@@ -1,0 +1,108 @@
+package sysmlv2tests
+
+import com.github.tukcps.sysmd.model.kerml.Feature
+import com.github.tukcps.sysmd.model.sysml.PartDefinition
+import com.github.tukcps.sysmd.model.sysml.PartUsage
+import com.github.tukcps.sysmd.model.sysml.PortDefinition
+import com.github.tukcps.sysmd.model.sysml.PortUsage
+import com.github.tukcps.sysmd.compiler.loadSysMD
+import com.github.tukcps.sysmd.services.session.SessionManager.testSession
+import com.github.tukcps.sysmd.services.resolve.resolve
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
+
+class PartAndPortTests {
+
+    /**
+     * A port usage generates a feature of class "Port".
+     */
+    @Test
+    fun portTest1() = testSession("Ports") {
+        loadSysMD("""
+            port p; 
+        """.trimIndent())
+        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        val p = global.resolve<PortUsage>("p")
+        assertNotNull(p)
+    }
+
+    /**
+     * A port usage generates a feature of class "Port".
+     */
+    @Test
+    fun portTestDirection() = testSession("Ports") {
+        loadSysMD("""
+            out port p; 
+        """.trimIndent())
+        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        val p = global.resolve<PortUsage>("p")
+        assertNotNull(p)
+    }
+
+    /**
+     * A port usage generates a feature of class "Port".
+     */
+    @Test
+    fun portDefTest() = testSession("Ports") {
+        loadSysMD("""
+            port def <short> p; 
+        """.trimIndent())
+        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        val p = global.resolve<PortDefinition>("p")
+        assertNotNull(p)
+        assertTrue(p.allSupertypes().first().qualifiedName == "Ports::Port")
+    }
+
+    /**
+     * A port usage generates a feature of class "Port".
+     * Here, a port that "features" a Real value and has direction out.
+     */
+    @Test
+    fun portDefTestWithSpecialization() = testSession("Ports") {
+        loadSysMD("""
+            port def p1 {
+                attribute value: ScalarValues::Real; 
+            }; 
+            port def p2 :> p1;
+            out port p3 : p2; 
+        """.trimIndent())
+        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        val p2 = global.resolve<PortDefinition>("p2")
+        assertNotNull(p2)
+        assertTrue(p2.allSupertypes().first().qualifiedName == "p1")
+        val p3 = global.resolve<PortUsage>("p3")
+        assertEquals(Feature.FeatureDirectionKind.OUT, p3!!.direction)
+    }
+
+    /**
+     * A port usage generates a feature of class "Parts::Part".
+     */
+    @Test
+    fun partTest1() = testSession("Parts") {
+        loadSysMD("""
+            part p; 
+        """.trimIndent())
+        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        val p = global.resolve<PartUsage>("p")
+        assertNotNull(p)
+        assertTrue(p.allSupertypes().first().qualifiedName == "Parts::Part")
+    }
+
+    /**
+     * A port usage generates a feature of class "Port".
+     */
+    @Test
+    fun partDefTestWithSpecialization() = testSession("Parts") {
+        loadSysMD("""
+            part def p1; 
+            part def p2 :> p1; 
+        """.trimIndent())
+        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        val p2 = global.resolve<PartDefinition>("p2")
+        assertNotNull(p2)
+        assertTrue(p2.allSupertypes().first().qualifiedName == "p1")
+    }
+
+}

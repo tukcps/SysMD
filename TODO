@@ -1,0 +1,9 @@
+
+FEATURE:
+- Draw table with alternatives of subclass values.
+
+- Solver:
+    - use dependency "bySubclasses" iff it has subclasses and expression is null
+
+- Compiler:
+    - use of multiplicity on Classifier shall report error, not return +-inf.

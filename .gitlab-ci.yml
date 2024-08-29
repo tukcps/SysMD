@@ -1,0 +1,94 @@
+# This file is a template, and might need editing before it works on your project.
+# This is the Gradle build system for JVM applications
+# https://gradle.org/
+# https://github.com/gradle/gradle
+image: gradle:7.6.0-jdk17
+
+stages:
+  - build
+  - test
+  - deploy
+  - regression_tests
+
+# Disable the Gradle daemon for Continuous Integration servers as correctness
+# is usually a priority over speed in CI environments. Using a fresh
+# runtime for each build is more reliable since the runtime is completely
+# isolated from any previous builds.
+variables:
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+
+before_script:
+  - export GRADLE_USER_HOME=`pwd`/.gradle
+
+build:
+  stage: build
+  script: 
+    - gradle --build-cache assemble
+  cache:
+    key: "$CI_COMMIT_REF_NAME"
+    policy: push
+    paths:
+      - build
+      - .gradle
+  tags:
+    - testing
+  
+
+test:
+  stage: test
+  script: gradle test --stacktrace --scan
+  artifacts:
+    when: always
+    paths:
+      - ///builds/open/sysmd/build/reports/**
+    expire_in: 1 week
+  cache:
+    key: "$CI_COMMIT_REF_NAME"
+    policy: pull
+    paths:
+      - build
+      - .gradle
+  tags:
+    - testing
+
+publish:
+  stage: deploy
+  script:
+    - 'gradle publish'
+    - export BUILD_VERSION=$(gradle properties -q | grep -oP 'version:\s*\K.*')
+    - echo "SYSMD_BUILD_VERSION=${BUILD_VERSION}" >> build.env
+  artifacts:
+    reports:
+      dotenv: build.env
+  cache:
+    key: "$CI_COMMIT_REF_NAME"
+    policy: pull
+    paths:
+      - build
+      - .gradle
+  only:
+    - Releases/2.7
+    - Releases/2.8
+    - Releases/2.9
+    - Releases/2.10
+    - Releases/2.11
+    - Releases/2.12
+  tags:
+    - testing
+
+integration_test_bridge:
+  # Move this after deployment stage
+  stage: regression_tests
+  variables:
+    SYSMD_VERSION: "$SYSMD_BUILD_VERSION"
+    # SYSMD_VERSION: 2.10.22
+  trigger:
+    strategy: depend
+    project: 'project/agila_backend'
+    # Must be changed to stage when stage server is ready.
+    # We want to run integration test on a stable backend.
+    branch: 'development'
+  needs: ["publish"]
+  rules:
+    - exists:
+        - publish

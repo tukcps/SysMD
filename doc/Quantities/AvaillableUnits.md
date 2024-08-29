@@ -1,43 +1,44 @@
 # Table of all available units
 
 # Basic units
-| Dimension                 | Unit                     |     Symbol     |
-|:--------------------------|:-------------------------|:--------------:|
-| Area                      | Square Meter             |      m^2       |
-|                           | Acre                     |       ac       |
-| Density                   | Kilogram per Cubic Meter |     kg/m^3     |
-| Information capacity      | Bit                      |   bit or Bit   |
-|                           | Byte                     |   B or Byte    |
-| Length                    | Meter                    |       m        |
-|                           | Inch                     |       in       |
-|                           | Feet                     |       ft       |
-|                           | Yard                     |       yd       |
-|                           | Mile                     |       mi       |
-|                           | Nautical mile            |      nmi       |
-| Mass                      | Kilogram                 |       kg       |
-|                           | Tonne (metric ton)       |       t        |
-|                           | Short Ton                |       tn       |
-|                           | Grain                    |       gr       |
-|                           | Carat                    |       ct       |
-|                           | Ounce                    |       oz       |
-|                           | Pound                    |       lb       |
-| Mass flow                 | Kilogram per Second      |      kg/s      |
-| Quantity of dimension one | Percent                  |       %        |
-|                           | Decibel                  |       dB       |
-|                           | Degree                   |    ° or deg    |
-|                           | Radiant                  | rad or pi or π |
-| Solid angle               | Steradian                |       sr       |
-| Time                      | Second                   |       s        |
-|                           | Minute                   |      min       |
-|                           | Hour                     |       h        |
-|                           | Day                      |       d        |
-|                           | Year (= 365 days)        |  a or yr or y  |
-| Volume                    | Cubic Meter              |      m^3       |
-|                           | Litre                    |       l        |
-|                           | Pint                     |       pt       |
-|                           | Quart                    |       qt       |
-|                           | Gallon                   |      gal       |
-|                           | Barrel                   |      bbl       |
+| Dimension                 | Unit                     |    Symbol     |
+|:--------------------------|:-------------------------|:-------------:|
+| Area                      | Square Meter             |      m^2      |
+|                           | Acre                     |      ac       |
+| Density                   | Kilogram per Cubic Meter |    kg/m^3     |
+| Information capacity      | Bit                      |  bit or Bit   |
+|                           | Byte                     |   B or Byte   |
+| Length                    | Meter                    |       m       |
+|                           | Inch                     |     inch      |
+|                           | Feet                     |      ft       |
+|                           | Yard                     |      yd       |
+|                           | Mile                     |      mi       |
+|                           | Nautical mile            |      nmi      |
+| Mass                      | Kilogram                 |      kg       |
+|                           | Tonne (metric ton)       |       t       |
+|                           | Short Ton                |      tn       |
+|                           | Grain                    |      gr       |
+|                           | Carat                    |      ct       |
+|                           | Ounce                    |      oz       |
+|                           | Pound                    |      lb       |
+| Mass flow                 | Kilogram per Second      |     kg/s      |
+| Quantity of dimension one | Percent                  |       %       |
+|                           | Decibel                  |      dB       |
+|                           | Degree                   |   ° or deg    |
+|                           | Radiant                  |      rad      |
+|                           | Pi                       | Pi or pi or π |
+| Solid angle               | Steradian                |      sr       |
+| Time                      | Second                   |       s       |
+|                           | Minute                   |      min      |
+|                           | Hour                     |       h       |
+|                           | Day                      |       d       |
+|                           | Year (= 365 days)        | a or yr or y  |
+| Volume                    | Cubic Meter              |      m^3      |
+|                           | Litre                    |       l       |
+|                           | Pint                     |      pt       |
+|                           | Quart                    |      qt       |
+|                           | Gallon                   |      gal      |
+|                           | Barrel                   |      bbl      |
 
 # Atomic units
 
@@ -69,6 +70,7 @@
 | **Power Density**       | Watt per cubic Meter      |   W/m^3    |
 | **Pressure**            | Pascal                    |     Pa     |
 |                         | Bar                       |    bar     |
+|                         | pounds per square inch    |    psi     |
 | **Speed**               | Meter per Second          |    m/s     |
 |                         | Knot                      |     kt     |
 |                         | Miles per hour            |    mph     |
@@ -80,6 +82,8 @@
 | **Electrical conductance** | Siemens            |     S      |
 | **Electrical resistance**  | Ohm                |  Ohm or Ω  |
 | **Electric charge**        | Coulomb            |     C      |
+|                            | Ampere hours       |     Ah     |
+|                            | Ampere second      |     As     |
 | **Electric current**       | Ampere             |     A      |
 | **Electric field**         | Newton per Coulomb |    N/C     |
 | **Electric potential**     | Volt               |     V      |

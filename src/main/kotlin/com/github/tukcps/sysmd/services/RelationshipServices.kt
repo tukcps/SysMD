@@ -1,0 +1,86 @@
+package com.github.tukcps.sysmd.services
+
+import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.model.kerml.implementation.TypeImplementation
+import com.github.tukcps.sysmd.compiler.parser.SimpleName
+import com.github.tukcps.sysmd.services.session.Session
+
+
+/**
+ * Gets all relationships from an element, filtered by name of relationship, and (for Associations) by class.
+ * @param element The element that is source of a relationship
+ * @param name The expected name; "*" for ignoring name.
+ * @param ofClass The type of Association; null for ignoring it.
+ * @return A set of all matching relationships.
+ */
+fun Session.getRelationshipsFrom(element: Element, name: String, ofClass: Type? = null): Set<Relationship> {
+    val sourceOfRelationship = repo.sourceOfRelationship[element]
+    val result: MutableSet<Relationship> = mutableSetOf()
+    sourceOfRelationship?.forEach {
+        if ((it.declaredName == name)  || (it.declaredShortName == name) || (name == "*")) {
+            if (ofClass == null)
+                result.add(it)
+            else if (it is Type && it.specializes(ofClass))
+                result.add(it)
+        }
+    }
+    return  result
+}
+
+
+/**
+ * Gets all relationships to an element, filtered by name of relationship, and (for Associations) by class.
+ * @param element The element that is target of a relationship
+ * @param name The expected name; "*" for ignoring name.
+ * @param ofClass The type of Association; null for ignoring it.
+ * @return A set of all matching relationships.
+ */
+fun Session.getRelationshipsTo(element: Element, name: SimpleName, ofClass: Type? = null): Set<Relationship> {
+    val targetOfRelationship = repo.targetOfRelationship[element]
+    val results: MutableSet<Relationship> = mutableSetOf()
+    targetOfRelationship?.forEach {
+        if ((it.declaredName == name) || (it.declaredShortName == name) || (name == "*")) {
+            if (ofClass == null)
+                results.add(it)
+            else if (it is Type && ofClass in it.allSupertypes())
+                results.add(it)
+        }
+    }
+    return results
+}
+
+
+/**
+ * Retrieves all relationships from an element, filtered by name of relationship, and (for Associations) by class.
+ * Furthermore, it considers inheritance and adds all relationships of superclasses.
+ * @param element The element that is source of a relationship
+ * @param name The expected name; "*" for ignoring name.
+ * @param ofClass The type of Association; null for ignoring it.
+ * @return A set of all matching relationships.
+ */
+fun Session.findRelationshipsFrom(element: Element, name: String, ofClass: Type? = null): Set<Relationship> {
+    val result = getRelationshipsFrom(element, name, ofClass)
+    return when (element) {
+        is Anything -> emptySet()
+        is Type -> result + findRelationshipsFrom(element.generalization.firstOrNull()?.ref as Namespace, name)
+        else -> result
+    }
+}
+
+
+/**
+ * Retrieves all relationships to an element, considering inheritance.
+ * Furthermore, it considers inheritance and adds all relationships of superclasses.
+ * @param element The element that is target of a relationship
+ * @param name The expected name; "*" for ignoring name.
+ * @param ofClass The type of Association; null for ignoring it.
+ * @return A set of all matching relationships.
+ */
+fun Session.findRelationshipsTo(element: Element, name: String, ofClass: Type? = null): Set<Relationship> {
+    val result = getRelationshipsTo(element, name, ofClass)
+    return when (element) {
+        is Anything -> emptySet()
+        is TypeImplementation -> result + findRelationshipsTo(element.generalization.firstOrNull()?.ref as Namespace, name)
+        else -> result
+    }
+}

@@ -1,0 +1,312 @@
+package parsertests
+
+import com.github.tukcps.sysmd.model.kerml.Element
+import com.github.tukcps.sysmd.model.kerml.getOwnedElementsOfType
+import com.github.tukcps.sysmd.model.sysml.PartUsage
+import com.github.tukcps.sysmd.model.sysml.StateUsage
+import com.github.tukcps.sysmd.model.sysml.TransitionUsage
+import com.github.tukcps.sysmd.compiler.HoodSysmlParser
+import com.github.tukcps.sysmd.compiler.KerMLPackage
+import org.junit.jupiter.api.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+
+class HoodSysmlParserTest {
+    val parser : HoodSysmlParser = HoodSysmlParser()
+
+    @Test
+    fun parseNoPackages() {
+        val model = parser.parseString("")
+        val emptyPackageList = model.global.getOwnedElementsOfType<KerMLPackage>()
+            .filterNot { it.isStandard }
+
+        assertTrue { emptyPackageList.isEmpty() }
+    }
+
+    @Test
+    fun parsesOnePackage() {
+        val model = parser.parseString("package firstPackage;")
+        val packageList = model.global.getOwnedElementsOfType<KerMLPackage>()
+            .filterNot { it.isStandard }
+        assertEquals("firstPackage", packageList[0].name)
+    }
+
+    @Test
+    fun parsesTwoPackages() {
+        val model = parser.parseString("package firstPackage;\npackage secondPackage;")
+        val packageList = model.global.getOwnedElementsOfType<KerMLPackage>()
+            .filterNot { it.isStandard }
+        assertEquals("firstPackage", packageList[0].name)
+        assertEquals("secondPackage", packageList[1].name)
+    }
+
+    @Test
+    fun doesNotParseNestedPackages() {
+        val model = parser.parseString("package firstPackage { package subPackage; }")
+        val packageList = model.global.getOwnedElementsOfType<KerMLPackage>()
+            .filterNot { it.isStandard }
+        assertEquals(1, packageList.size)
+        assertEquals("firstPackage", packageList[0].name)
+    }
+
+
+    @Test
+    fun parsesTopLevelPackage() {
+        val model = parser.parseString("package testPackage;")
+        val topLevelPackage = parser.getTopLevelPackage(model, "testPackage")
+
+        assertEquals("testPackage", topLevelPackage?.name)
+    }
+
+    @Test
+    fun parsesTwoParts() {
+        val model = parser.parseString("package testPackage{part part1;part part2;}")
+
+        val owningPackage = parser.getTopLevelPackage(model, "testPackage")
+        val parts = owningPackage!!.getOwnedElementsOfType<PartUsage>()
+        val partNames = parts.map(Element::name).toList()
+        assertTrue(partNames.contains("part1"))
+        assertTrue(partNames.contains("part2"))
+
+        val part1 = parts[0]
+        val part2 = parts[1]
+        assertEquals("testPackage", parser.getOwner(part1)?.name)
+        assertEquals("testPackage", parser.getOwner(part2)?.name)
+    }
+
+    @Test
+    fun parsesPartThatOwnsAttributeDefinition() {
+        val model = parser.parseString("package testPackage{part part1{attribute def EventType1;}}")
+
+        val owningPackage = parser.getTopLevelPackage(model, "testPackage")
+        val parts = owningPackage!!.getOwnedElementsOfType<PartUsage>()
+        val part1 = parts[0]
+
+        val eventTypes = parser.getAttributeDefinitions(part1)
+        val eventType1 = eventTypes[0]
+        assertEquals("EventType1", eventType1.name)
+    }
+
+    @Test
+    fun parsesTwoAttributeDefinitions() {
+        val model =
+            parser.parseString("package testPackage{part part1{attribute def EventType1;attribute def EventType2;}}")
+
+        val owningPackage = parser.getTopLevelPackage(model, "testPackage")
+        val parts = owningPackage!!.getOwnedElementsOfType<PartUsage>()
+        val part1 = parts[0]
+
+        val eventTypes = parser.getAttributeDefinitions(part1)
+        val eventType1 = eventTypes[0]
+        val eventType2 = eventTypes[1]
+
+        assertEquals("EventType1", eventType1.name)
+        assertEquals("EventType2", eventType2.name)
+    }
+
+    @Test
+    fun parsesPartThatOwnsState() {
+        val model = parser.parseString("package testPackage{part part1{state state1;}}")
+
+        val owningPackage = parser.getTopLevelPackage(model, "testPackage")
+        val parts = owningPackage!!.getOwnedElementsOfType<PartUsage>()
+        val part1 = parts[0]
+
+        val states = part1.getOwnedElementsOfType<StateUsage>()
+        val state1 = states[0]
+        assertEquals("state1", state1.name)
+    }
+
+    @Test
+    fun parsesTwoStateNames() {
+        val model = parser.parseString("package testPackage{part part1{state state1;state state2;}}")
+
+        val owningPackage = parser.getTopLevelPackage(model, "testPackage")
+        val parts = owningPackage!!.getOwnedElementsOfType<PartUsage>()
+        val part1 = parts[0]
+
+        val states = part1.getOwnedElementsOfType<StateUsage>()
+        val state1 = states[0]
+        val state2 = states[1]
+
+        assertEquals("state1", state1.name)
+        assertEquals("state2", state2.name)
+    }
+
+    @Test
+    fun parsesTwoStatesOwnershipByPart() {
+        val model = parser.parseString("package testPackage{part part1{state state1;state state2;}}")
+
+        val owningPackage = parser.getTopLevelPackage(model, "testPackage")
+        val parts = owningPackage!!.getOwnedElementsOfType<PartUsage>()
+        val part1 = parts[0]
+
+        val states = part1.getOwnedElementsOfType<StateUsage>()
+        val state1 = states[0]
+        val state2 = states[1]
+
+        assertEquals("part1", parser.getOwner(state1)?.name)
+        assertEquals("part1", parser.getOwner(state2)?.name)
+    }
+
+    @Test
+    fun parsesStateOwnershipByState() {
+        val model = parser.parseString("package testPackage{part part1{state state1{state subState;}}}")
+
+        val owningPackage = parser.getTopLevelPackage(model, "testPackage")
+        val parts = owningPackage!!.getOwnedElementsOfType<PartUsage>()
+        val part1 = parts[0]
+
+        val states = part1.getOwnedElementsOfType<StateUsage>()
+        val state1 = states[0]
+        val subState = state1.getOwnedElementsOfType<StateUsage>()[0]
+
+        assertEquals("subState", subState.name)
+        assertEquals("state1", parser.getOwner(subState)?.name)
+    }
+
+
+    @Test
+    fun parsesEntryAction() {
+        val model = parser.parseString(
+            """
+                package testPackage{
+                    part part1{
+                        state status{
+                            entry action initial;
+                        }
+                     }
+                }
+                """
+        )
+
+        val owningPackage = parser.getTopLevelPackage(model, "testPackage")
+        val parts = owningPackage!!.getOwnedElementsOfType<PartUsage>()
+        val part1 = parts[0]
+        val status = part1.getOwnedElementsOfType<StateUsage>()[0]
+        val entryAction = parser.getActionUsages(status)[0]
+
+        assertEquals("initial", entryAction.name)
+    }
+
+    @Test
+    fun parsesEntryActionAndState() {
+        val model = parser.parseString(
+            """
+                package testPackage{
+                    part part1{
+                        state status{
+                            entry action Initial;
+                            state state1;
+                        }
+                     }
+                }
+                """
+        )
+
+        val owningPackage = parser.getTopLevelPackage(model, "testPackage")
+        val parts = owningPackage!!.getOwnedElementsOfType<PartUsage>()
+        val part1 = parts[0]
+        val status = part1.getOwnedElementsOfType<StateUsage>()[0]
+        val actionUsages = parser.getActionUsages(status)
+
+        val entryAction = actionUsages[0]
+        val state1 = actionUsages[1]
+
+        assertEquals("Initial", entryAction.name)
+        assertEquals("state1", state1.name)
+    }
+
+    @Test
+    fun parsesOneTransitionFromEntryActionToState() {
+        val model = parser.parseString(
+            """
+                package testPackage{
+                    part part1{
+                        state status{
+                            entry action old;
+                            state new;
+                            transition first old then new;
+                        }
+                     }
+                }
+                """
+        )
+
+        val owningPackage = parser.getTopLevelPackage(model, "testPackage")
+        val parts = owningPackage!!.getOwnedElementsOfType<PartUsage>()
+        val part1 = parts[0]
+        val status = part1.getOwnedElementsOfType<StateUsage>()[0]
+        val transition = status.getOwnedElementsOfType<TransitionUsage>()[0]
+
+        assertEquals("old", transition.source.ref!!.name)
+        assertEquals("new", transition.target.ref!!.name)
+    }
+
+    @Test
+    fun parsesOneTransitionFromStateToState() {
+        val model = parser.parseString(
+            """
+                package testPackage{
+                	attribute def TurnOn;
+                
+                    part part1{
+                        state status{
+                            state state1;
+                            state state2;
+                            entry action initial;
+                            transition 
+                              first state1 
+                              accept TurnOn
+                              then state2;
+                        }
+                     }
+                }
+                """
+        )
+
+        val owningPackage = parser.getTopLevelPackage(model, "testPackage")
+        val parts = owningPackage!!.getOwnedElementsOfType<PartUsage>()
+        val part1 = parts[0]
+        val status = part1.getOwnedElementsOfType<StateUsage>()[0]
+        val transition = status.getOwnedElementsOfType<TransitionUsage>()[0]
+
+        assertEquals("state1", transition.source.ref!!.name)
+        assertEquals("state2", transition.target.ref!!.name)
+        // There are now infrastructures for multi-inheritance.
+        // In-line with standard:
+        assertEquals("TurnOn", transition.triggerPayloadParameterType?.name)
+    }
+
+    @Test
+    fun parsesTwoTransitionsFromStateToState() {
+        val model = parser.parseString(
+            """
+                package testPackage{
+                    part part1{
+                        state status{
+                            state state1;
+                            state state2;
+                            transition first state1 then state2;
+                            transition first state2 then state1;
+                        }
+                     }
+                }
+                """
+        )
+
+        val owningPackage = parser.getTopLevelPackage(model, "testPackage")
+        val parts = owningPackage!!.getOwnedElementsOfType<PartUsage>()
+        val part1 = parts[0]
+        val status = part1.getOwnedElementsOfType<StateUsage>()[0]
+        val transitions = status.getOwnedElementsOfType<TransitionUsage>()
+
+        val transition1 = transitions[0]
+        assertEquals("state1", transition1.source.ref!!.name)
+        assertEquals("state2", transition1.target.ref!!.name)
+
+        val transition2 = transitions[1]
+        assertEquals("state2", transition2.source.ref!!.name)
+        assertEquals("state1", transition2.target.ref!!.name)
+    }
+}

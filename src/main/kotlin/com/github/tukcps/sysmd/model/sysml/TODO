@@ -1,0 +1,3 @@
+Getan:
+* SVG-Diagramme werden im "diagrams"-Unterverzeichnis des Projektverzeichnisses gespeichert
+* Render Diagram wird nur für "State Usages" angezeigt

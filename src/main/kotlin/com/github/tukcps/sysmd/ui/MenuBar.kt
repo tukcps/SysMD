@@ -1,0 +1,80 @@
+package com.github.tukcps.sysmd.ui
+
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.window.FrameWindowScope
+import androidx.compose.ui.window.MenuBar
+import com.github.tukcps.sysmd.ui.viewmodel.SysMDViewModel
+import com.github.tukcps.sysmd.ui.viewmodel.EditorTabModel
+
+/**
+ * Adds the main pull-down menu in to top window line.
+ *
+ *  SysMD   Backend   Help
+ *  ----------------------
+ *  Quit    Login     Settings
+ *  ...     ------    Help
+ */
+@Composable
+fun FrameWindowScope.MenuBar(model: SysMDViewModel) = MenuBar {
+    fun showSettingsDialog() {
+        model.showSettingsDialog.value = true
+        model.reconnectionRequired.value = true
+    }
+
+    fun saveAction(){
+        val activeTab = model.tabsModel.active
+        val newActiveTab =  model.tabsModel.active as? EditorTabModel
+
+        activeTab?.save()
+        if(newActiveTab != null)
+            newActiveTab.elementEdited.value = false
+    }
+
+    fun createProject() {
+        model.showDialogProjectName.value=true
+    }
+
+    fun deleteProject() {
+
+    }
+
+    fun createBranch() {
+        model.showDialogBranchName.value = true
+    }
+
+    fun deleteBranch() {
+        model.showDialogBranchDeletion.value = true
+    }
+
+    fun mergeBranch() {
+        //model.showDialogMergeBranches.value = true
+    }
+
+    fun createCommit() {
+        isCommitDialogOpen.value = true
+    }
+
+
+    Menu("Backend") {
+        Item("Login", null) { showSettingsDialog() }
+        Separator()
+        Item("Create Project") { createProject() } // Icons.Default.NewLabel
+        Item("Delete Project") { deleteProject() } // Icons.Default.Delete
+        Item("Create Branch") { createBranch() }
+        Item("Delete Branch") { deleteBranch() }
+        Item("Merge Branch") { mergeBranch() }
+        Item("Commit") { createCommit() } // , Icons.Default.Save
+        Item("Pull") {model.pull()}  // , Icons.Default.Download
+        Item("Push") {} // , Icons.Default.Upload
+    }
+
+    Menu("Help") {
+        Item("Settings") { showSettingsDialog() }
+        Item("Help") {}
+    }
+
+    if(!model.showSettingsDialog.value&&model.reconnectionRequired.value){
+        model.reconnectToBackend()
+        model.reconnectionRequired.value=false
+    }
+}
