@@ -17,9 +17,7 @@ fun KerML.AttributeDef() {
     val attributeDef = sysMLSemantics.AttributeDefinitionSemantics()
     ATTRIBUTE.consume()
     DEF.consume()
-    Identification().also {
-        attributeDef.identification = it
-    }
+    Identification().also { attributeDef.identification = it }
     attributeDef.create()
     Body(Resolved(attributeDef.created!!))
 }
@@ -54,7 +52,7 @@ fun KerML.AttributeUsage() {
     }
     ATTRIBUTE.optional()
     alternatives {
-        REDEFINES starts  {attribute = AttributeUsageRedefines(attribute)}
+        REDEFINES starts  { attribute = AttributeUsageRedefines(attribute)}
         others {
             Identification().also { attribute?.identification = it }
             optional(DP) {

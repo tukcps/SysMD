@@ -2,6 +2,7 @@
 
 package com.github.tukcps.sysmd.cspsolver
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.github.tukcps.aadd.AADD
 import com.github.tukcps.aadd.BDD
 import com.github.tukcps.aadd.IDD
@@ -51,6 +52,7 @@ interface Variable: ConstraintPropagation {
         get() = if(valueStr.size()>0) valueSpecs as MutableList<String> else mutableListOf("")
 
     /** A getter for a string representation of the value, with field for serialization. */
+    @get:JsonIgnore
     var valueStr: String
 
     /** indicator for constraint propagation that shows stability in iterations. */

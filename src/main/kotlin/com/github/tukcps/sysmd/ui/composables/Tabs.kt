@@ -28,6 +28,13 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
 
+/**
+ * Renders a list of tabs.
+ * @param tabs a list of strings that are the titles of the tabs.
+ * @param selectedIndex the index of the selected tab
+ * @param onSelection a callback that will be called on selection of a tab
+ * @param onClose a callback that will be called on closing a tab
+ */
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun Tabs(
@@ -39,6 +46,8 @@ fun Tabs(
     val primaryColor = MaterialTheme.colorScheme.primary
     val closed: MutableState<Boolean> = mutableStateOf(false)
 
+    // selected index must be accessed to cause re-rendering.
+    val dummyRead = selectedIndex.value
     BoxWithConstraints(modifier = Modifier.fitMaxWidth()) {
         val swipeState = rememberSwipeableState(0, confirmStateChange = { selectedIndex.value = it; true })
 

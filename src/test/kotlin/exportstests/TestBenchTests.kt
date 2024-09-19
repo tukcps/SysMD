@@ -22,7 +22,7 @@ class TestBenchTests {
             
             // Library instances --> SystemC classes
             part def Amplifier isA Base::Anything {
-                attribute gain: Real [dB] = [0.0 .. 100.0] dB;     
+                attribute gain: Real [dB] = [0.0 .. 100.0] dB;
             }
             
             // Concrete model --> SystemC instances of library classes

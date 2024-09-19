@@ -1,5 +1,7 @@
 package com.github.tukcps.sysmd.rest.entities
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import com.fasterxml.jackson.datatype.jsr310.ser.ZonedDateTimeSerializer
 import com.github.tukcps.sysmlv2.entities.Commit
 import com.github.tukcps.sysmlv2.entities.Project
 import com.github.tukcps.sysmlv2.entities.responseModels.ProjectResponse
@@ -7,7 +9,8 @@ import java.time.ZonedDateTime
 import java.util.*
 
 class ProjectImplementation(
-    override var created: ZonedDateTime = ZonedDateTime.now(),
+    @JsonSerialize(using = ZonedDateTimeSerializer::class)
+    override var created: Date = Date.from(ZonedDateTime.now().toInstant()),
     override var alias: List<String> = mutableListOf(),
     override var description: String = "",
     override var id: UUID = UUID.randomUUID(),

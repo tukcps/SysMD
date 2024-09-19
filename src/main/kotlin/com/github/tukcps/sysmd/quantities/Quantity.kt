@@ -235,8 +235,21 @@ class Quantity : VectorQuantity {
      * @return Quantity with the with result as BDD as a new Quantity
      */
     infix fun eq(quantity: Quantity): Quantity {
-        if (value is BDD) throw BDDError("Less equals not allowed for BDDs")
-        return Quantity((value lessThanOrEquals quantity.value).and(value greaterThanOrEquals quantity.value))
+        return when (value) {
+            is BDD -> Quantity((value as BDD).xor(quantity.value.asBdd()).not()) // and is the same as not xor
+            is IDD -> Quantity((value lessThanOrEquals quantity.value).and(value greaterThanOrEquals quantity.value))
+            is AADD -> Quantity((value lessThanOrEquals quantity.value).and(value greaterThanOrEquals quantity.value))
+            is StrDD -> Quantity((value as StrDD).equalValue(quantity.value.asStrDD()))
+            else -> throw BDDError("equals only allowed for AADD, BDD, IDD and StrDD")
+        }
+
+
+    }
+
+    infix fun neq(quantity: Quantity): VectorQuantity {
+        if (value is BDD) throw BDDError("Not equals not allowed for BDDs")
+        val equalsValue = (this eq quantity).value
+        return VectorQuantity(equalsValue.asBdd().not())
     }
 
 //--------------Boolean operations--------------------------------

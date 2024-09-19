@@ -30,7 +30,7 @@ class AstBinOp(
 
     /** Initialization; starts from bottom-up */
     override fun initialize() {
-        upQuantity = if (op in setOf(GE, LE, EE, GT, LT, AND, OR)) VectorQuantity(mutableListOf(model.builder.Bool))
+        upQuantity = if (op in setOf(GE, LE, EE, GT, LT, AND, OR, NEQ)) VectorQuantity(mutableListOf(model.builder.Bool))
         else if (l.isReal) VectorQuantity(mutableListOf(model.builder.Reals),"?")
         else if (l.isInt) VectorQuantity(mutableListOf(model.builder.Integers))
         else VectorQuantity(mutableListOf(model.builder.Reals),"?")
@@ -68,6 +68,7 @@ class AstBinOp(
             OR -> l.upQuantity or r.upQuantity
             EXP -> l.upQuantity pow r.upQuantity
             EE  -> l.upQuantity eq r.upQuantity
+            NEQ -> l.upQuantity neq r.upQuantity
             else -> throw SemanticError("Operation $op resp. $op not supported here.")
         }
     }
@@ -189,6 +190,9 @@ class AstBinOp(
                     else ->
                         throw SemanticError("Comparison only defined between Integers, Reals, and Booleans.")
                 }
+            }
+            NEQ -> {
+                //Nothing to do; handled by Axels solver.
             }
 
             GT -> {

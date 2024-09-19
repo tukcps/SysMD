@@ -1,7 +1,9 @@
 
+import org.jetbrains.compose.ExperimentalComposeLibrary
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.plugin.getKotlinPluginVersion
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 /*
  * Gradle build file for SysMD Notebook.
@@ -16,9 +18,9 @@ import org.jetbrains.kotlin.gradle.plugin.getKotlinPluginVersion
  * - also set the value standalone according to your setup
  */
 group   = "com.github.tukcps"
-version = "3.0.13"
+version = "3.0.14"
 val jaaddVersion = "3.1.0"
-val sysmlapiVersion = "3.0.2"
+val sysmlapiVersion = "3.0.5"
 
 val kotlinVersion = getKotlinPluginVersion()
 
@@ -46,6 +48,7 @@ plugins {
 
 // Repositories where to search
 repositories {
+    mavenLocal()
     mavenCentral()
     google()
 
@@ -79,7 +82,7 @@ repositories {
 // Dependencies
 dependencies {
     implementation(compose.desktop.currentOs)
-
+    
     // Check if we do a standalone-build or a hierarchical build with git submodules
     val standalone: Boolean = if (org.gradle.internal.os.OperatingSystem.current().isWindows)
         !File("${System.getProperty("user.home")}\\agila.hierarchical.build").exists()
@@ -126,7 +129,7 @@ dependencies {
     implementation("org.commonmark:commonmark-ext-ins:0.22.0")
 
     // Some more icons ...
-    implementation("org.jetbrains.compose.material:material-icons-extended-desktop:1.6.2")
+    implementation("org.jetbrains.compose.material:material-icons-extended-desktop:1.6.11")
     implementation("br.com.devsrsouza.compose.icons.jetbrains:line-awesome:1.0.0")
 
     // Rendering of LaTeX in MD
@@ -140,6 +143,14 @@ dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:2.0.0")
     testImplementation(platform("org.junit:junit-bom:5.10.2"))
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")
+    
+    // compose ui tests
+    testImplementation(kotlin("test"))
+    @OptIn(ExperimentalComposeLibrary::class)
+    testImplementation(compose.uiTest)
+    testImplementation(compose.desktop.currentOs)
+    testImplementation(compose.desktop.uiTestJUnit4)
+    testImplementation(compose.desktop.currentOs)
 }
 
 
@@ -214,4 +225,17 @@ kotlin {
 
 tasks.withType<JavaCompile> {
     options.release.set(17)
+}
+
+tasks.withType<KotlinCompile>() {
+    compilerOptions.freeCompilerArgs.addAll(
+        "-P",
+        "plugin:androidx.compose.compiler.plugins.kotlin:metricsDestination="+project.projectDir.absolutePath+"/.gradle/composeDebug/metrics",
+    )
+}
+tasks.withType<KotlinCompile>() {
+    compilerOptions.freeCompilerArgs.addAll(
+        "-P",
+        "plugin:androidx.compose.compiler.plugins.kotlin:reportsDestination="+project.projectDir.absolutePath+"/.gradle/composeDebug/reports",
+    )
 }

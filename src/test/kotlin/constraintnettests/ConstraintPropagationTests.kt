@@ -8,6 +8,7 @@ import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.session.SessionManager.testSession
 import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
 class ConstraintPropagationTests {
@@ -374,6 +375,58 @@ class ConstraintPropagationTests {
             assertEquals(-6.0, global.resolveVar("a")!!.aadd().getRange().min, 0.00001)
             assertEquals(-1.0, global.resolveVar("a")!!.aadd().getRange().max, 0.00001)
             assertEquals("m", global.resolveVar("a")!!.vectorQuantity.unit.toString())
+            assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        }
+    }
+
+    @Test
+    fun notEquals() {
+        testSession {
+            +"attribute b: ScalarValues::Real = [1.0 .. 2.0] [m];"
+            +"attribute c: ScalarValues::Real = [3.0 .. 4.0] [m];"
+            +"attribute d: ScalarValues::Boolean = c!=b;"
+            assertEquals(0, status.exceptions.size, status.exceptions.toString())
+            propagate()
+            assertEquals("True", global.resolveVar("d")!!.bdd().toString())
+            assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        }
+    }
+
+    @Test
+    fun notEquals2() {
+        testSession {
+            +"attribute b: ScalarValues::Integer = 1 ;"
+            +"attribute c: ScalarValues::Integer = 1;"
+            +"attribute d: ScalarValues::Boolean = b!=c;"
+            assertEquals(0, status.exceptions.size, status.exceptions.toString())
+            propagate()
+            assertEquals("False", global.resolveVar("d")!!.bdd().toString())
+            assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        }
+    }
+
+    @Test @Disabled
+    fun notEquals3() {
+        testSession {
+            +"attribute b: ScalarValues::Real = 1.0 m ;"
+            +"attribute c: ScalarValues::Real = 1.0 m;"
+            +"attribute d: ScalarValues::Boolean = b!=c;"
+            assertEquals(0, status.exceptions.size, status.exceptions.toString())
+            propagate()
+            assertEquals("False", global.resolveVar("d")!!.bdd().toString())
+            assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        }
+    }
+
+    @Test @Disabled
+    fun equals3() {
+        testSession {
+            +"attribute b: ScalarValues::Real = 1.0 m ;"
+            +"attribute c: ScalarValues::Real = 1.0 m;"
+            +"attribute d: ScalarValues::Boolean = b==c;"
+            assertEquals(0, status.exceptions.size, status.exceptions.toString())
+            propagate()
+            assertEquals("False", global.resolveVar("d")!!.bdd().toString())
             assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
         }
     }

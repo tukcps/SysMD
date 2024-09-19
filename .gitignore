@@ -246,3 +246,6 @@ sysmd_settings.json
 /src/test/resources/toSystemC/Amp_Pipecleaner/
 
 .kotlin/sessions/
+# new
+.archive/
+

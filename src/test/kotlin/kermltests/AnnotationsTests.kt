@@ -53,7 +53,7 @@ class AnnotationsTests {
         loadSysMD("""
             class x; 
             class y; 
-            comment test about x, y /* comment on something */ 
+            comment test about x, y /* comment on something */
         """.trimIndent())
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val comment = global.getOwnedElementOfType<AnnotatingElement>()

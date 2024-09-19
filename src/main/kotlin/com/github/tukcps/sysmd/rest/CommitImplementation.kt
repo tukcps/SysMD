@@ -37,8 +37,8 @@ class CommitImplementation(): Commit {
         get() = TODO("Not yet implemented")
         set(value) {}
 
-    override var created: ZonedDateTime = ZonedDateTime.now()
-    override var modified: ZonedDateTime? = null
+    override var created: Date = Date.from(ZonedDateTime.now().toInstant())
+    override var modified: Date? = null
     override var name: String
         get() = TODO("Not yet implemented")
         set(value) {}

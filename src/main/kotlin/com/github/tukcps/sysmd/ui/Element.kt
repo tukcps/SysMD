@@ -4,35 +4,24 @@ package com.github.tukcps.sysmd.ui
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.foundation.interaction.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.ImageComposeScene
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toComposeImageBitmap
+import androidx.compose.ui.*
+import androidx.compose.ui.graphics.*
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.github.tukcps.sysmd.ui.composables.TooltipForIcons
-import com.github.tukcps.sysmd.ui.composables.TreeViewModel
+import androidx.compose.ui.unit.*
+import com.github.tukcps.sysmd.ui.composables.*
 import com.github.tukcps.sysmd.ui.rendering.*
 import com.github.tukcps.sysmd.ui.styles.AppTheme
-import com.github.tukcps.sysmd.ui.viewmodel.InternalRefReference
-import com.github.tukcps.sysmd.ui.viewmodel.MyIcons
-import com.github.tukcps.sysmd.ui.viewmodel.SysMDViewModel
-import com.github.tukcps.sysmd.ui.viewmodel.TextualRepresentationViewModel
+import com.github.tukcps.sysmd.ui.tableview.composables.TableView
+import com.github.tukcps.sysmd.ui.viewmodel.*
 import com.github.tukcps.sysmd.ui.viewmodel.TextualRepresentationViewModel.Companion.Language.*
 import com.github.tukcps.sysmd.ui.viewmodel.TextualRepresentationViewModel.Companion.compilableLanguages
 import org.jetbrains.skia.Image
@@ -58,16 +47,17 @@ fun Element(
     elementEdited: MutableState<Boolean>,
     internalRefReference: InternalRefReference,
     enableElementListScrolling: MutableState<Boolean>,
-    sysMDViewModel: MutableState<SysMDViewModel>
+    sysMDViewModel: MutableState<SysMDViewModel>,
 ) {
     val collapsed = mutableStateOf(collapsedElementIds[index] ?: false)
     val hidden = mutableStateOf(hiddenElementIds[index] ?: false)
     val imageChecked = remember { mutableStateOf(false) }
     val treeViewModel = remember { mutableStateOf<TreeViewModel.Item?>(null) }
     val image = remember { mutableStateOf<Image?>(null) }
-
+    var languageChangeBuffer by remember { mutableStateOf(model.language.value) }
+    
     fun isSelected(): Boolean = (index == selectedIndex.value && selectedItem.value)
-
+    
     fun createImage(className: String, relationshipType: String) {
         imageChecked.value = true
         val isA = relationshipType == "isA"
@@ -84,7 +74,7 @@ fun Element(
         if (treeViewModel.value != null) {
             val treeNodeModel = convertToTreeNodeModel(treeViewModel.value!!.item.node)
             determineChildsWidth(treeNodeModel)
-
+            
             image.value = ImageComposeScene(
                 content = { treeView(Modifier, treeNodeModel, true) },
                 width = getTreeViewWidth(treeNodeModel).roundToInt(),
@@ -94,21 +84,26 @@ fun Element(
             image.value = null
         }
     }
-
+    
     fun onLanguageChange() {
+        when {
+            languageChangeBuffer == TABLE -> model.tableViewModel.value.toText()
+            model.language.value == TABLE -> model.tableViewModel.value.build()
+        }
         if (model.language.value == VIEW) {
             elementEdited.value = true
             createImage(model.namespace.value, model.body.value.text)
         }
+        languageChangeBuffer = model.language.value
     }
-
+    
     fun resetImageView() {
         imageChecked.value = false
         image.value = null
         sysMDViewModel.value = SysMDViewModel(session = model.kerMlModel.value)
     }
-
-
+    
+    
     // Lambda that is called upon edit icon
     val changeEditStatusDescription = {
         val changedIndex = selectedIndex.value != index
@@ -118,24 +113,24 @@ fun Element(
         if (!selectedItem.value)
             internalRefReference.updateTOC()
     }
-
+    
     val onCollapseExpand = {
         selectedIndex.value = -1
         selectedItem.value = false
         collapsed.value = !collapsed.value
         collapsedElementIds[index] = collapsed.value
     }
-
+    
     val density = LocalDensity.current
     var mainRowWidth by remember { mutableStateOf(0.dp) }//Holds the Width of the very top Row of this Composable
-
+    
     val interactionSource = remember { MutableInteractionSource() }
     val hovered by interactionSource.collectIsHoveredAsState()
-
+    
     if (model.language.value == VIEW && !imageChecked.value && image.value == null) {
         createImage(model.namespace.value, model.body.value.text)
     }
-
+    
     Row(verticalAlignment = Alignment.CenterVertically) {
         if (!collapsed.value && !hidden.value) {
             Column(modifier = Modifier.fillMaxWidth(0.97f)) {
@@ -148,9 +143,11 @@ fun Element(
                         }
                         .hoverable(interactionSource = interactionSource, true)
                         .background(
-                            if (isSelected()) MaterialTheme.colorScheme.primaryContainer.copy(0.5f)
-                            else if (hovered) MaterialTheme.colorScheme.primaryContainer.copy(0.5f)
-                            else MaterialTheme.colorScheme.background
+                            when {
+                                isSelected() -> MaterialTheme.colorScheme.primaryContainer.copy(0.5f)
+                                hovered      -> MaterialTheme.colorScheme.primaryContainer.copy(0.5f)
+                                else         -> MaterialTheme.colorScheme.background
+                            }
                         )
                 ) {
                     Column {
@@ -168,9 +165,9 @@ fun Element(
                                 )
                             }
                         }
-
+                        
                         // Icon to select display of the optional info section.
-                        if (model.language.value in compilableLanguages) {
+                        if (model.language.value in compilableLanguages || model.language.value == TABLE) {
                             TooltipForIcons(tooltipText = "Display/Hide additional information section\nNote: If 'Analyze' was never clicked this might be empty") {
                                 IconButton(
                                     modifier = Modifier.height(18.dp).width(18.dp).padding(1.dp),
@@ -205,6 +202,8 @@ fun Element(
                                 IconButton(
                                     modifier = Modifier.height(18.dp).width(18.dp).padding(1.dp),
                                     onClick = {
+                                        if (model.language.value == TABLE)
+                                            model.tableViewModel.value.toText()
                                         model.compile()
                                         resetImageView()
                                     }
@@ -237,7 +236,7 @@ fun Element(
                                 }
                             }
                     }
-
+                    
                     Column(
                         Modifier.background(MaterialTheme.colorScheme.background)
                     ) {
@@ -247,12 +246,44 @@ fun Element(
                             Column {
                                 if (model.language.value != YAML)
                                     LanguageDropdown(model.language, model.namespace, model.body, ::onLanguageChange)
-
-                                if (model.language.value == YAML)
-                                    Frontmatter(model.body, readOnly = false)
-                                else if (model.language.value == FORM)
-                                    FormView(model.body, elementEdited = elementEdited, readOnly = false)
-                                else if (model.language.value == VIEW) {
+                                when(model.language.value) {
+                                    YAML  -> Frontmatter(model.body, readOnly = false)
+                                    FORM  -> FormView(model.body, elementEdited = elementEdited, readOnly = false)
+                                    VIEW  -> {
+                                        if (image.value != null) {
+                                            Image(
+                                                bitmap = image.value!!.toComposeImageBitmap(),
+                                                contentDescription = "",
+                                                modifier = Modifier.fillMaxSize()
+                                                    .horizontalScroll(state = rememberScrollState()),
+                                            )
+                                        }
+                                    }
+                                    TABLE -> TableView(tvm = model.tableViewModel.value, readOnly = false)
+                                    else  -> {
+                                        Row(modifier = Modifier.onGloballyPositioned { coordinates ->
+                                            mainRowWidth = with(density) { coordinates.size.width.toDp() }
+                                        })
+                                        {
+                                            Editor(
+                                                mainRowWidth,
+                                                model.body,
+                                                model.annotations,
+                                                model.resultsAnnotations,
+                                                readOnly = false,
+                                                useHighlighting = model.language.value in compilableLanguages,
+                                                elementEdited,
+                                                enableElementListScrolling
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            when(model.language.value) {
+                                YAML                     -> Frontmatter(model.body, readOnly = true)
+                                FORM                     -> FormView(model.body, elementEdited = elementEdited, readOnly = true)
+                                VIEW                     -> {
                                     if (image.value != null) {
                                         Image(
                                             bitmap = image.value!!.toComposeImageBitmap(),
@@ -261,82 +292,57 @@ fun Element(
                                                 .horizontalScroll(state = rememberScrollState()),
                                         )
                                     }
-                                } else {
-                                    Row(modifier = Modifier.onGloballyPositioned { coordinates ->
-                                        mainRowWidth = with(density) { coordinates.size.width.toDp() }
-                                    })
-                                    {
+                                }
+                                TABLE                    -> TableView(tvm = model.tableViewModel.value, readOnly = true)
+                                in setOf(SYS_MD, SYS_ML) -> {
+                                    Column {
+                                        Row(Modifier.background(MaterialTheme.colorScheme.background)
+                                                .fillMaxWidth()
+                                                .onGloballyPositioned { coordinates ->
+                                                    mainRowWidth = with(density) { coordinates.size.width.toDp() }
+                                                }) {
+                                            if (model.language.value == SYS_MD
+                                                && model.namespace.value !in setOf("Global", "")
+                                            )
+                                                Text(
+                                                    " Namespace ${model.namespace.value} hasA",
+                                                    fontSize = 12.sp,
+                                                    lineHeight = 14.sp
+                                                )
+                                        }
                                         Editor(
                                             mainRowWidth,
                                             model.body,
                                             model.annotations,
                                             model.resultsAnnotations,
-                                            readOnly = false,
-                                            useHighlighting = model.language.value in compilableLanguages,
+                                            readOnly = true,
+                                            useHighlighting = model.language.value == SYS_MD,
                                             elementEdited,
                                             enableElementListScrolling
                                         )
                                     }
                                 }
-                            }
-                        } else
-                            if (model.language.value == YAML)
-                                Frontmatter(model.body, readOnly = true)
-                            else if (model.language.value == FORM)
-                                FormView(model.body, elementEdited = elementEdited, readOnly = true)
-                            else if (model.language.value == VIEW) {
-                                if (image.value != null) {
-                                    Image(
-                                        bitmap = image.value!!.toComposeImageBitmap(),
-                                        contentDescription = "",
-                                        modifier = Modifier.fillMaxSize()
-                                            .horizontalScroll(state = rememberScrollState()),
-                                    )
-                                }
-                            } else if (model.language.value in setOf(SYS_MD, SYS_ML)) {
-                                Column {
-                                    Row(Modifier.background(MaterialTheme.colorScheme.background)
-                                        .fillMaxWidth()
-                                        .onGloballyPositioned { coordinates ->
-                                            mainRowWidth = with(density) { coordinates.size.width.toDp() }
-                                        }) {
-                                        if (model.language.value == SYS_MD
-                                            && model.namespace.value !in setOf("Global", "")
+                                //else if (model.language.value == MARKDOWN)
+                                else                     -> {
+                                    Column(Modifier.padding(start = 6.dp)) {
+                                        markdownRendering(
+                                            model.body.value.text,
+                                            internalRefReference
                                         )
-                                            Text(
-                                                " Namespace ${model.namespace.value} hasA",
-                                                fontSize = 12.sp,
-                                                lineHeight = 14.sp
-                                            )
                                     }
-                                    Editor(
-                                        mainRowWidth,
-                                        model.body,
-                                        model.annotations,
-                                        model.resultsAnnotations,
-                                        readOnly = true,
-                                        useHighlighting = model.language.value == SYS_MD,
-                                        elementEdited,
-                                        enableElementListScrolling
-                                    )
                                 }
-                            } else // if (model.language.value == MARKDOWN)
-                                Column(Modifier.padding(start = 6.dp)) {
-                                    markdownRendering(
-                                        model.body.value.text,
-                                        internalRefReference
-                                    )
-                                }
+                            }
+                        }
                     }
                 }
                 // Display annotations if selected
-                if (model.language.value in compilableLanguages)
+                if (model.language.value in compilableLanguages || model.language.value == TABLE)
                     AnnotationsView(showInfo, model)
             }
         } else if (collapsed.value && !hidden.value) {
             // the section is collapsed, but not hidden.
             Column(modifier = Modifier.fillMaxWidth(0.97f)) {
-
+                
                 // The body part of the cell
                 Row(// whole row ; double click selects/deselects it.
                     modifier = Modifier
@@ -379,17 +385,16 @@ fun Element(
                         }
                     }
                     Column(Modifier.background(MaterialTheme.colorScheme.background).fillMaxWidth()) {
-                        when (model.language.value) {
-                            MARKDOWN, YAML ->
+                        when(model.language.value) {
+                            MARKDOWN, YAML -> {
                                 markdownRendering(
                                     model.body.value.text.trim().lines()[0] + " (...)",
                                     internalRefReference
                                 )
-
-                            FORM
-                            -> FormView(model.body, elementEdited = elementEdited, readOnly = true)
-
-                            else -> {
+                            }
+                            FORM           -> FormView(model.body, elementEdited = elementEdited, readOnly = true)
+                            TABLE          -> TableView(tvm = model.tableViewModel.value, readOnly = true)
+                            else           -> {
                                 Row(modifier = Modifier.onGloballyPositioned { coordinates ->
                                     mainRowWidth = with(density) { coordinates.size.width.toDp() }
                                 })
@@ -413,7 +418,7 @@ fun Element(
                 }
             }
         }
-
+        
         //Arrow icons to move the elements/cells with in the file
         Column {
             TooltipForIcons(tooltipText = "Move up") {

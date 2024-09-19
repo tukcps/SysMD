@@ -107,7 +107,7 @@ open class VariableImplementation (
                     valueSpecs = mutableListOf(Range.Reals)
                     val values = mutableListOf<AADD>()
                     rangeSpecs.forEach{values.add(feature.model!!.builder.range(it,elementId.toString()))}
-                    vectorQuantity = VectorQuantity(values, unitSpec)
+                    vectorQuantity = VectorQuantity(values)
                 }
 
                 baseType == BaseType.Real -> {

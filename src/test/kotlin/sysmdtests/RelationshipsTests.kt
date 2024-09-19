@@ -194,7 +194,7 @@ class RelationshipsTests {
         loadSysMD("""
             class A :> Base::Anything; 
             class B :> Base::Anything;
-            assoc rel isA Links::Link {
+            assoc rel :> Links::Link {
                 end feature b: B :>> source [2 .. 3];
                 end feature a: A redefines target [1..5];
             }

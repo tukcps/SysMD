@@ -47,7 +47,7 @@ fun KerML.ConditionalExpression(): AstNode? {
  */
 fun KerML.Comparison(): AstNode {
     var result = Sum()
-    optional(GT or LT or EQ or GE or LE or EE) {
+    optional(GT or LT or EQ or GE or LE or EE or NEQ) {
         consume()
         val op = consumedToken.kind
         val t2 = Sum()
@@ -206,9 +206,10 @@ fun KerML.Value(): AstNode {
 
         FLOAT_LIT then {              // Floating point literal of kind number unit
             val value = consumedToken.number
+            var upperBound: Double? = null
             var unit = ""
             optional(DOTDOT, consume = true) {
-                FLOAT_LIT.consume()
+                FLOAT_LIT.consume().also { upperBound = consumedToken.number }
             }
 
             optional (LCBRACE or NAME_LIT or PERCENT) {
@@ -223,7 +224,7 @@ fun KerML.Value(): AstNode {
                     }
                 }
             }
-            astNode = AstLeaf(model, Quantity(model.builder.range(value, value), unit))
+            astNode = AstLeaf(model, Quantity(model.builder.range(value, upperBound?:value), unit))
         }
 
         INTEGER_LIT then  {            // Integer literal
@@ -312,7 +313,7 @@ fun KerML.Value(): AstNode {
                 LCBRACE.consume()
                 val position = parseIntegerRange()
                 val rangeQuantity = Quantity(model.builder.range(position))
-                //Set params and name for mkFunctionCall
+                //Set params and name for handleFunctionCall
                 params = arrayListOf(AstLeaf(semantics.namespace, name, model), AstLeaf(model,rangeQuantity))
                 name = "quantityOfVectorAtPosition"
                 RCBRACE.consume()

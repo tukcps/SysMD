@@ -1,43 +1,31 @@
 package com.github.tukcps.sysmd.ui.viewmodel
 
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.snapshots.SnapshotStateList
-import androidx.compose.runtime.snapshots.SnapshotStateMap
+import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshots.*
 import androidx.compose.ui.text.input.TextFieldValue
-import com.github.tukcps.sysmd.model.kerml.AnnotatingElement
-import com.github.tukcps.sysmd.model.kerml.Element
-import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
-import com.github.tukcps.sysmd.model.kerml.getOwned
-import com.github.tukcps.sysmd.model.kerml.implementation.AnnotatingElementImplementation
-import com.github.tukcps.sysmd.model.kerml.implementation.TextualRepresentationImplementation
-import com.github.tukcps.sysmd.compiler.parser.dropFirstName
 import com.github.tukcps.sysmd.compiler.loadProjectSourceOnly
+import com.github.tukcps.sysmd.compiler.parser.dropFirstName
+import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.model.kerml.implementation.*
 import com.github.tukcps.sysmd.rest.AgilaRepository.getCommits
 import com.github.tukcps.sysmd.rest.AgilaRepository.getElementById
 import com.github.tukcps.sysmd.rest.AgilaRepository.getElements
 import com.github.tukcps.sysmd.rest.AgilaRepository.getElementsForUi2
 import com.github.tukcps.sysmd.rest.AgilaRepository.postCommit
 import com.github.tukcps.sysmd.services.report
-import com.github.tukcps.sysmd.services.repositories.local.ElementData
-import com.github.tukcps.sysmd.services.repositories.local.toElement
+import com.github.tukcps.sysmd.services.repositories.local.*
 import com.github.tukcps.sysmd.services.session.Session
 import com.github.tukcps.sysmd.ui.MoveRequest
 import com.github.tukcps.sysmd.ui.viewmodel.TextualRepresentationViewModel.Companion.Language
 import com.github.tukcps.sysmd.ui.viewmodel.TextualRepresentationViewModel.Companion.language
-import com.github.tukcps.sysmlv2.entities.Commit
-import com.github.tukcps.sysmlv2.entities.ElementDAO
-import com.github.tukcps.sysmlv2.entities.Identified
-import com.github.tukcps.sysmlv2.entities.Project
+import com.github.tukcps.sysmlv2.entities.*
 import org.commonmark.Extension
 import org.commonmark.ext.front.matter.YamlFrontMatterExtension
 import org.commonmark.ext.gfm.tables.TablesExtension
 import org.commonmark.parser.Parser
 import java.io.File
-import java.util.*
+import java.util.UUID
 
 
 /**
@@ -95,6 +83,8 @@ class EditorTabModel(
     private fun toMarkdownString(): String {
         var str = ""
         for (e in cells) {
+            if(e.language.value == Language.TABLE)
+                e.tableViewModel.value.toText()
             // The lines of the description section.
             val languageStr = if (e.language.value !in setOf(Language.MARKDOWN, Language.YAML)) {
                 e.language.value.toString()+if (e.namespace.value.isNotBlank()) "::"+e.namespace.value else ""
@@ -242,10 +232,11 @@ class EditorTabModel(
                     refreshTrees = refreshTrees
                 )
                 when (e.language) {
-                    "SysMD" -> elementModel.language.value = Language.SYS_MD
-                    "SysML" -> elementModel.language.value = Language.SYS_ML
-                    "FormSysMd" -> elementModel.language.value = Language.FORM
-                    else -> elementModel.language.value = Language.MARKDOWN
+                    "SysMD"      -> elementModel.language.value = Language.SYS_MD
+                    "SysML"      -> elementModel.language.value = Language.SYS_ML
+                    "FormSysMd"  -> elementModel.language.value = Language.FORM
+                    "TableSysMD" -> elementModel.language.value = Language.TABLE
+                    else         -> elementModel.language.value = Language.MARKDOWN
                 }
                 cells.add(elementModel)
             }

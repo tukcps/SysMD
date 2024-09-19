@@ -18,7 +18,7 @@ package Signals {
         end attribute target: ScalarValues::Real;
         inv inoutIsEqual { source == target } 
     }
-    assoc Signal isA Links::Link {
+    assoc Signal :> Links::Link {
         end attribute source: ScalarValues::Real; 
         end attribute source: calarValues::Real; 
     }

@@ -20,7 +20,7 @@ open class ProjectData(
     override var id: UUID = UUID.randomUUID(),
     override var name: String,
     override var description: String = "",
-    override var created: ZonedDateTime = ZonedDateTime.now(),
+    override var created: Date = Date.from(ZonedDateTime.now().toInstant()),
     override var alias: List<String> = mutableListOf(name),
     var data: MutableList<CommitDataObject> = mutableListOf(),
     open var files: MutableList<File> = mutableListOf()

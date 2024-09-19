@@ -313,7 +313,13 @@ open class Scanner(
                 } else
                     buildToken(TIMES)
             }
-
+            '!' -> {
+                nextToken = if (nextChar() == '=') {
+                    nextChar()
+                    buildToken(NEQ)
+                } else
+                    buildToken(NOT)
+            }
             0.toChar() -> nextToken = buildToken(EOF)
 
             else -> {

@@ -421,7 +421,7 @@ open class VectorQuantity : Cloneable {
             }
             return Quantity(equal)
         }
-        if (values.first() is BDD) {
+        if (values.first() is BDD) { // and is the same as not xor
             var equal = value.asBdd().xor(quantity.value.asBdd()).not()
             for(i in 1 until values.size ){
                 if(values[i] != quantity.values[i]){
@@ -430,7 +430,6 @@ open class VectorQuantity : Cloneable {
             }
             return Quantity(equal)
         }
-        if (values.size > 1 || quantity.values.size > 1) throw DDError("For = both values should not be Vectors")
         var equal = (value lessThanOrEquals quantity.value).and(value greaterThanOrEquals quantity.value)
         for(i in 1 until values.size ){
             if(values[i] != quantity.values[i]){
@@ -438,6 +437,16 @@ open class VectorQuantity : Cloneable {
             }
         }
         return Quantity(equal)
+    }
+
+    infix fun neq(quality: VectorQuantity): VectorQuantity {
+        val equalsValues = (this eq quality).values
+        val resultingValues = mutableListOf<BDD>()
+        //negate the result of the equals operation
+        equalsValues.forEach {
+            resultingValues.add(it.asBdd().not())
+        }
+        return VectorQuantity(resultingValues)
     }
 //--------------Miscellaneous operations--------------------------------
 

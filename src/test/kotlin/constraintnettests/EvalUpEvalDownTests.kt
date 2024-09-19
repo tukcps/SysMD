@@ -7,6 +7,7 @@ import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.session.SessionManager.testSession
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import kotlin.test.assertTrue
 
 class EvalUpEvalDownTests {
 
@@ -24,6 +25,7 @@ class EvalUpEvalDownTests {
             feature x: ScalarValues::Real; 
             feature y: ScalarValues::Real(1.0 .. 2.0) = x;"""
         )
+        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         propagate()
         // now, both x and y must be 1..2
         assertEquals(1.0, global.resolve<Feature>("y")!!.variable!!.min(), 0.00001)

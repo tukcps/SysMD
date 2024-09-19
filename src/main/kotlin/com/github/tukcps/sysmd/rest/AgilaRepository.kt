@@ -177,6 +177,10 @@ object AgilaRepository: SysMLv2Services {
 
             val projectResponses = objectMapper.readValue<MutableList<ProjectResponse>>(response.body!!)
             projectsState = projectResponses.map { ProjectImplementation(it) }.toMutableList()
+            projectsState.forEach {
+                it.branches = getBranches(it.id).toMutableList()
+                it.commits = getCommits(it.id).toMutableList()
+            }
             projectsState
         } catch (io: Exception) {
             println("No projects: ${io.message}") // "Exception: " + io.stackTraceToString())
@@ -193,6 +197,9 @@ object AgilaRepository: SysMLv2Services {
                 Rest.login("/users/login", USER_KEY, username, PASSWORD_KEY, password)
                 val commitsResponse = Rest.get("/projects/$projectId/commits", null)
                 val commits = commitsResponse.body
+
+                println(commits)
+
                 val responses = objectMapper.readValue<MutableList<CommitResponse>>(commits!!)
                 return responses.map { CommitImplementation(it) }
             } catch (io: Exception) {

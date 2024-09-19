@@ -30,6 +30,7 @@ class InvariantTests {
 
 
     @Test @Disabled
+    // Issue: Invariant without names not yet supported in SysML implementation
     fun testSyntaxNoName() = testSession {
         loadSysMD("""
             feature e : ScalarValues::Boolean; 

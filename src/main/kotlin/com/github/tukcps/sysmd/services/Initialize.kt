@@ -270,9 +270,9 @@ private fun Session.initVariables() {
                         referencingVar!!.ownedElement.filter { it.ref is FeatureImplementation }.map{it.ref}.forEach { referencingFeature ->
                             if(owenedFeature!!.declaredName == referencingFeature!!.declaredName && owenedFeature.declaredName != "multiplicity") {
                                 if(feature.qualifiedName in (owenedFeature as FeatureImplementation).variable!!.feature.qualifiedName ) { //test if the previous feature is already replaced
-                                    (owenedFeature as FeatureImplementation).variable = (referencingFeature as FeatureImplementation).variable
+                                    owenedFeature.variable = (referencingFeature as FeatureImplementation).variable
                                 }else {
-                                    (owenedFeature as FeatureImplementation).variables.add((referencingFeature as FeatureImplementation).variable)
+                                    owenedFeature.variables.add((referencingFeature as FeatureImplementation).variable)
                                 }
                             }
                         }

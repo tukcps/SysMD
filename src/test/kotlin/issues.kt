@@ -201,19 +201,23 @@ class IssuesAndRegressions {
         settings.catchExceptions = false
         loadSysMD(
             """
-                class Vehicle;
-                class Car :> Vehicle;
-                class Bicycle :> Vehicle;
-                Car hasA attribute mass: ScalarValues::Real [kg] = 100.0 kg.
-                Bicycle hasA attribute mass: ScalarValues::Real(10 .. 20) [kg].
-                Vehicle hasA attribute mass: ScalarValues::Real [kg] = bySubclasses(mass).
+                class Vehicle {
+                    attribute mass: ScalarValues::Real [kg] = bySubclasses(mass);                 
+                }
+                class Car :> Vehicle {
+                    attribute mass: ScalarValues::Real [kg] = 100.0 kg; 
+                }
+                class Bicycle :> Vehicle {
+                    attribute mass: ScalarValues::Real(10 .. 20) [kg];                 
+                }
             """.trimIndent()
         )
         propagate()
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val vehicle = global.resolve<Namespace>("Vehicle") !!
         val mass =vehicle.resolveVar("mass")!!
-        assertTrue(mass.vectorQuantity.getMinAsDouble() in 9.99..10.0)
+        assertTrue(mass.vectorQuantity.getMinAsDouble() in 9.99..10.01)
+        assertTrue(mass.vectorQuantity.getMaxAsDouble() in 99.99..100.01)
         assertEquals("kg", mass.vectorQuantity.unit.toString())
     }
 
@@ -262,13 +266,13 @@ class IssuesAndRegressions {
     @Test
     fun variableUnknownIsReportedAsError() = testSession {
         loadSysMD(input = "feature x: ScalarValues::Real = yyy;")
-        assertTrue(status.exceptions.first() is ElementNotFoundException, "There shall be error reports.")
+        assertTrue(status.exceptions.first() is ElementNotFoundException, "There shall be error reporting yyy not defined.")
     }
 
     @Test
     fun typeUnknownIsReportedAsError() = testSession {
         loadSysMD(input = " feature x: YYY;")
-        assertTrue(status.exceptions.first() is SysMDInfo, "There shall be error reports.")
+        assertTrue(status.exceptions.first() is SysMDInfo, "There shall be error reporting that YYY is not defined.")
     }
 
     @Test

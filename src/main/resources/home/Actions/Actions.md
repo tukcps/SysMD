@@ -12,7 +12,7 @@ website:        https://cps.cs.uni-kl.de
 
 ```SysMD
 standard library package Actions {
-   class Action :> Occurences::Occurence;      // The base type of all ActionDefinitions
+   class Action :> Occurrences::Occurrence;      // The base type of all ActionDefinitions
    feature actions: Action [0 .. *]; // The base feature for all ActionUsages
 }
 ```

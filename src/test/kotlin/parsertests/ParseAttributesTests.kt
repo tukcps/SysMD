@@ -55,7 +55,7 @@ class ParseAttributesTests {
     // Definition of variables initializes its value based on an expression.
     @Test
     fun constantExprCheck() = testSession(catchExceptions = false) {
-        loadSysMD("attribute a: ScalarValues::Real = -1.0+2.0*- 3.0/(3.0-2.0).")
+        loadSysMD("attribute a: ScalarValues::Real = -1.0+2.0*- 3.0/(3.0-2.0);")
         propagate()
         val a = global.resolveVar("a")!!.aadd()
         // println(a.toIteString())
@@ -69,7 +69,7 @@ class ParseAttributesTests {
 
     @Test
     fun constraintTestReal() = testSession {
-        loadSysMD("attribute a: ScalarValues::Real(1 .. 2); attribute b: ScalarValues::Real(1.0 .. 2.0).")
+        loadSysMD("attribute a: ScalarValues::Real(1 .. 2); attribute b: ScalarValues::Real(1.0 .. 2.0);")
         val a = global.resolveVar("a")!!
         val b = global.resolveVar("b")!!
         propagate()
@@ -95,7 +95,7 @@ class ParseAttributesTests {
 
     @Test
     fun constraintTestInteger() = testSession {
-        loadSysMD("attribute a: ScalarValues::Integer(1 .. 2).")
+        loadSysMD("attribute a: ScalarValues::Integer(1 .. 2);")
         val a = global.resolveVar("a")!!
         propagate()
         assertEquals(1.0, a.min())
@@ -106,7 +106,7 @@ class ParseAttributesTests {
 
     @Test
     fun constraintTestIntegerStar() = testSession {
-        loadSysMD("attribute a: ScalarValues::Integer(-* .. *).")
+        loadSysMD("attribute a: ScalarValues::Integer(-* .. *);")
         val a = global.resolveVar("a")!!
         propagate()
         assertTrue(settings.minInt.toDouble() >= a.min())
@@ -117,7 +117,7 @@ class ParseAttributesTests {
 
     @Test
     fun boolSpecTestBoolean() = testSession {
-        loadSysMD("attribute a: ScalarValues::Boolean(true); attribute b: ScalarValues::Boolean(false).")
+        loadSysMD("attribute a: ScalarValues::Boolean(true); attribute b: ScalarValues::Boolean(false);")
         val a = global.resolveVar("a")!!
         val b = global.resolveVar("b")!!
         propagate()
@@ -191,7 +191,7 @@ class ParseAttributesTests {
     fun sumFunctionTest()  = testSession {
         loadSysMD("""
             attribute i: ScalarValues::Real; 
-            attribute a: ScalarValues::Real = sum_i(1.0, 9.0, i).
+            attribute a: ScalarValues::Real = sum_i(1.0, 9.0, i);
             """.trimMargin())
         propagate()
         assertTrue(status.exceptions.isEmpty(), "Error messages: ${status.exceptions}")
@@ -205,8 +205,8 @@ class ParseAttributesTests {
     fun sumFunctionTestIdd() = testSession {
         loadSysMD(
             """
-            attribute i: ScalarValues::Integer.
-            attribute a: ScalarValues::Integer = sum_i(1, 9, i)."""
+            attribute i: ScalarValues::Integer;
+            attribute a: ScalarValues::Integer = sum_i(1, 9, i);"""
         )
         propagate()
         assertEquals(45, global.resolveVar("a")!!.idd().getRange().min)
@@ -270,22 +270,22 @@ class ParseAttributesTests {
     // two uncorrelated noise symbols are created by parameter -1.
     fun rangeMinusUncorrelatedTest() = testSession {
         loadSysMD("""
-            attribute a: ScalarValues::Real= [1.0 .. 2.0].
-            attribute b: ScalarValues::Real= a.
-            attribute c: ScalarValues::Real= a - b.""")
+            attribute a: ScalarValues::Real= [1.0 .. 2.0];
+            attribute b: ScalarValues::Real= a;
+            attribute c: ScalarValues::Real= a - b;""")
         propagate()
         assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
         assertEquals(0.0, global.resolveVar("c")!!.min(), .00001)
         assertEquals(0.0, global.resolveVar("c")!!.max(), .00001)
     }
 
-    // two uncorrelated noise symbols are created by different names.
+    // different names create two uncorrelated noise symbols.
     @Test
     fun rangeMinusUncorrelated2Test()  = testSession {
         loadSysMD("""
-            attribute a: ScalarValues::Real = [1.0 .. 2.0].
-            attribute b: ScalarValues::Real = [1.0 .. 2.0].
-            attribute c: ScalarValues::Real = a - b.""")
+            attribute a: ScalarValues::Real = [1.0 .. 2.0];
+            attribute b: ScalarValues::Real = [1.0 .. 2.0];
+            attribute c: ScalarValues::Real = a - b; """)
         propagate()
         assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
         assertEquals(-1.0, global.resolveVar("c")!!.min(), .00001)
@@ -296,9 +296,9 @@ class ParseAttributesTests {
     @Test
     fun rangeNewSyntaxSimpleInteger() = testSession {
         loadSysMD("""
-            attribute a: ScalarValues::Integer = [1..2].
-            attribute b: ScalarValues::Integer = [1..2].
-            attribute c: ScalarValues::Integer = a - b.""")
+            attribute a: ScalarValues::Integer = [1..2];
+            attribute b: ScalarValues::Integer = [1..2];
+            attribute c: ScalarValues::Integer = a - b;""")
         propagate()
         assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
         assertEquals(-1.0, global.resolveVar("c")!!.min(), .00001)
@@ -308,9 +308,9 @@ class ParseAttributesTests {
     @Test
     fun rangeNewSyntaxWithFunctions()  = testSession {
         loadSysMD("""
-            attribute a: ScalarValues::Real = sqrt([9.0..25.0]).
-            attribute b: ScalarValues::Real = sqr([2.0..3.0]).
-            attribute c: ScalarValues::Real = a + b.""")
+            attribute a: ScalarValues::Real = sqrt([9.0..25.0]);
+            attribute b: ScalarValues::Real = sqr([2.0..3.0]);
+            attribute c: ScalarValues::Real = a + b; """)
         propagate()
         assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
         assertEquals(7.0, global.resolveVar("c")!!.min(), .00001)
@@ -323,8 +323,8 @@ class ParseAttributesTests {
     @Test
     fun allParseTest() = testSession {
         loadSysMD(input = """
-            attribute a: one ScalarValues::Real(1.0 .. 2.0).
-            attribute b: all ScalarValues::Real(2.0 .. 3.0).
+            attribute a: one ScalarValues::Real(1.0 .. 2.0);
+            attribute b: all ScalarValues::Real(2.0 .. 3.0);
         """)
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
     }

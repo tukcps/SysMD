@@ -56,6 +56,7 @@ class Token(
         GE { override fun toString() = ">=" },
         LE { override fun toString() = "<=" },
         EE { override fun toString() = "==" },
+        NEQ { override fun toString() = "!=" },
         EOF { override fun toString() = "EOF" },
         DOTDOT { override fun toString() = ".." },
         TRUE { override fun toString() = "true" },
@@ -119,7 +120,8 @@ class Token(
             '%' to Kind.PERCENT,
             '€' to Kind.EURO,
             '?' to Kind.QUESTION,
-            '~' to Kind.NOT
+            '~' to Kind.NOT,
+            '!' to Kind.NOT
         )
 
         val keywords = hashMapOf(

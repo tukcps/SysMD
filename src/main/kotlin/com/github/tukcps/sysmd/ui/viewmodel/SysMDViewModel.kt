@@ -1,10 +1,8 @@
 package com.github.tukcps.sysmd.ui.viewmodel
 
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.*
+import com.github.tukcps.sysmd.compiler.*
 import com.github.tukcps.sysmd.cspsolver.propagate
-import com.github.tukcps.sysmd.compiler.importMD
-import com.github.tukcps.sysmd.compiler.loadDefaultProjects
 import com.github.tukcps.sysmd.rest.AgilaRepository
 import com.github.tukcps.sysmd.rest.AgilaRepository.deleteProject
 import com.github.tukcps.sysmd.rest.AgilaRepository.getBranchById
@@ -15,23 +13,16 @@ import com.github.tukcps.sysmd.rest.AgilaRepository.getElements
 import com.github.tukcps.sysmd.rest.AgilaRepository.postCommit
 import com.github.tukcps.sysmd.rest.AgilaRepository.postProject
 import com.github.tukcps.sysmd.rest.entities.ProjectImplementation
-import com.github.tukcps.sysmd.services.Agenda
-import com.github.tukcps.sysmd.services.OutputDisplay
+import com.github.tukcps.sysmd.services.*
 import com.github.tukcps.sysmd.services.check.checkConsistencyOfBuilders
-import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.repositories.local.ElementData
 import com.github.tukcps.sysmd.services.session.Session
-import com.github.tukcps.sysmd.ui.composables.TreeViewModel
-import com.github.tukcps.sysmd.ui.composables.TreeViewNodeModel
-import com.github.tukcps.sysmd.ui.composables.menuState
-import com.github.tukcps.sysmd.ui.composables.modelToUpdate
+import com.github.tukcps.sysmd.ui.composables.*
 import com.github.tukcps.sysmd.ui.openDummy
-import com.github.tukcps.sysmlv2.entities.Branch
-import com.github.tukcps.sysmlv2.entities.ElementDAO
-import com.github.tukcps.sysmlv2.entities.Project
+import com.github.tukcps.sysmlv2.entities.*
 import com.github.tukcps.sysmlv2.entities.requestModels.DigitalTwinRequest
 import java.io.File
-import java.util.*
+import java.util.UUID
 
 
 /**
@@ -208,6 +199,9 @@ class SysMDViewModel(
                 it.cells.forEach { cell ->
                     if (cell.language.value == TextualRepresentationViewModel.Companion.Language.YAML) {
                         kerMlModel.value.importMD(cell.body.value.text, null)
+                    }
+                    if (cell.language.value == TextualRepresentationViewModel.Companion.Language.TABLE) {
+                        cell.tableViewModel.value.toText()
                     }
                 }
             }

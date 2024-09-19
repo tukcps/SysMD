@@ -33,7 +33,7 @@ class ClassTests {
      * isA specifies superclass; via parser.
      */
     @Test fun isATestParser() = testSession(loadKerML = false) {
-        loadSysMD("class a isA Base::Anything;")
+        loadSysMD("class a :> Base::Anything;")
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val a = global.resolve<Element>("a") as TypeImplementation
         assertNotNull(a)

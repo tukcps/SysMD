@@ -54,7 +54,7 @@ class Inconsistency(
 private class KeyDelay{
 
     private var lastKeyTime = 0L //Time when last key was pressed (in nanoseconds)
-    private val delay = 125E6 //Delay between key presses is set to 125 ms
+    private val delay = 500E6 //Delay between key presses is set to 125 ms
 
     /**Checks if the key that is pressed is currently set on pause.
      * @return True if key input is currently locked, False if input is allowed.

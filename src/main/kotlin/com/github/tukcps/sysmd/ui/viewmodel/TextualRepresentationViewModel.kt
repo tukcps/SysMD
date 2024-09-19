@@ -1,11 +1,7 @@
 package com.github.tukcps.sysmd.ui.viewmodel
 
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.snapshots.SnapshotStateList
-import androidx.compose.runtime.snapshots.SnapshotStateMap
+import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshots.*
 import androidx.compose.ui.text.input.TextFieldValue
 import com.github.tukcps.aadd.values.IntegerRange
 import com.github.tukcps.sysmd.cspsolver.propagate
@@ -14,12 +10,13 @@ import com.github.tukcps.sysmd.imports.ResultAnnotation
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.Annotation
 import com.github.tukcps.sysmd.model.kerml.implementation.CalculationDefinitionImplementation
+import com.github.tukcps.sysmd.services.*
 import com.github.tukcps.sysmd.services.inheritance.getAllInheritedFeatures
-import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.report
 import com.github.tukcps.sysmd.services.session.Session
 import com.github.tukcps.sysmd.ui.inCompile
-import java.util.*
+import com.github.tukcps.sysmd.ui.tableview.TableViewModel
+import com.github.tukcps.sysmd.ui.viewmodel.TextualRepresentationViewModel.Companion.Language.TABLE
+import java.util.UUID
 
 /**
  * The view model of an element.
@@ -64,10 +61,12 @@ open class TextualRepresentationViewModel(
      */
     private var displayElement: Element? = null
 ) {
-
+    
     //Simulation results annotations; for displaying simulation results right to the Editor field
     val resultsAnnotations : MutableList<ResultAnnotation> = mutableListOf()
-
+    
+    val tableViewModel: MutableState<TableViewModel> = mutableStateOf(TableViewModel (this))
+    
     init {
         language.value = TextualRepresentationViewModel.language[textualRepresentation.language.split("::").firstOrNull()] ?:Language.MARKDOWN
     }
@@ -183,10 +182,11 @@ open class TextualRepresentationViewModel(
             SYS_MD   { override fun toString() = "SysMD" },
             SYS_ML   { override fun toString() = "SysML" },
             FORM     { override fun toString() = "Form" },
+            TABLE    { override fun toString() = "Table"},
             YAML     { override fun toString() = "YaML" },
             VIEW     { override fun toString() = "View" },
         }
-        val compilableLanguages = setOf(Language.SYS_MD, Language.SYS_ML)
+        val compilableLanguages = setOf(Language.SYS_MD, Language.SYS_ML, TABLE)
         val allLanguages = Language.entries
         val language: Map<String, Language> = allLanguages.associate { (it.toString() to it) }
     }
