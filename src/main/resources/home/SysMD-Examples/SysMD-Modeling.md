@@ -3,26 +3,21 @@ name: Modeling Automotive Architecture
 title: Modeling Automotive Architecture
 maintainer: RPTU Kaiserslautern, Chair of Cyber-Physical Systems
 version: 2.12
-usage: SI, ISO26262
+usage: SI
 website: https://cps.cs.uni-kl.de
 ---
-# SysMD Example: Logical and Technical Architecture
+# SysMD Example: Basics of Modeling Frameworks
 
-The example shows a very small example for the modeling of 
+The example shows a tiny example for modeling the basics of larger modeling
+frameworks.  
 
-- Definition of requirements, 
-- Breakdown of requirements into *functions* in a logical architecture, and
-- Implementation of functions by *components* in a technical architecture.
+- Definition of requirements and its breakdown, 
+- Linking requirements to *functions* and its breakdown in a logical architecture, and
+- Implementation of functions by *components* and its breakdown in a technical architecture.
+ 
+The example uses the packages ScalarValues (default included) and SI.
 
-The package ISO26262 of SysMD provides (among other) the following classes and relationships: 
-
-- Function
-- Component
-- implements, a Relationship from Components to Functions. 
-
-The example uses the packages ISO26262, ScalarValues and SI.
-
-In this simple tutorial we assume that we have the following items: 
+In this tutorial, we assume that we have the following items: 
 
 - A requirement *enoughPower* for a vehicle that shall have a drive with enough power.
 - A function *Drive* that shall satisfy this requirement.

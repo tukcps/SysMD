@@ -12,8 +12,8 @@ import com.github.tukcps.sysmd.services.session.Session
 /**
  * Predefined functions: step
  */
-internal class AstStep(model: Session, args: ArrayList<AstNode>) :
-    AstFunction("step", model, 5, args) {
+internal class AstStepInterpolation(model: Session, args: ArrayList<AstNode>) :
+    AstFunction("stepInterpolation", model, 5, args) {
 
     private val numberOfParameters = parameters.size
     private val points = mutableListOf<Pair<Quantity, Quantity>>()
@@ -92,9 +92,9 @@ internal class AstStep(model: Session, args: ArrayList<AstNode>) :
 
     override fun toExpressionString() = "step(${getParam(0).toExpressionString()})"
 
-    override fun clone(): AstStep {
+    override fun clone(): AstStepInterpolation {
         val parClone = ArrayList<AstNode>()
         for (p in parameters) parClone.add(p.clone())
-        return AstStep(model, parClone)
+        return AstStepInterpolation(model, parClone)
     }
 }

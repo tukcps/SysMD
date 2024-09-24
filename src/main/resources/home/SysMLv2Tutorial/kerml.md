@@ -338,17 +338,12 @@ The same kind of difference also exists between Functions and Expressions:
 
 In the following, we focus on expressions. 
 Expressions have 
-
 - start with the keyword `expr`
-- have, like all elements an identification by name, short name, id; 
+- have, like all elements an indentification by name, short name, id; 
 - are typed by a type that is given as in a feature; 
 - can be bound to the value of another expression, i.e. by `=` followed by the other expression.  
-
-The semantic of Expressions is given in a denotational way by KerML. 
+Semantis is given in a denotational way. 
 This means that the result of an execution shall ensure that the values are the same resp. that there is only one value.
-
-Expressions can also be bound directly to a feature and define its value. 
-Then, a feature declaration is followed by `=` and an expression. 
 
 Assertions are a specific kind of expression. An assertion
 - starts with the keyword `assert`, eventually followed by an identification; 
@@ -359,13 +354,13 @@ Below are some examples.
 **Example: Boolean expressions**
 
 It has two Boolean variables, a and b that are free variables of type `Boolean`. 
-An assertion `c` is bound to the value `true` and to the expression `a and b`.
+An assertion `c` is bound to the value `true` and to the expression `a and b`. 
 ```SysMD::tutorial::kerml
 package expressionExamples { 
     package booleanExample {
-        feature a: ScalarValues::Boolean; // Not bound to a value, not model-level evaluable. 
-        feature b: ScalarValues::Boolean; // Not bound to a value, not model-level evaluable. 
-        assert c { a and b }              // c is true, and hence a and be must be true. 
+        feature a: ScalarValues::Boolean;
+        feature b: ScalarValues::Boolean;
+        assert c { a and b }
     }
 }
 ```

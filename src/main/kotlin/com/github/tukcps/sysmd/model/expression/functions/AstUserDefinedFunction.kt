@@ -157,7 +157,7 @@ internal class AstUserDefinedFunction(
                     "byParts" -> return AstByParts(model, namespace, parameters)
                     "byImplements" -> return AstByImplements(model, namespace, parameters)
                     "linear" -> return AstLinear(model, parameters)
-                    "step" -> return AstStep(model, parameters)
+                    "step" -> return AstStepInterpolation(model, parameters)
                     "Real" -> return AstReal(model, parameters)
                     "Integer" -> return AstInteger(model, parameters)
                     "norm" -> return AstNormalizeVector(model, parameters)

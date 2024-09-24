@@ -138,9 +138,9 @@ qualified name, i.e., an attribute of type Real has to be declared by ```ScalarV
 By importing the namespace of the package ```ScalarValues``` we can access it
 by its simple name as follows:
 ```SysMD::kickstart
-  import ScalarValues::*;             // Allows us shortcuts to Real, Integer, etc. 
-  attribute r: Real = 2.0 .. 3.0;     // assigns r a value from the range 2 to 3.
-  attribute i: Integer = 2;           // assignas i the value 2.  
+  import ScalarValues::*;                    // Allows us shortcuts to Real, Integer, etc. 
+  attribute r: Real = oneOf(2.0 .. 3.0);     // assigns r a value, constraine to the range 2 to 3.
+  attribute i: Integer = 2;                  // assigns i the value 2.  
 ```
 Note that with SysMD extensions we attach the cell above to the package ```kickstart```;
 hence, we work in this cell inside this package.
@@ -187,9 +187,9 @@ To display the values, click on the i in a circle left of the cell._
 ```SysMD::kickstart
     import SI::*; 
     part rangeExample {
-        attribute height:  Length = 10.0 .. 100.0 [cm];
-        attribute width:   Length = 1.0 .. 1.1 [m];
-        attribute length:  Length = 1.0 .. 1.1 [m];
+        attribute height:  Length = oneOf(10.0 .. 100.0 [cm]);
+        attribute width:   Length = oneOf(1.0 .. 1.1 [m]);
+        attribute length:  Length = oneOf(1.0 .. 1.1 [m]);
         attribute volume:  Volume(1000 .. 2000) [l] = height * width * length;
         // Same as: 
         // assert a { (volume >= 1000.0 l) and (volume <= 2000.0 l)}    
@@ -216,12 +216,13 @@ This time, we give dependencies that are not satisfiable.
 We use two arithmetic values, ```a, b``` and a Boolean condition ```c``` that shall be true.
 ```SysMD::kickstart
     package hybridExample {
-        attribute a: Real(1.0 .. 2.0); 
-        attribute b: Real(1.1 .. 2.1) = a + 0.1; 
-        assert c { a > b }
-    }
+        attribute a: Real = oneOf(1.0 .. 2.0); 
+        attribute b: Real = a + 0.1;
+        attribute c: Boolean { 
+          assert x { (a > b) } }    
+        }
 ```
-_Exercise:_ In place of ```>``` try the relations ```<, ==``` .
+_Exercise:_ In place of ```>``` try the relations ```<, ==```. Instead of assert try ```constraint``` .
 
 
 #### Units
@@ -513,7 +514,7 @@ The below example demonstrates this behavior.
 ```SysMD::kickstart
     package inheritanceExample {
         part def Coin {
-            attribute diameter: SI::Length(5..200) [mm];
+            attribute diameter: SI::Length = oneOf(5.0 ..200.0 [mm]);
             attribute circumference: SI::Length [mm] = diameter*3.141; // 15.7 .. 628.2 mm 
         }
         

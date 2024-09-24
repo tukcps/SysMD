@@ -518,12 +518,12 @@ class DiscreteSolver(
                                 valueSpecs = mutableListOf(XBool.X), //If we encode choice in 1 var => spec has to be bool
                                 relatedIndex = cond,
                                 createdBy = model.global.resolveVar(createdBy)
-                                    ?: model[UUID.fromString(createdBy)]!! as Variable
+                                    ?: (model[UUID.fromString(createdBy)]!! as Feature).variable!!
                             )
                             relatedExpression.vectorQuantity = Quantity(builder.conds.x[cond] as BDD)
                             relatedExpression.oldVectorQuantity = relatedExpression.vectorQuantity
                             val registered = registerOrUpdateProperty(relatedExpression, model.global.resolveVar(createdBy)
-                                ?: model[UUID.fromString(createdBy)]!! as Variable
+                                ?: (model[UUID.fromString(createdBy)]!! as Feature).variable!!
                             )
                             result.add(registered)
                         }

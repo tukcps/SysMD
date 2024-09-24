@@ -10,7 +10,7 @@ import com.github.tukcps.sysmd.model.expression.AstLeaf
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.model.expression.AstUnaryOp
 import com.github.tukcps.sysmd.model.expression.functions.AstHasA
-import com.github.tukcps.sysmd.model.expression.functions.AstIsA
+import com.github.tukcps.sysmd.model.expression.functions.AstHastype
 import com.github.tukcps.sysmd.model.expression.functions.AstNot
 import com.github.tukcps.sysmd.compiler.KerML
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
@@ -166,7 +166,7 @@ fun KerML.Unit(): String {
 
 /**
  * Value :-
- *    NUM_LIT (... -> Deprecated, use ...)
+ *    NUM_LIT
  * |  TRUE
  * |  FALSE
  * |  '[' ValueRange ']'
@@ -249,6 +249,7 @@ fun KerML.Value(): AstNode {
             astNode = AstLeaf(model, Quantity(model.builder.False))
         }
 
+        // '(' Expression ( ',' Expression)* ')'
         LBRACE then {
             var expression: AstNode
             val values = arrayListOf<AstNode>()
@@ -280,7 +281,7 @@ fun KerML.Value(): AstNode {
                         quantityValues.add(it.dd)
                     }
                     astNode = AstLeaf(model, VectorQuantity(quantityValues, com.github.tukcps.sysmd.quantities.Unit(unit)))
-                } catch (e: UninitializedPropertyAccessException) {
+                } catch (_: UninitializedPropertyAccessException) {
                     var resultingString = ""
                     values.forEach {
                         resultingString += (it as AstLeaf).qualifiedName
@@ -299,29 +300,37 @@ fun KerML.Value(): AstNode {
             val ownedName = QualifiedName()
             RBRACE.consume().also { astNode = AstHasA(model, semantics.namespace, ownerName, ownedName) }
         }
-        SPECIALIZES then {         // isA(typeName)
-            LBRACE.consume()
-            val subclassName = QualifiedName()
-            COMMA.consume()
-            val superclassName = QualifiedName()
-            RBRACE.consume().also { astNode = AstIsA(model, semantics.namespace, subclassName, superclassName) }
-        }
-        NAME_LIT starts {           // qualifiedName [( parameters )]
+        NAME_LIT starts { // QualifiedName [ '(' Parameters ')' | '[' Integer ']' ]
             var name = QualifiedName()
-            var params = Parameters()
-            optional(LCBRACE) {// Get quantity at specified position of Vector
-                LCBRACE.consume()
-                val position = parseIntegerRange()
-                val rangeQuantity = Quantity(model.builder.range(position))
-                //Set params and name for handleFunctionCall
-                params = arrayListOf(AstLeaf(semantics.namespace, name, model), AstLeaf(model,rangeQuantity))
-                name = "quantityOfVectorAtPosition"
-                RCBRACE.consume()
+            alternatives {
+                LBRACE starts {
+                    Parameters().also {
+                        astNode = semantics.handleFunctionCall(name, it!!, semantics)
+                    }
+                }
+                LCBRACE starts {
+                    LCBRACE.consume()
+                    val position = parseIntegerRange()
+                    val rangeQuantity = Quantity(model.builder.range(position))
+                    astNode = semantics.handleFunctionCall(
+                        function = "quantityOfVectorAtPosition",
+                        param = arrayListOf(AstLeaf(semantics.namespace, name, model), AstLeaf(model,rangeQuantity)),
+                        semantics = semantics
+                    )
+                    RCBRACE.consume()
+                }
+                ISTYPE starts {
+                    ISTYPE.consume()
+                    QualifiedName().also { astNode = AstHastype(model, semantics.namespace, name, it) }
+                }
+                HASTYPE starts {
+                    HASTYPE.consume()
+                    QualifiedName().also { astNode = AstHastype(model, semantics.namespace, name, it) }
+                }
+                others {
+                    astNode = AstLeaf(semantics.namespace, name, model)   // an identifier
+                }
             }
-            astNode = if (params == null)
-                AstLeaf(semantics.namespace, name, model)   // an identifier
-            else
-                semantics.handleFunctionCall(name, params!!, semantics)     // a function call
         }
         IF starts { ConditionalExpression().also { astNode = it  } }
     }

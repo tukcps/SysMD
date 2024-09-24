@@ -30,7 +30,6 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.github.tukcps.sysmd.compiler.parser.size
 import com.github.tukcps.sysmd.imports.ResultAnnotation
 import com.github.tukcps.sysmd.indexer
 import com.github.tukcps.sysmd.services.SyntaxHighlighter
@@ -38,7 +37,8 @@ import com.github.tukcps.sysmd.settings
 import com.github.tukcps.sysmd.ui.composables.*
 import com.github.tukcps.sysmd.ui.styles.AppTheme
 import com.github.tukcps.sysmd.ui.styles.Fonts
-import kotlinx.coroutines.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.jetbrains.skiko.currentNanoTime
 
 class Inconsistency(
@@ -439,7 +439,7 @@ private fun keyInputHandler(
         }
 
         else -> {
-            println("Some else key pressed")
+            // println("Some else key pressed")
         }
     }
 
