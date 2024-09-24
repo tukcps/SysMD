@@ -2,7 +2,6 @@
 import org.jetbrains.compose.ExperimentalComposeLibrary
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.plugin.getKotlinPluginVersion
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 /*
@@ -18,11 +17,9 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
  * - also set the value standalone according to your setup
  */
 group   = "com.github.tukcps"
-version = "3.0.14"
+version = "3.0.15"
 val jaaddVersion = "3.1.0"
 val sysmlapiVersion = "3.0.5"
-
-val kotlinVersion = getKotlinPluginVersion()
 
 if (JavaVersion.current() < JavaVersion.VERSION_17) {
     throw GradleException("The build must be run with Java 17 or newer; best use Java 19!")
@@ -117,16 +114,16 @@ dependencies {
     // Needed for annotations for Spring Boot in package rest
     implementation("org.json:json:20240303")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.17.0")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.17.0")
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.0")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.17.1")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.2")
 
     // Parsing markdown to AST
-    implementation("org.commonmark:commonmark:0.22.0")
-    implementation("org.commonmark:commonmark-ext-gfm-tables:0.22.0")
-    implementation("org.commonmark:commonmark-ext-image-attributes:0.22.0")
-    implementation("org.commonmark:commonmark-ext-yaml-front-matter:0.22.0")
-    implementation("org.commonmark:commonmark-ext-gfm-strikethrough:0.22.0")
-    implementation("org.commonmark:commonmark-ext-ins:0.22.0")
+    implementation("org.commonmark:commonmark:0.23.0")
+    implementation("org.commonmark:commonmark-ext-gfm-tables:0.23.0")
+    implementation("org.commonmark:commonmark-ext-image-attributes:0.23.0")
+    implementation("org.commonmark:commonmark-ext-yaml-front-matter:0.23.0")
+    implementation("org.commonmark:commonmark-ext-gfm-strikethrough:0.23.0")
+    implementation("org.commonmark:commonmark-ext-ins:0.23.0")
 
     // Some more icons ...
     implementation("org.jetbrains.compose.material:material-icons-extended-desktop:1.6.11")
@@ -141,8 +138,8 @@ dependencies {
 
     // Use the Kotlin JUnit integration.
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:2.0.0")
-    testImplementation(platform("org.junit:junit-bom:5.10.2"))
-    testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")
+    testImplementation(platform("org.junit:junit-bom:5.10.3"))
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.3")
     
     // compose ui tests
     testImplementation(kotlin("test"))
@@ -227,13 +224,13 @@ tasks.withType<JavaCompile> {
     options.release.set(17)
 }
 
-tasks.withType<KotlinCompile>() {
+tasks.withType<KotlinCompile> {
     compilerOptions.freeCompilerArgs.addAll(
         "-P",
         "plugin:androidx.compose.compiler.plugins.kotlin:metricsDestination="+project.projectDir.absolutePath+"/.gradle/composeDebug/metrics",
     )
 }
-tasks.withType<KotlinCompile>() {
+tasks.withType<KotlinCompile> {
     compilerOptions.freeCompilerArgs.addAll(
         "-P",
         "plugin:androidx.compose.compiler.plugins.kotlin:reportsDestination="+project.projectDir.absolutePath+"/.gradle/composeDebug/reports",

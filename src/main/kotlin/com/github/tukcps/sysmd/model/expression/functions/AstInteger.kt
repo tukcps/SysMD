@@ -11,10 +11,10 @@ import kotlin.math.floor
 
 
 /**
- * The function Integer : Real -> Integer converts a real to an integer.
+ * The function ToInteger : Real -> Integer converts a Real to an Integer.
  */
 class AstInteger(model: Session, args: ArrayList<AstNode>) :
-    AstFunction("Integer", model, 1, args) {
+    AstFunction("ToInteger", model, 1, args) {
 
     init {
         if (parameters.size != 1)

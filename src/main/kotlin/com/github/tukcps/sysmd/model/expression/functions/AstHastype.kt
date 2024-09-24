@@ -18,12 +18,12 @@ import com.github.tukcps.sysmd.services.resolve.resolve
  *
  * evaluates to true, iff x::y is resolvable.
  */
-class AstIsA(
+class AstHastype(
     model: Session,
     private val owningNamespace: Namespace,
     private val subclassName: QualifiedName,
     private val superclassName: QualifiedName
-) : AstFunction("isA", model, 0) {
+) : AstFunction("hastype", model, 0) {
 
     override fun initialize() {
         upQuantity = Quantity(model.builder.Bool)
@@ -41,7 +41,7 @@ class AstIsA(
                 if (supertype in subtype.allSupertypes(true)) model.builder.True else model.builder.False
             )
         } else
-            model.report(null, "Evaluation of hasA() not possible as parameter not a classifier or type.")
+            model.report(owningNamespace, "Evaluation of hastype not possible as parameters are no types.")
     }
 
     override fun evalDown() {

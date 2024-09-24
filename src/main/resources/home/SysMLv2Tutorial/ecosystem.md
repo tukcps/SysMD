@@ -126,11 +126,7 @@ In the tutorial we focus only on the textual notation.
 - For a cloud-based environment, a REST API and OSLC endpoints are specified. 
 - For file-based use cases, file format for projects is specified. 
 
-In the tutorial we cover all above aspects in the next tabs. 
-# SysMD 
-
-- Propagates constraints
-    - Added some specific extensions for that purpose!
-   
-- Allows interactive modifications 
-    - Addes some specific extensions for that purpose!
+In the tutorial we cover all above aspects: 
+- KerML introduces the basic metamodel for SysML v2.
+- SysML introduces basics of the SysML v2 textual modeling languate. 
+- API gives a brief introduction into the REST API.   

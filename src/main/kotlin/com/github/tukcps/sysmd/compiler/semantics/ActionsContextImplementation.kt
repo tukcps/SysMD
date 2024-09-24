@@ -1,15 +1,15 @@
 package com.github.tukcps.sysmd.compiler.semantics
 
 import com.github.tukcps.aadd.values.IntegerRange
+import com.github.tukcps.sysmd.compiler.parser.QualifiedName
+import com.github.tukcps.sysmd.compiler.parser.firstName
+import com.github.tukcps.sysmd.compiler.scanner.Token
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.model.expression.functions.*
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.Annotation
 import com.github.tukcps.sysmd.model.kerml.implementation.*
-import com.github.tukcps.sysmd.compiler.parser.QualifiedName
-import com.github.tukcps.sysmd.compiler.parser.firstName
-import com.github.tukcps.sysmd.compiler.scanner.Token
 import com.github.tukcps.sysmd.services.report
 import com.github.tukcps.sysmd.services.session.Session
 import java.util.*
@@ -235,6 +235,8 @@ open class ActionsContextImplementation(
         when (function) {
             "ITE" -> return AstIte(model, param)
             "oneOf" -> return buildOneOfAst(model, expression = semantics.expression!!, param, semantics)
+            "allOf" -> return AstAllOf(model, param)
+            "anyOf" -> return AstAnyOf(model, param)
             "sum_i" -> return AstSumI(namespace, model, param)
             "sum" -> return AstSum(namespace, model, param)
             "sumOverParts" -> return AstSumHasA(model, namespace, param, transitive = true)
@@ -273,7 +275,7 @@ open class ActionsContextImplementation(
             "byParts" -> return AstByParts(model, namespace, param)
             "byImplements" -> return AstByImplements(model, namespace, param)
             "linear" -> return AstLinear(model, param)
-            "stepInterpolation" -> return AstStep(model,param)
+            "stepInterpolation" -> return AstStepInterpolation(model,param)
             "Real" -> { semantics.model.report(semantics.expression, "Deprecated: Real; use ToReal"); return AstReal(model, param)}
             "ToReal" -> return AstReal(model, param)
             "Integer" -> { semantics.model.report(semantics.expression, "Deprecated: Integer; use ToInteger"); return AstInteger(model, param)}

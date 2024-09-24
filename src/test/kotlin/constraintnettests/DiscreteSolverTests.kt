@@ -3,15 +3,15 @@
 package constraintnettests
 
 import com.github.tukcps.aadd.BDD
+import com.github.tukcps.sysmd.compiler.loadSysMD
+import com.github.tukcps.sysmd.compiler.parseDependency
 import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Namespace
-import com.github.tukcps.sysmd.compiler.loadSysMD
-import com.github.tukcps.sysmd.compiler.parseDependency
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.resolve.resolve
+import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.session.SessionManager.testSession
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Disabled
@@ -811,16 +811,16 @@ class DiscreteSolverTests {
     fun enumConstraintTest() {
         testSession(catchExceptions = false) {
             loadSysMD("""
-                attribute enum: ScalarValues::Real = oneOf(1.0, 2.0, 3.0, 4.0, 7.0);
-                assert enumConstraint { enum >= 6.0 }
+                attribute selection: ScalarValues::Real = oneOf(1.0, 2.0, 3.0, 4.0, 7.0);
+                assert selectorConstraint { selection >= 6.0 }
             """.trimIndent())
             propagate()
             //builder.conds.x.forEach { println(it) }
-            val enum = global.resolveVar("enum")
-            val constr = global.resolveVar("enumConstraint")
+            val enum = global.resolveVar("selection")
+            val constr = global.resolveVar("selectorConstraint")
 
             //assertEquals(builder.False, builder.conds.x[4])
-            assertEquals("7..7", global.resolveVar("enum")!!.vectorQuantity.value.toString())
+            assertEquals("7..7", global.resolveVar("selection")!!.vectorQuantity.value.toString())
         }
     }
 
@@ -828,13 +828,13 @@ class DiscreteSolverTests {
     fun enumMoreConstraintsTest() {
         testSession(catchExceptions = false) {
             loadSysMD("""
-                attribute enum: ScalarValues::Real = oneOf(1.0, 2.0, 3.0, 4.0, 7.0); 
-                assert enumConstraint1 { enum >= 3.0 }
-                assert enumConstraint2 { enum <= 3.0 }
+                attribute selection: ScalarValues::Real = oneOf(1.0, 2.0, 3.0, 4.0, 7.0); 
+                assert enumConstraint1 { selection >= 3.0 }
+                assert enumConstraint2 { selection <= 3.0 }
             """.trimIndent())
             propagate()
 
-            val enum = global.resolveVar("enum")!!
+            val enum = global.resolveVar("selection")!!
 
             //assertEquals(builder.False, builder.conds.x[7])
             //assertEquals(builder.False, builder.conds.x[8])
@@ -854,15 +854,15 @@ class DiscreteSolverTests {
     fun enumArithmeticTest() {
         testSession {
             loadSysMD("""
-                feature enum1: ScalarValues::Real = oneOf(1.0, 2.0, 3.0); 
-                feature enum2: ScalarValues::Real = oneOf(1.0, 2.0, 3.0); 
-                inv enumConstraint { (enum1 + enum2) >= 6.0 }
+                feature selection1: ScalarValues::Real = oneOf(1.0, 2.0, 3.0); 
+                feature selection2: ScalarValues::Real = oneOf(1.0, 2.0, 3.0); 
+                inv enumConstraint { (selection1 + selection2) >= 6.0 }
             """.trimIndent())
             propagate()
             assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
 
-            val enum1 = global.resolveVar("enum1")!!
-            val enum2 = global.resolveVar("enum2")!!
+            val enum1 = global.resolveVar("selection1")!!
+            val enum2 = global.resolveVar("selection2")!!
             //assertEquals(builder.False, builder.conds.x[3])
             //assertEquals(builder.False, builder.conds.x[4])
             //assertEquals(builder.False, builder.conds.x[5])
