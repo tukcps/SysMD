@@ -248,6 +248,7 @@ fun KerML.Feature() {
     feature?.create()
     optional(EQ, consume =true) {
         val iBeforeExpression = token.indices.first
+        @Suppress("SENSELESS_COMPARISON")
         feature?.created?.variable = if (feature!=null) VariableImplementation(feature.created!!) else null
         semantics.expression = feature?.created
         Expression().also {

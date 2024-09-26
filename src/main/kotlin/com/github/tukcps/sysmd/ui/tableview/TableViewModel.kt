@@ -37,7 +37,7 @@ class TableViewModel(model: TextualRepresentationViewModel) {
     
     private fun internalBuild(): TableTreeNode {
         //instantly return an empty package table if body is empty
-        if (model.body.value.text.isNullOrBlank()) return TableTreeNode(PACKAGE, null)
+        if (model.body.value.text.isBlank()) return TableTreeNode(PACKAGE, null)
         
         var lineCounter = 0
         val tr = TextReader(model.body.value.text)
@@ -93,9 +93,11 @@ class TableViewModel(model: TextualRepresentationViewModel) {
             //when line contains more { than }: go deeper, else go to parent or stay in this node
             when {
                 tr.braces.first > tr.braces.second && currentTable.children.isNotEmpty() -> currentTable = currentTable.children.last()
-                tr.braces.first > tr.braces.second                                       -> println("Table builder: Unexpected '{' in line number $lineCounter, line: \"${tr.line}\"")
+                tr.braces.first > tr.braces.second                                       -> {}
+                // println("Table builder: Unexpected '{' in line number $lineCounter, line: \"${tr.line}\"")
                 tr.braces.first < tr.braces.second && currentTable.parent.notNull()      -> currentTable = currentTable.parent!!
-                tr.braces.first < tr.braces.second && tr.hasNext                         -> println("Table builder: Unexpected '}' in line number $lineCounter, line: \"${tr.line}\"")
+                tr.braces.first < tr.braces.second && tr.hasNext                         -> {}
+                // println("Table builder: Unexpected '}' in line number $lineCounter, line: \"${tr.line}\"")
             }
             
             

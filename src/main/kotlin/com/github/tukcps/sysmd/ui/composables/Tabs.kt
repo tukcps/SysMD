@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.rememberSwipeableState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -47,13 +46,12 @@ fun Tabs(
     val closed: MutableState<Boolean> = mutableStateOf(false)
 
     // selected index must be accessed to cause re-rendering.
-    val dummyRead = selectedIndex.value
+    @Suppress("UnusedVariable", "unused") val dummyRead = selectedIndex.value
     BoxWithConstraints(modifier = Modifier.fitMaxWidth()) {
-        val swipeState = rememberSwipeableState(0, confirmStateChange = { selectedIndex.value = it; true })
-
-        LaunchedEffect(selectedIndex.value) {
-            swipeState.animateTo(selectedIndex.value)
-        }
+        // val swipeState = rememberSwipeableState(0, confirmStateChange = { selectedIndex.value = it; true })
+        // LaunchedEffect(selectedIndex.value) {
+        //     swipeState.animateTo(selectedIndex.value)
+        // }
 
         Column(modifier = Modifier.fitMaxWidth()) {
             Row(

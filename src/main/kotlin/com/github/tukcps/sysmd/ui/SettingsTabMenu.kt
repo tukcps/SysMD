@@ -6,7 +6,6 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.SwipeableState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -46,11 +45,11 @@ fun SettingsTabMenu(
     ) {
         val constraints = this
         val width = constraints.maxWidth.toPx()
-        val swipeState = remember { SwipeableState(0, confirmStateChange = { onSelectionChange(it); true })}
+        // val swipeState = remember { SwipeableState(0, confirmStateChange = { onSelectionChange(it); true })}
 
-        LaunchedEffect(selectedIndex.value) {
-            swipeState.animateTo(selectedIndex.value)
-        }
+        // LaunchedEffect(selectedIndex.value) {
+        //     swipeState.animateTo(selectedIndex.value)
+        // }
 
         Column(modifier = Modifier.fitMaxWidth()) {
             Row(

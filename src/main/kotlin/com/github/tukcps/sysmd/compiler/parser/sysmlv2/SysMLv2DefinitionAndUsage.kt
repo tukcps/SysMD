@@ -9,7 +9,6 @@ import com.github.tukcps.sysmd.compiler.parser.kerml.Documentation
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Resolved
-import com.github.tukcps.sysmd.model.sysml.AttributeUsage
 
 
 /**
@@ -44,7 +43,7 @@ fun KerML.DefinitionBodyItem() {
         ALLOCATION then DEF starts { AllocationDefinition() }
         ASSERT starts { AssertConstraintUsage() }
         ASSOC starts { Association() }
-        (ATTRIBUTE then DEF) starts { AttributeDef() }
+        (ATTRIBUTE then DEF) starts { AttributeDefinition() }
         ATTRIBUTE starts { AttributeUsage() } // TODO
         CALCULATION starts { AttributeUsage() } // TODO
         (CALCULATION then DEF) starts{ CalculationDefinition() }

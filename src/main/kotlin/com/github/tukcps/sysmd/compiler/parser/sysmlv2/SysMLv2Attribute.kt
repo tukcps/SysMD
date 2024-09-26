@@ -13,7 +13,7 @@ import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
 /**
  * AttributeDef :- "attribute" "def" Identification ";"
  */
-fun KerML.AttributeDef() {
+fun KerML.AttributeDefinition() {
     val attributeDef = sysMLSemantics.AttributeDefinitionSemantics()
     ATTRIBUTE.consume()
     DEF.consume()
@@ -119,9 +119,11 @@ fun KerML.AttributeUsageRedefines(attribute: FeatureActions?): FeatureActions? {
             val iBeforeExpression = token.indices.first
             semantics.expression = attribute?.created
             Expression().also {
+                @Suppress("SENSELESS_COMPARISON")
                 attribute?.created?.featureWithValue =
                     if (attribute == null) null else AstRoot(model, attribute.created!!, it)
                 attribute?.created?.indices = iBeforeExpression..consumedToken.indices.last
+                @Suppress("SENSELESS_COMPARISON")
                 attribute?.created?.expression =
                     if (attribute == null) "" else input.subSequence(attribute.created?.indices!!).toString().trim()
             }

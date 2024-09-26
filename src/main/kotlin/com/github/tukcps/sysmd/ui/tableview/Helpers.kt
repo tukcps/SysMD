@@ -4,7 +4,7 @@ import androidx.compose.runtime.snapshots.*
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.*
 import kotlin.contracts.*
-import kotlin.contracts.InvocationKind.EXACTLY_ONCE
+import kotlin.contracts.InvocationKind.AT_MOST_ONCE
 import kotlin.reflect.KProperty
 
 /**
@@ -38,7 +38,7 @@ fun <T> T.notNull(): Boolean {
 @Suppress("UNCHECKED_CAST")
 inline fun <reified T, R> noneNullLet(vararg x: T?, block: (Array<out T>) -> R): R? {
     contract {
-        callsInPlace(block, EXACTLY_ONCE)
+        callsInPlace(block, AT_MOST_ONCE)
     }
     return if (x.none(Any?::isNull)) block(x as Array<out T>) else null
 }

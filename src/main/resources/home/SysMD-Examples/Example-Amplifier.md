@@ -31,13 +31,13 @@ package demo {
     // Concrete model --> SystemC instances of library classes
     part myAmplifier {
         part lna:    Amplifier {
-            attribute gain: Real [dB] = [15.0 .. 20.0] dB;  
+            attribute gain: Real [dB] = oneOf(15.0 .. 20.0 [dB]);  
         }
         part stage2: Amplifier {
-            attribute gain: Real [dB] = [5.0 .. 20.0] dB;  
+            attribute gain: Real [dB] = oneOf(5.0 .. 20.0 [dB]);  
         }
         part driver: Amplifier {
-            attribute gain: Real [dB] = [5.0 .. 20.0] dB;  
+            attribute gain: Real [dB] = oneOf(5.0 .. 20.0 [dB]);  
         }
         attribute gain: Real(20 .. 30) [dB] = productOverParts(gain); 
     }
@@ -50,13 +50,12 @@ Click on a part or class  generates
 
 - respective SystemC code frameworks for each element.
 - CMake makefiles, and 
-- for specified performance properties each a test 
-and infrastructures for coverage monitoring. 
+- for specified performance properties for each a test and infrastructures for coverage monitoring. 
 
 ## Feedback from characterization
 
 Characterization from SystemC sets the (uncertain) values of the initial performance budgets to values
-that are concrete, i.e. confidence intervals for 3 sigma (or more). 
+that are concrete, i.e., confidence intervals for three sigma (or more). 
 
 In the example, play with the above values and check its impact on other blocks!*
 

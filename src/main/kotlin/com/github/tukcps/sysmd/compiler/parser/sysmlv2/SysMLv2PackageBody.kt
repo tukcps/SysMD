@@ -20,7 +20,7 @@ fun KerML.PackageBodyElement() {
         ALLOCATION then DEF starts { AllocationDefinition() }
         ASSERT starts { AssertConstraintUsage() }
         ASSOC starts { Association() }
-        (ATTRIBUTE then DEF) starts { AttributeDef() }
+        (ATTRIBUTE then DEF) starts { AttributeDefinition() }
         ATTRIBUTE starts { AttributeUsage() } // TODO
         CALCULATION starts { AttributeUsage() } // TODO
         (CALCULATION then DEF) starts{ CalculationDefinition() }
