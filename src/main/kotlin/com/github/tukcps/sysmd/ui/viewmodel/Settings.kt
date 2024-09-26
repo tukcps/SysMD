@@ -47,7 +47,7 @@ class Settings {
     var useDefaultHighlight = false
 
     @JsonIgnore
-    var keywordHighlighing: HashMap<String, SpanStyle> = keywords.mapValuesTo(hashMapOf(), transform = {
+    var keywordHighlighting: HashMap<String, SpanStyle> = keywords.mapValuesTo(hashMapOf(), transform = {
             SpanStyle(
                 color = Color.Blue,
                 fontFamily = Fonts.jetbrainsMono,
@@ -81,9 +81,10 @@ class Settings {
 val mapper = ObjectMapper()
 
 fun importSettings() {
+    val sysmdfolder = System.getProperty("user.home") + "/SysMD"
     val json: String?
     try {
-        val inputStream: InputStream = File("sysmd_settings.json").inputStream()
+        val inputStream: InputStream = File("${sysmdfolder}/sysmd_settings.json").inputStream()
         json = inputStream.bufferedReader().use { it.readText() }
         settings = mapper.readValue(json, Settings::class.java)
     } catch (e: IOException) {
@@ -93,9 +94,10 @@ fun importSettings() {
 
 
 fun exportSettings() {
+    val sysmdfolder = System.getProperty("user.home") + "/SysMD"
     val data = mapper.writeValueAsString(settings)
     try {
-        File("sysmd_settings.json").writeText(data)
+        File("${sysmdfolder}/sysmd_settings.json").writeText(data)
     } catch (e: Exception) {
         e.printStackTrace()
     }

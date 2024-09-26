@@ -44,12 +44,12 @@ val indexer = Indexer() //Indexer which is required to provide code writing supp
 fun copyResources() {
     try {
         // First, we get the JAR file; the resources are part of it.
-        val path = object {}.javaClass.getClassLoader().getResource("version").path.replace("%20", " ")
+        val path = object {}.javaClass.getClassLoader().getResource("version")!!.path.replace("%20", " ")
         val jarPathSplit = path.split("!")
         assert(jarPathSplit.isNotEmpty())
         assert(jarPathSplit.size == 2)
         val jarPath = jarPathSplit.first()
-        val res = object {}.javaClass.getResource("")!!.path.replace("%20", " ").split("!").first()
+        object {}.javaClass.getResource("")!!.path.replace("%20", " ").split("!").first()
 
         // Then, we open it as a jar file, get all entries and filter out those that are in folder home
         val jar = JarFile(jarPath.substringAfter("file:"))
@@ -113,9 +113,9 @@ fun main() {
 
             loadSettings()  //actively initiate loading of the settings as otherwise the settings are only loaded after the settings window has been opened
 
-            val colors = when {
-                settings.colorStyle.equals("dark") -> DarkColors
-                settings.colorStyle.equals("light") -> LightColors
+            val colors = when (settings.colorStyle) {
+                "dark" -> DarkColors
+                "light" -> LightColors
                 else -> if (isSystemInDarkTheme()) DarkColors else LightColors
             }
             AppTheme.colors.onWarning = if (colors == DarkColors) dark_onWarning else light_onWarning

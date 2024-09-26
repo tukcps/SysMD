@@ -255,7 +255,7 @@ fun KerML.Value(): AstNode {
             val values = arrayListOf<AstNode>()
             do {  // Iterate through all vector elements
                 expression = Expression()
-                if(tokenIs(RBRACE) && values.size == 0)
+                if(tokenIs(RBRACE) && values.isEmpty() )
                     astNode = expression //no vector, only expression in braces
                 else if(expression is AstLeaf || expression is AstUnaryOp) {
                     values.add(expression)
