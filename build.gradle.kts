@@ -17,7 +17,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
  * - also set the value standalone according to your setup
  */
 group   = "com.github.tukcps"
-version = "3.0.15"
+version = "3.0.16"
 val jaaddVersion = "3.1.0"
 val sysmlapiVersion = "3.0.5"
 

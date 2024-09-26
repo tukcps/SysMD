@@ -49,7 +49,7 @@ val settingsViewModel = SettingsViewModel()
 fun loadSettings() {
     val key1 = settings.defaultHighlightStyle.color
     val key2 = settings.defaultHighlightStyle.fontFamily
-    val key3 = settings.keywordHighlighing["Connector"]?.color
+    val key3 = settings.keywordHighlighting["Connector"]?.color
 
     settingsViewModel.baseURI.value = settings.rest.baseURI
     settingsViewModel.entryURI.value = settings.rest.entryURI
@@ -115,7 +115,7 @@ fun storeSettings() {
     settings.tabSize = if (settingsViewModel.tabSize.value == "") 1 else settingsViewModel.tabSize.value.toInt()
     settings.useDefaultHighlight = settingsViewModel.useDefault.value
     settings.defaultHighlightStyle = SpanStyle(color = color1, fontWeight = fontWei, fontFamily = fontFam)
-    settings.keywordHighlighing = keywords.mapValuesTo(hashMapOf(), transform = { SpanStyle(color2) })
+    settings.keywordHighlighting = keywords.mapValuesTo(hashMapOf(), transform = { SpanStyle(color2) })
     settings.agendaExpertMode = settingsViewModel.agendaExpertMode.value
 }
 
@@ -132,7 +132,7 @@ fun resetRendering() {
     settings.imagesToCache = 10
     settings.defaultHighlightStyle =
         SpanStyle(color = Color.Blue, fontWeight = FontWeight.Normal, fontFamily = Fonts.jetbrainsMono)
-    settings.keywordHighlighing = keywords.mapValuesTo(hashMapOf(), transform = { SpanStyle(Color.Blue) })
+    settings.keywordHighlighting = keywords.mapValuesTo(hashMapOf(), transform = { SpanStyle(Color.Blue) })
     settings.heightWhenCollapsed = 100
     settings.tabSize = 4
     exportSettings()

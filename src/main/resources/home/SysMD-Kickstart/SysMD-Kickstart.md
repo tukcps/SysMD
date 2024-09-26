@@ -219,7 +219,7 @@ We use two arithmetic values, ```a, b``` and a Boolean condition ```c``` that sh
         attribute a: Real = oneOf(1.0 .. 2.0); 
         attribute b: Real = a + 0.1;
         attribute c: Boolean { 
-          assert x { (a > b) } }    
+          assert x {(a > b) or self} }    
         }
 ```
 _Exercise:_ In place of ```>``` try the relations ```<, ==```. Instead of assert try ```constraint``` .

@@ -94,7 +94,7 @@ class TextReader(input: String) {
                 .split("//")
                 .mapIndexed {i, s->
                     if (i > 0) "//$s"
-                    else if (s.last() == '.') "${s.dropLast(1)};"
+                    else if (s.lastOrNull() == '.') "${s.dropLast(1)};"
                     else s
                 }
             }
@@ -110,7 +110,7 @@ class TextReader(input: String) {
                 append(line)
             } else //getting to here should mean that this line is part of a line of code that was split between multiple lines: replace whitespaces at it's start with a single space to make it fit snugly to the prev one
                 append(" ${line.trimStart()}")
-            if (line.last() in "{};") //if the last char of the line added in one of the cases above is an eol char: linebreak - else this is another potential multiline declaration to be checked next iteration
+            if (line.lastOrNull() != null && line.last() in "{};") //if the last char of the line added in one of the cases above is an eol char: linebreak - else this is another potential multiline declaration to be checked next iteration
                 appendLine()
         }
     }
