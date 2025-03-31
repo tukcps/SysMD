@@ -1,9 +1,5 @@
 package com.github.tukcps.sysmd.model.kerml
 
-import com.github.tukcps.sysmd.model.kerml.implementation.NamespaceImportImplementation
-import com.github.tukcps.sysmd.compiler.parser.QualifiedName
-import com.github.tukcps.sysmd.services.session.Session
-
 
 /**
  * KerML foresees a namespace that is an element.
@@ -23,11 +19,6 @@ interface Namespace: Element {
             }
             return result
         }
-
-    fun importNamespace(model: Session, importedNamespace: QualifiedName, importedNamespaceRef: Namespace?=null) {
-        val import = NamespaceImportImplementation(importedNamespace = Resolved(id=null, str=importedNamespace, ref=importedNamespaceRef), owner= Resolved(this))
-        model.create(import, this)
-    }
 
     fun visibleMemberships(): List<Resolved<Element>> = ownedElement
 }

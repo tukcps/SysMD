@@ -2,13 +2,12 @@ package services
 
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.*
-import com.github.tukcps.sysmd.compiler.loadSysMD
-import com.github.tukcps.sysmd.services.session.SessionManager.testSession
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.resolve.resolve
-import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.Test
+import com.github.tukcps.sysmd.services.resolve.resolveVar
+import util.mockup.loadKerML
+import kotlin.test.*
+import util.testSession
 
 class NameResolutionTests {
 
@@ -20,7 +19,7 @@ class NameResolutionTests {
         create(ClassImplementation(declaredName="x"), global)
         val found = global.resolve<Element>("x")
         assertTrue(found is ClassImplementation)
-        assertEquals("x", found!!.declaredName)
+        assertEquals("x", found.declaredName)
     }
 
     /**
@@ -63,8 +62,8 @@ class NameResolutionTests {
         val test = create(PackageImplementation(declaredName = "test"), global)
         val test2 = create(PackageImplementation(declaredName = "test2"), global)
         val test1 = create(ClassImplementation(declaredName = "test1"), test)
-        global.importNamespace(this, "Global::test", test)
-        global.importNamespace(this, "Global::test2", test2)
+        create(NamespaceImportImplementation(importingNamespace = Resolved(global), importedNamespace = Resolved<Namespace>(ref=test)), global)
+        create(NamespaceImportImplementation(importedNamespace = Resolved(global), importingNamespace = Resolved<Namespace>(ref=test2)), global)
         val found = test2.resolve<Element>("test1")
         assertEquals(test1, found)
     }
@@ -73,18 +72,19 @@ class NameResolutionTests {
      * Search from specialization
      */
     @Test
-    fun findFromSpecialization() = testSession(loadKerML = false) {
-        loadSysMD("""
-            package ScalarValues { datatype ScalarValue; datatype Integer :> ScalarValue; }
-            class a;
-            a hasA feature X: Base::Anything. 
-            class b isA a;
-        """.trimIndent())
+    fun findFromSpecialization() = testSession("ScalarValues") {
+        loadKerML("""
+                type a :> Base::Anything { feature X: Base::Anything; } 
+                type b :> a;
+            """)
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        val bX = global.resolve<Element>("b::X")
+        assertNotNull(bX)
     }
 
 
-    @Test fun findPropertyInGlobal() {
+    @Test
+    fun findPropertyInGlobal() {
         testSession {
             // A property of Global.
             val id = create(FeatureImplementation(declaredName = "test"), global).elementId
@@ -95,7 +95,7 @@ class NameResolutionTests {
             assertNotNull((found2))
             val found3 = global.resolve<Feature>("test")
             assertEquals(id, found3!!.elementId)
-            assertEquals(id, found!!.elementId)
+            assertEquals(id, found.elementId)
         }
     }
 
@@ -118,9 +118,9 @@ class NameResolutionTests {
     @Test fun findHasAElementByNameDirectTest() = testSession {
         val sizeBefore = global.getOwnedElementsOfType<Type>().size
         val name = create(TypeImplementation(declaredName="name"), global) // new class or package in global.
-        create(SpecializationImplementation(name, any), name)
+        create(SpecializationImplementation(name, anything), name)
         val name2 = create(TypeImplementation(declaredName="name2"), name)  // class in name package/element
-        create(SpecializationImplementation(name2, any), name2)
+        create(SpecializationImplementation(name2, anything), name2)
         initialize()
         assertEquals(sizeBefore+1, global.getOwnedElementsOfType<Type>().size)
         assertEquals(1, name.getOwnedElementsOfType<Type>().size)
@@ -195,7 +195,7 @@ class NameResolutionTests {
         val sizeBefore = global.getOwnedElementsOfType<Element>().size
         val name = create(NamespaceImplementation(declaredName="name"), global)  // new class or package in global.
         @Suppress("UNUSED_VARIABLE")
-        val uid2 = create(FeatureImplementation(declaredName="name2"), name)
+        create(FeatureImplementation(declaredName="name2"), name)
         // class in name package/element
         assertEquals(sizeBefore+1, global.getOwnedElementsOfType<Element>().size)
         assertEquals(1, name.getOwnedElementsOfType<Element>().size)
@@ -213,9 +213,9 @@ class NameResolutionTests {
      * - Global imports name
      * - search in imported namespace and global must
      */
-    @Test fun findHasAElementByNameFromImportedPackageTest() = testSession {
-        val name = create(NamespaceImplementation(declaredName="name"), global)    // new class 'name' of the type any in global.
-        global.importNamespace(this,"Global::name")
+    @Test fun findElementByNameFromImportedPackageTest() = testSession {
+        val name = create(NamespaceImplementation(declaredName="name"), global)    // new class 'name' of the type anything in global.
+        create(NamespaceImportImplementation(importingNamespace = Resolved(global), importedNamespace = Resolved<Namespace>("name")), global)
         create(ElementImplementation(declaredName="name2"),  name)   // class in class name.
 
         initialize()
@@ -234,9 +234,9 @@ class NameResolutionTests {
      */
     @Test fun findPropertyByNameFromImportedPackageTest() = testSession {
         val name = create(NamespaceImplementation(declaredName="name"),  global)    // new class or package in global.
-        global.importNamespace(this,"Global::name")
+        create(NamespaceImportImplementation(importingNamespace = Resolved(global), importedNamespace = Resolved<Namespace>("name")), global)
         val feat = create(FeatureImplementation(declaredName="name2"), name)            // class in name package/element
-        create(SpecializationImplementation(feat, any), feat)
+        create(SpecializationImplementation(feat, anything), feat)
         initialize()
         assertEquals("name2", name.resolve<Feature>("name2")!!.declaredName)
         assertEquals("name2", global.resolve<Feature>("name2")!!.declaredName)

@@ -1,3 +1,6 @@
 Getan:
-* SVG-Diagramme werden im "diagrams"-Unterverzeichnis des Projektverzeichnisses gespeichert
-* Render Diagram wird nur für "State Usages" angezeigt
+* Guard Conditions im Diagramm sichtbar
+
+Todo:
+* Was bedeutet "Type"-Kommentar im Guard-Condition-Test? Im Standard nachschlagen!
+* Ggf. state Diagrams direkt einfügen, wenn man "Render Diagram" klickt

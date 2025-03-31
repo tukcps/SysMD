@@ -1,12 +1,12 @@
 package parsertests
 
 import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.compiler.loadSysMD
-import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.resolve.resolve
-import com.github.tukcps.sysmd.services.session.SessionManager.testSession
+import com.github.tukcps.sysmd.services.resolve.resolveVar
+import util.mockup.loadKerML
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import util.testSession
 import kotlin.test.assertTrue
 
 /**
@@ -17,13 +17,14 @@ class DependencyStringTest {
      * The dot after an expression is not part of it.
      */
     @Test
-    fun dependencyStringTest1() = testSession {
-        loadSysMD("""
-            import ScalarValues; 
+    fun dependencyStringTest1() = testSession("ScalarValues") {
+        loadKerML("""
+            private import ScalarValues; 
             feature x: Real = 1.0 + 2.0.
             feature x2: Real = 1.0 + 2.0  ;
-            attribute x3: Real = 1.0 + 2.0;
-            attribute z: Real = 1.0 + 2.0;""".trimIndent())
+            feature x3: Real = 1.0 + 2.0;
+            feature z: Real = 1.0 + 2.0;
+        """)
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val x = global.resolveVar("x") !!
         assertEquals("1.0 + 2.0", x.dependency)
@@ -39,13 +40,13 @@ class DependencyStringTest {
      * The semicolon after an expression is not part of it.
      */
     @Test
-    fun dependencyStringTest2() = testSession {
-        loadSysMD("""
+    fun dependencyStringTest2() = testSession("ScalarValues") {
+        loadKerML("""
             feature x: ScalarValues::Boolean = true;
             feature x2: ScalarValues::Boolean = true  ;
             feature x3: ScalarValues::Boolean = true
               ;
-            feature z: Boolean = true""".trimIndent())
+            feature z: Boolean = true""")
         val x = global.resolveVar("x") !!
         assertEquals("true", x.dependency)
         val x2 = global.resolveVar("x2") !!
@@ -61,8 +62,8 @@ class DependencyStringTest {
      * The dot after an expression is not part of it.
      */
     @Test
-    fun dependencyStringTest3() = testSession {
-        loadSysMD("""
+    fun dependencyStringTest3() = testSession("ScalarValues") {
+        loadKerML("""
             feature x: ScalarValues::Integer = 1 + 2 ;
             feature x2: ScalarValues::Integer = 1 + 2  ;
             feature x3: ScalarValues::Integer = 1 + 2
@@ -82,8 +83,8 @@ class DependencyStringTest {
      * The comma after an expression is not part of it.
      */
     @Test
-    fun dependencyStringTest4() = testSession {
-        loadSysMD("""
+    fun dependencyStringTest4() = testSession("ScalarValues") {
+        loadKerML("""
                 feature x: ScalarValues::Integer = 1 + 2;
                 feature x2: ScalarValues::Integer = 1 + 2  ;
                 feature x3: ScalarValues::Integer = 1 + 2
@@ -102,19 +103,9 @@ class DependencyStringTest {
     /**
      * Special case: Dot after Integer Literal that ends statement.
      */
-    @Test fun dotAfterIntegerDot() = testSession {
-        loadSysMD("attribute x: ScalarValues::Integer = 1.")
+    @Test fun dotAfterIntegerDot() = testSession("ScalarValues") {
+        loadKerML("feature x: ScalarValues::Integer = 1.")
         val x = global.resolve<Feature>("x") !!
         assertEquals("1", x.expression)
     }
-
-    /**
-     * Special case: Comma after Integer Literal that ends statement.
-     */
-    @Test fun dotAfterIntegerComma() = testSession {
-        loadSysMD("attribute x: ScalarValues::Integer = 1, attribute y: ScalarValues::Integer = 2.")
-        val x = global.resolve<Feature>("x") !!
-        assertEquals("1", x.expression)
-    }
-
 }

@@ -1,7 +1,7 @@
 package com.github.tukcps.sysmd.model.expression
 
-import com.github.tukcps.aadd.AADD
-import com.github.tukcps.aadd.IDD
+import io.github.tukcps.aadd.AADD
+import io.github.tukcps.aadd.IDD
 import com.github.tukcps.sysmd.model.expression.functions.AstNot
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.compiler.scanner.Token

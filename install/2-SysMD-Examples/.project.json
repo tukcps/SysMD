@@ -1,0 +1,11 @@
+{
+  "name" : "SysMD Examples",
+  "version" : "4.0",
+  "description" : "A project with some examples on SysML v2 and SysMD",
+  "license" : "Apache 2.0",
+  "maintainer" : ["TU Kaiserslautern, Chair of Cyber-Physical Systems"],
+  "website" : null,
+  "topic" : null,
+  "usage" : [ ],
+  "id" : "342532bb-0d7f-4fa0-b888-28c725f35cc4"
+}

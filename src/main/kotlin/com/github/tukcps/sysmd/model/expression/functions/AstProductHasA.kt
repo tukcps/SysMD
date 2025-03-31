@@ -1,7 +1,8 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import com.github.tukcps.aadd.AADD
-import com.github.tukcps.aadd.IDD
+import io.github.tukcps.aadd.AADD
+import io.github.tukcps.aadd.IDD
+import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.TIMES
 import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.model.expression.AstLeaf
@@ -10,11 +11,9 @@ import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.getOwnedElementsOfType
-import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.TIMES
 import com.github.tukcps.sysmd.quantities.Quantity
-import com.github.tukcps.sysmd.services.resolve.findAllOwnedElements
-import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.resolve.resolve
+import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.session.Session
 
 /**
@@ -78,8 +77,7 @@ internal class AstProductHasA(
         for (elem in expressions) {
             try {
                 elem.ast?.evalUp()
-            } catch (ignore: Exception) {
-            }
+            } catch (_: Exception) {}
         }
         evalUp()
     }
@@ -115,15 +113,6 @@ internal class AstProductHasA(
         }
     }
 
-    override fun <T> runDepthFirst(block: AstNode.() -> T): T {
-        val elements = namespace.getOwnedElementsOfType<Element>()
-        for (element in elements) {
-//            try { model.getProperty(model.selfId, Identification(null, propertyName))!!.ast!!.runDepthFirst(block) }
-//            catch (ignore: Exception){ } // No property found, we can do nothing or recurse.
-        }
-        return this.run(block)
-    }
-
     override fun getDependentPropertyStrings(): Set<String> {
         return getSubclassDependencyStrings(namespace, propertyAst.first())
     }
@@ -147,7 +136,7 @@ fun Session.initProductParts(
 ): AstNode {
     var ast: AstNode? = null
     var isRealProduct = isReal //indicates if the property is a real or an int
-    for (elementIterator in element.findAllOwnedElements().filterIsInstance<Feature>().filterNot { it is Variable || it.variable is Variable }) {
+    for (elementIterator in element.getOwnedElementsOfType<Feature>().filterNot { it is Variable || it.variable is Variable }) {
         var newAstNode: AstNode = propertyAST.clone()
         for (leaf in newAstNode.getLeaves().filter { it.qualifiedName != null }) {
             // Find property with propertyName owned by element ...
@@ -156,7 +145,7 @@ fun Session.initProductParts(
             if (variable != null) {
                 leaf.upQuantity = variable.vectorQuantity
                 leaf.downQuantity = variable.vectorQuantity
-                leaf.qualifiedName = variable.name
+                leaf.qualifiedName = variable.feature.qualifiedName
                 leaf.feature = ownedProperty
                 if (leaf.upQuantity.values[0] is IDD) isRealProduct = false
             } else if (transitive && elementIterator !is Variable) { // Transitive: search property in parts ...
@@ -194,15 +183,15 @@ fun Session.initProductParts(
         }
     }
     return ast ?: if (isRealProduct)
-        AstLeaf(this, Quantity(builder.scalar(1.0), "?"))
+        AstLeaf(this, Quantity(builder.real(1.0), "?"))
     else
-        AstLeaf(this, Quantity(builder.scalar(1)))
+        AstLeaf(this, Quantity(builder.integer(1)))
 }
 
 fun getSubclassDependencyStrings(element: Namespace, propertyAST: AstNode): Set<String> {
     val result = mutableSetOf<String>()
-    for (elementIterator in element.findAllOwnedElements()) {
-        if (elementIterator is Feature && elementIterator !is Variable) {
+    for (elementIterator in element.getOwnedElementsOfType<Feature>()) {
+        if (elementIterator !is Variable) {
             for (leaf in propertyAST.getLeaves().filter { it.qualifiedName != null }) {
                 result.add(leaf.qualifiedName as String)
             }

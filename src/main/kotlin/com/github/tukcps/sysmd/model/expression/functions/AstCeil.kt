@@ -1,10 +1,10 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import com.github.tukcps.aadd.AADD
-import com.github.tukcps.aadd.IDD
-import com.github.tukcps.aadd.values.IntegerRange
-import com.github.tukcps.sysmd.model.expression.AstNode
+import io.github.tukcps.aadd.AADD
+import io.github.tukcps.aadd.IDD
+import io.github.tukcps.aadd.values.IntegerRange
 import com.github.tukcps.sysmd.exceptions.SemanticError
+import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
 
@@ -35,7 +35,7 @@ internal class AstCeil(model: Session, args: ArrayList<AstNode>) :
                     val resultMax = it.asIdd().max
                     if (resultMin < resultMax) //otherwise there is nothing to do
                         resultMin = IntegerRange().plusOverflowDetection(resultMin, 1) //
-                    results.add(model.builder.range(resultMin, resultMax))
+                    results.add(model.builder.integer(resultMin..resultMax))
                 }
                 VectorQuantity(results)
             }
@@ -59,10 +59,7 @@ internal class AstCeil(model: Session, args: ArrayList<AstNode>) :
                 // avoid overflow during -1 calculation
                 downQuantity.values.forEach {
                     results.add(
-                        model.builder.range(
-                            IntegerRange().minusOverflowDetection(it.asIdd().min, 1),
-                            it.asIdd().max
-                        )
+                        model.builder.integer(IntegerRange().minusOverflowDetection(it.asIdd().min, 1)..it.asIdd().max)
                     )
                 }
                 VectorQuantity(results)
@@ -71,8 +68,6 @@ internal class AstCeil(model: Session, args: ArrayList<AstNode>) :
             else -> throw SemanticError("Ceil function only takes a Real or Integer parameter")
         }
     }
-
-    override fun toExpressionString() = "ceil(${getParam(0).toExpressionString()})"
 
     override fun clone(): AstCeil {
         val parClone = ArrayList<AstNode>()

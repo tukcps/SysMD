@@ -8,7 +8,7 @@ import com.github.tukcps.sysmd.quantities.Prefix
 private var siUnitSet = emptySet<BaseUnit>()
 
 open class QuantityOfDimensionOne(name: String, symbol: String, prefix: Prefix, convFac: Double, isLogarithmic: Boolean = false) :
-    DerivedUnit(name, symbol, prefix, "quantity of dimension one", siUnitSet, convFac, isLogarithmic = isLogarithmic) {
+    DerivedUnit(name, symbol, prefix, "QuantityOfDimensionOne", siUnitSet, convFac, isLogarithmic = isLogarithmic) {
 
     /**
      * generate UnitObjects and add them to the UnitList

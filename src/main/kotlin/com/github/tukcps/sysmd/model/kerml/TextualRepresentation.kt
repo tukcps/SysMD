@@ -1,20 +1,22 @@
 package com.github.tukcps.sysmd.model.kerml
 
-import com.github.tukcps.sysmd.compiler.parser.QualifiedName
-import com.github.tukcps.sysmd.compiler.parser.dropFirstName
+import com.github.tukcps.sysmd.model.util.QualifiedName
+import com.github.tukcps.sysmd.model.util.dropFirstName
 
 
 /**
  * A textual model of something in a modeling language.
- * In extension of the SysMLv2 metamodel we also save here results of the compilation:
+ * In extension of the SysMLv2 metamodel, we also save here results of the compilation:
  * - errorsByLine in a hashmap lineno -> error message
- * - infoByLine in a hashmap lineno -> infotext
+ * - infoByLine in a hashmap lineno -> info-text
  */
 interface TextualRepresentation: AnnotatingElement {
     var language: String
 
     /**
      * Runs the parser depending on the language field.
+     * @param generateAnnotations if true, the parser will add annotations that
+     * link the generated elements with the textual representation
      */
     fun compile(generateAnnotations: Boolean = true)
     override fun clone(): TextualRepresentation

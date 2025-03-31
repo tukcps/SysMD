@@ -2,19 +2,20 @@ package com.github.tukcps.sysmd.rest.entities
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import com.fasterxml.jackson.datatype.jsr310.ser.ZonedDateTimeSerializer
-import com.github.tukcps.sysmlv2.entities.Commit
-import com.github.tukcps.sysmlv2.entities.Project
-import com.github.tukcps.sysmlv2.entities.responseModels.ProjectResponse
+import io.github.tukcps.sysmlv2.api.entities.Commit
+import io.github.tukcps.sysmlv2.api.entities.Project
+import io.github.tukcps.sysmlv2.api.entities.responseModels.ProjectResponse
+import java.time.OffsetDateTime
 import java.time.ZonedDateTime
 import java.util.*
 
 class ProjectImplementation(
     @JsonSerialize(using = ZonedDateTimeSerializer::class)
-    override var created: Date = Date.from(ZonedDateTime.now().toInstant()),
-    override var alias: List<String> = mutableListOf(),
+    override var created: OffsetDateTime = OffsetDateTime.now(),
+    override var alias: Collection<String> = mutableListOf(),
     override var description: String = "",
     override var id: UUID = UUID.randomUUID(),
-    override var name: String = "",
+    override var name: String? = "",
     var defaultBranchId: UUID
 ) : Project {
     var branches = mutableListOf<BranchImplementation>()

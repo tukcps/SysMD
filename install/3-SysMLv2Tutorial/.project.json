@@ -1,0 +1,11 @@
+{
+  "name" : "SysML v2 Tutorial",
+  "version" : "4.0",
+  "description" : "Tutorial on modeling with SysML v2 and SysMD",
+  "license" : "Apache 2.0",
+  "maintainer" : ["TU Kaiserslautern, Chair of Cyber-Physical Systems"],
+  "website" : null,
+  "topic" : null,
+  "usage" : [ ],
+  "id" : "9d2332ad-0f7f-4fa0-b838-21c725f35cd1"
+}

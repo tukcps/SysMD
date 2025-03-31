@@ -3,11 +3,11 @@ package com.github.tukcps.sysmd.model.expression.functions
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.Type
-import com.github.tukcps.sysmd.compiler.parser.QualifiedName
+import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.quantities.Quantity
-import com.github.tukcps.sysmd.services.session.Session
-import com.github.tukcps.sysmd.services.report
+import com.github.tukcps.sysmd.services.session.report
 import com.github.tukcps.sysmd.services.resolve.resolve
+import com.github.tukcps.sysmd.services.session.Session
 
 
 /**
@@ -18,12 +18,12 @@ import com.github.tukcps.sysmd.services.resolve.resolve
  *
  * evaluates to true, iff x::y is resolvable.
  */
-class AstHastype(
+class AstHasType(
     model: Session,
     private val owningNamespace: Namespace,
     private val subclassName: QualifiedName,
     private val superclassName: QualifiedName
-) : AstFunction("hastype", model, 0) {
+) : AstFunction("hasType", model, 0) {
 
     override fun initialize() {
         upQuantity = Quantity(model.builder.Bool)
@@ -41,12 +41,11 @@ class AstHastype(
                 if (supertype in subtype.allSupertypes(true)) model.builder.True else model.builder.False
             )
         } else
-            model.report(owningNamespace, "Evaluation of hastype not possible as parameters are no types.")
+            model.report(owningNamespace, "Evaluation of hasType not possible as parameters are no types.")
     }
 
     override fun evalDown() {
         // getParam(0).downQuantity = downQuantity.log()
     }
 
-    override fun toExpressionString() = "hasA(${getParam(0).toExpressionString()}, ${getParam(1).toExpressionString()})"
 }

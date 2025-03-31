@@ -8,7 +8,7 @@ import com.github.tukcps.sysmd.quantities.baseUnits.Length
 private var siUnitSet = setOf(Length.Meter.copy(3))
 
 open class Volume(name: String, symbol: String, prefix: Prefix, convFac: Double, exponent: Int = 1, isLogarithmic: Boolean = false) :
-    DerivedUnit(name, symbol, prefix, "volume", siUnitSet, convFac, exponent, isLogarithmic) {
+    DerivedUnit(name, symbol, prefix, "Volume", siUnitSet, convFac, exponent, isLogarithmic) {
 
     /**
      * generate UnitObjects and add them to the UnitList

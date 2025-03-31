@@ -1,52 +1,40 @@
 package parsertests
 
+import com.github.tukcps.sysmd.compiler.HoodSysmlParser
 import com.github.tukcps.sysmd.model.kerml.Element
+import com.github.tukcps.sysmd.model.kerml.Package
 import com.github.tukcps.sysmd.model.kerml.getOwnedElementsOfType
 import com.github.tukcps.sysmd.model.sysml.PartUsage
 import com.github.tukcps.sysmd.model.sysml.StateUsage
 import com.github.tukcps.sysmd.model.sysml.TransitionUsage
-import com.github.tukcps.sysmd.compiler.HoodSysmlParser
-import com.github.tukcps.sysmd.compiler.KerMLPackage
-import org.junit.jupiter.api.Test
+import com.github.tukcps.sysmd.services.resolve.resolve
+import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class HoodSysmlParserTest {
     val parser : HoodSysmlParser = HoodSysmlParser()
 
-    @Test
-    fun parseNoPackages() {
-        val model = parser.parseString("")
-        val emptyPackageList = model.global.getOwnedElementsOfType<KerMLPackage>()
-            .filterNot { it.isStandard }
-
-        assertTrue { emptyPackageList.isEmpty() }
-    }
 
     @Test
     fun parsesOnePackage() {
         val model = parser.parseString("package firstPackage;")
-        val packageList = model.global.getOwnedElementsOfType<KerMLPackage>()
-            .filterNot { it.isStandard }
-        assertEquals("firstPackage", packageList[0].name)
+        val pkt = model.global.resolve<Package>("firstPackage")
+        assertEquals("firstPackage", pkt!!.name)
     }
 
     @Test
     fun parsesTwoPackages() {
         val model = parser.parseString("package firstPackage;\npackage secondPackage;")
-        val packageList = model.global.getOwnedElementsOfType<KerMLPackage>()
-            .filterNot { it.isStandard }
-        assertEquals("firstPackage", packageList[0].name)
-        assertEquals("secondPackage", packageList[1].name)
+        assertEquals("firstPackage", model.global.resolve<Package>("firstPackage")!!.name)
+        assertEquals("secondPackage", model.global.resolve<Package>("secondPackage")!!.name)
     }
 
     @Test
     fun doesNotParseNestedPackages() {
         val model = parser.parseString("package firstPackage { package subPackage; }")
-        val packageList = model.global.getOwnedElementsOfType<KerMLPackage>()
-            .filterNot { it.isStandard }
-        assertEquals(1, packageList.size)
-        assertEquals("firstPackage", packageList[0].name)
+        val packageList = model.global.resolve<Package>("firstPackage")!!
+        assertEquals("firstPackage", packageList.name)
     }
 
 
@@ -230,7 +218,7 @@ class HoodSysmlParserTest {
                         }
                      }
                 }
-                """
+            """
         )
 
         val owningPackage = parser.getTopLevelPackage(model, "testPackage")
@@ -262,7 +250,7 @@ class HoodSysmlParserTest {
                         }
                      }
                 }
-                """
+            """
         )
 
         val owningPackage = parser.getTopLevelPackage(model, "testPackage")
@@ -274,7 +262,7 @@ class HoodSysmlParserTest {
         assertEquals("state1", transition.source.ref!!.name)
         assertEquals("state2", transition.target.ref!!.name)
         // There are now infrastructures for multi-inheritance.
-        // In-line with standard:
+        // In-line with the standard:
         assertEquals("TurnOn", transition.triggerPayloadParameterType?.name)
     }
 
@@ -292,9 +280,9 @@ class HoodSysmlParserTest {
                         }
                      }
                 }
-                """
+            """
         )
-
+        assertTrue(model.status.exceptions.isEmpty(), model.status.exceptions.toString())
         val owningPackage = parser.getTopLevelPackage(model, "testPackage")
         val parts = owningPackage!!.getOwnedElementsOfType<PartUsage>()
         val part1 = parts[0]
@@ -308,5 +296,42 @@ class HoodSysmlParserTest {
         val transition2 = transitions[1]
         assertEquals("state2", transition2.source.ref!!.name)
         assertEquals("state1", transition2.target.ref!!.name)
+    }
+
+    @Test
+    fun parsesOneTransitionFromStateToState_withGuardCondition() {
+        val model = parser.parseString(
+            """
+                package testPackage{
+                	attribute def TurnOn;
+                
+                    part part1{
+                        state status{
+                            state state1;
+                            state state2;
+                            entry action initial;
+                            transition 
+                              first state1 
+                              accept TurnOn
+                              if 2 < 5 then state2;
+                        }
+                     }
+                }
+                """
+        )
+
+        val owningPackage = parser.getTopLevelPackage(model, "testPackage")
+        val parts = owningPackage!!.getOwnedElementsOfType<PartUsage>()
+        val part1 = parts[0]
+        val status = part1.getOwnedElementsOfType<StateUsage>()[0]
+        val transition = status.getOwnedElementsOfType<TransitionUsage>()[0]
+
+        assertEquals("state1", transition.source.ref!!.name)
+        assertEquals("state2", transition.target.ref!!.name)
+        // There are now infrastructures for multi-inheritance.
+        // In-line with the standard:
+        assertEquals("TurnOn", transition.triggerPayloadParameterType?.name)
+
+        assertEquals("2 < 5", transition.guardCondition?.ref?.expression)
     }
 }

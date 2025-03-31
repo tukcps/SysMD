@@ -1,11 +1,11 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
 
-import com.github.tukcps.aadd.AADD
-import com.github.tukcps.aadd.DD
-import com.github.tukcps.aadd.IDD
-import com.github.tukcps.sysmd.model.expression.AstNode
+import io.github.tukcps.aadd.AADD
+import io.github.tukcps.aadd.DD
+import io.github.tukcps.aadd.IDD
 import com.github.tukcps.sysmd.exceptions.SemanticError
+import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.quantities.VectorDimensionError
 import com.github.tukcps.sysmd.quantities.VectorQuantity
@@ -16,7 +16,7 @@ import com.github.tukcps.sysmd.services.session.Session
  */
 internal class AstPower(model: Session, args: ArrayList<AstNode>) : AstFunction("power", model, 2, args) {
 
-    private val exponent: DD
+    private val exponent: DD<*>
         get() = getParam(1).dd
 
     init {
@@ -46,7 +46,7 @@ internal class AstPower(model: Session, args: ArrayList<AstNode>) : AstFunction(
 
     override fun evalDown() { //TODO Many special cases for negative numbers are missing
         getParam(0).downQuantity = when (exponent) {
-            is AADD -> downQuantity.pow(model.builder.scalar(1.0).div(exponent.asAadd()))
+            is AADD -> downQuantity.pow(model.builder.real(1.0).div(exponent.asAadd()))
             is IDD -> {
                 val resultingValues = mutableListOf<IDD>()
                 downQuantity.values.forEach { resultingValues.add((it as IDD).root(exponent as IDD)) }

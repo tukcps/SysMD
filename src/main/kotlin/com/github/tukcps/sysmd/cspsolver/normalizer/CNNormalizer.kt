@@ -1,7 +1,7 @@
 package com.github.tukcps.sysmd.cspsolver.normalizer
 
-import com.github.tukcps.aadd.BDD
-import com.github.tukcps.aadd.values.XBool
+import io.github.tukcps.aadd.BDD
+import io.github.tukcps.aadd.values.XBool
 import com.github.tukcps.sysmd.model.expression.AstLeaf
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.model.expression.functions.AstNot
@@ -62,7 +62,7 @@ class CNNormalizer {
         // add the properties that need no normalization
         var simpleProp : SimpleProperty<XBool>
         for(prop in originalProperties) {
-             simpleProp = SimpleProperty(name = prop.feature.qualifiedName, expression = prop.dependency, dd = prop.bdd(), simpleAst = prop.ast?.let {
+             simpleProp = SimpleProperty(name = prop.feature.qualifiedName?:prop.feature.path(), expression = prop.dependency, dd = prop.bdd(), simpleAst = prop.ast?.let {
                  SimpleAstRoot(it.dependency)
              }, valueSpecs = mutableListOf(prop.valueSpecs[0]))
             normalizedProperties.add(simpleProp)

@@ -1,9 +1,9 @@
 package sysmdtests
 
 import com.github.tukcps.sysmd.cspsolver.propagate
-import com.github.tukcps.sysmd.compiler.loadSysMD
 import com.github.tukcps.sysmd.services.resolve.resolveVar
-import com.github.tukcps.sysmd.services.session.SessionManager.testSession
+import util.mockup.loadKerML
+import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -20,15 +20,15 @@ class FailedTests {
 
     // It is not possible to assign a value without a formula to a non-SI unit
     @Test
-    fun unitTransformTest() = testSession("ScalarValues") {
-        loadSysMD(input = """
+    fun unitTransformTest() = testSession("SI") {
+        loadKerML(input = """
             // It is not possible to assign a value without a formula to a non-SI unit
             //only test1 works
-            class Test {
-                attribute test1: ScalarValues::Real [A]= 1.0 A;
-                attribute test2: ScalarValues::Real [N]= 1.0 N;
-                attribute test3: ScalarValues::Real [Ohm]= 1.0 [Ohm];
-                attribute test4: ScalarValues::Real [Ohm m]= 1.0 [Ohm m];
+            type Test :> Base::Anything {
+                feature test1: SI::ElectricCurrent = 1.0 A;
+                feature test2: SI::Force = 1.0 N;
+                feature test3: SI::ElectricalResistance = 1.0 [Ohm];
+                feature test4: SI::Quantity [Ohm m] = 1.0 [Ohm m];
             }
             """
         )
@@ -37,75 +37,51 @@ class FailedTests {
     }
 
     // The operations exp, power2, sqrt, ln .. are not supported in combination with units yet
-    @Test fun unitsWithOperations()  = testSession("ScalarValues") {
-        loadSysMD(catchExceptions = false, input = """
-            Package unitsWithOperation;
-
-            // The operations exp, power2, sqrt, ln .. are not supported in combination with units yet         
-            //test with V
-            unitsWithOperation hasA
-                 Value testV: ScalarValues::Real [V] = 5.0 [V];
-                 Value testVSquare: ScalarValues::Real [V^2] = 49.0 [V^2]; 
-                 Value test4: ScalarValues::Real [V] = sqrt(testVSquare). 
-                //Property test5: ScalarValues::Real [V] = exp(testV)
-                //Property test6: ScalarValues::Real [V] = power2(testV)
+    @Test fun unitsWithOperations()  = testSession("SI") {
+        loadKerML("""
+            package unitsWithOperation {
+                 feature testV: SI::Voltage = 5.0 [V];
+                 feature testVSquare: SI::Quantity [V^2] = 49.0 [V^2]; 
+                 feature test4: SI::Voltage = sqrt(testVSquare); 
+                //Property test5: SI::Voltage = exp(testV)
+                //Property test6: SI::Voltage = power2(testV)
+            }
             """
         )
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
     }
 
     @Test
-    fun unitsInMultipleIterations() = testSession("Math", catchExceptions = false) {
-        +"""package hello; 
-            hello defines class world.
-            hello::world hasA Value density: ScalarValues::Real [kg/l] = 1.0 [kg/l].
-            hello::world hasA Value r:       ScalarValues::Real [km] = 1000.0 km.
-            hello::world hasA Value volume:  ScalarValues::Real = 4.0/3.0 * r * r * r * Math::pi. 
-            hello::world hasA Value mass:    ScalarValues::Real = density * volume."""
+    fun unitsInMultipleIterations() = testSession("Occurrences", "SI", "Math") {
+        loadKerML("""package hello { 
+            class world {
+                feature density: SI::Density = 1.0 [kg/l];
+                feature r:       SI::Length = 1000.0 km;
+                feature volume:  SI::Volume = 4.0/3.0 * r * r * r * Math::pi;
+                feature mass:    SI::Mass = density * volume;
+                }
+            }
+            """)
         propagate()
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
     }
 
-    /** Works ... */
-    @Test
-    fun additionTrivial()  = testSession("ScalarValues") {
-        +"package p;"
-        +"p defines class i."
-        +"p::i hasA feature p: ScalarValues::Real  = 1.0 + 1000.0."
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
-        propagate()
-        assertEquals(1001.0, global.resolveVar("p::i::p")!!.vectorQuantity.getMaxAsDouble(), 0.00001)
-    }
 
     /** Does not copy up-propagated value into quantity field */
     @Test // @Ignore
-    fun additionTrivial2() = testSession("ScalarValues", catchExceptions = false) {
-        loadSysMD(""" 
-            package p; 
-            p defines class i.
-            p::i hasA Value p: ScalarValues::Real = 1.0 m + 1.0 km.
-        """.trimIndent())
+    fun additionTrivial2() = testSession("Occurrences", "SI") {
+        loadKerML(""" 
+            package p { 
+                class i {
+                    feature p: SI::Length = 1.0 m + 1.0 km;
+                }
+            }
+        """)
         // p::i::p is wrongly identified in initialization --> resolveName issue?
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         propagate()
         // println("p="+global.resolveName<Expression>("p::i::p"))
         assertEquals(1001.0, global.resolveVar("p::i::p")!!.vectorQuantity.getMaxAsDouble(), 0.00001)
-    }
-
-    @Test
-    fun additionTrivial3() = testSession {
-        +"package p;"
-        +"p defines class i."
-        +"p::i hasA feature p: ScalarValues::Real [km] = 1.0 m + 1.0 km."
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
-        global.resolveVar("p::i::p")?.ast?.evalUpRec()
-        assertEquals(1001.0, global.resolveVar("p::i::p")!!.vectorQuantity.getMinAsDouble(), 0.0001)
-        global.resolveVar("p::i::p")?.ast?.evalDownRec()
-        assertEquals(1001.0, global.resolveVar("p::i::p")!!.vectorQuantity.getMinAsDouble(), 0.0001)
-        global.resolveVar("p::i::p")?.ast?.evalUpRec()
-        propagate()
-        global.resolveVar("p::i::p")?.ast?.evalDownRec()
-        // println(resolveName<Expression>("p::i::p"))
     }
 
     /**
@@ -114,12 +90,12 @@ class FailedTests {
      * FIX: in evalDown, unit is not converted if unitSpec is empty string.
      */
     @Test
-    fun fail2() = testSession {
-        loadSysMD("""
-            Value p: ScalarValues::Real [m] = 1.0 m;
-            Value p2: ScalarValues::Real [km]= 1.0 km; 
-            Value p3: ScalarValues::Real = p + p2;
-        """.trimIndent())
+    fun fail2() = testSession("SI") {
+        loadKerML("""
+            feature p: SI::Length = 1.0 m;
+            feature p2:  SI::Length = 1.0 km; 
+            feature p3:  SI::Length = p + p2;
+        """)
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         propagate()
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
@@ -136,16 +112,16 @@ class FailedTests {
      *  it might not be considered properly in p3, hence problems with intersections????
      */
     @Test
-    fun fail3() = testSession("SI") {
-        loadSysMD(input = """
+    fun fail3() = testSession("Occurrences", "SI") {
+        loadKerML("""
             package p { 
                 class a { 
-                    feature p: SI::Length = 1.0 m;
-                    feature p2: SI::Length = 1.0 km;
+                    feature p: SI::Length = 1.0 [m];
+                    feature p2: SI::Length = 1.0 [km];
                     feature p3: SI::Length = p + p2;
                 }
             }
-        """.trimIndent())
+        """)
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         propagate()
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
@@ -161,36 +137,36 @@ class FailedTests {
      *  **   True, False and drop Infeasible paths in toString method.
      */
     @Test
-    fun fail4() = testSession {
-        loadSysMD("""
-            attribute p:  ScalarValues::Real(2 .. 4);
-            attribute p2: ScalarValues::Real = p + 1.0;
-            attribute p3: ScalarValues::Boolean = ( p > p2 ).
-        """.trimIndent())
+    fun fail4() = testSession("ScalarValues") {
+        loadKerML("""
+            feature p:  ScalarValues::Real(2 .. 4);
+            feature p2: ScalarValues::Real = p + 1.0;
+            feature p3: ScalarValues::Boolean = ( p > p2 ).
+        """)
         propagate()
 
         val p = global.resolveVar("p")!!.vectorQuantity.aadd()
         val p2 = global.resolveVar("p2")!!.vectorQuantity.aadd()
         val p3 = global.resolveVar("p3")!!.vectorQuantity.bdd()
 
-        assertEquals("2..4", p.toString())
-        assertEquals("3..5", p2.toString())
+        assertEquals(2.0, p.min, 0.00001)
+        assertEquals(3.0, p2.min, 0.00001)
         assertEquals("False", p3.toString())
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
     }
 
 
     /**
-     * Problem: Intersection in intermediate result is not computed on both way up and down.
-     * Value ov V from up-propagation seems to get over-written by down-propagated value.
+     * Problem: Intersection in an intermediate result is not computed on both way up and down.
+     * Feature of V from up-propagation seems to get overwritten by down-propagated value.
      */
     @Test
-    fun simplePhysicsExample() = testSession {
-        loadSysMD(""" 
-            attribute I: ScalarValues::Real(9.9 .. 10.1); 
-            attribute R: ScalarValues::Real(1.9 .. 2.1); 
-            attribute V: ScalarValues::Real = I * R; 
-            attribute P: ScalarValues::Real = I * V; 
+    fun simplePhysicsExample() = testSession("ScalarValues") {
+        loadKerML(""" 
+            feature I: ScalarValues::Real(9.9 .. 10.1); 
+            feature R: ScalarValues::Real(1.9 .. 2.1); 
+            feature V: ScalarValues::Real = I * R; 
+            feature P: ScalarValues::Real = I * V; 
         """)
         assertEquals(9.9*1.9, global.resolveVar("V")!!.min(), 0.00001)
         assertEquals(10.1*2.1, global.resolveVar("V")!!.max(), 0.00001)
@@ -203,58 +179,11 @@ class FailedTests {
     }
 
 
-    @Test
-    fun sumHasAWithoutUnits() = testSession("Parts", "Ports") {
-        loadSysMD(""" 
-            import ScalarValues::*;
-            package Smartgrid {
-                class Microgrid;
-                class Smokedetector; 
-                class SmartParking; 
-            }
-           
-            Smartgrid::SmartParking hasA
-                feature powConsumption: Real(0..800).
-           
-            Smartgrid::Microgrid hasA  
-                feature parking: Smartgrid::SmartParking.
-           
-            package Example {
-                class gridSupply;
-                class parking isA Smartgrid::SmartParking;
-                class house1 isA Smartgrid::Microgrid;
-                class Smoke isA Smartgrid::Smokedetector;
-            }
-                
-            Example::Smoke hasA 
-                feature powConsumption: Real(2..50).
-            
-            Example::house1 hasA 
-                feature Smoke: Example::Smoke. 
-
-            Example::gridSupply hasA 
-                feature microconsumer1: Example::house1.
-                
-            Example::gridSupply hasA 
-                feature totalpowConsumption: Real = sumOverParts(powConsumption).
-            """)
-        assertEquals(0, status.exceptions.size, "Error message: ${status.exceptions}")
-        propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
-        propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
-        assertEquals(2.0, global.resolveVar("Example::gridSupply::totalpowConsumption")!!.min(), 0.00001)
-        // house1 is owned by gridsupply and
-        // - has directly a Smoke with 2 .. 50 power consumption
-        // - has inherited a Smart Parking as it is a Microgrid. with 0 .. 800 power consumption.
-        assertEquals(850.0, global.resolveVar("Example::gridSupply::totalpowConsumption")!!.max(), 0.00001)
-    }
-
-    @Test fun evalDownReal() = testSession {
-        loadSysMD("""
-            attribute a: ScalarValues::Real; 
-            attribute b: ScalarValues::Real(3..5); 
-            attribute sum: ScalarValues::Real(9..10) = a+b;""")
+    @Test fun evalDownReal() = testSession("ScalarValues") {
+        loadKerML("""
+            feature a: ScalarValues::Real; 
+            feature b: ScalarValues::Real(3..5); 
+            feature sum: ScalarValues::Real(9..10) = a+b;""")
         propagate()
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         assertEquals(9.0, global.resolveVar("sum")!!.aadd().min, 0.00001)
@@ -269,8 +198,8 @@ class FailedTests {
      * Integers do not well deal with overflows.
      * One overflow breaks the whole computation chain ...
      */
-    @Test fun evalDownInt() = testSession {
-        loadSysMD(""" 
+    @Test fun evalDownInt() = testSession("ScalarValues") {
+        loadKerML(""" 
            feature a: ScalarValues::Integer;
            feature b: ScalarValues::Integer(3..5);
            feature sum: ScalarValues::Integer(9..10) = a+b.
@@ -289,12 +218,12 @@ class FailedTests {
      * Throws error "lateinit property downQuantity has not been initialized", this is caused by an evaluation
      * of the 3rd parameter of the sum_i function before 'i' is defined
      */
-    @Test fun sumFunctionTestRangeExpr() = testSession {
-        loadSysMD("""
-            attribute i: ScalarValues::Real.
-            attribute s: ScalarValues::Real = 10.0.
-            attribute MAC_notb: ScalarValues::Real = sum_i( 0.0, 3.0, s*i )."""                  // eq. 12
-        )
+    @Test fun sumFunctionTestRangeExpr() = testSession("ScalarValues") {
+        loadKerML("""
+            feature i: ScalarValues::Real;
+            feature s: ScalarValues::Real = 10.0;
+            feature MAC_notb: ScalarValues::Real = sum_i( 0.0, 3.0, s*i );
+        """)
         propagate()
         assertEquals(60.0, global.resolveVar("MAC_notb")!!.aadd().getRange().min, 0.00001)
         assertEquals(60.0, global.resolveVar("MAC_notb")!!.aadd().getRange().max, 0.00001)

@@ -5,12 +5,10 @@ import com.github.tukcps.sysmd.model.sysml.AllocationDefinition
 import java.util.UUID
 
 open class AllocationDefinitionImplementation(
-    elementId: UUID = UUID.randomUUID(),
     declaredName: String? = null,
     declaredShortName: String? = null,
     elementType: String = "AllocationDefinition"
 ): AllocationDefinition, ConnectionDefinitionImplementation(
-    elementId = elementId,
     declaredName = declaredName,
     declaredShortName = declaredShortName,
     elementType = elementType

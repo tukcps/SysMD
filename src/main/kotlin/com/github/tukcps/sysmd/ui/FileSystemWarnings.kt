@@ -1,3 +1,5 @@
+@file:Suppress("LocalVariableName")
+
 package com.github.tukcps.sysmd.ui
 
 import androidx.compose.foundation.BorderStroke
@@ -44,7 +46,7 @@ fun displayWarningDirectoryAccess(openDialog: MutableState<Boolean>,uri:MutableS
             {
                 Icon(
                     Icons.Default.Warning,
-                    contentDescription = "Warning openening Directroy",
+                    contentDescription = "Warning opening Directory",
                     tint = AppTheme.colors.iconRed,
                     modifier = Modifier.size(60.dp).padding(start = 20.dp)
                 )
@@ -131,7 +133,7 @@ fun displayWarningNoSuchFileOrDirectory(openDialog: MutableState<Boolean>)
 }
 
 @Composable
-fun displayWarningOpenFileWithDefaultSystemProgramm(openDialog: MutableState<Boolean>, uri:MutableState<String>)
+fun displayWarningOpenFileWithDefaultSystemProgram(openDialog: MutableState<Boolean>, uri:MutableState<String>)
 {
     DialogWindow(
         onCloseRequest = {openDialog.value=false },
@@ -159,7 +161,7 @@ fun displayWarningOpenFileWithDefaultSystemProgramm(openDialog: MutableState<Boo
                         modifier = Modifier
                             .padding(start = 20.dp, end = 20.dp),
                         textAlign = TextAlign.Center,
-                        text = "This file is not supported by SysMD. Do you wish to open it with the system Default Programm?"
+                        text = "This file is not supported by SysMD. Do you wish to open it with the system default program?"
                     )
                 }
                 Row(
@@ -214,7 +216,7 @@ fun displayWarningFileDeletion(openDialog: MutableState<Boolean>, deleteFunction
                     Text(
                         modifier = Modifier
                             .padding(start = 20.dp, end = 20.dp),
-                        textAlign = TextAlign.Center, text = "Are you shure, that you want to delete this file?"
+                        textAlign = TextAlign.Center, text = "Are you sure, that you want to delete this file?"
                     )
                 }
                 Row(
@@ -242,7 +244,7 @@ fun displayWarningFileDeletion(openDialog: MutableState<Boolean>, deleteFunction
 }
 
 @Composable
-fun displayConnectionDialog(openDialog: MutableState<Boolean>, ServerAdress: MutableState<String>)
+fun displayConnectionDialog(openDialog: MutableState<Boolean>, ServerAddress: MutableState<String>)
 {
     //                Icon(
 //                    Icons.Default.Warning,
@@ -277,14 +279,14 @@ fun displayConnectionDialog(openDialog: MutableState<Boolean>, ServerAdress: Mut
                     Text(
                         modifier = Modifier
                             .padding(start = 20.dp, end = 20.dp),
-                        textAlign = TextAlign.Center, text = "URL/IP-Adress"
+                        textAlign = TextAlign.Center, text = "URL/IP-Address"
                     )
                     //                var text by remember { mutableStateOf(TextFieldValue("")) }
                     TextField(
-                        value = ServerAdress.value,
+                        value = ServerAddress.value,
                         placeholder = { Text(text = "localhost") },
                         leadingIcon = { Icon(Icons.Default.Create, null) },
-                        onValueChange = { ServerAdress.value = it; },
+                        onValueChange = { ServerAddress.value = it; },
                         singleLine = true,
                         textStyle = TextStyle(lineHeight = 28.sp),
                         modifier = Modifier.fillMaxWidth()
@@ -297,10 +299,10 @@ fun displayConnectionDialog(openDialog: MutableState<Boolean>, ServerAdress: Mut
                     )
                     //                var text by remember { mutableStateOf(TextFieldValue("")) }
                     TextField(
-                        value = ServerAdress.value,
+                        value = ServerAddress.value,
                         placeholder = { Text(text = "8080") },
                         leadingIcon = { Icon(Icons.Default.Create, null) },
-                        onValueChange = { ServerAdress.value = it; },
+                        onValueChange = { ServerAddress.value = it; },
                         singleLine = true,
                         textStyle = TextStyle(lineHeight = 28.sp),
                         modifier = Modifier.fillMaxWidth()

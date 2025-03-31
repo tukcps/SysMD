@@ -1,184 +1,134 @@
 package com.github.tukcps.sysmd.compiler.semantics.kerml
 
-import com.github.tukcps.aadd.values.IntegerRange
-import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.model.kerml.implementation.*
-import com.github.tukcps.sysmd.compiler.parser.QualifiedName
-import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.LIBRARY
-import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.STANDARD
+import com.github.tukcps.sysmd.compiler.semantics.ActionsContext
 import com.github.tukcps.sysmd.compiler.semantics.Identification
-import com.github.tukcps.sysmd.compiler.semantics.SemanticActions
+import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.Function
-
-
-/**
- * Adds a package.
- * If the semantic actions object was build with a generatedElementsAnnotation not null,
- * the created package will be added to it as well.
- */
-class PackageActions(
-    var context: SemanticActions,
-    var isLibrary: Boolean = false,
-    var isStandard: Boolean = false,
-    var owner: QualifiedName = context.ownerName(),
-    var identification: Identification? = null,
-    var created: Package? = null
-) {
-    fun create(): Package {
-        created = PackageImplementation(
-            declaredName = identification?.name,
-            declaredShortName = identification?.shortName,
-            owner = context.owners.peek(),
-            isStandard = isStandard,
-            isLibraryElement = isLibrary)
-        context.model.addUnownedElement(created!!, owner)
-        if (context.generateAnnotations) context.addAnnotation(context.textualRepresentation, created!!)
-        return created!!
-    }
-}
-
+import com.github.tukcps.sysmd.model.util.QualifiedName
+import com.github.tukcps.sysmd.model.util.SimpleName
 
 
 /**
  * Semantic action for the definition of an association type.
- * @param owner The qualified name of the owner of the Classifiable
- * @param identification The name of the Classifiable
- * @param superclass The qualified name of the superclass of the Classifiable
- * @param sourceEnd A type that specifies class of the sources.
- * @param sourceMult multiplicity of sources
- * @param targetEnd A type that specifies class of the targets.
- * @param targetMult ... its multiplicity
+ * @param context Context of semantic analysis
+ * @param creator Lambda that creates an Association
+ * @param specializes The qualified names of general types
  * an Association will be created; otherwise, a Classifier
  */
-class AssociationActions(
-    var context: SemanticActions,
-    var identification: Identification? = null,
-    var superclass: QualifiedName = "Links::BinaryLink",
-    var sourceEnd:  Resolved<Feature>? = null,
-    var sourceMult: IntegerRange? = null,
-    var targetEnd:  Resolved<Feature>? = null,
-    var targetMult: IntegerRange? = null,
-    var owner: Resolved<Element> = Resolved(context.ownerName()),
-    var created: Association? = null
-) {
-    fun create() {
-        // The respective KerML element is either an Association (=typed relationship), or a
-        // Connector (=relationship and feature)
-        created = AssociationImplementation(
-            declaredName = identification?.name,
-            declaredShortName = identification?.shortName,
-            owner = context.owners.peek()
-        )
-        created?.textualRepresentation = mutableListOf(context.textualRepresentation)
-
-        // add the created element to its (unresolved) owner
-        context.model.addUnownedElement(created!!, path = context.ownerName())
-        context.addSpecialization(created!!, superclass)
-        if (context.generateAnnotations) context.addAnnotation(context.textualRepresentation, created!!)
-    }
-}
-
+open class AssociationActions<T: Association>(
+    context: ActionsContext,
+    creator: (SimpleName?, SimpleName?) -> T,
+    specializes: MutableList<QualifiedName> = mutableListOf("Links::BinaryLink"),
+): ClassifierActions<T>(context, creator, specializes), RelationshipActionsAssoc<T>
 
 
 /**
- * Adds a relationship/association types by Link to the KerML instances.
- * @param owner Qualified name of the owner
- * @param identification name, short name
- * @param source list of all sources
- * @param target list of all targets
+ * Additional functions for an association:
+ * - addSource adds references to sources
+ * - addTarget adds references to targets
  */
-class ConnectorActions(
-    var context: SemanticActions,
-    var owner: QualifiedName = context.ownerName(),
-    var identification: Identification? = null,
-    var source: List<QualifiedName> = mutableListOf(),
-    var association: QualifiedName = "Links::Link",
-    var target: List<QualifiedName> = mutableListOf(),
-    var created: Connector? = null
-) {
-    fun create() = with(context){
-        created = ConnectorImplementation(
-            owner = owners.peek(),
-            declaredName = identification?.name,
-            declaredShortName = identification?.shortName,
-            from = source.toIdentityList(),
-            to = target.toIdentityList(),
-        )
-        created?.textualRepresentation = mutableListOf(context.textualRepresentation)
+interface RelationshipActionsAssoc<T: Association>: RelationshipActions<T> {
 
-        val featureTyping = FeatureTypingImplementation(
-            owner = Resolved(str = null, ref = created, id = created!!.elementId),
-            typedFeature = Resolved(ref = created!!),
-            type = Resolved(str = association)
-        )
-        model.addUnownedElement(created!!, owner)
-        model.addUnownedElement(featureTyping, startOfOwnerPath =  created!!)
+    override fun addSource(source: List<QualifiedName>) {
+        super.addSource(source)
         if (source.isNotEmpty()) {
-            addReferenceSubsetting(
+            context.addReferenceSubsetting(
                 owner = created!!,
                 pathFromOwnerToReferencingFeature = "source",
-                referencedFeature = source.first())
+                referencedFeature = source.first()
+            )
         }
+    }
+
+    override fun addTarget(target: List<QualifiedName>) {
+        super.addTarget(target)
         if (target.isNotEmpty()) {
-            addReferenceSubsetting(
+            context.addReferenceSubsetting(
                 owner = created!!,
                 pathFromOwnerToReferencingFeature = "target",
                 referencedFeature = target.first())
         }
-        if (context.generateAnnotations) context.addAnnotation(context.textualRepresentation, created!!)
     }
 }
 
+/**
+ * Additional functions for connectors
+ */
+interface ConnectorRelationshipActions<T: Connector>: RelationshipActions<T> {
+    override var created: T?
+    override val context: ActionsContext
 
+    override fun addSource(source: List<QualifiedName>) {
+        created?.source = source.toIdentityList()
+        if (source.isNotEmpty()) {
+            context.addReferenceSubsetting(
+                owner = created!!,
+                pathFromOwnerToReferencingFeature = "source",
+                referencedFeature = source.first())
+        }
+    }
+
+    override fun addTarget(target: List<QualifiedName>) {
+        created?.target = target.toIdentityList()
+
+        if (target.isNotEmpty()) {
+            context.addReferenceSubsetting(
+                owner = created!!,
+                pathFromOwnerToReferencingFeature = "target",
+                referencedFeature = target.first())
+        }
+    }
+}
+
+/**
+ * Adds a connector to the model.
+ * @param context Semantic context during compilation
+ * @param defaultType Type if no type is given
+ */
+open class ConnectorActions<T: Connector>(
+    context: ActionsContext,
+    creator: (SimpleName?, SimpleName?) -> T,
+    defaultType: MutableList<String> = mutableListOf("Links::Link")
+): FeatureActions<T>(context, creator, defaultType),
+    ConnectorRelationshipActions<T>
 
 
 /**
  * Semantic action for the definition of a Function.
- * @param owner The identification of the Calculation's owner
- * @param identification The name of the Classifiable
- * @param superclass The qualified name of the Calculation's superclass
+ * @param context
+ * @param creator lambda that creates T: Function
+ * @param specializes The qualified name of the Calculation's superclass
  */
-class FunctionActions(
-    var context: SemanticActions,
-    var owner: QualifiedName = context.ownerName(),
-    var identification: Identification = Identification(),
-    var superclass: QualifiedName = "Base::Anything",
-    var created: Function? = null
-) {
-    fun create() {
-        // Call constructor depending on type
-        created = FunctionImplementation(declaredName = identification.name, declaredShortName = identification.shortName, owner = context.owners.peek())
-        created?.textualRepresentation = mutableListOf(context.textualRepresentation)
-        context.model.addUnownedElement(created!!, owner)
-        val specialization = SpecializationImplementation(specific = Resolved(ref = created!!), general = Resolved(superclass))
-        context.model.addUnownedElement(specialization, startOfOwnerPath = created!!)
-        if (context.generateAnnotations) context.addAnnotation(context.textualRepresentation, created!!)
-    }
-}
+open class FunctionActions<T: Function>(
+    context: ActionsContext,
+    creator: (SimpleName?, SimpleName?) -> T,
+    specializes: MutableList<QualifiedName> = mutableListOf("Base::Anything")
+): ClassifierActions<T>(context, creator, specializes)
 
 
-
+class MetaclassActions<T: Metaclass> (
+    context: ActionsContext,
+    creator: (SimpleName?, SimpleName?) -> T,
+    defaultType: MutableList<String> = mutableListOf("Base::Anything")
+): ClassActions<T>(context, creator, defaultType)
 
 /**
- * Semantic action for the definition of a Calculation.
- * @param owner The identification of the Calculation's owner
- * @param identification The name of the Classifiable
- * @param superclass The qualified name of the Calculation's superclass
+ * Semantic actions for the definition of a Metadata feature.
  */
-class CalculationActions(
-    var context: SemanticActions,
-    var owner: QualifiedName = context.ownerName(),
-    var identification: Identification = Identification(),
-    var superclass: QualifiedName = "Base::Anything",
-    var created: Calculation? = null
-) {
+class MetadataFeatureActions<T: Feature>(
+    context: ActionsContext,
+    creator: (SimpleName?, SimpleName?) -> T,
+    defaultType: MutableList<QualifiedName> = mutableListOf("Base::Anything")
+): FeatureActions<T>(context, creator, defaultType) {
+    var identificationOrType: Identification? = null
+    var typeIfPresent: QualifiedName? = null
     fun create() {
-        // Call constructor depending on type
-        created = CalculationDefinitionImplementation(declaredName = identification.name, declaredShortName = identification.shortName, owner = context.owners.peek())
-        created?.textualRepresentation = mutableListOf(context.textualRepresentation)
-        context.model.addUnownedElement(created!!, owner)
-        val specialization = SpecializationImplementation(specific = Resolved(ref = created!!), general = Resolved(superclass))
-        context.model.addUnownedElement(specialization, startOfOwnerPath = created!!)
-        if (context.generateAnnotations) context.addAnnotation(context.textualRepresentation, created!!)
+        if (typeIfPresent == null) {
+            super.create(identification = Identification())
+            addTyping(type = mutableListOf(identificationOrType!!.name!!))
+        } else {
+            super.create(identification = identificationOrType!!)
+            addTyping(type = mutableListOf(typeIfPresent!!))
+        }
     }
 }

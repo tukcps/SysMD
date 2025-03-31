@@ -4,9 +4,6 @@ class SessionSettings {
     // If true, the parser will not catch exceptions. For debugging.
     var catchExceptions: Boolean = true
 
-    // if true, the parser writes scanned text to stdio. For debugging.
-    var log: Boolean = false
-
     var initialize = true
 
     /**

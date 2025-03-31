@@ -1,7 +1,7 @@
 package com.github.tukcps.sysmd.cspsolver.normalizer
 
-import com.github.tukcps.aadd.BDD
-import com.github.tukcps.aadd.values.XBool
+import io.github.tukcps.aadd.BDD
+import io.github.tukcps.aadd.values.XBool
 
 /**
  * Class to solve the normalized properties [NormalizedProperties] produced by the [CNNormalizer]
@@ -44,7 +44,7 @@ class NormalizedPropertiesSolver {
 
         // extract the relevant properties (remove variable declarations and store them in map variables)
         val variables = HashMap<Int, String>()
-        //val variables2 = HashMap<String, DD>()
+        //val variables2 = HashMap<String, DD<*>>()
         for(prop in props.reversed()) {
             if(debugMode) {
                 debugPrint(prop.toString())
@@ -185,12 +185,7 @@ class NormalizedPropertiesSolver {
                     }
                 }
             }
-
-            else -> {
-                throw RuntimeException("BDD of unexpected type.")
-            }
         }
-
     }
 
     /**
@@ -237,12 +232,7 @@ class NormalizedPropertiesSolver {
                     }
                 }
             }
-
-            else -> {
-                throw RuntimeException("BDD of unexpected type.")
-            }
         }
-
     }
 
     /**

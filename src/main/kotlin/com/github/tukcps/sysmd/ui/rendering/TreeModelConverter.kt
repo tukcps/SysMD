@@ -1,9 +1,9 @@
 package com.github.tukcps.sysmd.ui.rendering
 
-import com.github.tukcps.sysmd.ui.viewmodel.AgilaInheritanceTree
+import com.github.tukcps.sysmd.ui.viewmodel.IsATree
 import com.github.tukcps.sysmd.ui.composables.TreeViewModel
 import com.github.tukcps.sysmd.ui.composables.TreeViewNodeModel
-import com.github.tukcps.sysmd.ui.viewmodel.AgilaCompositionTree
+import com.github.tukcps.sysmd.ui.viewmodel.HasATree
 import java.util.*
 
 var id:Int = 0
@@ -16,7 +16,7 @@ fun convertSelectedToTreeNodeModel(treeViewModel : TreeViewModel) :Pair<TreeNode
     val children: List<TreeNodeViewModel> = convertToTreeNodeModels(selected.item.node.children())
     val elemId = treeViewModel.root.getId()
     val attributes = if(elemId!=null){ getAttributes(treeViewModel.root.search(elemId))} else { listOf()}
-    return TreeNodeViewModel(id, name, attributes, children) to (treeViewModel.root !is AgilaCompositionTree)
+    return TreeNodeViewModel(id, name, attributes, children) to (treeViewModel.root !is HasATree)
 }
 
 
@@ -47,8 +47,8 @@ fun convertToTreeNodeModel(treeViewNodeModel: TreeViewNodeModel) : TreeNodeViewM
  */
 fun TreeViewNodeModel.search(query: UUID):TreeViewNodeModel?{
     when (this) {
-        is AgilaCompositionTree -> {
-            if (this.elem.elementId == query) {
+        is HasATree -> {
+            if (this.element.elementId == query) {
                 return this
             } else {
                 for (child: TreeViewNodeModel in this.children()) {
@@ -61,8 +61,8 @@ fun TreeViewNodeModel.search(query: UUID):TreeViewNodeModel?{
                 return null
             }
         }
-        is AgilaInheritanceTree -> {
-            if (this.elem.elementId == query) {
+        is IsATree -> {
+            if (this.element.elementId == query) {
                 return this
             } else {
                 for (child: TreeViewNodeModel in this.children()) {
@@ -82,8 +82,8 @@ fun TreeViewNodeModel.search(query: UUID):TreeViewNodeModel?{
 
 fun TreeViewNodeModel.getId(): UUID? =
     when(this) {
-        is AgilaCompositionTree -> this.elem.elementId
-        is AgilaInheritanceTree -> this.getElem().elementId
+        is HasATree -> this.element.elementId
+        is IsATree -> this.getElem().elementId
         else -> null
     }
 

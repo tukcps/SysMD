@@ -8,6 +8,7 @@ import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Multiplicity
 import com.github.tukcps.sysmd.model.kerml.Resolved
+import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.kerml.implementation.ClassImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.ConnectorImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
@@ -310,10 +311,10 @@ class Exporter {
     private fun setUpRequirements(element: Element){
         when (element){
             is RequirementUsageImplementation -> {
-                allRequirements[element.qualifiedName] =
+                allRequirements[element.path()] =
                     Requirement(element.declaredName!!.substringAfterLast("::"),
                         findDutName(element),
-                        (getElementOfType(element, "FeatureImplementation") as FeatureImplementation).referencedFeature!!.ref!!.qualifiedName
+                        (getElementOfType(element, "FeatureImplementation") as FeatureImplementation).referencedFeature!!.ref!!.path()
                     )
             }
         }
@@ -351,7 +352,7 @@ class Exporter {
             is ClassImplementation -> {
                 module = Module(
                     moduleName = element.declaredName.toString(),
-                    fullQualifiedName = element.qualifiedName,
+                    fullQualifiedName = element.path(),
                     superClassFullQualifiedName = when (element.generalization.firstOrNull()!!.ref!!.declaredName){
                         "Part" -> null
                         "Anything" -> null
@@ -444,8 +445,8 @@ class Exporter {
                     PortType.TARGET-> inputPorts.add(it.apply {  it.createdFromExpression = true})
                     PortType.BIDIRECTIONAL -> bidirectionalPorts.add(it.apply {  it.createdFromExpression = true})
                 }
-            } ?: when(expression.type.first().str){
-                "Real" -> {
+            } ?: when {
+                expression.model!!.repo.realType in (expression as Type).allSupertypes(true) -> {
                     if(isVariableWithoutValues(expression)){
                         variablesNoValues.add(VariableNoValues(expression, DataType.REAL))
                     }else if(isVariable(expression)){
@@ -454,7 +455,7 @@ class Exporter {
                         constants.add(Constant(expression, DataType.REAL, ::dependencyStringToMinMax))
                     }
                 }
-                "Integer" -> {
+                expression.model!!.repo.integerType in (expression as Type).allSupertypes(true) -> {
                     if(isVariableWithoutValues(expression)){
                         variablesNoValues.add(VariableNoValues(expression, DataType.INT))
                     }else if(isVariable(expression)){
@@ -463,14 +464,14 @@ class Exporter {
                         constants.add(Constant(expression, DataType.INT, ::dependencyStringToMinMax))
                     }
                 }
-                "String" -> {
+                expression.model!!.repo.stringType in (expression as Type).allSupertypes(true) -> {
                     if(isVariableWithoutValues(expression)){
                         variablesNoValues.add(VariableNoValues(expression, DataType.STRING))
                     }else{
                         variables.add(Variable(expression, DataType.STRING, ::dependencyStringToMinMax))
                     }
                 }
-                "Boolean" -> {
+                expression.model!!.repo.booleanType in (expression as Type).allSupertypes(true) -> {
                     if(isVariableWithoutValues(expression)){
                         variablesNoValues.add(VariableNoValues(expression, DataType.BOOLEAN))
                     }else{
@@ -515,20 +516,20 @@ class Exporter {
                     allChannels.add(
                         Channel(
                             channelName = element.declaredName.toString(),
-                            channelType = when (element.type.first().str) {
-                                "Signal" -> ChannelType.PRIMITIVE
-                                "ComplexSignal" -> ChannelType.HIERARCHICAL
-                                "Bus" -> ChannelType.TLM
-                                else -> throw SysMDInternalError("No matching Channel Type found for: ${element.declaredName}")
+                            channelType = when  {
+                                "Signal" in element.type.map { it.str }       -> ChannelType.PRIMITIVE
+                                "ComplexSignal" in element.type.map { it.str } -> ChannelType.HIERARCHICAL
+                                "Bus" in element.type.map { it.str }-> ChannelType.TLM
+                                else -> throw SysMDInternalError("No matching channel type found for: ${element.declaredName}")
                             }
                         ).apply {
                             //Add the Ports to the Channel
                             element.from.forEach { outputPort ->
-                                if(allModules.contains(outputPort.ref!!.qualifiedName.substringBeforeLast("::"))) return@run
+                                if(allModules.contains(outputPort.ref!!.path().substringBeforeLast("::"))) return@run
                                 addPortToChannel(outputPort, this.outputPorts, this, PortType.SOURCE)
                             }
                             element.to.forEach { inputPort ->
-                                if(allModules.contains(inputPort.ref!!.qualifiedName.substringBeforeLast("::"))) return@run
+                                if(allModules.contains(inputPort.ref!!.path().substringBeforeLast("::"))) return@run
                                 addPortToChannel(inputPort, this.inputPorts, this, PortType.TARGET)
                             }
 
@@ -581,10 +582,10 @@ class Exporter {
 
             assert(element.variable != null)
 
-            allModules[element.qualifiedName.substringBeforeLast("::")].let { mod1 ->
+            allModules[element.path().substringBeforeLast("::")].let { mod1 ->
                 mod1?.expressions?.add(element)
-                    ?: allModules[element.qualifiedName.substringBeforeLast("::") + "_CLASS"].let { mod2 ->
-                        mod2?.expressions?.add(element) ?: allRequirements[element.qualifiedName.substringBeforeLast("::")].let { requirement ->
+                    ?: allModules[element.path().substringBeforeLast("::") + "_CLASS"].let { mod2 ->
+                        mod2?.expressions?.add(element) ?: allRequirements[element.path().substringBeforeLast("::")].let { requirement ->
                             requirement?.constraints?.add(
                                     Constraint(
                                         constraintName = element.declaredName.toString(),
@@ -611,7 +612,7 @@ class Exporter {
 
             element as InvariantImplementation
 
-            allRequirements[element.qualifiedName.substringBeforeLast("::")].let { requirement ->
+            allRequirements[element.path().substringBeforeLast("::")].let { requirement ->
                 requirement?.invariants?.add(
                     Invariant(
                         invariantName = element.declaredName.toString(),
@@ -637,12 +638,12 @@ class Exporter {
             //Create Port Object
            Port(
                 portName = element.declaredName.toString(),
-                fullQualifiedName = element.qualifiedName,
+                fullQualifiedName = element.path(),
                 portType = translateToPortType(element.direction),
                dataType = DataType.REAL,
                isInherited = element.isTransient,
-               module = allModules[element.qualifiedName.substringBeforeLast("::")].let { it1 ->
-                   it1 ?: allModules[element.qualifiedName.substringBeforeLast("::") + "_CLASS"].let { it2 ->
+               module = allModules[element.path().substringBeforeLast("::")].let { it1 ->
+                   it1 ?: allModules[element.path().substringBeforeLast("::") + "_CLASS"].let { it2 ->
                        it2 ?: throw SysMDInternalError("No Module found for Port: ${element.declaredName}")
                    }
                }
@@ -679,7 +680,7 @@ class Exporter {
                 usage = Usage(
                     instanceName = element.declaredName.toString(),
                     className = "", //The class name is set down in the apply{} scope
-                    amount = (getMultiplicity(element).variable!!.intSpecs[0].max.toInt()),
+                    amount = (element.multiplicityProperty?.variable?.intSpecs?.firstOrNull()?.max?.toInt())?:1,
                     module = allModules[element.qualifiedName + "_CLASS"].let { mod1 ->
                         (if(mod1?.useSuperClass == true) mod1.superClassModule else mod1) ?:allModules[element.type.first().ref!!.qualifiedName].let { mod2 ->
                             mod2 ?: allModules[element.type.first().ref!!.qualifiedName + "_CLASS"].let { mod3 ->
@@ -706,9 +707,9 @@ class Exporter {
             if( element.owner.ref is PackageImplementation ){
                 mainUsages.add(usage.apply { instanceLocation = "MAIN" })
             }else{
-                allModules[element.qualifiedName.substringBeforeLast("::")].let { mod1 ->
+                allModules[element.path().substringBeforeLast("::")].let { mod1 ->
                     mod1?.subModules?.add(usage.apply { instanceLocation = mod1.fullQualifiedName })
-                        ?: allModules[element.qualifiedName.substringBeforeLast("::") + "_CLASS"].let { mod2 ->
+                        ?: allModules[element.path().substringBeforeLast("::") + "_CLASS"].let { mod2 ->
                             mod2?.subModules?.add(usage.apply { instanceLocation = mod2.fullQualifiedName })
                                 ?: throw SysMDInternalError("No Module found to add this Usage to: ${element.declaredName}")
                         }
@@ -763,12 +764,12 @@ class Exporter {
             portList.add(
                 Port(
                     portName = port.ref!!.declaredName.toString(),
-                    fullQualifiedName = port.ref!!.qualifiedName,
+                    fullQualifiedName = port.ref!!.path(),
                     portType = portType,
                     dataType = getFeatureTyping(port.ref!!).toDataType(),
                     isInherited = port.ref!!.isTransient,
-                    module = allModules[port.ref!!.qualifiedName.substringBeforeLast("::")].let { module1 ->
-                        module1 ?: allModules[port.ref!!.qualifiedName.substringBeforeLast("::") + "_CLASS"].let { module2 ->
+                    module = allModules[port.ref!!.path().substringBeforeLast("::")].let { module1 ->
+                        module1 ?: allModules[port.ref!!.path().substringBeforeLast("::") + "_CLASS"].let { module2 ->
                             module2 ?: throw SysMDInternalError("No Module found with Full Qualified Name \"${port.ref!!.qualifiedName}\" " +
                                     "was found for Port \"${port.ref!!.declaredName.toString()}\"")
                         }
@@ -826,7 +827,7 @@ class Exporter {
             }
 
             //##### PRINT ALL CHANNELS #############################################################
-            if(mainChannels.size > 0) out.println("\n\n\t//\t### Channels ###")
+            if(mainChannels.isNotEmpty()) out.println("\n\n\t//\t### Channels ###")
             mainChannels.forEach { ch ->
                 when (ch.channelType) {
                     ChannelType.PRIMITIVE -> {
@@ -849,7 +850,7 @@ class Exporter {
 
 
             //##### INSTANTIATION OF MODULES ########################################################
-            if(mainUsages.size > 0) out.println("\n\n\t//\t### Modules ###")
+            if(mainUsages.isNotEmpty()) out.println("\n\n\t//\t### Modules ###")
             mainUsages.forEach { usage ->
 
                 //If the module has usages, instantiate it accordingly to them
@@ -870,7 +871,7 @@ class Exporter {
 
 
             //##### PORT BINDING #################################################################
-            if(mainChannels.size > 0) out.println("\n\n\t//\t### Port binding ###")
+            if(mainChannels.isNotEmpty()) out.println("\n\n\t//\t### Port binding ###")
             mainChannels.forEach { channel ->
                 channel.printPortBinding("MAIN", out)
             }
@@ -901,8 +902,8 @@ class Exporter {
     }
 
 
-    
-    
+
+
     /**
      * Function to create the makefile with clean function
      */

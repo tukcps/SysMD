@@ -8,7 +8,7 @@ import com.github.tukcps.sysmd.quantities.baseUnits.Length
 private var siUnitSet = setOf(Length.Meter.copy(2))
 
 open class Area(name: String, symbol: String, prefix: Prefix, convFac: Double, exponent: Int = 1, isLogarithmic: Boolean = false) :
-    DerivedUnit(name, symbol, prefix, "area", siUnitSet, convFac, exponent, isLogarithmic) {
+    DerivedUnit(name, symbol, prefix, "Area", siUnitSet, convFac, exponent, isLogarithmic) {
 
     /**
      * generate UnitObjects and add them to the UnitList

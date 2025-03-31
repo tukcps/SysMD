@@ -5,9 +5,9 @@ import com.github.tukcps.sysmd.model.sysml.PartDefinition
 import com.github.tukcps.sysmd.model.sysml.PartUsage
 import com.github.tukcps.sysmd.model.sysml.PortDefinition
 import com.github.tukcps.sysmd.model.sysml.PortUsage
-import com.github.tukcps.sysmd.compiler.loadSysMD
-import com.github.tukcps.sysmd.services.session.SessionManager.testSession
 import com.github.tukcps.sysmd.services.resolve.resolve
+import util.mockup.loadSysMLv2
+import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -20,7 +20,7 @@ class PartAndPortTests {
      */
     @Test
     fun portTest1() = testSession("Ports") {
-        loadSysMD("""
+        loadSysMLv2("""
             port p; 
         """.trimIndent())
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
@@ -33,7 +33,7 @@ class PartAndPortTests {
      */
     @Test
     fun portTestDirection() = testSession("Ports") {
-        loadSysMD("""
+        loadSysMLv2("""
             out port p; 
         """.trimIndent())
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
@@ -46,7 +46,7 @@ class PartAndPortTests {
      */
     @Test
     fun portDefTest() = testSession("Ports") {
-        loadSysMD("""
+        loadSysMLv2("""
             port def <short> p; 
         """.trimIndent())
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
@@ -57,14 +57,14 @@ class PartAndPortTests {
 
     /**
      * A port usage generates a feature of class "Port".
-     * Here, a port that "features" a Real value and has direction out.
+     * Here, a port that "features" a Real value and has the direction out.
      */
     @Test
     fun portDefTestWithSpecialization() = testSession("Ports") {
-        loadSysMD("""
+        loadSysMLv2("""
             port def p1 {
                 attribute value: ScalarValues::Real; 
-            }; 
+            }
             port def p2 :> p1;
             out port p3 : p2; 
         """.trimIndent())
@@ -81,7 +81,7 @@ class PartAndPortTests {
      */
     @Test
     fun partTest1() = testSession("Parts") {
-        loadSysMD("""
+        loadSysMLv2("""
             part p; 
         """.trimIndent())
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
@@ -95,7 +95,7 @@ class PartAndPortTests {
      */
     @Test
     fun partDefTestWithSpecialization() = testSession("Parts") {
-        loadSysMD("""
+        loadSysMLv2("""
             part def p1; 
             part def p2 :> p1; 
         """.trimIndent())

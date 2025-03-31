@@ -1,6 +1,6 @@
 package com.github.tukcps.sysmd.cspsolver.normalizer
 
-import com.github.tukcps.aadd.values.XBool
+import io.github.tukcps.aadd.values.XBool
 import com.github.tukcps.sysmd.services.session.Session
 
 /**

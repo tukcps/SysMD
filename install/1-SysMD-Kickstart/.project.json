@@ -1,0 +1,11 @@
+{
+  "name" : "SysMD Kickstart",
+  "version" : "4.0",
+  "description" : "A quick guide into the specific use of SysMD notebook",
+  "license" : "Apache 2.0",
+  "maintainer" : ["TU Kaiserslautern, Chair of Cyber-Physical Systems"],
+  "website" : null,
+  "topic" : null,
+  "usage" : [ ],
+  "id" : "8f2532ad-0f7f-4fa0-b888-28c725f35cd1"
+}

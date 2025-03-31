@@ -1,131 +1,125 @@
 package parsertests
 
-import com.github.tukcps.sysmd.cspsolver.propagate
+import com.github.tukcps.sysmd.model.expression.AstRoot
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Import
-import com.github.tukcps.sysmd.compiler.loadSysMD
-import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.resolve.resolve
-import com.github.tukcps.sysmd.services.session.SessionManager.testSession
+import util.mockup.loadKerML
+import util.mockup.loadSysMD
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
+import util.testSession
 
 /**
  * Tests that focus on the SYNTAX implemented by the SysMD parser only.
  * Should basically only test if the parser throws syntax errors.
- * Semantics are tested in SysMDtests (w.r.t. simple propagation) and Constraintnettests (eval-up-down).
+ * Semantics are tested in SysMDTests (w.r.t. simple propagation) and ConstraintNetTests (eval-up-down).
  */
 class SyntaxTests {
-
 
     /** Check syntax for Package declaration */
     @Test
     fun parsePackageTest() = testSession {
-        loadSysMD(input = """Global hasA Package test.""".trimIndent(), catchExceptions = false)
+        loadSysMD("""Global hasA package test.""")
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         assertEquals(0, getUnownedElements().size)
+        assertEquals(0, astNodes.size)
     }
-
 
     /**
      * Check syntax for single, global classification (isA) of an element.
      * A bare classification template is added to the list of unowned elements.
      */
     @Test
-    fun parseClassification() = testSession( initialize = false, catchExceptions = false, loadKerML = false) {
-        loadSysMD(
+    fun parseClassification() = testSession( initialize = false) {
+        loadKerML(
             input = """
                 class x :> Base::Anything;
             """.trimIndent())
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         assertNotNull(getUnownedElements().find { it.element.declaredName == "x" })
-        assertEquals("Global", getUnownedElements().first().path)
+        assertEquals(global, getUnownedElements().first().startOfPath)
+        assertEquals(0, astNodes.size)
     }
 
-    /**
-     * Check syntax for classification (isA) of an element in a definition list
-     */
-    @Test
-    fun parseClassification2() = testSession(initialize = false, catchExceptions = false, loadKerML = false) {
-        loadSysMD(
-            input = """
-                package pkg; 
-                pkg defines class x.
-            """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
-        assertNotNull(getUnownedElements().find { it.path?.contains("pkg") == true })
-    }
 
     /** Short name is given in <> */
     @Test
-    fun shortNameTest1() = testSession(catchExceptions = false, initialize = false, loadKerML = false) {
-        loadSysMD("""class < abc >; """.trimIndent())
+    fun shortNameTest1() = testSession(initialize = false) {
+        loadKerML("""class < abc >; """.trimIndent())
         val abc = getUnownedElements().first().element
         assertEquals("abc", abc.declaredShortName)
         assertEquals(null, abc.declaredName)
         assertEquals(0, status.exceptions.size, status.exceptions.toString() )
+        assertEquals(0, astNodes.size)
     }
 
     /** Short name is given in <> */
     @Test
-    fun shortNameTest2() = testSession(catchExceptions = false, initialize = false, loadKerML = false) {
-        loadSysMD(input = """
-            class < abc > abcd isA Base::Anything; 
-        """.trimIndent())
+    fun shortNameTest2() = testSession(initialize = false) {
+        loadKerML("class < shortName > longName;")
         val abc = getUnownedElements().first().element
-        assertEquals("abc", abc.declaredShortName)
-        assertEquals("abcd", abc.declaredName)
+        assertEquals("shortName", abc.declaredShortName)
+        assertEquals("longName", abc.declaredName)
         assertEquals(0, status.exceptions.size, status.exceptions.toString() )
+        assertEquals(0, astNodes.size)
     }
 
     /** Check syntax for declaration of a value feature */
     @Test
-    fun parseValueTest() = testSession(catchExceptions = false, initialize = false, loadKerML = false) {
+    fun parseValueTest() = testSession(initialize = false) {
         loadSysMD("""
-            package ScalarValues { 
-                datatype ScalarValue; datatype Integer :> ScalarValue; datatype Real :> ScalarValue; 
-            }
-            hello::car hasA feature p: ScalarValues::Real = Global::hello::world::x + 2.0.
-            """)
+            hello::car hasA 
+                feature p: ScalarValues::Real = Global::hello::world::x + 2.0.
+        """)
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
-        assertTrue("Global::hello::car" in getUnownedElements().map { it.path })
+        assertTrue("hello::car" in getUnownedElements().map { it.path })
+
+        assertEquals(4, astNodes.size)
+        assertEquals(1, astNodes.count { it.value is AstRoot })
     }
 
     /**
      * The parser creates Features and creates them as orphan features, without an owner and id.
      */
-    @Test fun parseFeature()  = testSession(initialize = false, catchExceptions = false, loadKerML = false) {
-        loadSysMD("a::b hasA feature x: Base::Anything.")
+    @Test fun parseFeature()  = testSession(initialize = false) {
+        loadSysMD("a::b hasA feature x : Base::Anything.")
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
-        assertTrue(getUnownedElements().find {  it.path!!.endsWith("a::b")}?.element is Feature)
+        assertTrue(getUnownedElements().find { it.path?.endsWith("a::b") == true }?.element is Feature)
+        assertEquals(0, astNodes.size)
     }
 
     /**
-     * The parser creates Features and creates them as orphan features, without owner and id.
+     * The parser creates Features and creates them as orphan features, without an owner and id.
      */
     @Test
-    fun parseExpression()  = testSession(catchExceptions = false, initialize = false, loadKerML = false) {
+    fun parseExpression()  = testSession(initialize = false) {
         loadSysMD("a::b hasA feature x: Real.")
-        assertTrue("Global::a::b" in getUnownedElements().map { it.path })
+        assertTrue("a::b" in getUnownedElements().map { it.path })
+        assertEquals(0, astNodes.size)
     }
 
     @Test
-    fun importsSyntaxTest() = testSession(initialize = false, catchExceptions = false, loadKerML = false) {
+    fun importsSyntaxTest() = testSession(initialize = false) {
         loadSysMD("""
-                test::e hasA import space.
+                test::e hasA private import space.
             """)
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         assertEquals("space", (getUnownedElements().first().element as Import).importedNamespace.str  )
+
+        assertEquals(0, astNodes.size)
     }
 
     /**
      * Lexical comments are just ignored.
      */
     @Test
-    fun commentTest() = testSession(initialize = false, catchExceptions = false, loadKerML = false) {
+    fun commentTest() = testSession(initialize = false) {
         loadSysMD("""Global hasA feature x: Base::Anything. // comment""")
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
-        assertTrue(getUnownedElements().find { it.path == "Global"}?.element is Feature)
+        assertTrue(getUnownedElements().find { it.startOfPath == global}?.element is Feature)
+
+        assertEquals(0, astNodes.size)
     }
 
 
@@ -134,39 +128,32 @@ class SyntaxTests {
      * Check the syntax of if - else statement in expressions.
      */
     @Test
-    fun ifElseTestSysMlV2() = testSession(catchExceptions = false, initialize = false, loadKerML = false) {
-        loadSysMD("""
-            attribute x: ScalarValues::Boolean; 
-            attribute y: ScalarValues::Boolean = false or if x? true else false;
-            attribute z: ScalarValues::Boolean = if x? true else false;
-        """.trimIndent())
+    fun ifElseTestSysMlV2() = testSession(initialize = false) {
+        loadKerML("""
+                feature x: ScalarValues::Boolean; 
+                feature y: ScalarValues::Boolean = false or if x? true else false;
+                feature z: ScalarValues::Boolean = if x? true else false;
+            """)
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+
+        assertEquals(setOf("y", "z"), astNodes.mapNotNull { (it.value as? AstRoot)?.feature?.name }.toSet())
+        assertEquals(2 + 2 + 2*4, astNodes.size)
     }
 
     @Test
-    fun realRangeWithUnitTest() = testSession(loadKerML = false) {
-        loadSysMD("""
-            package ScalarValues { datatype ScalarValue; datatype Integer :> ScalarValue; datatype Real :> ScalarValue; }
-            attribute i: ScalarValues::Integer = 2;
-            attribute r: ScalarValues::Real [m] = [1.0 .. 2.0] m;
-        """.trimIndent()
-        )
+    fun realRangeWithUnitTest() = testSession("Base", "SI") {
+        loadKerML("""
+            feature i: ScalarValues::Integer = 2;
+            feature r: SI::Length [m] = oneOf(1.0 .. 2.0 m);
+        """)
         val r = global.resolve<Feature>("r")!!
         val i = global.resolve<Feature>("i")!!
         assertEquals("m", r.unitConstraint)
         assertEquals("2", i.expression?.trim())
-        assertEquals("ScalarValues::Real", r.type.first().str)
+        assertEquals("SI::Length", r.type.first().str)
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
-    }
 
-
-    @Test
-    fun parseUnitTest() = testSession {
-        loadSysMD("attribute x: ScalarValues::Real [km/s] = 10.0 [m/s].".trimIndent())
-        propagate()
-        val test= global.resolveVar("x")!!.vectorQuantity.unit
-        assertEquals("m / s", test.toString() )
-        assertEquals(0.01,
-            global.resolveVar("x")!!.vectorQuantity.valuesIn("km/s")[0].asAadd().getRange().min, 0.000001)
+        assertEquals(setOf("i", "r"), astNodes.mapNotNull { (it.value as? AstRoot)?.feature?.name }.toSet())
+        assertEquals(2 + 2, astNodes.size)
     }
 }

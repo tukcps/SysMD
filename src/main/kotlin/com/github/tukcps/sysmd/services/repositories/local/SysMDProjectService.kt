@@ -1,73 +1,159 @@
 package com.github.tukcps.sysmd.services.repositories.local
 
-import com.github.tukcps.sysmd.compiler.loadSysMDFromFile
+import com.github.tukcps.sysmd.services.session.report
 import com.github.tukcps.sysmd.services.session.SessionImplementation
-import com.github.tukcps.sysmd.services.report
-import com.github.tukcps.sysmlv2.api.ProjectService
-import com.github.tukcps.sysmlv2.entities.Project
+import com.github.tukcps.sysmd.services.session.loadSysMDFromFile
+import com.github.tukcps.sysmd.settings
+import io.github.tukcps.sysmlv2.api.entities.Branch
+import io.github.tukcps.sysmlv2.api.entities.Project
+import io.github.tukcps.sysmlv2.api.services.ProjectService
+import io.github.tukcps.sysmlv2.interchange.InterchangeProject
+import org.apache.logging.log4j.LogManager
+import org.apache.logging.log4j.Logger
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.*
+import kotlin.collections.emptyList
+import kotlin.io.path.*
 
 
 /**
  * A simple file-based, local repository
  * Other implementation is the Backend via REST.
  */
-object SysMDProjectService: ProjectService {
+open class SysMDProjectService: ProjectService {
 
     /**
      * A List of all projects; locally we do not implement Project Versioning Service.
      * Only a list of Projects (ProjectData).
      */
-    private val projectsData = mutableListOf<ProjectData>()
+    protected val projectDataRepository = mutableListOf<ProjectData>()
 
-    fun reset() = projectsData.clear()
-
-    /**
-     * Creates a new project and returns the created project data
-     * @param project the project to be created
-     */
-    override fun createProject(project: Project): ProjectData {
-        if (project is ProjectData) {
-            projectsData.add(project)
-            return project
-        } else {
-            val added = ProjectData(name = project.name, id = project.id, description = project.description)
-            projectsData.add(added)
-            return added
-        }
+    fun reset() {
+        projectDataRepository.clear()
+        getProjects()
     }
 
-    override fun getProjects(): List<ProjectData> = projectsData
-
-    override fun getProjectById(id: UUID): ProjectData = projectsData.first { it.id == id }
 
     /**
-     * Implementation that searches for a project in
-     * - The local (cache) repository (first); maintains consistent UUID over a session
-     * - The local file system under the SysMD home directory (in a project-named directory)
+     * Creates a new project and initializes data structures for it.
+     * @param name name of the project and also the folder's name of the project to be created.
+     * Creation will fail if the name is null or if a project with the same name already exists.
+     * @param description description, optional
+     * @param defaultBranch (null)
      */
-    override fun getProjectByName(projectName: String): ProjectData {
-        var project = projectsData.firstOrNull { it.name == projectName }
-        if ( project != null ) {
-            return project
-        }
+    override fun createProject(name: String?, description: String?, defaultBranch: Branch?): Project {
+        val project = ProjectData(InterchangeProject(
+            name = name?:"",
+            description = description),
+            directory = Path(settings.dataFolder).resolve(name!!)
+        )
 
-        println("    Project $projectName not in local repository, loading file: $projectName.md")
-        val sandbox = SessionImplementation()
-        try {
-            sandbox.loadSysMDFromFile("$projectName.md", false)
-        } catch (error: Exception) {
-            sandbox.report(error)
-        }
-        if (sandbox.status.exceptions.isNotEmpty())
-            println(sandbox.status.exceptions)
-        project = ProjectData(name = projectName)
-        project.data = sandbox.export().data
-        projectsData.add(project)
+        projectDataRepository.add(project)
+
+        if (project.data.isNotEmpty()) return project
+
+        val projectFolder = Path(settings.dataFolder)
+            .resolve(project.name?:project.id.toString())
+            .createDirectories()
+        val newFile = projectFolder.resolve("${project.name}.md").createFile()
+        newFile.writeText("""
+            ---
+            id: ${project.project.id}
+            title:
+            name: ${project.name}
+            maintainer: 
+            version: 
+            website: 
+            usage: 
+            description: ${project.description}
+            ---
+            [toc]
+            # Cell with documentation
+            Write the documentation in Markdown-Cells.
+            - To add a cell double click on (+) above or below an existing cell
+            - To add a file (edited in a new tab) add its file name in the configuration on top (requires restart)
+            
+            ```SysML
+            // Write the model in the cells of SysMD Notebook
+            package hello {
+                attribute world: ScalarValues::Real = 1.0 + oneOf(2.0 .. 3.0); 
+            }
+            ```
+        """.trimIndent())
+        project.addIndex(newFile.name, newFile.name)
+        project.saveToInterchangeFiles()
         return project
     }
 
-    override fun updateProject(project: Project) = TODO("Not yet implemented")
-    override fun deleteProject(id: UUID): Boolean = projectsData.removeIf { it.id == id }
-}
 
+    /**
+     * Returns a list with all interchange projects
+     */
+    override fun getProjects(): List<ProjectData> {
+        if (!Path(settings.dataFolder).isDirectory()) return emptyList<ProjectData>()
+        val projectDirectories = Path(settings.dataFolder).listDirectoryEntries()
+            .filter { it.isDirectory() }
+            .filter { it.resolve(".project.json").exists() }
+            .filter { !it.name.endsWith(".deleted") }
+
+        projectDirectories.forEach { projectDirectory ->
+            val project = ProjectData.fromInterchangeFiles(projectDirectory)
+            if (project != null) {
+                if (project.id !in projectDataRepository.map { it.id })
+                    projectDataRepository.add(project)
+                else {
+                    projectDataRepository.find { it.id == project.id }.also {
+                        it!!.name = project.name
+                        it.description = project.description
+                    }
+                }
+            }
+        }
+        return projectDataRepository
+    }
+
+
+    /**
+     * Gets a project by its id.
+     * @param projectId the id of the project.
+     * @return the project data record.
+     */
+    override fun getProjectById(projectId: UUID): ProjectData? = projectDataRepository.find { it.id == projectId }
+
+    /**
+     * Updates a project
+     */
+    override fun updateProject(projectId: UUID, name: String?, description: String?, defaultBranch: Branch?): Project {
+        val projectFound = projectDataRepository.firstOrNull { it.id == projectId }
+        if (projectFound != null) {
+            projectFound.name = name?:projectFound.name
+            projectFound.description = description?:projectFound.description
+        }
+        return projectFound?: TODO()
+    }
+
+
+    /**
+     * Deletes a project, both from the files and the project list.
+     * @param projectId the ID of the project
+     */
+    override fun deleteProject(projectId: UUID): ProjectData? {
+        try {
+            val dateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy.HH.mm.ss")).toString()
+            val projectFound = projectDataRepository.firstOrNull { it.id == projectId }
+            projectFound?.let {
+                it.directory?.moveTo(Path("${it.directory!!}.${it.name}.$dateTime.deleted"))
+            }
+            projectDataRepository.remove(projectFound)
+            return projectFound
+        } catch (error: Exception) {
+            logger.error(error.message)
+            return null
+        }
+    }
+
+    companion object {
+        val logger: Logger = LogManager.getLogger(SysMDProjectService::class.java)
+    }
+}

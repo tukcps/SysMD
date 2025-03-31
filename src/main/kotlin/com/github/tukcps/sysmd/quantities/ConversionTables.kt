@@ -52,7 +52,7 @@ object ConversionTables {
         "Bit" to InformationCapacity.Bit,
         "K" to Temperature.Kelvin,
         "?" to EmptyUnit.Empty,
-        "€" to Currency.Euro,
+        "€" to AmountOfMoney.Euro,
 
         // Units in use with SI System
         "l" to Volume.Liter,
@@ -100,7 +100,7 @@ object ConversionTables {
         "C" to ElectricCharge.Coulomb,
         "Ah" to ElectricCharge.AmpereHours,
         "As" to ElectricCharge.AmpereSecond,
-        "V" to ElectricPotential.Volt,
+        "V" to Voltage.Volt,
         "F" to Capacitance.Farad,
         "Ω" to ElectricalResistance.Ohm,
         "Ohm" to ElectricalResistance.Ohm,
@@ -145,17 +145,14 @@ object ConversionTables {
         "Nm" to MomentOfForce.NewtonMeter,
         "Ws" to Energy.WattSecond,
         "Wh" to Energy.WattHour,
+        "bps" to BitRate.BitsPerSecond,
+        "Bps" to BitRate.BytesPerSecond,
         "kg m^2" to MomentOfInertia.KilogramSquareMeter,
         "kg m/s" to Momentum.KilogramMeterPerSecond,
         "F/s" to Permittivity.FaradPerSecond,
-        "W/m^2" to PowerDensity.WattPerSquremeter,
+        "W/m^2" to PowerDensity.WattPerSquareMeter,
         "m/s" to Speed.MeterPerSeconds,
     )
-
-    var dimensions = hashMapOf(
-        "radius" to Length.Meter,
-
-        )
 }
 
 /**

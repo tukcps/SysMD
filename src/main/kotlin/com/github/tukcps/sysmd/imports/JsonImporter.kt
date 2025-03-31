@@ -44,7 +44,7 @@ object JsonImporter {
             }
 
             return importedResults
-        }catch (e : Exception){
+        } catch (e : Exception){
             println(e.message)
         }
 

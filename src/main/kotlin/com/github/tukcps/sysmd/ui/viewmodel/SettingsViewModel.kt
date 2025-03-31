@@ -14,6 +14,7 @@ class SettingsViewModel {
     val useDefault = mutableStateOf(false)
     val agendaExpertMode = mutableStateOf(false)
     val dataFolder = mutableStateOf("")
+    val dataFolderOk = mutableStateOf(true)
     val systemCExportFolder = mutableStateOf("")
     val username = mutableStateOf("")
     val password = mutableStateOf("")
@@ -23,8 +24,10 @@ class SettingsViewModel {
     val initializationNumber = mutableStateOf("")
     val propagationNumber = mutableStateOf("")
     val images = mutableStateOf("")
+    val imagesOk = mutableStateOf(true)
     val heightWhenCollapsed = mutableStateOf("")
     val tabSize = mutableStateOf("")
+    val tabSizeOk = mutableStateOf(true)
     val keyWordColor = mutableStateOf("")
     val defaultColor = mutableStateOf("")
     val fontWeight = mutableStateOf("")
@@ -39,9 +42,27 @@ class SettingsViewModel {
         Color.Cyan to "Cyan",
         Color.Magenta to "Magenta"
     )
-    val fontFamilyMap: HashMap<FontFamily, String> = hashMapOf(
-        FontFamily.Default to "jetbrainsMono",
-    )
+    val fontFamilyMap: HashMap<FontFamily, String> = hashMapOf(FontFamily.Default to "jetbrainsMono")
+
+    fun setTabSize(value: String) {
+        val trimmed = value.trim()
+        tabSizeOk.value = trimmed.all { it in '0'..'9' }
+        tabSize.value = value
+    }
+
+    fun setImages(value: String) {
+        val trimmed = value.trim()
+        imagesOk.value = trimmed.all { it in '0'..'9' }
+        images.value = trimmed
+    }
+
+    fun setDataFolder(value: String) {
+        val trimmed = value.trim()
+        dataFolderOk.value = trimmed.matches(Regex("^[^<>:\"/\\\\|?*]+$")) && trimmed != "." && trimmed != ".."
+        dataFolder.value = trimmed
+    }
+
+    fun allOk(): Boolean = dataFolderOk.value && imagesOk.value && tabSizeOk.value
 }
 
 val settingsViewModel = SettingsViewModel()
@@ -139,7 +160,7 @@ fun resetRendering() {
     loadSettings()
 }
 
-fun resetGeneral() {
+fun resetAll() {
     settings.dataFolder = System.getProperty("user.home") + "/SysMD"
     exportSettings()
     loadSettings()

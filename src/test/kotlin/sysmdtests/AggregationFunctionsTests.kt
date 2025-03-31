@@ -1,13 +1,13 @@
 package sysmdtests
 
 import com.github.tukcps.sysmd.cspsolver.propagate
-import com.github.tukcps.sysmd.compiler.loadSysMD
 import com.github.tukcps.sysmd.services.resolve.resolveVar
-import com.github.tukcps.sysmd.services.session.SessionManager.testSession
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Disabled
-import org.junit.jupiter.api.Test
-
+import util.mockup.loadKerML
+import util.testSession
+import kotlin.test.Ignore
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class AggregationFunctionsTests {
     /**
@@ -15,8 +15,8 @@ class AggregationFunctionsTests {
      * decomposition relation hasElements.
      */
     @Test
-    fun sumAggregationTest1() = testSession {
-        loadSysMD(""" 
+    fun sumAggregationTest1() = testSession("Occurrences") {
+        loadKerML(""" 
             class c1 { feature p: ScalarValues::Real(1..1); }
             class c2 { feature p: ScalarValues::Real(2..2); }
             class c3 {
@@ -35,8 +35,8 @@ class AggregationFunctionsTests {
      * decomposition relation hasElements.
      */
     @Test
-    fun sumAggregationTest2()   = testSession {
-        loadSysMD("""
+    fun sumAggregationTest2()   = testSession("Occurrences") {
+        loadKerML("""
             class c1 { feature p: ScalarValues::Real(1..1); }
             class c2 { feature p: ScalarValues::Real(2..3); }
             class c3 {
@@ -57,18 +57,20 @@ class AggregationFunctionsTests {
      * property is assumed to be 0.
      */
     @Test
-    fun sumAggregationTest3() = testSession("ScalarValues") {
-        loadSysMD(input = """
-            package l.
-            l defines class c1;  class c2; class c3. 
-            l::c1 hasA 
-                feature p: ScalarValues::Real(1..2).
-            l::c3 hasA 
-                feature a: Global::l::c1 [1..2];    // 1..2 * 1..2 
-                feature b: Global::l::c2 [2..3];    // shall be 0 as no property p is not defined.
-                feature p3: ScalarValues::Real = sumOverParts(p). 
-            """)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+    fun sumAggregationTest3() = testSession("Occurrences") {
+        loadKerML(input = """
+            package l { 
+                class c1 {
+                    feature p: ScalarValues::Real(1..2).
+                }  
+                class c2; 
+                class c3 {
+                    feature a: Global::l::c1 [1..2];    // 1..2 * 1..2 
+                    feature b: Global::l::c2 [2..3];    // shall be 0 as no property p is not defined.
+                    feature p3: ScalarValues::Real = sumOverParts(p). 
+                }
+            }""")
+        assertTrue(status.exceptions.isEmpty(), "Error messages: ${status.exceptions}")
         propagate()
         // println(resolveName<Expression>("l::c3::p3"))
         assertEquals(1.0, global.resolveVar("l::c3::p3")!!.vectorQuantity.getMinAsDouble(), 0.0001)
@@ -81,24 +83,24 @@ class AggregationFunctionsTests {
      * property in its parts shall be used.
      */
     @Test
-    fun sumAggregationTest4() = testSession("ScalarValues") {
-        loadSysMD(input = """
+    fun sumAggregationTest4() = testSession("Occurrences") {
+        loadKerML(input = """
             package l {
-                class c1; 
-                class c2; 
-                class c3; 
-            }
-            l::c1 hasA 
-                feature p: ScalarValues::Real(1..2).
-            l::c2 hasA 
-                feature c: c1[5 .. 6] . 
-            l::c3 hasA 
-                feature a:  Global::l::c1[1..2];          // 1..2 +
-                feature b: Global::l::c2[2..3];          // 2..3 * (1..2 * 5..6) 
+                class c1 {
+                    feature p: ScalarValues::Real(1..2); 
+                }
+                class c2 {
+                    feature c: c1[5 .. 6];
+                }
+                class c3 {
+                    feature a:  l::c1[1..2];          // 1..2 +
+                    feature b: l::c2[2..3];          // 2..3 * (1..2 * 5..6) 
                                                             // = 1..2 + 2..3 * (1..2*5..12)
                                                             // = 1..2 + 2..3 * 5..24
                                                             // = 1..2 + 10..
-                feature p3: ScalarValues::Real = sumOverParts(p).
+                    feature p3: ScalarValues::Real = sumOverParts(p); 
+                }
+            }
             """)
         assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
         propagate()
@@ -107,12 +109,10 @@ class AggregationFunctionsTests {
         assertEquals(40.0, global.resolveVar("l::c3::p3")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
     }
 
-
-
     /**
      * The function forAll(BoolExpression): Bool evaluates
      */
-    @Disabled
+    @Ignore
     @Test fun forAllElementsTest() {
     }
 
@@ -120,11 +120,11 @@ class AggregationFunctionsTests {
     /**
      * The function existsProperty(scope: String, name: String),
      */
-    @Disabled
+    @Ignore
     @Test fun existsPropertyTest() {
     }
 
-    @Disabled
+    @Ignore
     @Test fun existsInstanceTest() {
     }
 }

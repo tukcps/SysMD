@@ -4,8 +4,8 @@ import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.exceptions.ElementNotFoundException
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Namespace
-import com.github.tukcps.sysmd.compiler.parser.QualifiedName
-import com.github.tukcps.sysmd.services.report
+import com.github.tukcps.sysmd.model.util.QualifiedName
+import com.github.tukcps.sysmd.services.session.report
 
 
 /**

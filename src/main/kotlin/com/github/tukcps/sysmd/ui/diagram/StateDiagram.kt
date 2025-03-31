@@ -52,7 +52,8 @@ class StateDiagram(statemachine: StateUsage) {
         val toNode = diagramNodeFor(transition.target.ref!!)
 
         val trigger = transition.triggerPayloadParameterType?.name ?: ""
-        val transitionText = trigger
+        val guardCondition = transition.guardCondition?.ref?.expression?.let { "[$it]" } ?: ""
+        val transitionText = trigger + guardCondition
 
         return org.diagramsascode.state.edge.Transition(fromNode, toNode, transitionText)
     }
@@ -66,7 +67,7 @@ class StateDiagram(statemachine: StateUsage) {
     }
 
     private fun idOf(action: ActionUsage): String {
-        return action.qualifiedName.replace("::", "__")
+        return action.path().replace("::", "__")
     }
 
     private fun nameOf(action: ActionUsage): String {

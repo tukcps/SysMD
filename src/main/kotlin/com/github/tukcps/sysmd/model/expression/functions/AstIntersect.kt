@@ -1,11 +1,11 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import com.github.tukcps.aadd.AADD
-import com.github.tukcps.aadd.BDD
-import com.github.tukcps.aadd.DD
-import com.github.tukcps.aadd.IDD
-import com.github.tukcps.sysmd.model.expression.AstNode
+import io.github.tukcps.aadd.AADD
+import io.github.tukcps.aadd.BDD
+import io.github.tukcps.aadd.DD
+import io.github.tukcps.aadd.IDD
 import com.github.tukcps.sysmd.exceptions.SemanticError
+import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
 
@@ -44,7 +44,7 @@ internal class AstIntersect(model: Session, args: ArrayList<AstNode>) :
      */
     override fun evalUp() {
         // compute intersection
-        val results = mutableListOf<DD>()
+        val results = mutableListOf<DD<*>>()
         getParam(0).upQuantity.values.indices.forEach {
             results.add(
                 when (getParam(0).upQuantity.values[0]) {
@@ -70,13 +70,9 @@ internal class AstIntersect(model: Session, args: ArrayList<AstNode>) :
         getParam(1).downQuantity = downQuantity.clone()
     }
 
-    override fun toExpressionString() =
-        "intersect(${getParam(0).toExpressionString()}, ${getParam(1).toExpressionString()})"
-
     override fun clone(): AstIntersect {
         val parClone = ArrayList<AstNode>()
         for (p in parameters) parClone.add(p.clone())
         return AstIntersect(model, parClone)
     }
 }
-

@@ -2,7 +2,7 @@ package com.github.tukcps.sysmd.cspsolver
 
 import com.github.tukcps.sysmd.cspsolver.valuefeatures.RelatedValueFeature
 
-abstract class SolvingStrategy(private val solver: DiscreteSolver) {
+abstract class SolvingStrategy(private val solver: DDBasedDiscreteSolver) {
 
     abstract val input: Set<Variable>
 

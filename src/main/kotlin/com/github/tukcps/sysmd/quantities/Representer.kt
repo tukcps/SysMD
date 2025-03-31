@@ -1,7 +1,6 @@
 package com.github.tukcps.sysmd.quantities
 
-import com.github.tukcps.aadd.AADD
-import com.github.tukcps.aadd.DDBuilder
+import io.github.tukcps.aadd.AADD
 import java.math.BigDecimal
 import java.math.MathContext
 import java.math.RoundingMode
@@ -10,6 +9,9 @@ import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.round
 
+/**
+ * Class with functionality to create nice representations of values.
+ */
 class Representer(
     private var precision: Int = 5,
     private var infinityString:String = "*",
@@ -47,31 +49,23 @@ class Representer(
 
     /**
      * Do representation of the value
-     * @param value AADD value
+     * @param value AADD representation of a value
      */
     fun represent(value: AADD): String {
         this.min = value.getRange().min
         this.max = value.getRange().max
         findInputType()
-        when (this.inputType) {
-            InputType.NaN -> return naNString
-            InputType.InfinityIncluded -> {
-                return if (min == DDBuilder().Reals.min && max == DDBuilder().Reals.max) {
-                    "$infinityString..$infinityString"
-                } else if (min == Double.NEGATIVE_INFINITY) {
-                    "$infinityString.." + this.toEngineeringNotation(max)
-                } else {
-                    this.toEngineeringNotation(min) + "..$infinityString"
-                }
+        return when (this.inputType) {
+            InputType.NaN -> naNString
+            InputType.InfinityIncluded -> when {
+                min == Double.NEGATIVE_INFINITY && max == Double.POSITIVE_INFINITY -> "$infinityString..$infinityString"
+                min == Double.NEGATIVE_INFINITY -> "$infinityString.." + toEngineeringNotation(max)
+                else -> toEngineeringNotation(min) + "..$infinityString"
             }
-            InputType.CloseRange -> return toEngineeringNotation(min) //+ "±Δ"
-            InputType.Illegal -> return illegalValue
-            InputType.NormalNumbers ->{
-                return if(abs(max/min)>10.0.pow(precision+1))
-                    "0.." + toEngineeringNotation(max)
-                else
-                    toEngineeringNotation(min) + ".." + toEngineeringNotation(max)
-            }
+            InputType.CloseRange -> toEngineeringNotation(min)
+            InputType.Illegal -> illegalValue
+            InputType.NormalNumbers -> if (abs(max / min) > 10.0.pow(precision + 1)) "0.." + toEngineeringNotation(max)
+                                       else toEngineeringNotation(min) + ".." + toEngineeringNotation(max)
         }
     }
 
@@ -170,10 +164,5 @@ class Representer(
             return endResult
         }
         return BigDecimal(num).setScale(precision, RoundingMode.HALF_EVEN).stripTrailingZeros().toPlainString()
-    }
-
-    private fun normalRounding(num: Double): String {
-        return BigDecimal(num).setScale(precision, RoundingMode.HALF_EVEN).stripTrailingZeros().toPlainString()
-            .replace("\\.0+", "")
     }
 }

@@ -1,26 +1,26 @@
 package constraintnettests
 
 import com.github.tukcps.sysmd.cspsolver.propagate
-import com.github.tukcps.sysmd.exceptions.SysMDInfo
 import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.compiler.loadSysMD
-import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.resolve.resolve
-import com.github.tukcps.sysmd.services.session.SessionManager.testSession
+import com.github.tukcps.sysmd.services.resolve.resolveVar
+import util.mockup.loadKerML
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import util.testSession
 import kotlin.test.assertTrue
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class VectorTests {
 
-    @Test fun vectorDefineTestReal() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Real(0.0..1.0,1.0..2.0) [kg] = (0.5,1.5) kg;
-                feature b: ScalarValues::Real [kg] = (0.5,1.5) kg;
-                feature c: ScalarValues::Real(-5.0..-1.0,-1.0..2.0, 2.0..4.0) [kg] = (-5.0, -1.0, 3.0) kg.
+    @Test
+    fun vectorDefineTestReal() = testSession("SI") {
+        loadKerML("""
+                feature a: SI::Mass = (0.5,1.5) kg {:>> range = "0.0..1.0,1.0..2.0";}
+                feature b: SI::Mass = (0.5,1.5) kg;
+                feature c: SI::Mass  = (-5.0, -1.0, 3.0) kg {:>> range = "-5.0..-1.0,-1.0..2.0, 2.0..4.0";}
             """)
         propagate()
         assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
@@ -43,20 +43,20 @@ class VectorTests {
         assertEquals(3.0, c.vectorQuantity.values[2].asAadd().max, 0.000001)
     }
 
-    @Test fun vectorDefineTestRealError1() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Real(0.0..1.0,1.0..2.0, 3.0..4.0) [kg] = (0.5,1.5) kg;
+    @Test fun vectorDefineTestRealError1() = testSession("SI") {
+        loadKerML("""
+                feature a: SI::Mass = (0.5,1.5) kg {:>> range = "0.0..1.0,1.0..2.0, 3.0..4.0";}
             """)
         propagate()
         assertTrue(status.exceptions.isNotEmpty() , status.exceptions.toString())
         assertEquals("Internal error: Problem with vector size: Vector size of 2 does not match Constraint size of 3", status.exceptions.first().message)
     }
 
-    @Test fun vectorDefineTestInt() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Integer(0..1,1..2) = (0,1);
-                feature b: ScalarValues::Integer(0..1,1..2) = (0,1);
-                feature c: ScalarValues::Integer(-5..-1,-1..2, 2..4) = (-5, -1, 3).
+    @Test fun vectorDefineTestInt() = testSession("ScalarValues") {
+        loadKerML("""
+            feature a: ScalarValues::Integer = (0,1) {:>> range = "0..1,1..2";}
+            feature b: ScalarValues::Integer = (0,1) {:>> range = "0..1,1..2";}
+            feature c: ScalarValues::Integer = (-5, -1, 3) {:>> range = "-5..-1,-1..2, 2..4";}
             """)
         propagate()
         assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
@@ -79,20 +79,20 @@ class VectorTests {
         assertEquals(3, c.vectorQuantity.values[2].asIdd().max)
     }
 
-    @Test fun vectorDefineTestIntegerError1() = testSession {
-        loadSysMD("""
-                feature b: ScalarValues::Integer(0..1,1..2,0..3) = (0,1).
+    @Test fun vectorDefineTestIntegerError1() = testSession("ScalarValues") {
+        loadKerML("""
+                feature b: ScalarValues::Integer = (0,1)  {:>> range = "0..1,1..2,0..3";}
             """)
         propagate()
         assertTrue(status.exceptions.isNotEmpty() , "An error should be reported")
         assertEquals("Internal error: Problem with vector size: Vector size of 2 does not match Constraint size of 3", status.exceptions.first().message)
     }
 
-    @Test fun vectorPlusTestReal() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Real(0..1,1..2,3..4) [kg];
-                feature b: ScalarValues::Real(0..1,1..3,-2..2) [kg];
-                feature c: ScalarValues::Real [kg] = a + b;
+    @Test fun vectorPlusTestReal() = testSession("SI") {
+        loadKerML("""
+                feature a: SI::Mass {:>> range = "0..1,1..2,3..4";}
+                feature b: SI::Mass {:>> range = "0..1,1..3,-2..2";}
+                feature c: SI::Mass = a + b;
             """)
         propagate()
         assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
@@ -105,10 +105,10 @@ class VectorTests {
         assertEquals(6.0, c.vectorQuantity.values[2].asAadd().max, 0.000001)
     }
 
-    @Test fun vectorPlusTestInt() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Integer(0..1,1..2,3..4);
-                feature b: ScalarValues::Integer(0..1,1..3,-2..2);
+    @Test fun vectorPlusTestInt() = testSession("ScalarValues") {
+        loadKerML("""
+                feature a: ScalarValues::Integer {:>> range = "0..1,1..2,3..4";} 
+                feature b: ScalarValues::Integer {:>> range = "0..1,1..3,-2..2";}
                 feature c: ScalarValues::Integer  = a + b;
             """)
         propagate()
@@ -122,11 +122,11 @@ class VectorTests {
         assertEquals(6, c.vectorQuantity.values[2].asIdd().max)
     }
 
-    @Test fun vectorMinusTestReal() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Real(0..1,1..2,3..4) [kg];
-                feature b: ScalarValues::Real(0..1,1..3,-2..2) [kg];
-                feature c: ScalarValues::Real [kg] = a - b;
+    @Test fun vectorMinusTestReal() = testSession("SI") {
+        loadKerML("""
+                feature a: SI::Mass {:>> range = "0..1,1..2,3..4";} 
+                feature b: SI::Mass {:>> range = "0..1,1..3,-2..2";} 
+                feature c: SI::Mass = a - b;
             """)
         propagate()
         assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
@@ -139,10 +139,10 @@ class VectorTests {
         assertEquals(6.0, c.vectorQuantity.values[2].asAadd().max, 0.000001)
     }
 
-    @Test fun vectorMinusTestInt() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Integer(0..1,1..2,3..4);
-                feature b: ScalarValues::Integer(0..1,1..3,-2..2);
+    @Test fun vectorMinusTestInt() = testSession("ScalarValues") {
+        loadKerML("""
+                feature a: ScalarValues::Integer {:>> range = "0..1,1..2,3..4";}
+                feature b: ScalarValues::Integer {:>> range = "0..1,1..3,-2..2";}
                 feature c: ScalarValues::Integer  = a - b;
             """)
         propagate()
@@ -156,11 +156,11 @@ class VectorTests {
         assertEquals(6, c.vectorQuantity.values[2].asIdd().max)
     }
 
-    @Test fun vectorScalarMultiplicationTestReal() = testSession {
-        loadSysMD("""  
-                feature a: ScalarValues::Real(0..6,6..12,4..20) [kg];
-                feature b: ScalarValues::Real(-2..3); 
-                feature c: ScalarValues::Real [kg] = a * b;
+    @Test fun vectorScalarMultiplicationTestReal() = testSession("SI") {
+        loadKerML("""  
+                feature a: SI::Mass {:>> range = "0..6, 6..12, 4..20";}
+                feature b: ScalarValues::Real {:>> range = "-2..3";} 
+                feature c: SI::Mass = a * b;
             """)
         propagate()
         assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
@@ -173,10 +173,10 @@ class VectorTests {
         assertEquals(60.0, c.vectorQuantity.values[2].asAadd().max, 0.000001)
     }
 
-    @Test fun vectorSum() = testSession {
-        loadSysMD("""  
-                attribute a: ScalarValues::Real(0..6,6..12,4..20) [kg];
-                attribute b: ScalarValues::Real [kg] = sum(a);
+    @Test fun vectorSum() = testSession("SI") {
+        loadKerML("""  
+                feature a: SI::Mass {:>> range = "0..6,6..12,4..20";}
+                feature b: SI::Mass = sum(a);
             """)
         propagate()
         assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
@@ -185,10 +185,10 @@ class VectorTests {
         assertEquals(38.0, b.vectorQuantity.values[0].asAadd().max, 0.000001)
     }
 
-    @Test fun vectorSumInteger() = testSession {
-        loadSysMD("""  
-                attribute a: ScalarValues::Integer(0..6,6..12,4..20);
-                attribute b: ScalarValues::Integer = sum(a);
+    @Test fun vectorSumInteger() = testSession("ScalarValues") {
+        loadKerML("""  
+                feature a: ScalarValues::Integer {:>> range = "0..6,6..12,4..20";}
+                feature b: ScalarValues::Integer = sum(a);
             """)
         propagate()
         assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
@@ -197,10 +197,10 @@ class VectorTests {
         assertEquals(38, b.vectorQuantity.values[0].asIdd().max)
     }
 
-    @Test fun vectorSumIntegerEvalDown() = testSession {
-        loadSysMD("""  
-                attribute a: ScalarValues::Integer(6..6,1..100,10..10);
-                attribute b: ScalarValues::Integer(20..20) = sum(a);
+    @Test fun vectorSumIntegerEvalDown() = testSession("ScalarValues") {
+        loadKerML("""  
+                feature a: ScalarValues::Integer {:>> range = "6..6,1..100,10..10";}
+                feature b: ScalarValues::Integer = sum(a) {:>> range = "20..20";}
             """)
         propagate()
         assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
@@ -213,10 +213,10 @@ class VectorTests {
         assertEquals(10, a.vectorQuantity.values[2].asIdd().max)
     }
 
-    @Test fun vectorSumIntegerEvalDown2() = testSession {
-        loadSysMD("""  
-                attribute a: ScalarValues::Integer(5..10,1..100,20..30);
-                attribute b: ScalarValues::Integer(60..80) = sum(a);
+    @Test fun vectorSumIntegerEvalDown2() = testSession("ScalarValues") {
+        loadKerML("""  
+                feature a: ScalarValues::Integer {:>> range = "5..10,1..100,20..30";}
+                feature b: ScalarValues::Integer = sum(a) {:>> range = "60..80";}
             """)
         propagate()
         assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
@@ -229,10 +229,10 @@ class VectorTests {
         assertEquals(30, a.vectorQuantity.values[2].asIdd().max)
     }
 
-    @Test fun vectorSum2() = testSession {
-        loadSysMD("""  
-                attribute a: ScalarValues::Real(5..8,-4..-3,4..5) [kg];
-                attribute b: ScalarValues::Real [kg] = sum(a);
+    @Test fun vectorSum2() = testSession("SI") {
+        loadKerML("""  
+                feature a: SI::Mass {:>> range = "5..8,-4..-3,4..5";}
+                feature b: SI::Mass = sum(a);
             """)
         propagate()
         assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
@@ -241,10 +241,10 @@ class VectorTests {
         assertEquals(10.0, b.vectorQuantity.values[0].asAadd().max, 0.000001)
     }
 
-    @Test fun vectorSumRealEvalDown() = testSession {
-        loadSysMD("""  
-                attribute a: ScalarValues::Real(6..6,1..100,10..10);
-                attribute b: ScalarValues::Real(20..20) = sum(a);
+    @Test fun vectorSumRealEvalDown() = testSession("ScalarValues") {
+        loadKerML("""  
+                feature a: ScalarValues::Real {:>> range = "6..6,1..100,10..10";}
+                feature b: ScalarValues::Real = sum(a) {:>> range = "20..20";}
             """)
         propagate()
         assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
@@ -257,10 +257,10 @@ class VectorTests {
         assertEquals(10.0, a.vectorQuantity.values[2].asAadd().max, 0.000001)
     }
 
-    @Test fun vectorSumRealEvalDown2() = testSession {
-        loadSysMD("""  
-                attribute a: ScalarValues::Real(5..10,1..100,20..30);
-                attribute b: ScalarValues::Real(60..80) = sum(a);
+    @Test fun vectorSumRealEvalDown2() = testSession("ScalarValues") {
+        loadKerML("""  
+                feature a: ScalarValues::Real {:>> range = "5..10,1..100,20..30";}
+                feature b: ScalarValues::Real = sum(a) {:>> range = "60..80";}
             """)
         propagate()
         assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
@@ -276,12 +276,12 @@ class VectorTests {
 
 
     @Disabled //TODO Eval Down of Power (row wise or scalar operand)
-    @Test fun vectorPowerTestReal() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Real(0..1,1..4,4..9);
-                feature b: ScalarValues::Real(-2..2);
+    @Test fun vectorPowerTestReal() = testSession("ScalarValues") {
+        loadKerML("""
+                feature a: ScalarValues::Real {:>> range = "0..1,1..4,4..9";}
+                feature b: ScalarValues::Real {:>> range = "-2..2";}
                 feature c: ScalarValues::Real = a ^ b;
-                """)
+        """)
         propagate()
         assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
         val c = global.resolveVar("c")!!
@@ -294,10 +294,10 @@ class VectorTests {
     }
 
     @Disabled //TODO Eval Down of Power (row wise or scalar operand)
-    @Test fun vectorPowerTestInt() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Integer(0..1,1..2,3..4);
-                feature b: ScalarValues::Integer(0..1,1..3,-2..2);
+    @Test fun vectorPowerTestInt() = testSession("ScalarValues") {
+        loadKerML("""
+                feature a: ScalarValues::Integer {:>> range = "0..1,1..2,3..4";}
+                feature b: ScalarValues::Integer {:>> range = "0..1,1..3,-2..2";}
                 feature c: ScalarValues::Integer  = a ^ b;
             """)
         propagate()
@@ -311,10 +311,10 @@ class VectorTests {
         assertEquals(8, c.vectorQuantity.values[2].asIdd().max)
     }
 
-    @Test fun vectorNegateTestReal() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Real(0..1,1..2,3..4) [kg];
-                feature c: ScalarValues::Real [kg] = -a;
+    @Test fun vectorNegateTestReal() = testSession("SI") {
+        loadKerML("""
+                feature a: SI::Mass {:>> range = "0..1,1..2,3..4";}
+                feature c: SI::Mass = -a;
             """)
         propagate()
         assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
@@ -327,9 +327,9 @@ class VectorTests {
         assertEquals(-3.0, c.vectorQuantity.values[2].asAadd().max, 0.000001)
     }
 
-    @Test fun vectorNegateTestInt() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Integer(0..1,1..2,3..4);
+    @Test fun vectorNegateTestInt() = testSession("ScalarValues") {
+        loadKerML("""
+                feature a: ScalarValues::Integer {:>> range = "0..1,1..2,3..4";}
                 feature c: ScalarValues::Integer  = -a;
             """)
         propagate()
@@ -343,10 +343,10 @@ class VectorTests {
         assertEquals(-3, c.vectorQuantity.values[2].asIdd().max)
     }
 
-    @Test fun vectorAbsTestReal() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Real(3..3,0..0,4..4) [kg];
-                feature c: ScalarValues::Real [kg] = abs(a);
+    @Test fun vectorAbsTestReal() = testSession("SI") {
+        loadKerML("""
+                feature a: SI::Mass {:>> range = "3..3,0..0,4..4";}
+                feature c: SI::Mass = abs(a);
             """)
         propagate()
         assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
@@ -356,11 +356,11 @@ class VectorTests {
         assertEquals(1, c.vectorQuantity.values.size)
     }
 
-    @Test fun vectorCityBlockTestReal() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Real(3..3,0..0,4..4) [kg];
-                feature b: ScalarValues::Real(5..5,-3..-3,4..4) [kg];
-                feature c: ScalarValues::Real [kg] = cityBlockDistance(a,b);
+    @Test fun vectorCityBlockTestReal() = testSession("SI") {
+        loadKerML("""
+                feature a: SI::Mass {:>> range = "3..3,0..0,4..4";}
+                feature b: SI::Mass {:>> range = "5..5,-3..-3,4..4";}
+                feature c: SI::Mass = cityBlockDistance(a,b);
             """)
         propagate()
         assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
@@ -370,10 +370,10 @@ class VectorTests {
         assertEquals(1, c.vectorQuantity.values.size)
     }
 
-    @Test fun vectorCityBlockTestInt() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Integer(3..3,0..0,4..4); 
-                feature b: ScalarValues::Integer(5..5,-3..-3,4..4); 
+    @Test fun vectorCityBlockTestInt() = testSession("ScalarValues") {
+        loadKerML("""
+                feature a: ScalarValues::Integer {:>> range = "3..3,0..0,4..4";} 
+                feature b: ScalarValues::Integer {:>> range = "5..5,-3..-3,4..4";}
                 feature c: ScalarValues::Integer = cityBlockDistance(a,b); """)
         propagate()
         assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
@@ -383,9 +383,9 @@ class VectorTests {
         assertEquals(1, c.vectorQuantity.values.size)
     }
 
-    @Test fun vectorAbsTestInt() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Integer(3..3,4..4,0..0);
+    @Test fun vectorAbsTestInt() = testSession("ScalarValues") {
+        loadKerML("""
+                feature a: ScalarValues::Integer {:>> range = "3..3,4..4,0..0";}
                 feature c: ScalarValues::Integer  = abs(a);
             """)
         propagate()
@@ -396,10 +396,10 @@ class VectorTests {
         assertEquals(1, c.vectorQuantity.values.size)
     }
 
-    @Test fun vectorFloorTestReal() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Real(0.5..1.5,6.2..9.0,-6.9..7.1) [kg];
-                feature c: ScalarValues::Real [kg] = floor(a);
+    @Test fun vectorFloorTestReal() = testSession("SI") {
+        loadKerML("""
+                feature a: SI::Mass {:>> range = "0.5..1.5,6.2..9.0,-6.9..7.1";}
+                feature c: SI::Mass = floor(a);
             """)
         propagate()
         assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
@@ -412,10 +412,10 @@ class VectorTests {
         assertEquals(7.0, c.vectorQuantity.values[2].asAadd().max, 0.000001)
     }
 
-    @Test fun vectorCeilTestReal() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Real(0.5..1.5,6.2..9.0,-6.9..7.1) [kg];
-                feature c: ScalarValues::Real [kg] = ceil(a);
+    @Test fun vectorCeilTestReal() = testSession("SI") {
+        loadKerML("""
+                feature a: SI::Mass {:>> range = "0.5..1.5, 6.2..9.01, -6.9..7.1";}
+                feature c: SI::Mass = ceil(a);
             """)
         propagate()
         assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
@@ -428,10 +428,10 @@ class VectorTests {
         assertEquals(8.0, c.vectorQuantity.values[2].asAadd().max, 0.000001)
     }
 
-    @Test fun vectorSqrtTestReal() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Real(1..4,0.64..225,9..81) [m^2];
-                feature c: ScalarValues::Real [m] = sqrt(a);
+    @Test fun vectorSqrtTestReal() = testSession("SI") {
+        loadKerML("""
+                feature a: SI::Area {:>> range = "1..4,0.64..225,9..81";}
+                feature c: SI::Length = sqrt(a);
             """)
         propagate()
         assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
@@ -445,9 +445,9 @@ class VectorTests {
         assertEquals(9.0, c.vectorQuantity.values[2].asAadd().max, 0.000001)
     }
 
-    @Test fun vectorsSqrtTestInt() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Integer(1..4,64..225,9..81);
+    @Test fun vectorsSqrtTestInt() = testSession("ScalarValues") {
+        loadKerML("""
+                feature a: ScalarValues::Integer {:>> range = "1..4,64..225,9..81";}
                 feature c: ScalarValues::Integer  = sqrt(a);
             """)
         propagate()
@@ -461,10 +461,10 @@ class VectorTests {
         assertEquals(9, c.vectorQuantity.values[2].asIdd().max)
     }
 
-    @Test fun vectorSqrTestReal() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Real(1..4,0.5..15.0,-3..2) [m];
-                feature c: ScalarValues::Real [m^2] = sqr(a);
+    @Test fun vectorSqrTestReal() = testSession("SI") {
+        loadKerML("""
+                feature a: SI::Length {:>> range = "1..4,0.5..15.0,-3..2";}
+                feature c: SI::Area = sqr(a);
             """)
         propagate()
         assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
@@ -478,9 +478,9 @@ class VectorTests {
         assertEquals(9.0, c.vectorQuantity.values[2].asAadd().max, 0.000001)
     }
 
-    @Test fun vectorsSqrTestInt() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Integer(1..4,5..15,-3..2);
+    @Test fun vectorsSqrTestInt() = testSession("ScalarValues") {
+        loadKerML("""
+                feature a: ScalarValues::Integer {:>> range = "1..4,5..15,-3..2";}
                 feature c: ScalarValues::Integer  = sqr(a);
             """)
         propagate()
@@ -494,9 +494,9 @@ class VectorTests {
         assertEquals(9, c.vectorQuantity.values[2].asIdd().max)
     }
 
-    @Test fun vectorLogTestReal() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Real(1..4,1..10,2.5..4);
+    @Test fun vectorLogTestReal() = testSession("ScalarValues") {
+        loadKerML("""
+                feature a: ScalarValues::Real {:>> range = "1..4,1..10,2.5..4";}
                 feature c: ScalarValues::Real = ln(a);
             """)
         propagate()
@@ -511,9 +511,9 @@ class VectorTests {
         assertEquals(1.3862943611198904, c.vectorQuantity.values[2].asAadd().max, 0.000001)
     }
 
-    @Test fun vectorPow2TestReal() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Real(1..4,0..5,6..10);
+    @Test fun vectorPow2TestReal() = testSession("ScalarValues") {
+        loadKerML("""
+                feature a: ScalarValues::Real {:>> range = "1..4,0..5,6..10";}
                 feature c: ScalarValues::Real = pow2(a);
             """)
         propagate()
@@ -528,9 +528,9 @@ class VectorTests {
         assertEquals(1024.0, c.vectorQuantity.values[2].asAadd().max, 0.000001)
     }
 
-    @Test fun vectorsPow2TestInt() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Integer(1..4,0..5,6..10);
+    @Test fun vectorsPow2TestInt() = testSession("ScalarValues") {
+        loadKerML("""
+                feature a: ScalarValues::Integer {:>> range = "1..4,0..5,6..10";}
                 feature c: ScalarValues::Integer  = pow2(a);
             """)
         propagate()
@@ -544,12 +544,12 @@ class VectorTests {
         assertEquals(1024, c.vectorQuantity.values[2].asIdd().max)
     }
 
-    @Test fun vectorsToString() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Integer(1..4,0..5,6..10);
-                feature b: ScalarValues::Real(1..4,0..5,6..10);
-                feature c: ScalarValues::Integer(1..4,0..5,6..10) = (4,5,6);
-                feature d: ScalarValues::Real(1..4,0..5,6..10) = (4.0,5.0,6.0);
+    @Test fun vectorsToString() = testSession("ScalarValues") {
+        loadKerML("""
+                feature a: ScalarValues::Integer {:>> range = "1..4,0..5,6..10";}
+                feature b: ScalarValues::Real {:>> range = "1..4,0..5,6..10";}
+                feature c: ScalarValues::Integer = (4,5,6) {:>> range = "1..4,0..5,6..10";}
+                feature d: ScalarValues::Real = (4.0,5.0,6.0) {:>> range = "1..4,0..5,6..10";}
             """)
         propagate()
         assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
@@ -563,11 +563,11 @@ class VectorTests {
         assertEquals("(4, 5, 6)", d.vectorQuantity.toString())
     }
 
-    @Test fun vectorsToStringWithUnits() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Real(1..4,0..5,6..10) [kg m / s];
-                feature b: ScalarValues::Real(1..4,0..5,6..10)  [N]= (4.0,5.0,6.0) N;
-                feature c: ScalarValues::Real(1..4,0..5,4..10)  [km/h] = (1.0,3.0,4.0) [km/h];
+    @Test fun vectorsToStringWithUnits() = testSession("SI") {
+        loadKerML("""
+                feature a: SI::Quantity {:>> unit = "kg m / s"; :>> range = "1..4,0..5,6..10";}
+                feature b: SI::Force = (4.0,5.0,6.0) N {:>> range = "1..4,0..5,6..10";}
+                feature c: SI::Speed = (1.0,3.0,4.0) [km/h] {:>> unit = "km / h"; :>> range = "1..4,0..5,4..10";}
             """)
         propagate()
         assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
@@ -579,10 +579,10 @@ class VectorTests {
         assertEquals("(1, 3, 4) km / h", c.vectorQuantity.toString())
     }
 
-    @Test fun vectorCrossProductTestReal() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Real(1..1,5..5,10..10);
-                feature b: ScalarValues::Real(5..5,1..1,10..10);
+    @Test fun vectorCrossProductTestReal() = testSession("ScalarValues") {
+        loadKerML("""
+                feature a: ScalarValues::Real {:>> range = "1..1,5..5,10..10";}
+                feature b: ScalarValues::Real {:>> range = "5..5,1..1,10..10";}
                 feature c: ScalarValues::Real = a cross b;
             """)
         propagate()
@@ -596,10 +596,10 @@ class VectorTests {
         assertEquals(-24.0, c.vectorQuantity.values[2].asAadd().max, 0.000001)
     }
 
-    @Test fun vectorCrossProductTestInt() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Integer(1..1,5..5,10..10);
-                feature b: ScalarValues::Integer(5..5,1..1,10..10);
+    @Test fun vectorCrossProductTestInt() = testSession("ScalarValues") {
+        loadKerML("""
+                feature a: ScalarValues::Integer {:>> range = "1..1,5..5,10..10";}
+                feature b: ScalarValues::Integer {:>> range = "5..5,1..1,10..10";}
                 feature c: ScalarValues::Integer  = a cross b;
             """)
         propagate()
@@ -614,11 +614,11 @@ class VectorTests {
     }
 
     @Disabled // Should have the same result as test with Int, but AA gives some strange results for independent values.
-    @Test fun vectorCrossProductTestReal2() = testSession {
-        loadSysMD(
+    @Test fun vectorCrossProductTestReal2() = testSession("ScalarValues") {
+        loadKerML(
             """
-                feature a: ScalarValues::Real(-3..4,5..7,0..1);
-                feature b: ScalarValues::Real(4..5,-2..-1,3..10);
+                feature a: ScalarValues::Real {:>> range = "-3..4,5..7,0..1";}
+                feature b: ScalarValues::Real {:>> range = "4..5,-2..-1,3..10";}
                 feature c: ScalarValues::Real = a cross b.
             """
         )
@@ -633,10 +633,10 @@ class VectorTests {
         assertEquals(-14.0, c.vectorQuantity.values[2].asAadd().max, 0.000001)
     }
 
-    @Test fun vectorCrossProductTestInt2() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Integer(-3..4,5..7,0..1);
-                feature b: ScalarValues::Integer(4..5,-2..-1,3..10);
+    @Test fun vectorCrossProductTestInt2() = testSession("ScalarValues") {
+        loadKerML("""
+                feature a: ScalarValues::Integer {:>> range = "-3..4,5..7,0..1";}
+                feature b: ScalarValues::Integer {:>> range = "4..5,-2..-1,3..10";}
                 feature c: ScalarValues::Integer  = a cross b;
             """)
         propagate()
@@ -651,11 +651,11 @@ class VectorTests {
     }
 
     @Disabled // Should have the same result as test with Int, but AA gives some strange results for independent values.
-    @Test fun vectorDotProductTestReal() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Real(-3..4,5..7,0..1),
-                feature b: ScalarValues::Real(4..5,-2..-1,3..10),
-                feature c: ScalarValues::Real = a dot b.
+    @Test fun vectorDotProductTestReal() = testSession("ScalarValues") {
+        loadKerML("""
+                feature a: ScalarValues::Real {:>> range = "-3..4,5..7,0..1";}
+                feature b: ScalarValues::Real {:>> range = "4..5,-2..-1,3..10";}
+                feature c: ScalarValues::Real = a dot b;
             """)
         propagate()
         assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
@@ -665,10 +665,10 @@ class VectorTests {
         assertEquals(1,c.vectorQuantity.values.size)
     }
 
-    @Test fun vectorDotProductTestInt() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Integer(-3..4,5..7,0..1);
-                feature b: ScalarValues::Integer(4..5,-2..-1,3..10);
+    @Test fun vectorDotProductTestInt() = testSession("ScalarValues") {
+        loadKerML("""
+                feature a: ScalarValues::Integer {:>> range = "-3..4,5..7,0..1";}
+                feature b: ScalarValues::Integer {:>> range = "4..5,-2..-1,3..10";}
                 feature c: ScalarValues::Integer  = a dot b;
             """)
         propagate()
@@ -679,10 +679,10 @@ class VectorTests {
         assertEquals(1,c.vectorQuantity.values.size)
     }
 
-    @Test fun vectorNormalizeTestReal() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Real(0..0,3..3,4..4);
-                feature b: ScalarValues::Real(10..10,3..3,2..2);
+    @Test fun vectorNormalizeTestReal() = testSession("ScalarValues") {
+        loadKerML("""
+                feature a: ScalarValues::Real {:>> range = "0..0,3..3,4..4";}
+                feature b: ScalarValues::Real {:>> range = "10..10,3..3,2..2";}
                 feature c: ScalarValues::Real = norm(a);
                 feature d: ScalarValues::Real = norm(b);
             """)
@@ -704,11 +704,11 @@ class VectorTests {
         assertEquals(0.18814417367671904, d.vectorQuantity.values[2].asAadd().max, 0.000001)
     }
 
-    @Test fun vectorAngleTestReal() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Real(1..1,1..1,0..0) [kg];
-                feature b: ScalarValues::Real(1..1,0..0,0..0) [kg];
-                feature c: ScalarValues::Real [°] = angle(a,b).
+    @Test fun vectorAngleTestReal() = testSession("SI") {
+        loadKerML("""
+                feature a: SI::Mass {:>> range = "1..1,1..1,0..0";}
+                feature b: SI::Mass {:>> range = "1..1,0..0,0..0";}
+                feature c: SI::Quantity = angle(a,b) {:>> unit = "°";}
             """)
         propagate()
         assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
@@ -717,24 +717,25 @@ class VectorTests {
         assertEquals(1,c.vectorQuantity.values.size)
     }
 
-    @Test fun vectorAngleTestReal2() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Real(1..1,1..1,0..0) [kg];
-                feature b: ScalarValues::Real(1..1,1..1,0..0) [kg];
-                feature c: ScalarValues::Real [°] = angle(a,b).
+    @Test fun vectorAngleTestReal2() = testSession("SI") {
+        loadKerML("""
+                feature a: SI::Mass {:>> range = "1..1, 1..1, 0..0";}
+                feature b: SI::Mass {:>> range = "1..1, 1..1, 0..0";}
+                feature c: SI::Quantity = angle(a,b) {:>> unit = "°";}
             """)
         propagate()
-        assertTrue(status.exceptions.any {it !is SysMDInfo} , status.exceptions.toString())
+        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
         val c = global.resolveVar("c")!!
-        assertEquals("7.09198e-6 °", c.vectorQuantity.toString())
+        assertEquals(0.0, c.vectorQuantity.values[0].asAadd().min, 0.000001)
+        assertEquals(0.0, c.vectorQuantity.values[0].asAadd().max, 0.000001)
         assertEquals(1,c.vectorQuantity.values.size)
     }
 
-    @Test fun vectorAngleTestReal3() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Real(1..1,1..1,0..0);
-                feature b: ScalarValues::Real(-1..-1,-1..-1,0..0);
-                feature c: ScalarValues::Real [°] = angle(a,b);
+    @Test fun vectorAngleTestReal3() = testSession("SI") {
+        loadKerML("""
+                feature a: ScalarValues::Real {:>> range = "1..1, 1..1, 0..0";}
+                feature b: ScalarValues::Real {:>> range = "-1..-1, -1..-1, 0..0";}
+                feature c: SI::Quantity = angle(a,b) {:>> unit = "°";}
             """)
         propagate()
         assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
@@ -743,11 +744,11 @@ class VectorTests {
         assertEquals(1,c.vectorQuantity.values.size)
     }
 
-    @Test fun vectorAngleTestReal4() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Real(1..1,5..5,10..10);
-                feature b: ScalarValues::Real(5..5,2..2,-1..-1);
-                feature c: ScalarValues::Real [°] = angle(a,b).
+    @Test fun vectorAngleTestReal4() = testSession("SI") {
+        loadKerML("""
+                feature a: ScalarValues::Real {:>> range = "1..1,5..5,10..10";}
+                feature b: ScalarValues::Real {:>> range = "5..5,2..2,-1..-1";}
+                feature c: SI::Quantity = angle(a,b) {:>> unit = "°";}
             """)
         propagate()
         assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
@@ -757,11 +758,11 @@ class VectorTests {
     }
 
 
-    @Test fun vectorAngleTestInt() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Integer(1..1,1..1,0..0);
-                feature b: ScalarValues::Integer(-1..-1,-1..-1,0..0);
-                feature c: ScalarValues::Real [°] = angle(a,b);
+    @Test fun vectorAngleTestInt() = testSession("SI") {
+        loadKerML("""
+                feature a: ScalarValues::Integer {:>> range = "1..1,1..1,0..0";}
+                feature b: ScalarValues::Integer {:>> range = "1..1,-1..-1,0..0";}
+                feature c: SI::Quantity = angle(a,b) {:>> unit = "°";}
             """)
         propagate()
         assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
@@ -770,25 +771,24 @@ class VectorTests {
         assertEquals(1,c.vectorQuantity.values.size)
     }
 
-    @Test fun inheritanceOfVectorTest() = testSession {
-        loadSysMD("""
+    @Test fun inheritanceOfVectorTest() = testSession("ScalarValues") {
+        loadKerML("""
             package InstallationSpaces {
-                class InstallationSpace;
-                class EngineCompartment isA InstallationSpace; 
+                type InstallationSpace :> Base::Anything {
+                    feature origin: ScalarValues::Real;
+                    feature vertex1: ScalarValues::Real = origin;
+                }
+                type EngineCompartment :> InstallationSpace; 
             }
-
-            InstallationSpaces::InstallationSpace hasA 
-                feature origin: ScalarValues::Real(*..*, *..*,*..*);
-                feature vertex1: ScalarValues::Real = origin.
             """)
         propagate()
         assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
     }
 
-    @Test fun vectorPositionAccessTest() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Real(1..1,5..5,10..10);
-                feature b: ScalarValues::Real = a[1].
+    @Test fun vectorPositionAccessTest() = testSession("ScalarValues") {
+        loadKerML("""
+                feature a: ScalarValues::Real {:>> range = "1..1,5..5,10..10";}
+                feature b: ScalarValues::Real = a[1];
             """)
         propagate()
         assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
@@ -797,24 +797,24 @@ class VectorTests {
         assertEquals(1,c.vectorQuantity.values.size)
     }
 
-    @Test fun vectorPositionAccessTest2() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Real(1..1,5..5,10..10);
-                feature b: ScalarValues::Real = a[1..2].
+    @Test fun vectorPositionAccessTest2() = testSession("ScalarValues") {
+        loadKerML("""
+                feature a: ScalarValues::Real {:>> range = "1..1,5..5,10..10";}
+                feature b: ScalarValues::Real = a[1..2];
             """)
         propagate()
         assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
         val c = global.resolveVar("b")!!
-        assertEquals("5", c.vectorQuantity.values[0].toString())
-        assertEquals("10", c.vectorQuantity.values[1].toString())
+        assertEquals(5.0, c.vectorQuantity.values[0].asAadd().max, 0.00001)
+        assertEquals(10.0, c.vectorQuantity.values[1].asAadd().max, 0.0001)
         assertEquals(2,c.vectorQuantity.values.size)
     }
 
-    @Test fun vectorPositionAccessTest3() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Real(1..1,5..5,10..10);
-                feature b: ScalarValues::Real(3..3,2..2,7..7);
-                feature c: ScalarValues::Real = a[1]+b[2].
+    @Test fun vectorPositionAccessTest3() = testSession("ScalarValues") {
+        loadKerML("""
+                feature a: ScalarValues::Real {:>> range = "1..1,5..5,10..10";}
+                feature b: ScalarValues::Real {:>> range = "3..3,2..2,7..7";}
+                feature c: ScalarValues::Real = a[1]+b[2];
             """)
         propagate()
         assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
@@ -824,10 +824,10 @@ class VectorTests {
     }
 
     //Todo implement changing value at given vector position
-    @Disabled @Test fun vectorPositionAccessTest4() = testSession {
-        loadSysMD("""
-                feature a: ScalarValues::Real(1..1,5..5,10..10);
-                feature a[1]: ScalarValues::Real = 2..2.
+    @Disabled @Test fun vectorPositionAccessTest4() = testSession("ScalarValues") {
+        loadKerML("""
+                feature a: ScalarValues::Real {:>> range = "1..1,5..5,10..10";}
+                feature a[1]: ScalarValues::Real = 2..2;
             """)
         propagate()
         assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())

@@ -1,39 +1,36 @@
 package com.github.tukcps.sysmd.ui.viewmodel
 
 import androidx.compose.runtime.*
-import androidx.compose.runtime.snapshots.*
+import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.text.input.TextFieldValue
-import com.github.tukcps.aadd.values.IntegerRange
 import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.exceptions.SysMDError
+import com.github.tukcps.sysmd.exceptions.SysMDException
 import com.github.tukcps.sysmd.imports.ResultAnnotation
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.Annotation
-import com.github.tukcps.sysmd.model.kerml.implementation.CalculationDefinitionImplementation
-import com.github.tukcps.sysmd.services.*
+import com.github.tukcps.sysmd.model.sysml.implementation.CalculationDefinitionImplementation
 import com.github.tukcps.sysmd.services.inheritance.getAllInheritedFeatures
 import com.github.tukcps.sysmd.services.session.Session
+import com.github.tukcps.sysmd.services.session.report
 import com.github.tukcps.sysmd.ui.inCompile
-import com.github.tukcps.sysmd.ui.tableview.TableViewModel
-import com.github.tukcps.sysmd.ui.viewmodel.TextualRepresentationViewModel.Companion.Language.TABLE
-import java.util.UUID
+import io.github.tukcps.aadd.values.IntegerRange
 
 /**
- * The view model of an element.
+ * The view model of a textual representation that is rendered.
  * Each element consists of a description in MD or textual SysMD code.
  * The view model represents the state of the element:
  *  - the code/description lines
  *  - which of both is editable
  *  - a list of annotations to the lines
  *  - a list of updated properties from the constraint propagation
- *  @param kerMlModel The internal kerMl model; does not refresh, is independent of UI
+ *  @param sessionState The internal kerMl model; does not refresh, it is independent of UI
  *  @param refreshTrees lambda that refreshes the tree-views in the left panel
  */
 open class TextualRepresentationViewModel(
-    val kerMlModel: MutableState<Session>,
+    val sessionState: MutableState<Session>,
     val refreshTrees: () -> Unit,
-    // id for easy identification
-    var id: UUID? = null,
 
     // Code or description in Markdown?
     var language: MutableState<Language> = mutableStateOf(Language.MARKDOWN),
@@ -64,20 +61,18 @@ open class TextualRepresentationViewModel(
     
     //Simulation results annotations; for displaying simulation results right to the Editor field
     val resultsAnnotations : MutableList<ResultAnnotation> = mutableListOf()
-    
-    val tableViewModel: MutableState<TableViewModel> = mutableStateOf(TableViewModel (this))
-    
+
     init {
         language.value = TextualRepresentationViewModel.language[textualRepresentation.language.split("::").firstOrNull()] ?:Language.MARKDOWN
     }
 
 
-    /** Clears annotations on properties, but not the lines. */
-    fun reset() {
+    /** Clears annotations on features, but not the lines. */
+    fun clearView() {
         displayElement = null
         annotations.clear()
         displayItems.clear()
-        inCompile = false   // who knows ... the semaphor to prevent starting the compiler twice.
+        inCompile = false   // who knows ... the semaphore to prevent starting the compiler twice.
     }
 
     /**
@@ -85,29 +80,28 @@ open class TextualRepresentationViewModel(
      * @param propagate If true (default), constraint propagation is computed.
      */
     fun compile(propagate: Boolean = true) {
-        // Clean old status
-        require(kerMlModel.value == textualRepresentation.model)
-        reset()
+        clearView()
         textualRepresentation.body = this.body.value.text
         if (language.value in compilableLanguages) {
-            // search for Element named Display and show hasA relations; first clean it.
             try {
                 // Parse model & compute propagation
-                textualRepresentation.language = "SysMD"+"::"+namespace.value
-                textualRepresentation.compile()
+                textualRepresentation.language = "${language.value}::${namespace.value}"
+                textualRepresentation.compile(generateAnnotations = true)
                 if (propagate) {
-                    kerMlModel.value.initialize()
-                    kerMlModel.value.propagate()
+                    sessionState.value.propagate()
                     refreshTrees()
                     display()
                 }
-            } catch (ignore: Exception) {
-                kerMlModel.value.report(SysMDError(message = ignore.message?:"(unknown)"))
+            } catch (error: Exception) {
+                if (error is SysMDException) {
+                    sessionState.value.report(error)
+                } else
+                    sessionState.value.report(SysMDError(message = error.message?:"(unknown error)"))
             }
             // Update and show the display part with results
         }
 
-        // refresh the tree views & the agenda
+        // refresh the tree views and the agenda
         refreshTrees()
     }
 
@@ -117,7 +111,7 @@ open class TextualRepresentationViewModel(
      */
     fun display() {
         // Update annotations (error messages in the shape of a bell near line no.).
-        kerMlModel.value.status.exceptions.forEach {
+        sessionState.value.status.exceptions.forEach {
             if (it.textualRepresentation == this.textualRepresentation) {
                 if (it.token?.lineNo != null )
                     annotations[it.token!!.lineNo - 1] = it.message
@@ -132,8 +126,8 @@ open class TextualRepresentationViewModel(
                 when (val target = annotation.annotatedElement.ref) {
                     is Classifier -> {
                         if (target !is CalculationDefinitionImplementation){
-                            displayItems.add(TextFieldValue("Definition ${target.qualifiedName} created or updated "))
-                            kerMlModel.value.getAllInheritedFeatures(target).forEach {
+                            displayItems.add(TextFieldValue("Definition ${target.path()} created or updated "))
+                            sessionState.value.getAllInheritedFeatures(target).forEach {
                                 when (it) {
                                     is Classifier -> displayItems.add(TextFieldValue("   Type: ${it.escapedName()}"))
                                     else    -> {
@@ -152,20 +146,20 @@ open class TextualRepresentationViewModel(
                     is Feature -> {
                         // kerMlModel.value.getAllInheritedFeatures(target).forEach {
                            if ((target.variable != null) && !(target is Multiplicity && target.variable!!.vectorQuantity.idd().getRange() == IntegerRange(1, 1)))
-                                displayItems.add (TextFieldValue("    ${target.qualifiedName} = ${target.variable!!.vectorQuantity}"))
+                                displayItems.add (TextFieldValue("    ${target.path()} = ${target.variable!!.vectorQuantity}"))
                         //}
                     }
                 }
             }
 
             // Errors to be displayed.
-            kerMlModel.value.status.exceptions.forEach {
+            sessionState.value.status.exceptions.forEach {
                 if (it.textualRepresentation == this.textualRepresentation && it.priority > 1)
                     displayItems.add(TextFieldValue("ERROR: $it"))
             }
 
             // Other infos ...
-            kerMlModel.value.status.exceptions.forEach {
+            sessionState.value.status.exceptions.forEach {
                 if (it.textualRepresentation == this.textualRepresentation && it.priority <= 1)
                     displayItems.add(TextFieldValue("INFO: $it"))
             }
@@ -179,14 +173,12 @@ open class TextualRepresentationViewModel(
         /** The languages handled in SysMD Notebook. */
         enum class Language {
             MARKDOWN { override fun toString() = "Markdown" },
+            KerML    { override fun toString() = "KerML" },
             SYS_MD   { override fun toString() = "SysMD" },
             SYS_ML   { override fun toString() = "SysML" },
-            FORM     { override fun toString() = "Form" },
-            TABLE    { override fun toString() = "Table"},
-            YAML     { override fun toString() = "YaML" },
-            VIEW     { override fun toString() = "View" },
+            YAML     { override fun toString() = "YAML" },
         }
-        val compilableLanguages = setOf(Language.SYS_MD, Language.SYS_ML, TABLE)
+        val compilableLanguages = setOf(Language.KerML, Language.SYS_MD, Language.SYS_ML)
         val allLanguages = Language.entries
         val language: Map<String, Language> = allLanguages.associate { (it.toString() to it) }
     }

@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package com.github.tukcps.sysmd.ui
 
 import androidx.compose.foundation.*
@@ -64,7 +66,7 @@ fun FormView(
                 }
                 formBody = bodyString.toString()
 
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 formBody = ""
             }
         }
@@ -157,7 +159,7 @@ fun FormView(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                //Hide rows and cols edit when read only
+                //Hide rows and cols edit when read-only
                 if (!readOnly) {
                     Row {
                         formViewModel.value.formColMaskList.forEachIndexed { index, mask ->

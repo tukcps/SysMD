@@ -2,11 +2,11 @@ package com.github.tukcps.sysmd.model.expression.functions
 
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Namespace
-import com.github.tukcps.sysmd.compiler.parser.QualifiedName
+import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.quantities.Quantity
-import com.github.tukcps.sysmd.services.session.Session
-import com.github.tukcps.sysmd.services.report
+import com.github.tukcps.sysmd.services.session.report
 import com.github.tukcps.sysmd.services.resolve.resolve
+import com.github.tukcps.sysmd.services.session.Session
 
 class AstHasA(
     model: Session,
@@ -32,9 +32,5 @@ class AstHasA(
             model.report(null, "Evaluation of hasA() not possible as parameter not a namespace.")
     }
 
-    override fun evalDown() {
-        // getParam(0).downQuantity = downQuantity.log()
-    }
-
-    override fun toExpressionString() = "hasA(${getParam(0).toExpressionString()}, ${getParam(1).toExpressionString()})"
+    override fun evalDown() {}
 }

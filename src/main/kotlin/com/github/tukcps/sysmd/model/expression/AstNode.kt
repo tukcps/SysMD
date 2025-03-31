@@ -1,23 +1,26 @@
 package com.github.tukcps.sysmd.model.expression
 
 
-import com.github.tukcps.aadd.*
+import io.github.tukcps.aadd.*
 import com.github.tukcps.sysmd.cspsolver.Variable
-import com.github.tukcps.sysmd.model.expression.functions.AstAggregationFunction
-import com.github.tukcps.sysmd.model.expression.functions.AstByImplements
-import com.github.tukcps.sysmd.model.expression.functions.AstBySubclasses
-import com.github.tukcps.sysmd.model.expression.functions.AstFunction
+import com.github.tukcps.sysmd.model.expression.functions.*
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
+import java.util.UUID
 
 /**
  * The class AstNode implements an interface for an attributed syntax tree (AST).
  * The base class of the expression tree is a simple value,
  * represented by result: a constant literal or a variable.
  * For variables, there is an id (name); for literals the result is its value.
+ *
+ * @param uuid A unique identifier for this node
  */
 @Suppress("UNCHECKED_CAST")
-abstract class AstNode(val model: Session) : Cloneable {
+abstract class AstNode(val model: Session, val uuid : UUID = UUID.randomUUID()!!) : Cloneable {
+    init {
+        model.astNodes[uuid] = this
+    }
 
     lateinit var upQuantity: VectorQuantity
     lateinit var downQuantity: VectorQuantity
@@ -29,17 +32,13 @@ abstract class AstNode(val model: Session) : Cloneable {
     internal open var root: AstNode? = null // Reference to next-higher level of AST
     internal var parent: AstNode? = null    // Reference to the parent node or null, if root.
 
-    val isLeaf: Boolean
-        get() = this is AstLeaf   // Returns true if node is leaf.
-    val isRoot: Boolean
-        get() = this is AstRoot   // Returns true if node is root.
     val aadd: AADD                          // Returns value as AADD or throws error
         get() = upQuantity.values[0] as AADD
     val bdd: BDD                            // Returns value as BDD or returns error
         get() = upQuantity.values[0]as BDD
     val idd: IDD
         get() = upQuantity.values[0] as IDD
-    val dd: DD
+    val dd: DD<*>
         get() = upQuantity.values[0]
 
     val aadds: List<AADD>          // Returns value as AADD or throws error
@@ -48,7 +47,7 @@ abstract class AstNode(val model: Session) : Cloneable {
         get() = upQuantity.values as List<BDD>
     val idds: List<IDD>
         get() = upQuantity.values as List<IDD>
-    val dds: List<DD>
+    val dds: List<DD<*>>
         get() = upQuantity.values
 
     val isBool: Boolean
@@ -68,7 +67,7 @@ abstract class AstNode(val model: Session) : Cloneable {
      * It does not search for properties etc. in the symbol table as these might not be declared.
      * This will be done after the complete model is read by initialize().
      * Initialize must take care of the late init variables upQuantity and downQuantity and
-     * assign them a non-null variable of type DD.
+     * assign them a non-null variable of type DD<*>.
      */
     abstract fun initialize()
 
@@ -81,12 +80,12 @@ abstract class AstNode(val model: Session) : Cloneable {
     abstract fun <R> withDepthFirst(receiver: AstNode, block: AstNode.() -> R): R
 
     /** casts this to AADD */
-    fun asAADD(aadd: DD?): AADD =
+    fun asAADD(aadd: DD<*>?): AADD =
         if (aadd == null) model.builder.Reals
         else aadd as AADD
 
     /** casts this to IDD */
-    fun asIDD(idd: DD?): IDD =
+    fun asIDD(idd: DD<*>?): IDD =
         if (idd == null) model.builder.Integers
         else idd as IDD
 
@@ -114,7 +113,7 @@ abstract class AstNode(val model: Session) : Cloneable {
                 is AstLeaf -> if (variable != null) setOf(variable!!) else emptySet()
                 is AstBinOp -> l.getDependencies() + r.getDependencies()
                 is AstUnaryOp -> operand.getDependencies()
-                is AstBySubclasses -> emptySet()
+                is AstBySpecializations -> emptySet()
                 is AstByImplements -> emptySet()
                 is AstFunction -> {
                     val r = mutableSetOf<Variable>()
@@ -125,13 +124,22 @@ abstract class AstNode(val model: Session) : Cloneable {
                 else -> throw Exception("AstNode of unknown type.")
             }
         }
+
     fun getDependencyStrings(): Set<String> =
         this.runDepthFirst {
             when (this) {
-                is AstLeaf -> if (qualifiedName != null) setOf(qualifiedName as String) else emptySet()
+                is AstLeaf -> {
+                    if (qualifiedName != null) {
+                        if (this.parent is AstUserDefinedFunction)
+                            setOf("${namespace!!.owner.ref!!.qualifiedName}::${qualifiedName}")
+                        else
+                            setOf(qualifiedName as String)
+
+                    } else emptySet()
+                }
                 is AstBinOp -> l.getDependencyStrings() + r.getDependencyStrings()
                 is AstUnaryOp -> operand.getDependencyStrings()
-                is AstBySubclasses -> emptySet()
+                is AstBySpecializations -> emptySet()
                 is AstByImplements -> emptySet()
                 is AstFunction -> {
                     when(this){
@@ -140,7 +148,10 @@ abstract class AstNode(val model: Session) : Cloneable {
                         }
                         else-> {
                             val r = mutableSetOf<String>()
-                            for (p in parameters) r += (p.getDependencyStrings())
+
+                            for (p in parameters) {
+                                r += (p.getDependencyStrings())
+                            }
                             return@runDepthFirst r
                         }
                     }

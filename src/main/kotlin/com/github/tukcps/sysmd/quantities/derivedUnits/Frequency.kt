@@ -8,7 +8,7 @@ import com.github.tukcps.sysmd.quantities.baseUnits.Time
 private var siUnitSet = setOf(Time.Second.copy(-1))
 
 open class Frequency(name: String, symbol: String, prefix: Prefix, convFac: Double, exponent: Int = 1, isLogarithmic: Boolean = false) :
-    DerivedUnit(name, symbol, prefix, "frequency", siUnitSet, convFac, exponent, isLogarithmic) {
+    DerivedUnit(name, symbol, prefix, "Frequency", siUnitSet, convFac, exponent, isLogarithmic) {
 
     /**
      * generate UnitObjects and add them to the UnitList

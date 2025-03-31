@@ -1,25 +1,23 @@
 package services
 
-import com.github.tukcps.sysmd.compiler.loadSysMD
-import com.github.tukcps.sysmd.compiler.loadSysMDFromFile
-import com.github.tukcps.sysmd.services.session.SessionManager.testSession
 import com.github.tukcps.sysmd.cspsolver.propagate
+import util.mockup.loadKerML
 import org.junit.jupiter.api.Test
+import util.testSession
 
 class SessionMgrTests {
     @Test
     fun exportTest() = testSession {
-        loadSysMDFromFile("ISO26262.md")
+        // checkConsistency(get())
         export()
-        // Export does some checks
     }
 
     @Test
-    fun exportTestWithInitializePropagateDigital() = testSession("ISO26262") {
-        loadSysMD(input = """
-            expression x: Real(1.0..3.0).
-            expression y: Real = x+0.1 .
-            expression r: Requirement = x >= y.
+    fun exportTestWithInitializePropagateDigital() = testSession("ScalarValues") {
+        loadKerML(input = """
+            feature x: Real(1.0..3.0);
+            feature y: Real = x+0.1; 
+            feature r: Requirement = x >= y; 
             """.trimIndent())
         propagate()
         export()

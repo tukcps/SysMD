@@ -1,16 +1,20 @@
 package com.github.tukcps.sysmd.services.check
 
 import com.fasterxml.uuid.Generators
-import com.github.tukcps.sysmd.exceptions.ElementNotFoundException
+import com.github.tukcps.sysmd.exceptions.SysMDException
 import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.services.report
-import com.github.tukcps.sysmd.services.reportInfo
+import com.github.tukcps.sysmd.services.session.report
+import com.github.tukcps.sysmd.services.session.reportInfo
 import com.github.tukcps.sysmd.services.session.Session
 import java.util.*
 
 
 /**
  * Checks invariants for debugging and robustness.
+ * In particular,
+ * - the consistency of owner/owned relationships,
+ * - the use of the right UUID (v4? v5?)
+ * Normally, this should not be needed ... but who knows?
  * @param elements Collection of all elements
  * @param info Info string for error message
  */
@@ -30,7 +34,11 @@ fun checkConsistency(
 
         // Every element with an id is in the map.
         if ( it.owner.id != null && (it.owner.id !in map.keys) && it.declaredName != "Global") {
-            throw Exception("($info) Inconsistency in model: element '${it.qualifiedName}' has unknown owner id.")
+            println("  ---> Owner name: ${it.owner.ref?.qualifiedName}")
+            println("  ---> Owner UUID5 by name: ${Generators.nameBasedGenerator().generate(it.owner.ref?.qualifiedName)}")
+            println("  ---> Owner id owner.ref:  ${it.owner.ref?.elementId} (ID in model: ${it.owner.ref?.elementId in map.keys})")
+            println("  ---> Owner id owner.id:   ${it.owner.id} (ID in model: ${it.owner.id in map.keys})")
+            throw Exception("($info) Inconsistency in model: element '${it.qualifiedName}' has unknown owner id ${it.owner.id}.")
         }
         if ( it is Specialization && !it.isLibraryElement ) {
             if (it.general.id != null && map[it.general.id] == null)
@@ -44,6 +52,7 @@ fun checkConsistency(
 
 /**
  * Checks for debugging and robustness.
+ * This checks that all element ids are in the model's repository.
  */
 fun checkConsistency(elements: HashMap<UUID, Element>, global: UUID, info: String?= "") {
     if (elements[global] == null)
@@ -59,7 +68,7 @@ fun checkConsistency(elements: HashMap<UUID, Element>, global: UUID, info: Strin
  * Function that does the semantic checks on the KerML model data.
  * Errors and issues are reported to the agenda.
  */
-fun Session.checkIdentifications() {
+fun Session.checkNameResolutionSuccessful() {
 
     // Checks whether superclass was resolved (e.g., x isA y, with unknown y).
     // Also checks Feature types.
@@ -74,11 +83,9 @@ fun Session.checkIdentifications() {
         }
     }
 
-    // Checks whether definitions were resolved
+    // Checks whether all elements without owner could be merged
     getUnownedElements().forEach {
-        report(global,
-            "Could not resolve owner '${it.path}:${it.startOfPath.qualifiedName}' or ${it.element.escapedName()}",
-            ElementNotFoundException(it.element, "Could not resolve owner '${it.path}:${it.startOfPath.qualifiedName}' or ${it.element.escapedName()}"))
+        report(SysMDException(message = "Could not resolve owning package '${it.startOfPath.qualifiedName}::${it.path}' for adding ${it.element.escapedName()?:it.element.elementType} ", priority = 5))
     }
 }
 
@@ -125,10 +132,15 @@ fun Session.checkOwnership() {
 
 /**
  * Checks that all library- or standard elements have a UUID 5, not UUID 4.
+ * And that the UUID 5 is generated from the right name.
  */
 internal fun Session.checkLibraryElementIds() {
     get().forEach { element ->
-        if ( (element.isLibraryElement || element.isStandard ) && !element.isTransient){
+        if ( (element.isLibraryElement || element.isStandard )
+            && !element.isTransient
+            && (element.declaredName != null || element.declaredShortName != null)
+            && element !is Multiplicity)
+        {
             val uuid5 = Generators.nameBasedGenerator().generate(element.qualifiedName)
             if (element.elementId != uuid5)
                 report(element, "Library element ${element.qualifiedName} does not have correct UUID5")

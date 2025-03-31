@@ -1,1 +1,0 @@
-package com.github.tukcps.sysmd.ui.viewmodel

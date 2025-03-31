@@ -1,12 +1,13 @@
 package constraintnettests
 
 import com.github.tukcps.sysmd.cspsolver.normalizer.CDCL
-import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Disabled
-import org.junit.jupiter.api.Test
-import java.io.File
 
-@Disabled
+import java.io.File
+import kotlin.test.Ignore
+import kotlin.test.Test
+import kotlin.test.assertTrue
+
+@Ignore
 class CDCLTest {
 
     private val solver : CDCL = CDCL()
@@ -141,7 +142,7 @@ class CDCLTest {
      * Use a set of files that contain satisfiable CNFs in the DIMACS format to test the CDCL algorithm.
      * It searches for all satisfying assignments.
      */
-    @Disabled("Reason: Finding all solutions of the 133 test files takes too long")
+    @Ignore("Reason: Finding all solutions of the 133 test files takes too long")
     @Test
     fun satTestAllAssignments() {
         //solver.deactivateDebugMode()

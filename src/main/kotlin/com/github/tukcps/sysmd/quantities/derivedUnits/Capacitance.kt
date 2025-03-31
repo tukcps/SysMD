@@ -14,7 +14,7 @@ private var siUnitSet = setOf(
 )
 
 open class Capacitance(name: String, symbol: String, prefix: Prefix, convFac: Double, exponent: Int = 1, isLogarithmic: Boolean = false) :
-    DerivedUnit(name, symbol, prefix, "capacitance", siUnitSet, convFac, exponent, isLogarithmic) {
+    DerivedUnit(name, symbol, prefix, "Capacitance", siUnitSet, convFac, exponent, isLogarithmic) {
 
     /**
      * generate UnitObjects and add them to the UnitList

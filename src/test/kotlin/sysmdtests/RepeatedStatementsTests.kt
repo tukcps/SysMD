@@ -1,9 +1,8 @@
 package sysmdtests
 
-import com.github.tukcps.sysmd.compiler.loadSysMD
-import com.github.tukcps.sysmd.services.session.SessionManager.testSession
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Test
+import util.mockup.loadKerML
+import kotlin.test.*
+import util.testSession
 
 class RepeatedStatementsTests {
 
@@ -13,9 +12,9 @@ class RepeatedStatementsTests {
      * Here: Specialization element; must be merged as well.
      */
     @Test
-    fun repeatedClassDeclaration() = testSession(loadKerML = false) {
+    fun repeatedClassDeclaration() = testSession("Occurrences") {
         settings.catchExceptions=false
-        loadSysMD(""" 
+        loadKerML(""" 
                 class A; 
                 class A; 
         """)
@@ -23,20 +22,17 @@ class RepeatedStatementsTests {
     }
 
     @Test
-    fun repeatedClassDeclaration2() = testSession(loadKerML = false) {
+    fun repeatedClassDeclaration2() = testSession("Occurrences") {
         settings.catchExceptions=false
-        loadSysMD("class A;")
-        loadSysMD("class A;")
+        loadKerML("class A;")
+        loadKerML("class A;")
         assertEquals(0, status.exceptions.size, status.exceptions.toString())
     }
 
     @Test
-    fun repeatedFeatureDeclaration() = testSession(loadKerML = false) {
+    fun repeatedFeatureDeclaration() = testSession("ScalarValues") {
         settings.catchExceptions=false
-        loadSysMD(""" 
-                package ScalarValues {
-                    datatype Integer; 
-                }
+        loadKerML(""" 
                 feature A; 
                 feature A; 
         """)

@@ -7,6 +7,7 @@ import androidx.compose.ui.text.font.FontWeight
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tukcps.sysmd.compiler.scanner.Token.Definitions.keywords
+import com.github.tukcps.sysmd.logger
 import com.github.tukcps.sysmd.settings
 import com.github.tukcps.sysmd.ui.styles.AppTheme
 import com.github.tukcps.sysmd.ui.styles.Fonts
@@ -36,10 +37,7 @@ class Settings {
     // Set user home as start - otherwise, users end up in mostly empty directory that cannot be left ...
     // User can then set it to less restricted directory.
     var dataFolder: String = System.getProperty("user.home") + "/SysMD"
-    var projectFolder: String? = null
-        get() = field ?:dataFolder
-
-    var imagesToCache = 10
+    var imagesToCache = 20
 
     //var textSize: TextSize = TextSize.NORMAL
     @JsonIgnore
@@ -73,32 +71,37 @@ class Settings {
     val rest = RestSettings()
 
     var initializationNumber: Int = 2
-    var propagationNumber: Int = 1
+    var propagationNumber: Int = 100
     var agendaExpertMode = false
 }
-
 
 val mapper = ObjectMapper()
 
 fun importSettings() {
-    val sysmdfolder = System.getProperty("user.home") + "/SysMD"
+    val sysMDFolder = System.getProperty("user.home") + "/SysMD"
     val json: String?
     try {
-        val inputStream: InputStream = File("${sysmdfolder}/sysmd_settings.json").inputStream()
+        val inputStream: InputStream = File("${sysMDFolder}/settings.json").inputStream()
         json = inputStream.bufferedReader().use { it.readText() }
         settings = mapper.readValue(json, Settings::class.java)
     } catch (e: IOException) {
-        println("Could not open file sysmd_settings.json, using default-settings.")
+        logger.info("Couldn't find settings '${sysMDFolder}/settings.json', using defaults and create new settings file.")
+        exportSettings()
     }
 }
 
 
 fun exportSettings() {
-    val sysmdfolder = System.getProperty("user.home") + "/SysMD"
+    val sysMDFolder = System.getProperty("user.home") + "/SysMD"
     val data = mapper.writeValueAsString(settings)
     try {
-        File("${sysmdfolder}/sysmd_settings.json").writeText(data)
+        val settings = File("${sysMDFolder}/settings.json")
+        if (!settings.exists()) {
+            logger.info("No settings.json file in $sysMDFolder; creating a new")
+            settings.createNewFile()
+        }
+        settings.writeText(data)
     } catch (e: Exception) {
-        e.printStackTrace()
+        logger.error("Error exporting settings")
     }
 }

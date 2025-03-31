@@ -1,3 +1,3 @@
 package com.github.tukcps.sysmd.model.kerml
 
-interface Interaction: Association
+interface Interaction: Association, Behavior

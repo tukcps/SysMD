@@ -1,7 +1,5 @@
 ![SysMD](doc/pics/SysMD-logo.png)
-# SysMD Notebook 
-
-_(c) University of Kaiserslautern, Chair of Cyber-Physical Systems (Prof. Ch. Grimm)_
+# SysMD Notebook
 
 This Gradle project contains the SysMD Notebook. 
 It supports the creation of _executable_ requirements and specification documents in a *Notebook-like* way.
@@ -13,8 +11,9 @@ With executable requirements and specification documents, we mean that
 For this purpose, SysMD Notebook implements
 
 - a Notebook-like user interface, 
-- a subset of SysML v2 textual and KerML in code cells; unfortunately, still with incompatibilities and limitations,
-- a constraint solver for checking the consistency of SysML v2 models and computing an over-approximation of consistent values, and
+- a SysML v2 textual and KerML compiler in code cells; unfortunately, still with incompatibilities and limitations,
+- a constraint solver for checking the consistency of SysML v2 models 
+  and computing an over-approximation of consistent values.
 
 ![SysMD](doc/pics/SysMD-Screenshot.png)
 
@@ -26,38 +25,56 @@ On this metamodel, the constraint solver checks consistency of
 
 and returns an over-approximation of values that satisfy all constraints or an empty set if no consistent values exist.
 
-
 > More documentation is provided in 'SysMD Kickstart' and 'SysML v2 tutorial.' projects.
 > Open them after starting SysMD notebook! 
-
 
 Also, in the folder 'doc' some documentation is provided. 
 
 - [Scientific Papers](doc/publications/papers.md)
 - [Overview of SysMD specific extensions](doc/SysMDLanguageExtensions.md)
-- [List of supported units](doc/Quantities/AvaillableUnits.md)
-- [Modeling of time and date](doc/Quantities/Time.md)
-
+- [List of supported units](doc/AvailableUnits.md)
+- [Modeling of time and date](doc/Time.md)
 
 ## Running SysMD Notebook
+
+### via Installer
+
+1. Make shure you have at least Java 21 installed on your Computer.
+2. Download the Installer of the SysMD Notebook from the "Releases" page in GitHub.
+3. Run the Installer  and use the SysMD Notebook.
+
+### via Build System
+
 To run the frontend, just use the build system Gradle: 
 
 ```
-./gradlew run
+./gradlew bootRun
 ```
 resp. on Windows systems: 
 
 ```
-gradlew.bat
+gradlew.bat bootRun
 ```
 
-## Creating executables
+## Creating installer
 
-Use the gradle target  ```packageDistributionForCurrentOS```.
+To create a platform-specific installer, use the gradle target  ```sysMDPackage```.
 
 ```
-./gradlew packageDistributionForCurrentOS
+./gradlew sysMDPackage
 ```
 
-Take care that the Gradle settings in IDEs like IntelliJ IDEA are set to use the Gradle 
-wrapper settings.
+# Release notes (only major versions)
+
+- SysMD 4.0 implements the platform-specific REST API of SysML v2. 
+For this purpose, SysMD 4.0 includes Spring Boot for the REST API. 
+
+# Acknowledgements 
+SysMD was developed and is maintained by
+- University of Kaiserslautern-Landau
+- HOOD Group
+
+The work was partially supported by EC and German BMBF within the projects 
+- Arrowhead Tools (EC & BMBF)
+- GENIAL! (BMBF)
+- KI4BoardNet (BMBF)

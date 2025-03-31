@@ -2,30 +2,36 @@ package com.github.tukcps.sysmd.ui.viewmodel
 
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.*
-import androidx.compose.runtime.snapshots.*
+import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.text.input.TextFieldValue
-import com.github.tukcps.sysmd.compiler.loadProjectSourceOnly
-import com.github.tukcps.sysmd.compiler.parser.dropFirstName
-import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.model.kerml.implementation.*
-import com.github.tukcps.sysmd.rest.AgilaRepository.getCommits
-import com.github.tukcps.sysmd.rest.AgilaRepository.getElementById
-import com.github.tukcps.sysmd.rest.AgilaRepository.getElements
-import com.github.tukcps.sysmd.rest.AgilaRepository.getElementsForUi2
-import com.github.tukcps.sysmd.rest.AgilaRepository.postCommit
-import com.github.tukcps.sysmd.services.report
-import com.github.tukcps.sysmd.services.repositories.local.*
+import com.github.tukcps.sysmd.logger
+import com.github.tukcps.sysmd.model.kerml.AnnotatingElement
+import com.github.tukcps.sysmd.model.kerml.Element
+import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
+import com.github.tukcps.sysmd.model.kerml.getOwned
+import com.github.tukcps.sysmd.model.kerml.implementation.AnnotatingElementImplementation
+import com.github.tukcps.sysmd.model.kerml.implementation.TextualRepresentationImplementation
+import com.github.tukcps.sysmd.model.util.dropFirstName
+import com.github.tukcps.sysmd.rest.RESTRepository.getCellsForUi
+import com.github.tukcps.sysmd.rest.RESTRepository.getCommit
+import com.github.tukcps.sysmd.rest.RESTRepository.getElementById
+import com.github.tukcps.sysmd.services.repositories.local.ElementData
+import com.github.tukcps.sysmd.services.repositories.local.SysMDElementNavigationService.getElements
+import com.github.tukcps.sysmd.services.repositories.local.toElement
 import com.github.tukcps.sysmd.services.session.Session
 import com.github.tukcps.sysmd.ui.MoveRequest
 import com.github.tukcps.sysmd.ui.viewmodel.TextualRepresentationViewModel.Companion.Language
 import com.github.tukcps.sysmd.ui.viewmodel.TextualRepresentationViewModel.Companion.language
-import com.github.tukcps.sysmlv2.entities.*
+import io.github.tukcps.sysmlv2.api.entities.Commit
+import io.github.tukcps.sysmlv2.api.entities.ElementDAO
+import io.github.tukcps.sysmlv2.api.entities.Identified
+import io.github.tukcps.sysmlv2.api.entities.Project
 import org.commonmark.Extension
 import org.commonmark.ext.front.matter.YamlFrontMatterExtension
 import org.commonmark.ext.gfm.tables.TablesExtension
 import org.commonmark.parser.Parser
 import java.io.File
-import java.util.UUID
+import java.util.*
 
 
 /**
@@ -35,23 +41,24 @@ import java.util.UUID
  *
  * For the tab, we save
  *  - a list of elements that can be edited; an element is a Package or an Element.
- *  - the agila model (must be shared, if several tabs are active, not yet done)
+ *  - the model (must be shared, if several tabs are active, not yet done)
  *  - the selected index of an element, and its section (description, code)
- * @param kerMlModel internal model that is the result of the compilation and analysis;
+ * @param sessionState internal model that is the result of the compilation and analysis;
  *        does not trigger any updates of any views.
  * @param refreshTrees lambda that can be called when a refresh of the tree-views is needed
  */
 class EditorTabModel(
-    override val kerMlModel: MutableState<Session>,
+    val sessionState: MutableState<Session>,
     val refreshTrees: () -> Unit
-) : TabModel {
+) {
     var file: File? = null
-    override var tabTitle: MutableState<String> = mutableStateOf("")
+    val session by sessionState
+    val tabTitle: MutableState<String> = mutableStateOf("")
 
     lateinit var openFileInNewTab: (File) -> Unit
 
     /** The collapsed element ids in the tab */
-    val collapsedElementIds: SnapshotStateMap<Int, Boolean> = mutableStateMapOf()
+    val collapsedCellIndices: SnapshotStateMap<Int, Boolean> = mutableStateMapOf()
 
     /** The hidden element ids in the tab */
     val hiddenElementIds: SnapshotStateMap<Int, Boolean> = mutableStateMapOf()
@@ -69,10 +76,7 @@ class EditorTabModel(
     private var commitList = mutableListOf<Commit>()
     private var oldCommitElementsDAOList = mutableListOf<ElementDAO>()
     private var newCommitElementsDaoList = mutableListOf<ElementDAO>()
-    override var doPostCommit = mutableStateOf(false)
-    override var commitId:UUID? = null
-    override var branchId:UUID? = null
-    override var owningProjectId: UUID? = null
+    private var doPostCommit = mutableStateOf(false)
 
     val elementEdited: MutableState<Boolean> = mutableStateOf(false)
     val references = InternalRefReference(editorTabModel = this) { generateTableOfContents() }
@@ -83,8 +87,6 @@ class EditorTabModel(
     private fun toMarkdownString(): String {
         var str = ""
         for (e in cells) {
-            if(e.language.value == Language.TABLE)
-                e.tableViewModel.value.toText()
             // The lines of the description section.
             val languageStr = if (e.language.value !in setOf(Language.MARKDOWN, Language.YAML)) {
                 e.language.value.toString()+if (e.namespace.value.isNotBlank()) "::"+e.namespace.value else ""
@@ -103,24 +105,21 @@ class EditorTabModel(
     val selectedIndex = mutableStateOf(0)
 
     /**
-     * Reads file directly into the view-model. It creates annotation elements that
+     * Reads a file directly into the view-model. It creates annotation elements that
      * hold the textual models and the comments for documentation.
      * The textual models are, however, not compiled.
      * @param file The file that is read into the view-model.
      */
-    override fun open(file: File, kerMlModel: Session) {
+    fun open(file: File, sessionState: MutableState<Session>) {
         /**
          * Adds a TextualRepresentation view model to the model elements.
          */
-        fun buildViewModelFromModel(
-            element: Element,
-            modelElements: SnapshotStateList<TextualRepresentationViewModel>
-        ) {
+        fun buildViewModelFromModel(element: Element) {
             element.ownedElement.forEach {
                 val e = it.ref!!
                 if (e is TextualRepresentation) {
                     val elementModel = TextualRepresentationViewModel(
-                        kerMlModel = mutableStateOf(kerMlModel),
+                        sessionState = sessionState,
                         body = mutableStateOf(TextFieldValue(e.body)),
                         textualRepresentation = e,
                         refreshTrees = refreshTrees
@@ -137,14 +136,13 @@ class EditorTabModel(
 
         if (file.isFile) {
             try {
-                this.tabTitle.value = file.name.dropLast(3)
+                this.tabTitle.value = " " + file.name.dropLast(3) + " "
                 this.file = file
-                kerMlModel.loadProjectSourceOnly(projectName = file.name.dropLast(3).trim('/', '\\') )
-                fileAnnotation = kerMlModel.global.getOwned<AnnotatingElement>(name = file.name)
-                buildViewModelFromModel(fileAnnotation!!, cells)
+                fileAnnotation = session.global.getOwned<AnnotatingElement>(name = file.name)
+                buildViewModelFromModel(fileAnnotation!!)
                 refreshTrees()
             } catch (error: Exception) {
-                kerMlModel.report(exception = error)
+                logger.error(error.message, error)
             }
         }
     }
@@ -180,52 +178,51 @@ class EditorTabModel(
     fun onAddRequest(index: Int) {
         val textualRepresentationViewModel =
             TextualRepresentationViewModel(
-                kerMlModel = kerMlModel,
+                sessionState = sessionState,
                 refreshTrees = refreshTrees,
                 textualRepresentation = TextualRepresentationImplementation(language = "Markdown", body = ""),
                 body = mutableStateOf(TextFieldValue()),
             )
-        kerMlModel.value.create(
+        sessionState.value.create(
             textualRepresentationViewModel.textualRepresentation,
-            kerMlModel.value.global
+            sessionState.value.global
         )
         cells.add(index, textualRepresentationViewModel)
     }
 
     /**
      * Reads Commit directly into the view-model. It creates annotation elements that
-     * hold the textual models and the comments for documentation. The textual models are however
+     * hold the textual models and the comments for documentation. The textual models are, however,
      * not compiled.
      * @param commit The commit that is read into the view-model.
      * @param project The Project the commit is opened
-     * @param kerMlModel the Agila Session Model, that is required
+     * @param kerMlModel the Session Model that is required
      */
     fun openSingleCommit(commit: Commit, project: Project, kerMlModel: Session) {
         fileAnnotation = AnnotatingElementImplementation(declaredName = commit.description, body = "")
         fileAnnotation = kerMlModel.create(fileAnnotation!!, kerMlModel.global)
         // fileName.value = commitTree.commit.name.toString()
-        owningProjectId = project.id
 
         /**
          *  TODO(Order so that the first commit in the ThreeView has the last State (last commit)
          *          for(i in commitList.size-1 downTo  0)
          */
-        commitList = getCommits(project.id).toMutableList()
+        commitList = getCommit(project).toMutableList()
         // get all textual Representation Elements of the last Commit to know the initial State of the model Elements later
 
         var elementModel: TextualRepresentationViewModel
-        oldCommitElementsDAOList = getElements(project.id, commit.id)
-        val oldCommitElementsIds = getElementsForUi2(project.id, commit.id)
+        oldCommitElementsDAOList = getElements(project, commit).toMutableList()
+        val oldCommitElementsIds = getCellsForUi(project, commit)
         println("====> Old Number of Ids: " + oldCommitElementsIds.size)
 
         for (elemID in oldCommitElementsIds) {
-            val e = getElementById(project.id, commit.id, elemID)
+            val e = getElementById(project, commit, elemID)
             val element = e.toElement()
 
             if (element is TextualRepresentation) {
                 element.model = kerMlModel
                 elementModel = TextualRepresentationViewModel(
-                    kerMlModel = mutableStateOf(kerMlModel),
+                    sessionState = mutableStateOf(kerMlModel),
                     language = mutableStateOf(Language.SYS_MD),
                     body = mutableStateOf(TextFieldValue(text = element.body)),
                     textualRepresentation = element,
@@ -234,8 +231,7 @@ class EditorTabModel(
                 when (e.language) {
                     "SysMD"      -> elementModel.language.value = Language.SYS_MD
                     "SysML"      -> elementModel.language.value = Language.SYS_ML
-                    "FormSysMd"  -> elementModel.language.value = Language.FORM
-                    "TableSysMD" -> elementModel.language.value = Language.TABLE
+                    "YAML"       -> elementModel.language.value = Language.YAML
                     else         -> elementModel.language.value = Language.MARKDOWN
                 }
                 cells.add(elementModel)
@@ -244,16 +240,16 @@ class EditorTabModel(
         generateTableOfContents()
     }
 
-    override var close: (() -> Unit)? = null
+    var close: (() -> Unit)? = null
 
     /**
      * Compile all cells; first, only translation, after all are compiled, calls
      * solver and updates display lines with errors/infos.
      */
-    override fun compile() {
-        kerMlModel.value.loadUsage()
+    fun compile() {
+        sessionState.value.loadUsages()
         cells.forEach { cell ->
-            kerMlModel.value.status.exceptions.clear()
+            sessionState.value.status.exceptions.clear()
             cell.compile(propagate = false)
         }
         cells.forEach { it.display() }
@@ -264,7 +260,7 @@ class EditorTabModel(
      * Saves the currently open tab into its file.
      * Only for local Files
      */
-    override fun save() {
+    fun save() {
         val str = toMarkdownString()
         file?.writeText(str)
     }
@@ -274,15 +270,17 @@ class EditorTabModel(
      * This also affects the error messages and results.
      */
     fun reset() {
-        for (element in cells)
-            element.reset()
+        for (element in cells) {
+            element.clearView()
+            element.textualRepresentation.model = sessionState.value
+        }
     }
 
     /**
      * Sets Up the environment for a Commit
      * Checks all the conditions before a Commit
      */
-    override fun checkBeforeCommit(editorTab: EditorTabModel) {
+    fun checkBeforeCommit(editorTab: EditorTabModel) {
         val bodyEdited = editorTab.elementEdited.value
         val languageChanged = mutableStateOf(false)
 
@@ -298,7 +296,7 @@ class EditorTabModel(
         doPostCommit.value = (bodyEdited || languageChanged.value)
     }
 
-    override fun setUpCommit(commitName: String, commitDescription: String) {
+    fun setUpCommit(commitName: String, commitDescription: String) {
         val ownedElements = mutableListOf<Identified>()
 
         // Create the AE
@@ -306,7 +304,7 @@ class EditorTabModel(
             elementId = UUID.randomUUID(),
             name = "$commitName.md",
             type = "AnnotatingElement",
-            ownedElements = ownedElements,
+            ownedElement = ownedElements,
             body = ""
         )
         newCommitElementsDaoList.add(annotatedElement)
@@ -325,7 +323,8 @@ class EditorTabModel(
         for (elementViewModel in cells) {
             /**
              *  Comparing bodies to identify Updated elements that should keep their ID requires high time execution
-             *  Even with the implementation of versions for each Element ( cells ) . It will not make sense, because, we won't be able to
+             *  Even with the implementation of versions for each Element ( cells ).
+             *  It will not make sense because we won't be able to
              *  identify edited cells without comparing Bodies ( which is what we want to avoid.)
              */
 
@@ -366,9 +365,8 @@ class EditorTabModel(
      * Commits to the DataBase
      * TODO (This should also commit a  local project as new project in the Database?)
      */
-    override fun validateCommit(name: String, description: String) {
-        println("BranchId: $branchId")
-        postCommit("${name}.md", description, owningProjectId!!, newCommitElementsDaoList, branchId = branchId)
+    fun validateCommit(name: String, description: String) {
+        // postCommit("${name}.md", description, kerMlModel.value.project!!.id, newCommitElementsDaoList, branchId = branchId)
     }
 
     fun generateTableOfContents() {

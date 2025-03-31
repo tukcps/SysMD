@@ -1,8 +1,7 @@
 
+import org.gradle.internal.os.OperatingSystem
 import org.jetbrains.compose.ExperimentalComposeLibrary
-import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 /*
  * Gradle build file for SysMD Notebook.
@@ -17,27 +16,29 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
  * - also set the value standalone according to your setup
  */
 group   = "com.github.tukcps"
-version = "3.0.17"
-val jaaddVersion = "3.1.0"
-val sysmlapiVersion = "3.0.5"
+version = "3.9.6"               // must be number.number.number
+val aaddVersion = "0.1.9"
+val sysmlapiVersion = "3.9.4"
+val useMavenAADD = true
+val useMavenSysMLAPI = true
 
-if (JavaVersion.current() < JavaVersion.VERSION_17) {
-    throw GradleException("The build must be run with Java 17 or newer; best use Java 19!")
+if (JavaVersion.current() < JavaVersion.VERSION_21) {
+    throw GradleException("The build must be run with JVM 21 or newer.")
 } else {
     val versionFile = file("src/main/resources/version")
     versionFile.createNewFile()
     versionFile.writeText("$version")
 }
 
-
 // Plugins needed: id and versions.
 plugins {
     // Plugin that checks for updates:
     id("com.github.ben-manes.versions") version "0.51.0"
-    // id("java-library")
     id("idea")
-    kotlin("jvm") version "2.0.20"
-    kotlin("plugin.serialization") version "2.0.20"
+    kotlin("jvm") version "2.1.20"
+    kotlin("plugin.serialization") version "2.1.20"
+    id("org.springframework.boot") version "3.4.3"
+    id("io.spring.dependency-management") version "1.1.7"
     alias(libs.plugins.jetbrainsCompose) apply true
     alias(libs.plugins.compose.compiler) apply true
     id("maven-publish")
@@ -45,31 +46,8 @@ plugins {
 
 // Repositories where to search
 repositories {
-    mavenLocal()
     mavenCentral()
     google()
-
-    //jAADD
-    maven ("https://cpsgit.informatik.uni-kl.de/api/v4/projects/87/packages/maven") {
-        name = "GitLab"
-        credentials(HttpHeaderCredentials::class) {
-            name = "Deploy-Token"
-            value = "m2XeQuM-1sqMXeUX-2-X"
-        }
-        authentication {
-            create<HttpHeaderAuthentication>("header")
-        }
-    }
-
-    // SysML-API
-    maven("https://cpsgit.informatik.uni-kl.de/api/v4/projects/164/packages/maven") {
-        name = "GitLab"
-        credentials(HttpHeaderCredentials::class) {
-            name = "Deploy-Token"
-            value = "ri2mY2J5Y5tqT2U4JfJR"
-        }
-        authentication { create<HttpHeaderAuthentication>("header") }
-    }
 
     // LaTeX Rendering for UI
     maven ("https://jitpack.io")
@@ -79,70 +57,76 @@ repositories {
 // Dependencies
 dependencies {
     implementation(compose.desktop.currentOs)
-    
-    // Check if we do a standalone-build or a hierarchical build with git submodules
-    val standalone: Boolean = if (org.gradle.internal.os.OperatingSystem.current().isWindows)
-        !File("${System.getProperty("user.home")}\\agila.hierarchical.build").exists()
-    else
-        !File("/tmp/agila.hierarchical.build").exists()
 
-    if(file("../jaadd").exists()&&!standalone) {
-        println("  *** using jaadd from local clone in ./jaadd           ***")
-        implementation(project(":jaadd"))
+    // Check if we do a standalone-build or a hierarchical build with git submodules
+    if(file("aadd").exists() && !useMavenAADD) {
+        println("  *** using AADD from project clone in ./aadd               ***")
+        implementation(project(":aadd"))
     } else {
-        println("  *** using jaadd $jaaddVersion from CPS Maven repo     ***")
-        implementation("com.github.tukcps:jaadd:$jaaddVersion")
+        println("  *** using AADD v$aaddVersion from Maven repository           ***")
+        implementation("io.github.tukcps:aadd:$aaddVersion")
+        implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0")
     }
 
-    if (file("../agila-base").exists()&&!standalone) {
-        println("  *** using SysMD from local clone in ./sysmd           ***")
+    if (!useMavenSysMLAPI) {
+        println("  *** using SysMLv2API from project clone in ./sysmlapi     ***")
         implementation(project(":sysmlapi"))
     } else {
-        println("  *** using SysML API version $sysmlapiVersion from CPS Maven repo     ***")
-        implementation("com.github.tukcps:sysmlapi:$sysmlapiVersion")
+        println("  *** using SysML API $sysmlapiVersion from the Maven repository   ***")
+        implementation("io.github.tukcps:sysmlapi:$sysmlapiVersion")
     }
+
+    implementation(compose.components.resources)
 
     // For UUID version 5 (name-based)
     implementation("com.fasterxml.uuid:java-uuid-generator:5.1.0")
 
-    implementation("org.jetbrains.compose.material3:material3-desktop:1.6.11")
+    implementation("org.jetbrains.compose.material3:material3-desktop:1.7.3")
 
     // These are necessary for the annotations in the models.
-    implementation("org.springframework:spring-web:6.1.10")
-    implementation("org.slf4j:slf4j-nop:2.0.13")
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.hibernate.validator:hibernate-validator:8.0.2.Final")
+
+    // Open API / Swagger
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.5")
 
     // Needed for annotations for Spring Boot in package rest
-    implementation("org.json:json:20240303")
-    implementation("com.fasterxml.jackson.core:jackson-databind:2.17.0")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.17.1")
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.2")
+    implementation("com.fasterxml.jackson.core:jackson-databind")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
 
     // Parsing markdown to AST
-    implementation("org.commonmark:commonmark:0.23.0")
-    implementation("org.commonmark:commonmark-ext-gfm-tables:0.23.0")
-    implementation("org.commonmark:commonmark-ext-image-attributes:0.23.0")
-    implementation("org.commonmark:commonmark-ext-yaml-front-matter:0.23.0")
-    implementation("org.commonmark:commonmark-ext-gfm-strikethrough:0.23.0")
-    implementation("org.commonmark:commonmark-ext-ins:0.23.0")
+    implementation("org.commonmark:commonmark:0.24.0")
+    implementation("org.commonmark:commonmark-ext-gfm-tables:0.24.0")
+    implementation("org.commonmark:commonmark-ext-image-attributes:0.24.0")
+    implementation("org.commonmark:commonmark-ext-yaml-front-matter:0.24.0")
+    implementation("org.commonmark:commonmark-ext-gfm-strikethrough:0.24.0")
+    implementation("org.commonmark:commonmark-ext-ins:0.24.0")
 
     // Some more icons ...
-    implementation("org.jetbrains.compose.material:material-icons-extended-desktop:1.6.11")
+    implementation(compose.components.resources)
+    implementation("org.jetbrains.compose.material:material-icons-extended:1.7.3")
     implementation("br.com.devsrsouza.compose.icons.jetbrains:line-awesome:1.0.0")
 
     // Rendering of LaTeX in MD
     implementation("com.github.opencollab.jlatexmath:jlatexmath:1.0.7")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
 
     // Needed for state diagrams (HOOD GmbH)
     implementation ("org.diagramsascode:diagramsascode-image:0.1.5")
+    implementation("org.apache.xmlgraphics:batik-transcoder:1.18")
+    implementation("org.apache.xmlgraphics:batik-codec:1.18")
 
     // Use the Kotlin JUnit integration.
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:2.0.0")
-    testImplementation(platform("org.junit:junit-bom:5.10.3"))
-    testImplementation("org.junit.jupiter:junit-jupiter:5.10.3")
-    
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:2.1.10")
+    testImplementation(platform("org.junit:junit-bom:5.12.0"))
+
     // compose ui tests
     testImplementation(kotlin("test"))
+    testImplementation("org.springframework.boot:spring-boot-starter-test:3.4.3") {
+        exclude(group = "org.mockito", module = "mockito-core")
+    }
+
     @OptIn(ExperimentalComposeLibrary::class)
     testImplementation(compose.uiTest)
     testImplementation(compose.desktop.currentOs)
@@ -150,62 +134,20 @@ dependencies {
     testImplementation(compose.desktop.currentOs)
 }
 
-
-// The application created in various distributables
-// only for standalone:
-compose.desktop {
-
-    val standalone = !File("/tmp/agila.hierarchical.build").exists()
-    if (standalone) {
-        application {
-            mainClass = "com.github.tukcps.sysmd.MainKt"
-            nativeDistributions {
-                targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-                packageName = "SysMD notebook"
-                description = "Notebook frontend for the SysMD language"
-                copyright   = "(c) 2020-2024, University of Kaiserslautern, Chair of Cyber-Physical Systems"
-
-                macOS {
-                    setDockNameSameAsPackageName = true
-                    iconFile.set(project.file("src/main/resources/SysMD-Icon.icns"))
-                }
-                windows {
-                    shortcut = true
-                    menu = true
-                    menuGroup = "Genial!"
-                    iconFile.set(project.file("src/main/resources/SysMD-Icon.ico"))
-                }
-                linux {
-                    iconFile.set(project.file("src/main/resources/SysMD-Icon.png"))
-                }
-            }
-        }
-    }
+// Don't use the regular jar as the project is a spring boot project.
+tasks.named<Jar>("jar") {
+    enabled = false
 }
 
-
-// Publishing of jar and pom
-publishing {
-    publications {
-        create<MavenPublication>("appel") {
-            from(components["java"])
-        }
-    }
-
-    repositories {
-        maven("https://cpsgit.informatik.uni-kl.de/api/v4/projects/117/packages/maven") {
-            name = "GitLab"
-            credentials(HttpHeaderCredentials::class) {
-                name = "Deploy-Token"
-                value = "jDN-qwxvyFW9DxXPqCJL"
-            }
-            authentication {
-                create<HttpHeaderAuthentication>("header")
-            }
-        }
-    }
+// Sets the file name of the bootJar
+tasks.named<Jar>("bootJar") {
+    archiveFileName.set("sysmd-$version.jar")
 }
 
+compose.resources {
+    publicResClass = false
+    generateResClass = auto
+}
 
 // Configuration of tasks
 tasks.test {
@@ -219,20 +161,60 @@ kotlin {
     }
 }
 
-
 tasks.withType<JavaCompile> {
     options.release.set(17)
 }
 
-tasks.withType<KotlinCompile> {
-    compilerOptions.freeCompilerArgs.addAll(
-        "-P",
-        "plugin:androidx.compose.compiler.plugins.kotlin:metricsDestination="+project.projectDir.absolutePath+"/.gradle/composeDebug/metrics",
-    )
-}
-tasks.withType<KotlinCompile> {
-    compilerOptions.freeCompilerArgs.addAll(
-        "-P",
-        "plugin:androidx.compose.compiler.plugins.kotlin:reportsDestination="+project.projectDir.absolutePath+"/.gradle/composeDebug/reports",
-    )
+/**
+ * Task that generates an installer package for SysMD Notebook.
+ * For Windows, WiX-Tools 3.0 - 3.11.2 must be installed.
+ * If it does not work, make bootJar explicitly first and ensure that the folder 'libraries' is empty before.
+ */
+tasks.register<Exec>("sysMDPackage") {
+    dependsOn("bootJar")
+
+    val os = OperatingSystem.current()
+
+    // Package type, depending on OS
+    val packageType = when {
+        os.isWindows -> "msi"
+        os.isMacOsX -> "dmg"
+        os.isLinux -> "deb"
+        else -> throw GradleException("Unsupported OS: ${os.name}")
+    }
+
+    // Icon path, depending on OS
+    val iconPath = when {
+        os.isWindows -> "src/main/resources/SysMD-Icon.ico"
+        os.isMacOsX -> "src/main/resources/SysMD-Icon.icns"
+        os.isLinux -> "src/main/resources/SysMD-Icon.png" // if needed by Linux
+        else -> throw GradleException("Unsupported OS: ${os.name}")
+    }
+
+    // Additional arguments for jPackage, depending on OS
+    val additionalArgs = when {
+        os.isWindows -> listOf("--win-shortcut", "--win-menu", "--win-dir-chooser", "--win-per-user-install")
+        os.isMacOsX -> emptyList()
+        os.isLinux -> emptyList()
+        else -> throw GradleException("Unsupported OS: ${os.name}")
+    }
+
+    // Combination of arguments in a list of parameters for command line
+    val args = listOf(
+        "jpackage",
+        "--name", "SysMD Notebook",
+        "--vendor", "Univ. Kaiserslautern-Landau, Chair of Cyber-Physical Systems",
+        "--app-version", version,
+        "--input", "build/libs",
+        "--main-jar", "sysmd-$version.jar",
+        "--type", packageType,
+        "--dest", "build/installer",
+        "--icon", iconPath,
+        "--app-content", "install",
+        "--java-options", """ "-splash:\${"$"}APPDIR/install/SysMD-Logo.png" """,
+        "--resource-dir", "src/main/resources"      // location of resources
+    ) + additionalArgs
+
+    // Finally, execute jPackage command line
+    commandLine(args)
 }

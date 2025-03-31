@@ -1,8 +1,8 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import com.github.tukcps.aadd.AADD
-import com.github.tukcps.sysmd.model.expression.AstNode
+import io.github.tukcps.aadd.AADD
 import com.github.tukcps.sysmd.exceptions.SemanticError
+import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.quantities.VectorDimensionError
 import com.github.tukcps.sysmd.quantities.ite
@@ -88,7 +88,7 @@ internal class AstLinear(model: Session, args: ArrayList<AstNode>) :
     override fun evalDown() {
         // new Quantity of downQuantity with same range
         val y = Quantity(
-            model.builder.range((downQuantity.asQuantity()).getRange()),
+            model.builder.real((downQuantity.asQuantity()).getRange()),
             downQuantity.unit,
             downQuantity.unitSpec
         )
@@ -101,10 +101,10 @@ internal class AstLinear(model: Session, args: ArrayList<AstNode>) :
             //calc x with the help of the upQuantities of x0,x1,y0,y1 and with the downQuantity of y
             getParam(0).downQuantity = (y.le(y0)).bdd().ite(
                 // must be same value as y0 or smaller
-                Quantity(model.builder.range(-Double.MAX_VALUE, x0.getMaxAsDouble()).asAadd(), x0.unit, x0.unitSpec),
+                Quantity(model.builder.real(-Double.MAX_VALUE..x0.getMaxAsDouble()), x0.unit, x0.unitSpec),
                 (y.ge(y1)).bdd().ite(
                     // must be same value as x1 or bigger
-                    Quantity(model.builder.range(x1.getMinAsDouble(), Double.MAX_VALUE).asAadd(), x1.unit, x1.unitSpec),
+                    Quantity(model.builder.real(x1.getMinAsDouble()..Double.MAX_VALUE), x1.unit, x1.unitSpec),
                     x0 + (x1 - x0) / (y1 - y0) * (y - y0)
                 )
             )
@@ -122,12 +122,12 @@ internal class AstLinear(model: Session, args: ArrayList<AstNode>) :
             getParam(0).downQuantity = (y.eq(y0)).bdd().ite(
                 y1y2BothBiggerOrSmallerThanY.ite(
                     Quantity(
-                        model.builder.range(-Double.MAX_VALUE, x0.getMaxAsDouble()).asAadd(),
+                        model.builder.real(-Double.MAX_VALUE..x0.getMaxAsDouble()),
                         x0.unit,
                         x0.unitSpec
                     ),
                     Quantity(
-                        model.builder.range(-Double.MAX_VALUE, xValueOfInterpolY1Y2.getMaxAsDouble()).asAadd(),
+                        model.builder.real(-Double.MAX_VALUE..xValueOfInterpolY1Y2.getMaxAsDouble()),
                         x0.unit,
                         x0.unitSpec
                     )
@@ -135,12 +135,12 @@ internal class AstLinear(model: Session, args: ArrayList<AstNode>) :
                 (y.eq(y2)).bdd().ite(
                     y0y1BothBiggerOrSmallerThanY.ite(
                         Quantity(
-                            model.builder.range(x1.getMinAsDouble(), Double.MAX_VALUE).asAadd(),
+                            model.builder.real(x1.getMinAsDouble()..Double.MAX_VALUE),
                             x1.unit,
                             x1.unitSpec
                         ),
                         Quantity(
-                            model.builder.range(xValueOfInterpolY0Y1.getMinAsDouble(), Double.MAX_VALUE).asAadd(),
+                            model.builder.real(xValueOfInterpolY0Y1.getMinAsDouble()..Double.MAX_VALUE),
                             x1.unit,
                             x1.unitSpec
                         )
@@ -149,9 +149,8 @@ internal class AstLinear(model: Session, args: ArrayList<AstNode>) :
                         y1y2BothBiggerOrSmallerThanY.ite(
                             xValueOfInterpolY0Y1,
                             Quantity(
-                                model.builder.range(
-                                    xValueOfInterpolY0Y1.getMinAsDouble(),
-                                    xValueOfInterpolY1Y2.getMaxAsDouble()
+                                model.builder.real(
+                                    xValueOfInterpolY0Y1.getMinAsDouble()..xValueOfInterpolY1Y2.getMaxAsDouble()
                                 ).asAadd(), x1.unit, x1.unitSpec
                             )
                         ),
@@ -161,8 +160,6 @@ internal class AstLinear(model: Session, args: ArrayList<AstNode>) :
             )
         }
     }
-
-    override fun toExpressionString() = "linear(${getParam(0).toExpressionString()})"
 
     override fun clone(): AstLinear {
         val parClone = ArrayList<AstNode>()

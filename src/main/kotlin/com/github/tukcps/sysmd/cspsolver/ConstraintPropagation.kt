@@ -1,12 +1,7 @@
 package com.github.tukcps.sysmd.cspsolver
 
-import com.github.tukcps.sysmd.model.kerml.Element
 
 interface ConstraintPropagation {
-    /**
-     * Method that updates fields of this element from another element.
-     */
-    fun updateFrom(template: Element)
 
     /**
      * is true if the element has been updated in evaluate/update cycles of constraint propagation

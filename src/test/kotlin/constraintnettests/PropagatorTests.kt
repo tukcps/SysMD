@@ -1,29 +1,26 @@
-package sysmltests.constraintnettests
+package constraintnettests
 
-import com.github.tukcps.aadd.BDD
-import com.github.tukcps.aadd.functions.numInternalNodes
-import com.github.tukcps.sysmd.cspsolver.DiscreteSolver
-import com.github.tukcps.sysmd.compiler.loadSysMD
-import com.github.tukcps.sysmd.services.session.SessionManager.testSession
-import com.github.tukcps.sysmd.services.initialize
+import io.github.tukcps.aadd.BDD
+import io.github.tukcps.aadd.functions.numInternalNodes
 import com.github.tukcps.sysmd.cspsolver.propagate
+import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolveVar
+import util.mockup.loadKerML
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
+import util.testSession
 
 class PropagatorTests {
 
-    //Test to find remaining Null pointers... just make sure no exception is thrown.
+    //Test to find remaining Null pointers... make sure no exception is thrown.
     @Test
-    fun propagationByPropagatorsTest() = testSession {
-        loadSysMD(input = """
-                    attribute a: ScalarValues::Boolean;
-                    attribute b: ScalarValues::Boolean;
-                    attribute c: ScalarValues::Boolean;
-                    attribute y: ScalarValues::Boolean = (a and c) or (not(b) and not(a));
-                    attribute z: ScalarValues::Boolean(true).
+    fun propagationByPropagatorsTest() = testSession("ScalarValues") {
+        loadKerML(input = """
+                    feature a: ScalarValues::Boolean;
+                    feature b: ScalarValues::Boolean;
+                    feature c: ScalarValues::Boolean;
+                    feature y: ScalarValues::Boolean = (a and c) or (not(b) and not(a));
+                    feature z: ScalarValues::Boolean {:>> spec = "true";}
                 """
         )
         propagate()
@@ -32,13 +29,13 @@ class PropagatorTests {
 
     //Test if all don't cares are found
     @Test
-    fun propagationByPropagatorsDontCareTest()  = testSession {
-        loadSysMD(input = """
-                attribute a: ScalarValues::Boolean;
-                attribute b: ScalarValues::Boolean(false);
-                attribute c: ScalarValues::Boolean(true);
-                attribute y: ScalarValues::Boolean(true) = (a and c) or (not(b) and not(a));
-                attribute z: ScalarValues::Boolean(true);
+    fun propagationByPropagatorsDontCareTest()  = testSession("ScalarValues") {
+        loadKerML(input = """
+                feature a: ScalarValues::Boolean;
+                feature b: ScalarValues::Boolean {:>> spec = "false";}
+                feature c: ScalarValues::Boolean {:>> spec = "true";}
+                feature y: ScalarValues::Boolean  = (a and c) or (not(b) and not(a)) {:>> spec = "true";}
+                feature z: ScalarValues::Boolean {:>> spec = "true";}
             """
         )
         assertEquals(0, status.exceptions.size, status.exceptions.toString())
@@ -49,14 +46,14 @@ class PropagatorTests {
     }
 
     @Test
-    fun propagationByPropagatorsUnitClausesTest() = testSession {
-        loadSysMD(input = """
-                    attribute a: ScalarValues::Boolean;
-                    attribute b: ScalarValues::Boolean;
-                    attribute c: ScalarValues::Boolean;
-                    attribute d: ScalarValues::Boolean;
-                    attribute f: ScalarValues::Boolean;
-                    attribute g: ScalarValues::Boolean(true) = (a or b or c or d) and f.
+    fun propagationByPropagatorsUnitClausesTest() = testSession("ScalarValues") {
+        loadKerML(input = """
+                    feature a: ScalarValues::Boolean;
+                    feature b: ScalarValues::Boolean;
+                    feature c: ScalarValues::Boolean;
+                    feature d: ScalarValues::Boolean;
+                    feature f: ScalarValues::Boolean;
+                    feature g: ScalarValues::Boolean = (a or b or c or d) and f {:>> spec = "true";}
                 """
         ).run {
             propagate()
@@ -65,24 +62,4 @@ class PropagatorTests {
         }
     }
 
-    @Test @Disabled
-    fun propagationByPropagatorsUnitClausesConflictTest() = testSession {
-        loadSysMD(input = """
-                    attribute a: ScalarValues::Boolean;
-                    attribute b: ScalarValues::Boolean;
-                    attribute c: ScalarValues::Boolean;
-                    attribute d: ScalarValues::Boolean;
-                    attribute f: ScalarValues::Boolean(false);
-                    attribute g: ScalarValues::Boolean(true) = (a or b or c or d) and f.
-                """
-        ).run {
-            settings.catchExceptions = false // otherwise, errors will be caught and reported in status.errors ...
-            assertThrows<DiscreteSolver.DiscreteConflictDetectedException> {
-                initialize()
-                propagate()
-            }
-            //Assertions.assertEquals(1, status.errors.size, status.errors.toString())
-            //Assertions.assertEquals(true, resolveName<ValueFeature>(global.uid!!, "f")!!.quantity.value.asBdd().isLeaf)
-        }
-    }
 }

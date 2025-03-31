@@ -2,9 +2,6 @@ package com.github.tukcps.sysmd.model.kerml.implementation
 
 import com.github.tukcps.sysmd.model.kerml.AnnotatingElement
 import com.github.tukcps.sysmd.model.kerml.Element
-import com.github.tukcps.sysmd.model.kerml.Resolved
-import java.util.*
-
 
 /**
  * Annotating element following 7.2.3.3.1, 2 KerMLv2
@@ -15,19 +12,13 @@ import java.util.*
  * An AnnotatingElement is attached to its annotatedElement by an Annotation Relationship
  */
 open class AnnotatingElementImplementation(
-    elementId: UUID = UUID.randomUUID(),
     declaredName: String? = null,
     declaredShortName: String? = null,
-    ownedElement: MutableList<Resolved<Element>> = mutableListOf(),
-    owner: Resolved<Element> = Resolved(),
     override var body: String = "",
     elementType: String = "AnnotatingElement"
 ): AnnotatingElement, ElementImplementation(
-    elementId = elementId,
     declaredName = declaredName,
     declaredShortName = declaredShortName,
-    owner = owner,
-    ownedElement = ownedElement,
     elementType = elementType
 ) {
     override fun resolveNames() = false
@@ -36,8 +27,6 @@ open class AnnotatingElementImplementation(
         return AnnotatingElementImplementation(
             declaredName = declaredName,
             declaredShortName = declaredShortName,
-            ownedElement = Resolved.copyOfIdentityList(ownedElement),
-            owner = Resolved(owner),
             body = body,
             elementType = elementType)
     }
@@ -48,5 +37,8 @@ open class AnnotatingElementImplementation(
      * The annotated element is defined by an annotation (relationship) or, if no annotation
      * is available, is the owning element.
      */
-    override fun annotatedElement(): Nothing = TODO()
+    override fun annotatedElement(): List<Element> {
+        val ownedAnnotations = annotation().map { it.annotatedElement.ref!! }
+        return if (ownedAnnotations.isEmpty()) ownedAnnotations else listOf(owner.ref!!)
+    }
 }

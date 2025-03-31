@@ -9,7 +9,7 @@ import com.github.tukcps.sysmd.quantities.baseUnits.Time
 private var siUnitSet = setOf(Time.Second.copy(), ElectricCurrent.Ampere.copy())
 
 open class ElectricCharge(name: String, symbol: String, prefix: Prefix, convFac: Double, exponent: Int = 1, isLogarithmic: Boolean = false) :
-    DerivedUnit(name, symbol, prefix, "electric charge", siUnitSet, convFac, exponent, isLogarithmic) {
+    DerivedUnit(name, symbol, prefix, "ElectricCharge", siUnitSet, convFac, exponent, isLogarithmic) {
 
     /**
      * generate UnitObjects and add them to the UnitList

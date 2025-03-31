@@ -9,7 +9,7 @@ import com.github.tukcps.sysmd.quantities.baseUnits.Time
 private var siUnitSet = setOf(Length.Meter.copy(), Time.Second.copy(-1))
 
 open class Speed(name: String, symbol: String, prefix: Prefix, convFac: Double, exponent: Int = 1, isLogarithmic: Boolean = false) :
-    DerivedUnit(name, symbol, prefix, "speed", siUnitSet, convFac, exponent, isLogarithmic) {
+    DerivedUnit(name, symbol, prefix, "Speed", siUnitSet, convFac, exponent, isLogarithmic) {
 
     /**
      * generate UnitObjects and add them to the UnitList

@@ -3,8 +3,13 @@ package com.github.tukcps.sysmd.services.resolve
 import com.github.tukcps.sysmd.exceptions.ElementNotFoundException
 import com.github.tukcps.sysmd.exceptions.SysMDError
 import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.compiler.parser.*
-import com.github.tukcps.sysmd.services.report
+import com.github.tukcps.sysmd.model.util.QualifiedName
+import com.github.tukcps.sysmd.model.util.SimpleName
+import com.github.tukcps.sysmd.model.util.dropFirstName
+import com.github.tukcps.sysmd.model.util.firstName
+import com.github.tukcps.sysmd.model.util.hasNoName
+import com.github.tukcps.sysmd.model.util.isSimpleName
+import com.github.tukcps.sysmd.services.session.report
 
 
 /**
@@ -41,6 +46,7 @@ inline fun <reified T: Element> Namespace.resolve(
  * @param name A SimpleName that is searched for
  */
 fun Namespace.resolveLocal(name: SimpleName): Element? {
+
     visibleMemberships().forEach {
         if (it.ref?.name == name || it.ref?.shortName == name)
             return it.ref
@@ -56,6 +62,7 @@ fun Namespace.resolveLocal(name: SimpleName): Element? {
  * @param searchInOwner optionally, whether the given qualified name is initially given as a simple name, or just
  * became a simple name via recursion that cuts qualified name down.
  * @param searchInSuperClass optionally, whether to recurse into superclasses.
+ * Since 3.1 default off! This has an impact on the redefinitions that might not be handled properly (?), but 20% speedup.
  * @return An element of or null, if the name cannot be resolved.
  */
 fun Namespace.findRecursive(
@@ -70,9 +77,15 @@ fun Namespace.findRecursive(
     if (qualifiedName == "self")
         return this
 
+    if (qualifiedName == "that") {
+        return owner.ref
+    }
+
     // Stop search if we search in Any, or if the name has been shortened to an empty string.
-    if (this is Anything) return null
-    if (qualifiedName.hasNoName()) return null
+    if (this is Anything)
+        return null
+    if (qualifiedName.hasNoName())
+        return null
 
     // If we have a simple name, we can search in owned elements that are identified by simple names.
     if (qualifiedName.isSimpleName()) {
@@ -91,7 +104,7 @@ fun Namespace.findRecursive(
         var matchingNamespace =
             if (qualifiedName.firstName() == "Global") model?.global
             else {
-                getOwnedElement(qualifiedName.firstName())
+                resolveLocal(qualifiedName.firstName())
             }
         if (matchingNamespace is Feature && matchingNamespace.referencedFeature?.ref != null && resolveReferences) {
             matchingNamespace = matchingNamespace.referencedFeature!!.ref
@@ -121,23 +134,12 @@ fun Namespace.findRecursive(
     }
 
     // Search in owning namespace
-    return if (searchInOwner) owningNamespace?.findRecursive(qualifiedName, searchedImports, searchedSuperClasses, true) else null
+    return if (searchInOwner)
+        owningNamespace?.findRecursive(qualifiedName, searchedImports, searchedSuperClasses, true)
+    else
+        null
 }
 
-
-
-/**
- * Recursive search upwards to superclasses until global; first occurrence is returned.
- * @param name simple name that is searched in owned elements only
- */
-fun Namespace.findOwnedElement(name: SimpleName): Element? {
-    return getOwnedElement(name)
-        ?: if (this is Type) {
-            var found: Element? = null
-            allSupertypes().forEach { found = it.findOwnedElement(name)?:found }
-            return found
-        } else null
-}
 
 
 /**
@@ -178,7 +180,9 @@ private fun mergeOwnedElements(own: Collection<Element>, inherited: Collection<E
 
     for (i in inherited) {
         var overridden = false
-        for (o in own) { overridden = true }
+        own.forEach { o ->
+            overridden = true
+        }
         if (!overridden)
             merged.add(i)
     }

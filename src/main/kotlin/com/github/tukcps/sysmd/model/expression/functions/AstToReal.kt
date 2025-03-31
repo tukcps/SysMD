@@ -1,9 +1,9 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import com.github.tukcps.aadd.AADD
-import com.github.tukcps.aadd.BDD
-import com.github.tukcps.sysmd.model.expression.AstNode
+import io.github.tukcps.aadd.AADD
+import io.github.tukcps.aadd.BDD
 import com.github.tukcps.sysmd.exceptions.SemanticError
+import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
 
@@ -22,7 +22,7 @@ internal class AstToReal(model: Session, args: ArrayList<AstNode>) :
 
     override fun initialize() {
         if (!parameters[0].isBool)
-            throw SemanticError("Paramete of toReal function must be of type Bool")
+            throw SemanticError("Parameter of toReal function must be of type Bool")
         upQuantity = VectorQuantity(mutableListOf(model.builder.Reals), "")
         evalUp()
         downQuantity = upQuantity.clone()
@@ -34,7 +34,7 @@ internal class AstToReal(model: Session, args: ArrayList<AstNode>) :
     override fun evalUp() {
         val results = mutableListOf<AADD>()
         getParam(0).bdds.forEach {
-            results.add(it.asBdd().ite(model.builder.range(1.0, 1.0), model.builder.range(0.0, 0.0)))
+            results.add(it.asBdd().ite(model.builder.real(1.0..1.0), model.builder.real(0.0..0.0)))
         }
         upQuantity = VectorQuantity(results, "1")
     }
@@ -56,15 +56,9 @@ internal class AstToReal(model: Session, args: ArrayList<AstNode>) :
         getParam(0).downQuantity = VectorQuantity(results)
     }
 
-
-    override fun toExpressionString(): String {
-        return "toReal(${getParam(0).toExpressionString()})"
-    }
-
     override fun clone(): AstToReal {
         val parClone = ArrayList<AstNode>()
         for (p in parameters) parClone.add(p.clone())
         return AstToReal(model, parClone)
     }
 }
-

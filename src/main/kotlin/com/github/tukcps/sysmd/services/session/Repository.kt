@@ -33,11 +33,15 @@ class Repository {
     var realType: Type? = null
     var booleanType: Type? = null
     var integerType: Type? = null
+    var naturalType: Type? = null
     var stringType: Type? = null
+    var inRangeType: Type? = null
+    var occurrence: Type? = null
+    var links: Type? = null
 
 
     /** Map for elements with the not-yet identified owner */
-    val unownedElements: MutableList<Session.UnresolvedElement> = mutableListOf()
+    var unownedElements: MutableList<Session.UnresolvedElement> = mutableListOf()
 
     /** Projects that have been loaded into the session; as of now identified by name, not ID (!!!) */
     val loadedProjects: MutableSet<String> = mutableSetOf()
@@ -55,5 +59,8 @@ class Repository {
         booleanType = null
         integerType = null
         stringType = null
+        inRangeType = null
+        occurrence = null
+        links= null
     }
 }

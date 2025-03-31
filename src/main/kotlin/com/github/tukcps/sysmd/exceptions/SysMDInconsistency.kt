@@ -1,8 +1,8 @@
 package com.github.tukcps.sysmd.exceptions
 
+import com.github.tukcps.sysmd.compiler.scanner.Token
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
-import com.github.tukcps.sysmd.compiler.scanner.Token
 
 
 /**
@@ -21,4 +21,11 @@ class SysMDInconsistency (
     element = element,
     cause = cause,
     priority = 1,
-)
+) {
+    companion object {
+        val explanation = """
+            The constraint propagation detected a contradiction in the model. 
+            Check the model for such issues. 
+        """.trimIndent()
+    }
+}

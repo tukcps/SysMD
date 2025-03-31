@@ -9,7 +9,7 @@ import com.github.tukcps.sysmd.quantities.baseUnits.Mass
 private var siUnitSet = setOf(Mass.Kilogram.copy(), Length.Meter.copy(-3))
 
 open class Density(name: String, symbol: String, prefix: Prefix, convFac: Double, exponent: Int = 1, isLogarithmic: Boolean = false) :
-    DerivedUnit(name, symbol, prefix, "density", siUnitSet, convFac, exponent, isLogarithmic) {
+    DerivedUnit(name, symbol, prefix, "Density", siUnitSet, convFac, exponent, isLogarithmic) {
 
     /**
      * generate UnitObjects and add them to the UnitList

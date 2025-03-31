@@ -1,18 +1,18 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import com.github.tukcps.aadd.DD
-import com.github.tukcps.aadd.functions.ite
+import io.github.tukcps.aadd.DD
+import io.github.tukcps.aadd.functions.ite
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.model.expression.AstLeaf
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Namespace
-import com.github.tukcps.sysmd.compiler.parser.QualifiedName
+import com.github.tukcps.sysmd.model.kerml.getOwnedElementsOfType
+import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.quantities.VectorDimensionError
 import com.github.tukcps.sysmd.quantities.VectorQuantity
-import com.github.tukcps.sysmd.services.report
-import com.github.tukcps.sysmd.services.resolve.findAllOwnedElements
+import com.github.tukcps.sysmd.services.session.report
 import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.session.Session
@@ -33,14 +33,12 @@ class  AstByParts(model: Session, namespace: Namespace, args: ArrayList<AstNode>
      * all found properties in subclasses.
      */
     override fun evalUp() {
-        var ownedElements = inNameSpace.findAllOwnedElements().filterIsInstance<Feature>().filter { it.variable == null }
+        var ownedElements = inNameSpace.getOwnedElementsOfType<Feature>().filter { it.variable == null }
         if (ownedElements.isNotEmpty()) {
             val firstOwnedElement = ownedElements.first()
             ownedElements = ownedElements.drop(1)
-            val feature = firstOwnedElement.resolve<Feature>(propertyName)
-            val variable = feature?.variable
-            val quantity = variable!!.vectorQuantity
-            var result: DD = quantity.values[0].clone()
+            val quantity = firstOwnedElement.resolve<Feature>(propertyName)?.variable!!.vectorQuantity
+            var result: DD<*> = quantity.values[0].clone()
             for (part in ownedElements) {
                 // TODO: generate a variable for it!
                 val chooser = model.builder.variable("choose_+${part.qualifiedName}", inNameSpace.qualifiedName+"::"+propertyName, true)
@@ -84,7 +82,7 @@ class  AstByParts(model: Session, namespace: Namespace, args: ArrayList<AstNode>
      * @param block the lambda that is applied depth-first
      */
     override fun <R> withDepthFirst(receiver: AstNode, block: AstNode.() -> R): R {
-        val ownedElements = inNameSpace.findAllOwnedElements().filterIsInstance<Feature>()
+        val ownedElements = inNameSpace.getOwnedElementsOfType<Feature>()
         for (part in ownedElements) {
             val ast = part.resolveVar(propertyName)?.ast
             if (ast != null) withDepthFirst(ast, block)
@@ -93,7 +91,7 @@ class  AstByParts(model: Session, namespace: Namespace, args: ArrayList<AstNode>
     }
 
     override fun evalDown() {
-        val ownedElements = inNameSpace.findAllOwnedElements().filterIsInstance<Feature>()
+        val ownedElements = inNameSpace.getOwnedElementsOfType<Feature>()
         if (ownedElements.isNotEmpty()) {
             for (part in ownedElements) {
                 val partProperty = part.resolveVar(propertyName)
@@ -106,6 +104,4 @@ class  AstByParts(model: Session, namespace: Namespace, args: ArrayList<AstNode>
     override fun evalDownRec() {
         evalDown()
     }
-
-    override fun toExpressionString() = "bySubclasses($propertyName)"
 }

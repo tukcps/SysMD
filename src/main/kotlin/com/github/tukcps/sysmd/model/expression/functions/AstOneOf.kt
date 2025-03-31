@@ -1,7 +1,7 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import com.github.tukcps.aadd.AADD
-import com.github.tukcps.aadd.IDD
+import io.github.tukcps.aadd.AADD
+import io.github.tukcps.aadd.IDD
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.quantities.Unit
@@ -34,10 +34,6 @@ class AstOneOf(model: Session, args: ArrayList<AstNode>) :
     override fun evalUp() {}
 
     override fun evalDown() {}
-
-    override fun toExpressionString(): String {
-        return "oneOf(${getParam(0).toExpressionString()})"
-    }
 
     override fun clone(): AstOneOf {
         val parClone = ArrayList<AstNode>()

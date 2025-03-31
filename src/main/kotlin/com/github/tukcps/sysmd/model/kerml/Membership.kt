@@ -5,8 +5,8 @@ import java.util.*
 interface Membership: Relationship {
     val memberId: UUID?
         get() = memberElement.elementId
-    var memberName: String?
-    var memberShortName: String?
+    val memberName: String?
+    val memberShortName: String?
 
     val memberElement: Element
         get() = target.firstOrNull()!!.ref!!

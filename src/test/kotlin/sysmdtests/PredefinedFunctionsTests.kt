@@ -2,32 +2,31 @@ package sysmdtests
 
 import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.model.kerml.Connector
-import com.github.tukcps.sysmd.compiler.loadSysMD
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.resolve.resolve
-import com.github.tukcps.sysmd.services.session.SessionManager.testSession
-import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.Test
+import com.github.tukcps.sysmd.services.resolve.resolveVar
+import util.mockup.loadKerML
+import util.testSession
 import kotlin.math.exp
 import kotlin.math.ln
 import kotlin.math.sqrt
+import kotlin.test.*
 
 @Suppress("UNUSED_VARIABLE")
 class PredefinedFunctionsTests {
 
     val tol = 0.0001
 
-    // The operations exp, log, pow2, sqrt, ln .. are supported
+    // The operations exp, log, pow2, sqrt, ln ... are supported
     // also to test: ITE function
     @Test
-    fun operationsTest() = testSession {
-        loadSysMD(input = """
+    fun operationsTest() = testSession("ScalarValues") {
+        loadKerML("""
                 feature test1: ScalarValues::Real = ln(5.0);
                 feature test2: ScalarValues::Real = sqrt(5.0);
                 feature test3: ScalarValues::Real = exp(5.0);
                 feature test4: ScalarValues::Real = power2(5.0);
-            """.trimIndent())
+        """)
         propagate()
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         assertEquals(ln(5.0), global.resolveVar("test1")!!.vectorQuantity.getMinAsDouble(), 0.00001)
@@ -37,10 +36,10 @@ class PredefinedFunctionsTests {
     }
 
     @Test
-    fun rangeOperatorTest() = testSession {
-        loadSysMD("""
+    fun rangeOperatorTest() = testSession("ScalarValues") {
+        loadKerML("""
             feature p: ScalarValues::Real = [1.0 .. 2.0] + 2.0;
-            """.trimIndent())
+            """)
         propagate()
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         assertEquals(3.0, global.resolveVar("p")!!.min(), 0.001)
@@ -49,13 +48,11 @@ class PredefinedFunctionsTests {
 
 
     @Test
-    fun linearFunctionTest() = testSession {
-        loadSysMD(
-            catchExceptions = false, input = """
+    fun linearFunctionTest() = testSession("ScalarValues") {
+        loadKerML("""
                 feature T: ScalarValues::Real = 2005.0;
                 feature p: ScalarValues::Real = linear(T, 2000.0, 10.0, 2010.0, 20.0);
-                """.trimIndent()
-        )
+                """)
         propagate()
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val p = global.resolveVar("p")
@@ -65,13 +62,11 @@ class PredefinedFunctionsTests {
     }
 
     @Test
-    fun linearFunctionTestDecreasing() = testSession {
-        loadSysMD(
-            catchExceptions = false, input = """
+    fun linearFunctionTestDecreasing() = testSession("ScalarValues") {
+        loadKerML("""
                 feature T: ScalarValues::Real = 1995.0;
                 feature p: ScalarValues::Real = linear(T, 2000.0, 20.0, 2010.0, 10.0);
-                """.trimIndent()
-        )
+                """)
         propagate()
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val p = global.resolveVar("p")
@@ -81,13 +76,11 @@ class PredefinedFunctionsTests {
     }
 
     @Test
-    fun linearFunctionTestSame() = testSession {
-        loadSysMD(
-            catchExceptions = false, input = """
+    fun linearFunctionTestSame() = testSession("ScalarValues") {
+        loadKerML("""
                 feature T: ScalarValues::Real = 2015.0;
                 feature p: ScalarValues::Real = linear(T, 2000.0, 20.0, 2010.0, 10.0);
-                """.trimIndent()
-        )
+                """)
         propagate()
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val p = global.resolveVar("p")
@@ -97,13 +90,11 @@ class PredefinedFunctionsTests {
     }
 
     @Test
-    fun linearFunctionTest_Reverse() = testSession {
-        loadSysMD(
-            catchExceptions = false, input = """
+    fun linearFunctionTest_Reverse() = testSession("ScalarValues") {
+        loadKerML("""
                 feature T: ScalarValues::Real;
                 feature p: ScalarValues::Real(15.0..15.0) = linear(T, 2000.0, 10.0, 2010.0, 20.0);
-                """.trimIndent()
-        )
+                """)
         propagate()
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val t = global.resolveVar("T")
@@ -113,13 +104,11 @@ class PredefinedFunctionsTests {
     }
 
     @Test
-    fun linearFunctionTest7_1() = testSession {
-        loadSysMD(
-            catchExceptions = false, input = """
+    fun linearFunctionTest7_1() = testSession("ScalarValues") {
+        loadKerML("""
                 feature T: ScalarValues::Real = 2015.0;
                 feature p: ScalarValues::Real = linear(T, 2000.0, 10.0, 2010.0, 20.0, 2020.0, 0.0);
-                """.trimIndent()
-        )
+                """)
         propagate()
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val p = global.resolveVar("p")
@@ -128,13 +117,11 @@ class PredefinedFunctionsTests {
     }
 
     @Test
-    fun linearFunctionTest7_2() = testSession {
-        loadSysMD(
-            catchExceptions = false, input = """
+    fun linearFunctionTest7_2() = testSession("ScalarValues") {
+        loadKerML("""
                 feature T: ScalarValues::Real = 2005.0;
                 feature p: ScalarValues::Real = linear(T, 2000.0, 10.0, 2010.0, 20.0, 2020.0, 0.0);
-                """.trimIndent()
-        )
+                """)
         propagate()
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val p = global.resolveVar("p")
@@ -144,13 +131,11 @@ class PredefinedFunctionsTests {
 
     // y0 < y1 and y2 between y0 and y1
     @Test
-    fun linearFunctionTest7_3() = testSession {
-        loadSysMD(
-            catchExceptions = false, input = """
+    fun linearFunctionTest7_3() = testSession("ScalarValues") {
+        loadKerML("""
                 feature T: ScalarValues::Real = 2005.0;
                 feature p: ScalarValues::Real = linear(T, 2000.0, 10.0, 2010.0, 20.0, 2015.0, 0.0);
-                """.trimIndent()
-        )
+                """)
         propagate()
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val p = global.resolveVar("p")
@@ -160,13 +145,11 @@ class PredefinedFunctionsTests {
 
     // y1 < y0 and y2 > y1
     @Test
-    fun linearFunctionTest7_4() = testSession {
-        loadSysMD(
-            catchExceptions = false, input = """
+    fun linearFunctionTest7_4() = testSession("ScalarValues") {
+        loadKerML("""
                 feature T: ScalarValues::Real = 2015.0;
                 feature p: ScalarValues::Real = linear(T, 2000.0, 20.0, 2010.0, 10.0, 2020.0, 30.0);
-                """.trimIndent()
-        )
+                """)
         propagate()
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val p = global.resolveVar("p")
@@ -176,13 +159,11 @@ class PredefinedFunctionsTests {
 
     // y = y0 and y1 > y0 and y2 > y0
     @Test
-    fun linearFunctionTest7_5() = testSession {
-        loadSysMD(
-            catchExceptions = false, input = """
+    fun linearFunctionTest7_5() = testSession("ScalarValues") {
+        loadKerML("""
                 feature T: ScalarValues::Real = 2000.0.
                 feature p: ScalarValues::Real = linear(T, 2000.0, 20.0, 2010.0, 30.0, 2020.0, 40.0).
-                """.trimIndent()
-        )
+                """)
         propagate()
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val p = global.resolveVar("p")
@@ -192,11 +173,11 @@ class PredefinedFunctionsTests {
 
     // y = y0 and y1 > y0 and y2 < y0
     @Test
-    fun linearFunctionTest7_6() = testSession {
-        loadSysMD(catchExceptions = false, input = """
+    fun linearFunctionTest7_6() = testSession("ScalarValues") {
+        loadKerML(catchExceptions = false, input = """
                 feature T: ScalarValues::Real = 1995.0.
                 feature p: ScalarValues::Real = linear(T, 2000.0, 20.0, 2010.0, 30.0, 2020.0, 10.0).
-                """.trimIndent())
+                """)
         propagate()
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val p = global.resolveVar("p")
@@ -206,11 +187,11 @@ class PredefinedFunctionsTests {
 
     // y = y2 and y1 > y2 and y0 > y2
     @Test
-    fun linearFunctionTest7_7() = testSession {
-        loadSysMD(catchExceptions = false, input = """
+    fun linearFunctionTest7_7() = testSession("ScalarValues") {
+        loadKerML(catchExceptions = false, input = """
                 feature T: ScalarValues::Real = 2020.0.
                 feature p: ScalarValues::Real = linear(T, 2000.0, 30.0, 2010.0, 20.0, 2020.0, 10.0).
-                """.trimIndent())
+                """)
         propagate()
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val p = global.resolveVar("p")
@@ -220,11 +201,11 @@ class PredefinedFunctionsTests {
 
     // y = y2 and y1 > y2 and y0 < y2
     @Test
-    fun linearFunctionTest7_8() = testSession {
-        loadSysMD(catchExceptions = false, input = """
+    fun linearFunctionTest7_8() = testSession("ScalarValues") {
+        loadKerML(catchExceptions = false, input = """
                 feature T: ScalarValues::Real = 2025.0.
                 feature p: ScalarValues::Real = linear(T, 2000.0, 0.0, 2010.0, 20.0, 2020.0, 10.0).
-                """.trimIndent())
+                """)
         propagate()
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val p = global.resolveVar("p")
@@ -233,11 +214,11 @@ class PredefinedFunctionsTests {
     }
 
     @Test
-    fun linearFunctionTest7_8_reverse() = testSession {
-        loadSysMD(catchExceptions = false, input = """
+    fun linearFunctionTest7_8_reverse() = testSession("ScalarValues") {
+        loadKerML(catchExceptions = false, input = """
                 feature T: ScalarValues::Real;
                 feature p: ScalarValues::Real(10.0) = linear(T, 2000.0, 0.0, 2010.0, 20.0, 2020.0, 10.0);
-                """.trimIndent())
+                """)
         propagate()
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val p = global.resolveVar("T")
@@ -246,12 +227,11 @@ class PredefinedFunctionsTests {
     }
 
     @Test
-    fun linearFunctionTest7_9_reverse() = testSession {
-        loadSysMD(
-            catchExceptions = false, input = """
+    fun linearFunctionTest7_9_reverse() = testSession("ScalarValues") {
+        loadKerML("""
                 feature T: ScalarValues::Real;
                 feature p: ScalarValues::Real(10.0) = linear(T, 2000.0, 0.0, 2010.0, 20.0, 2020.0, 0.0);
-                """.trimIndent())
+                """)
         propagate()
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val p = global.resolveVar("T")
@@ -265,11 +245,10 @@ class PredefinedFunctionsTests {
      */
     @Test
     fun testFloorFxnA() {
-        testSession("ScalarValues", catchExceptions = false) {
-            // model.loadSysMDfromResources("/libraries/ScalarValues.md")
-            +"feature p: ScalarValues::Real(1.0 .. 1.0);" // padding, 0 = NOT enabled, 1 = enabled
-            +"feature C_wb_s_floor_arg: ScalarValues::Real(2.75 .. 2.75);"
-            +"feature a_pb: ScalarValues::Real = p * floor(C_wb_s_floor_arg);"
+        testSession("ScalarValues") {
+            loadKerML("feature p: ScalarValues::Real(1.0 .. 1.0);") // padding, 0 = NOT enabled, 1 = enabled
+            loadKerML("feature C_wb_s_floor_arg: ScalarValues::Real(2.75 .. 2.75);")
+            loadKerML("feature a_pb: ScalarValues::Real = p * floor(C_wb_s_floor_arg);")
             assertEquals(2.0, global.resolveVar( "a_pb")!!.vectorQuantity.value.asAadd().getRange().min, tol)
             assertEquals(2.0, global.resolveVar("a_pb")!!.vectorQuantity.value.asAadd().getRange().max, tol)
         }
@@ -279,9 +258,9 @@ class PredefinedFunctionsTests {
      * Test of Floor.
      */
     @Test
-    fun testFloorFxnB() = testSession("ScalarValues", catchExceptions = false) {
-            +"feature C_wb_s_floor_arg: ScalarValues::Real(2.75 .. 2.75);"
-            +"feature a_pb: ScalarValues::Real = floor(C_wb_s_floor_arg);"
+    fun testFloorFxnB() = testSession("ScalarValues") {
+            loadKerML("feature C_wb_s_floor_arg: ScalarValues::Real(2.75 .. 2.75);")
+            loadKerML("feature a_pb: ScalarValues::Real = floor(C_wb_s_floor_arg);")
             assertEquals(2.0, global.resolveVar("a_pb")!!.vectorQuantity.value.asAadd().getRange().min, tol)
             assertEquals(2.0, global.resolveVar("a_pb")!!.vectorQuantity.value.asAadd().getRange().max, tol)
     }
@@ -290,8 +269,8 @@ class PredefinedFunctionsTests {
      * Test of Floor.
      */
     @Test
-    fun testFloorFxnC() = testSession {
-        loadSysMD("feature C_wb_s_floor_arg: ScalarValues::Real(2.75 .. 2.75); feature a_pb: ScalarValues::Real = floor(C_wb_s_floor_arg) - 1.0.")
+    fun testFloorFxnC() = testSession("ScalarValues") {
+        loadKerML("feature C_wb_s_floor_arg: ScalarValues::Real(2.75 .. 2.75); feature a_pb: ScalarValues::Real = floor(C_wb_s_floor_arg) - 1.0.")
         assertEquals(1.0, global.resolveVar("a_pb")!!.vectorQuantity.value.asAadd().getRange().min, 0.001)
         assertEquals(1.0, global.resolveVar("a_pb")!!.vectorQuantity.value.asAadd().getRange().max, 0.001)
     }
@@ -302,9 +281,9 @@ class PredefinedFunctionsTests {
      */
     @Test
     fun testFloorFxnD() {
-        testSession("ScalarValues", catchExceptions = false) {
-            +"feature C_wb_s_floor_arg: ScalarValues::Real(2.75 .. 2.75);"
-            +"feature a_pb: ScalarValues::Real = 3.0 - floor(C_wb_s_floor_arg);"
+        testSession("ScalarValues") {
+            loadKerML("feature C_wb_s_floor_arg: ScalarValues::Real(2.75 .. 2.75);")
+            loadKerML("feature a_pb: ScalarValues::Real = 3.0 - floor(C_wb_s_floor_arg);")
             assertEquals(1.0, global.resolveVar("a_pb")!!.vectorQuantity.value.asAadd().getRange().min, tol)
             assertEquals(1.0, global.resolveVar("a_pb")!!.vectorQuantity.value.asAadd().getRange().max, tol)
         }
@@ -313,11 +292,11 @@ class PredefinedFunctionsTests {
     /**
      * stress test number 7 --> Poles and zeroes ...
      * see: the stress tests for AADD data types in AADDTests.kt in the jAADD
-     * 9x^4 - y^4 + 2y^2 = 1
+     * 9x^4 - y^4 + 2 y^2 = 1
      */
     @Test
-    fun testAgainstRumpEquation7() = testSession {
-        loadSysMD("""
+    fun testAgainstRumpEquation7() = testSession("ScalarValues") {
+        loadKerML("""
             feature x: ScalarValues::Real(2910.99 .. 2911.001);
             feature y: ScalarValues::Real(5041.999 .. 5042.001);
             feature z: ScalarValues::Real = 9.0 * x^4.0 - y^4.0 + 2.0 * y^2.0
@@ -329,24 +308,24 @@ class PredefinedFunctionsTests {
     }
 
     @Test
-    fun linearRangeRealTest() = testSession {
-        loadSysMD(catchExceptions = false, input = """
-                 attribute Datenratetst: ScalarValues::Real[MB/s] = linear(Month("2025-01"), Month("2021-01"), [20.0 .. 80.0] [MB/s], Month("2030-01"), [100.0 .. 800.0] [MB/s]).
-                """.trimIndent())
+    fun linearRangeRealTest() = testSession("SI") {
+        loadKerML(catchExceptions = false, input = """
+                 feature DataRate: SI::BitRate = linear(Month("2025-01"), Month("2021-01"), [20.0 .. 80.0] [MB/s], Month("2030-01"), [100.0 .. 800.0] [MB/s]).
+                """)
         propagate()
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
-        val t = global.resolveVar("Datenratetst")
+        val t = global.resolveVar("DataRate")
         assertEquals(28.889564952844047, t!!.vectorQuantity.valuesIn("MB/s")[0].asAadd().getRange().min, tol)
         assertEquals(426.69303316094675, t.vectorQuantity.valuesIn("MB/s")[0].asAadd().getRange().max, tol)
     }
 
 
     @Test
-    fun stepFunctionTest() = testSession {
-        loadSysMD(catchExceptions = false, input = """
-                attribute T: ScalarValues::Real = 2005.0.
-                attribute p: ScalarValues::Real = stepInterpolation(T, 2000.0, 10.0, 2010.0, 20.0).
-                """.trimIndent())
+    fun stepFunctionTest() = testSession("ScalarValues") {
+        loadKerML(catchExceptions = false, input = """
+                feature T: ScalarValues::Real = 2005.0.
+                feature p: ScalarValues::Real = stepInterpolation(T, 2000.0, 10.0, 2010.0, 20.0).
+                """)
         propagate()
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val p = global.resolveVar("p")
@@ -356,13 +335,11 @@ class PredefinedFunctionsTests {
     }
 
     @Test
-    fun stepFunctionTest2() = testSession {
-        loadSysMD(
-            catchExceptions = false, input = """
-                attribute T: ScalarValues::Real = 1990.0.
-                attribute p: ScalarValues::Real = stepInterpolation(T, 2000.0, 10.0, 2010.0, 20.0).
-                """.trimIndent()
-        )
+    fun stepFunctionTest2() = testSession("ScalarValues") {
+        loadKerML("""
+                feature T: ScalarValues::Real = 1990.0.
+                feature p: ScalarValues::Real = stepInterpolation(T, 2000.0, 10.0, 2010.0, 20.0).
+                """)
         propagate()
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val p = global.resolveVar("p")
@@ -372,13 +349,11 @@ class PredefinedFunctionsTests {
     }
 
     @Test
-    fun stepFunctionTest3() = testSession {
-        loadSysMD(
-            catchExceptions = false, input = """
-                attribute T: ScalarValues::Real = 2011.0.
-                attribute p: ScalarValues::Real = stepInterpolation(T, 2000.0, 10.0, 2010.0, 20.0).
-                """.trimIndent()
-        )
+    fun stepFunctionTest3() = testSession("ScalarValues") {
+        loadKerML("""
+                feature T: ScalarValues::Real = 2011.0.
+                feature p: ScalarValues::Real = stepInterpolation(T, 2000.0, 10.0, 2010.0, 20.0).
+                """)
         propagate()
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val p = global.resolveVar("p")
@@ -388,13 +363,11 @@ class PredefinedFunctionsTests {
     }
 
     @Test
-    fun stepFunctionTest5() = testSession {
-        loadSysMD(
-            catchExceptions = false, input = """
-                attribute T: ScalarValues::Real = 2011.0.
-                attribute p: ScalarValues::Real = stepInterpolation(T, 2000.0, 10.0, 2010.0, 20.0, 2020.0, 0.0).
-                """.trimIndent()
-        )
+    fun stepFunctionTest5() = testSession("ScalarValues") {
+        loadKerML("""
+                feature T: ScalarValues::Real = 2011.0.
+                feature p: ScalarValues::Real = stepInterpolation(T, 2000.0, 10.0, 2010.0, 20.0, 2020.0, 0.0).
+                """)
         propagate()
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val p = global.resolveVar("p")
@@ -404,13 +377,11 @@ class PredefinedFunctionsTests {
     }
 
     @Test
-    fun stepFunctionTest6() = testSession {
-        loadSysMD(
-            catchExceptions = false, input = """
-                attribute T: ScalarValues::Real = 2020.0.
-                attribute p: ScalarValues::Real = stepInterpolation(T, 2000.0, 10.0, 2010.0, 20.0, 2020.0, 0.0).
-                """.trimIndent()
-        )
+    fun stepFunctionTest6() = testSession("ScalarValues") {
+        loadKerML("""
+                feature T: ScalarValues::Real = 2020.0.
+                feature p: ScalarValues::Real = stepInterpolation(T, 2000.0, 10.0, 2010.0, 20.0, 2020.0, 0.0).
+                """)
         propagate()
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val p = global.resolveVar("p")
@@ -420,13 +391,11 @@ class PredefinedFunctionsTests {
     }
 
     @Test
-    fun stepFunctionTestInt() = testSession {
-        loadSysMD(
-            catchExceptions = false, input = """
-                attribute T: ScalarValues::Integer = 2020.
-                attribute p: ScalarValues::Integer = stepInterpolation(T, 2000, 10, 2010, 20, 2020, 0).
-                """.trimIndent()
-        )
+    fun stepFunctionTestInt() = testSession("ScalarValues") {
+        loadKerML("""
+                feature T: ScalarValues::Integer = 2020.
+                feature p: ScalarValues::Integer = stepInterpolation(T, 2000, 10, 2010, 20, 2020, 0).
+                """)
         initialize()
         propagate()
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
@@ -436,13 +405,11 @@ class PredefinedFunctionsTests {
     }
 
     @Test
-    fun stepFunctionTestInt2() = testSession {
-        loadSysMD(
-            catchExceptions = false, input = """
-                attribute T: ScalarValues::Integer = 1990.
-                attribute p: ScalarValues::Integer = stepInterpolation(T, 2000, 10, 2010, 20, 2020, 0).
-                """.trimIndent()
-        )
+    fun stepFunctionTestInt2() = testSession("ScalarValues") {
+        loadKerML("""
+                feature T: ScalarValues::Integer = 1990.
+                feature p: ScalarValues::Integer = stepInterpolation(T, 1980, 10, 2010, 20, 2020, 0).
+                """)
         initialize()
         propagate()
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
@@ -452,13 +419,11 @@ class PredefinedFunctionsTests {
     }
 
     @Test
-    fun stepFunctionTestInt3() = testSession {
-        loadSysMD(
-            catchExceptions = false, input = """
-                attribute T: ScalarValues::Integer = 2000.
-                attribute p: ScalarValues::Integer = stepInterpolation(T, 2000, 10, 2010, 20, 2020, 0).
-                """.trimIndent()
-        )
+    fun stepFunctionTestInt3() = testSession("ScalarValues") {
+        loadKerML("""
+                feature T: ScalarValues::Integer = 2000.
+                feature p: ScalarValues::Integer = stepInterpolation(T, 2000, 10, 2010, 20, 2020, 0).
+                """)
         propagate()
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val p = global.resolveVar("p")
@@ -467,13 +432,11 @@ class PredefinedFunctionsTests {
     }
 
     @Test
-    fun stepFunctionTestInt4() = testSession {
-        loadSysMD(
-            catchExceptions = false, input = """
-                attribute T: ScalarValues::Integer = 2005.
-                attribute p: ScalarValues::Integer = stepInterpolation(T, 2000, 10, 2010, 20, 2020, 0).
-                """.trimIndent()
-        )
+    fun stepFunctionTestInt4() = testSession("ScalarValues") {
+        loadKerML("""
+                feature T: ScalarValues::Integer = 2005.
+                feature p: ScalarValues::Integer = stepInterpolation(T, 2000, 10, 2010, 20, 2020, 0).
+                """)
         propagate()
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val p = global.resolveVar("p")
@@ -482,13 +445,11 @@ class PredefinedFunctionsTests {
     }
 
     @Test
-    fun stepFunctionTestInt5() = testSession {
-        loadSysMD(
-            catchExceptions = false, input = """
-                attribute T: ScalarValues::Integer = 2015.
-                attribute p: ScalarValues::Integer = stepInterpolation(T, 2000, 10, 2010, 20, 2020, 0).
-                """.trimIndent()
-        )
+    fun stepFunctionTestInt5() = testSession("ScalarValues") {
+        loadKerML("""
+                feature T: ScalarValues::Integer = 2015.
+                feature p: ScalarValues::Integer = stepInterpolation(T, 2000, 10, 2010, 20, 2020, 0).
+                """)
         propagate()
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val p = global.resolveVar("p")
@@ -497,12 +458,11 @@ class PredefinedFunctionsTests {
     }
 
     @Test
-    fun stepFunctionTestInt6() = testSession {
-        loadSysMD(catchExceptions = false, input = """
-                attribute T: ScalarValues::Integer = 2015.
-                attribute p: ScalarValues::Integer = stepInterpolation(T, 2000, 10, 2010, 20, 2020, 0).
-                """.trimIndent()
-        )
+    fun stepFunctionTestInt6() = testSession("ScalarValues") {
+        loadKerML("""
+                feature T: ScalarValues::Integer = 2015.
+                feature p: ScalarValues::Integer = stepInterpolation(T, 2000, 10, 2010, 20, 2020, 0).
+                """)
         propagate()
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val p = global.resolveVar("p")
@@ -511,11 +471,11 @@ class PredefinedFunctionsTests {
     }
 
     @Test
-    fun realFunctionTest() = testSession {
-        loadSysMD("""
-            attribute i: ScalarValues::Integer = [2 .. 3].
-            attribute r: ScalarValues::Real = ToReal(i).
-            """.trimIndent())
+    fun realFunctionTest() = testSession("ScalarValues") {
+        loadKerML("""
+            feature i: ScalarValues::Integer = [2 .. 3].
+            feature r: ScalarValues::Real = ToReal(i).
+            """)
         propagate()
         val r = global.resolveVar("r")!!
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
@@ -524,23 +484,24 @@ class PredefinedFunctionsTests {
     }
 
     @Test
-    fun integerFunctionTest() = testSession {
-        loadSysMD("""
-            import ScalarValues::*; 
-            attribute i: Real = [2.0 .. 3.0]; 
-            attribute r: Integer = ToInteger(i); 
-            """.trimIndent())
+    fun integerFunctionTest() = testSession("ScalarValues") {
+        loadKerML("""
+            private import ScalarValues::*; 
+            feature i: Real = [2.0 .. 3.0]; 
+            feature r: Integer = ToInteger(i); 
+            """)
         propagate()
-        val i = global.resolveVar("i")!!
+        val i = global.resolveVar("i")
+        assertNotNull(i)
         val r = global.resolveVar("r")!!
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
-        assertEquals(1, r.vectorQuantity.value.asIdd().min) // Ugly over-approximation
-        assertEquals(4, r.vectorQuantity.value.asIdd().max) // Ugly over-approximation
+        assertEquals(2, r.vectorQuantity.value.asIdd().min)
+        assertEquals(3, r.vectorQuantity.value.asIdd().max)
     }
 
     @Test
-    fun byImplementsTest() = testSession(catchExceptions = false) {
-        loadSysMD("""
+    fun byImplementsTest() = testSession("ScalarValues", "Links") {
+        loadKerML("""
             package ISO26262 {
                 assoc implements {
                    end feature 'from': Base::Anything;
@@ -556,7 +517,7 @@ class PredefinedFunctionsTests {
             //connector r = c ISO26262::implements f; 
             connector r : ISO26262::implements from c to f; 
 
-        """.trimIndent())
+        """)
         propagate()
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val r = global.resolve<Connector>("r")

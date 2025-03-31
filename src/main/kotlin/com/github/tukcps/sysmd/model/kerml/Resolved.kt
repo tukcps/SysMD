@@ -3,9 +3,9 @@ package com.github.tukcps.sysmd.model.kerml
 import com.github.tukcps.sysmd.exceptions.FeatureExpected
 import com.github.tukcps.sysmd.exceptions.NamespaceExpected
 import com.github.tukcps.sysmd.exceptions.TypeExpected
-import com.github.tukcps.sysmd.compiler.parser.QualifiedName
+import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.services.resolve.resolve
-import com.github.tukcps.sysmlv2.entities.Identified
+import io.github.tukcps.sysmlv2.api.entities.Identified
 import java.util.*
 
 
@@ -40,8 +40,8 @@ class Resolved<out T: Element>(
 
     override fun toString() = when {
         ref != null -> ref!!.elementType + " '${if (ref!!.escapedName() != null) ref!!.qualifiedName else ""}'"
-        id  != null -> "Unresolved id: " + id.toString()
-        str != null -> "Unresolved name: $str?"
+        id  != null -> "Unresolved id: '${id}'"
+        str != null -> "$str (?)"
         else -> "(none)"
     }
 
@@ -86,7 +86,7 @@ class Resolved<out T: Element>(
         if (other !is Resolved<*>) return false
         if (this.ref != null && other.ref != null && this.ref == other.ref) return true
         else if (this.id != null && other.id != null && this.id == other.id) return true
-        else return (this.str == other.str) && (this.id == other.id)
+        else return (this.str != null) && (this.str == other.str) && (this.id == other.id)
     }
 
     override fun hashCode(): Int {

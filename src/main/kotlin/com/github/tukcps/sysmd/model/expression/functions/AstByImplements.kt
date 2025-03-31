@@ -1,19 +1,20 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import com.github.tukcps.aadd.AADD
-import com.github.tukcps.aadd.BDD
-import com.github.tukcps.aadd.IDD
+import io.github.tukcps.aadd.AADD
+import io.github.tukcps.aadd.BDD
+import io.github.tukcps.aadd.IDD
 import com.github.tukcps.sysmd.model.expression.AstLeaf
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.model.kerml.Association
 import com.github.tukcps.sysmd.model.kerml.Connector
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Namespace
-import com.github.tukcps.sysmd.compiler.parser.QualifiedName
+import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.quantities.Quantity
-import com.github.tukcps.sysmd.services.*
-import com.github.tukcps.sysmd.services.resolve.resolveVar
+import com.github.tukcps.sysmd.services.getRelationshipsTo
+import com.github.tukcps.sysmd.services.session.report
 import com.github.tukcps.sysmd.services.resolve.resolve
+import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.session.Session
 
 /**
@@ -87,6 +88,4 @@ class AstByImplements(model: Session, namespace: Namespace, args: ArrayList<AstN
      * Does nothing so far.
      */
     override fun evalDownRec() {}
-
-    override fun toExpressionString() = "byImplements($propertyName)"
 }

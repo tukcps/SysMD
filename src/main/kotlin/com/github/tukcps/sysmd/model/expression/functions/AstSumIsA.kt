@@ -1,19 +1,17 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import com.github.tukcps.aadd.AADD
-import com.github.tukcps.aadd.IDD
+import io.github.tukcps.aadd.AADD
+import io.github.tukcps.aadd.IDD
+import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.PLUS
 import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.model.expression.AstLeaf
 import com.github.tukcps.sysmd.model.expression.AstNode
-import com.github.tukcps.sysmd.model.kerml.Element
-import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.kerml.Namespace
-import com.github.tukcps.sysmd.model.kerml.getOwnedElementsOfType
-import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.PLUS
+import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.quantities.Quantity
-import com.github.tukcps.sysmd.services.resolve.resolveVar
+import com.github.tukcps.sysmd.services.session.report
 import com.github.tukcps.sysmd.services.resolve.resolve
+import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.session.Session
 
 /**
@@ -43,7 +41,13 @@ internal class AstSumIsA(
         downQuantity = upQuantity
         if (propertyAst.size != 1)
             throw SemanticError("function 'sumOverSubclasses' expects one parameter")
-        generatedAst = model.initAstSumSubclasses(namespace, propertyAst.first(), transitive)
+        generatedAst = if (namespace is Type)
+            model.initAstSumSubclasses(namespace, propertyAst.first(), transitive)
+        else {
+            model.report(SemanticError("function 'sumOverSubclasses' can only be used in type", namespace))
+            null
+        }
+
         generatedAst!!.evalUpRec()
         evalUpRec()
         downQuantity = upQuantity.clone()
@@ -51,8 +55,8 @@ internal class AstSumIsA(
 
 
     /**
-     * Just compute the AST as set up in the init section.
-     * Still, no support for integers, requires adding operators Real * Int on dD
+     * Compute the AST as set up in the init section.
+     * Still, no support for integers; this requires adding operator Real * Int on dD
      **/
     override fun evalUp() {
         // upQuantity = model.getElement(elementUId).sumOverComposition(model, propertyName)!!
@@ -69,17 +73,16 @@ internal class AstSumIsA(
         for (elem in ownedElements) {
             try {
                 elem.ast?.evalUp()
-            } catch (ignore: Exception) {
-            }
+            } catch (_: Exception) { }
         }
         evalUp()
     }
 
 
-    /** Just compute the AST as set up in the init section.*/
+    /** Compute the AST as set up in the init section.*/
     override fun evalDown() {
         val resultingSum = downQuantity
-        //only do evalDown if the value is ready (interval should not be empty)
+        //only do evalDown if the value is ready (the interval should not be empty)
         val resultIsReady = when (resultingSum.values[0]) {
             is AADD -> !resultingSum.values.any { it.asAadd().getRange().isEmpty() }
             is IDD -> !resultingSum.values.any { it.asIdd().getRange().isEmpty() }
@@ -104,16 +107,7 @@ internal class AstSumIsA(
     }
 
     override fun getDependentPropertyStrings(): Set<String> {
-        return model.getPartDependencies(namespace, propertyAst.first())
-    }
-
-    override fun <T> runDepthFirst(block: AstNode.() -> T): T {
-        val elements = namespace.getOwnedElementsOfType<Element>()
-        for (element in elements) {
-//            try { model.getProperty(model.selfId, Identification(null, propertyName))!!.ast!!.runDepthFirst(block) }
-//            catch (ignore: Exception){ } // No property found, we can do nothing or recurse.
-        }
-        return this.run(block)
+        return getPartDependencies(namespace as Type, propertyAst.first())
     }
 
     override fun clone(): AstFunction {
@@ -128,20 +122,20 @@ internal class AstSumIsA(
  * Then, it builds an AST that computes the sum.
  */
 fun Session.initAstSumSubclasses(
-    element: Element,
+    type: Type,
     propertyAST: AstNode,
     transitive: Boolean,
     isReal: Boolean = true
 ): AstNode {
     var ast: AstNode? = null
     var isRealSum = isReal //indicates if the property is a real or an int
-    for (subclass in getSubclasses(element)) {
+    for (subtype in type.subtypes) {
         //iterate through all leafs of the propertyAST (which do not include only a number) to find the value for the properties.
         var newAstNode: AstNode = propertyAST.clone()
         for (leaf in newAstNode.getLeaves().filter { it.qualifiedName != null }) {
             // Find property with propertyName owned by element ...
             //TODO Could cause problems with inheritance or imports
-            val feature = global.resolve<Feature>(subclass.qualifiedName + "::" + leaf.qualifiedName)
+            val feature = global.resolve<Feature>(subtype.qualifiedName + "::" + leaf.qualifiedName)
             val ownedProperty = if (feature is Variable) feature else feature?.variable
             if (ownedProperty != null) {
                 leaf.upQuantity = ownedProperty.vectorQuantity
@@ -150,7 +144,7 @@ fun Session.initAstSumSubclasses(
                 leaf.feature = feature
                 if (leaf.upQuantity.values[0] is IDD) isRealSum = false
             } else if (transitive) { // Transitive: search property in parts
-                newAstNode = this.initAstSumSubclasses(subclass as Element, propertyAST, true, isRealSum)
+                newAstNode = this.initAstSumSubclasses(subtype, propertyAST, true, isRealSum)
                 break   // if one property of a leaf is not included in the current Element, there is no need to search
                 // for the properties of the other leafs, because all properties of one propertyAST must contain to the same element
                 // without this break statement, subclasses would be added multiple times to the ast
@@ -161,7 +155,7 @@ fun Session.initAstSumSubclasses(
             ast = if (ast == null) newAstNode else com.github.tukcps.sysmd.model.expression.AstBinOp(newAstNode, PLUS, ast)
     }
     return ast ?: if (isRealSum)
-        AstLeaf(this, Quantity(builder.scalar(0.0), "?"))
+        AstLeaf(this, Quantity(builder.real(0.0), "?"))
     else
-        AstLeaf(this, Quantity(builder.scalar(0)))
+        AstLeaf(this, Quantity(builder.integer(0)))
 }

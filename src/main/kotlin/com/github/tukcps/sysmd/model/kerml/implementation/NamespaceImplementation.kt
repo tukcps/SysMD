@@ -1,10 +1,7 @@
 package com.github.tukcps.sysmd.model.kerml.implementation
 
-import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Namespace
-import com.github.tukcps.sysmd.model.kerml.Resolved
 import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
-import java.util.*
 
 
 /**
@@ -14,27 +11,21 @@ import java.util.*
  * a different name when imported."
  */
 open class NamespaceImplementation(
-    elementId: UUID = UUID.randomUUID(),
     declaredName: String? = null,
     declaredShortName: String? = null,
-    ownedElement: MutableList<Resolved<Element>> = mutableListOf(),
-    owner: Resolved<Element> = Resolved(),
     isLibraryElement: Boolean = false,
     isStandard: Boolean = false,
     textualRepresentation: MutableList<TextualRepresentation> = mutableListOf(),
     elementType: String = "Namespace"
 ): Namespace, ElementImplementation(
-    elementId=elementId,
     declaredName=declaredName,
     declaredShortName=declaredShortName,
-    ownedElement=ownedElement,
-    owner=owner,
     textualRepresentation = textualRepresentation,
     elementType = elementType
 ){
     init {
-        this.isStandard = isStandard
-        this.isLibraryElement = isLibraryElement
+        this.isStandard = isStandard || (owner.ref?.isStandard == true)
+        this.isLibraryElement = isLibraryElement || (owner.ref?.isStandard == true)
     }
     override fun toString(): String {
         return "$elementType {" +
@@ -55,8 +46,6 @@ open class NamespaceImplementation(
         return NamespaceImplementation(
             declaredName=declaredName,
             declaredShortName = declaredShortName,
-            owner = Resolved(owner),
-            ownedElement = Resolved.copyOfIdentityList(ownedElement),
             isLibraryElement = isLibraryElement,
             isStandard = isStandard
         ).also { klon ->

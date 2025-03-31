@@ -8,7 +8,7 @@ import com.github.tukcps.sysmd.quantities.baseUnits.Time
 private var siUnitSet = setOf(Time.Second.copy(1))
 
 open class Timestamp(name: String, symbol: String, prefix: Prefix, convFac: Double = 1.0, exponent: Int = 1, isLogarithmic: Boolean = false) :
-    DerivedUnit(name, symbol, prefix, "timestamp", siUnitSet, convFac, exponent, isLogarithmic, isDifference = false) {
+    DerivedUnit(name, symbol, prefix, "Timestamp", siUnitSet, convFac, exponent, isLogarithmic, isDifference = false) {
 
     /**
      * generate UnitObjects and add them to the UnitList

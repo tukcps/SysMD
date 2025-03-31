@@ -6,12 +6,10 @@ import com.github.tukcps.sysmd.model.sysml.ConnectionUsage
 import java.util.UUID
 
 open class ConnectionUsageImplementation(
-    elementId: UUID = UUID.randomUUID(),
     declaredName: String? = null,
     declaredShortName: String? = null,
     elementType: String = "ConnectionUsage"
 ) : ConnectionUsage, ConnectorImplementation(
-    elementId = elementId,
     declaredName = declaredName,
     declaredShortName = declaredShortName,
     elementType = elementType

@@ -5,11 +5,9 @@ import com.github.tukcps.sysmd.model.sysml.RequirementDefinition
 import java.util.UUID
 
 class RequirementDefinitionImplementation(
-    elementId: UUID = UUID.randomUUID(),
     declaredName: String? = null,
     declaredShortName: String? = null,
 ): RequirementDefinition, TypeImplementation(
-    elementId = elementId,
     declaredName = declaredName,
     declaredShortName = declaredShortName,
     elementType = "RequirementDefinition"

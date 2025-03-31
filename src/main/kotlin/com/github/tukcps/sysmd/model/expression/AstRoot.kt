@@ -1,11 +1,10 @@
 
 package com.github.tukcps.sysmd.model.expression
 
-import com.github.tukcps.aadd.AADD
-import com.github.tukcps.aadd.DD
-import com.github.tukcps.aadd.DDcond
-import com.github.tukcps.aadd.IDD
-import com.github.tukcps.aadd.values.XBool
+import io.github.tukcps.aadd.AADD
+import io.github.tukcps.aadd.DD
+import io.github.tukcps.aadd.IDD
+import io.github.tukcps.aadd.values.XBool
 import com.github.tukcps.sysmd.cspsolver.Variable.BaseType
 import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.exceptions.SemanticError
@@ -13,19 +12,19 @@ import com.github.tukcps.sysmd.exceptions.SysMDError
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.quantities.VectorDimensionError
 import com.github.tukcps.sysmd.quantities.VectorQuantity
-import com.github.tukcps.sysmd.services.reportInconsistency
-import com.github.tukcps.sysmd.services.reportInfo
+import com.github.tukcps.sysmd.services.session.reportInconsistency
+import com.github.tukcps.sysmd.services.session.reportInfo
 import com.github.tukcps.sysmd.services.session.Session
 import java.util.*
 
-typealias DDLeaf=DDcond.Leaf<*>
-typealias DDInternal=DDcond.Internal<*>
+typealias DDLeaf=DD.Leaf<*>
+typealias DDInternal=DD.Internal<*>
 
 /**
  * This AST node holds information for the constraint propagation.
  * It holds the root of the AST for a given property that has to be computed.
  * @param model the overall data model as dependency injected via constructor parameter.
- * @param property the property that is computed by the AST
+ * @param feature the feature - variable that is computed by the AST
  * @param dependency the AST that describes the dependency of the property from other properties.
  */
 class AstRoot(
@@ -50,7 +49,14 @@ class AstRoot(
         downQuantity = dependency.upQuantity.clone()
         leaves = dependency.getLeaves()
         variable.ast = this
-        variable.vectorQuantity = upQuantity
+        if(variable.baseType == BaseType.Real && variable.vectorQuantity.unit.clone().toSI()!=upQuantity.unit.clone().toSI())
+            model.reportInconsistency(variable.feature, "Unit of ${variable.feature.escapedName()} (${variable.vectorQuantity.unit}) does not match the unit of the dependency (${upQuantity.unit})")
+        val a = variable.vectorQuantity
+        val b = upQuantity
+        //val c = a.constrain(b)
+        variable.vectorQuantity.values = upQuantity.values
+        variable.vectorQuantity.unit = upQuantity.unit
+
     }
 
     /**
@@ -75,7 +81,7 @@ class AstRoot(
                 } else if (variable.baseType == BaseType.Real && variable.feature.isSufficient) {
                     // Convert the rangeSpecs to a VectorQuantity
                     val values = mutableListOf<AADD>()
-                    variable.rangeSpecs.forEach{values.add(model.builder.range(it))}
+                    variable.rangeSpecs.forEach{values.add(model.builder.real(it))}
                     upQuantity = VectorQuantity(values, variable.unitSpec)
                     variable.vectorQuantity = upQuantity
                     if(variable.rangeSpecs.size!=dependency.upQuantity.values.size && variable.rangeSpecs.size!=1)
@@ -84,7 +90,7 @@ class AstRoot(
                         if (variable.rangeSpecs.indices.any{variable.rangeSpecs[it] !in (dependency.upQuantity.values[it] as AADD).getRange()})
                             model.reportInfo(variable.feature, "Dependency for ${variable.feature.escapedName()} cannot be satisfied for all values of range.")
                 } else
-                    throw SemanticError("${variable.name}: expect expression of type Real")
+                    throw SemanticError("${variable.name}: expect expression of type Real", variable.feature)
             }
 
             this.dependency.isBool -> {
@@ -95,19 +101,19 @@ class AstRoot(
             this.dependency.isInt -> {
                 if (variable.baseType == BaseType.Int && ! variable.feature.isSufficient) {
                     upQuantity = dependency.upQuantity
-                    variable.vectorQuantity = upQuantity.constrain(variable.intSpecs)
+                    variable.vectorQuantity = upQuantity.constrain(variable.intSpecs).constrain(variable.vectorQuantity)
                 } else if (variable.baseType == BaseType.Int && variable.feature.isSufficient) {
                     upQuantity = dependency.upQuantity
                     val values = mutableListOf<IDD>()
-                    variable.intSpecs.forEach { values.add(model.builder.range(it)) }
+                    variable.intSpecs.forEach { values.add(model.builder.integer(it)) }
                     variable.vectorQuantity = VectorQuantity(values)
-                    if(variable.rangeSpecs.size!=dependency.upQuantity.values.size && variable.rangeSpecs.size!=1)
+                    if(variable.rangeSpecs.size!=dependency.upQuantity.values.size && variable.rangeSpecs.size != 1)
                         throw VectorDimensionError("Vector size of ${dependency.upQuantity.values.size} does not match Constraint size of ${variable.rangeSpecs.size}")
                     if(variable.rangeSpecs.size == dependency.upQuantity.values.size)
                         if (variable.rangeSpecs.indices.any{variable.intSpecs[it] !in (dependency.upQuantity.values[it] as IDD).getRange()})
                             model.reportInfo(variable.feature, "Dependency for ${variable.name} cannot be satisfied for all values of range.")
                 } else
-                    throw SemanticError("${variable.name}: expect expression of type Integer")
+                    throw SemanticError("${variable.feature.qualifiedName}: expect expression of type Integer", variable.feature)
             }
             this.dependency.isString -> {
                 upQuantity = dependency.upQuantity.constrainString(variable.stringSpecs)
@@ -120,6 +126,12 @@ class AstRoot(
     /** This may be causing errors with the IntegerRange / IDD datatype(s) */
     override fun evalUpRec() {
         dependency.evalUpRec()
+        //add predefined dimension to the unit
+        if(feature.specializes(feature.model!!.repo.realType)&& feature.type.size==1) {
+            val type =  feature.type[0].ref?.declaredName.toString()
+            if(feature.type[0].ref?.generalization?.firstOrNull()?.ref?.declaredName=="Quantity")
+                dependency.upQuantity.unit.unitDimension = type
+        }
         evalUp()
     }
 
@@ -152,6 +164,13 @@ class AstRoot(
     override fun evalDownRec() {
         evalDown()
         dependency.evalDownRec()
+        //add predefined dimension to the unit in the leaves (changed by evalDown)
+        if(feature.specializes(feature.model!!.repo.realType)&& feature.type.size==1) {
+            dependency.getLeaves().forEach {
+                val type = it.upQuantity.unit.unitDimension
+                it.variable?.vectorQuantity?.unit?.unitDimension = type
+            }
+        }
     }
 
     override fun toString() =
@@ -159,10 +178,10 @@ class AstRoot(
         else "AstRoot: (uninitialized quantity)"
 
     @Deprecated("Will be phased out") //TODO not for Vectors implemented
-    fun solveAst(): DD {
+    fun solveAst(): DD<*> {
         val conditions = if (this.isBool) this.bdd.evaluate() else if (this.isReal) this.aadd.evaluate() else this.idd.evaluate()
 
-        if (conditions is DDcond.Leaf) return conditions
+        if (conditions is DD.Leaf<*>) return conditions
         if (conditions.isInfeasible) return model.builder.Infeasible //TODO: InfeasibleB?
 
         //Find the shortest path!
@@ -178,10 +197,10 @@ class AstRoot(
     }
 
     @Deprecated("Will be phased out") //TODO not for Vectors implemented
-    fun solveAstWithAlternatives(): DD {
+    fun solveAstWithAlternatives(): DD<*> {
         val conditions = if (this.isBool) this.bdd.evaluate() else if (this.isReal) this.aadd.evaluate() else this.idd.evaluate()
 
-        if (conditions is DDcond.Leaf) return conditions
+        if (conditions is DD.Leaf) return conditions
         if (conditions.isInfeasible) return model.builder.Infeasible //TODO: InfeasibleB?
 
         val paths = findAllPaths(conditions, variable.boolSpecs[0])
@@ -213,12 +232,12 @@ class AstRoot(
             } else
                 boolSpecOk = true
         }
-        model.builder.conds.x = trialState as HashMap<Int, DD>
+        model.builder.conds.x = trialState as HashMap<Int, DD<*>>
 
         return if (isBool) bdd.evaluate() else aadd.evaluate()
     }
 
-    private fun findShortestPath(dd: DD, target: XBool = XBool.True, path: MutableMap<Int, Boolean> = mutableMapOf()): MutableMap<Int, Boolean> {
+    private fun findShortestPath(dd: DD<*>, target: XBool = XBool.True, path: MutableMap<Int, Boolean> = mutableMapOf()): MutableMap<Int, Boolean> {
         val targetLeaf = when (target) {
             XBool.True, XBool.X -> model.builder.True //default case: if not specified => make it true
             XBool.False -> model.builder.False
@@ -259,7 +278,7 @@ class AstRoot(
 
 
     /*private*/ fun findAllPaths(
-        dd: DD,
+        dd: DD<*>,
         target: XBool = XBool.True,
         path: MutableMap<Int, Boolean> = mutableMapOf(),
         paths: MutableList<MutableMap<Int, Boolean>> = mutableListOf()
@@ -272,7 +291,7 @@ class AstRoot(
             }
         }
 
-        if (dd is DDcond.Leaf) {
+        if (dd is DD.Leaf) {
             if (dd === targetLeaf) {
                 paths.add(path)
             }

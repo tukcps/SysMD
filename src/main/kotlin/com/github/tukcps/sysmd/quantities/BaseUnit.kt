@@ -45,7 +45,7 @@ open class BaseUnit(
             is Temperature -> setOf(Temperature.Kelvin.copy())
             is Time -> setOf(Time.Second.copy())
             is EmptyUnit -> setOf(EmptyUnit.Empty.copy())
-            is Currency -> setOf(Currency.Euro.copy())
+            is AmountOfMoney -> setOf(AmountOfMoney.Euro.copy())
             else -> throw UnknownUnitError("$this should be a base unit, but it is not defined")
         }
     }

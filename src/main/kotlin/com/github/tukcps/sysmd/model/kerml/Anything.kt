@@ -2,7 +2,6 @@ package com.github.tukcps.sysmd.model.kerml
 
 import com.fasterxml.uuid.Generators
 import com.github.tukcps.sysmd.model.kerml.implementation.ClassifierImplementation
-import com.github.tukcps.sysmd.model.kerml.implementation.SpecializationImplementation
 import com.github.tukcps.sysmd.services.session.Session
 
 /**
@@ -11,15 +10,13 @@ import com.github.tukcps.sysmd.services.session.Session
  */
 @Suppress("UNUSED_PARAMETER")
 class Anything(
-    owner: Resolved<Element>,
     model: Session
 ): Classifier, ClassifierImplementation(
-    elementId = Generators.nameBasedGenerator().generate("Anything"),
     declaredName = "Anything",
     declaredShortName = "Any",
-    owner = owner,
 ) {
     init {
+        elementId = Generators.nameBasedGenerator().generate("Anything")
         this.model = model
         isLibraryElement = true
         isStandard = true

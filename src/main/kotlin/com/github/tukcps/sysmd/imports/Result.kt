@@ -8,5 +8,4 @@ class Result(
     val referenceUnit : String,
     val successful : Boolean,
     val attributeQualifiedName: String,
-
 )

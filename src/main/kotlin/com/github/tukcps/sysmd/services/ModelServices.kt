@@ -2,18 +2,18 @@ package com.github.tukcps.sysmd.services
 
 import com.github.tukcps.sysmd.cspsolver.ConstraintPropagation
 import com.github.tukcps.sysmd.model.kerml.Element
-import com.github.tukcps.sysmd.services.check.CheckMetamodel
+import com.github.tukcps.sysmd.services.check.CheckSemanticConstraints
 import com.github.tukcps.sysmd.services.session.Session
 
 /**
- * API for
+ * API of the model elements for
  * - Methods needed for verification of metamodel constraints
  * - Methods needed by constraint propagation
  */
 interface ModelServices:
     Cloneable,
     ConstraintPropagation,
-    CheckMetamodel {
+    CheckSemanticConstraints {
     /**
      * The session and model to which the element belongs.
      */

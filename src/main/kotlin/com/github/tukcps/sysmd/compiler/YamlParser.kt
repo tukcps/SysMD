@@ -3,7 +3,7 @@ package com.github.tukcps.sysmd.compiler
 import java.io.File
 
 /**
- * Gets the Yaml information from the header of a SysMD file
+ * Gets the YAML information from the header of a SysMD file
  * Format:
  * ---
  * key: value

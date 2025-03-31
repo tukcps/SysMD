@@ -1,6 +1,6 @@
 package com.github.tukcps.sysmd.model.kerml
 
-import com.github.tukcps.aadd.values.IntegerRange
+import io.github.tukcps.aadd.values.IntegerRange
 import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.model.expression.AstNode
 
@@ -80,5 +80,5 @@ interface Feature: Type {
     var variable: Variable?
         get() = variables.firstOrNull()
         set(value) { variables = mutableListOf(value) }
-    var variables: MutableList<Variable?> // For nested attributes multiple variables are needed
+    var variables: MutableList<Variable?> // For nested attributes, multiple variables are necessary
 }

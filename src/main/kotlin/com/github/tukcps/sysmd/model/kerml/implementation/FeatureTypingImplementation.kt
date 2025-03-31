@@ -1,20 +1,15 @@
 package com.github.tukcps.sysmd.model.kerml.implementation
 
 import com.github.tukcps.sysmd.model.kerml.*
-import java.util.*
 
 /**
  * Feature typing relationship.
  */
 class FeatureTypingImplementation(
-    elementId: UUID = UUID.randomUUID(),
-    owner: Resolved<Element> = Resolved(),
     typedFeature: Resolved<Feature> = Resolved(),
     type: Resolved<Type> = Resolved(),
     elementType: String = "FeatureTyping"
 ): FeatureTyping, SpecializationImplementation(
-    elementId = elementId,
-    owner = owner,
     specific = typedFeature,
     general = type,
     elementType = elementType
@@ -29,7 +24,6 @@ class FeatureTypingImplementation(
     @Suppress("UNCHECKED_CAST")
     override val typedFeature: Resolved<Feature>
         get() = owner as Resolved<Feature>
-
 
     @Suppress("UNCHECKED_CAST")
     override fun clone(): FeatureTyping {

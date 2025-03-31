@@ -1,26 +1,75 @@
 package kermltests
 
-import com.github.tukcps.aadd.values.IntegerRange
+import io.github.tukcps.aadd.values.IntegerRange
 import com.github.tukcps.sysmd.cspsolver.propagate
-import com.github.tukcps.sysmd.model.kerml.Class
-import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.kerml.Redefinition
-import com.github.tukcps.sysmd.model.kerml.getOwnedElementsOfType
-import com.github.tukcps.sysmd.compiler.loadSysMD
+import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.services.resolve.resolve
-import com.github.tukcps.sysmd.services.session.SessionManager.testSession
+import com.github.tukcps.sysmd.services.resolve.resolveVar
+import util.mockup.loadKerML
+import org.junit.jupiter.api.Assertions
+import util.testSession
 import kotlin.test.*
 import kotlin.test.DefaultAsserter.assertEquals
 
 class FeatureTests {
 
+    @Test
+    fun basicTest() = testSession("ScalarValues") {
+        loadKerML("""
+                feature f;   
+            """)
+        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+    }
+
+    /**
+     * We can use "string"s that are recognized as a literal.
+     * Strings are saved in the AST as leaf with idType=STRING.
+     * The string literal is in the field id.
+     */
+    @Test
+    fun stringLiteralsTest() = testSession("ScalarValues") {
+        loadKerML("""feature x: ScalarValues::String = "test2" ;""")
+        assertEquals(0, status.exceptions.size, "error messages: ${status.exceptions}")
+        val feature = global.resolve<Feature>("x")
+        assertEquals("x", feature!!.declaredName)
+        assertEquals("\"test2\"", feature.variable!!.dependency.trim())
+        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+    }
+
+    @Test
+    fun prefixesTest() = testSession {
+        loadKerML(
+            """
+               in abstract composite readonly derived feature f; 
+               out portion feature all g; 
+            """)
+        val f = global.resolve<Feature>("f")
+        assertNotNull(f)
+        assertEquals(Feature.FeatureDirectionKind.IN, f.direction)
+        assertTrue(f.isAbstract)
+        assertTrue(f.isComposite)
+        assertFalse(f.isPortion)
+        assertTrue(f.isReadOnly)
+        assertTrue(f.isDerived)
+
+        val g = global.resolve<Feature>("g")
+        assertNotNull(g)
+        assertEquals(Feature.FeatureDirectionKind.OUT, g.direction)
+        assertFalse(g.isAbstract)
+        assertFalse(g.isComposite)
+        assertTrue(g.isPortion)
+        assertFalse(g.isReadOnly)
+        assertFalse(g.isDerived)
+        assertTrue(g.isSufficient)
+    }
 
     /**
      * Some checks of prefixes
      */
     @Test
-    fun testValueFeaturePrefixes() = testSession {
-        loadSysMD("""
+    fun testValueFeaturePrefixes() = testSession("Base") {
+        loadKerML("""
+            standard library package ScalarValues { datatype Natural; } // For multiplicity 
             out feature f1;
             inout feature f2; 
             end feature f3; 
@@ -45,14 +94,15 @@ class FeatureTests {
      * Typed by two types.
      */
     @Test
-    fun testInheritance() = testSession {
-        +"""
-            type a :> Base::Anything; 
-            type b :> Base::Anything {
-                feature c: a; 
-            }; 
-            feature f typed by a, b;  
-        """
+    fun testInheritance() = testSession("Base") {
+        loadKerML("""
+                package ScalarValues { datatype Natural; } // For multiplicity 
+                type a :> Base::Anything; 
+                type b :> Base::Anything {
+                    feature c: a; 
+                }; 
+                feature f : a, b;
+            """)
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val f = global.resolve<Feature>("f")
         assertEquals( 2, f!!.type.size)
@@ -61,8 +111,8 @@ class FeatureTests {
     }
 
     @Test
-    fun testValueFeatureType() = testSession {
-        loadSysMD("""
+    fun testValueFeatureType() = testSession("ScalarValues") {
+        loadKerML("""
             feature f: ScalarValues::Real;
         """)
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
@@ -71,8 +121,8 @@ class FeatureTests {
     }
 
     @Test
-    fun testValueFeature1() = testSession {
-        loadSysMD("""
+    fun testValueFeature1() = testSession("ScalarValues") {
+        loadKerML("""
             feature f: ScalarValues::Real = 1.0;
         """)
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
@@ -81,8 +131,8 @@ class FeatureTests {
     }
 
     @Test
-    fun testValueFeatureCompute() = testSession {
-        loadSysMD("""
+    fun testValueFeatureCompute() = testSession("ScalarValues") {
+        loadKerML("""
             feature f: ScalarValues::Real = 1.0;
             feature g: ScalarValues::Real = f+1.0;
         """)
@@ -93,24 +143,24 @@ class FeatureTests {
 
 
     @Test
-    fun testFeatureWithUnitConstraint() = testSession {
-        loadSysMD("""
-            feature f: ScalarValues::Real [mm] = 1.0 m;
-        """.trimIndent())
+    fun testFeatureWithUnitConstraint() = testSession("SI") {
+        loadKerML("""
+                feature f: SI::Length [mm] = 1.0 [m];
+            """)
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val f = global.resolve<Feature>("f")
         assertNotNull(f)
         assertTrue(f.isFeatureWithValue())
         assertEquals("f", f.declaredName)
         assertEquals("mm", f.unitConstraint)
-        assertEquals("1.0 m", f.expression)
+        assertEquals("1.0 [m]", f.expression)
     }
 
     @Test
-    fun testFeatureWithTypeAndUnitConstraint() = testSession {
-        loadSysMD("""
-            feature f: ScalarValues::Real(1.0 .. 2000.0) [mm] = 1.0 m;
-        """.trimIndent())
+    fun testFeatureWithTypeAndUnitConstraint() = testSession("SI") {
+        loadKerML("""
+                feature f: SI::Length(1.0 .. 2000.0) [mm] = 1.0 m;
+            """)
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val f = global.resolve<Feature>("f")
         assertEquals(1000.0 , f!!.variable!!.max(), 0.000001)
@@ -119,49 +169,47 @@ class FeatureTests {
 
 
     @Test
-    fun testFeatureWithConstraintsOfProfile() = testSession {
-        loadSysMD("""
-            feature f: ScalarValues::Integer (1 .. 2) [2 .. 4][m] = 1; 
-        """.trimIndent())
-        val f = global.resolve<Feature>("f")
+    fun testFeatureWithConstraintsOfProfile() = testSession("ScalarValues") {
+        loadKerML("""
+                feature f: ScalarValues::Integer[2 .. 4] (1 .. 2) [m] = 1; 
+            """)
+        val f = global.resolve<Feature>("f")!!
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
-        assertEquals("Declared name not correct", "f", f?.declaredName)
-        assertTrue(f?.isFeatureWithValue() == true)
-        assertEquals("Unit saved incorrectly", "m", f?.unitConstraint)
-        assertEquals("Expression saved incorrectly", "1", f?.expression)
+        assertEquals("Declared name not correct", "f", f.declaredName)
+        assertTrue(f.isFeatureWithValue())
+        assertEquals("Unit saved incorrectly", "m", f.unitConstraint)
+        assertEquals("Expression saved incorrectly", "1", f.expression)
     }
 
-
     @Test
-    fun testFeatureWithConstraintsOfProfilePropagate() = testSession {
-        loadSysMD("""
-            feature f: ScalarValues::Integer(0 .. 2) = 1; 
-        """.trimIndent())
-        val f = global.resolve<Feature>("f")
+    fun testFeatureWithConstraintsOfProfilePropagate() = testSession("ScalarValues") {
+        loadKerML("""
+                feature f: ScalarValues::Integer(0 .. 2) = 1; 
+            """)
+        val f = global.resolve<Feature>("f")!!
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
-        assertEquals("Declared name not correct", "f", f?.declaredName)
-        assertTrue(f?.isFeatureWithValue() == true)
-        assertEquals("Expression saved incorrectly", "1", f?.expression)
-        assertEquals(IntegerRange(0,2), f?.variable?.intSpecs?.firstOrNull())
-        assertNotNull(f?.variable?.ast)
+        assertEquals("Declared name not correct", "f", f.declaredName)
+        assertTrue(f.isFeatureWithValue())
+        assertEquals("Expression saved incorrectly", "1", f.expression)
+        assertEquals(IntegerRange(0,2), f.variable?.intSpecs?.firstOrNull())
+        assertNotNull(f.variable?.ast)
         propagate()
-        assertEquals(IntegerRange(1,1), f?.variable?.vectorQuantity?.values?.first()?.asIdd()?.getRange())
+        assertEquals(IntegerRange(1,1), f.variable?.vectorQuantity?.values?.first()?.asIdd()?.getRange())
     }
 
     @Test
-    fun testRedefine() = testSession(loadKerML = false) {
-        loadSysMD("""
-            package ScalarValues { datatype ScalarValue; datatype Integer :> ScalarValue; }
-            class c {
-                feature f [1 ..*]; 
-            }
-            class c2 :> c {
-                feature f2 redefines c::f [1];
-            }
-        """)
+    fun testRedefine() = testSession("ScalarValues") {
+        loadKerML("""
+                type c :> Base::Anything {
+                    feature f [1 ..*]; 
+                }
+                type c2 :> c {
+                    feature f2 redefines c::f [1];
+                }
+            """)
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
-        val c = global.resolve<Class>("c")
-        val c2 = global.resolve<Class>("c2")
+        val c = global.resolve<Type>("c")
+        val c2 = global.resolve<Type>("c2")
         val c2f = global.resolve<Feature>("c2::f2")
         val cf = global.resolve<Feature>("c::f")
         val redefinition = c2f?.getOwnedElementsOfType<Redefinition>()?.firstOrNull()
@@ -173,21 +221,40 @@ class FeatureTests {
         assertEquals(c2f.owner.ref, c2 )
     }
 
+
     @Test
-    fun testRedefineSameName() = testSession(loadKerML = false) {
-        loadSysMD("""
-            package ScalarValues { datatype ScalarValue; datatype Integer :> ScalarValue; }
-            class c {
-                feature f [1 ..*]; 
-            }
-            class c2 :> c {
-                // f inherited --> should be redefined
-                feature redefines f [2]; // c::f not inherited, instead replaced by redef. 
-            }
-        """)
+    fun redefinesTest()  = testSession("ScalarValues") {
+        loadKerML("""
+                type f1 :> Base::Anything {
+                    feature a: ScalarValues::Real(0..20); 
+                }
+                type f2 :> f1 {
+                    // feature a: ScalarValues::Real(3.0); 
+                    :>> a = 3.0;
+                }
+            """)
+        propagate()
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
-        val c = global.resolve<Class>("c")
-        val c2 = global.resolve<Class>("c2")
+        Assertions.assertEquals(0.0, global.resolveVar("f1::a")!!.vectorQuantity.aadd().getRange().min, 0.000001)
+        Assertions.assertEquals(20.0, global.resolveVar("f1::a")!!.vectorQuantity.aadd().getRange().max, 0.000001)
+        Assertions.assertEquals(3.0, global.resolveVar("f2::a")!!.vectorQuantity.aadd().getRange().min, 0.000001)
+        Assertions.assertEquals(3.0, global.resolveVar("f2::a")!!.vectorQuantity.aadd().getRange().max, 0.000001)
+    }
+
+    @Test
+    fun testRedefineSameName() = testSession("ScalarValues") {
+        loadKerML("""
+                type c :> Base::Anything {
+                    feature f [1 ..*]; 
+                }
+                type c2 :> c {
+                    // f inherited --> should be redefined
+                    feature redefines f [2]; // c::f not inherited, instead replaced by redef. 
+                }
+            """)
+        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        val c = global.resolve<Type>("c")
+        val c2 = global.resolve<Type>("c2")
         val c2f = global.resolve<Feature>("c2::f")
         val cf = global.resolve<Feature>("c::f")
         val redefinition = c2f?.getOwnedElementsOfType<Redefinition>()?.firstOrNull()
@@ -200,5 +267,38 @@ class FeatureTests {
         assertNotSame(c2f, cf, "The redefinition shall be independent KerML Element")
         assertEquals(cf?.owner?.ref, c )
         assertEquals(c2f.owner.ref, c2 )
+    }
+
+    @Test
+    fun referenceSubsettingTest() = testSession("ScalarValues") {
+        loadKerML("""
+            feature referencedFeature; 
+            feature referencingFeature references referencedFeature; 
+        """.trimIndent())
+        val f2 = global.getOwned<Feature>("referencingFeature")
+        val reference = f2!!.getOwnedElementsOfType<ReferenceSubsetting>()
+        assertTrue(reference.isNotEmpty())
+        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+    }
+
+
+    @Test
+    fun redefineWithInheritance()  = testSession( "Base") {
+        loadKerML("""
+            standard library package ScalarValues {
+                datatype String;
+                datatype Real :> String { 
+                    feature range: String; 
+                }	
+                datatype Integer :> Real;
+                datatype Natural :> Integer; 
+            }	
+        """)
+        assertTrue(status.exceptions.isEmpty(), "${status.exceptions}")
+        val integerRange = global.resolve<Feature>("ScalarValues::Integer::range")
+        assertNotNull(integerRange)
+        assertEquals("String",global.resolveVar("ScalarValues::Real::range")!!.baseType.name)
+        assertEquals("String",global.resolve<Feature>("ScalarValues::Integer::range")!!.type[0].ref!!.name)
+        assertEquals(1, global.resolve<Feature>("ScalarValues::Integer::range")!!.type.size)
     }
 }

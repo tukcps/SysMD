@@ -6,12 +6,10 @@ import com.github.tukcps.sysmd.model.sysml.ConnectionDefinition
 import java.util.UUID
 
 open class ConnectionDefinitionImplementation(
-    elementId: UUID = UUID.randomUUID(),
     declaredName: String? = null,
     declaredShortName: String? = null,
     elementType: String = "ConnectionDefinition"
 ) : ConnectionDefinition, AssociationImplementation(
-    elementId = elementId,
     declaredName = declaredName,
     declaredShortName = declaredShortName,
     elementType = elementType

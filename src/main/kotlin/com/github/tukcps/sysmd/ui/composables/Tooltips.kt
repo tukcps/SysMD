@@ -14,24 +14,30 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 
-@Suppress("EXPERIMENTAL_IS_NOT_ENABLED")
+
+/**
+ * A SysMD - specific tooltip area
+ * @param tooltipText The text that appears after 800 ms
+ * @param modifier a modifier that is passed to components
+ * @param content the content of the area with the tooltip
+ */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun TooltipForIcons(
+fun SysMDTooltipArea(
     tooltipText: String = "Place tooltip text here",
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
     TooltipArea(
-        tooltip = {// composable tooltip content
+        tooltip = {
             Surface(
                 modifier = Modifier.shadow(4.dp),
-                shape = RoundedCornerShape(4.dp)
+                shape = RoundedCornerShape(10.dp)
             ) {
                 Text(
                     text = tooltipText,
                     modifier = Modifier.padding(5.dp),
-                    fontSize = MaterialTheme.typography.bodyLarge.fontSize
+                    fontSize = MaterialTheme.typography.bodyMedium.fontSize,
                 )
             }
         },

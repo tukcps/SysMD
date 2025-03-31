@@ -16,15 +16,11 @@ class SessionStatus {
     // Hashmap of error messages, property id is key, string (error message).
     val exceptions = mutableSetOf<SysMDException>()
 
-    @Deprecated("Replace with exceptions.filterIsInstance<SysMDError")
-    val errors: List<SysMDError>
-        get() = exceptions.filterIsInstance<SysMDError>()
-
     // Hashmap of updated properties, property id is key, and string (updated result).
     val updates: HashMap<UUID, String> = hashMapOf()
 
     /**
-     * Resets all internal values: source, lineNo, columnNo, and the mapx errors, errorsByLine,
+     * Resets all internal values: source, lineNo, columnNo, and the maps errors, errorsByLine,
      * and updates.
      */
     fun reset() {

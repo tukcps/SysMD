@@ -1,14 +1,13 @@
 package com.github.tukcps.sysmd.cspsolver
 
-
-import com.github.tukcps.aadd.DD
-import com.github.tukcps.aadd.DDBuilder
-import com.github.tukcps.aadd.values.XBool
+import io.github.tukcps.aadd.DD
+import io.github.tukcps.aadd.DDBuilder
+import io.github.tukcps.aadd.values.XBool
 import com.github.tukcps.sysmd.cspsolver.analyzer.SetOfSolutions
 
 
 open class UnitMap(private val builder: DDBuilder) {
-    private val unitMap: HashMap<Variable, HashMap<Int, DD>> = hashMapOf()
+    private val unitMap: HashMap<Variable, HashMap<Int, DD<*>>> = hashMapOf()
     val keys
         get() = unitMap.keys
     val values
@@ -18,30 +17,29 @@ open class UnitMap(private val builder: DDBuilder) {
     private val reversed
         get() = unitMap.entries.associate { (k, v) -> v to k }
 
-    fun getKey(element: HashMap<Int, DD>) : Variable {
+    fun getKey(element: HashMap<Int, DD<*>>) : Variable {
         return reversed[element]!!
     }
 
     @Suppress("UNCHECKED_CAST")
-    operator fun iterator() : MutableIterator<HashMap<Variable, HashMap<Int, DD>>> {
-        return unitMap.iterator() as MutableIterator<HashMap<Variable, HashMap<Int, DD>>>
+    operator fun iterator() : MutableIterator<HashMap<Variable, HashMap<Int, DD<*>>>> {
+        return unitMap.iterator() as MutableIterator<HashMap<Variable, HashMap<Int, DD<*>>>>
     }
 
-    fun update(value: Variable, units: HashMap<Int, DD>, dontcares: HashSet<Int>) {
-        val filteredUnitMap = units
-        for (e in filteredUnitMap.keys) {
-            if (dontcares.contains(e)) filteredUnitMap[e] = XBool.X.bddLeafOf(builder)
+    fun update(value: Variable, units: HashMap<Int, DD<*>>, dontcares: HashSet<Int>) {
+        for (e in units.keys) {
+            if (dontcares.contains(e)) units[e] = XBool.X.bddLeafOf(builder)
         }
-        if (filteredUnitMap.isEmpty()) {
+        if (units.isEmpty()) {
             for (i in dontcares) {
-                filteredUnitMap[i] = XBool.X.bddLeafOf(builder)
+                units[i] = XBool.X.bddLeafOf(builder)
             }
         }
-        unitMap[value]=filteredUnitMap
+        unitMap[value] = units
     }
 
-    operator fun get(i: Variable): HashMap<Int, DD> {
-        return unitMap[i] as HashMap<Int, DD> /* = java.util.HashMap<kotlin.Int, com.github.tukcps.jaadd.DD> */
+    operator fun get(i: Variable): HashMap<Int, DD<*>> {
+        return unitMap[i] as HashMap<Int, DD<*>> /* = java.util.HashMap<kotlin.Int, com.github.tukcps.aadd.DD> */
     }
 
     override fun toString(): String {
@@ -66,15 +64,13 @@ open class InfeasibilityMap(private val builder: DDBuilder) {
     val entries
         get() = infeasibilityMap.entries
 
-
-
     operator fun get(i: Variable): SetOfSolutions? {
         return infeasibilityMap[i]
     }
 
     @Suppress("UNCHECKED_CAST")
-    operator fun iterator() : MutableIterator<HashMap<Variable, HashSet<HashMap<Int, DD>>>> {
-        return infeasibilityMap.iterator() as MutableIterator<HashMap<Variable, HashSet<HashMap<Int, DD>>>>
+    operator fun iterator() : MutableIterator<HashMap<Variable, HashSet<HashMap<Int, DD<*>>>>> {
+        return infeasibilityMap.iterator() as MutableIterator<HashMap<Variable, HashSet<HashMap<Int, DD<*>>>>>
     }
 
     fun update(uid: Variable, infeasiblePaths: SetOfSolutions) {
@@ -105,7 +101,7 @@ open class DiscreteSolverStep(val stepNumber: Int) {
     lateinit var unitMap: UnitMap
     lateinit var infeasibilityMap: InfeasibilityMap
     val introducedProperties = mutableListOf<Variable>()
-    val conflicts = hashMapOf<Int, HashSet<DD>>()
+    val conflicts = hashMapOf<Int, HashSet<DD<*>>>()
     val updatedProperties = mutableListOf<Variable>()
 }
 
@@ -116,8 +112,8 @@ open class DiscreteSolverDepth(var depthLevel: Int, var currentState: DiscreteSo
 
 
 data class DiscreteSolverHistoryTreeNode(val id: Int, val parent: DiscreteSolverHistoryTreeNode?) {
-    val assignments = mutableSetOf<MutableMap<Int, DD>>()
-    val noGoods = mutableSetOf<Pair<Int, DD>>()
+    val assignments = mutableSetOf<MutableMap<Int, DD<*>>>()
+    val noGoods = mutableSetOf<Pair<Int, DD<*>>>()
     val children = mutableSetOf<DiscreteSolverHistoryTreeNode>()
 }
 

@@ -1,16 +1,16 @@
-package test.constraintnettests
+package constraintnettests
 
-import com.github.tukcps.aadd.values.XBool
+import util.testSession
+import io.github.tukcps.aadd.values.XBool
+import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.cspsolver.normalizer.CNNormalizer
 import com.github.tukcps.sysmd.cspsolver.normalizer.NormalizedProperties
 import com.github.tukcps.sysmd.cspsolver.normalizer.SimpleProperty
-import com.github.tukcps.sysmd.cspsolver.Variable
-import com.github.tukcps.sysmd.compiler.loadSysMD
 import com.github.tukcps.sysmd.services.session.Session
-import com.github.tukcps.sysmd.services.session.SessionManager.testSession
+import util.mockup.loadKerML
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import kotlin.collections.get
 
 /**
  * Tests for the CNNormalizer, which normalizes a constraint net.
@@ -28,6 +28,7 @@ class ConstraintNetNormalizationTests {
      * Print the debug outputs, which can individually be activated/deactivated
      * by [printOriginalProperties], [printOriginalConditions], [printIndexedVariables], [printNormalizedProperties]
      */
+    @Suppress("unused")
     private fun printDebugOutputs(model : Session, normalizedProperties: NormalizedProperties) {
         if(printOriginalProperties) {
             val originalProperties : List<Variable> = model.get().filterIsInstance<Variable>()
@@ -70,47 +71,43 @@ class ConstraintNetNormalizationTests {
     }
 
     @Test
-    fun booleanNormalizationWithoutPropertiesToBeNormalized() = testSession("ScalarValues") {
-        +"Value x: ScalarValues::Boolean; Value y: ScalarValues::Boolean; Value z: ScalarValues::Boolean = x and y."
-        //ParserSysMD {
-        //semantics.defVar("x", model.builder.variable("x"), "")
-        //semantics.defVar("y", model.builder.variable("y"), "")
-        //+"Value z: ScalarValues::Boolean  = x and y"
-
-        // val z = global.resolveName<ValueFeature>("z")!!.ast!!.solve(1)
-        //this.run {
-        //    CspSolver(this). solve("z", 1)
-        //}
-
+    fun booleanNormalizationWithoutPropertiesToBeNormalized() = testSession {
+        loadKerML("""package ScalarValues { datatype Boolean; }; 
+                feature x: ScalarValues::Boolean; 
+                feature y: ScalarValues::Boolean; 
+                feature z: ScalarValues::Boolean = x and y; 
+        """)
         val normalizedProperties = normalizer.normalizeBooleanConstraints(this)
 
         // printDebugOutputs(this, normalizedProperties)
 
-        assertTrue(normalizedProperties.properties.size == 3)
+        assertEquals(3, normalizedProperties.properties.size)
     }
 
     @Test
-    fun booleanNormalizationTwoPropertiesToBeNormalized() = testSession("ScalarValues") {
-        loadSysMD("""
-                Value x: ScalarValues::Boolean;
-                Value y: ScalarValues::Boolean;
-                Value z1: ScalarValues::Boolean = x and y;
-                Value z2: ScalarValues::Boolean = x or y.
+    fun booleanNormalizationTwoPropertiesToBeNormalized() = testSession {
+        loadKerML("""
+                package ScalarValues { datatype Boolean; }
+                feature x: ScalarValues::Boolean;
+                feature y: ScalarValues::Boolean;
+                feature z1: ScalarValues::Boolean = x and y;
+                feature z2: ScalarValues::Boolean = x or y.
          """)
         val normalizedProperties = normalizer.normalizeBooleanConstraints(this)
         // printDebugOutputs(this, normalizedProperties)
-        assert(normalizedProperties.properties.size == 3)
+        assertEquals(3, normalizedProperties.properties.size)
     }
 
     @Test
-    fun booleanNormalizationThreePropertiesToBeNormalized() = testSession("ScalarValues") {
-        loadSysMD("""
-                Value x: ScalarValues::Boolean;
-                Value y: ScalarValues::Boolean;
-                Value z: ScalarValues::Boolean;
-                Value z1: ScalarValues::Boolean  = x and y and z;
-                Value z2: ScalarValues::Boolean  = x or y or z;
-                Value z3: ScalarValues::Boolean  = x and y or z; 
+    fun booleanNormalizationThreePropertiesToBeNormalized() = testSession {
+        loadKerML("""
+                package ScalarValues { datatype Boolean; }
+                feature x: ScalarValues::Boolean;
+                feature y: ScalarValues::Boolean;
+                feature z: ScalarValues::Boolean;
+                feature z1: ScalarValues::Boolean  = x and y and z;
+                feature z2: ScalarValues::Boolean  = x or y or z;
+                feature z3: ScalarValues::Boolean  = x and y or z; 
         """.trimIndent())
         val normalizedProperties = normalizer.normalizeBooleanConstraints(this)
         // printDebugOutputs(this, normalizedProperties)
@@ -119,32 +116,35 @@ class ConstraintNetNormalizationTests {
 
     @Test
     fun booleanNormalizationTwoSetsOfPropertiesToBeNormalized() {
-        testSession("ScalarValues") {
-            loadSysMD("""
-                Value x: ScalarValues::Boolean; 
-                Value y: ScalarValues::Boolean; 
-                Value z: ScalarValues::Boolean; 
-                Value a1: ScalarValues::Boolean  = x and y.
-                Value a2: ScalarValues::Boolean  = x or y.
-                Value b1: ScalarValues::Boolean  = y or z.
-                Value b2: ScalarValues::Boolean  = y and z.
+        testSession {
+            loadKerML("""
+                package ScalarValues { datatype Boolean; }
+                feature x: ScalarValues::Boolean; 
+                feature y: ScalarValues::Boolean; 
+                feature z: ScalarValues::Boolean; 
+                feature a1: ScalarValues::Boolean  = x and y.
+                feature a2: ScalarValues::Boolean  = x or y.
+                feature b1: ScalarValues::Boolean  = y or z.
+                feature b2: ScalarValues::Boolean  = y and z.
             """.trimIndent())
             val normalizedProperties = normalizer.normalizeBooleanConstraints(this)
 
             // printDebugOutputs(this, normalizedProperties)
 
-            assert(normalizedProperties.properties.size == 5)
+            assertEquals(5, normalizedProperties.properties.size)
         }
     }
 
     @Test
     fun booleanNormalizationNegationTest() {
-        testSession("ScalarValues") {
-            +"Value x: ScalarValues::Boolean"
-            +"Value y: ScalarValues::Boolean"
-            +"Value a1: ScalarValues::Boolean(false)  = not (x and y)"
-            +"Value a2: ScalarValues::Boolean(false)  = not (x or y)"
-
+        testSession {
+            loadKerML("""
+                package ScalarValues { datatype Boolean; }
+                feature x: ScalarValues::Boolean; 
+                feature y: ScalarValues::Boolean; 
+                feature a1: ScalarValues::Boolean = not (x and y) {:>> spec = "false";}
+                feature a2: ScalarValues::Boolean = not (x or y) {:>> spec = "false";}
+            """)
             val normalizedProperties = normalizer.normalizeBooleanConstraints(this)
 
             // printDebugOutputs(this, normalizedProperties)
@@ -155,21 +155,23 @@ class ConstraintNetNormalizationTests {
 
     @Test
     fun booleanNormalizationTwoSetsOfPropertiesToBeNormalizedAndNegated() {
-        testSession("ScalarValues") {
-            +"Value x: ScalarValues::Boolean"
-            +"Value y: ScalarValues::Boolean"
-            +"Value z: ScalarValues::Boolean"
-            +"Value a1: ScalarValues::Boolean(false)  = not (x and y)"
-            +"Value a2: ScalarValues::Boolean(false)  = not (x or y)"
-            +"Value b1: ScalarValues::Boolean(false)  = not (y or z)"
-            +"Value b2: ScalarValues::Boolean(false)  = not (y and z)"
-
+        testSession {
+            loadKerML("""
+                package ScalarValues { datatype Boolean; }
+                feature x: ScalarValues::Boolean;
+                feature y: ScalarValues::Boolean;
+                feature z: ScalarValues::Boolean;
+                feature a1: ScalarValues::Boolean  = not (x and y) {:>> spec = "false";}
+                feature a2: ScalarValues::Boolean  = not (x or y) {:>> spec = "false";}
+                feature b1: ScalarValues::Boolean  = not (y or z) {:>> spec = "false";}
+                feature b2: ScalarValues::Boolean  = not (y and z) {:>> spec = "false";}
+            """)
 
             val normalizedProperties = normalizer.normalizeBooleanConstraints(this)
 
             // printDebugOutputs(this, normalizedProperties)
 
-            assert(normalizedProperties.properties.size == 5)
+            assertEquals(5, normalizedProperties.properties.size)
         }
     }
 

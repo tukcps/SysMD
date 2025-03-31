@@ -11,15 +11,11 @@ class MultiplicityImplementation(
     elementId: UUID = UUID.randomUUID(),
     name: String? = "multiplicity",
     shortName: String? = null,
-    owner: Resolved<Element> = Resolved(),
     multiplicity: String = "1 .. 1",
     elementType: String = "Multiplicity"
 ): Multiplicity, FeatureImplementation(
-    elementId = elementId,
     declaredName = name,
     declaredShortName = shortName,
-    owner = owner,
-    ownedElement = mutableListOf(),
     typeConstraint = mutableListOf(multiplicity),
     elementType = elementType
 ) {
@@ -29,13 +25,13 @@ class MultiplicityImplementation(
     }
 
     override val generalization: List<Resolved<Type>>
-        get() = listOf(Resolved(str="ScalarValues::Integer", ref = model?.repo?.integerType, id=model?.repo?.integerType?.elementId))
+        get() = listOf(Resolved(str="ScalarValues::Natural", ref = model!!.repo.naturalType, id=model?.repo?.naturalType?.elementId))
 
     override val ownedSpecialization: List<Specialization>
         get() = mutableListOf()
 
     override fun toString(): String {
-        return "Multiplicity { owner = ${owner.ref?.qualifiedName}, constraint=$typeConstraint, value=${variable?.valueStr} }"
+        return "Multiplicity { constraint=$typeConstraint, value=${variable?.valueStr} }"
     }
 
     override fun updateFrom(template: Element) {
@@ -55,7 +51,6 @@ class MultiplicityImplementation(
         return MultiplicityImplementation(
             name=declaredName,
             shortName=declaredShortName,
-            owner=Resolved(owner),
         ).also {
             it.typeConstraint = typeConstraint
         }

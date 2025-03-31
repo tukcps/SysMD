@@ -1,9 +1,9 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import com.github.tukcps.aadd.AADD
-import com.github.tukcps.aadd.IDD
-import com.github.tukcps.sysmd.model.expression.AstNode
+import io.github.tukcps.aadd.AADD
+import io.github.tukcps.aadd.IDD
 import com.github.tukcps.sysmd.exceptions.SemanticError
+import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
 
@@ -31,8 +31,6 @@ internal class AstExp(model: Session, args: ArrayList<AstNode>) :
     override fun evalDown() {
         getParam(0).downQuantity = downQuantity.ln()
     }
-
-    override fun toExpressionString() = "exp(${getParam(0).toExpressionString()})"
 
     override fun clone(): AstExp {
         val parClone = ArrayList<AstNode>()

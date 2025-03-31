@@ -1,13 +1,16 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import com.github.tukcps.aadd.AADD
-import com.github.tukcps.aadd.IDD
-import com.github.tukcps.sysmd.model.expression.AstNode
+import io.github.tukcps.aadd.AADD
+import io.github.tukcps.aadd.IDD
 import com.github.tukcps.sysmd.exceptions.SemanticError
+import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.quantities.VectorDimensionError
+import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.quantities.ite
 import com.github.tukcps.sysmd.services.session.Session
+import kotlin.math.max
+import kotlin.math.min
 
 /**
  * Predefined functions: step
@@ -28,12 +31,20 @@ internal class AstStepInterpolation(model: Session, args: ArrayList<AstNode>) :
 
     override fun initialize() {
         if (parameters.any { it.upQuantity.values.size != 1 })
-            throw VectorDimensionError("Step is not possible with Vectors of size > 1")
-        for (i in 1 until numberOfParameters step 2) {
-            if (getParam(i).upQuantity.values[0] !is AADD && getParam(i).upQuantity.values[0] !is IDD ||
-                getParam(i + 1).upQuantity.values[0] !is AADD && getParam(i + 1).upQuantity.values[0] !is IDD
-            )
-                throw SemanticError("Step only takes Real and Integer parameters")
+            throw VectorDimensionError("StepInterpolation is not possible with Vectors of size > 1")
+        for (i in points.indices) {
+            if (i < points.size - 1) {
+                if(points[i].first.value is AADD && points[i + 1].first.value is AADD)
+                    if (points[i].first.getMaxAsDouble() >= points[i + 1].first.getMinAsDouble())
+                        throw SemanticError("StepInterpolation function needs all x-values to be in increasing order")
+                else if(points[i].first.value is IDD && points[i + 1].first.value is IDD)
+                    if (points[i].first.idd().max >= points[i + 1].first.idd().min)
+                        throw SemanticError("StepInterpolation function needs all x-values to be in increasing order")
+                else
+                    throw SemanticError("StepInterpolation function needs all x-values to be of the same type")
+                if(points[i].second.value is AADD && points[i + 1].second.value !is AADD || points[i].second.value is IDD && points[i + 1].second.value !is IDD)
+                    throw SemanticError("StepInterpolation function needs all y-values to be of the same type (IDD or AADD)")
+            }
         }
         upQuantity = when (getParam(0).upQuantity.values[0]) {
             is AADD -> Quantity(model.builder.Reals, "?")
@@ -56,41 +67,38 @@ internal class AstStepInterpolation(model: Session, args: ArrayList<AstNode>) :
         val x = getParam(0).upQuantity
         upQuantity = points[0].second
         for (element in points)
-            upQuantity = x.ge(element.first).bdd().ite(element.second, upQuantity.asQuantity())
+            upQuantity = x.ge(element.first).bdd().ite(element.second, upQuantity).clone()
     }
 
     override fun evalDown() {
-        if (downQuantity.values[0] is AADD) {
-            getParam(0).downQuantity = Quantity(model.builder.Reals, downQuantity.unit) // if no other solution found
+        if (getParam(1).isReal) {
+            var startingPoint = Double.POSITIVE_INFINITY
+            var endingPosition = Double.NEGATIVE_INFINITY
             for (i in 0 until points.size) {
-                if (points[i].second.value.asAadd().contains(downQuantity.aadd().min) ||
-                    points[i].second.value.asAadd().contains(downQuantity.aadd().max)
-                ) { // only discrete solutions possible
-                    val startingPoint = if (i != 0) points[i].first.getMinAsDouble() else model.builder.Reals.min
-                    val endingPoint =
-                        if (i != points.size - 1) points[i + 1].first.getMaxAsDouble() else model.builder.Reals.max
-                    getParam(0).downQuantity =
-                        Quantity(model.builder.range(startingPoint, endingPoint), downQuantity.unit)
+                if (downQuantity.contains(points[i].second)) { // only discrete solutions possible
+                    startingPoint = min(points[i].first.getMinAsDouble(), startingPoint)
+                    endingPosition = max(if (i != points.size - 1) points[i + 1].first.aadd().max else getParam(0).upQuantity.getMaxAsDouble(), endingPosition)
                 }
             }
-        }
-        if (downQuantity.values[0] is IDD) {
-            getParam(0).downQuantity = Quantity(model.builder.Integers) // if no other solution found
+            if(startingPoint <= endingPosition) //resulting values found
+                getParam(0).downQuantity = VectorQuantity(model.builder.real(startingPoint..endingPosition), getParam(0).downQuantity.unit, getParam(0).downQuantity.unitSpec)
+            else
+                getParam(0).downQuantity = VectorQuantity(model.builder.Empty, getParam(0).downQuantity.unit, getParam(0).downQuantity.unitSpec)
+        } else if (getParam(1).isInt) {
+            var startingPoint = Long.MAX_VALUE
+            var endingPosition = Long.MIN_VALUE
             for (i in 0 until points.size) {
-                if (points[i].second.value.asIdd().contains(downQuantity.idd().min) ||
-                    points[i].second.value.asIdd().contains(downQuantity.idd().max)
-                ) { // only discrete solutions possible
-                    val startingPoint = if (i != 0) points[i].first.idd().min else model.builder.Integers.min
-                    val endingPoint =
-                        if (i != points.size - 1) points[i + 1].first.idd().max else model.builder.Integers.max
-                    getParam(0).downQuantity =
-                        Quantity(model.builder.range(startingPoint, endingPoint), downQuantity.unit)
+                if (downQuantity.contains(points[i].second)) { // only discrete solutions possible
+                    startingPoint = min(points[i].first.idd().min, startingPoint)
+                    endingPosition = max(if (i != points.size - 1) points[i + 1].first.idd().max else getParam(0).upQuantity.idd().max, endingPosition)
                 }
             }
+            if(startingPoint <= endingPosition) //resulting values found
+                getParam(0).downQuantity = VectorQuantity(model.builder.integer(startingPoint..endingPosition))
+            else
+                getParam(0).downQuantity = VectorQuantity(model.builder.EmptyIntegerRange)
         }
     }
-
-    override fun toExpressionString() = "step(${getParam(0).toExpressionString()})"
 
     override fun clone(): AstStepInterpolation {
         val parClone = ArrayList<AstNode>()

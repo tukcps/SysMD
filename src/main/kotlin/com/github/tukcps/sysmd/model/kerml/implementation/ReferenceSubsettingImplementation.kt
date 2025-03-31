@@ -1,19 +1,14 @@
 package com.github.tukcps.sysmd.model.kerml.implementation
 
 import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.services.report
-import java.util.*
+import com.github.tukcps.sysmd.services.session.report
 
 @Suppress("UNCHECKED_CAST")
 class ReferenceSubsettingImplementation(
-    elementId: UUID = UUID.randomUUID(),
-    owner: Resolved<Element> = Resolved(),
     referencingFeature: Resolved<Feature>? = null,
     referencedFeature: Resolved<Feature>? = null,
     elementType: String = "ReferenceSubsetting"
 ) : ReferenceSubsetting, SubsettingImplementation(
-    elementId = elementId,
-    owner = owner,
     subsettingFeature = referencingFeature,
     subsettedFeature = referencedFeature,
     elementType
@@ -32,7 +27,6 @@ class ReferenceSubsettingImplementation(
 
     override fun clone(): ReferenceSubsetting {
         return ReferenceSubsettingImplementation(
-            owner = Resolved(owner),
             referencingFeature = Resolved(source.firstOrNull() as Resolved<Feature>),
             referencedFeature = if (target.firstOrNull() == null) Resolved() else Resolved(target.firstOrNull() as Resolved<Feature>)
         ).also { klon ->

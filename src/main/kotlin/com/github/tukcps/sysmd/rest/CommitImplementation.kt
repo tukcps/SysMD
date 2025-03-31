@@ -1,9 +1,9 @@
 package com.github.tukcps.sysmd.rest
 
-import com.github.tukcps.sysmlv2.entities.Commit
-import com.github.tukcps.sysmlv2.entities.CommitDataObject
-import com.github.tukcps.sysmlv2.entities.responseModels.CommitResponse
-import java.time.ZonedDateTime
+import io.github.tukcps.sysmlv2.api.entities.Commit
+import io.github.tukcps.sysmlv2.api.entities.CommitDataObject
+import io.github.tukcps.sysmlv2.api.entities.responseModels.CommitResponse
+import java.time.OffsetDateTime
 import java.util.*
 
 /**
@@ -33,13 +33,13 @@ class CommitImplementation(): Commit {
 
     var payload: List<CommitDataObject> = arrayListOf()
 
-    override var alias: List<String>
+    override var alias: Collection<String>
         get() = TODO("Not yet implemented")
         set(value) {}
 
-    override var created: Date = Date.from(ZonedDateTime.now().toInstant())
-    override var modified: Date? = null
-    override var name: String
+    override var created: OffsetDateTime = OffsetDateTime.now()
+    override var modified: OffsetDateTime? = null
+    override var name: String?
         get() = TODO("Not yet implemented")
         set(value) {}
 

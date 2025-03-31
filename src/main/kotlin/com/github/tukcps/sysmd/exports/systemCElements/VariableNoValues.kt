@@ -1,7 +1,6 @@
 package com.github.tukcps.sysmd.exports.systemCElements
 
 import java.io.PrintWriter
-import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.model.kerml.Feature
 
 class VariableNoValues(expression: Feature, val dataType: DataType) {

@@ -1,10 +1,10 @@
 package com.github.tukcps.sysmd.exceptions
 
-import com.github.tukcps.sysmd.model.kerml.Element
-import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
 import com.github.tukcps.sysmd.compiler.KerML
 import com.github.tukcps.sysmd.compiler.scanner.Scanner
 import com.github.tukcps.sysmd.compiler.scanner.Token
+import com.github.tukcps.sysmd.model.kerml.Element
+import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
 
 
 /**
@@ -25,20 +25,6 @@ open class SysMDError(
     priority: Int = 2
 ) : SysMDException(message, textualRepresentation, token, element, cause, priority = priority)
 
-/**
- * This Exception is thrown for all errors that are caused in the parsing methods.
- * It is thrown from the parser from which textual representation and current token are retrieved.
- */
-class SyntaxError(
-    parser: KerML? = null,
-    message: String,
-) : SysMDError(
-    message = message,
-    priority = 3,
-    textualRepresentation = parser?.textualRepresentation,
-    token = parser?.token
-)
-
 
 /**
  * This Exception is thrown for all errors that are caused in the parsing methods.
@@ -50,9 +36,16 @@ class LexicalError(
 ) : SysMDError(message = message, priority = 3) {
     init {
         if (scanner is KerML) {
-            textualRepresentation = scanner.textualRepresentation
+            textualRepresentation = scanner.semantics.textualRepresentation
             token = scanner.token
         }
+    }
+    companion object {
+        val explanation = """
+            This error has been caused during scanning the single tokens of the textual representation. 
+            Check the tokens around the current token given above. 
+            If there is an error before this error, first fix the error before this one.
+        """.trimIndent()
     }
 }
 
@@ -60,7 +53,7 @@ class LexicalError(
  * This Exception is thrown for all errors during initialized and propagate phases.
  * It just creates an error message.
  */
-open class SemanticError(message: String, cause: Throwable? = null, element: Element? = null) :
+open class SemanticError(message: String, element: Element? = null, cause: Throwable? = null) :
     SysMDError(
         message,
         cause = cause,
@@ -68,12 +61,17 @@ open class SemanticError(message: String, cause: Throwable? = null, element: Ele
         priority = 2
 ){
     init {
-        if (element?.textualRepresentation?.firstOrNull() != null)
-            this.textualRepresentation = element.textualRepresentation.firstOrNull()
+        if (textualRepresentation != null)
+            this.textualRepresentation = element?.textualRepresentation?.firstOrNull()
         if (cause is SysMDException && cause.element != null) {
             this.element = cause.element
             this.textualRepresentation = cause.textualRepresentation
         }
+    }
+    companion object {
+        val explanation = """
+            This error has been caused during parsing the semantic analysis of the model. 
+        """.trimIndent()
     }
 }
 
@@ -165,7 +163,15 @@ open class ExportIssue(
     element: Element?
 ) : SysMDException(
     message = message, textualRepresentation = textualRepresentation, cause = cause, element = element, priority = 2
-)
+) {
+    companion object {
+        val explanation = """
+            This error has been caused during parsing the textual representation. 
+            Check the syntax around the current token given above. 
+            If there is an error before this error, first fix the error before this one.
+        """.trimIndent()
+    }
+}
 
 /**
  * Exception for elements which are yet undefined but not affecting the model
@@ -184,7 +190,7 @@ class ClassificationIssue(
 )
 
 /**
- * Exception for elements parameterised with a range of values which should have
+ * Exception for elements parameterized with a range of values which should have
  * a single value for export
  */
 class ParametrisationIssue(

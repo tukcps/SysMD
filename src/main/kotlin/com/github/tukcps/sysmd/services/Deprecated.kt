@@ -1,9 +1,9 @@
 package com.github.tukcps.sysmd.services
 
-import com.github.tukcps.aadd.AADD
-import com.github.tukcps.aadd.BDD
-import com.github.tukcps.aadd.DD
-import com.github.tukcps.aadd.IDD
+import io.github.tukcps.aadd.AADD
+import io.github.tukcps.aadd.BDD
+import io.github.tukcps.aadd.DD
+import io.github.tukcps.aadd.IDD
 import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.exceptions.ElementNotFoundException
 import com.github.tukcps.sysmd.exceptions.SemanticError
@@ -18,16 +18,18 @@ import com.github.tukcps.sysmd.services.session.Session
 
 
 /**
- * Directly updates a variable in the solver
+ * Direct interface to the internal model:
+ * some extensions and definitions for convenience.
+ * AVOID ITS USE; MOSTLY INTENDED FOR TESTING.
  */
-fun Session.letVar(value: Variable, dd: DD): Variable { //TODO not for Vectors
+fun Session.letVar(value: Variable, dd: DD<*>): Variable { //TODO not for Vectors
     require(dd.builder === builder)
 
     when (dd) {
         is AADD -> value.valueSpecs = mutableListOf(dd.getRange())
         is IDD  -> value.valueSpecs = mutableListOf(dd.getRange())
         is BDD  -> value.valueSpecs = mutableListOf(dd.value)
-        else -> throw SemanticError("parameter must be of subtype of DD")
+        else -> throw SemanticError("parameter must be of subtype of DD<*>")
     }
 
     value.feature.typeConstraint = mutableListOf(dd.toString() )
@@ -51,7 +53,7 @@ fun Session.letVar(value: Variable, dd: DD): Variable { //TODO not for Vectors
 /**
  * Updates a value in the model.
  */
-fun Session.letVar(qualifiedName: String, value: DD): Variable {
+fun Session.letVar(qualifiedName: String, value: DD<*>): Variable {
     require(value.builder == builder)
     val variable = global.resolveVar(qualifiedName)
         ?: throw ElementNotFoundException(global, "Not found in scope Global:  $qualifiedName")

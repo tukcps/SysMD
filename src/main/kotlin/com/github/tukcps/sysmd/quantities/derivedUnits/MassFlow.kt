@@ -9,7 +9,7 @@ import com.github.tukcps.sysmd.quantities.baseUnits.Time
 private var siUnitSet = setOf(Mass.Kilogram.copy(), Time.Second.copy(-1))
 
 open class MassFlow(name: String, symbol: String, prefix: Prefix, convFac: Double, exponent: Int = 1, isLogarithmic: Boolean = false) :
-    DerivedUnit(name, symbol, prefix, "mass flow", siUnitSet, convFac, exponent, isLogarithmic) {
+    DerivedUnit(name, symbol, prefix, "MassFlow", siUnitSet, convFac, exponent, isLogarithmic) {
 
     /**
      * generate UnitObjects and add them to the UnitList

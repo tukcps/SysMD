@@ -1,18 +1,16 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import com.github.tukcps.aadd.AADD
-import com.github.tukcps.aadd.IDD
+import io.github.tukcps.aadd.AADD
+import io.github.tukcps.aadd.IDD
+import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.TIMES
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.model.expression.AstLeaf
 import com.github.tukcps.sysmd.model.expression.AstNode
-import com.github.tukcps.sysmd.model.kerml.Element
-import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.kerml.Namespace
-import com.github.tukcps.sysmd.model.kerml.getOwnedElementsOfType
-import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.TIMES
+import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.quantities.Quantity
-import com.github.tukcps.sysmd.services.resolve.resolveVar
+import com.github.tukcps.sysmd.services.session.report
 import com.github.tukcps.sysmd.services.resolve.resolve
+import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.session.Session
 
 /**
@@ -43,8 +41,13 @@ internal class AstProductIsA(
         downQuantity = upQuantity
         if (propertyAst.size != 1)
             throw SemanticError("function 'productOverSubclasses' expects one parameter")
-        generatedAst = model.initProductSubclasses(namespace, propertyAst.first(), transitive)
-        generatedAst!!.evalUpRec()
+        if (namespace is Type)
+            generatedAst = model.initProductSubclasses(namespace, propertyAst.first(), transitive)
+        else {
+            generatedAst = null
+            model.report(SemanticError("function 'productOverSubclasses' must be called from type", namespace))
+        }
+        generatedAst?.evalUpRec()
         evalUpRec()
         downQuantity = upQuantity.clone()
     }
@@ -52,7 +55,7 @@ internal class AstProductIsA(
 
     /**
      * Just compute the AST as set up in the init section.
-     * Still no support for integers, requires adding operators Real * Int on dD
+     * Still, no support for integers, requires adding operators Real * Int on dD
      **/
     override fun evalUp() {
         generatedAst!!.evalUpRec()
@@ -101,17 +104,8 @@ internal class AstProductIsA(
         }
     }
 
-    override fun <T> runDepthFirst(block: AstNode.() -> T): T {
-        val elements = namespace.getOwnedElementsOfType<Element>()
-        for (element in elements) {
-//            try { model.getProperty(model.selfId, Identification(null, propertyName))!!.ast!!.runDepthFirst(block) }
-//            catch (ignore: Exception){ } // No property found, we can do nothing or recurse.
-        }
-        return this.run(block)
-    }
-
     override fun getDependentPropertyStrings(): Set<String> {
-        return model.getPartDependencies(namespace, propertyAst.first())
+        return getPartDependencies(namespace as Type, propertyAst.first())
     }
 
     override fun clone(): AstProductIsA {
@@ -126,14 +120,14 @@ internal class AstProductIsA(
  * Then, it builds an AST that computes the Product.
  */
 fun Session.initProductSubclasses(
-    element: Element,
+    element: Type,
     propertyAST: AstNode,
     transitive: Boolean,
     isReal: Boolean = true
 ): AstNode {
     var ast: AstNode? = null
     var isRealProduct = isReal //indicates if the property is a real or an int
-    for (subclass in getSubclasses(element)) {
+    for (subclass in element.subtypes) {
         //iterate through all leafs of the propertyAST (which do not include only a number) to find the value for the properties.
         var newAstNode: AstNode = propertyAST.clone()
         for (leaf in newAstNode.getLeaves().filter { it.qualifiedName != null }) {
@@ -148,9 +142,9 @@ fun Session.initProductSubclasses(
                 leaf.feature = feature
                 if (leaf.upQuantity.values[0] is IDD) isRealProduct = false
             } else if (transitive) { // Transitive: search property in parts
-                newAstNode = this.initProductSubclasses(subclass as Element, propertyAST, true, isRealProduct)
+                newAstNode = this.initProductSubclasses(subclass, propertyAST, true, isRealProduct)
                 break   // if one property of a leaf is not included in the current Element, there is no need to search
-                // for the properties of the other leafs, because all properties of one propertyAST must contain to the same element
+                // for the properties of the other leaves, because all properties of one propertyAST must contain to the same element
                 // without this break statement, subclasses would be added multiple times to the ast
             } else
                 break // no further look in subclasses because transitive search is not enabled
@@ -160,14 +154,14 @@ fun Session.initProductSubclasses(
     }
 
     return ast ?: if (isRealProduct)
-        AstLeaf(this, Quantity(builder.scalar(1.0), "?"))
+        AstLeaf(this, Quantity(builder.real(1.0), "?"))
     else
-        AstLeaf(this, Quantity(builder.scalar(1)))
+        AstLeaf(this, Quantity(builder.integer(1)))
 }
 
-fun Session.getPartDependencies(element: Element, propertyAST: AstNode): Set<String> {
+fun getPartDependencies(element: Type, propertyAST: AstNode): Set<String> {
     val result = mutableSetOf<String>()
-    for (subclass in getSubclasses(element)) {
+    for (subclass in element.subtypes) {
         for (leaf in propertyAST.getLeaves().filter { it.qualifiedName != null }) {
             result.add(leaf.qualifiedName as String)
         }

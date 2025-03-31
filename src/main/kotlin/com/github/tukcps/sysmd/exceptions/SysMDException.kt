@@ -1,18 +1,18 @@
 package com.github.tukcps.sysmd.exceptions
 
+import com.github.tukcps.sysmd.compiler.scanner.Token
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
-import com.github.tukcps.sysmd.compiler.scanner.Token
 
 
 /**
- * General exception class that is also used for persisting in issues list.
+ * General exception class that is also used for persisting in the list of errors/issues.
  * Each entry has:
  * @param message Mandatory textual description
  * @param textualRepresentation the textual representation in which the error has occurred
  * @param token the token where the error has occurred
  * @param element the element in which the error has occurred
- * @param
+ * @param cause the initial exception that caused the SysMD exception
  */
 open class SysMDException(
     override var message: String,
@@ -20,11 +20,11 @@ open class SysMDException(
     var token: Token? = null,
     var element: Element? = null,
     override val cause: Throwable? = null,
-    var priority: Int
+    var priority: Int,
 ): Exception(message, cause) {
 
     /**
-     * A method for comparison that is simple to prevent duplicates.
+     * A method for comparison that is straightforward to prevent duplicates.
      * Does not consider cause and token that can be different from different runs for the same error.
      */
     override fun equals(other: Any?): Boolean {
@@ -52,12 +52,19 @@ open class SysMDException(
     override fun toString(): String {
         var string = ""
         if (token != null) {
-            string += "Line ${token!!.lineNo}, near ${token!!.string} "
+            string += "Line ${token!!.lineNo}, near '${token!!.string}' "
         }
         if (element != null) {
-            string += "in ${element!!.escapedName()} "
+            string += "in '${element!!.escapedName()?:element?.elementType}': "
         }
         string += message
         return string
     }
+
+    open val explanation get() = EXPLANATION
+
+    companion object {
+        const val EXPLANATION = "An exception inside SysMD that is not specifically classified."
+    }
+
 }

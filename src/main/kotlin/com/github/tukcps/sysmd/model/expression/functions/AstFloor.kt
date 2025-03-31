@@ -1,10 +1,10 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import com.github.tukcps.aadd.AADD
-import com.github.tukcps.aadd.IDD
-import com.github.tukcps.aadd.values.IntegerRange
-import com.github.tukcps.sysmd.model.expression.AstNode
+import io.github.tukcps.aadd.AADD
+import io.github.tukcps.aadd.IDD
+import io.github.tukcps.aadd.values.IntegerRange
 import com.github.tukcps.sysmd.exceptions.SemanticError
+import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
 
@@ -37,8 +37,8 @@ internal class AstFloor(model: Session, args: ArrayList<AstNode>) :
                         resultMax = IntegerRange().minusOverflowDetection(
                             resultMax,
                             1
-                        ) //only reduce maximum border by one if not infinity
-                    results.add(model.builder.range(resultMin, resultMax))
+                        ) //only reduce the maximum border by one if not infinity
+                    results.add(model.builder.integer(resultMin..resultMax))
                 }
                 VectorQuantity(results)
             }
@@ -62,9 +62,8 @@ internal class AstFloor(model: Session, args: ArrayList<AstNode>) :
                 // avoid overflow during -1 calculation
                 downQuantity.values.forEach {
                     results.add(
-                        model.builder.range(
-                            it.asIdd().min,
-                            IntegerRange().plusOverflowDetection(it.asIdd().max, 1)
+                        model.builder.integer(
+                            it.asIdd().min..IntegerRange().plusOverflowDetection(it.asIdd().max, 1)
                         )
                     )
                 }
@@ -74,8 +73,6 @@ internal class AstFloor(model: Session, args: ArrayList<AstNode>) :
             else -> throw SemanticError("Floor function only takes a Real or Integer parameter")
         }
     }
-
-    override fun toExpressionString() = "floor(${getParam(0).toExpressionString()})"
 
     override fun clone(): AstFloor {
         val parClone = ArrayList<AstNode>()

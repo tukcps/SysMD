@@ -9,5 +9,4 @@ class UcbDataPack(
      val channels : MutableList<Channel>,
      val macros : BooleanArray,
      val requirements : MutableList<Requirement>,
-     val packageName : String) {
-}
+     val packageName : String)

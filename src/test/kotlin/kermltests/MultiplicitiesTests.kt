@@ -1,15 +1,16 @@
 package kermltests
 
-import com.github.tukcps.aadd.values.IntegerRange
-import com.github.tukcps.sysmd.cspsolver.Variable
-import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.kerml.implementation.TextualRepresentationImplementation
-import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
+import io.github.tukcps.aadd.values.IntegerRange
 import com.github.tukcps.sysmd.compiler.semantics.Identification
 import com.github.tukcps.sysmd.compiler.semantics.SemanticActionsImplementation
+import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
+import com.github.tukcps.sysmd.cspsolver.Variable
+import com.github.tukcps.sysmd.model.kerml.Feature
+import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolve
-import com.github.tukcps.sysmd.services.session.SessionManager.testSession
+import util.mockup.loadKerML
+import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -17,15 +18,18 @@ import kotlin.test.assertTrue
 class MultiplicitiesTests {
 
     @Test
-    fun testMultiplicitySemanticActions() = testSession(loadKerML = false) {
-        +"package ScalarValues { datatype ScalarValue; datatype Integer :> ScalarValue; }"
-        val context = SemanticActionsImplementation(this, TextualRepresentationImplementation())
-        val actions = FeatureActions(
-            context,
-            identification = Identification(name="f"),
-            multiplicity = IntegerRange(1,2)
-        )
-        actions.create()
+    fun testMultiplicitySemanticActions() = testSession {
+        loadKerML("""
+            package ScalarValues { // Needed for instantiation of Variable & Multiplicity
+                datatype Integer; 
+                datatype Natural :> Integer;;
+            }
+        """)
+        val context = SemanticActionsImplementation(this)
+        context.initOwners("Global")
+        val actions = FeatureActions<Feature>(context, creator = ::FeatureImplementation, mutableListOf("Base::Anything"))
+        actions.create(Identification(name="f"))
+        actions.addMultiplicity(IntegerRange(1,2))
         assertTrue(actions.created is Feature, "Created feature actions must be an instance of Feature")
         initialize()
         val multiplicity = actions.created!!.multiplicityProperty
@@ -34,11 +38,10 @@ class MultiplicitiesTests {
     }
 
     @Test
-    fun testMultiplicity() = testSession(loadKerML = false) {
-        +"""
-            package ScalarValues { datatype ScalarValue; datatype Integer :> ScalarValue; }
+    fun testMultiplicity() = testSession("Base", "ScalarValues") {
+        loadKerML("""
             feature f [1 .. 2];
-        """.trimIndent()
+        """)
         val f = global.resolve<Feature>("f")!!
         val multiplicity = f.multiplicityProperty
         initialize()

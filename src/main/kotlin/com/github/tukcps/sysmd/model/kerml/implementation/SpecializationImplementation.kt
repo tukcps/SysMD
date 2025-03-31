@@ -4,35 +4,30 @@ import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Resolved
 import com.github.tukcps.sysmd.model.kerml.Specialization
 import com.github.tukcps.sysmd.model.kerml.Type
-import java.util.*
-
+import com.github.tukcps.sysmd.model.util.QualifiedName
 
 @Suppress("UNCHECKED_CAST")
 open class SpecializationImplementation(
-    elementId: UUID = UUID.randomUUID(),
-    owner: Resolved<Element> = Resolved(),
     specific: Resolved<Type>? = null,
     general: Resolved<Type>? = null,
     elementType: String = "Specialization"
 ): Specialization, RelationshipImplementation(
-    elementId = elementId,
-    owner = owner,
     source = if (specific != null) mutableListOf(specific) else mutableListOf(),
     target = if (general != null) mutableListOf(general) else mutableListOf(),
     elementType = elementType
 ) {
-    constructor(subclass: Type, superclass: String):
-            this(owner= Resolved(), specific= Resolved(ref=subclass), general= Resolved(str=superclass))
+    constructor(subclass: Type, superclass: QualifiedName):
+            this(specific= Resolved(ref=subclass), general= Resolved(str=superclass))
 
     constructor(subclass: Type, superclass: Type):
-            this(owner= Resolved(), specific= Resolved(ref=subclass), general= Resolved(ref =superclass)) {
+            this(specific= Resolved(ref=subclass), general= Resolved(ref =superclass)) {
         target[0].str = target[0].ref!!.qualifiedName
     }
 
-    constructor() : this(owner= Resolved(), specific=null, general = null)
+    constructor() : this( specific=null, general = null)
 
     override var general: Resolved<Type>
-        get() = (target.firstOrNull()?: Resolved(model!!.any)) as Resolved<Type>
+        get() = (target.firstOrNull()?: Resolved(model!!.anything)) as Resolved<Type>
         set(value) { target = mutableListOf(value) }
 
     override var specific: Resolved<Type>
@@ -59,20 +54,22 @@ open class SpecializationImplementation(
         super.updateFrom(template)
     }
 
-
     /**
      * Initialize resolves the QualifiedNames and/or uid and adds references and uid to Elements.
+     * @return true if there was a change in this.
      */
     override fun resolveNames(): Boolean {
         require( model != null )
 
-        // Search all sources & targets.
+        // Search all sources and targets.
         source.forEach {
-            if (it.resolveIdentity(owningNamespace!!, Resolved.RefType.TYPE))
+            if (it.resolveIdentity(owner.ref?.owningNamespace?:model!!.global, Resolved.RefType.TYPE))
                 updated = true
         }
+
+        // The target of the specialization cannot be in the owner itself, must be in the owner
         target.forEach {
-            if (it.resolveIdentity(owningNamespace!!, Resolved.RefType.TYPE))
+            if (it.resolveIdentity(owner.ref?.owner?.ref?.owningNamespace?:model!!.global, Resolved.RefType.TYPE))
                 updated = true
         }
 
@@ -86,7 +83,7 @@ open class SpecializationImplementation(
                 model!!.repo.targetOfRelationship[relatedElement.ref!!] = mutableSetOf()
         }
 
-        // Add found sources & targets to hashmap for faster lookup
+        // Add found sources and targets to hashmap for faster lookup
         source.forEach { relatedElement ->
             if (relatedElement.ref != null) {
                 model!!.repo.sourceOfRelationship[relatedElement.ref!!]?.add(this)

@@ -9,11 +9,13 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.outlined.Error
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.surfaceColorAtElevation
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -31,14 +33,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.github.tukcps.sysmd.imports.ResultAnnotation
-import com.github.tukcps.sysmd.indexer
-import com.github.tukcps.sysmd.services.SyntaxHighlighter
+import com.github.tukcps.sysmd.ui.syntaxhighlighting.Indexer
+import com.github.tukcps.sysmd.ui.syntaxhighlighting.SyntaxHighlighter
 import com.github.tukcps.sysmd.settings
 import com.github.tukcps.sysmd.ui.composables.*
 import com.github.tukcps.sysmd.ui.styles.AppTheme
 import com.github.tukcps.sysmd.ui.styles.Fonts
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import org.jetbrains.skiko.currentNanoTime
 
 class Inconsistency(
@@ -53,29 +53,27 @@ class Inconsistency(
  */
 private class KeyDelay{
 
-    private var lastKeyTime = 0L //Time when last key was pressed (in nanoseconds)
+    private var lastKeyTime = 0L //Time when the last key was pressed (in nanoseconds)
     private val delay = 500E6 //Delay between key presses is set to 125 ms
 
-    /**Checks if the key that is pressed is currently set on pause.
+    /**
+     * Checks if the key that is pressed is currently set on pause.
      * @return True if key input is currently locked, False if input is allowed.
      */
     fun isLocked(): Boolean{
-
         if((currentNanoTime() - lastKeyTime) > delay) {
             lastKeyTime = currentNanoTime()
             return false
         }
         return true
-
     }
-
 }
 
 /**
- * Editor field with decorations. Parameters are:
- * - Lines: The lines of e.g. code as a TextFieldValue
- * - lineAnnotations: A map of line number to an annotating text, e.g. an error message.
- * - active: Boolean, a flag that can de-activate the editor.
+ * Editor field with decorations. The parameters are
+ * - Lines: The lines of e.g., code as a TextFieldValue
+ * - lineAnnotations: A map of line number to an annotating text, e.g., an error message.
+ * - Active: Boolean, a flag that can deactivate the editor.
  *
  * The Editor has 2 columns;
  * - left: line numbers (70.dp)
@@ -94,36 +92,20 @@ fun Editor(
     enableElementListScrolling : MutableState<Boolean>
 ) = Box(Modifier.fillMaxSize()) {
 
-    val coroutineScope = rememberCoroutineScope()
-
     val resultsColumnWidth = 200.dp //Width of the Column that displays the imported Simulation Results
     val fixedLineHeight = AppTheme.fixedLineHeight  // * settings.lineHeightMultiplier
     val horizontalState = rememberScrollState(0)
     
     
-    /**Tells if this is the initial run of the EditorField*/
+    /** Tells if this is the initial run of the EditorField*/
     val firstRun = remember { mutableStateOf(true) }
     
-    /**Before the new state of the TextFieldValue is applied, the state is saved here, so it can be rolled back*/
+    /** Before the new state of the TextFieldValue is applied, the state is saved here, so it can be rolled back*/
     val oldTextFieldValue = remember { mutableStateOf(lines.value) }
 
     
-    /**The data class which holds all necessary attributes to handle showing the suggestions menu*/
+    /** The data class which holds all necessary attributes to handle showing the suggestions menu*/
     val suggestions = remember { mutableStateOf(SuggestionsData(dummyValue = true)) }
-
-    /**Holds a local index of Components defined in this TextField*/
-    val localComponentsIndex = remember { mutableStateOf( mutableSetOf<String>() ) }
-    /**Holds a local index of Packages defined in this TextField*/
-    val localPackagesIndex = remember { mutableStateOf( mutableSetOf<String>() ) }
-
-    /**Holds the point of time (in nanoseconds) when the last change has happened to the TextField*/
-    val lastChange = remember { mutableStateOf(-1L) }
-
-    /** The value (in milliseconds) defining how long the TextField should be untouched before the re-analization process starts*/
-    val delayValue = 450
-
-    /**The inconsistencies which were found when analyzing the text of this Editor*/
-    val inconsistencies = remember { mutableListOf<Inconsistency>()  }
 
     /**The SysMD color scheme. Used to perform the Syntax Highlighting.*/
     val sysMDColorScheme = MaterialTheme.colorScheme
@@ -137,24 +119,28 @@ fun Editor(
     val density = LocalDensity.current
     val editorHeight = remember { mutableStateOf(0.dp) }
 
-
-
-    if(firstRun.value){
+    if (firstRun.value) {
 
         //When the Editor is displayed the first time, the whole text gets a Syntax Highlighting
-        if(useHighlighting) lines.value = SyntaxHighlighter.applyFullSyntaxHighlighting(lines.value, sysMDColorScheme)
+        if (useHighlighting)
+            lines.value = SyntaxHighlighter.applyFullSyntaxHighlighting(lines.value, sysMDColorScheme)
         oldTextFieldValue.value = lines.value
+
+        firstRun.value = false
+
+        /*
+        TODO: The following indexing requires consideration of the language: KermL? SysML? SysMD?
+        and then the selection of a suitable compiler.
 
         with(indexer){
             lines.value.buildLocalIndexes(localComponentsIndex, localPackagesIndex)
-        }
+        }*/
 
-        firstRun.value = false
     }
 
     // This row needs padding at the end to make space for the scrollbar if needed
     Row {
-        // Background of line numbers & line menus over whole screen.
+        // Background of line numbers & line menus over the whole screen.
         Box(
             modifier = Modifier
                 .background(color = if (!readOnly)
@@ -205,7 +191,7 @@ fun Editor(
                         oldTextFieldValue.value
                     } else {
                         if (lines.value.text.contains("\t")) lines.value = lines.value.replaceTab()
-                        //Store new textFieldValue so when update occurs we can compare new TextField to old one
+                        //Store new textFieldValue so when update occurs, we can compare new TextField to old one
                         oldTextFieldValue.value = lines.value
                         //Output to be viewed by BasicTextField (oldTextFieldValue can be safely used here as to this point of time, it is up-to-date)
                         oldTextFieldValue.value
@@ -235,37 +221,12 @@ fun Editor(
                 // only perform syntax highlighting if you need it e.g. if you are in a code block
                 //visualTransformation = if (useHighlighting) syntaxHighlightingTransformation else VisualTransformation.None,
                 onValueChange = {
-
                     if(!readOnly){
-
-                        lastChange.value = currentNanoTime()
-
                         lines.value = checkAndAddIndents(it, oldTextFieldValue)
                         elementEdited.value = true
-
-
-                        //Launch a coroutine which re-analyzes the EditorField if it hasn't been changes for a specific period of time
-                        coroutineScope.launch {
-                            //Delay coroutine for a specific time
-                            delay(delayValue.toLong())
-
-                            //Check if no updates have happened in the field for a specific period of time
-                            if(currentNanoTime() - lastChange.value > delayValue*1e+6){
-
-                                //Pass new Text Content to indexer to update Indices
-                                with(indexer) { isUpdating.value = true
-                                    it.updateLocalIndexes(localComponentsIndexReference = localComponentsIndex, localPackagesIndexReference = localPackagesIndex)
-                                    //Clear the current inconsistencies
-                                    inconsistencies.clear()
-                                    //Update the inconsistencies
-                                    inconsistencies.addAll(SyntaxHighlighter.checkForInconsistencies(oldTextFieldValue, sysMDColorScheme))
-                                    isUpdating.value = false
-                                }
-                            }
-
-                        }
                     }
-                },
+                    Indexer.addChangedEditorCell(lines.value)
+                }
             )
 
             /**Block for Suggestions Menu*/
@@ -280,25 +241,8 @@ fun Editor(
                 Box(modifier = Modifier.align(Alignment.TopEnd).padding(10.dp)){
                     CircularProgressIndicator(modifier = Modifier.size(AppTheme.fontSize.value.dp))
                 }
-            }else{
-                if(false){
-                //TODO Uncomment line below if red error symbol on right upper corner should be shown
-                //if(inconsistencies.isNotEmpty()){
-                    Box(modifier = Modifier.align(Alignment.TopEnd).padding(10.dp)){
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(text = inconsistencies.size.toString(), fontSize = AppTheme.fontSize)
-                            SelectableIcon(
-                                icon = Icons.Outlined.Error,
-                                color = AppTheme.colors.iconRed,
-                                tooltip = if(inconsistencies.size == 1) "There is 1 inconsistency!" else "There are ${inconsistencies.size} inconsistencies!",
-                                onSelection = {})
-
-                        }
-                    }
-                }
             }
         }
-
     }
 
     HorizontalScrollbar(
@@ -459,10 +403,11 @@ private fun checkAndAddIndents(tfv: TextFieldValue, oldTfv: MutableState<TextFie
         var textAbove = tfv.text.substring(0, tfv.selection.start)
         val textAfter = tfv.text.substring(tfv.selection.end, tfv.text.length)
 
-        when(tfv.text[tfv.selection.start - 1]){
+        when(tfv.text.getOrNull(tfv.selection.start - 1)){
 
 
-            //When User enters a new line, calculate required indents and detect if a prefix has to be added to the line (e.g.: a comment)
+            //When a user enters a new line,
+            // calculate required indents and detect if a prefix has to be added to the line (e.g.: a comment)
             '\n' -> {
 
                 /**Tells if the cursors has to be shifted to the left or right independently from any brace indentation*/
@@ -580,7 +525,7 @@ private fun checkAndAddIndents(tfv: TextFieldValue, oldTfv: MutableState<TextFie
         }
     }
 
-    //No indents were added, just return the input TextFieldValue as is
+    //No indents were added, return the input TextFieldValue as is
     return tfv
 }
 

@@ -2,16 +2,17 @@ package kermltests
 
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.Annotation
-import com.github.tukcps.sysmd.compiler.loadSysMD
-import com.github.tukcps.sysmd.services.session.SessionManager.testSession
+import util.mockup.loadKerML
+import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class AnnotationsTests {
     @Test
-    fun testComment() = testSession(loadKerML = false) {
-        loadSysMD("""
+    fun testComment() = testSession {
+        loadKerML("""
             comment /* comment on something */ 
         """.trimIndent())
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
@@ -21,8 +22,8 @@ class AnnotationsTests {
     }
 
     @Test
-    fun testCommentWidhId() = testSession(loadKerML = false) {
-        loadSysMD("""
+    fun testCommentWidhId() = testSession {
+        loadKerML("""
             comment test /* comment on something */ 
         """.trimIndent())
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
@@ -33,11 +34,11 @@ class AnnotationsTests {
     }
 
     @Test
-    fun testCommentWidhIdOnSomething() = testSession(loadKerML = false) {
-        loadSysMD("""
-            class x; 
-            comment test about x /* comment on something */ 
-        """.trimIndent())
+    fun testCommentWidhIdOnSomething() = testSession {
+        loadKerML("""
+                namespace x; 
+                comment test about x /* comment on something */ 
+            """)
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val comment = global.getOwnedElementOfType<AnnotatingElement>()
         assertTrue(comment is Comment)
@@ -49,12 +50,12 @@ class AnnotationsTests {
     }
 
     @Test
-    fun testCommentWithIdAboutSomething2() = testSession(loadKerML = false) {
-        loadSysMD("""
-            class x; 
-            class y; 
+    fun testCommentWithIdAboutSomething2() = testSession {
+        loadKerML("""
+            namespace x; 
+            namespace y; 
             comment test about x, y /* comment on something */
-        """.trimIndent())
+        """)
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val comment = global.getOwnedElementOfType<AnnotatingElement>()
         assertTrue(comment is Comment)
@@ -69,8 +70,8 @@ class AnnotationsTests {
 
 
     @Test
-    fun testDocWidhId() = testSession(loadKerML = false) {
-        loadSysMD("""
+    fun testDocWidhId() = testSession {
+        loadKerML("""
             doc test /* comment on something */ 
         """.trimIndent())
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
@@ -81,9 +82,9 @@ class AnnotationsTests {
     }
 
     @Test
-    fun testRepWidhId() = testSession(loadKerML = false) {
-        loadSysMD("""
-            rep test /* code on something */ 
+    fun testRepWidhId() = testSession {
+        loadKerML("""
+            rep test language some /* code on something */ 
         """.trimIndent())
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val rep = global.getOwnedElementOfType<AnnotatingElement>()
@@ -94,23 +95,23 @@ class AnnotationsTests {
 
 
     @Test
-    fun testRepWidhIdAndLanguage() = testSession(loadKerML = false) {
-        loadSysMD("""
-            rep test language sysmd /* code on something */ 
+    fun testRepWidhLanguage() = testSession {
+        loadKerML("""
+            language sysmd /* code on something */ 
         """.trimIndent())
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val rep = global.getOwnedElementOfType<AnnotatingElement>()
         assertTrue(rep is TextualRepresentation)
         assertEquals( "code on something", rep.body)
-        assertEquals("test", rep.name)
+        assertNull(rep.escapedName())
     }
 
 
     @Test
-    fun testRepWidhIdAndLanguage2() = testSession(loadKerML = false) {
-        loadSysMD("""
+    fun testRepWidhIdAndLanguage2() = testSession {
+        loadKerML("""
             rep test language ltl /* ltl expressions */ 
-        """.trimIndent())
+        """)
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val rep = global.getOwnedElementOfType<AnnotatingElement>()
         assertTrue(rep is TextualRepresentation)

@@ -1,10 +1,10 @@
 package com.github.tukcps.sysmd.quantities
 
-import com.github.tukcps.aadd.*
-import com.github.tukcps.aadd.functions.*
-import com.github.tukcps.aadd.values.IntegerRange
-import com.github.tukcps.aadd.values.Range
-import com.github.tukcps.aadd.values.XBool
+import io.github.tukcps.aadd.*
+import io.github.tukcps.aadd.functions.*
+import io.github.tukcps.aadd.values.IntegerRange
+import io.github.tukcps.aadd.values.Range
+import io.github.tukcps.aadd.values.XBool
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.quantities.baseUnits.Temperature
 import java.time.Instant
@@ -17,13 +17,13 @@ import kotlin.math.pow
 import kotlin.math.round
 
 /**
- * A quantity that consists of a value that is represented by a DD instance, and
+ * A quantity that consists of a value that is represented by a DD<*> instance, and
  * a unit that is represented by SI units fraction. The unit is transformed to SI, so that
  * calculations are much efficient
  */
 class Quantity : VectorQuantity {
 
-    override var value: DD
+    override var value: DD<*>
 
     constructor(value: BDD) : super(value) {
         this.value = value.clone()
@@ -54,11 +54,11 @@ class Quantity : VectorQuantity {
 
     /**
      * Constructor
-     * @param value Value of the Quantity represented as a DD, so that possible errors are considered
+     * @param value Value of the Quantity represented as a DD<*>, so that possible errors are considered
      * @param unitObject Unit, which should be added to the new Quantity
      * @param unitSpec The wanted representation of the Unit, toString converts the Unit to this representation
      */
-    constructor(value: DD, unitObject: Unit, unitSpec: String = "") : super(value, unitObject, unitSpec) {
+    constructor(value: DD<*>, unitObject: Unit, unitSpec: String = "") : super(value, unitObject, unitSpec) {
         this.value = value.clone()
         this.unit = unitObject.clone()
         this.unitSpec = unitSpec
@@ -159,14 +159,14 @@ class Quantity : VectorQuantity {
     operator fun minus(quantity: Quantity): Quantity {
         if (value is BDD) throw SemanticError("Subtraction not allowed on BDDs")
         // Set isDifference of resultUnit to true
-        unit.isDifference = true
-        quantity.unit.isDifference = true
-        return if (unit == quantity.unit || quantity.unit.toString() == "?")
-            Quantity(value - quantity.value, unit, unitSpec)
-        else return if (unit.toString() == "?")
-            Quantity(value - quantity.value, quantity.unit, quantity.unitSpec)
+        val resultingUnit = if (unit == quantity.unit || quantity.unit.toString() == "?")
+            unit.clone()
+        else if (unit.toString() == "?")
+            quantity.unit.clone()
         else
             throw SubtractionError("${this.unit} and ${quantity.unit}")
+        resultingUnit.isDifference = true
+        return Quantity(value - quantity.value, resultingUnit, unitSpec)
     }
 
     /**
@@ -304,23 +304,14 @@ class Quantity : VectorQuantity {
      */
     override fun sqrt(): Quantity {
         //calculate final sqrt value
-        val finalValue: DD = when (value) {
-            is AADD -> { // either bigger or equal than zero or not defined
-                require((value as AADD).min >= -0.00001 || (value as AADD).min.isInfinite()) { "Sqrt only possible for values greater or equal than zero" }
-                (value as AADD).sqrt()
-            }
-
-            is IDD -> { // either bigger or equal than zero or not defined
-                require((value as IDD).min >= 0 || (value as IDD).min == value.builder.Integers.min) { "Sqrt only possible for values greater or equal than zero" }
-                (value as IDD).sqrt()
-            }
-
+        val finalValue: DD<*> = when (value) {
+            is AADD -> (value as AADD).sqrt()
+            is IDD -> (value as IDD).sqrt()
             else -> throw SemanticError("Sqrt not allowed for any other type than AADD or IDD")
         }
 
         //Calculating sqrt of unit exponents and adding to result unit
         var resUnit = Unit()
-
         if (unit.toString() == "?")
             resUnit = Unit("?")
         else {
@@ -343,13 +334,12 @@ class Quantity : VectorQuantity {
     override fun sqr(): Quantity {
         //calculate final sqrt value
         val finalValue = when (value) {
-            is AADD -> value.asAadd().pow(value.builder.scalar(2.0))
+            is AADD -> value.asAadd().pow(value.builder.real(2.0))
             is IDD -> value.asIdd().sqr()
             else -> throw BDDError("Sqr not allowed for any other type than AADD or IDD")
         }
 
         var resUnit = Unit()
-
         if (unit.toString() == "?")
             resUnit = Unit("?")
         else for (element in unit.unitSet) {
@@ -367,10 +357,10 @@ class Quantity : VectorQuantity {
     override fun ln(): Quantity {
         //Test if unit is 1, otherwise it is not possible
         if (unit.toString() != "1" && unit.toString() != "?") throw SemanticError("Log with units is not allowed")
-        val finalValue: DD = when (value) {
+        val finalValue: DD<*> = when (value) {
             is AADD -> (value as AADD).log()
             is IDD -> (value as IDD).log()
-            else -> throw SemanticError("Log not allowed for any other type than AADD or IDD.")
+            else -> throw SemanticError("Ln not allowed for any other type than AADD or IDD.")
         }
         return Quantity(finalValue, unit)
     }
@@ -380,10 +370,10 @@ class Quantity : VectorQuantity {
      * @param base base value for the logarithm
      * @return Quantity with result as a new Quantity
      */
-    override fun log(base: DD): Quantity {
+    override fun log(base: DD<*>): Quantity {
         //Test if unit is 1, otherwise it is not possible
         if (unit.toString() != "1" && unit.toString() != "?") throw SemanticError("Log with units is not allowed")
-        val finalValue: DD = when (value) {
+        val finalValue: DD<*> = when (value) {
             is AADD -> (value as AADD).log() / (base as AADD).log()
             is IDD -> (value as IDD).log(base as IDD)
             else -> throw SemanticError("Log not allowed for any other type than AADD or IDD.")
@@ -399,7 +389,7 @@ class Quantity : VectorQuantity {
     override fun exp(): Quantity {
         //Test if unit is 1, otherwise it is not possible
         if (unit.toString() != "1" && unit.toString() == "?") throw SemanticError("Exp with units is not allowed")
-        val resultValue: DD = when (value) {
+        val resultValue: DD<*> = when (value) {
             is AADD -> value.asAadd().exp()
             is IDD -> value.asIdd().exp()
             else -> throw SemanticError("Exp only possible with IDD and AADD")
@@ -415,7 +405,7 @@ class Quantity : VectorQuantity {
     override fun pow2(): Quantity {
         //Test if unit is 1, otherwise it is not possible
         if (unit.toString() != "1" && unit.toString() != "?") throw SemanticError("Pow2 with units is not allowed")
-        val resultValue: DD = when (value) {
+        val resultValue: DD<*> = when (value) {
             is AADD -> value.asAadd().power2()
             is IDD -> value.asIdd().power2()
             else -> throw SemanticError("Pow2 only possible with IDD and AADD")
@@ -428,11 +418,11 @@ class Quantity : VectorQuantity {
      * @param exponent Exponent for the Pow function
      * @return Quantity with result as a new Quantity
      */
-    override fun pow(exponent: DD): Quantity {
+    override fun pow(exponent: DD<*>): Quantity {
         //Test if unit is 1, otherwise it is not possible
         if (unit.toString() !in setOf("1", "?", "dB"))
             throw SemanticError("Power with units is not allowed")
-        val resultValue: DD = when (value) {
+        val resultValue: DD<*> = when (value) {
             is AADD -> value.asAadd() power exponent.asAadd()
             is IDD -> pow(value.asIdd(), exponent.asIdd())
             else -> throw SemanticError("Power only possible with IDD and AADD")
@@ -440,36 +430,36 @@ class Quantity : VectorQuantity {
         return Quantity(resultValue, unit.clone())
     }
 
-    override fun sin(): Quantity{
+    override fun sin(): Quantity {
         if (unit.toString() != "1" && unit.toString() != "?") throw SemanticError("Sin with units is not allowed")
-        val resultValue: DD = when (value) {
+        val resultValue: DD<*> = when (value) {
             is AADD -> value.asAadd().sin()
             else -> throw SemanticError("Sin only possible with AADD")
         }
         return Quantity(resultValue, unit.clone())
     }
 
-    override fun arcsin(): Quantity{
+    override fun arcsin(): Quantity {
         if (unit.toString() != "1" && unit.toString() != "?") throw SemanticError("arcsin with units is not allowed")
-        val resultValue: DD = when (value) {
+        val resultValue: DD<*> = when (value) {
             is AADD -> value.asAadd().arcsin()
             else -> throw SemanticError("arcsin only possible with AADD")
         }
         return Quantity(resultValue, unit.clone())
     }
 
-    override fun cos(): Quantity{
+    override fun cos(): Quantity {
         if (unit.toString() != "1" && unit.toString() != "?") throw SemanticError("Cos with units is not allowed")
-        val resultValue: DD = when (value) {
+        val resultValue: DD<*> = when (value) {
             is AADD -> value.asAadd().cos()
             else -> throw SemanticError("Cos only possible with AADD")
         }
         return Quantity(resultValue, unit.clone())
     }
 
-    override fun arccos(): Quantity{
+    override fun arccos(): Quantity {
         if (unit.toString() != "1" && unit.toString() != "?") throw SemanticError("arccos with units is not allowed")
-        val resultValue: DD = when (value) {
+        val resultValue: DD<*> = when (value) {
             is AADD -> value.asAadd().arccos()
             else -> throw SemanticError("arccos only possible with AADD")
         }
@@ -525,86 +515,63 @@ class Quantity : VectorQuantity {
      * If the Quantity contains a unitSpec, the unit is transformed to this Quantity before returning the string.
      * @Return a string representation of the Quantity
      */
-    override fun toString(): String {
+   override fun toString(): String {
         when (value) {
             is IDD -> {
-                val value = (value as IDD).getRange()
-                return if (value.min == value.max) value.min.toString() else {
-                    val min = if (value.min == Long.MIN_VALUE) "*" else value.min.toString()
-                    val max = if (value.max == Long.MAX_VALUE) "*" else value.max.toString()
-                    "$min..$max"
+                val range = (value as IDD).getRange()
+                return when {
+                    range.min == range.max -> range.min.toString()
+                    range.min > range.max -> "∅"
+                    else -> {
+                        val min = if (range.min == Long.MIN_VALUE) "*" else range.min.toString()
+                        val max = if (range.max == Long.MAX_VALUE) "*" else range.max.toString()
+                        "$min..$max"
+                    }
                 }
             }
-
             is BDD -> return (value as BDD).toString()
             is StrDD -> return (value as StrDD).toString()
             is AADD -> {
-                if(value.isInfeasible)
-                    return  Representer().represent(value.asAadd())
-                if (unitSpec == "DateTime" && this.value.asAadd().getRange().isFinite()) {//Transform timestamp to real datetime
-                    val min = timeToString(round(this.value.asAadd().getRange().min))
-                    val max = timeToString(round(this.value.asAadd().getRange().max))
-                    return if (min == max)
-                        max
-                    else
-                        "$min .. $max"
+                if (value.isInfeasible) return Representer().represent(value.asAadd())
+                if (unitSpec == "DateTime" && value.asAadd().getRange().isFinite()) {
+                    val min = timeToString(round(value.asAadd().getRange().min))
+                    val max = timeToString(round(value.asAadd().getRange().max))
+                    return if (min == max) max else "$min .. $max"
                 }
-                if (unitSpec == "Date" && this.value.asAadd().getRange().isFinite())//Transform timestamp to real date
-                    return dateToString(this.value.asAadd().getRange().max)
-                if (unitSpec == "Month" && this.value.asAadd().getRange().isFinite())//Transform timestamp to real date
-                    return monthToString(this.value.asAadd().getRange().max)
-                if (unitSpec == "Year" && this.value.asAadd().getRange().isFinite())
-                    return yearToString(this.value.asAadd().getRange().max)
-                //normal Quantity with value and unit
-                val transformedValue: DD
-                val transformedUnitString: String
-                if (unitSpec != "") {
-                    transformedValue = valueIn(unitSpec)
-                    transformedUnitString = unitSpec
-                } else if (unit.toString() == "?") {
-                    transformedValue = value
-                    transformedUnitString = unit.toString()
-                } else if (unit.calculatedUnitSymbol != "") {
-                    val unitSymbol = unit.calculatedUnitSymbol //there is no prefix, because all defined units have no prefix
-                    //find best prefix by trying every prefix and use the one with a value bigger than one and the maximum prefix factor
-                    val quantityCalc = Quantity(value, Unit(unitSymbol))
-                    var bestSolution: Prefix = Yocto
-                    var bestSolutionFound = false
-                    val prefixesNotBinary = ConversionTables.prefixes.filter { it.key == "" || it.key.last() != 'i' }
-                    for (prefix in prefixesNotBinary) {  //do not use binary prefixes like Gi
-                        if (bestSolution.factor < prefix.value.factor) { //only check for better factors
-                            val valueInPrefix = quantityCalc.valueIn(prefix.key + unitSymbol)
-                            // * 1.0001 to avoid rounding errors to cause problems, value should be bigger than one or a too small value for prefixes
-                            val min = valueInPrefix.asAadd().min
-                            val max = valueInPrefix.asAadd().max
-                            if ((abs(min) * 1.0001 >= 1 || abs(max) < 0e-24) && abs(max / min) <= 10.0.pow(24)) {
-                                bestSolution = prefix.value
-                                bestSolutionFound = true
-                            }
+                if (unitSpec == "Date" && value.asAadd().getRange().isFinite()) return dateToString(value.asAadd().getRange().max)
+                if (unitSpec == "Month" && value.asAadd().getRange().isFinite()) return monthToString(value.asAadd().getRange().max)
+                if (unitSpec == "Year" && value.asAadd().getRange().isFinite()) return yearToString(value.asAadd().getRange().max)
+
+                val (transformedValue, transformedUnitString) = when {
+                    unitSpec.isNotEmpty() -> valueIn(unitSpec) to unitSpec
+                    unit.toString() == "?" -> value to unit.toString()
+                    unit.calculatedUnitSymbol.isNotEmpty() -> {
+                        val unitSymbol = unit.calculatedUnitSymbol
+                        //find best prefix by trying every prefix and use the one with a value bigger than one and the maximum prefix factor
+                        val quantityCalc = Quantity(value, Unit(unitSymbol))
+                        val bestSolution = ConversionTables.prefixes
+                            .filter { it.key.isEmpty() || it.key.last() != 'i' }
+                            .maxByOrNull { prefix ->
+                                val valueInPrefix = quantityCalc.valueIn(prefix.key + unitSymbol)
+                                val min = valueInPrefix.asAadd().min
+                                val max = valueInPrefix.asAadd().max // * 1.0001 to avoid rounding errors to cause problems, value should be bigger than one or a too small value for prefixes
+                                if ((abs(min) * 1.0001 >= 1 || abs(max) < 0e-24) && abs(max / min) <= 10.0.pow(24)) prefix.value.factor else Double.MIN_VALUE
+                            }?.value ?: NoPrefix
+                        val finalUnitSymbol = when { //some special cases for ha, l, cm and ml
+                            unitSymbol == "m^2" && bestSolution == Hecto -> "ha"
+                            unitSymbol == "m^3" && bestSolution == Deci -> "l"
+                            unitSymbol == "m" && (bestSolution == Centi || bestSolution == Deci) -> "cm"
+                            bestSolution.symbol !in listOf("d", "c", "da", "h") || unitSymbol in listOf("m^2", "m^3") -> bestSolution.symbol + unitSymbol
+                            else -> unitSymbol
                         }
+                        quantityCalc.valueIn(finalUnitSymbol) to finalUnitSymbol
                     }
-                    if (!bestSolutionFound)
-                        bestSolution = NoPrefix//some special cases for ha, l, cm and ml
-                    transformedUnitString = if (unitSymbol == "m^2" && bestSolution == Hecto) "ha"
-                    else if (unitSymbol == "m^3" && bestSolution == Deci) "l"
-                    else if (unitSymbol == "m" && (bestSolution == Centi || bestSolution == Deci)) "cm"
-                    // only use small prefixes for length, area or volume
-                    else if (bestSolution.symbol !in listOf("d", "c", "da", "h") || unitSymbol in listOf(
-                            "m^2",
-                            "m^3"
-                        )
-                    ) bestSolution.symbol + unitSymbol
-                    else unitSymbol
-                    transformedValue = quantityCalc.valueIn(transformedUnitString)
-                } else { // no unit is given or can be calculated. So simply use the given unit and value
-                    transformedValue = value.clone()
-                    transformedUnitString = unit.toString()
+                    else -> value.clone() to unit.toString()  //no unit is given or can be calculated. So simply use the given unit and value
                 }
-                //use representer to format value
+
                 val valueStr = Representer().represent(transformedValue.asAadd())
                 return if (transformedUnitString == "1" || valueStr == "∅") valueStr else "$valueStr $transformedUnitString"
             }
-
             else -> throw DDError("Unsupported value type for toString: $value")
         }
     }
@@ -668,7 +635,7 @@ class Quantity : VectorQuantity {
      * @param wantedRepresentation String of the wanted representation of the Unit
      * @Return value in AADD/IDD of the result
      */
-    fun valueIn(wantedRepresentation: String): DD {
+    fun valueIn(wantedRepresentation: String): DD<*> {
         val quantity = this.clone()
         val expectedUnit = Unit(wantedRepresentation)
         // Unit "1" means there is no unit to transform to
@@ -676,18 +643,18 @@ class Quantity : VectorQuantity {
             return quantity.value
         // Logarithmic quantity is transformed to not logarithmic Quantity
         if (expectedUnit.isLogarithmic) {
-            val ten = value.builder.scalar(10.0)
+            val ten = value.builder.real(10.0)
             return ten * quantity.value.asAadd().log() / ten.log()
         }
         //Special case for temperature to temperature conversion From K to °C/°F
-        if (quantity.unit.unitSet.size > 0 && expectedUnit.unitSet.size > 0) {
+        if (quantity.unit.unitSet.isNotEmpty() && expectedUnit.unitSet.isNotEmpty()) {
             val unit1 = quantity.unit.unitSet.elementAt(0)
             val unit2 = expectedUnit.unitSet.elementAt(0)
             if (unit1 is Temperature && unit2 is Temperature && unit2.name != "kelvin")
                 return unit1.convertTo(quantity.value * unit1.prefix.factor, unit2)
         }
         //1) Make expected unit canonical and calculate correlationFac
-        val temporaryExpected = Quantity(value.builder.scalar(1.0), expectedUnit.clone())
+        val temporaryExpected = Quantity(value.builder.real(1.0), expectedUnit.clone())
         temporaryExpected.toSI()
         val correlationFac = temporaryExpected.value
 
@@ -715,7 +682,7 @@ class Quantity : VectorQuantity {
     private fun toSI() {
         removePrefixes()
         if (unit.isLogarithmic) { // Logarithmic quantity is transformed to not logarithmic
-            val ten = value.builder.scalar(10.0)
+            val ten = value.builder.real(10.0)
             value = ten.power(value.asAadd() / ten)
             unit.isLogarithmic = false
         }
@@ -776,7 +743,6 @@ class Quantity : VectorQuantity {
      * Constrain a Quantity with the interval of this valueFeature (only for AADD)
      * TODO: define strategy that ensures that intersect in evalUp/Down does not introduce
      *  arbitrary many comparisons and hence growing size of BDD/AADD
-     *  TODO: Remove checks for NaN or Empty value if FIX for division by 0 during evalDown ready
      * @param q The Quantity which should be constrained to
      * @param rangeSpec the specified range
      * @param unitSpec the wanted representation of the Unit
@@ -787,8 +753,7 @@ class Quantity : VectorQuantity {
 
         val newQuantity = q.clone()
         // convert RangeSpec, which is in UnitSpec into SI Unit by using a new Quantity
-        if (rangeSpec.isNaN()) return thisClone
-        val rangeQuantity = Quantity(value.builder.range(rangeSpec), Unit(unitSpec))
+        val rangeQuantity = Quantity(value.builder.real(rangeSpec), Unit(unitSpec))
 
         // calculate intersection of propagated and specified values
         var result = thisClone.value.asAadd() constrainTo rangeQuantity.getRange()
@@ -797,12 +762,6 @@ class Quantity : VectorQuantity {
         if (newQuantity.value.toString() != "Real" && !(newQuantity.value as AADD).isEmpty())
             result = result.asAadd() constrainTo newQuantity.getRange()
 
-        // Iff one of the results was NaN, continue with the other (???)
-        if (result.isEmpty())
-            return if ((newQuantity.value as AADD).isNaN()) thisClone
-            else if ((thisClone.value as AADD).isNaN()) newQuantity
-            else return Quantity(result, unit, unitSpec)
-                //contains empty set
         return Quantity(result, unit, unitSpec)
     }
 
@@ -814,10 +773,10 @@ class Quantity : VectorQuantity {
         var result = this.clone().value
         // only constrain to newQ if not infinite and not empty
         when (newQuantity.value) {
-            is AADD -> if (!(newQuantity.value as AADD).isNaN() && !(newQuantity.value as AADD).isEmpty())
+            is AADD -> if (!(newQuantity.value as AADD).isEmpty())
                 result = result.asAadd() constrainTo newQuantity.getRange()
 
-            is IDD -> if (!(newQuantity.value as IDD).isNaN() && !(newQuantity.value as IDD).isEmpty())
+            is IDD -> if (!(newQuantity.value as IDD).isEmpty())
                 result = result.asIdd() constrainTo newQuantity.getIntRange()
 
             else -> throw SemanticError("Constrain only for IDD and AADD")
@@ -836,7 +795,6 @@ class Quantity : VectorQuantity {
 
     /**
      * Compares a quantity with another object.
-     * TODO: Should return BDD! And comparison should use jAADD comparison function.
      * @param other the other object
      * @return true, if equal
      */
@@ -863,7 +821,7 @@ class Quantity : VectorQuantity {
                 val min2 = other.value.asIdd().getRange().min
                 val max2 = other.value.asIdd().getRange().max
                 // For infinite values compare borders
-                if (min1 == value.builder.Integers.min || min1 == value.builder.Integers.max)
+                if (min1 == Long.MIN_VALUE || min1 == Long.MAX_VALUE)
                     return min1 == min2 && max1 == max2
                 //if difference is too big, they are not the same
                 if (abs(min1 - min2) > abs(min1) * 0.0001) return false
@@ -878,6 +836,14 @@ class Quantity : VectorQuantity {
         return true
     }
 
+    fun contains(other: Quantity): Boolean {
+        return when (value) {
+            is AADD -> value.asAadd().contains(other.value.asAadd())
+            is IDD -> value.asIdd().contains(other.value.asIdd())
+            else -> throw DDError("Unsupported value type for contains, only AADD and IDD are supported")
+        }
+    }
+
     /**
      * Length of vector
      * @return Quantity with length and unit of vector
@@ -889,23 +855,24 @@ class Quantity : VectorQuantity {
                 val min = value.asIdd().getRange().min
                 val max = value.asIdd().getRange().max
                 if (min <= 0 && max >= 0)  // interval has different signs
-                    result.value = value.builder.range(0, max(abs(min), max))
+                    result.value = value.builder.integer(0..max(abs(min), max))
                 else if (max < 0)  //everything is negative
-                    result.value = value.builder.range(abs(max), abs(min))
+                    result.value = value.builder.integer(abs(max)..abs(min))
                 else  //everything is positive
-                    result.value = value.builder.range(min, max)
+                    result.value = value.builder.integer(min..max)
             }
 
             is AADD -> {
                 val min = getMinAsDouble()
                 val max = getMaxAsDouble()
                 if (min <= 0.0 && max >= 0.0) // interval has different signs
-                    result.value = value.builder.range(0.0, max(abs(min), max))
+                    result.value = value.builder.real(0.0..max(abs(min), max))
                 else if (max < 0.0) //everything is negative
-                    result.value = value.builder.range(abs(max), abs(min))
+                    result.value = value.builder.real(abs(max)..abs(min))
                 else  //everything is positive
-                    result.value = value.builder.range(min, max)
+                    result.value = value.builder.real(min..max)
             }
+
             else -> throw DDError("Abs is only available for IDD and AADD")
         }
         return result
@@ -919,7 +886,6 @@ class Quantity : VectorQuantity {
     }
 }
 
-
 fun BDD.ite(t: Quantity, e: Quantity): Quantity {
     return Quantity(this.ite(t.value, e.value), t.unit)
 }
@@ -927,16 +893,7 @@ fun BDD.ite(t: Quantity, e: Quantity): Quantity {
 /**
  * Returns the maximum of two quantities a, b.
  */
-fun max(a: Quantity, b: Quantity): Quantity {
-    val af = a.ge(b).bdd().ite(a, b)
-    val max = max(a.getMaxAsDouble(), b.getMaxAsDouble())
-    val min = max(a.getMinAsDouble(), b.getMinAsDouble())
-    if (af.value is AADD)
-        return Quantity(af.aadd().constrainTo(Range(min, max)), af.unit)
-    else if (af.value is IDD)
-        return Quantity(af.idd().constrainTo(IntegerRange(min, max)))
-    throw SemanticError("Expect parameters of max to be Real or Integer.")
-}
+fun max(a: Quantity, b: Quantity): Quantity = a.ge(b).bdd().ite(a, b)
 
 /**
  * Returns the minimum of two quantities a, b.

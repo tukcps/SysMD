@@ -1,13 +1,14 @@
 package constraintnettests
 
+import util.testSession
 import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.compiler.loadSysMD
 import com.github.tukcps.sysmd.services.resolve.resolve
-import com.github.tukcps.sysmd.services.session.SessionManager.testSession
+import util.mockup.loadKerML
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import kotlin.test.assertTrue
+import org.junit.jupiter.api.Assertions.assertTrue
+
 
 class EvalUpEvalDownTests {
 
@@ -19,11 +20,10 @@ class EvalUpEvalDownTests {
      *  - y becomes 1..2, x becomes 1..2 if solved.
      */
     @Test
-    fun considerSubtypeConstraintTest() = testSession {
-        loadSysMD(
-            """
+    fun considerSubtypeConstraintTest() = testSession("ScalarValues") {
+        loadKerML("""
             feature x: ScalarValues::Real; 
-            feature y: ScalarValues::Real(1.0 .. 2.0) = x;"""
+            feature y: ScalarValues::Real = x { :>> range = "1.0 .. 2.0";}"""
         )
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         propagate()
@@ -40,11 +40,10 @@ class EvalUpEvalDownTests {
      * is the intersection of 1.00 .. 2.0 and 1.5 .. 2.5
      */
     @Test
-    fun considerSubtypeConstraintTestIntersection()  = testSession {
-        loadSysMD(
-            """
-            feature x: ScalarValues::Real(1.5 .. 2.5).
-            feature y: ScalarValues::Real(1.0 .. 2.0) = x."""
+    fun considerSubtypeConstraintTestIntersection()  = testSession("ScalarValues") {
+        loadKerML("""
+            feature x: ScalarValues::Real { :>> range = "1.5 .. 2.5";}
+            feature y: ScalarValues::Real = x { :>> range = "1.0 .. 2.0";}"""
         )
         assertEquals(0, status.exceptions.size, status.exceptions.toString())
         propagate()
@@ -59,10 +58,9 @@ class EvalUpEvalDownTests {
      */
     @Test
     fun considerSubtypeConstraintTestIntersectionInt()  = testSession("ScalarValues") {
-        loadSysMD(
-            """
-            feature x: ScalarValues::Integer(1 .. 3).
-            feature y: ScalarValues::Integer(2 .. 4) = x."""
+        loadKerML("""
+            feature x: ScalarValues::Integer { :>> range = "1 .. 3";}
+            feature y: ScalarValues::Integer = x { :>> range = "2 .. 4";}"""
         )
         propagate()
         assertEquals(2, global.resolve<Feature>("y")!!.variable!!.idd().getRange().min)

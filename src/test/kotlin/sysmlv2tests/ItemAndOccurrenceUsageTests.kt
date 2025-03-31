@@ -1,10 +1,11 @@
 package sysmlv2tests
 
 import com.github.tukcps.sysmd.model.sysml.*
-import com.github.tukcps.sysmd.compiler.loadSysMD
-import com.github.tukcps.sysmd.services.session.SessionManager.testSession
 import com.github.tukcps.sysmd.services.resolve.resolve
+import util.mockup.loadSysMLv2
+import util.testSession
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -16,9 +17,9 @@ class ItemAndOccurrenceUsageTests {
      */
     @Test
     fun itemTest1() = testSession("Items") {
-        loadSysMD("""
+        loadSysMLv2("""
             item p; 
-        """.trimIndent())
+        """)
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val p = global.resolve<ItemUsage>("p")
         assertNotNull(p)
@@ -30,10 +31,10 @@ class ItemAndOccurrenceUsageTests {
      */
     @Test
     fun itemDefTestWithSpecialization() = testSession("Items") {
-        loadSysMD("""
+        loadSysMLv2("""
             item def p1; 
             item def p2 :> p1; 
-        """.trimIndent())
+        """)
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val p2 = global.resolve<ItemDefinition>("p2")
         assertNotNull(p2)
@@ -45,28 +46,27 @@ class ItemAndOccurrenceUsageTests {
      */
     @Test
     fun occurrenceTest1() = testSession("Occurrences") {
-        loadSysMD("""
+        loadSysMLv2("""
             occurrence p; 
-        """.trimIndent())
+        """)
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val p = global.resolve<OccurrenceUsage>("p")
         assertNotNull(p)
-        assertTrue(p.allSupertypes().first().qualifiedName == "Occurrences::Occurrence")
+        assertEquals("Occurrences::Occurrence", p.allSupertypes().first().qualifiedName)
     }
 
     /**
-     * A occurrence usage generates a feature of class "Port".
+     * An occurrence usage generates a feature of class "Port".
      */
     @Test
     fun occurrenceDefTestWithSpecialization() = testSession("Occurrences") {
-        loadSysMD("""
+        loadSysMLv2("""
             occurrence def p1; 
             occurrence def p2 :> p1; 
-        """.trimIndent())
+        """)
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val p2 = global.resolve<OccurrenceDefinition>("p2")
         assertNotNull(p2)
         assertTrue(p2.allSupertypes().first().qualifiedName == "p1")
     }
-
 }

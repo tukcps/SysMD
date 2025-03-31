@@ -1,8 +1,8 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import com.github.tukcps.aadd.BDD
-import com.github.tukcps.sysmd.model.expression.AstNode
+import io.github.tukcps.aadd.BDD
 import com.github.tukcps.sysmd.exceptions.SemanticError
+import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
@@ -38,11 +38,6 @@ class AstNot(model: Session, args: ArrayList<AstNode>) :
 
     /** No propagation; Boolean functions are handled by discrete solver */
     override fun evalDown() {}
-
-
-    override fun toExpressionString(): String {
-        return "not(${getParam(0).toExpressionString()})"
-    }
 
     override fun clone(): AstNot {
         val parClone = ArrayList<AstNode>()

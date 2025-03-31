@@ -5,7 +5,7 @@ import com.github.tukcps.sysmd.quantities.NoPrefix
 import com.github.tukcps.sysmd.quantities.Prefix
 
 open class ElectricCurrent(name: String, symbol: String, prefix: Prefix, convFac: Double = 1.0, exponent: Int = 1) :
-    BaseUnit(name, symbol, prefix, "electric current", convFac, exponent) {
+    BaseUnit(name, symbol, prefix, "ElectricCurrent", convFac, exponent) {
 
     /**
      * generate UnitObjects and add them to the UnitList

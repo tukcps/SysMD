@@ -2,7 +2,7 @@
 
 package com.github.tukcps.sysmd.compiler.parser.kerml
 
-import com.github.tukcps.aadd.*
+import io.github.tukcps.aadd.*
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.exceptions.SyntaxError
 import com.github.tukcps.sysmd.model.expression.AstBinOp
@@ -10,7 +10,7 @@ import com.github.tukcps.sysmd.model.expression.AstLeaf
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.model.expression.AstUnaryOp
 import com.github.tukcps.sysmd.model.expression.functions.AstHasA
-import com.github.tukcps.sysmd.model.expression.functions.AstHastype
+import com.github.tukcps.sysmd.model.expression.functions.AstHasType
 import com.github.tukcps.sysmd.model.expression.functions.AstNot
 import com.github.tukcps.sysmd.compiler.KerML
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
@@ -34,7 +34,7 @@ fun KerML.ConditionalExpression(): AstNode? {
     val action = semantics.conditionalExpressionActions()
     IF.consume()
     Expression().also { action?.condExpr = it }
-    (QUESTION or RBRACE).consume()
+    QUESTION.consume()
     Expression().also { action?.thenExpr = it }
     ELSE.consume()
     Expression().also { action?.elseExpr = it; return action?.run() }
@@ -184,7 +184,8 @@ fun KerML.Value(): AstNode {
 
             optional (LCBRACE or NAME_LIT or PERCENT) {
                 alternatives {
-                    LCBRACE then {
+                    LCBRACE starts  {
+                        LCBRACE.consume()
                         Unit().also { unit = it }
                         RCBRACE.consume()
                     }
@@ -224,7 +225,8 @@ fun KerML.Value(): AstNode {
                     }
                 }
             }
-            astNode = AstLeaf(model, Quantity(model.builder.range(value, upperBound?:value), unit))
+            val ub = upperBound?:value
+            astNode = AstLeaf(model, Quantity(model.builder.real(value .. ub), unit))
         }
 
         INTEGER_LIT then  {            // Integer literal
@@ -234,7 +236,7 @@ fun KerML.Value(): AstNode {
                 INTEGER_LIT.consume()
                 consumedToken.number.toLong()
             }!!
-            astNode = AstLeaf(model, Quantity(model.builder.range(min, max)))
+            astNode = AstLeaf(model, Quantity(model.builder.integer(min..max)))
         }
 
         STRING_LIT then {            // A string literal
@@ -275,7 +277,7 @@ fun KerML.Value(): AstNode {
             }
             if(astNode == null)
                 try {
-                    val quantityValues = mutableListOf<DD>()
+                    val quantityValues = mutableListOf<DD<*>>()
                     values.forEach {
                         it.evalUp()
                         quantityValues.add(it.dd)
@@ -311,7 +313,7 @@ fun KerML.Value(): AstNode {
                 LCBRACE starts {
                     LCBRACE.consume()
                     val position = parseIntegerRange()
-                    val rangeQuantity = Quantity(model.builder.range(position))
+                    val rangeQuantity = Quantity(model.builder.integer(position))
                     astNode = semantics.handleFunctionCall(
                         function = "quantityOfVectorAtPosition",
                         param = arrayListOf(AstLeaf(semantics.namespace, name, model), AstLeaf(model,rangeQuantity)),
@@ -321,11 +323,11 @@ fun KerML.Value(): AstNode {
                 }
                 ISTYPE starts {
                     ISTYPE.consume()
-                    QualifiedName().also { astNode = AstHastype(model, semantics.namespace, name, it) }
+                    QualifiedName().also { astNode = AstHasType(model, semantics.namespace, name, it) }
                 }
                 HASTYPE starts {
                     HASTYPE.consume()
-                    QualifiedName().also { astNode = AstHastype(model, semantics.namespace, name, it) }
+                    QualifiedName().also { astNode = AstHasType(model, semantics.namespace, name, it) }
                 }
                 others {
                     astNode = AstLeaf(semantics.namespace, name, model)   // an identifier

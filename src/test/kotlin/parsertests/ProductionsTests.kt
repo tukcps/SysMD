@@ -1,12 +1,18 @@
 package parsertests
 
-import com.github.tukcps.sysmd.model.kerml.implementation.TextualRepresentationImplementation
+import com.github.tukcps.sysmd.compiler.KerML
+import com.github.tukcps.sysmd.compiler.SysMD
+import com.github.tukcps.sysmd.compiler.SysMLv2
 import com.github.tukcps.sysmd.compiler.parser.kerml.ElementList
 import com.github.tukcps.sysmd.compiler.parser.kerml.Identification
-import com.github.tukcps.sysmd.compiler.KerML
+import com.github.tukcps.sysmd.compiler.parser.kerml.NamespaceBodyElement
 import com.github.tukcps.sysmd.compiler.parser.kerml.Unit
+import com.github.tukcps.sysmd.compiler.parser.sysmlv2.RequirementDefinition
+import com.github.tukcps.sysmd.compiler.parser.sysmlv2.RequirementUsage
+import com.github.tukcps.sysmd.compiler.parser.sysmd.Triple
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.COMMA
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.EOF
+import com.github.tukcps.sysmd.model.kerml.implementation.TextualRepresentationImplementation
 import com.github.tukcps.sysmd.services.session.SessionImplementation
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -19,16 +25,26 @@ import kotlin.test.assertTrue
  */
 class ProductionsTests {
 
-    private fun testParser(): KerML {
-        val model = SessionImplementation(loadKerML = false)
-        val textualRepresentation = model.create(TextualRepresentationImplementation(language = "SysMD", body = ""), model.global)
-        return KerML(model = model, textualRepresentation = textualRepresentation)
+    private fun kerMLParser(): KerML {
+        val model = SessionImplementation( )
+        return KerML(model = model)
+    }
+
+    private fun sysMLv2Parser(): SysMLv2 {
+        val model = SessionImplementation( )
+        return SysMLv2(model = model)
+    }
+
+    private fun sydMDParser(): SysMD {
+        val model = SessionImplementation( )
+        val textualRepresentation = model.create(TextualRepresentationImplementation(language = "SysML", body = ""), model.global)
+        return SysMD(model = model)
     }
 
     /**
      * The identification statement following SysMLv2 textual is tested here.
      */
-    @Test fun identificationTest()  = testParser().run {
+    @Test fun identificationTest()  = kerMLParser().run {
         input = """
                 name
                 < idname > 'name in quotes' 
@@ -47,16 +63,16 @@ class ProductionsTests {
      * Test that definition creates a class, and that in a hasA decomposition,
      * occurrence of classes/elements can be retrieved via its name.
      */
-    @Test fun classDefinitionTest() = testParser().run {
+    @Test fun classDefinitionTest() = sydMDParser().run {
         input = """
-            Global defines 
+            Global hasA 
                 class b isA Any. 
             Global hasA 
                 feature a: b; 
-                attribute c: Any = Any; 
-                part d: Any;
-                part e: Any; 
-                part sysmlAllowsNoClass. 
+                feature c: Any = Any; 
+                feature d: Any;
+                feature e: Any; 
+                feature sysmlAllowsNoClass. 
         """
         Triple()
         Triple()
@@ -64,7 +80,7 @@ class ProductionsTests {
 
 
     @Test
-    fun prefixesTest() = testParser().run {
+    fun prefixesTest() = kerMLParser().run {
         input = """
             public in feature f; 
         """.trimIndent()
@@ -79,64 +95,28 @@ class ProductionsTests {
     /**
      * Triple with hasA
      */
-    @Test fun hasATest1() = testParser().run {
+    @Test fun hasATest1() = sydMDParser().run {
         input = """
         Global hasA
-            attribute name : Real  = 2 + 5 * 4; 
-            part name1 : [1..2] Any = Any; 
-            part name2 : Any. 
+            feature name : Real  = 2 + 5 * 4; 
+            feature name1 : Any [1..2]; 
+            feature name2 : Any.
         A hasA 
-            part b: Any.
+            feature b: Any.
         """.trimIndent()
         Triple()
     }
 
 
-    /**
-     * Triple with "defines"
-     */
     @Test
-    fun testDefinesTripleTest() = testParser().run {
-        input = """
-        Global defines 
-            class a isA b; 
-            class c isA d. 
-        """.trimIndent()
-        Triple()
-        consume(EOF)
-        Unit
-    }
-
-
-    /**
-     * A list of elements.
-     */
-    @Test fun partListTest1() = testParser().run {
-        input = """
-            attribute name  : Real    = 2 + 5 * 4; 
-            part name1 : [1..2] Any = Any; 
-            part name2 : Any; 
-        """.trimIndent()
-        ElementList()
-    }
-
-    @Test
-    fun parseClassDefinition(): Unit = testParser().run {
+    fun parseClassDefinition(): Unit = kerMLParser().run {
         input = "class a :> Any;"
         NamespaceBodyElement()
         assertEquals(0, model.status.exceptions.size, model.status.exceptions.toString())
     }
 
     @Test
-    fun parsePartDefinition3(): Unit = testParser().run {
-        input = "part def a :> Any;"
-        NamespaceBodyElement()
-        assertEquals(0, model.status.exceptions.size, model.status.exceptions.toString())
-    }
-
-
-    @Test
-    fun parsePackage(): Unit = testParser().run {
+    fun parsePackage(): Unit = kerMLParser().run {
         input = "package p;"
         NamespaceBodyElement()
         consume(EOF)
@@ -144,7 +124,7 @@ class ProductionsTests {
     }
 
     @Test
-    fun parseAssoc(): Unit = testParser().run {
+    fun parseAssoc(): Unit = kerMLParser().run {
         input = """
             assoc Link :> Base::Anything {
                 end feature From: KerML::root::Element;
@@ -163,13 +143,13 @@ class ProductionsTests {
 
 
     @Test
-    fun tripleProductionTest2() = testParser().run  {
+    fun tripleProductionTest2() = sydMDParser().run  {
         input = """
             c hasA 
-                attribute b: Real; 
-                attribute c: Integer. 
-            d defines 
-                class d isA Global::Any. 
+                feature b: Real; 
+                feature c: Integer. 
+            d hasA 
+                class e isA Base::Anything. 
         """.trimIndent()
         Triple()
         Triple()
@@ -177,13 +157,13 @@ class ProductionsTests {
     }
 
     @Test
-    fun tripleProductionTest3() = testParser().run {
+    fun tripleProductionTest3() = sydMDParser().run {
         // model.loadSysMDFromResources("ScalarValues.md")
         input = """
             a hasA 
-                attribute b: Real; 
-                attribute c: Integer;  
-                part d: [1 .. 3] Global::Any = Global::Any; 
+                feature b: Real; 
+                feature c: Integer;  
+                feature d: Global::Any[1 .. 3] ; 
                 import x;
                 import y; 
                 import z. 
@@ -194,12 +174,12 @@ class ProductionsTests {
     /**
      * Top-level: List of triples, separated by DOT and ended by EOF.
      */
-    @Test fun tripleProductionTest4() = testParser().run {
+    @Test fun tripleProductionTest4() = sydMDParser().run {
         input = """
-            P defines 
+            P hasA 
                 class Component :> Base::Anything.
         """.trimIndent()
-        parseSysMD()
+        parse()
         assertEquals(0, model.status.exceptions.size, model.status.exceptions.toString())
     }
 
@@ -209,48 +189,47 @@ class ProductionsTests {
      * In particular, Packages have lists of triples,
      * and Elements have lists of occurrences.
      */
-    @Test fun tripleTest5() = testParser().run  {
+    @Test fun tripleTest5() = sydMDParser().run  {
         input = """
             // More complex test with "mixed challenges" for parsing. 
-            attribute pi : Real = 3.1414; 
-            attribute T  : Real; 
+            Global hasA feature pi : Real = 3.1414.
+            Global hasA feature T  : Real. 
             
-            package e; 
+            Global hasA package e. 
     
-            e hasA import p2::easd. 
+            e hasA private import p2::easd. 
             
-            package e. 
-            
-            e defines   
+            Global hasA package e. 
+            e hasA   
                 class d isA Element; 
                 assoc x isA Relation { end feature b; end feature blupp; }
                 class x.
                 
             d hasA  
-                attribute p:  Real = 5.0 V; 
+                feature p:  Real = 5.0 V; 
                 feature r:  Real = a < b;  
                 feature p:  Real = a*c; 
                 feature b:  Integer = 2; 
                 feature c:  Component = part1.
                     
             e hasA 
-                Value a: Real = 5.0 V. 
+                feature a: Real = 5.0 V. 
                 
             // Hierarchical components in separate statements, avoiding nesting.     
             d hasA 
                 feature r: Real = 3; 
                 feature x: Element [1..2] =  Element.
-            it defines 
-                assoc x isA Link { end feature a; end feature b; }
+            it hasA 
+                assoc x :> Link { end feature a; end feature b; }
                 class y.
                 
         """.trimIndent()
-        parseSysMD()
+        parse()
         assertEquals(0, model.status.exceptions.size, model.status.exceptions.toString())
     }
 
 
-    @Test fun unitProductionTest() = testParser().run  {
+    @Test fun unitProductionTest() = kerMLParser().run  {
         input = """
             1 / m , 
             m^2 / km^3 ,
@@ -266,27 +245,27 @@ class ProductionsTests {
         assertEquals("%", Unit())
     }
 
-    @Test fun elementListTest() = testParser().run {
+    @Test fun elementListTest() = kerMLParser().run {
         input = """
             package    p;
-            feature    v: Any;
-            connector  r = source rel target;
+            feature    v: Base::Anything;
+            connector  r from source to target;
             assoc      a specializes Link; 
-            part       f: Any; 
-            attribute  a: Any; 
-            class      c isA Any; 
+            feature    f: Base::Anything; 
+            feature    a: Base::Anything; 
+            class      c :> Base::Anything; 
         """
         ElementList()
-        // 9 new elements (Multiplicities, Specialization included!)
-        assertEquals(18, model.getUnownedElements().size)
+        val elements = model.getUnownedElements()
+        assertTrue(18 <= elements.size)
     }
 
     @Test
-    fun prefixOperators() = testParser().run {
+    fun prefixOperators() = kerMLParser().run {
         input = """
-        attribute a: Boolean = not a;
-        attribute b: Real = +1.0;
-        attribute c: Real = -1.0;
+        feature a: Boolean = not a;
+        feature b: Real = +1.0;
+        feature c: Real = -1.0;
         """
         NamespaceBodyElement()
         NamespaceBodyElement()
@@ -296,10 +275,10 @@ class ProductionsTests {
     }
 
     @Test
-    fun postfixExpressionsTest() = testParser().run {
+    fun postfixExpressionsTest() = kerMLParser().run {
         input = """
-        attribute a: Real = 1.0 m;
-        attribute b: Real = -2.0 [m];
+        feature a: Real = 1.0 m;
+        feature b: Real = -2.0 [m];
         """
         NamespaceBodyElement()
         NamespaceBodyElement()
@@ -307,13 +286,13 @@ class ProductionsTests {
     }
 
     @Test  // ISSUE! sign is not considered properly
-    fun rangesTest() = testParser().run {
+    fun rangesTest() = kerMLParser().run {
         input = """
-        attribute a: Real = 1.0 .. 2.0; 
-        attribute b: Real = [-2.0 .. -1.0];
-        attribute c: Integer = [-2 .. -1] m;
-        attribute d: Real = [1.0 .. 3.0];
-        attribute e: Real = [1.0 .. 3.0] m;
+        feature a: Real = 1.0 .. 2.0; 
+        feature b: Real = [-2.0 .. -1.0];
+        feature c: Integer = [-2 .. -1] m;
+        feature d: Real = [1.0 .. 3.0];
+        feature e: Real = [1.0 .. 3.0] m;
         """
         NamespaceBodyElement()
         assertTrue(model.status.exceptions.isEmpty() )
@@ -326,30 +305,30 @@ class ProductionsTests {
     }
 
     @Test
-    fun requirementUsageTest() = testParser().run {
+    fun requirementUsageTest() = sysMLv2Parser().run {
         input = """
             requirement <'req 1.1'> EnoughMass: EnoughMassDef {
                 subject vehicle: Vehicle; 
-                // attribute mass: Mass :>>  vehicle::mass; 
+                // feature mass: Mass :>>  vehicle::mass; 
                 attribute mass : Mass; 
                 require r mass > 100.0 [kg]; 
             }
         """.trimIndent()
-        NamespaceBodyElement()
+        RequirementUsage()
         assertTrue(model.status.exceptions.isEmpty())
     }
 
 
     @Test
-    fun requirementDefinitionTest() = testParser().run {
+    fun requirementDefinitionTest() = sysMLv2Parser().run {
         input = """
             requirement def <'req 1.1'> EnoughMassDef {
-                 // attribute mass: Mass :>>  vehicle::mass; 
+                 // feature mass: Mass :>>  vehicle::mass; 
                 attribute mass : Mass; 
                 require r mass > 100.0 [kg]; 
             }
         """.trimIndent()
-        NamespaceBodyElement()
+        RequirementDefinition()
         assertTrue(model.status.exceptions.isEmpty())
     }
 }

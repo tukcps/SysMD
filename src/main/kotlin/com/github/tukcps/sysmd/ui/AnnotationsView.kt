@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package com.github.tukcps.sysmd.ui
 
 import androidx.compose.foundation.background
@@ -13,7 +15,6 @@ import com.github.tukcps.sysmd.ui.viewmodel.TextualRepresentationViewModel
 
 /**
  * Composable that shows a list of information texts if activated
- * @param activates composable, otherwise nothing is shown
  * @param model View model of textual representation cell with information to be shown
  */
 @Composable

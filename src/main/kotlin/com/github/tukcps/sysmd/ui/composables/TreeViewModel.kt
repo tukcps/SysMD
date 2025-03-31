@@ -33,23 +33,17 @@ interface TreeViewNodeModel {
  */
 class TreeViewModel(
     var root: TreeViewNodeModel,
-    val onOpen: (TreeViewNodeModel) -> Unit,
-    val onCreate: (TreeViewNodeModel) -> Unit,
-    val onDelete: (TreeViewNodeModel, String) -> Unit,
-    val onUpload: (TreeViewNodeModel, String) -> Unit,
+    val onOpen: ((TreeViewNodeModel) -> Unit)? = null,
+    val onCreate: ((TreeViewNodeModel) -> Unit)? = null,
+    val onDelete: ((TreeViewNodeModel, String) -> Unit)? = null,
+    val onUpload: ((TreeViewNodeModel, String) -> Unit)? = null,
     val sort: Boolean = true,
-    val filter: (TreeViewModel.Item) -> Boolean = { true }
+    val filter: (Item) -> Boolean = { true }
 ) {
     private var expandableRoot = ExpandableItem(root, 0, sort).apply { toggleExpanded() }
 
     // The list of items that are currently displayed; from expandableRoot
     val items: List<Item> get() = expandableRoot.toItems().filter { filter(it) }
-
-    fun refresh(){
-        expandableRoot.toggleExpanded()
-        expandableRoot.toggleExpanded()
-    }
-
 
     // The last selected item that will be highlighted.
     var selectedItem = mutableStateOf(-1)
@@ -72,18 +66,12 @@ class TreeViewModel(
                 selectedItem.value = index
             }
             is ItemType.Item -> {
-                onOpen(item.node)
+                if (onOpen != null) onOpen(item.node)
                 selectedItem.value = index
             }
         }
         fun select(index: Int){
             selectedItem.value = index
-        }
-
-        @Suppress("UNUSED_PARAMETER")
-        fun create(index: Int, newFileName: String) {
-            assert(type is ItemType.Folder)
-            onCreate(item.node)
         }
     }
 

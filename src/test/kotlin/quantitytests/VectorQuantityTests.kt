@@ -1,9 +1,11 @@
+@file:Suppress("PrivatePropertyName")
+
 package quantitytests
 
-import com.github.tukcps.aadd.AADD
-import com.github.tukcps.aadd.BDD
-import com.github.tukcps.aadd.DDBuilder
-import com.github.tukcps.aadd.IDD
+import io.github.tukcps.aadd.AADD
+import io.github.tukcps.aadd.BDD
+import io.github.tukcps.aadd.DDBuilder
+import io.github.tukcps.aadd.IDD
 import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.quantities.Unit
 import com.github.tukcps.sysmd.quantities.VectorQuantity
@@ -54,39 +56,39 @@ class VectorQuantityTests {
     @BeforeAll
     fun setUp() {
         DDBuilder {
-            DDdummy0 = scalar(0.0)
-            DDdummy0_5 = scalar(0.5)
-            DDdummy1 = scalar(1.0)
-            DDdummyNeg1 = scalar(-1.0)
-            DDdummy1_5 = scalar(1.5)
-            DDdummy2 = scalar(2.0)
-            DDdummy2_5 = scalar(2.5)
-            DDdummy3 = scalar(3.0)
-            DDdummy4 = scalar(4.0)
-            DDdummy5 = scalar(5.0)
-            DDdummy8 = scalar(8.0)
-            DDdummy10 = scalar(10.0)
-            DDdummy20 = scalar(20.0)
-            DDdummy30 = scalar(30.0)
-            DDdummy36 = scalar(36.0)
-            DDdummy50 = scalar(50.0)
-            DDdummy99 = scalar(99.0)
-            DDdummy100 = scalar(100.0)
-            DDdummy200 = scalar(200.0)
-            DDdummy1000 = scalar(1000.0)
-            DDdummy1024 = scalar(1024.0)
-            DDdummyminus50 = scalar(-50.0)
-            AADDdummy100 = range(-100.0, 100.0)
-            AADDdummy1 = range(-1.0, 1.0)
-            AADDdummy5 = range(-5.0, 5.0)
-            IDDdummy0 = scalar(0)
-            IDDdummy1 = scalar(1)
-            IDDdummy2 = scalar(2)
-            IDDdummy3 = scalar(3)
-            IDDdummy4 = scalar(4)
-            IDDdummy5 = scalar(5)
-            IDDdummy10 = scalar(10)
-            IDDdummy100 = scalar(100)
+            DDdummy0 = real(0.0)
+            DDdummy0_5 = real(0.5)
+            DDdummy1 = real(1.0)
+            DDdummyNeg1 = real(-1.0)
+            DDdummy1_5 = real(1.5)
+            DDdummy2 = real(2.0)
+            DDdummy2_5 = real(2.5)
+            DDdummy3 = real(3.0)
+            DDdummy4 = real(4.0)
+            DDdummy5 = real(5.0)
+            DDdummy8 = real(8.0)
+            DDdummy10 = real(10.0)
+            DDdummy20 = real(20.0)
+            DDdummy30 = real(30.0)
+            DDdummy36 = real(36.0)
+            DDdummy50 = real(50.0)
+            DDdummy99 = real(99.0)
+            DDdummy100 = real(100.0)
+            DDdummy200 = real(200.0)
+            DDdummy1000 = real(1000.0)
+            DDdummy1024 = real(1024.0)
+            DDdummyminus50 = real(-50.0)
+            AADDdummy100 = real(-100.0..100.0)
+            AADDdummy1 = real(-1.0..1.0)
+            AADDdummy5 = real(-5.0..5.0)
+            IDDdummy0 = integer(0)
+            IDDdummy1 = integer(1)
+            IDDdummy2 = integer(2)
+            IDDdummy3 = integer(3)
+            IDDdummy4 = integer(4)
+            IDDdummy5 = integer(5)
+            IDDdummy10 = integer(10)
+            IDDdummy100 = integer(100)
             BDDdummyF = False
             BDDdummyT = True
         }

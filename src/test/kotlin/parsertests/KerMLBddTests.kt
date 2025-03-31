@@ -1,15 +1,17 @@
+@file:Suppress("unused")
+
 package parsertests
 
-import com.github.tukcps.aadd.BDD
+import io.github.tukcps.aadd.BDD
 import com.github.tukcps.sysmd.cspsolver.propagate
-import com.github.tukcps.sysmd.compiler.loadSysMD
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.letVar
 import com.github.tukcps.sysmd.services.resolve.resolveVar
-import com.github.tukcps.sysmd.services.session.SessionManager.testSession
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Disabled
+import util.mockup.loadKerML
+import util.testSession
+import kotlin.test.Ignore
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
@@ -23,12 +25,12 @@ class KerMLBddTests {
      * a BDD with just height 1, and the index of the root is the index of the variable.
      * Leaves are true and false.
      */
-    @Test fun bddVariableCreatedTest() = testSession {
-        loadSysMD("attribute x: ScalarValues::Boolean;")
+    @Test fun bddVariableCreatedTest() = testSession("ScalarValues") {
+        loadKerML("feature x: ScalarValues::Boolean;")
         assertTrue(global.resolveVar("x")!!.bdd().height() == 1)
-        loadSysMD("attribute a: ScalarValues::Boolean = x;")
+        loadKerML("feature a: ScalarValues::Boolean = x;")
         assertTrue((global.resolveVar("a")!!.bdd().height() == 1))
-        loadSysMD("attribute b: ScalarValues::Boolean = not(a).")
+        loadKerML("feature b: ScalarValues::Boolean = not(a).")
         assertTrue(global.resolveVar("x")!!.bdd().height() == 1)
         assertTrue((global.resolveVar("a")!!.bdd().height() == 1))
         initialize()
@@ -42,32 +44,32 @@ class KerMLBddTests {
     /**
      * Domain constraint is considered properly.
      */
-    @Test fun bddVariableCreatedTestWithSubtype() = testSession {
-        loadSysMD("attribute x: ScalarValues::Boolean(true).")
+    @Test fun bddVariableCreatedTestWithSubtype() = testSession("ScalarValues") {
+        loadKerML("feature x: ScalarValues::Boolean(true).")
         val test = global.resolveVar("x")!!.bdd().evaluate()
         assertSame(global.resolveVar("x")!!.bdd().evaluate(), builder.True)
         // ToDo: we must check that after considering known value x can be reduced to True.
         // But x should stay as it is as we might change its value interactively.
         // (It is a design decision ... can be adapted if needed to evaluate x as well)
-        loadSysMD("attribute a: ScalarValues::Boolean(false).")
+        loadKerML("feature a: ScalarValues::Boolean(false).")
         assertTrue((global.resolveVar("a")!!.bdd().evaluate() === builder.False))
-        loadSysMD("attribute b: ScalarValues::Boolean.")
+        loadKerML("feature b: ScalarValues::Boolean.")
         assertTrue((global.resolveVar("b")!!.bdd().height() == 1))
         assertTrue(((global.resolveVar("a")!!.bdd() and global.resolveVar("x")!!.bdd()).evaluate() === builder.False))
     }
 
 
 
-    @Test @Disabled
+    @Test @Ignore
     fun setAndEvaluateVariableTestWithComplexBDD() {
-        testSession {
-            + "attribute ca: ScalarValues::Boolean(false)."
-            + "attribute b: ScalarValues::Boolean."
-            + "attribute cc: ScalarValues::Boolean(true)."
-            + "attribute a: ScalarValues::Boolean."
-            + "attribute c: ScalarValues::Boolean."
-            + "attribute ccomplexBDD: ScalarValues::Boolean(true) = (ca and cc) or (not(b) and not(ca))"
-            + "attribute complexBDD: ScalarValues::Boolean(true) = (a and c) or (not(b) and not(a))"
+        testSession("ScalarValues") {
+            loadKerML("feature ca: ScalarValues::Boolean(false);")
+            loadKerML("feature b: ScalarValues::Boolean;")
+            loadKerML("feature cc: ScalarValues::Boolean(true);")
+            loadKerML("feature a: ScalarValues::Boolean;")
+            loadKerML("feature c: ScalarValues::Boolean;")
+            loadKerML("feature ccomplexBDD: ScalarValues::Boolean(true) = (ca and cc) or (not(b) and not(ca));")
+            loadKerML("feature complexBDD: ScalarValues::Boolean(true) = (a and c) or (not(b) and not(a));")
 
             assertSame(global.resolveVar("ca")!!.bdd().evaluate(), builder.False)
             assertTrue((global.resolveVar("ccomplexbdd")!!.bdd().evaluate()).height() == 1)
@@ -81,12 +83,12 @@ class KerMLBddTests {
     }
 
     @Test
-    fun solveAstBDD() = testSession {
-        loadSysMD( """
-                attribute a: ScalarValues::Boolean; 
-                attribute b: ScalarValues::Boolean;
-                attribute c: ScalarValues::Boolean(false);
-                attribute bdd: ScalarValues::Boolean(true) = a and (b or c);
+    fun solveAstBDD() = testSession("ScalarValues") {
+        loadKerML( """
+                feature a: ScalarValues::Boolean; 
+                feature b: ScalarValues::Boolean;
+                feature c: ScalarValues::Boolean(false);
+                feature bdd: ScalarValues::Boolean(true) = a and (b or c);
         """.trimIndent())
         assertEquals(0, status.exceptions.size, "Messages: ${status.exceptions}")
         propagate()
@@ -99,14 +101,14 @@ class KerMLBddTests {
         // assertTrue(builder.conds.getCondition(3) === builder.False)
     }
 
-    @Test @Disabled
-    fun solveAstBDDFalse() = testSession {
-        loadSysMD(
+    @Test @Ignore
+    fun solveAstBDDFalse() = testSession("ScalarValues") {
+        loadKerML(
             """
-            attribute a: ScalarValues::Boolean;
-            attribute b: ScalarValues::Boolean;
-            attribute c: ScalarValues::Boolean(true);
-            attribute bdd: ScalarValues::Boolean(false) = a and (b or c);"""
+            feature a: ScalarValues::Boolean;
+            feature b: ScalarValues::Boolean;
+            feature c: ScalarValues::Boolean(true);
+            feature bdd: ScalarValues::Boolean(false) = a and (b or c);"""
         )
         propagate()
         val result = global.resolveVar("bdd")!!.ast!!.solveAst()
@@ -117,14 +119,14 @@ class KerMLBddTests {
     }
 
     @Test
-    fun solveAstBDDMultipleSolutions()  = testSession {
-        loadSysMD(
+    fun solveAstBDDMultipleSolutions()  = testSession("ScalarValues") {
+        loadKerML(
             """
-            attribute a: ScalarValues::Boolean;
-            attribute b: ScalarValues::Boolean(false);
-            attribute c: ScalarValues::Boolean;
-            attribute d: ScalarValues::Boolean;
-            attribute bdd: ScalarValues::Boolean(true) = (a and (b or c)) or d;"""
+            feature a: ScalarValues::Boolean;
+            feature b: ScalarValues::Boolean(false);
+            feature c: ScalarValues::Boolean;
+            feature d: ScalarValues::Boolean;
+            feature bdd: ScalarValues::Boolean(true) = (a and (b or c)) or d;"""
         )
         propagate()
         val hrm = global.resolveVar("bdd")!!.bdd().evaluate()

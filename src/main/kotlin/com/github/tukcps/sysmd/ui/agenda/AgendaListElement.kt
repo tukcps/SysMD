@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package com.github.tukcps.sysmd.ui.agenda
 
 import androidx.compose.foundation.clickable
@@ -17,8 +19,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.github.tukcps.sysmd.exceptions.SysMDException
 import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
+import com.github.tukcps.sysmd.ui.composables.SysMDTooltipArea
 import com.github.tukcps.sysmd.ui.viewmodel.EditorTabModel
-import com.github.tukcps.sysmd.ui.viewmodel.TabModel
 import kotlinx.coroutines.launch
 
 /**
@@ -39,19 +41,21 @@ fun AgendaListElement(
      */
     message: String = "",
     /**
-     * Line in cell in which the error occurred. Set to -1 for identifying the case that no line is given.
+     * Line in the cell in which the error occurred.
+     * Set to -1 for identifying the case that no line is given.
      * If a negative number is passed, no line is displayed.
      */
     errorLine: Int = -1,
     /**
-     * Wiki link, defaults to main page
+     * Wiki link, defaults to the main page
      */
     link: WikiLink = exceptionLink(errorType),
     /**
      * Preferably an EditorTabModel, as one is necessary to make use of the jump
-     * function from error card to failing cell. If none given, then nothing happens on click
+     * function from error card to failing cell.
+     * If none is given, then nothing happens on click
      */
-    editorTabModel: TabModel?,
+    editorTabModel: EditorTabModel?,
     /**
      * Necessary for identifying the correct cell in editorTabModel to jump to
      */
@@ -73,12 +77,12 @@ private fun ExpandedCard(
     message: String,
     line: Int,
     link: WikiLink,
-    editorTabModel: TabModel?,
+    editorTabModel: EditorTabModel?,
     description: TextualRepresentation?
 ) {
     Card(
+        modifier = Modifier.padding(all = 5.dp),
         colors = CardDefaults.cardColors(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
         shape = RoundedCornerShape(12.dp),
     ) {
         Column {
@@ -90,11 +94,20 @@ private fun ExpandedCard(
                     .padding(16.dp, 16.dp, 16.dp, 8.dp)
             ) {
                 LeadingIcon(errorType)
-                Spacer(
+                Column(
                     modifier = Modifier
                         .weight(1.0f)
-                        .clickable { expanded.value = !expanded.value })
-                ElementButtons(link, editorTabModel = editorTabModel, description = description)
+                        .clickable { expanded.value = !expanded.value }
+                ) {
+                    Text(text = title, overflow = TextOverflow.Ellipsis, maxLines = 1, style = MaterialTheme.typography.labelMedium)
+                    Text(
+                        text = errorOriginString(description, editorTabModel, line),
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.labelSmall,
+                        maxLines = 1
+                    )
+                }
+                AgendaButtons(link, editorTabModel = editorTabModel, description = description)
             }
             Row(
                 modifier = Modifier
@@ -103,8 +116,11 @@ private fun ExpandedCard(
                     .clickable { expanded.value = !expanded.value }
             ) {
                 Column(modifier = Modifier.padding(start = 8.dp)) {
-                    Text(text = title, style = MaterialTheme.typography.labelMedium,)
-                    Text(text = errorOrigin(description, editorTabModel, line) + "\n" + message, style = MaterialTheme.typography.labelSmall)
+                    Text(text = "Concrete error message: ", style = MaterialTheme.typography.labelLarge)
+                    Text(text =  message, style = MaterialTheme.typography.labelSmall)
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(text = "Explanation: ", style = MaterialTheme.typography.labelLarge)
+                    Text(text = errorType.explanation, style = MaterialTheme.typography.labelSmall)
                 }
             }
         }
@@ -119,12 +135,13 @@ private fun FoldedCard(
     title: String,
     line: Int,
     link: WikiLink,
-    editorTabModel: TabModel?,
+    editorTabModel: EditorTabModel?,
     description: TextualRepresentation?
 ) {
     Card(
+        modifier = Modifier.padding(all = 5.dp),
         colors = CardDefaults.cardColors(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        // elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
         shape = RoundedCornerShape(12.dp)
     ) {
         Row(
@@ -140,15 +157,15 @@ private fun FoldedCard(
                     .weight(1.0f)
                     .clickable { expanded.value = !expanded.value }
             ) {
-                Text(text = title, overflow = TextOverflow.Ellipsis, maxLines = 1, style = MaterialTheme.typography.labelMedium,)
+                Text(text = title, overflow = TextOverflow.Ellipsis, maxLines = 1, style = MaterialTheme.typography.labelMedium)
                 Text(
-                    text = errorOrigin(description, editorTabModel, line),
+                    text = errorOriginString(description, editorTabModel, line),
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.labelSmall,
                     maxLines = 1
                 )
             }
-            ElementButtons(link, editorTabModel = editorTabModel, description = description)
+            AgendaButtons(link, editorTabModel = editorTabModel, description = description)
         }
     }
 }
@@ -164,9 +181,9 @@ private fun LeadingIcon(errorType: SysMDException) {
 }
 
 @Composable
-private fun ElementButtons(
+private fun AgendaButtons(
     link: WikiLink,
-    editorTabModel: TabModel?,
+    editorTabModel: EditorTabModel?,
     description: TextualRepresentation?
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -188,25 +205,22 @@ private fun ElementButtons(
         },
         modifier = Modifier.size(24.dp)
     ) {
-        Icon(Icons.Filled.Code, contentDescription = null)
+        SysMDTooltipArea("Navigate to cell with error (if in open tab)", Modifier, { Icon(Icons.Filled.Code, contentDescription = "Navigate to cell" )} )
     }
     FilledIconButton(
         onClick = { uriHandler.openUri(link) },
         modifier = Modifier.size(24.dp)
     ) {
-        Icon(
-            Icons.Filled.Language,
-            contentDescription = null
-        )
+        SysMDTooltipArea("Open URL with explanation", Modifier, {Icon(Icons.Filled.Language, contentDescription = null)} )
     }
 }
 
 /**
  * Returns formatted String with cell number and line in which the error occurred, depending on the available information
  */
-private fun errorOrigin(
+private fun errorOriginString(
     description: TextualRepresentation?,
-    editorTabModel: TabModel?,
+    editorTabModel: EditorTabModel?,
     line: Int
 ): String {
     val index = if (description != null && editorTabModel is EditorTabModel) {
@@ -214,11 +228,13 @@ private fun errorOrigin(
         // Add one to adapt human indexing starting with 1
         editorTabModel.cells.indexOfFirst { cell -> cell.textualRepresentation.elementId == description.elementId } + 1
     } else {
-        "Program error"
+        null
     }
-    return if (index is String) {
-        index
-    } else {
+    return if (index == null) {
+        "No relationship to any concrete cell."
+    } else if (index >= 0) {
         "Cell: $index" + if (line > 0) ", Line: $line" else ""
+    } else {
+        "Cause of issue in other tab of editor."
     }
 }

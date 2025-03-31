@@ -1,0 +1,82 @@
+package sysmlv2specificationtests
+
+import util.mockup.loadSysMLv2
+import util.testSession
+import kotlin.test.Ignore
+import kotlin.test.Test
+import kotlin.test.assertTrue
+
+class RequirementTests {
+
+    /**
+     * This test checks the definition of a requirement in SysML v2.
+     * It verifies that requirements can be defined using the `requirement def` keyword and that no exceptions are raised.
+     * Refer to Section: 7.20 Requirements
+     * Language Specification Document: https://www.omg.org/spec/SysML/2.0/Beta2/Language/PDF
+     */
+    @Test
+    fun testRequirementDefinition() = testSession("Requirements") {
+        loadSysMLv2("""
+        requirement def RequirementDef1 {
+            /* members */
+        }
+        """.trimIndent())
+        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+    }
+
+    /**
+     * This test checks the definition of a requirement in SysML v2.
+     * It verifies that requirements can be defined using the `requirement def` keyword and that no exceptions are raised.
+     * Refer to Section: 7.20 Requirements
+     * Language Specification Document: https://www.omg.org/spec/SysML/2.0/Beta2/Language/PDF
+     */
+    @Test
+    fun testRequirementDefinitionWithAssumption() = testSession("Requirements") {
+        loadSysMLv2("""
+        requirement def RequirementDef1 {
+            attribute a : ScalarValues::Real;
+            attribute b : ScalarValues::Real;
+            assume  {a > 0.0}
+            require {a > b}
+        }
+        """.trimIndent())
+        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+    }
+
+    /**
+     * This test checks the definition of a requirement with a subject in SysML v2.
+     * It verifies that requirements can define a subject, linking them to specific parts.
+     * Refer to Section: 7.20 Requirements
+     * Language Specification Document: https://www.omg.org/spec/SysML/2.0/Beta2/Language/PDF
+     */
+    @Test
+    fun testRequirementWithSubjectDefinition() = testSession("Requirements", "Parts") {
+        loadSysMLv2("""
+        part def Subject1;
+        requirement def <R1> RequirementDef1 {
+            subject s1 : Subject1;
+        }
+        """.trimIndent())
+        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+    }
+
+    /**
+     * This test checks the `satisfy` relationship in SysML v2.
+     * It ensures that parts can satisfy specific requirements without errors.
+     * Refer to Section: 7.20 Requirements
+     * Language Specification Document: https://www.omg.org/spec/SysML/2.0/Beta2/Language/PDF
+     */
+    @Ignore
+    @Test
+    fun testSatisfy() = testSession("Requirements", "Parts") {
+        loadSysMLv2("""
+        part def Part1;
+        requirement def Requirement1;
+        requirement requirement1 : Requirement1;
+        part part1 : Part1 {
+            satisfy requirement1;
+        }
+        """.trimIndent())
+        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+    }
+}

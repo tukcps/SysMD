@@ -1,33 +1,25 @@
 package com.github.tukcps.sysmd.model.kerml.implementation
 
 import com.fasterxml.uuid.Generators
-import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Package
-import com.github.tukcps.sysmd.model.kerml.Resolved
-import com.github.tukcps.sysmd.compiler.parser.SimpleName
+import com.github.tukcps.sysmd.model.util.SimpleName
 import java.util.*
 
 
 class PackageImplementation(
-    elementId: UUID = UUID.randomUUID(),
     declaredName: SimpleName? = null,
     declaredShortName: SimpleName? = null,
-    ownedElements: MutableList<Resolved<Element>> = mutableListOf(),
-    owner: Resolved<Element> = Resolved(),
     isLibraryElement: Boolean = false,
     isStandard: Boolean = false,
     elementType: String = "Package"
 ): Package, NamespaceImplementation(
-    elementId = elementId,
     declaredName = declaredName,
     declaredShortName = declaredShortName,
-    ownedElement = ownedElements,
-    owner = owner,
     elementType = elementType
 ) {
     init {
-        this.isStandard = isStandard
-        this.isLibraryElement = isLibraryElement
+        this.isStandard = (owner.ref?.isStandard == true) or isStandard
+        this.isLibraryElement = (owner.ref?.isStandard == true) or isLibraryElement
         if (isStandard || isLibraryElement)
             this.elementId = Generators.nameBasedGenerator().generate(qualifiedName)
     }
@@ -36,8 +28,6 @@ class PackageImplementation(
         return PackageImplementation(
             declaredName = declaredName,
             declaredShortName = declaredShortName,
-            owner = Resolved(owner),
-            ownedElements = Resolved.copyOfIdentityList(ownedElement),
             isStandard = isStandard,
             isLibraryElement = isLibraryElement
         ).also { klon ->

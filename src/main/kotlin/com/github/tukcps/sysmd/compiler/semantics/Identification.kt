@@ -1,7 +1,7 @@
 package com.github.tukcps.sysmd.compiler.semantics
 
 import com.github.tukcps.sysmd.model.kerml.Element
-import com.github.tukcps.sysmd.compiler.parser.SimpleName
+import com.github.tukcps.sysmd.model.util.SimpleName
 
 
 /**
@@ -19,8 +19,6 @@ class Identification(
     override fun toString(): String =
                 (if (shortName!= null) "shortName: $shortName" else "")+
                 (if (name != null) " name: $name" else "")
-
-    fun toName(): String = shortName?:name?:"(no name)"
 
     override fun equals(other: Any?): Boolean {
         if (other == null) return false

@@ -10,15 +10,18 @@ import kotlin.math.log
 class Unit : Cloneable {
     var unitSet = mutableSetOf<UnitOfMeasurement>()
     private var unitStr = "" //String before converting to SI unit
-    private var unitDimension = "" //dimension calculated by calculateUnitDimension()
+    var unitDimension = "" //dimension calculated by calculateUnitDimension()
     var calculatedUnitSymbol = ""  // calculated simplified unitString
     var isLogarithmic = false
     var isDifference = false
 
     constructor()
 
-    constructor(unitStr: String) {
+    constructor(unitStr: String, unitDimension:String="") {
+        this.unitDimension = unitDimension
         parse(unitStr)
+        if(unitDimension!="")
+            testGivenUnitDimension()
     }
 
     /**
@@ -146,36 +149,23 @@ class Unit : Cloneable {
      * If the unit is not a combined unit, the type was already assigned before and is simply returned
      */
     fun calculateUnitDimension(unitSpec: String) {
-        // Simple case only one element in SI unit list, because it is a base unit
-        if (unitDimension == "" || unitSpec != "") {
-            var unitString = unitStr
-            if (unitSpec != "") { // if unitSpec exists, use this as the unitString (no influence of calculations)
-                unitString = Unit(unitSpec).unitStr
-            }
-            if (unitSet.isEmpty()) { // Quantity of dimension one
+        if ((unitDimension.isEmpty() || unitSpec.isNotEmpty()) && unitStr != "?") {
+            val unitString = if (unitSpec.isNotEmpty()) Unit(unitSpec).unitStr else unitStr
+            if (unitSet.isEmpty()) {
                 unitDimension = QuantityOfDimensionOne.One.dimension
                 return
             }
-            val unitList = mutableListOf<UnitOfMeasurement>() //List of possible units for the dimension
-            //iterate through all units
-            for (unitCompared in ConversionTables.unitsMap.values) {
-                // iterate through all element in the unitsMap and test if they are the same.
-                if (unitCompared.getBaseUnits() == unitSet) {
-                    //only return result directly, if unitStr contains the symbol of the compared unit (remove whitespaces first)
-                    if (unitString.replace(" ","") .contains(unitCompared.symbol)) {
-                        unitDimension = unitCompared.dimension
-                        isDifference = isDifference || unitCompared.isDifference
-                        return
-                    }
-                    if (unitList.none { unit -> unit.dimension == unitCompared.dimension && unit.isDifference == unitCompared.isDifference })
-                        unitList.add(unitCompared) //only add to list, if there is no unit with the same dimension
-                }
-            }
-            if (unitList.size == 0)
+            val unitList = ConversionTables.unitsMap.values.filter { it.getBaseUnits() == unitSet }
+            //only return result directly, if unitStr contains the symbol of the compared unit (remove whitespaces first)
+            unitList.firstOrNull { unitString.replace(" ", "").contains(it.symbol) }?.let {
+                unitDimension = it.dimension
+                isDifference = isDifference || it.isDifference
                 return
-            //Select first element, because there are no more information about the dimension available
-            unitDimension = unitList[0].dimension
-            isDifference = isDifference || unitList[0].isDifference
+            }
+            unitList.firstOrNull()?.let {
+                unitDimension = it.dimension
+                isDifference = isDifference || it.isDifference
+            }
         }
     }
 
@@ -193,14 +183,9 @@ class Unit : Cloneable {
                 calculatedUnitSymbol = ""
                 return
             }
-            val unitList = mutableListOf<UnitOfMeasurement>() //List of possible units for the dimension
-            //iterate through all units
-            for (unitCompared in ConversionTables.unitsMap.values) {
-                // iterate through all element in the unitsMap and test if they are the same.
-                if (unitCompared.getBaseUnits() == unitSet) {
-                    unitList.add(unitCompared)
-                }
-            }
+            //List of possible units for the dimension
+            val unitList = ConversionTables.unitsMap.values.filter { it.getBaseUnits() == unitSet }
+
             //if there are units from different (or zero) dimensions
             //and also different units (or zero), return empty string, because no unique solution possible
             if (unitList.groupBy { it.dimension }.size!=1 && unitList.groupBy { it.symbol }.size!=1) {
@@ -208,9 +193,36 @@ class Unit : Cloneable {
                 return
             } else {
                 //For more than one unit of the same dimension use the unit with the closest conversion factor to one
-                unitList.sortBy { abs(log(it.convFac,10.0)) }
-                calculatedUnitSymbol = unitList[0].symbol
+                calculatedUnitSymbol = unitList.minByOrNull { abs(log(it.convFac, 10.0)) }?.symbol ?: ""
             }
+        }
+    }
+
+    /**
+     * Test if the given unit dimension is possible and add the base unit to the unitSet
+     */
+    private fun testGivenUnitDimension() {
+
+        if(unitSet.isEmpty()&& unitDimension!="") { //unit is not defined
+            // unit is not given -> use Unit of given dimension (remove whitespaces and ignore case)
+            val possibleDimensions = ConversionTables.unitsMap.values.filter { it.dimension.equals(unitDimension,ignoreCase = true) }
+            if(possibleDimensions.isNotEmpty()) {
+                // select unit with the closest conversion factor to 1
+                val selectedUnit = possibleDimensions.minByOrNull { abs(it.convFac - 1 )}!!
+                unitSet = mutableSetOf(selectedUnit)
+                unitStr = selectedUnit.symbol
+            } else
+                unitDimension = ""
+        } else { //unit is defined
+            val possibleUnits = ConversionTables.unitsMap.values.filter { it.getBaseUnits() == clone().toSI().unitSet }
+            //test, if the given unit domain is possible (remove whitespaces and ignore case)
+            if (possibleUnits.none { it.dimension.replace(" ", "").equals(unitDimension, ignoreCase = true) })
+                if(unitDimension!="Quantity") { //if dimension is empty, throw no error (no error in this case)
+                    if(unitDimension == "ScalarValues::Real" || unitDimension == "Real")
+                        throw UnitDimensionError("Units with type ScalarValues::Real are not allowed. Use Type from SI Package instead with units (e.g. SI::Time, SI::Length, SI::Quantity ...)")
+                    else
+                        throw UnitDimensionError("Domain $unitDimension not possible for unit $this")
+                }
         }
     }
 
@@ -218,18 +230,16 @@ class Unit : Cloneable {
      * Adds a unit of measurement to the unitSet (Changes exponent if unit already in Set)
      */
     fun addUnitOfMeasurement(unit: UnitOfMeasurement) {
-        if (unitSet.none { it.name == unit.name && it.prefix == unit.prefix })
-            unitSet.add(unit)
-        else { // Change exponent id Unit already in Set
-            unitSet.filter { it.name == unit.name }.elementAt(0).exponent += unit.exponent
-        }
+        unitSet.find { it.name == unit.name && it.prefix == unit.prefix }?.let {
+            it.exponent += unit.exponent
+        } ?: unitSet.add(unit)
     }
 
     /**
      * Reduce redundant Units by removing all units with the exponent 0
      */
     fun reduceRedundantUnits() {
-        unitSet.removeAll { i -> i.exponent == 0 }
+        unitSet.removeAll { it.exponent == 0 }
     }
 
     /** Negates all Exponents of a unit **/
@@ -242,46 +252,30 @@ class Unit : Cloneable {
      * compare this with other unit and return false
      */
     override fun equals(other: Any?): Boolean {
-        if (other !is Unit)
-            return false
-        return if(toString()=="?" || other.toString()=="?")
-            true
-        else
-            unitSet == other.unitSet
+        return other is Unit && (toString() == "?" || other.toString() == "?" || unitSet == other.unitSet)
     }
 
 
     /**
      * Returns String representation of a unit as a fraction of units
      */
-    override fun toString(): String {
-        var unitStr = ""
-        var i = 0
-        //  use the calculatedUnitSymbol if available
-        val numerator = unitSet.partition { elem -> elem.exponent > 0 }.first
-        val denominator = unitSet.partition { elem -> elem.exponent < 0 }.first
-        numerator.sortedBy { elem -> elem.name }
-        denominator.sortedBy { elem -> elem.name }
+   override fun toString(): String {
+        val numerator = unitSet.filter { it.exponent > 0 }.sortedBy { it.name }
+        val denominator = unitSet.filter { it.exponent < 0 }.sortedBy { it.name }
+        var numeratorStr = "1"
         if (numerator.isNotEmpty()) {
-            for (s in numerator) {
-                unitStr += s.prefix.symbol
-                unitStr += s.symbol
-                if (s.exponent != 1) unitStr += "^" + s.exponent
-                i++
-                if (i != numerator.size) unitStr += " "
+            numeratorStr = numerator.joinToString(" ") {
+                "${it.prefix.symbol}${it.symbol}${if (it.exponent != 1) "^${it.exponent}" else ""}"
             }
-        } else {
-            unitStr += "1"
         }
+        var denominatorStr = ""
         if (denominator.isNotEmpty()) {
-            unitStr += " /"
-            for (s in denominator) {
-                unitStr += " " + s.prefix.symbol
-                unitStr += s.symbol
-                if (s.exponent != -1) unitStr += "^" + s.exponent * -1
+            denominatorStr = denominator.joinToString(" ", " / ") {
+                "${it.prefix.symbol}${it.symbol}${if (it.exponent != -1) "^${-it.exponent}" else ""}"
             }
         }
-        return unitStr
+
+        return numeratorStr + denominatorStr
     }
 
     /**
@@ -290,28 +284,24 @@ class Unit : Cloneable {
      */
     fun getUnitDimension(value: Double): String {
         //special case for time:
-        if (unitDimension == "time" || unitDimension == "timestamp") {
-            return if (value < 50 * 365 * 24 * 60 * 60) "time" else "timestamp"
+        return when {
+            unitDimension == "time" || unitDimension == "timestamp" -> if (value < 50 * 365 * 24 * 60 * 60) "time" else "timestamp"
+            isDifference -> "$unitDimension Difference"
+            else -> unitDimension
         }
-        return if (isDifference) "$unitDimension difference" else unitDimension
     }
 
     /**
      * Transforms Unit to the SI System (does not consider value of Quantity)
      */
     fun toSI():Unit {
-        for (element in unitSet) {
-            element.prefix = NoPrefix
-        }
-        val resultUnit = clone()
-        resultUnit.unitSet = mutableSetOf() // make resultSet empty
-        for (currentUnit in unitSet) {
-            // Change Unit to SI
-            (currentUnit.getBaseUnits()).forEach {
-                val newUnitElement = it.clone()
+        unitSet.forEach { it.prefix = NoPrefix }
+        val resultUnit = clone().apply { unitSet.clear() }
+        // Change Unit to SI
+        unitSet.forEach { currentUnit ->
+            currentUnit.getBaseUnits().forEach {
                 //change exponent of derived unit
-                newUnitElement.exponent = currentUnit.exponent * it.exponent
-                resultUnit.addUnitOfMeasurement(newUnitElement)
+                resultUnit.addUnitOfMeasurement(it.clone().apply { exponent = currentUnit.exponent * it.exponent })
             }
         }
         resultUnit.reduceRedundantUnits()

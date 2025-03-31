@@ -13,13 +13,13 @@ private var siUnitSet = setOf(
     Time.Second.copy(-3), ElectricCurrent.Ampere.copy(-1)
 )
 
-open class ElectricPotential(name: String, symbol: String, prefix: Prefix, convFac: Double, exponent: Int = 1, isDifference: Boolean = false) :
-    DerivedUnit(name, symbol, prefix, "electric potential", siUnitSet, convFac, exponent, isDifference = isDifference) {
+open class ElectricPotential(name: String, symbol: String, prefix: Prefix, convFac: Double, exponent: Int = 1, isDifference: Boolean) :
+    DerivedUnit(name, symbol, prefix, "ElectricPotential", siUnitSet, convFac, exponent, isDifference = isDifference) {
 
     /**
      * generate UnitObjects and add them to the UnitList
      */
-    object Volt : ElectricPotential("volt", "V", NoPrefix, 1.0, isDifference = true)
+    object Volt : ElectricPotential("volt", "φ", NoPrefix, 1.0, isDifference = false)
 
     override fun copy(): ElectricPotential {
         return ElectricPotential(name, symbol, prefix, convFac, exponent, isLogarithmic)

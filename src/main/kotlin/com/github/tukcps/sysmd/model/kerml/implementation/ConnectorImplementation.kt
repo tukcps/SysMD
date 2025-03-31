@@ -10,21 +10,12 @@ import java.util.*
  * connector c: A from f1 to f2;
  */
 open class ConnectorImplementation(
-    elementId: UUID = UUID.randomUUID(),
     declaredName: String? = null,
     declaredShortName: String? = null,
-    ownedElement: MutableList<Resolved<Element>> = mutableListOf(),
-    override var owningRelatedElement: Resolved<Element> = Resolved(),
-    owner: Resolved<Element> = Resolved(),
-    from: MutableList<Resolved<Feature>> = mutableListOf(),
-    to: MutableList<Resolved<Feature>> = mutableListOf(),
     elementType: String = "Connector",
 ) : Connector, Type, FeatureImplementation(
-    elementId = elementId,
     declaredName = declaredName,
     declaredShortName = declaredShortName,
-    ownedElement = ownedElement,
-    owner = owner,
     elementType = elementType
 ) {
 
@@ -42,19 +33,13 @@ open class ConnectorImplementation(
         get() = target as MutableList<Resolved<Feature>>
         set(value) { target = value as MutableList<Resolved<Element>> }
 
-    final override var source: MutableList<Resolved<Element>> = from as MutableList<Resolved<Element>>
-    final override var target: MutableList<Resolved<Element>> = to as MutableList<Resolved<Element>>
-
-
-    init {
-        this.from = from
-        this.to = to
-    }
+    final override var source: MutableList<Resolved<Element>> = mutableListOf()
+    final override var target: MutableList<Resolved<Element>> = mutableListOf()
 
     override fun resolveNames(): Boolean {
         updated = updated or super.resolveNames()
 
-        // Search all sources & targets.
+        // Search all sources and targets.
         source.forEach {
             if (it.resolveIdentity(this, expectedType = Resolved.RefType.FEATURE))
                 updated = true
@@ -74,7 +59,7 @@ open class ConnectorImplementation(
                 model!!.repo.targetOfRelationship[relatedElement.ref!!] = mutableSetOf()
         }
 
-        // Add found sources & targets to hashmap for faster lookup
+        // Add found sources and targets to hashmap for faster lookup
         source.forEach { relatedElement ->
             if (relatedElement.ref != null) {
                 model!!.repo.sourceOfRelationship[relatedElement.ref!!]?.add(this)
@@ -91,12 +76,10 @@ open class ConnectorImplementation(
     override fun clone(): Connector{
         return ConnectorImplementation(
             declaredName = declaredName, declaredShortName = declaredShortName,
-            ownedElement = Resolved.copyOfIdentityList(ownedElement),
-            owner = Resolved(owner),
-            from = Resolved.copyOfIdentityList(from as MutableCollection<Resolved<Element>>) as MutableList<Resolved<Feature>>,
-            to = Resolved.copyOfIdentityList(to as MutableCollection<Resolved<Element>>) as MutableList<Resolved<Feature>>,
         ).also { klon ->
             klon.model = model
+            klon.from = Resolved.copyOfIdentityList(from as MutableCollection<Resolved<Element>>) as MutableList<Resolved<Feature>>
+            klon.to = Resolved.copyOfIdentityList(to as MutableCollection<Resolved<Element>>) as MutableList<Resolved<Feature>>
             klon.direction = direction
             klon.updated = updated
         }

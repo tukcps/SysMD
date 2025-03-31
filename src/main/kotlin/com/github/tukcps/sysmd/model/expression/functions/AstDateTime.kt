@@ -1,8 +1,8 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import com.github.tukcps.aadd.StrDD
-import com.github.tukcps.sysmd.model.expression.AstNode
+import io.github.tukcps.aadd.StrDD
 import com.github.tukcps.sysmd.exceptions.SemanticError
+import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.quantities.Unit
 import com.github.tukcps.sysmd.quantities.VectorDimensionError
@@ -38,7 +38,7 @@ internal class AstDateTime(model: Session, args: ArrayList<AstNode>) :
             throw SemanticError("Datetime should be given as a String")
         val string = getParam(0).upQuantity.values[0] as StrDD
         val timestamp = toUnix(string.toIteString())
-        upQuantity = Quantity(model.builder.scalar(timestamp), Unit("s"), "DateTime")
+        upQuantity = Quantity(model.builder.real(timestamp), Unit("s"), "DateTime")
     }
 
     override fun evalDown() { //Transforms unix timestamp back to the String
@@ -52,7 +52,7 @@ internal class AstDateTime(model: Session, args: ArrayList<AstNode>) :
      * Converts a datetime string to a unix timestamp
      */
     private fun toUnix(datetime: String): Double {
-        return if (datetime.contains("T")) { //contains a explicit time
+        return if (datetime.contains("T")) { //contains an explicit time
             if (datetime.length > 20) // if length > 20, the datetime string contains a timezone
                 OffsetDateTime.parse(datetime, DateTimeFormatter.ISO_OFFSET_DATE_TIME).toEpochSecond().toDouble()
             else

@@ -4,6 +4,8 @@ import com.github.tukcps.sysmd.services.session.Session
 
 interface DiscreteSolverIF {
 
+    fun isInitialized(): Boolean
+
     fun initialize(model: Session)
 
     fun update(scheduledProperties: List<Variable>)
@@ -12,6 +14,5 @@ interface DiscreteSolverIF {
 
     fun advanceState()
 
-    fun returnToLastState()
-
+    fun assertConstraints()
 }

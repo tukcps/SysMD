@@ -66,7 +66,7 @@ object MDTypography {
                 fontFamily = FontFamily.SansSerif,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Normal,
-                lineHeight = 20.sp,
+                lineHeight = 21.sp,
             )
     }
 }

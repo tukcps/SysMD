@@ -8,11 +8,9 @@ import java.util.UUID
  * A requirement as defined in SysML v2 metamodel
  */
 class RequirementUsageImplementation(
-    elementId: UUID = UUID.randomUUID(),
     declaredName: String? = null,
     declaredShortName: String? = null,
 ): RequirementUsage, FeatureImplementation(
-    elementId = elementId,
     declaredName = declaredName,
     declaredShortName = declaredShortName,
     elementType = "RequirementUsage",

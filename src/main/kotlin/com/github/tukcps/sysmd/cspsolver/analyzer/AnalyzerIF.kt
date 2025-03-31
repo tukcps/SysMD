@@ -12,5 +12,5 @@ interface AnalyzerIF {
 
     //fun conditionInAllPaths(conditionIndex: Int, property: Property): Boolean
 
-    //fun getAllocationFromAllPaths(index: Int, property: Property): DD
+    //fun getAllocationFromAllPaths(index: Int, property: Property): DD<*>
 }

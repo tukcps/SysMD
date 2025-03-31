@@ -1,6 +1,5 @@
 package com.github.tukcps.sysmd.compiler.scanner
 
-import com.github.tukcps.sysmd.exceptions.LexicalError
 import com.github.tukcps.sysmd.compiler.scanner.Token.Definitions.charTokens
 import com.github.tukcps.sysmd.compiler.scanner.Token.Definitions.keywords
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
@@ -21,7 +20,6 @@ import kotlin.math.pow
  *   advances if the token is in the set of token passed as parameter.
  */
 open class Scanner(
-    input: CharSequence = "",
     var indices: IntRange?=null,
     val skip: Set<Token.Kind> = setOf(WHITESPACE, NOTE)
 ) {
@@ -29,7 +27,7 @@ open class Scanner(
      * The input as a String. Setting it will reset i, lineNo, columnNo, token, etc.:
      * however, it will not change the mode.
      **/
-    var input = input           // Giving it a new input resets all states.
+    var input: CharSequence = ""           // Giving it a new input resets all states.
         set(it) {
             position = indices?.first?:0
             currLineNo = 1
@@ -63,7 +61,6 @@ open class Scanner(
 
     /** the next token */
     var nextToken = Token(EOF, "", lineNo = 0, indices = 0..0)
-
 
     init {
         position = 0 // indices?.first?:0 // Only if we could also persist string
@@ -103,6 +100,11 @@ open class Scanner(
         token = nextToken
         do {
             nextTokenOrSkip()
+            // Special case: tokens in SysML v2 that are sequence of two "tokens", typed by = TYPED_BY = DP
+            if (token.kind == TYPED && nextToken.kind == BY) {
+                nextToken = buildToken(TYPED_BY)
+                nextToken()
+            }
         } while (nextToken.kind in skip) // Read over skip-tokens
     }
 
@@ -285,24 +287,17 @@ open class Scanner(
                     buildToken(EQ)
             }
 
-            // : or :> or :: or :>> or ::>
+            // : or := or :> or :: or :>> or ::>
             ':' -> {
-                nextToken = if (nextChar() == '>') {
-                    if (nextChar() == '>') {
-                        nextChar()
-                        buildToken(REDEFINES)
-                    } else
-                        buildToken(SPECIALIZES)
-                } else
-                    if (curChar == ':') {
-                        nextChar()
-                        if (curChar == '>') {
-                            nextChar()
-                            buildToken(REFERENCES)
-                        } else
-                            buildToken(DPDP)
-                    } else
-                        buildToken(DP)
+                nextToken = when(nextChar()) {
+                    // :>> (Redefines) resp. :> (Specializes)
+                    '>' -> if (nextChar() == '>') { nextChar(); buildToken(REDEFINES)} else buildToken(DPGT)
+                    // :=
+                    '=' -> { nextToken(); buildToken(DPEQ)}
+                    // ::> (references) resp. :: (DPDP)
+                    ':' -> if (nextChar() == '>') { nextChar(); buildToken(REFERENCES)} else buildToken(DPDP)
+                    else -> buildToken(TYPED_BY)
+                }
             }
 
             // * or **
@@ -351,11 +346,6 @@ open class Scanner(
             false
 
 
-    /**
-     * Checks if the current token is in the argument.
-     * @return true, if current token is, else false
-     */
-    fun tokenIs(t: Set<Token.Kind>): Boolean = token.kind in t
 
     /**
      * Checks if the current token is in the argument.
@@ -367,59 +357,7 @@ open class Scanner(
      * Checks if the current token is in the argument.
      * @return true, if current token is, else false
      */
-    fun tokenIsNot(t: Set<Token.Kind>): Boolean = token.kind !in t
-
-    /**
-     * Checks if the current token is in the argument.
-     * @return true, if current token is, else false
-     */
     fun tokenIsNot(t: Token.Kind): Boolean = token.kind != t
-
-
-    /**
-     * Checks for an expected token.
-     * If the token is there, it is consumed and the next token is read.
-     * If not, it is a syntax error.
-     * @param accept expected tokens
-     * @return token, if current token is in expected tokens and was consumed
-     */
-    fun consume(accept: Token.Kind): Token.Kind {
-        if (token.kind == accept) {
-           nextToken()
-           return accept
-        }
-        throw LexicalError(this, "after '$consumedToken': expected '$accept' but read '$token' ")
-    }
-
-    fun consume(accept: Set<Token.Kind>): Token.Kind {
-        if (token.kind in accept) {
-            nextToken()
-            return token.kind
-        }
-        var acceptStr: String? = null
-        accept.forEach { acceptStr = "${acceptStr?:""} '$it'"  }
-        throw LexicalError(this, "after '$consumedToken': expected $acceptStr but read '$token' ")
-    }
-
-
-    @JvmName("consumeInfix")
-    fun Token.Kind.consume(): Token.Kind = consume(this)
-
-    @JvmName("consumeInfix")
-    fun Set<Token.Kind>.consume(): Token.Kind = consume(this)
-
-    @JvmName("optionalInfix")
-    fun Token.Kind.optional() {
-        if (token.kind == this)
-            nextToken()
-    }
-
-    fun Token.Kind.optional(ifAccepted: () -> Unit) {
-        if (token.kind == this) {
-            nextToken()
-            ifAccepted()
-        }
-    }
 
     infix fun Token.Kind.or(kind: Token.Kind): MutableSet<Token.Kind> = mutableSetOf(this, kind)
     infix fun Token.Kind.or(kinds: MutableSet<Token.Kind>): MutableSet<Token.Kind>  { kinds.add(this); return kinds }

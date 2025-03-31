@@ -11,7 +11,6 @@ interface Relationship: Element {
     var source: MutableList<Resolved<Element>>
     var target: MutableList<Resolved<Element>>
     var isImplied: Boolean
-    var owningRelatedElement: Resolved<Element>
 
     // derived properties:
     val relatedElements

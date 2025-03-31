@@ -4,7 +4,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.window.FrameWindowScope
 import androidx.compose.ui.window.MenuBar
 import com.github.tukcps.sysmd.ui.viewmodel.SysMDViewModel
-import com.github.tukcps.sysmd.ui.viewmodel.EditorTabModel
 
 /**
  * Adds the main pull-down menu in to top window line.
@@ -19,15 +18,6 @@ fun FrameWindowScope.MenuBar(model: SysMDViewModel) = MenuBar {
     fun showSettingsDialog() {
         model.showSettingsDialog.value = true
         model.reconnectionRequired.value = true
-    }
-
-    fun saveAction(){
-        val activeTab = model.tabsModel.active
-        val newActiveTab =  model.tabsModel.active as? EditorTabModel
-
-        activeTab?.save()
-        if(newActiveTab != null)
-            newActiveTab.elementEdited.value = false
     }
 
     fun createProject() {
@@ -64,17 +54,11 @@ fun FrameWindowScope.MenuBar(model: SysMDViewModel) = MenuBar {
         Item("Delete Branch") { deleteBranch() }
         Item("Merge Branch") { mergeBranch() }
         Item("Commit") { createCommit() } // , Icons.Default.Save
-        Item("Pull") {model.pull()}  // , Icons.Default.Download
         Item("Push") {} // , Icons.Default.Upload
     }
 
     Menu("Help") {
         Item("Settings") { showSettingsDialog() }
         Item("Help") {}
-    }
-
-    if(!model.showSettingsDialog.value&&model.reconnectionRequired.value){
-        model.reconnectToBackend()
-        model.reconnectionRequired.value=false
     }
 }

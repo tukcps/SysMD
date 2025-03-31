@@ -2,7 +2,7 @@ package com.github.tukcps.sysmd.services
 
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.TypeImplementation
-import com.github.tukcps.sysmd.compiler.parser.SimpleName
+import com.github.tukcps.sysmd.model.util.SimpleName
 import com.github.tukcps.sysmd.services.session.Session
 
 

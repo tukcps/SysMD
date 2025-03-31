@@ -1,7 +1,7 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import com.github.tukcps.aadd.AADD
-import com.github.tukcps.aadd.IDD
+import io.github.tukcps.aadd.AADD
+import io.github.tukcps.aadd.IDD
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.quantities.DDError
@@ -37,7 +37,7 @@ internal class AstSqr(model: Session, args: ArrayList<AstNode>) : AstFunction("s
                 val results = mutableListOf<IDD>()
                 downQuantity.values.indices.forEach {
                     val max = downQuantity.values[it].asIdd().sqrt().getRange().max
-                    results.add(model.builder.range(-max, max))
+                    results.add(model.builder.integer(-max..max))
                 }
                 getParam(0).downQuantity = getParam(0).downQuantity.constrain(VectorQuantity(results))
 
@@ -48,9 +48,9 @@ internal class AstSqr(model: Session, args: ArrayList<AstNode>) : AstFunction("s
                 downQuantity.values.indices.forEach {
                     var valueForSqrt = downQuantity.values[it].asAadd()
                     if (valueForSqrt.min in -0.00001..0.00001)
-                        valueForSqrt = downQuantity.values[it].builder.range(0.0, valueForSqrt.max)
+                        valueForSqrt = downQuantity.values[it].builder.real(0.0..valueForSqrt.max)
                     val max = valueForSqrt.sqrt().getRange().max
-                    results.add(model.builder.range(-max, max))
+                    results.add(model.builder.real(-max .. max))
                 }
                 getParam(0).downQuantity = getParam(0).downQuantity.constrain(
                     VectorQuantity(

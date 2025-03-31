@@ -1,9 +1,9 @@
 package com.github.tukcps.sysmd.cspsolver.normalizer
 
-import com.github.tukcps.aadd.DDcond
-import com.github.tukcps.aadd.values.IntegerRange
-import com.github.tukcps.aadd.values.Range
-import com.github.tukcps.aadd.values.XBool
+import io.github.tukcps.aadd.DD
+import io.github.tukcps.aadd.values.IntegerRange
+import io.github.tukcps.aadd.values.Range
+import io.github.tukcps.aadd.values.XBool
 
 /**
  * Class to store a simple property.
@@ -11,7 +11,7 @@ import com.github.tukcps.aadd.values.XBool
 data class SimpleProperty<T : Any>(
     val name: String,
     val expression : String,
-    val dd : DDcond<T>,
+    val dd : DD<T>,
     val simpleAst : SimpleAstRoot? = null, // store a simpler version of the AST
 
     var unitSpec:   String = "",        // Specified unit as string
@@ -61,6 +61,6 @@ data class SimpleProperty<T : Any>(
                     }
 
                     else -> {"Unidentified type: $valueSpecs"}
-                } + ", DD = ${dd.toIteString()} }"
+                } + ", DD<*> = ${dd.toIteString()} }"
 
 }

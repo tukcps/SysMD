@@ -1,18 +1,21 @@
 package models.kerml
 
-import com.github.tukcps.aadd.values.IntegerRange
 import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.exceptions.SysMDError
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.*
-import com.github.tukcps.sysmd.compiler.loadProject
-import com.github.tukcps.sysmd.compiler.loadSysMD
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolve
-import com.github.tukcps.sysmd.services.session.SessionManager.testSession
-import com.github.tukcps.sysmlv2.entities.ElementDAO
-import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.Test
+import com.github.tukcps.sysmd.services.session.loadLibrary
+import com.github.tukcps.sysmd.services.session.loadProject
+import io.github.tukcps.aadd.values.IntegerRange
+import io.github.tukcps.sysmlv2.api.entities.getElements
+import util.mockup.loadKerML
+import util.testSession
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 @Suppress("UNUSED_VARIABLE")
 class ExportProjectTests {
@@ -21,9 +24,9 @@ class ExportProjectTests {
      * Test: Create export record with Class
      */
     @Test
-    fun exportClassTest() = testSession(loadKerML = false) {
+    fun exportClassTest() = testSession {
         val classifier = create(ClassImplementation(declaredName="c"), global)
-        val specialization = create(SpecializationImplementation(classifier, any), classifier)
+        val specialization = create(SpecializationImplementation(classifier, anything), classifier)
         assertNotNull(classifier.getOwnedElementOfType<Specialization>())
         assertNotNull(classifier.getOwnedElementOfType<Specialization>()?.elementId)
         initialize()
@@ -39,7 +42,7 @@ class ExportProjectTests {
         // Specialization is in record
         val spec=record.getElements().first { it.type == "Specialization"}
         assertNotNull(spec)
-        assertEquals(any.elementId, spec.target?.first()?.id)
+        assertEquals(anything.elementId, spec.target?.first()?.id)
         assertEquals(c.elementId, spec.owner?.id)
     }
 
@@ -49,10 +52,10 @@ class ExportProjectTests {
      */
     @Test
     fun importClassTest() {
-        var export: List<ElementDAO> = listOf()
+        var export: List<io.github.tukcps.sysmlv2.api.entities.ElementDAO> = listOf()
         testSession {
             val classifier = create(TypeImplementation(declaredName = "c"), global)
-            create(SpecializationImplementation(classifier, any), classifier)
+            create(SpecializationImplementation(classifier, anything), classifier)
             assertNotNull(classifier.getOwnedElementOfType<Specialization>())
             assertNotNull(classifier.getOwnedElementOfType<Specialization>()?.elementId)
             initialize()
@@ -64,7 +67,7 @@ class ExportProjectTests {
             initialize()
             val c = global.resolve<TypeImplementation>("c")
             assertNotNull(c)
-            assertTrue(c!!.ownedSpecialization.isNotEmpty())
+            assertTrue(c.ownedSpecialization.isNotEmpty())
             assertEquals(c.ownedSpecialization.first().owner.id, c.elementId)
             assertNotNull(c.owner.ref)
             assertNotNull(c.owner.id)
@@ -75,7 +78,7 @@ class ExportProjectTests {
      * Test: Create export record with Package
      */
     @Test
-    fun exportPackageTest() = testSession( loadKerML = false ) {
+    fun exportPackageTest() = testSession {
         val p = create(PackageImplementation(declaredName="p"), global)
         val f = create(FeatureImplementation(declaredName ="f"), p)
         create(MultiplicityImplementation(multiplicity = IntegerRange(1,3).toString()), f)
@@ -102,9 +105,9 @@ class ExportProjectTests {
 
     @Test
     fun importPackageTest() {
-        var export: List<ElementDAO> = emptyList()
-        testSession(loadKerML = false) {
-            loadSysMD("package ScalarValues { datatype Integer; }")
+        var export: List<io.github.tukcps.sysmlv2.api.entities.ElementDAO> = emptyList()
+        testSession("Base") {
+            loadKerML("package ScalarValues { datatype Natural; }")
             val p = create(PackageImplementation(declaredName="p"), global)
             val f = create(FeatureImplementation(declaredName ="f"), p)
             create(MultiplicityImplementation(multiplicity = IntegerRange(1,3).toString()), f)
@@ -113,7 +116,7 @@ class ExportProjectTests {
             assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
             export = export().getElements()
         }
-        testSession(loadKerML = false) {
+        testSession {
             import(export)
             initialize()
             propagate()
@@ -123,9 +126,9 @@ class ExportProjectTests {
             assertNotNull(p)
             assertNotNull(f)
             assertNotNull(m)
-            assertTrue(p!!.owner.ref == global)
-            assertTrue(f!!.owner.ref == p)
-            assertTrue(m!!.owner.ref == f)
+            assertTrue(p.owner.ref == global)
+            assertTrue(f.owner.ref == p)
+            assertTrue(m.owner.ref == f)
         }
     }
 
@@ -134,13 +137,13 @@ class ExportProjectTests {
      */
     @Test
     fun importScalarValuesTest() {
-        var export: List<ElementDAO> = emptyList()
-        testSession {
+        var export: List<io.github.tukcps.sysmlv2.api.entities.ElementDAO> = emptyList()
+        testSession("ScalarValues") {
             initialize()
             assertEquals(0, status.exceptions.size, status.exceptions.toString())
             export = export().getElements()
         }
-        testSession {
+        testSession("ScalarValues") {
             import(export)
             initialize()
             assertNotNull(repo.booleanType)
@@ -157,7 +160,7 @@ class ExportProjectTests {
 
     @Test
     fun importViaRepositoryCache() {
-        testSession("ScalarValues", "ISO26262") {
+        testSession("ScalarValues") {
             initialize()
             propagate()
             get().forEach { element ->
@@ -174,7 +177,7 @@ class ExportProjectTests {
             }
         }
 
-        testSession("ScalarValues", "ISO26262") {
+        testSession("ScalarValues") {
             get().forEach { element ->
                 assertEquals(builder, element.model?.builder)
                 if (element is Relationship) {
@@ -183,8 +186,6 @@ class ExportProjectTests {
                             assertEquals(builder, source.ref?.model?.builder)
                     }
                     element.target.forEach { target ->
-                        if (builder != target.ref?.model?.builder)
-                            println()
                         assertEquals(builder, target.ref?.model?.builder)
                     }
                 }
@@ -199,10 +200,10 @@ class ExportProjectTests {
     @Test
     fun repeatedUsage() {
         testSession {
-            loadProject("Math")
+            loadLibrary("Math")
             val pi = global.resolve<Feature>("Math::pi")!!
-            loadProject("Math")
-            loadProject("Math")
+            loadLibrary("Math")
+            loadLibrary("Math")
             val pi2 = global.resolve<Feature>("Math::pi")!!
             assertEquals(pi.elementId, pi2.elementId)
         }

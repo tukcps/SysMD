@@ -1,26 +1,24 @@
 package models.expression
 
 import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.compiler.loadSysMD
 import com.github.tukcps.sysmd.services.repositories.local.toDAO
 import com.github.tukcps.sysmd.services.repositories.local.toElement
 import com.github.tukcps.sysmd.services.resolve.resolve
-import com.github.tukcps.sysmd.services.session.SessionManager.testSession
+import util.mockup.loadKerML
+import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class VariableTests {
 
-
     @Test
-    fun testSerialization1() = testSession {
-        loadSysMD("""
+    fun testSerialization1() = testSession("ScalarValues") {
+        loadKerML("""
             feature f: ScalarValues::Real(2..3) [m] = 2.0 m; 
             // serialized in body-field: 
             // 2..3 $$ m $$ 1.0 m;
-        """.trimIndent()
-        )
+        """)
         val f = global.resolve<Feature>("f")
         val fdao = f!!.toDAO()
         assertEquals("2 .. 3 ## m ## 2.0 m", fdao.body?.trim() )
@@ -34,13 +32,12 @@ class VariableTests {
 
 
     @Test
-    fun testSerialization2() = testSession {
-        loadSysMD("""
-            feature f: ScalarValues::Real(2..3) = 2.0; 
-            // serialized in body-field: 
-            // 2..3 $$ $$ 1.0 m;
-        """.trimIndent()
-        )
+    fun testSerialization2() = testSession("ScalarValues") {
+        loadKerML("""
+                feature f: ScalarValues::Real(2..3) = 2.0; 
+                // serialized in body-field: 
+                // 2..3 $$ $$ 1.0 m;
+            """)
         val f = global.resolve<Feature>("f")
         val fdao = f!!.toDAO()
         assertEquals("2 .. 3 ##  ## 2.0", fdao.body?.trim() )

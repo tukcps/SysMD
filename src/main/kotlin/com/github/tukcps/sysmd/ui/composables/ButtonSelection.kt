@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package com.github.tukcps.sysmd.ui.composables
 
 import androidx.compose.foundation.clickable
@@ -22,13 +24,13 @@ import com.github.tukcps.sysmd.ui.viewmodel.MyIcons
 fun ButtonSelection( selected: MutableState<Boolean> , text: String) {
     Row(Modifier.padding(start = 10.dp).height(24.dp).fillMaxWidth().clickable { selected.value = !selected.value} ) {
         if (selected.value)
-            Icon(MyIcons.RadioButtonChecked, text, modifier = Modifier.padding(end=10.dp).height(16.dp).align(
+            Icon(MyIcons.RadioButtonChecked, text, modifier = Modifier.padding(horizontal = 5.dp).height(16.dp).align(
                 Alignment.CenterVertically))
         else
             Icon(
-                MyIcons.RadioButtonUnchecked, text, modifier = Modifier.padding(end=10.dp).height(16.dp).align(
+                MyIcons.RadioButtonUnchecked, text, modifier = Modifier.padding(horizontal = 5.dp).height(16.dp).align(
                 Alignment.CenterVertically))
-        Text(text, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.align(Alignment.CenterVertically))
+        Text(text, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(bottom = 1.dp).align(Alignment.CenterVertically))
     }
 }
 
@@ -45,7 +47,7 @@ fun ButtonSelection( selected: MutableState<String>, text: String, onSelection: 
             Icon(MyIcons.RadioButtonChecked, text, Modifier.padding(end = 10.dp).height(16.dp).align(Alignment.CenterVertically))
             onSelection()
         } else
-            Icon(MyIcons.RadioButtonUnchecked, text, Modifier.padding(end = 10.dp).height(16.dp).align(Alignment.CenterVertically),)
-        Text(text, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.align(Alignment.CenterVertically))
+            Icon(MyIcons.RadioButtonUnchecked, text, Modifier.padding(end = 10.dp).height(16.dp).align(Alignment.CenterVertically))
+        Text(text, style = MaterialTheme.typography.bodySmall, modifier = Modifier.align(Alignment.CenterVertically))
     }
 }

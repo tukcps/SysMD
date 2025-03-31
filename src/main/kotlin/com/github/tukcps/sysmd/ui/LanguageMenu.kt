@@ -14,7 +14,6 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.*
 import com.github.tukcps.sysmd.ui.composables.TooltipInstant
 import com.github.tukcps.sysmd.ui.styles.Fonts
-import com.github.tukcps.sysmd.ui.viewmodel.TextualRepresentationViewModel
 import com.github.tukcps.sysmd.ui.viewmodel.TextualRepresentationViewModel.Companion.Language
 import com.github.tukcps.sysmd.ui.viewmodel.TextualRepresentationViewModel.Companion.allLanguages
 
@@ -29,8 +28,8 @@ fun LanguageDropdown(
     selectedLanguage: MutableState<Language>,
     selectedNamespace: MutableState<String>,
     selectedRelationshipType: MutableState<TextFieldValue>,
-    onLanguageChange: () -> Unit,
-    ) {
+    onLanguageChange: () -> Unit
+) {
     var languageExpanded by remember { mutableStateOf(false) }
     var typeOfRelationshipExpanded by remember { mutableStateOf(false) }
 
@@ -53,7 +52,7 @@ fun LanguageDropdown(
                         DropdownMenuItem(
                             modifier = Modifier.height(18.dp),
                             onClick = {
-                                selectedLanguage.value = TextualRepresentationViewModel.Companion.Language.entries[index]
+                                selectedLanguage.value = Language.entries[index]
                                 languageExpanded = false
                                 onLanguageChange()
                             },
@@ -63,9 +62,9 @@ fun LanguageDropdown(
                     }
                 }
             }
-            if (selectedLanguage.value == TextualRepresentationViewModel.Companion.Language.SYS_MD) {
+            if (selectedLanguage.value in setOf(Language.SYS_MD, Language.KerML, Language.SYS_ML)) {
                 Spacer(Modifier.width(20.dp)) // Same as width of line numbers of Editor Composable
-                Text(" Namespace ", fontSize = 12.sp, lineHeight = 14.sp)
+                Text(" package ", fontSize = 12.sp, lineHeight = 14.sp)
                 Box(modifier = Modifier.wrapContentSize(Alignment.TopStart)) {
                     BasicTextField(
                         value = selectedNamespace.value,
@@ -79,62 +78,8 @@ fun LanguageDropdown(
                         )
                     )
                 }
-                Text(" hasA ", fontSize = 12.sp, lineHeight = 14.sp)
+                Text(" owns ", fontSize = 12.sp, lineHeight = 14.sp)
             }
-
-            if (selectedLanguage.value == TextualRepresentationViewModel.Companion.Language.VIEW) {
-                Spacer(Modifier.width(20.dp)) // Same as width of line numbers of Editor Composable
-
-                Box(modifier = Modifier.wrapContentSize(Alignment.TopStart)) {
-                    // val items = allLanguages.toList()
-                    Text(
-                        text = if (selectedRelationshipType.value.text.isBlank()) "hasA" else selectedRelationshipType.value.text,
-                        fontSize = 12.sp,
-                        lineHeight = 14.sp,
-                        modifier = Modifier.clickable(onClick = { typeOfRelationshipExpanded = true })
-                            .background(MaterialTheme.colorScheme.background.copy(0.3f))
-                    )
-                    DropdownMenu(
-                        expanded = typeOfRelationshipExpanded,
-                        onDismissRequest = { typeOfRelationshipExpanded = false },
-                    ) {
-                        arrayOf("hasA", "isA").forEachIndexed { _, s ->
-                            DropdownMenuItem(
-                                modifier = Modifier.height(18.dp),
-                                onClick = {
-                                    selectedRelationshipType.value = TextFieldValue(s)
-                                    typeOfRelationshipExpanded = false
-                                    onLanguageChange()
-                                },
-                                text = { Text(text = s.toString(), fontSize = 12.sp, lineHeight = 14.sp) },
-                                contentPadding = PaddingValues(1.dp)
-                            )
-                        }
-                    }
-                }
-                Spacer(Modifier.width(20.dp))
-                Text(" Namespace ", fontSize = 12.sp, lineHeight = 14.sp)
-                Box(modifier = Modifier.wrapContentSize(Alignment.TopStart)) {
-                    BasicTextField(
-                        value = selectedNamespace.value,
-                        maxLines = 1,
-                        onValueChange = {
-                            selectedNamespace.value = it
-                            onLanguageChange()
-                        },
-                        textStyle = TextStyle(
-                            color = Color.Magenta,
-                            fontSize = 12.sp,
-                            lineHeight = 14.sp,
-                            fontFamily = Fonts.jetbrainsMono
-                        )
-                    )
-
-
-                }
-
-            }
-
         }
     }
 }

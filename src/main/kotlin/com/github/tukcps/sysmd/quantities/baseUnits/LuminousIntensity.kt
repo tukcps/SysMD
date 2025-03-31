@@ -5,7 +5,7 @@ import com.github.tukcps.sysmd.quantities.NoPrefix
 import com.github.tukcps.sysmd.quantities.Prefix
 
 open class LuminousIntensity(name: String, symbol: String, prefix: Prefix, convFac: Double = 1.0, exponent: Int = 1) :
-    BaseUnit(name, symbol, prefix, "luminous intensity", convFac, exponent) {
+    BaseUnit(name, symbol, prefix, "LuminousIntensity", convFac, exponent) {
 
     /**
      * generate UnitObjects and add them to the UnitList

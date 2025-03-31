@@ -3,15 +3,15 @@
 package com.github.tukcps.sysmd.cspsolver
 
 import com.fasterxml.jackson.annotation.JsonIgnore
-import com.github.tukcps.aadd.AADD
-import com.github.tukcps.aadd.BDD
-import com.github.tukcps.aadd.IDD
-import com.github.tukcps.aadd.values.IntegerRange
-import com.github.tukcps.aadd.values.Range
-import com.github.tukcps.aadd.values.XBool
+import io.github.tukcps.aadd.AADD
+import io.github.tukcps.aadd.BDD
+import io.github.tukcps.aadd.IDD
+import io.github.tukcps.aadd.values.IntegerRange
+import io.github.tukcps.aadd.values.Range
+import io.github.tukcps.aadd.values.XBool
 import com.github.tukcps.sysmd.model.expression.AstRoot
 import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.compiler.parser.size
+import com.github.tukcps.sysmd.model.util.size
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import java.util.*
 
@@ -24,10 +24,10 @@ import java.util.*
  * - ValueFeature, a relationship that links the value of a Feature with an Expression.
  */
 interface Variable: ConstraintPropagation {
-    enum class BaseType {Bool, Int, Str, Real, Unknown}
+    enum class BaseType {Bool, Int, String, Real, Unknown}
 
     var feature: Feature
-    var elementId: UUID
+    val elementId: UUID?
     var name: String?
     val baseType: BaseType
 
@@ -36,7 +36,7 @@ interface Variable: ConstraintPropagation {
     val unitSpec:   String       // Specified unit as string
 
     /*  For quantities, constraints, performances: an equation as text, right side of eqn for parser! */
-    var dependency:   String     // equation as text, right side of eqn for parser!
+    val dependency:   String     // equation as text, right side of eqn for parser!
 
     /** access methods for the valueSpec field; returns different types */
     val rangeSpecs: MutableList<Range>
@@ -89,11 +89,12 @@ interface Variable: ConstraintPropagation {
     /** Setter for range specification that also initializes the value */
     fun intSpec(init: IntegerRange) : Variable
 
-
     /** Casts the quantity value to AADD and returns it. */
     fun aadd(): AADD
     fun bdd(): BDD
     fun idd(): IDD
-    fun min(): Double
-    fun max(): Double
+    fun compileExpression()
+
+    fun <T: Number> min(index: Int = 0): T
+    fun <T: Number> max(index: Int = 0): T
 }

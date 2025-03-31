@@ -1,11 +1,11 @@
 package com.github.tukcps.sysmd.model.kerml.implementation
 
-import com.github.tukcps.sysmd.model.kerml.Element
-import com.github.tukcps.sysmd.model.kerml.Resolved
-import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
 import com.github.tukcps.sysmd.compiler.KerML
-import com.github.tukcps.sysmd.compiler.parser.firstName
-import java.util.*
+import com.github.tukcps.sysmd.compiler.SysMD
+import com.github.tukcps.sysmd.compiler.SysMLv2
+import com.github.tukcps.sysmd.model.kerml.Element
+import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
+import com.github.tukcps.sysmd.model.util.firstName
 
 
 /**
@@ -19,20 +19,14 @@ import java.util.*
  * @param body the model itself
  */
 class TextualRepresentationImplementation(
-    elementId: UUID = UUID.randomUUID(),
     declaredName: String? = null,
     declaredShortName: String? = null,
-    owner: Resolved<Element> = Resolved(),
-    ownedElement: MutableList<Resolved<Element>> = mutableListOf(),
     override var language: String="SysML",
     body: String="",
     elementType: String = "TextualRepresentation"
 ): TextualRepresentation, AnnotatingElementImplementation(
-    elementId = elementId,
     declaredName = declaredName,
     declaredShortName = declaredShortName,
-    owner = owner,
-    ownedElement = ownedElement,
     body=body,
     elementType = elementType
 ) {
@@ -41,10 +35,9 @@ class TextualRepresentationImplementation(
      */
     override fun compile(generateAnnotations: Boolean) {
         when (language.firstName()) {
-            "SysML", "KerML", "SysMD" -> KerML(model!!,
-                textualRepresentation = this,
-                indices = null,
-                generateAnnotations = generateAnnotations).parseSysMD()
+            "SysMD" -> SysMD(model!!, generateAnnotations = generateAnnotations).parse(this)
+            "KerML" -> KerML(model!!, generateAnnotations = generateAnnotations).parse(this)
+            "SysML" -> SysMLv2(model!!, generateAnnotations = generateAnnotations).parse(this)
         }
     }
 
@@ -52,8 +45,6 @@ class TextualRepresentationImplementation(
         return TextualRepresentationImplementation(
             declaredName = declaredName,
             declaredShortName = declaredShortName,
-            owner = Resolved(owner),
-            ownedElement = Resolved.copyOfIdentityList(ownedElement),
             language = language,
             body = body).also { klon ->
             klon.model = model

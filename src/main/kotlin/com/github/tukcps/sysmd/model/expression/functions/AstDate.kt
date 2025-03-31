@@ -1,8 +1,8 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import com.github.tukcps.aadd.StrDD
-import com.github.tukcps.sysmd.model.expression.AstNode
+import io.github.tukcps.aadd.StrDD
 import com.github.tukcps.sysmd.exceptions.SemanticError
+import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.quantities.Unit
 import com.github.tukcps.sysmd.quantities.VectorDimensionError
@@ -37,7 +37,7 @@ internal class AstDate(model: Session, args: ArrayList<AstNode>) :
             throw SemanticError("Date should be given as a String")
         val string = getParam(0).upQuantity.values[0] as StrDD
         val timestamp = toUnix(string.toIteString())
-        upQuantity = Quantity(model.builder.scalar(timestamp), Unit("s"), "Date")
+        upQuantity = Quantity(model.builder.real(timestamp), Unit("s"), "Date")
     }
 
     override fun evalDown() { //Transforms unix timestamp back to the String
@@ -51,7 +51,7 @@ internal class AstDate(model: Session, args: ArrayList<AstNode>) :
      * Converts a date string to a unix timestamp
      */
     private fun toUnix(date: String): Double {
-        return if (date.contains("T")) { //contains a explicit time
+        return if (date.contains("T")) { //contains an explicit time
             throw SemanticError("Date should not contain a time")
         } else { //contains no explicit time
             LocalDate.parse(date, DateTimeFormatter.ISO_LOCAL_DATE).atStartOfDay(UTC).toEpochSecond().toDouble()

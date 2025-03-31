@@ -1,112 +1,97 @@
 package com.github.tukcps.sysmd.services.inheritance
 
-import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.compiler.semantics.Identification
+import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureTypingImplementation
-import com.github.tukcps.sysmd.services.deepCloneWithInheritedFeature
-import com.github.tukcps.sysmd.services.report
-import com.github.tukcps.sysmd.services.reportInconsistency
+import com.github.tukcps.sysmd.services.session.reportInconsistency
 import com.github.tukcps.sysmd.services.session.Session
-import com.github.tukcps.sysmd.services.session.getAllOfClass
-
 
 /**
- * Initializes the types (first classifiers, then features) by
- * 1) Checking that superclasses are ok and not cyclic.
- * 2) Creating a copy of the features inherited from superclasses in subclasses.
+ * For a type, iterates overall subtypes, and adds clones of the own owned features to it.
+ * Then, recursively the same for all subtypes.
+ * @param calls used to recognize loops
  */
-fun Session.addInherited() {
-
-    // We do checks on types and features
-    val features = getAllOfClass<Feature>()
-    val classifier = getAllOfClass<Classifier>().filter { it !is Anything }
-    val types =  (classifier + features).filter { !it.qualifiedName.startsWith("KerML::") }
-
-    // We do static semantic checks ...
-    types.forEach { type ->
-        type.checkSupertypesAreResolved()
-        type.checkForCycles()
-    }
-
-    features.forEach { feature ->
-        feature.checkIsNotTypedByOwner()
-    }
-
-    classifier.forEach { it.updated = false }
-    any.updated = true
-    var stable: Boolean
-    val specializations = get().filter { it.elementType == "Specialization" }
-    val updated = mutableListOf<Type>()
-    do {
-        stable = true
-        specializations.forEach {
-            try {
-                if (it is Specialization && it.general.ref!!.updated && !it.specific.ref!!.updated) {
-                    it.specific.ref!!.addInheritedElements()
-                    it.specific.ref!!.updated = true
-                    stable = false
-                    updated.add(it.specific.ref!!)
-                }
-            } catch (error: Exception) {
-                report(it, "Problem in deriving inherited features", error)
-            }
-        }
-    } while (! stable )
-
-    features.forEach {
-        try {
-            it.addInheritedElements()
-        } catch (error: Exception) {
-            report(it, "Error inheriting feature from typing '${it.allSupertypes()} of ${it.qualifiedName}", cause = error)
-        }
+fun Type.addInheritedToSubtypes(calls: Int = 0) {
+    addInheritedFeatures()
+    subtypes.forEach { subtype ->
+        subtype.addInheritedToSubtypes(calls + 1)
     }
 }
-
 
 /**
  * For inherited properties that are computed, computation can -- depending on the scope --
  * lead to different results. Hence, we create a volatile, inherited property that is
  * a clone of the superclass' property.
  */
-fun Type.addInheritedElements() {
+fun Type.addInheritedFeatures() {
     // "Clone" features of superclass iff not there!
+    // Type element must be part of model
     require(model != null)
-    if (this is Feature && referencedFeature != null) return
+    if (this is Feature && (referencedFeature != null || isDerived)) return
 
-    val superTypeFeatures: HashMap<Identification, Feature> = hashMapOf()
+    // get all features of general type if that is already resolved
+    val typeFeatures: MutableList<Feature> = mutableListOf()
     generalization.forEach { general ->
-        superTypeFeatures += model!!.getAllInheritedFeatures(general.ref?:model!!.any).associateBy { Identification(it) }
+        typeFeatures += model!!.getAllInheritedFeatures(general.ref?: model!!.anything)
     }
+
     val localFeatures = getOwnedElementsOfType<Feature>().associateBy { Identification(it) }
 
     // For each inherited property, we create a clone; needed as changes in the owning class
     // to the property shall not change the original property of the superclass.
-    superTypeFeatures.values.forEach { superclassFeature ->
-        if (localFeatures[Identification(superclassFeature)] == null) {
-            val klon = superclassFeature.deepCloneWithInheritedFeature(this)
+    typeFeatures.forEach { feature ->
+
+        // Cyclic dependencies are ok, but we must not clone them recursively ...
+        if (this.owner.ref in feature.allSupertypes(true))
+            return
+
+        // If feature with same identification does not exist, add a clone from general
+        val local = localFeatures[Identification(feature)]
+        if (local == null) {
+            val klon = feature.deepCloneWithInheritedFeature(this)
             model!!.create(klon, this)
-        } else {
-            val local = localFeatures[Identification(superclassFeature)]!!
+        } else if (local.isRedefined){
             //If the property is redefined, we need to update the type and constraints.
-            if (local.isRedefined) {
-                if(local.type.elementAt(0).ref!!.qualifiedName == "Base::Anything") {
-                    //Go over all Types of the superclass property and add them
-                    superclassFeature.type.forEach { type ->
-                        //Remove old type (Base::Anything)
-                        local.ownedElement.removeIf { it.ref is FeatureTypingImplementation && it.ref!!.qualifiedName == "Base::Anything" }
-                        //Add all types of refined property
-                        val typing = FeatureTypingImplementation(
-                            owner = Resolved(ref = local),
-                            typedFeature = Resolved(ref = local),
-                            type = Resolved(ref = type.ref!!)
-                        )
-                        local.ownedElement.add(Resolved(typing))
+            // if(local.type.elementAt(0).ref!!.qualifiedName == "Base::Anything") {
+                //Go over all Types of the superclass property and add them
+                feature.type.forEach { type ->
+                    //Remove old type (Base::Anything)
+                    local.ownedElement.removeIf {
+                        it.ref is FeatureTypingImplementation &&
+                                (it.ref as FeatureTypingImplementation).target
+                                    .firstOrNull()?.ref?.qualifiedName in listOf("Base::DataValue", "Base::Anything")
                     }
+                    if (type.ref == null) {
+                        type.ref = model!!.get(type.id!!) as Type?
+                    }
+                    //Add all types of refined property
+                    val typing = FeatureTypingImplementation(
+                        typedFeature = Resolved(ref = local),
+                        type = Resolved(ref = type.ref!!)
+                    ).also {
+                        it.isTransient
+                        it.isImplied
+                    }
+                    model!!.create(typing, local)
                 }
-                //add constraints
-                local.typeConstraint = superclassFeature.typeConstraint
-                local.unitConstraint = superclassFeature.unitConstraint
-                local.isSufficient = superclassFeature.isSufficient
+            //}
+            //add constraints
+            local.typeConstraint = feature.typeConstraint
+            local.unitConstraint = feature.unitConstraint
+            local.isSufficient = feature.isSufficient
+            if(local.name=="range" || local.name=="spec"){ //range for Integer, Real, spec for Boolean
+                if(local.owner.ref is Feature) {
+                    // remove """ and " " from the string
+                    val specString = local.expression!!.replace("\"", "").replace(" ", "")
+                    // set the type constraint to the list of specs split by "," (vectors)
+                    (local.owner.ref as FeatureImplementation).typeConstraint.clear()
+                    (local.owner.ref as FeatureImplementation).typeConstraint.addAll(specString.split(","))
+                }
+            }
+            if(local.name=="unit"){
+                if(local.owner.ref is Feature)
+                    (local.owner.ref as FeatureImplementation).unitConstraint = local.expression!!.replace("\"","")
             }
         }
     }

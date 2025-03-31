@@ -1,8 +1,9 @@
 package com.github.tukcps.sysmd.model.expression
 
-import com.github.tukcps.aadd.AADD
-import com.github.tukcps.aadd.BDD
-import com.github.tukcps.aadd.IDD
+import io.github.tukcps.aadd.AADD
+import io.github.tukcps.aadd.BDD
+import io.github.tukcps.aadd.IDD
+import io.github.tukcps.aadd.values.XBool
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.compiler.scanner.Token
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
@@ -128,7 +129,9 @@ class AstBinOp(
                 l.downQuantity = when(prevR.upQuantity.values[0]){
                     is AADD -> {
                         val results = mutableListOf<AADD>()
-                        downQuantity.values.indices.forEach { results.add(downQuantity.values[it].asAadd() power model.builder.scalar(1.0).div(prevR.upQuantity.values[it] as AADD) ) }
+                        downQuantity.values.indices.forEach {
+                            results.add(downQuantity.values[it].asAadd() power model.builder.real(1.0).div(prevR.upQuantity.values[it] as AADD) )
+                        }
                         VectorQuantity(results,downQuantity.unit,downQuantity.unitSpec)
                     }
                     is IDD ->{
@@ -173,12 +176,18 @@ class AstBinOp(
                         r.downQuantity = VectorQuantity(resultsL, prevR.downQuantity.unit, prevR.downQuantity.unitSpec)
                     }
                     prevL.isInt && prevR.isInt -> {
-                        val resultsR = mutableListOf<IDD>()
-                        val resultsL = mutableListOf<IDD>()
-                        prevR.idds.forEach { resultsR.add(downQuantity.value.asBdd().ite(it, it.builder.Integers)) }
-                        prevL.idds.forEach { resultsL.add(downQuantity.value.asBdd().ite(it, it.builder.Integers)) }
-                        l.downQuantity = VectorQuantity(resultsR)
-                        r.downQuantity = VectorQuantity(resultsL)
+                        val results = mutableListOf<IDD>()
+                        prevR.idds.indices.forEach {
+                            val down = downQuantity.values[it].asBdd()
+                            val intersect = l.idds[it].clone() intersect r.idds[it].clone().clone()
+                            val result: IDD = if (down.value in setOf(XBool.True, XBool.X))
+                                intersect
+                            else
+                                this.model.builder.EmptyIntegerRange
+                            results.add(result)
+                        }
+                        l.downQuantity = VectorQuantity(results)
+                        r.downQuantity = VectorQuantity(results)
                     }
                     prevL.isBool && prevR.isBool -> {
                         // We leave Booleans for the discrete solver; no error!
@@ -192,7 +201,7 @@ class AstBinOp(
                 }
             }
             NEQ -> {
-                //Nothing to do; handled by Axels solver.
+                //Nothing to do; handled by discrete solver.
             }
 
             GT -> {
@@ -367,7 +376,7 @@ class AstBinOp(
                 }
             }
             else -> {
-                // Else we do nothing; job of Axels solver.
+                // Else we do nothing; job of discrete solver.
             }
         }
     }

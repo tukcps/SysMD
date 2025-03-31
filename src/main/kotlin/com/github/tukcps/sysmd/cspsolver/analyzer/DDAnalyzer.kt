@@ -3,8 +3,8 @@ package com.github.tukcps.sysmd.cspsolver.analyzer
 import com.github.tukcps.sysmd.model.expression.DDInternal
 import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.services.session.Session
-import com.github.tukcps.aadd.*
-import com.github.tukcps.aadd.functions.intersect
+import io.github.tukcps.aadd.*
+import io.github.tukcps.aadd.functions.intersect
 
 /**
  * This class will be new base class for BDD,IDD and AADD analyzer. Combining unit- dontcare and other analyzers
@@ -15,11 +15,11 @@ open class DDAnalyzer(override val model: Session): StructuralAnalyzerIF {
     private val conditionIndexes
         get() = builder.conds.x.keys
 
-    private val units: HashMap<Variable, HashMap<Int, DD>> = hashMapOf()
+    private val units: HashMap<Variable, HashMap<Int, DD<*>>> = hashMapOf()
     private val dontCares: HashMap<Variable, HashSet<Int>> = hashMapOf()
     private val infeasibleCombinations: HashMap<Variable, SetOfSolutions> = hashMapOf()
 
-    fun getUnits(value: Variable) : HashMap<Int, DD> {
+    fun getUnits(value: Variable) : HashMap<Int, DD<*>> {
         return if (units[value] != null) units[value]!!
         else hashMapOf()
     }
@@ -50,7 +50,7 @@ open class DDAnalyzer(override val model: Session): StructuralAnalyzerIF {
                 false
             }
             is IDD -> {
-                val currentPaths = findPathsTo(property.vectorQuantity.values[0].asIdd().evaluate(), builder.leaf(property.intSpecs[0]))
+                val currentPaths = findPathsTo(property.vectorQuantity.values[0].asIdd().evaluate(), builder.integer(property.intSpecs[0]))
                 for (c in currentPaths) {
                     if (c.containsKey(conditionIndex)) return true
                 }
@@ -58,7 +58,7 @@ open class DDAnalyzer(override val model: Session): StructuralAnalyzerIF {
             }
             is AADD -> {
                 //FIXME: target constructe correctly?
-                val currentPaths = findPathsTo(property.vectorQuantity.values[0].asAadd().evaluate(), builder.leaf(builder.interval(property.rangeSpecs[0])))
+                val currentPaths = findPathsTo(property.vectorQuantity.values[0].asAadd().evaluate(), builder.real(property.rangeSpecs[0]))
                 for (c in currentPaths) {
                     if (c.containsKey(conditionIndex)) return true
                 }
@@ -81,7 +81,7 @@ open class DDAnalyzer(override val model: Session): StructuralAnalyzerIF {
                 result
             }
             is IDD -> {
-                val currentPaths = findPathsTo(property.vectorQuantity.values[0].asIdd().evaluate(), builder.leaf(property.intSpecs[0]))
+                val currentPaths = findPathsTo(property.vectorQuantity.values[0].asIdd().evaluate(), builder.integer(property.intSpecs[0]))
                 if (currentPaths.isEmpty()) return false
                 var result = true
                 for (c in currentPaths) {
@@ -90,7 +90,7 @@ open class DDAnalyzer(override val model: Session): StructuralAnalyzerIF {
                 result
             }
             is AADD -> {
-                val currentPaths = findPathsTo(property.vectorQuantity.values[0].asAadd().evaluate(), builder.leaf(builder.interval(property.rangeSpecs[0])))
+                val currentPaths = findPathsTo(property.vectorQuantity.values[0].asAadd().evaluate(), builder.real(property.rangeSpecs[0]))
                 if (currentPaths.isEmpty()) return false
                 var result = true
                 for (c in currentPaths) {
@@ -103,7 +103,7 @@ open class DDAnalyzer(override val model: Session): StructuralAnalyzerIF {
         }
     }
 
-    override fun getAllocationFromAllPaths(index: Int, property: Variable): DD {
+    override fun getAllocationFromAllPaths(index: Int, property: Variable): DD<*> {
         return when (property.vectorQuantity.values[0]) {
             is BDD -> {
                 val currentPaths = findPathsTo(property.vectorQuantity.values[0].asBdd().evaluate(), property.boolSpecs[0].bddLeafOf(builder))
@@ -115,16 +115,16 @@ open class DDAnalyzer(override val model: Session): StructuralAnalyzerIF {
                 result
             }
             is IDD -> {
-                val currentPaths = findPathsTo(property.vectorQuantity.values[0].asIdd().evaluate(),builder.leaf(property.intSpecs[0]))
-                var result = builder.Integers
+                val currentPaths = findPathsTo(property.vectorQuantity.values[0].asIdd().evaluate(),builder.integer(property.intSpecs[0]))
+                var result:IDD = builder.Integers
                 for (c in currentPaths) {
                     val value = followPathTo(property.vectorQuantity.values[0].asIdd().evaluate(), c, index)
-                    result = result.intersect(value as IDD.Leaf) as IDD.Leaf
+                    result = result.intersect(value.asIdd())
                 }
                 result
             }
             is AADD -> {
-                val currentPaths = findPathsTo(property.vectorQuantity.values[0].asAadd().evaluate(), builder.leaf(builder.interval(property.rangeSpecs[0])))
+                val currentPaths = findPathsTo(property.vectorQuantity.values[0].asAadd().evaluate(), builder.real(property.rangeSpecs[0]))
                 var result: AADD = builder.Reals//AFReals
                 for (c in currentPaths) {
                     val value = followPathTo(property.vectorQuantity.values[0].asAadd().evaluate(), c, index)
@@ -138,13 +138,13 @@ open class DDAnalyzer(override val model: Session): StructuralAnalyzerIF {
     }
 
     // V3.0:
-    fun <T: Any> findPathsTo(dd:DDcond<T>, target: DDcond<T>, result: SetOfSolutions = SetOfSolutions(), partialSolution: Solution = Solution()): SetOfSolutions {
+    fun <T: Any> findPathsTo(dd:DD<T>, target: DD<T>, result: SetOfSolutions = SetOfSolutions(), partialSolution: Solution = Solution()): SetOfSolutions {
         if (dd.structurallyEquals(target)) { //recursion end case 1
             result.add(partialSolution)
             return result//.filter { it.isNotEmpty() } as HashSet<Solution>
         }
         else {
-            if (dd is DDcond.Internal) {
+            if (dd is DD.Internal) {
                 if (dd.T.containsSubDD(target)) {
                     val partialSolutionT = partialSolution.clone()
                     partialSolutionT[dd.index] = true
@@ -161,7 +161,7 @@ open class DDAnalyzer(override val model: Session): StructuralAnalyzerIF {
         return result//.filter { it.isNotEmpty() } as HashSet<Solution>
     }
 
-    private fun followPath(dd: DD, path: Solution): DD {
+    private fun followPath(dd: DD<*>, path: Solution): DD<*> {
         return if (path.isNotEmpty() && dd is DDInternal) {
             val condition = path.remove(dd.index)!!
             if (condition) followPath(dd.T, path)
@@ -171,8 +171,8 @@ open class DDAnalyzer(override val model: Session): StructuralAnalyzerIF {
         }
     }
 
-    private fun followPathTo(dd: DD, path: Solution, index: Int): DD {
-        if (path.isNotEmpty() && path.containsKey(index) && dd is DDcond.Internal) {
+    private fun followPathTo(dd: DD<*>, path: Solution, index: Int): DD<*> {
+        if (path.isNotEmpty() && path.containsKey(index) && dd is DD.Internal) {
             val condition = path.remove(dd.index)!!
             return if (dd.index == index) {
                 if (condition) dd.T
@@ -191,7 +191,7 @@ open class DDAnalyzer(override val model: Session): StructuralAnalyzerIF {
         }
     }
 
-    //FXIME: Adapt do DD instead of only BDD!
+    //FXIME: Adapt do DD<*> instead of only BDD!
     private fun findUnits(updatedProperty: Variable) {
         when (updatedProperty.vectorQuantity.values[0]) {
             is BDD -> {
@@ -200,7 +200,7 @@ open class DDAnalyzer(override val model: Session): StructuralAnalyzerIF {
                     if (builder.conds.x[i] !is BDD) continue@variables //not a bool cond
                     possibleUnitExists = conditionInAllPaths(i, updatedProperty)
 
-                    var booleanAllocation: DD
+                    var booleanAllocation: DD<*>
                     if (possibleUnitExists) {
                         booleanAllocation = getAllocationFromAllPaths(i, updatedProperty) as BDD
                         if (booleanAllocation.toString() == "Contradiction") continue@variables
@@ -304,11 +304,11 @@ open class DDAnalyzer(override val model: Session): StructuralAnalyzerIF {
             }
             is AADD -> {
                 //TODO! FIXME: Hier weiter
-                var freeVarValue: DD = builder.Reals
+                var freeVarValue: DD<*> = builder.Reals
                 var freeVarExists: Boolean
                 var possibleUnitExists: Boolean
                 var i = conditionIndexes.minOrNull()
-                variables@ while ((i != null) && (conditionIndexes.maxOrNull() != null) && (i!! < conditionIndexes.maxOrNull()!!) ) {
+                variables@ while ((i != null) && (conditionIndexes.maxOrNull() != null) && (i < conditionIndexes.maxOrNull()!!) ) {
                     if (builder.conds.x[i] !is AADD) {
                         if (conditionInAllPaths(i, updatedProperty) && getAllocationFromAllPaths(i, updatedProperty).toString() == "Contradiction") {
                             if (dontCares.containsKey(updatedProperty)) dontCares[updatedProperty]!!.add(i)
@@ -320,9 +320,9 @@ open class DDAnalyzer(override val model: Session): StructuralAnalyzerIF {
                         possibleUnitExists = conditionInAllPaths(i, updatedProperty)
 
                         freeVarExists = freeVarExists && possibleUnitExists
-                        var allocation: DD = builder.Reals
+                        var allocation: DD<*> = builder.Reals
                         if (possibleUnitExists) {
-                            allocation = getAllocationFromAllPaths(i, updatedProperty) // as DD//as AADD//.Leaf //FIXME: CAST ERROR!
+                            allocation = getAllocationFromAllPaths(i, updatedProperty) // as DD<*>//as AADD//.Leaf //FIXME: CAST ERROR!
                             if (allocation !is AADD.Leaf) continue@variables
                         }
                         if (freeVarExists) {
@@ -352,8 +352,8 @@ open class DDAnalyzer(override val model: Session): StructuralAnalyzerIF {
         infeasibleCombinations[updatedProperty] = pathsToInfeasibility
     }
 
-    private fun findInfeasiblePaths(dd: DD): SetOfSolutions {
-        return if (dd is DDcond.Leaf && dd.isFeasible) SetOfSolutions()
+    private fun findInfeasiblePaths(dd: DD<*>): SetOfSolutions {
+        return if (dd is DD.Leaf && dd.isFeasible) SetOfSolutions()
         else when (dd) {
             is BDD  -> {
                 findPathsTo(dd, builder.InfeasibleB)

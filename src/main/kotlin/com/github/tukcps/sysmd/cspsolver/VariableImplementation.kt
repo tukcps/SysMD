@@ -1,24 +1,25 @@
 package com.github.tukcps.sysmd.cspsolver
 
-import com.github.tukcps.aadd.AADD
-import com.github.tukcps.aadd.BDD
-import com.github.tukcps.aadd.IDD
-import com.github.tukcps.aadd.StrDD
-import com.github.tukcps.aadd.values.IntegerRange
-import com.github.tukcps.aadd.values.Range
-import com.github.tukcps.aadd.values.XBool
+import io.github.tukcps.aadd.AADD
+import io.github.tukcps.aadd.BDD
+import io.github.tukcps.aadd.IDD
+import io.github.tukcps.aadd.StrDD
+import io.github.tukcps.aadd.values.IntegerRange
+import io.github.tukcps.aadd.values.Range
+import io.github.tukcps.aadd.values.XBool
+import com.github.tukcps.sysmd.compiler.KerML
+import com.github.tukcps.sysmd.compiler.parser.kerml.Expression
 import com.github.tukcps.sysmd.cspsolver.Variable.BaseType
 import com.github.tukcps.sysmd.exceptions.ExpressionError
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.exceptions.SysMDError
 import com.github.tukcps.sysmd.exceptions.TypeExpected
 import com.github.tukcps.sysmd.model.expression.AstRoot
-import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.quantities.VectorQuantity
-import com.github.tukcps.sysmd.services.report
+import com.github.tukcps.sysmd.services.session.report
 import java.util.*
 
 
@@ -32,20 +33,15 @@ open class VariableImplementation (
 
     override var name: String? = null
         get() = if (field == null) feature.qualifiedName else field
-        set(value) { field = value }
-
-    var variable: Variable? = this
 
     val qualifiedName
         get() = feature.qualifiedName
 
-    override var elementId: UUID
+    override val elementId: UUID?
         get() = feature.elementId
-        set(value) = TODO("Not needed and should not be used")
 
-    override var dependency: String
+    override val dependency: String
         get() = feature.expression?:""
-        set(value) { TODO("Not needed and should not be used") }
 
     override var valueSpecs: MutableList<Any?> = mutableListOf()
 
@@ -54,7 +50,7 @@ open class VariableImplementation (
 
     /** access methods for the valueSpec field; returns different types */
     override val rangeSpecs: MutableList<Range>
-        get() = if(valueSpecs.size>0 && valueSpecs[0]!=null) valueSpecs as MutableList<Range> else mutableListOf(Range.Reals)
+        get() = if(valueSpecs.isNotEmpty() && valueSpecs[0]!=null) valueSpecs as MutableList<Range> else mutableListOf(Range.Reals)
 
     override val boolSpecs: MutableList<XBool>
         get() {
@@ -65,12 +61,15 @@ open class VariableImplementation (
         }
 
     override val intSpecs: MutableList<IntegerRange>
-        get() = if(valueSpecs.size>0 && valueSpecs[0]!=null) valueSpecs as MutableList<IntegerRange> else mutableListOf(IntegerRange.Integers)
+        get() = if(valueSpecs.isNotEmpty() && valueSpecs[0]!=null) valueSpecs as MutableList<IntegerRange> else mutableListOf(IntegerRange.Integers)
 
     /** A getter for a string representation of the value, with field for serialization. */
     override var valueStr: String = ""
         get() {
-            field = vectorQuantity.values.toString()
+            if (vectorQuantity.values.size > 1)
+                field = vectorQuantity.values.toString()
+            else
+                field = vectorQuantity.value.toString()
             return field
         }
 
@@ -106,7 +105,7 @@ open class VariableImplementation (
                     feature.model!!.report(TypeExpected("expected specialization of ScalarValue, but got: '${feature.type.firstOrNull()?.str}'", element=feature))
                     valueSpecs = mutableListOf(Range.Reals)
                     val values = mutableListOf<AADD>()
-                    rangeSpecs.forEach{values.add(feature.model!!.builder.range(it,elementId.toString()))}
+                    rangeSpecs.forEach{values.add(feature.model!!.builder.real(it, elementId.toString()))}
                     vectorQuantity = VectorQuantity(values)
                 }
 
@@ -116,13 +115,23 @@ open class VariableImplementation (
                             mutableListOf(Range.Reals)
                         } else {
                             val ranges = mutableListOf<Any?>()
-                            feature.typeConstraint.forEach { if (it.isNotBlank()) ranges.add(Range(it)) else ranges.add(Range.Reals)}
+                            feature.typeConstraint.forEach {
+                                if (it.isNotBlank())
+                                    ranges.add(Range(it))
+                                else
+                                    ranges.add(Range.Reals)
+                            }
                             ranges
                         }
                     }
                     val values = mutableListOf<AADD>()
-                    rangeSpecs.forEach{values.add(feature.model!!.builder.range(it,elementId.toString()))}
-                    vectorQuantity = VectorQuantity(values, unitSpec)
+                    rangeSpecs.forEach{values.add(feature.model!!.builder.real(it,elementId.toString()))}
+                    //Test, if there is a dimension (in namespace SI) defined in the definition of the attribute
+                    if(feature.type[0].str!=null){
+                        val unitDimension = feature.type[0].str!!.replace("SI::","")
+                        vectorQuantity = VectorQuantity(values, unitSpec,unitDimension)
+                    }else
+                        vectorQuantity = VectorQuantity(values, unitSpec)
                 }
 
                 baseType == BaseType.Int -> {
@@ -134,7 +143,7 @@ open class VariableImplementation (
                         valueSpecs = ranges
                     }
                     val values = mutableListOf<IDD>()
-                    intSpecs.forEach{ values.add(feature.model!!.builder.range(it)) }
+                    intSpecs.forEach{ values.add(feature.model!!.builder.integer(it)) }
                     vectorQuantity = VectorQuantity(values)
                 }
 
@@ -173,7 +182,7 @@ open class VariableImplementation (
                     vectorQuantity = VectorQuantity(values)
                 }
 
-                baseType == BaseType.Str ->{
+                baseType == BaseType.String ->{
                     val values = mutableListOf<StrDD>()
                     if(valueSpecs.isEmpty())
                         values.add(feature.model!!.builder.Strings)
@@ -214,8 +223,8 @@ open class VariableImplementation (
         updated = true
         if (lbs == null || ubs == null) return this
 
-        var lb = -Double.MAX_VALUE
-        var ub = Double.MAX_VALUE
+        var lb = -Double.POSITIVE_INFINITY
+        var ub = Double.POSITIVE_INFINITY
 
         if (lbs.isNotBlank()) lb = lbs.toDouble()
         if (ubs.isNotBlank()) ub = ubs.toDouble()
@@ -281,26 +290,87 @@ open class VariableImplementation (
         "Variable { feature=${feature.qualifiedName}, type=$baseType, unitSpec=$unitSpec, valueSpecs=$valueSpecs, value = $vectorQuantity }"
 
     /**
-     * Returns min of first value of VectorQuantity
+     * Returns min value of position index of VectorQuantity
      */
-    override fun min(): Double =
-        when (vectorQuantity.values[0]) {
-            is AADD -> (vectorQuantity.valuesIn(unitSpec)[0] as AADD).getRange().min
-            is IDD -> (vectorQuantity.valuesIn(unitSpec)[0] as IDD).getRange().min.toDouble()
+    override fun <T: Number>  min(index: Int): T =
+        when (vectorQuantity.values.getOrNull(index)) {
+            is AADD -> (vectorQuantity.valuesIn(unitSpec)[index] as AADD).getRange().min
+            is IDD -> (vectorQuantity.valuesIn(unitSpec)[index] as IDD).getRange().min
             else -> throw SemanticError(".min can only be applied on properties of type Integer or Real", element=feature)
-        }
+        } as T
 
     /**
-     * Returns max of VectorQuantity's first value
+     * Returns max value of position index of VectorQuantity
      */
-    override fun max(): Double =
-        when (vectorQuantity.values[0]) {
-            is AADD -> (vectorQuantity.valuesIn(unitSpec)[0] as AADD).getRange().max
-            is IDD -> (vectorQuantity.valuesIn(unitSpec)[0] as IDD).getRange().max.toDouble()
+    override fun <T: Number> max(index: Int): T =
+        when (vectorQuantity.values.getOrNull(index)) {
+            is AADD -> (vectorQuantity.valuesIn(unitSpec)[index] as AADD).getRange().max
+            is IDD -> (vectorQuantity.valuesIn(unitSpec)[index] as IDD).getRange().max
             else -> throw InternalError(".max can only be applied on properties of type Integer or Real")
-        }
+        } as T
 
-    override fun updateFrom(template: Element) {
-        TODO()
+
+    /**
+     * This method calls the parser with a given property, from which the dependency string is
+     * parsed and the ast is created.
+     */
+    override fun compileExpression() {
+        try {
+            if (feature.model != null) {
+                val parserSysMD = KerML(
+                    feature.model!!,
+                ).also { it.input = dependency }
+
+                // The parsing itself, can throw exceptions that are caught optionally below.
+                if (feature.model?.repo?.scalarType == null)
+                    feature.model?.report(
+                        feature,
+                        "Could not resolve ScalarValues::ScalarValue -- add usage of ScalarValues"
+                    )
+                feature.type.forEach {
+                    if (it.ref == null)
+                        feature.model!!.report(
+                            feature,
+                            "Could not resolve Type '${feature.generalization.firstOrNull()?.str}' of feature ${feature.qualifiedName}"
+                        )
+                }
+                if (!feature.specializes(feature.model?.repo?.scalarType))
+                    feature.model?.report(feature, "Expected subtype of ScalarValues::ScalarValue")
+
+                if (dependency.isNotBlank()) {
+                    // set the scope to the element to which the property belongs.
+                    feature.owner.ref
+                        ?: throw SemanticError("No owner of ${feature.qualifiedName}; initialize identifications before using services.")
+                    parserSysMD.semantics.namespace = feature.owningNamespace!!
+                    parserSysMD.semantics.expression = feature
+
+                    ast = AstRoot(feature.model!!, feature, parserSysMD.Expression())
+                    // Initialize internal AST nodes, starting from leaves
+                    ast?.runDepthFirst { initialize() }
+                    when {
+                        feature.specializes(feature.model!!.repo.booleanType) -> {
+                            if (ast!!.upQuantity.values[0] !is BDD)
+                                throw SemanticError("Expecting dependency of type Boolean")
+                        }
+
+                        feature.specializes(feature.model!!.repo.integerType) -> {
+                            if (ast!!.upQuantity.values[0] !is IDD)
+                                throw SemanticError("Expecting dependency of type Integer")
+                        }
+
+                        feature.specializes(feature.model!!.repo.realType) -> {
+                            if (ast!!.upQuantity.values[0] !is AADD)
+                                throw SemanticError("Expecting dependency of type Real")
+                        }
+                    }
+                }
+            }
+        } catch (exception: Exception) {
+            ast = null
+            feature.model?.report(
+                feature, "Error in expression '$dependency' of ${feature.qualifiedName}; problem: ${exception.message}",
+                exception
+            )
+        }
     }
 }

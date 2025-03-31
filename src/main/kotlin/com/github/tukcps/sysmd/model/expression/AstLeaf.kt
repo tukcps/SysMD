@@ -1,16 +1,16 @@
 package com.github.tukcps.sysmd.model.expression
 
-import com.github.tukcps.aadd.AADD
-import com.github.tukcps.aadd.IDD
+import io.github.tukcps.aadd.AADD
+import io.github.tukcps.aadd.IDD
+import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.cspsolver.VariableImplementation
 import com.github.tukcps.sysmd.exceptions.ElementNotFoundException
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Namespace
-import com.github.tukcps.sysmd.compiler.parser.QualifiedName
 import com.github.tukcps.sysmd.quantities.VectorDimensionError
 import com.github.tukcps.sysmd.quantities.VectorQuantity
-import com.github.tukcps.sysmd.services.reportInfo
+import com.github.tukcps.sysmd.services.session.reportInfo
 import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.session.Session
 
@@ -138,7 +138,7 @@ class AstLeaf private constructor (
                         variable!!.unitSpec
                     )
                 }
-                if (variable!!.feature.direction == Feature.FeatureDirectionKind.OUT) {
+                if (variable!!.feature.isSufficient) {
                     if (variable!!.rangeSpecs.size != downQuantity.values.size && variable!!.rangeSpecs.size != 1)
                         throw VectorDimensionError("Vector size of ${downQuantity.values.size} does not match Constraint size of ${variable!!.rangeSpecs.size}")
                     if (variable!!.rangeSpecs.size == downQuantity.values.size)
@@ -148,8 +148,8 @@ class AstLeaf private constructor (
                 variable!!.checkEvent()
             }
             if (isInt) {
-                variable!!.vectorQuantity = downQuantity.constrain(variable!!.vectorQuantity)
-                if (variable!!.feature.direction == Feature.FeatureDirectionKind.OUT) {
+                variable!!.vectorQuantity = downQuantity.constrain(variable!!.vectorQuantity).clone()
+                if (variable!!.feature.isSufficient) {
                     if (variable!!.intSpecs.size != downQuantity.values.size && variable!!.rangeSpecs.size != 1)
                         throw VectorDimensionError("Vector size of ${downQuantity.values.size} does not match Constraint size of ${variable!!.rangeSpecs.size}")
                     if (variable!!.intSpecs.size == downQuantity.values.size)

@@ -1,11 +1,12 @@
 package com.github.tukcps.sysmd.compiler.semantics
 
-import com.github.tukcps.aadd.values.IntegerRange
+import io.github.tukcps.aadd.values.IntegerRange
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.Annotation
-import com.github.tukcps.sysmd.compiler.parser.QualifiedName
+import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.compiler.scanner.Token
+import com.github.tukcps.sysmd.model.util.SimpleName
 import com.github.tukcps.sysmd.services.session.Session
 import java.util.*
 
@@ -24,16 +25,18 @@ import java.util.*
  */
 interface ActionsContext {
     val model: Session
-    val textualRepresentation: TextualRepresentation
-    var visibilityKind: Token.Kind
+    var textualRepresentation: TextualRepresentation?
+    var visibilityKind: Token.Kind?
     val prefixes: MutableSet<Token.Kind>
     val owners: Stack<Resolved<Element>>
 
     fun pushOwner(owner: Resolved<Element>)
+    fun pushOwner(owner: Element)
     fun popOwner(): Resolved<Element>
 
     /** returns the fully qualified name of the owner in the current parse run, derived from the owner's stack */
     fun ownerName(): QualifiedName
+    fun qualifiedName(owned: SimpleName?=null): QualifiedName
 
     /** creates a fully qualified name considering the current scope */
     fun toEffectiveName(name: QualifiedName): QualifiedName
@@ -41,22 +44,28 @@ interface ActionsContext {
     /**
      * Adds a ReferenceSubsetting relationship.
      * @param owner name of the referencing feature's owner
-     * @param pathFromOwnerToReferencingFeature path to the referencing feature's owner, can be combined with owner
+     * @param pathFromOwnerToReferencingFeature path to the referencing feature's owner; can be combined with the owner
      * @param referencedFeature qualified name of the referenced feature
      */
     fun addReferenceSubsetting(owner: Element, pathFromOwnerToReferencingFeature: QualifiedName?, referencedFeature: QualifiedName)
     fun addFeatureTyping(owner: Feature, type: QualifiedName): FeatureTyping
     fun addMultiplicity(owner: Feature, integerRange: IntegerRange): Multiplicity
-    fun initOwners()
+    fun initOwners(ownerPrefix: String)
     fun addRedefinition(owner: Feature, pathFromOwnerToRedefinedFeature: QualifiedName?, redefinedFeature: QualifiedName)
-    fun addFeature(owner: Element, feature: Feature, type: QualifiedName, rangeOfMultiplicity: IntegerRange)
     fun addSpecialization(owner: Type, type: QualifiedName): Specialization
     fun addAnnotation(owner: AnnotatingElement, annotatedElement: Element): Annotation
     fun handleFunctionCall(function: QualifiedName, param: ArrayList<AstNode>, semantics: SemanticActions): AstNode
 
+    fun directionFromPrefixes(): Feature.FeatureDirectionKind = when {
+        Token.Kind.IN in prefixes -> Feature.FeatureDirectionKind.IN
+        Token.Kind.OUT in prefixes -> Feature.FeatureDirectionKind.OUT
+        Token.Kind.INOUT in prefixes -> Feature.FeatureDirectionKind.INOUT
+        else -> Feature.FeatureDirectionKind.INOUT
+    }
     // Context if string of an expression is re-evaluated
     var namespace: Namespace          // owning namespace of expression
     var expression: Feature?          // owning feature of an expression
 
     val generateAnnotations: Boolean
+    val inLibrary get() = (owners.peek().ref?.isLibraryElement == true || Token.Kind.LIBRARY in prefixes || Token.Kind.STANDARD in prefixes)
 }

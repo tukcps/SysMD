@@ -4,8 +4,8 @@ import com.github.tukcps.sysmd.cspsolver.Variable.BaseType.Unknown
 import com.github.tukcps.sysmd.exceptions.SysMDError
 import com.github.tukcps.sysmd.model.expression.checkEvent
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.report
-import com.github.tukcps.sysmd.services.reportInfo
+import com.github.tukcps.sysmd.services.session.report
+import com.github.tukcps.sysmd.services.session.reportInfo
 import com.github.tukcps.sysmd.services.session.Session
 
 
@@ -19,7 +19,7 @@ fun Session.propagate() {
         if (repo.schedule.isEmpty())
             initialize()
         if (!dSolver.isInitialized())
-            dSolver.initialize(this, 100)
+            dSolver.initialize(this)
         // We use the inv { ... } syntax from standard SysMLv2 / KerML hence this is no longer needed:
         // else
         //    dSolver.processRequirements(get().filterIsInstance<Expression>().filter { it.type?.str?.contains("Requirement") == true })
@@ -37,7 +37,7 @@ fun Session.propagate() {
             repo.schedule.forEach { value ->
                 try {
                     assert(value.baseType != Unknown)
-                    if ( value.baseType != Variable.BaseType.Str ) {
+                    if ( value.baseType != Variable.BaseType.String ) {
                         modelIsStable = modelIsStable and value.stable
                         if (value.ast != null) {
                             value.ast!!.evalUpRec()
@@ -59,7 +59,8 @@ fun Session.propagate() {
             dSolver.advanceState()
             dSolver.assertConstraints()
 
-            // val instables = repo.schedule.filter { !it.stable }
+            // ----- For debugging ---
+            // val inStables = repo.schedule.filter { !it.stable }
             // val stables = repo.schedule.filter { it.stable }
             status.numberOfPropagateIterations += 1
         } while (!modelIsStable && status.numberOfPropagateIterations < 100)
@@ -69,7 +70,7 @@ fun Session.propagate() {
         // Copy updated entries into the status map, check consistency.
         repo.schedule.forEach {
             if (it.updated)
-                status.updates[it.elementId] = it.valueStr
+                status.updates[it.elementId!!] = it.valueStr
         }
     } catch (error: Exception) {
         report(SysMDError("During propagation: ${error.message}", cause = error))

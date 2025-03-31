@@ -1,24 +1,14 @@
 package com.github.tukcps.sysmd.model.kerml.implementation
 
-import com.github.tukcps.sysmd.model.kerml.Calculation
-import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Function
-import com.github.tukcps.sysmd.model.kerml.Resolved
-import java.util.*
 
-class FunctionImplementation(
-    elementId: UUID = UUID.randomUUID(),
+open class FunctionImplementation(
     declaredName: String? = null,
     declaredShortName: String? = null,
-    ownedElement: MutableList<Resolved<Element>> = mutableListOf(),
-    owner: Resolved<Element> = Resolved(),
     elementType: String = "Function"
 ): Function, AssociationImplementation(
-    elementId=elementId,
     declaredName=declaredName,
     declaredShortName=declaredShortName,
-    ownedElements=ownedElement,
-    owner=owner,
     elementType=elementType
 ) {
     override fun toString(): String {
@@ -34,8 +24,6 @@ class FunctionImplementation(
         return FunctionImplementation(
             declaredName = declaredName,
             declaredShortName = declaredShortName,
-            ownedElement = Resolved.copyOfIdentityList(ownedElement),
-            owner = Resolved(owner),
             elementType = elementType
         ).also {
             it.model = model

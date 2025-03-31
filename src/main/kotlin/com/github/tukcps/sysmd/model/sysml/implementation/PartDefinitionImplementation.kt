@@ -1,16 +1,13 @@
 package com.github.tukcps.sysmd.model.sysml.implementation
 
-import com.github.tukcps.sysmd.model.kerml.implementation.ClassImplementation
+import com.github.tukcps.sysmd.model.kerml.implementation.StructureImplementation
 import com.github.tukcps.sysmd.model.sysml.PartDefinition
-import java.util.UUID
 
 class PartDefinitionImplementation(
-    elementId: UUID = UUID.randomUUID(),
     declaredName: String? = null,
     declaredShortName: String? = null,
     elementType: String = "PartDefinition",
-) : PartDefinition, ClassImplementation(
-    elementId = elementId,
+) : PartDefinition, StructureImplementation(
     declaredName = declaredName,
     declaredShortName = declaredShortName,
     elementType = elementType) {

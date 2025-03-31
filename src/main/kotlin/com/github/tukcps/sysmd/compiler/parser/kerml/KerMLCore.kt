@@ -1,92 +1,45 @@
+@file:JvmName("Strings")
 @file:Suppress("FunctionName")
 
 package com.github.tukcps.sysmd.compiler.parser.kerml
 
-import com.github.tukcps.sysmd.cspsolver.VariableImplementation
-import com.github.tukcps.sysmd.model.expression.AstRoot
-import com.github.tukcps.sysmd.model.kerml.Element
-import com.github.tukcps.sysmd.model.kerml.Resolved
+import io.github.tukcps.aadd.values.IntegerRange
 import com.github.tukcps.sysmd.compiler.KerML
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
-import com.github.tukcps.sysmd.compiler.semantics.Identification
+import com.github.tukcps.sysmd.compiler.semantics.kerml.ClassActions
+import com.github.tukcps.sysmd.compiler.semantics.kerml.ClassifierActions
 import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
-import com.github.tukcps.sysmd.services.reportInfo
+import com.github.tukcps.sysmd.compiler.semantics.kerml.RelationshipActionsImpl
+import com.github.tukcps.sysmd.compiler.semantics.kerml.TypeActions
+import com.github.tukcps.sysmd.compiler.semantics.Identification
+import com.github.tukcps.sysmd.exceptions.SyntaxError
+import com.github.tukcps.sysmd.exceptions.throwSyntaxError
+import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.model.kerml.implementation.ClassImplementation
+import com.github.tukcps.sysmd.model.kerml.implementation.ClassifierImplementation
+import com.github.tukcps.sysmd.model.kerml.implementation.ConjugationImplementation
+import com.github.tukcps.sysmd.model.kerml.implementation.TypeImplementation
+import com.github.tukcps.sysmd.model.util.QualifiedName
+import com.github.tukcps.sysmd.services.session.reportInfo
 
 /**
- * 8.2.4.1.1 Types
- * Type =
- * TypePrefix 'type'
- * TypeDeclaration TypeBody
- *
- * TypePrefix : Type =
- * ( isAbstract ?= 'abstract' )?
- * ( ownedRelationship += PrefixMetadataMember )*
- *
- * TypeDeclaration : Type =
- *  ( isSufficient ?= 'all' )? Identification
- *  ( ownedRelationship += OwnedMultiplicity )?
- *  ( SpecializationPart | ConjugationPart )+
- *  TypeRelationshipPart*
- *
- * SpecializationPart : Type =
- *  SPECIALIZES ownedRelationship += OwnedSpecialization
- *  ( ',' ownedRelationship += OwnedSpecialization )*
- *
- * ConjugationPart : Type =
- * CONJUGATES ownedRelationship += OwnedConjugation
- *
- * TypeRelationshipPart : Type =
- * DisjoiningPart
- * | UnioningPart
- * | IntersectingPart
- * | DifferencingPart
- * DisjoiningPart : Type =
- * 'disjoint' 'from' ownedRelationship += OwnedDisjoining
- * ( ',' ownedRelationship += OwnedDisjoining )*
- * UnioningPart : Type =
- * 'unions' ownedRelationship += Unioning
- * ( ',' ownedRelationship += Unioning )*
- * IntersectingPart : Type =
- * 'intersects' ownedRelationship += Intersecting
- * ( ',' ownedRelationship += Intersecting )*
- * DifferencingPart : Type =
- * 'differences' ownedRelationship += Differencing
- * ( ',' ownedRelationship += Differencing )*
- * TypeBody : Type =
- * ';' | '{' TypeBodyElement* '}'
- * TypeBodyElement : Type =
- * ownedRelationship += NonFeatureMember
- * | ownedRelationship += FeatureMember
- * | ownedRelationship += AliasMember
- * | ownedRelationship += Import
+ * SPECIALIZES is a pseudo-lexical element that is either
+ * :> (DPGT) or 'specializes'
  */
-/**
- * Type :- "type" Identification [ :> QualifiedName] Body
- */
-fun KerML.Type() {
-    val semantics = semantics.typeActions()
-    TYPE.consume()
-    Identification().also { semantics?.identification = it }
-    oneOrMore(start = setOf(SPECIALIZES, CONJUGATION)) {
-        alternatives {
-            SPECIALIZES starts { SpecializationPart().also { semantics?.general?.addAll(it) }}
-            CONJUGATION starts { ConjugationPart()}
-        }
+fun KerML.SPECIALIZES() {
+    when(token.kind) {
+        DPGT        -> { consume() }
+        SPECIALIZES -> { consume() }
+        else -> throwSyntaxError("Expect ':>' or 'specializes'")
     }
-    semantics?.create()
-    Body(Resolved(semantics?.created!!))
 }
 
-
-/*
- * SpecializationPart : Type =
- * SPECIALIZES ownedRelationship += OwnedSpecialization
- * ( ',' ownedRelationship += OwnedSpecialization )* // WE USE + instead
- *
+/**
+ *      SpecializationPart = SPECIALIZES OwnedSpecialization (',' OwnedSpecialization)*
  */
-fun KerML.SpecializationPart(): List<String> {
-    val result = mutableListOf<String>()
-    SPECIALIZES.consume()
+fun KerML.SpecializationPart(): MutableList<QualifiedName> {
+    val result = mutableListOf<QualifiedName>()
+    SPECIALIZES()
     QualifiedName().also        { result.add(it) }
     noOrMore(start = COMMA) {
         COMMA.consume()
@@ -95,7 +48,10 @@ fun KerML.SpecializationPart(): List<String> {
     return result
 }
 
-fun KerML.ConjugationPart(): List<String> {
+/**
+ *      ConjugationPart = 'conjugates' ownedRelationship += OwnedConjugation
+ */
+fun KerML.ConjugationPart(): MutableList<String> {
     val result = mutableListOf<String>()
     CONJUGATION.consume()
     noOrMore(start = COMMA) {
@@ -106,211 +62,440 @@ fun KerML.ConjugationPart(): List<String> {
     return result
 }
 
+/**
+ * 8.2.4.1.1 Types
+ *
+ *      Type = TypePrefix 'type' TypeDeclaration TypeBody
+ *      TypePrefix = ('abstract')? (PrefixMetadataMember)*
+ */
+fun KerML.Type() {
+    val type = TypeActions<Type>(this.semantics, creator = ::TypeImplementation)
+    // Prefix handled in calling method.
+    TYPE.consume()
+    TypeDeclaration(type)
+    TypeBody(Resolved(type.created!!))
+}
+
+/**
+ *      TypeDeclaration = ( 'all' )? Identification ( OwnedMultiplicity )?
+ *           ( SpecializationPart | ConjugationPart )+
+ *          TypeRelationshipPart*
+ */
+fun KerML.TypeDeclaration(type: TypeActions<Type>) {
+    ALL.optional                { type.isSufficient = true }
+    Identification().also       { type.create(it) }
+    OwnedMultiplicity().also    { if (it != IntegerRange(1,1)) type.addMultiplicity(it) }
+    alternatives {  // TODO: --> +, not only alternative, also + !!
+        SPECIALIZES or DPGT starts { SpecializationPart().also { type.addSpecialization(it) } }
+        CONJUGATION starts      { ConjugationPart().also    { type.addConjugation(it) } }
+    }
+}
+
+/**
+ *      TypeRelationshipPart =
+ *          DisjoiningPart | UnioningPart | IntersectingPart | DifferencingPart
+ *      DisjoiningPart =
+ *          'disjoint' 'from' OwnedDisjoining ( ',' ownedRelationship += OwnedDisjoining )*
+ */
+fun KerML.TypeRelationshipPart(): List<QualifiedName> {
+    val typeRelationships = mutableListOf<QualifiedName>()
+    alternatives {
+        DISJOINT starts     { DisjoiningPart() }
+        UNIONS starts       { UnioningPart() }
+        INTERSECTS starts   { IntersectingPart() }
+        DIFFERENCES starts  { DifferencingPart() }
+    }
+    return typeRelationships
+}
+
+/**
+ *      DisjoiningPart = 'disjoint' 'from' OwnedDisjoining ( ',' OwnedDisjoining )*
+ */
+fun KerML.DisjoiningPart(): List<QualifiedName> {
+    val disjoining = mutableListOf<QualifiedName>()
+    DISJOINT.consume()
+    FROM.consume()
+    QualifiedName().also { disjoining.add(it) }
+    noOrMore(start = COMMA) {
+        COMMA.consume()
+        QualifiedName().also { disjoining.add(it) }
+    }
+    return disjoining
+}
+
+/**
+ *      UnioningPart = 'unions' Unioning ( ',' Unioning )*
+ */
+fun KerML.UnioningPart(): List<QualifiedName> {
+    val unions = mutableListOf<QualifiedName>()
+    UNIONS.consume()
+    QualifiedName().also     { unions.add(it) }
+    noOrMore(start = COMMA) {
+        COMMA.consume()
+        QualifiedName().also { unions.add(it) }
+    }
+    return unions
+}
+
+/**
+ *      IntersectingPart = 'intersects' Intersecting( ',' ownedRelationship += Intersecting )*
+ */
+fun KerML.IntersectingPart(): List<QualifiedName> {
+    val intersecting = mutableListOf<QualifiedName>()
+    INTERSECTS.consume()
+    QualifiedName().also     { intersecting.add(it) }
+    noOrMore(start = COMMA) {
+        COMMA.consume()
+        QualifiedName().also { intersecting.add(it) }
+    }
+    return intersecting
+}
+
+/**
+ *      DifferencingPart : Type = 'differences' Differencing( ',' ownedRelationship += Differencing )*
+ */
+fun KerML.DifferencingPart(): List<QualifiedName> {
+    val differencing = mutableListOf<QualifiedName>()
+    DIFFERENCES.consume()
+    QualifiedName().also     { differencing.add(it) }
+    noOrMore(start = COMMA) {
+        COMMA.consume()
+        QualifiedName().also { differencing.add(it) }
+    }
+    return differencing
+}
 
 /**
  * 8.2.4.2.1 Classifiers
- * Classifier =
- *      TypePrefix 'classifier'
- *      ClassifierDeclaration TypeBody
  *
- * ClassifierDeclaration : Classifier =
- *      ( isSufficient ?= 'all' )? Identification
- *      ( ownedRelationship += OwnedMultiplicity )?
- *      ( SuperclassingPart | ConjugationPart )?
- *      TypeRelationshipPart*
+ *      Classifier = TypePrefix 'classifier' ClassifierDeclaration TypeBody
  */
-data class ClassifierDeclarationInfo(
-    var all: Boolean = false,
-    var identification: Identification = Identification(),
-    val superclassingPart: MutableList<String> = mutableListOf(),
-    val conjugationPart: MutableList<String> = mutableListOf(),
-)
-
-fun KerML.ClassifierDeclaration(): ClassifierDeclarationInfo {
-    val classifierDeclaration = ClassifierDeclarationInfo()
-    ALL.optional            { classifierDeclaration.all = true }
-    Identification().also   { classifierDeclaration.identification = it }
-    alternatives {
-        SPECIALIZES starts { SpecializationPart().also { classifierDeclaration.superclassingPart.addAll(it) } }
-        CONJUGATION starts { ConjugationPart() }
-        others {  }  // Just skip
-    }
-    return classifierDeclaration
+fun KerML.Classifier() {
+    val classifier = ClassifierActions<Classifier>(this.semantics, creator =  ::ClassifierImplementation)
+    CLASSIFIER.consume()
+    ClassifierDeclaration(classifier)
+    TypeBody(Resolved(classifier.created!!))
+    classifier.finish()
 }
 
 /**
- * DataType :- "datatype" Identification ["specializes" QualifiedName] Body
+ *      ClassifierDeclaration : Classifier =
+ *          ( 'all' )?
+ *          Identification
+ *          ( OwnedMultiplicity )?
+ *          ( SuperclassingPart | ConjugationPart )?
+ *          TypeRelationshipPart*
+ */
+fun KerML.ClassifierDeclaration(classifier: ClassifierActions<Classifier>) {
+    ALL.optional             { classifier.isSufficient = true }
+    Identification().also    { classifier.create(it) }
+    OwnedMultiplicity()
+    alternatives {
+        SPECIALIZES or DPGT starts  { SpecializationPart().also { classifier.addSubclassification(it) } }
+        CONJUGATION starts  { ConjugationPart().also    { classifier.addConjugation(it) } }
+        others                                          {  }
+    }
+}
+
+
+/**
+ *      DataType :- "datatype" Identification ["specializes" QualifiedName] Body
  */
 fun KerML.Datatype() {
-    val semantics = semantics.datatypeActions()
+    val datatype = semantics.datatypeActions()
     DATATYPE.consume()
-    ClassifierDeclaration().also    { semantics?.classifierDeclaration = it; semantics?.create() }
-    semantics?.create()
-    Body(Resolved(semantics?.created!!))
+    @Suppress("UNCHECKED_CAST")
+    ClassifierDeclaration(datatype as ClassifierActions<Classifier>)
+    TypeBody(Resolved(datatype.created!!))
+    datatype.finish()
 }
-
 
 /**
- * Class :- "class"  Identification [ :> QualifiedName] Body
+ *  8.2.5.2 Classes Concrete Syntax
+ *
+ *      Class = TypePrefix 'class' ClassifierDeclaration TypeBody
+ *          Note: Calling production handles prefixes before.
  */
 fun KerML.Class() {
-    val semantics = semantics.classActions()
+    val klass = ClassActions(semantics, ::ClassImplementation)
     CLASS.consume()
-    ClassifierDeclaration().also    { semantics?.classifierDeclaration = it; semantics?.create() }
-    Body(Resolved(semantics?.created!!))
+    @Suppress("UNCHECKED_CAST")
+    ClassifierDeclaration(klass as ClassifierActions<Classifier>)
+    TypeBody(Resolved(klass.created!!))
+    klass.finish()
 }
-
 
 /**
  * _8.2.4.1.2 Specialization_
- * Specialization = ( 'specialization' Identification )?
- * 'subtype' SpecificType SPECIALIZES GeneralType
- * RelationshipBody
- * OwnedSpecialization : Specialization =
- * GeneralType
- * SpecificType : Specialization :
- * specific = [QualifiedName]
- * | specific += OwnedFeatureChain
- * { ownedRelatedElement += specific }
- * GeneralType : Specialization =
- * general = [QualifiedName]
- * | general += OwnedFeatureChain
- * { ownedRelatedElement += general }
+ *
+ *      Specialization = ( 'specialization' Identification )?
+ *          'subtype' SpecificType SPECIALIZES GeneralType RelationshipBody
+ *
+ *      OwnedSpecialization = GeneralType
+ *      SpecificType =  [QualifiedName] | OwnedFeatureChain
+ *      GeneralType =  [QualifiedName] | OwnedFeatureChain
  */
+val specializationStart = setOf(SPECIALIZATION, SUBTYPE)
+fun KerML.Specialization() {
+    SPECIALIZATION.optional {
+        Identification()
+    }
+    SUBTYPE.consume()
+    SpecificType()
+    SPECIALIZES()
+    GeneralType()
+    RelationshipBody(Resolved(null, null, null))
+}
 
+fun KerML.SpecificType() =
+    when(nextToken.kind) {
+        DOT ->  FeatureChain()
+        else -> QualifiedName()
+    }
+
+fun KerML.GeneralType() =
+    when(nextToken.kind) {
+        DOT ->  FeatureChain()
+        else -> QualifiedName()
+    }
+
+/**
+ * TODO: Move FeatureChain into Expressions properly
+ */
+fun KerML.FeatureChain(): String {
+    val result: StringBuilder = StringBuilder()
+    NAME_LIT.consume()          .also { result.append(consumedToken.string) }
+    noOrMore(DOT) {
+        DOT.consume()           .also { result.append("::") }
+        NAME_LIT.consume()      .also { result.append(consumedToken.string) }
+    }
+    return result.toString()
+}
 
 /**
  * _8.2.4.1.3 Conjugation_
- * Conjugation =
- * ( 'conjugation' Identification )?
- * 'conjugate'
- * ( conjugatedType = [QualifiedName]
- * | conjugatedType = FeatureChain
- * { ownedRelatedElement += conjugatedType }
- * )
- * CONJUGATES
- * ( originalType = [QualifiedName]
- * | originalType = FeatureChain
- * { ownedRelatedElement += originalType }
- * )
- * RelationshipBody
- * OwnedConjugation : Conjugation =
- * originalType = [QualifiedName]
- * | originalType = FeatureChain
- * { ownedRelatedElement += originalType }
+ *
+ *      Conjugation = ( 'conjugation' Identification )?
+ *          'conjugate' ( [QualifiedName] |  FeatureChain )
+ *          CONJUGATES ( [QualifiedName] | FeatureChain)
+ *          RelationshipBody
+ *
+ *      OwnedConjugation = [QualifiedName] | FeatureChain
  */
+val CONJUGATION_START = setOf(CONJUGATION, CONJUGATE)
+fun KerML.Conjugation() {
+    val conjugation = RelationshipActionsImpl<Conjugation>(semantics, ::ConjugationImplementation)
+    CONJUGATION.optional {
+        Identification().also {     conjugation.create(it) }
+    }
+    if (conjugation.created == null) conjugation.create(Identification(null, null))
+    CONJUGATE.consume()
+    QualifiedName()
+    CONJUGATES.consume()
+    QualifiedName()
+    RelationshipBody(Resolved(conjugation.created!!))
+}
 
 /**
  * _8.2.4.1.4 Disjoining_
- * Disjoining =
- * ( 'disjoining' Identification )?
- * 'disjoint'
- * ( typeDisjoined = [QualifiedName]
- * | typeDisjoined = FeatureChain
- * { ownedRelatedElement += typeDisjoined }
- * )
- * 'from'
- * ( disjoiningType = [QualifiedName]
- * | disjoiningType = FeatureChain
- * { ownedRelatedElement += disjoiningType }
- * )
- * RelationshipBody
- * OwnedDisjoining : Disjoining =
- * disjoiningType = [QualifiedName]
+ *
+ *      Disjoining = ( 'disjoining' Identification )?
+ *          'disjoint' ( [QualifiedName] | FeatureChain )
+ *          'from' ( [QualifiedName] | FeatureChain )
+ *      RelationshipBody
+ *
+ *      OwnedDisjoining = [QualifiedName]
  */
+val DISJOINING_START = setOf(DISJOINING, DISJOINT)
+fun KerML.Disjoining() {
+    DISJOINING.optional {
+        Identification()
+    }
+    DISJOINT.consume()
+    QualifiedName()
+    FROM.consume()
+    QualifiedName()
+    RelationshipBody(Resolved(null, null, null))
+}
 
 /**
- * Feature =
- *     FeaturePrefix
- *     ( 'feature'? FeatureDeclaration
- *     | 'feature'
- *     | ownedRelationship += PrefixMetadataMember
- *     )
- *     ValuePart? TypeBody
- * (See Note 1)
+ * 8.2.4.3.1 Features
  *
+ *      Feature =   // FeaturePrefix --> consumed in production calling Feature
+ *          (    'feature'? FeatureDeclaration
+ *              | 'feature'
+ *              | PrefixMetadataMember
+ *          )
+ *          ValuePart? TypeBody
  */
 fun KerML.Feature() {
     val feature = semantics.featureActions()
-    FEATURE.optional()  // DIRTY!!!
-    EXPR.optional()     // DIRTY!!!
-    Identification().also { feature?.identification = it }
-
-    // Type, Redefinition, ... in arbitrary order; not clean.
-    FeatureType(feature)
-    FeatureType(feature)
-    FeatureType(feature)
-
-    // For SysMLV2, multiplicity is after the type:
-    optional(LCBRACE) {
-        Multiplicity().also { feature?.multiplicity = it }
+    FEATURE.optional()
+    FeatureDeclaration(feature)
+    optional(valuePartStart) {
+        ValuePart(feature)
     }
-    feature?.create()
-    optional(EQ, consume =true) {
-        val iBeforeExpression = token.indices.first
-        @Suppress("SENSELESS_COMPARISON")
-        feature?.created?.variable = if (feature!=null) VariableImplementation(feature.created!!) else null
-        semantics.expression = feature?.created
-        Expression().also {
-            feature?.created?.variable?.ast = AstRoot(model, semantics.expression!!, it)
-            feature?.created?.indices = iBeforeExpression..consumedToken.indices.last
-            feature?.created?.expression = input.subSequence(feature?.created?.indices!!).toString().trim()
-        }
-    }
-    TypeBody(Resolved(feature?.created!!))
+    TypeBody(Resolved(feature.created!!))
+    feature.finish()
 }
-
-
-
-fun KerML.FeatureType(feature: FeatureActions?) {
-    alternatives {
-        DP starts {
-            DP.consume()
-            ALL.optional().also { if (consumedToken.kind == ALL) feature?.isSufficient = true }
-            QualifiedNameList().also { feature?.type = it }
-            TypeConstraint().also { feature?.typeConstraint = it }
-            optional(start = LCBRACE) {
-                if (nextToken.kind == INTEGER_LIT)
-                    Multiplicity().also { feature?.multiplicity = it }
-            }
-            optional(start = LCBRACE) {
-                LCBRACE.consume()
-                Unit().also { feature?.unitConstraint = it }
-                RCBRACE.consume()
-            }
-        }
-        TYPED starts {
-            TYPED.consume()
-            BY.consume()
-            ALL.optional().also { if (consumedToken.kind == ALL) feature?.isSufficient = true }
-            QualifiedNameList().also { feature?.type = it }
-            TypeConstraint().also { feature?.typeConstraint = it }
-            optional(start = LCBRACE) {
-                if (nextToken.kind == INTEGER_LIT)
-                    Multiplicity().also { feature?.multiplicity = it }
-            }
-            optional(start = LCBRACE) {
-                LCBRACE.consume()
-                Unit().also { feature?.unitConstraint = it }
-                RCBRACE.consume()
-            }
-        }
-        REFERENCES starts {
-            REFERENCES.consume()
-            QualifiedName().also { feature?.references = it }
-        }
-        REDEFINES starts {
-            REDEFINES.consume()
-            QualifiedName().also { feature?.redefines = it }
-        }
-        others {  }
-    }
-}
-
 
 
 /**
- * TypeConstraint :- ["(" (LiteralExpression [.. LiteralExpression])* | (true | false)* ")"]
+ *      FeatureDeclaration  =
+ *          ( 'all' )?
+ *          (   FeatureIdentification ( FeatureSpecializationPart | ConjugationPart )?
+ *              | FeatureSpecializationPart
+ *              | ConjugationPart
+ *          )
+ *          FeatureRelationshipPart*
+ */
+fun KerML.FeatureDeclaration(feature: FeatureActions<Feature>) {
+    ALL.optional { feature.isSufficient = true }
+    alternatives {
+        NAME_LIT starts {
+            Identification().also { feature.create(it) }
+            alternatives {
+                featureSpecializationPartStart starts { FeatureSpecializationPart(feature) }
+                CONJUGATION starts { ConjugationPart() }
+                others {  }
+            }
+        }
+        featureSpecializationPartStart starts { FeatureSpecializationPart(feature) }
+        CONJUGATION starts { ConjugationPart() }
+    }
+    noOrMore(start = setOf(CHAINS, FEATURED, INVERSE, DISJOINT, UNIONS, DIFFERENCES, INTERSECTS)) {
+        FeatureRelationshipPart()
+    }
+
+    // The Following is a non-standard extension / might be replaced later by standard
+    TypeConstraint().also { feature.addTypeConstraint(it) }
+    UnitConstraint().also { feature.addUnitConstraint(it) }
+    feature.addTyping(mutableListOf())
+}
+
+/**
+ * Proprietary SysMD; might be dropped
+ *
+ *      '[' Unit ']'
+ */
+fun KerML.UnitConstraint(): String? {
+    var unit: String? = null
+    optional(IN or LCBRACE, consume = false) {
+        IN.optional()
+        LCBRACE.consume()
+        Unit().also { unit = it }
+        RCBRACE.consume()
+    }
+    return unit
+}
+
+/**
+ *      FeatureSpecializationPart : Feature =
+ *          FeatureSpecialization+ MultiplicityPart? FeatureSpecialization*
+ *          | MultiplicityPart FeatureSpecialization*
+ */
+fun KerML.FeatureSpecializationPart(feature: FeatureActions<Feature>) {
+    alternatives {
+        featureSpecializationStart starts {
+            oneOrMore(featureSpecializationStart) { FeatureSpecialization(feature)  }
+            optional( {token.kind == LCBRACE && nextToken.kind == INTEGER_LIT} ) { MultiplicityPart().also { feature.addMultiplicity(it) } }
+            noOrMore(featureSpecializationStart) { FeatureSpecialization(feature) }
+        }
+        LCBRACE then INTEGER_LIT starts {
+            MultiplicityPart().also { feature.addMultiplicity(it) }
+            noOrMore(featureSpecializationStart) { FeatureSpecialization(feature) }
+        }
+    }
+}
+val featureSpecializationPartStart get() = featureSpecializationStart + LCBRACE
+
+
+/**
+ *      MultiplicityPart = OwnedMultiplicity
+ *                      |  OwnedMultiplicity? ( 'ordered' ( 'nonunique' )? | 'nonunique' ( 'ordered' )? )
+ *
+ * implemented by:
+ *
+ *      MultiplicityPart = OwnedMultiplicity? ( 'ordered' ( 'nonunique')? | 'nonunique' ('ordered')?))
+ */
+fun KerML.MultiplicityPart(): IntegerRange {
+    val multiplicity = OwnedMultiplicity()
+    alternatives {
+        ORDERED starts { ORDERED.consume(); NONUNIQUE.optional() }
+        NONUNIQUE starts { NONUNIQUE.consume(); ORDERED.optional() }
+        others {  }
+    }
+    return multiplicity
+}
+
+
+/**
+ * Parses an optional Multiplicity; if it is not present, the result is [1, 1]
+ *
+ *      Multiplicity :- ["[" (IntegerLiteral | "*") [".." ( IntegerLiteral | "*" ] ) "]"]
+ */
+fun KerML.OwnedMultiplicity(): IntegerRange {
+    var multiplicity = IntegerRange(1, 1)
+    optional(LCBRACE, consume = true) {
+        parseIntegerRange().also { multiplicity = it }
+        RCBRACE.consume()
+    }
+    return multiplicity
+}
+
+/**
+ *      IntegerRange :- ConstInt [".." ConstInt]
+ */
+fun KerML.parseIntegerRange(): IntegerRange {
+    val result = IntegerRange(IntegerRange.Integers)
+    ConstInt().also { result.min = it; result.max = it }
+    optional(DOTDOT, consume = true) {
+        ConstInt().also { result.max = it }
+    }
+    if (result.min > result.max)
+        throw SyntaxError(this, message = "max of range must be larger or equal min")
+    return result
+}
+
+/**
+ *      FeatureSpecialization = Typings | Subsettings | References | Redefinitions
+ */
+fun KerML.FeatureSpecialization(feature: FeatureActions<Feature>) {
+    alternatives {
+        TYPED_BY then { QualifiedNameList().also { feature.addTyping(it) } }
+        SUBSETS or DPGT then { QualifiedNameList().also { feature.addSubsetting(it) } }
+        REFERENCES then { QualifiedName().also { feature.addReferences(it) } }
+        REDEFINES then { QualifiedNameList().also { feature.addRedefinitions(it.first()) } }
+    }
+}
+val featureSpecializationStart = setOf(TYPED_BY, SUBSETS, DPGT, REFERENCES, REDEFINES)
+
+/**
+ *      FeatureRelationshipPart =
+ *          TypeRelationshipPart | ChainingPart | InvertingPart | TypeFeaturingPart
+ */
+fun KerML.FeatureRelationshipPart() {
+    alternatives {
+        DISJOINT or UNIONS or INTERSECTS or DIFFERENCES starts {
+            TypeRelationshipPart()
+        }
+        CHAINS starts {
+            CHAINS.consume()
+        }
+        INVERSE starts {
+            INVERSE.consume()
+        }
+        FEATURED starts {
+            FEATURED.consume()
+            BY.consume()
+        }
+    }
+}
+
+/**
+ * Proprietary; avoid use
+ *
+ *      TypeConstraint = ["(" (LiteralExpression [.. LiteralExpression])* | (true | false)* ")"]
  */
 fun KerML.TypeConstraint(): MutableList<String> {
     val constraintSpec = mutableListOf<String>()
@@ -348,9 +533,14 @@ fun KerML.TypeConstraint(): MutableList<String> {
     return constraintSpec
 }
 
-
-
-
+/**
+ *      TypeBody : Type = ';' | '{' TypeBodyElement* '}'
+ *      TypeBodyElement : Type =
+ *          NonFeatureMember
+ *          | FeatureMember
+ *          | AliasMember
+ *          | Import
+ */
 fun KerML.TypeBody(owner: Resolved<Element>) {
     alternatives {
         LCURBRACE then {
@@ -367,17 +557,50 @@ fun KerML.TypeBody(owner: Resolved<Element>) {
 }
 
 /**
- * TypeBodyElement : Type =
- *       ownedRelationship += NonFeatureMember
- *     | ownedRelationship += FeatureMember
- *     | ownedRelationship += AliasMember
- *     | ownedRelationship += Import
+ *      FeaturePrefix =
+ *          ( FeatureDirection )?
+ *          ( 'abstract' )?
+ *          ( 'composite' | 'portion' )?
+ *          ( 'readonly' )?
+ *          ( 'derived' )?
+ *          ( 'end' )?
+ *          ( PrefixMetadataMember )*
+ *
+ *      FeatureDirection = 'in' | 'out' | 'inout'
+ */
+fun KerML.FeaturePrefix() {
+    alternatives {
+        IN        then  { semantics.prefixes.add(IN) }
+        OUT       then  { semantics.prefixes.add(OUT) }
+        INOUT     then  { semantics.prefixes.add(INOUT) }
+        others          {  }
+    }
+    ABSTRACT.optional   { semantics.prefixes.add(ABSTRACT) }
+    alternatives {
+        COMPOSITE then  { semantics.prefixes.add(COMPOSITE) }
+        PORTION   then  { semantics.prefixes.add(PORTION) }
+        others          {  }
+    }
+    READONLY.optional   { semantics.prefixes.add(READONLY) }
+    DERIVED.optional    { semantics.prefixes.add(DERIVED) }
+    END.optional        { semantics.prefixes.add(END) }
+}
+val FEATURE_PREFIX_START = setOf(IN, OUT, INOUT, COMPOSITE, PORTION, READONLY, DERIVED, END)
+
+/**
+ *      TypeBodyElement =
+ *          ownedRelationship += NonFeatureMember
+ *          | ownedRelationship += FeatureMember
+ *          | ownedRelationship += AliasMember
+ *          | ownedRelationship += Import
  */
 fun KerML.TypeBodyElement() {
     MemberPrefix()
+    noOrMore(HASHTAG) { PrefixMetadataMember()}
     alternatives {
-        NON_FEATURE_ELEMENT_TOKENS starts   { NonFeatureElement() }
-        FEATURE_ELEMENT_TOKENS starts       { FeatureElement() }
+        nonFeatureElementStart starts    { NonFeatureElement() }
+        FEATURE_PREFIX_START   starts       { FeatureElement() }
+        featureElementStart starts       { FeatureElement() }
         ALIAS starts                        { AliasMember() }
         IMPORT starts                       { Import() }
     }

@@ -1,10 +1,8 @@
 package com.github.tukcps.sysmd.model.kerml
 
 import com.github.tukcps.sysmd.exceptions.CyclicDependency
-import com.github.tukcps.sysmd.compiler.parser.QualifiedName
 import com.github.tukcps.sysmd.exceptions.SemanticError
-import com.github.tukcps.sysmd.services.report
-import com.github.tukcps.sysmd.services.resolve.resolve
+import com.github.tukcps.sysmd.services.session.report
 
 
 /**
@@ -14,7 +12,9 @@ interface Type: Namespace {
 
     var isAbstract: Boolean
     var isSufficient: Boolean
+
     val isConjugated: Boolean
+        get() = getOwnedElementsOfType<Conjugation>().isNotEmpty()
 
     val generalization: List<Resolved<Type>>
         get() = ownedSpecialization.map { it.general }
@@ -35,19 +35,6 @@ interface Type: Namespace {
     }
 
 
-
-    /**
-     * Checks if a fully qualified name resolves to a type and
-     * whether this is a subtype of it.
-     * @param other fully qualified name of a type
-     * @return true, if this is a subtype of 'other' after the name resolution
-     */
-    fun specializes(other: QualifiedName): Boolean {
-        val otherType = model?.global?.resolve<Type>(other)
-        return this.specializes(otherType)
-    }
-
-
     /**
      * Checks if a type given as parameter is a direct or indirect supertype of the parameter.
      * It considers itself as a specialization of it.
@@ -58,13 +45,19 @@ interface Type: Namespace {
         if (supertype === this)
             return true
         generalization.forEach {
-            if (depth > 100) {
-                model?.report(this, "Cyclic dependency in inheritance of $supertype ")
+            if (depth > 200) {
+                model?.report(SemanticError( "Cyclic dependency in inheritance of $supertype ", element = this))
             } else {
+
                 if (it.ref == null) {
-                    model?.report(SemanticError("Error trying to find generalization of $this",null, this))
+                    if (it.id != null)
+                        it.ref = model?.get(it.id!!) as Type?
+                    if (it.ref == null)
+                        model?.report(SemanticError("Error trying to find generalization of ${this.qualifiedName}",this))
+                    else
+                        return (it.ref!!.specializes(supertype, depth+1))
                 } else
-                    if (it.ref!!.specializes(supertype))
+                    if (it.ref!!.specializes(supertype, depth+1))
                         return true
             }
         }
@@ -82,7 +75,7 @@ interface Type: Namespace {
         val supertypes = generalization.mapNotNull { it.ref }.toMutableList()
 
         if (this in supertypes || this in visited) {
-            model?.report(CyclicDependency(message = "Cyclic dependency in definition of type $this", element = this))
+            model?.report(CyclicDependency(message = "Cyclic dependency in definition of type ${this.qualifiedName}", element = this))
             return listOf()
         }
         if (transitive) {
@@ -95,15 +88,7 @@ interface Type: Namespace {
         return supertypes
     }
 
-    /**
-     * @return list of the Type's subclasses.
-     */
-    fun subclasses(): Collection<Classifier> =
-        model!!.getSubclasses(this)
-
-
-    fun subtypes(): Collection<Type> =
-        model!!.getSubtypes(this)
+    val subtypes: MutableSet<Type>
 
     fun features(): List<Feature> =
         ownedElement.filter { it.ref is Feature }.map { it.ref as Feature }

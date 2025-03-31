@@ -1,8 +1,8 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import com.github.tukcps.aadd.StrDD
-import com.github.tukcps.sysmd.model.expression.AstNode
+import io.github.tukcps.aadd.StrDD
 import com.github.tukcps.sysmd.exceptions.SemanticError
+import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.quantities.Unit
 import com.github.tukcps.sysmd.quantities.VectorDimensionError
@@ -38,7 +38,7 @@ internal class AstMonth(model: Session, args: ArrayList<AstNode>) :
         }
         val string = getParam(0).upQuantity.values[0] as StrDD
         val timestamp = toUnix(string.toIteString())
-        upQuantity = Quantity(model.builder.scalar(timestamp), Unit("s"), "Month")
+        upQuantity = Quantity(model.builder.real(timestamp), Unit("s"), "Month")
     }
 
     override fun evalDown() { //Transforms unix timestamp back to the String
@@ -52,7 +52,7 @@ internal class AstMonth(model: Session, args: ArrayList<AstNode>) :
      * Converts a month string to a timestamp
      */
     private fun toUnix(month: String): Double {
-        return if (month.contains("T")) { //contains a explicit time
+        return if (month.contains("T")) { //contains an explicit time
             throw SemanticError("Month should contain no time")
         } else { //contains no explicit time
             if (month.length >= 8)

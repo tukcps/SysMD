@@ -22,7 +22,10 @@ class BDDError internal constructor(msg: String) :
     Exception("Problem with BDD: $msg")
 
 class DDError internal constructor(msg: String) :
-    Exception("Problem with DD: $msg")
+    Exception("Problem with DD<*>: $msg")
 
 class VectorDimensionError internal constructor(msg: String):
     Exception("Problem with vector size: $msg")
+
+class UnitDimensionError internal constructor(msg: String):
+    Exception("Problem with unit dimension: $msg")

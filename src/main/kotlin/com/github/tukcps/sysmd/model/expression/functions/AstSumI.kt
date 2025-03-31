@@ -1,13 +1,14 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import com.github.tukcps.aadd.AADD
-import com.github.tukcps.aadd.IDD
-import com.github.tukcps.aadd.ceil
-import com.github.tukcps.aadd.floor
-import com.github.tukcps.aadd.values.IntegerRange
-import com.github.tukcps.aadd.values.Range
+import io.github.tukcps.aadd.AADD
+import io.github.tukcps.aadd.IDD
+import io.github.tukcps.aadd.functions.ceil
+import io.github.tukcps.aadd.functions.floor
+import io.github.tukcps.aadd.values.IntegerRange
+import io.github.tukcps.aadd.values.Range
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.model.expression.AstNode
+import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.quantities.VectorDimensionError
@@ -67,15 +68,15 @@ internal class AstSumI(
 
     override fun evalUp() {
         if (startI.isInt) {
-            upQuantity = VectorQuantity(mutableListOf(model.builder.scalar(0)))
+            upQuantity = VectorQuantity(mutableListOf(model.builder.integer(0)))
             // test if startI or endI is not defined
-            if (startI.idds[0].min == model.builder.Integers.min || startI.idds[0].max == model.builder.Integers.max ||
-                endI.idds[0].min == model.builder.Integers.min || endI.idds[0].max == model.builder.Integers.max
+            if (startI.idds[0].min == Long.MIN_VALUE || startI.idds[0].max == Long.MAX_VALUE ||
+                endI.idds[0].min == Long.MIN_VALUE || endI.idds[0].max == Long.MAX_VALUE
             )
                 return // no loop possible with infinite borders
             upQuantity = subSumInt(startI.idds[0], endI.idds[0])
         } else { //startI is Real (see initialize)
-            upQuantity = VectorQuantity(mutableListOf(model.builder.scalar(0.0)), iteration.upQuantity.unit)
+            upQuantity = VectorQuantity(mutableListOf(model.builder.real(0.0)), iteration.upQuantity.unit)
             // test if startI or endI is not defined
             if (startI.aadds[0].min.isInfinite() || startI.aadds[0].max.isInfinite() || endI.aadds[0].min.isInfinite() || endI.aadds[0].max.isInfinite()) {
                 upQuantity = Quantity(model.builder.Reals, iteration.upQuantity.unit)
@@ -90,7 +91,7 @@ internal class AstSumI(
      */
     override fun evalDown() {
         if (downQuantity.values[0] is IDD) {
-            if (startI.idds[0].getRange().min == model.builder.Integers.min || startI.idds[0].getRange().max == model.builder.Integers.max) {
+            if (startI.idds[0].getRange().min == Long.MIN_VALUE || startI.idds[0].getRange().max == Long.MAX_VALUE) {
                 getParam(1).downQuantity = Quantity(model.builder.Integers) //no infinite loops
             } else {
                 // calculate endI
@@ -105,13 +106,12 @@ internal class AstSumI(
                     isEnd = true
                 )
                 getParam(1).downQuantity = Quantity(
-                    model.builder.range(
-                        min(endIReverseMin.min, endIReverseMax.min),
-                        max(endIReverseMin.max, endIReverseMax.max)
+                    model.builder.integer(
+                        min(endIReverseMin.min, endIReverseMax.min)..max(endIReverseMin.max, endIReverseMax.max)
                     )
                 )
             }
-            if (endI.idds[0].getRange().min == model.builder.Integers.min || endI.idds[0].getRange().max == model.builder.Integers.max) {
+            if (endI.idds[0].getRange().min == Long.MIN_VALUE || endI.idds[0].getRange().max == Long.MAX_VALUE) {
                 getParam(0).downQuantity = Quantity(model.builder.Integers) //no infinite loops
             } else {
                 // calculate startI
@@ -126,9 +126,8 @@ internal class AstSumI(
                     isEnd = false
                 )
                 getParam(0).downQuantity = Quantity(
-                    model.builder.range(
-                        min(startIReverseMin.min, startIReverseMax.min),
-                        max(startIReverseMin.max, startIReverseMax.max)
+                    model.builder.integer(
+                        min(startIReverseMin.min, startIReverseMax.min)..max(startIReverseMin.max, startIReverseMax.max)
                     )
                 )
             }
@@ -144,7 +143,7 @@ internal class AstSumI(
                     endI.aadds[0].getRange(),
                     isEnd = true
                 )
-                getParam(1).downQuantity = Quantity(model.builder.range(endIReverse), unit)
+                getParam(1).downQuantity = Quantity(model.builder.real(endIReverse), unit)
             }
             if (endI.aadds[0].getRange().min.isInfinite() || endI.aadds[0].getRange().max.isInfinite()) {
                 getParam(0).downQuantity = Quantity(model.builder.Reals, unit) //no infinite loops
@@ -156,7 +155,7 @@ internal class AstSumI(
                     startI.aadds[0].getRange(),
                     isEnd = false
                 )
-                getParam(0).downQuantity = Quantity(model.builder.range(startIReverse), unit)
+                getParam(0).downQuantity = Quantity(model.builder.real(startIReverse), unit)
             }
         }
         return
@@ -170,7 +169,7 @@ internal class AstSumI(
      * @return IntegerRange for endI (isEnd true) or startI (isEndFalse)
      */
     private fun reverseSumInt(sum: Long, startI: Long, isEnd: Boolean): IntegerRange {
-        var currentSum = VectorQuantity(mutableListOf(model.builder.scalar(sum)))
+        var currentSum = VectorQuantity(mutableListOf(model.builder.integer(sum)))
         var i = startI
         while (currentSum.values[0].asIdd().getRange().min > 0 && i >= 0) {
             // set variable to i and evaluate iteration for it.
@@ -221,7 +220,7 @@ internal class AstSumI(
         }
         if (resultIList.isEmpty()) {
             resultIList.add(if (!isEnd) startCalculation.min else 0.0)
-            resultIList.add(if (isEnd) model.builder.Reals.max else startCalculation.max)
+            resultIList.add(if (isEnd) Double.POSITIVE_INFINITY else startCalculation.max)
         }
         resultIList.sort()
         val minResult = resultIList[0] - 0.5
@@ -232,15 +231,15 @@ internal class AstSumI(
      * Maximal SubSum for the function using Kadane's algorithm
      */
     private fun subSumReal(startI: AADD, endI: AADD): Quantity {
-        var maxSum = model.builder.scalar(0.0)
-        var minSum = model.builder.scalar(0.0)
-        var currSumMax = model.builder.scalar(0.0)
-        var currSumMin = model.builder.scalar(0.0)
+        var maxSum = model.builder.real(0.0)
+        var minSum = model.builder.real(0.0)
+        var currSumMax = model.builder.real(0.0)
+        var currSumMin = model.builder.real(0.0)
 
         for (i in floor(startI).min.toLong()..ceil(endI).max.toLong()) {
             //either in startI, endI or between startI and endI
             if (startI.contains(i.toDouble()) || endI.contains(i.toDouble())
-                || model.builder.range((startI.min + startI.max) / 2.0, (endI.min + endI.max) / 2.0)
+                || model.builder.real((startI.min + startI.max) / 2.0 .. (endI.min + endI.max) / 2.0)
                     .contains(i.toDouble())
             ) {
                 // set variable to i and evaluate iteration for it.
@@ -252,17 +251,17 @@ internal class AstSumI(
                 currSumMin += iterationValue
                 if (i >= endI.min + 1) { // (i>=endLow+1) these elements are added to the sum if needed
                     // maxSum = (maxSum.greaterThanOrEquals(currSumMax)).asBdd().ite(maxSum, currSumMax) ==> exponential growth of tree size
-                    maxSum = model.builder.scalar(max(maxSum.max, currSumMax.max))
+                    maxSum = model.builder.real(max(maxSum.max, currSumMax.max))
                     // minSum = (minSum.lessThanOrEquals(currSumMin)).asBdd().ite(minSum, currSumMin) ==> exponential growth of tree size
-                    minSum = model.builder.scalar(min(minSum.min, currSumMin.min))
+                    minSum = model.builder.real(min(minSum.min, currSumMin.min))
                 } else if (i <= startI.max) { // in this area the sum must start
                     //maxSum reset the start of the sum (use max instead of ite -> otherwise exponential growth of tree size)
                     //currSumMax = (currSumMax.greaterThanOrEquals(iterationValue)).asBdd().ite(currSumMax, iterationValue) ==> exponential growth of tree size
-                    currSumMax = model.builder.scalar(max(currSumMax.max, iterationValue.max))
+                    currSumMax = model.builder.real(max(currSumMax.max, iterationValue.max))
                     maxSum = currSumMax
                     //minSum  reset the start of the sum  (use min instead of ite -> otherwise exponential growth of tree size)
                     //currSumMin = (currSumMin.lessThanOrEquals(iterationValue)).asBdd().ite(currSumMin, iterationValue) ==> exponential growth of tree size
-                    currSumMin = model.builder.scalar(min(currSumMin.min, iterationValue.min))
+                    currSumMin = model.builder.real(min(currSumMin.min, iterationValue.min))
                     minSum = currSumMin
                 } else { //between startI and endI
                     //these elements are required for the sum
@@ -273,17 +272,17 @@ internal class AstSumI(
                 }
             }
         }
-        return Quantity(model.builder.range(minSum.min, maxSum.max), iteration.upQuantity.unit)
+        return Quantity(model.builder.real(minSum.min..maxSum.max), iteration.upQuantity.unit)
     }
 
     /**
      * Maximal SubSum for the function using Kadane's algorithm
      */
     private fun subSumInt(startI: IDD, endI: IDD): Quantity {
-        var maxSum = model.builder.scalar(0)
-        var minSum = model.builder.scalar(0)
-        var currSumMax = model.builder.scalar(0)
-        var currSumMin = model.builder.scalar(0)
+        var maxSum = model.builder.integer(0)
+        var minSum = model.builder.integer(0)
+        var currSumMax = model.builder.integer(0)
+        var currSumMin = model.builder.integer(0)
 
         for (i in startI.min..endI.max) {
             //either in startI, endI or between startI and endI
@@ -297,18 +296,18 @@ internal class AstSumI(
             if (i > endI.min) { // (i>=endLow+1) these elements are added to the sum if needed
                 //maxSum
                 // maxSum = (maxSum.greaterThanOrEquals(currSumMax)).asBdd().ite(maxSum, currSumMax) ==> exponential growth of tree size
-                maxSum = model.builder.scalar(max(maxSum.max, currSumMax.max))
+                maxSum = model.builder.integer(max(maxSum.max, currSumMax.max))
                 //minSum
                 // minSum = (minSum.lessThanOrEquals(currSumMin)).asBdd().ite(minSum, currSumMin) ==> exponential growth of tree size
-                minSum = model.builder.scalar(min(minSum.min, currSumMin.min))
+                minSum = model.builder.integer(min(minSum.min, currSumMin.min))
             } else if (i <= startI.max) { // in this area the sum must start
                 //maxSum reset the start of the sum  (use max instead of ite -> otherwise exponential growth of tree size)
                 //currSumMax = (currSumMax.greaterThanOrEquals(iterationValue)).asBdd().ite(currSumMax, iterationValue) ==> exponential growth of tree size
-                currSumMax = model.builder.scalar(max(currSumMax.max, iterationValue.max))
+                currSumMax = model.builder.integer(max(currSumMax.max, iterationValue.max))
                 maxSum = currSumMax
                 //minSum  reset the start of the sum  (use min instead of ite -> otherwise exponential growth of tree size)
                 //currSumMin = (currSumMin.lessThanOrEquals(iterationValue)).asBdd().ite(currSumMin, iterationValue) ==> exponential growth of tree size
-                currSumMin = model.builder.scalar(min(currSumMin.min, iterationValue.min))
+                currSumMin = model.builder.integer(min(currSumMin.min, iterationValue.min))
                 minSum = currSumMin
             } else { //between startI and endI
                 //these elements are required for the sum
@@ -318,7 +317,7 @@ internal class AstSumI(
                 minSum = currSumMin // not reset of the sum, because this area must be included in the final result
             }
         }
-        return Quantity(model.builder.range(minSum.min, maxSum.max), iteration.upQuantity.unit)
+        return Quantity(model.builder.integer(minSum.min..maxSum.max), iteration.upQuantity.unit)
     }
 
     override fun <T> runDepthFirst(block: AstNode.() -> T): T {

@@ -13,7 +13,6 @@ class GuardValueFeature(
     val reason: String = ""
 ): VariableImplementation(FeatureImplementation(), Variable.BaseType.Bool) {
     init {
-        this.name = name
         this.feature.expression = dependency
         this.valueSpecs = valueSpecs
     }

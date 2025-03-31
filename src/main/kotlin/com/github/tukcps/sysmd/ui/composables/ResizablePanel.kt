@@ -90,7 +90,7 @@ internal fun ResizablePanel(
         val modifierAlignment: Alignment =
             if (panelPosition == ResizablePanelSide.LEFT_SIDE) Alignment.TopEnd else Alignment.TopStart
 
-        TooltipForIcons(tooltipText = "Hide/Show sidebar", modifier = Modifier.align(modifierAlignment)) {
+        SysMDTooltipArea(tooltipText = "Hide/Show sidebar", modifier = Modifier.align(modifierAlignment)) {
             Icon(
                 if (state.isExpanded && panelPosition == ResizablePanelSide.LEFT_SIDE) Icons.AutoMirrored.Filled.ArrowBack
                 else if (!state.isExpanded && panelPosition == ResizablePanelSide.LEFT_SIDE) Icons.AutoMirrored.Filled.ArrowForward

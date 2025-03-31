@@ -28,8 +28,8 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import com.github.tukcps.sysmd.compiler.scanner.Scanner
 import com.github.tukcps.sysmd.compiler.scanner.Token
-import com.github.tukcps.sysmd.services.globalComponentsIndex
-import com.github.tukcps.sysmd.services.globalPackagesIndex
+import com.github.tukcps.sysmd.ui.syntaxhighlighting.globalComponentsIndex
+import com.github.tukcps.sysmd.ui.syntaxhighlighting.globalPackagesIndex
 import com.github.tukcps.sysmd.ui.styles.AppTheme
 import com.github.tukcps.sysmd.ui.styles.Fonts
 
@@ -237,7 +237,7 @@ fun checkSuggestionsInit(
     sg : MutableState<SuggestionsData>
 ) : Boolean{
 
-    val sc = Scanner(tfv.value.text) //Feed total textField text to Scanner
+    val sc = Scanner().also { it.input = tfv.value.text } //Feed total textField text to Scanner
 
     //Scan through the text until reaching a token whose last index is the current cursor position
     do{

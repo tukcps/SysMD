@@ -4,16 +4,16 @@ import com.github.tukcps.sysmd.model.expression.implementation.InvariantImplemen
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.*
 import com.github.tukcps.sysmd.model.sysml.implementation.*
-import com.github.tukcps.sysmlv2.entities.ElementDAO
-import com.github.tukcps.sysmlv2.entities.Identified
-import com.github.tukcps.sysmlv2.entities.responseModels.ElementResponse
+import io.github.tukcps.sysmlv2.api.entities.ElementDAO
+import io.github.tukcps.sysmlv2.api.entities.Identified
 import java.util.*
 
 
 /**
- * A simple plain old java object (POJO) that stores element data in the local repository.
+ * A simple plain old java object (POJO) that implements the Element Data Abstraction (DAO) interface
+ * for storing element data in the local repository.
  */
-open class ElementData(
+data class ElementData(
     //used to parse JSON and map it to ElementDAO
     override var elementId: UUID, // --> elementId
     override var type: String,       // mandatory type of the metamodel as annotation
@@ -24,7 +24,7 @@ open class ElementData(
     override var declaredName: String? = null,
     override var declaredShortName: String? = null,
 
-    override var ownedElements: MutableList<Identified> = mutableListOf(),
+    override var ownedElement: MutableList<Identified> = mutableListOf(),
     override var owner: Identified? = null,
     override var owningMembership: Identified? = null,
     override var owningNamespace: Identified? = null,
@@ -39,7 +39,7 @@ open class ElementData(
 
     // For type AnnotationElement, Expression:
     override var language: String? = null,  // language, e.g. SysMD, SysML
-    override var body: String? = null,      // The code in e.g. SysMD or SysML v2 textual
+    override var body: String? = null,      // The code in e.g., SysMD or SysML v2 textual
 
     override var isImplied: Boolean? = null,
     override var isImpliedIncluded: Boolean? = null,
@@ -62,8 +62,7 @@ open class ElementData(
     override var source: MutableList<Identified>? = mutableListOf(),     // list of id or null (i.e., global, anything)
     override var target: MutableList<Identified>? = mutableListOf(),    // list of id or null (i.e., global, anything)
 ): ElementDAO {
-    override fun toString(): String =
-        "$type '${declaredName?:declaredShortName?:""}'"
+    override fun toString(): String = "$type '${declaredName?:declaredShortName?:""}'"
 }
 
 /**
@@ -72,54 +71,60 @@ open class ElementData(
  */
 fun ElementDAO.toElement(): Element {
     val element = when (type) {
-        "AllocationUsage"   -> AllocationUsageImplementation(elementId=elementId)
-        "AllocationDefinition" -> AllocationDefinitionImplementation(elementId=elementId)
-        "AnnotatingElement" -> AnnotatingElementImplementation(elementId=elementId, body = body!!)
-        "Annotation"        -> AnnotationImplementation(elementId=elementId)
-        "Association"       -> AssociationImplementation(elementId=elementId)
-        "CalculationDefinition" -> CalculationDefinitionImplementation(elementId=elementId)
-        "Classifier"        -> ClassifierImplementation(elementId=elementId)
-        "Class"             -> ClassImplementation(elementId=elementId)
-        "Comment"           -> CommentImplementation(elementId=elementId, body = body!!)
-        "Connector"         -> ConnectorImplementation(elementId=elementId)
-        "ConnectionUsage"   -> ConnectionUsageImplementation(elementId=elementId)
-        "ConnectionDefinition" -> ConnectionDefinitionImplementation(elementId=elementId)
-        "DataType"          -> DataTypeImplementation(elementId=elementId)
-        "Dependency"        -> DependencyImplementation(elementId=elementId)
-        "Documentation"     -> DocumentationImplementation(elementId=elementId, body = body!!)
-        "Element"           -> ElementImplementation(elementId=elementId)
-        "FeatureTyping"     -> FeatureTypingImplementation(elementId=elementId, typedFeature= Resolved(id=source?.firstOrNull()?.id), type=Resolved(id = target?.firstOrNull()?.id))
-        "Function"          -> FunctionImplementation(elementId=elementId)
-        "InterfaceDefinition" -> InterfaceDefinitionImplementation(elementId=elementId)
-        "InterfaceUsage"    -> InterfaceUsageImplementation(elementId=elementId)
-        "NamespaceImport"   -> NamespaceImportImplementation(elementId=elementId, importedNamespace = Resolved(id=target?.firstOrNull()?.id, str=importedNamespace, ref=null))
-        "MembershipImport"  -> MembershipImportImplementation(id=elementId, importedNamespace = Resolved(id= target?.firstOrNull()?.id, str=importedNamespace, ref=null), importedMemberName = Resolved(id=null, ref=null, str=importedMemberName))
-        "Multiplicity"      -> MultiplicityImplementation(elementId=elementId, name=name)
-        "Specialization"    -> SpecializationImplementation(elementId=elementId, specific= Resolved(id = source?.firstOrNull()?.id), general= Resolved(id = target?.firstOrNull()?.id))
-        "Subsetting"        -> SubsettingImplementation(elementId=elementId, subsettingFeature= Resolved(id= source?.firstOrNull()?.id), subsettedFeature= Resolved(id= target?.firstOrNull()?.id))
-        "Type"              -> TypeImplementation(elementId=elementId)
-        "Feature"           -> FeatureImplementation(elementId =elementId, direction = enumValueOf<Feature.FeatureDirectionKind>(direction?:"IN"))
-        "Invariant"         -> InvariantImplementation(elementId=elementId)
-        "Package"           -> PackageImplementation(elementId=elementId, declaredName=declaredName, declaredShortName = declaredShortName, isLibraryElement = isLibraryElement == true, isStandard = isStandard == true)
-        "PartUsage"         -> PartUsageImplementation(elementId=elementId)
-        "PartDefinition"    -> PartDefinitionImplementation(elementId=elementId)
-        "PortUsage"         -> PortUsageImplementation(elementId=elementId)
-        "PortDefinition"    -> PortDefinitionImplementation(elementId=elementId)
-        "Namespace"         -> NamespaceImplementation(elementId=elementId)
-        "Redefinition"      -> RedefinitionImplementation(elementId=elementId)
-        "Relationship"      -> RelationshipImplementation(elementId=elementId)
-        "ReferenceSubsetting" -> ReferenceSubsettingImplementation(elementId=elementId)
-        "RequirementUsage"   -> RequirementUsageImplementation(elementId=elementId)
-        "RequirementDefinition" -> RequirementDefinitionImplementation(elementId=elementId)
-        "TextualRepresentation" -> TextualRepresentationImplementation(elementId=elementId, body = body!!, language = language!!)
+        "AllocationUsage"   -> AllocationUsageImplementation()
+        "AllocationDefinition" -> AllocationDefinitionImplementation()
+        "AnnotatingElement" -> AnnotatingElementImplementation(body = body!!)
+        "Annotation"        -> AnnotationImplementation()
+        "AttributeDefinition" -> AttributeDefinitionImplementation()
+        "AttributeUsage"    -> AttributeUsageImplementation()
+        "Association"       -> AssociationImplementation()
+        "CalculationDefinition" -> CalculationDefinitionImplementation()
+        "Classifier"        -> ClassifierImplementation()
+        "Class"             -> ClassImplementation()
+        "Comment"           -> CommentImplementation(body = body!!)
+        "Connector"         -> ConnectorImplementation()
+        "ConnectionUsage"   -> ConnectionUsageImplementation()
+        "ConnectionDefinition" -> ConnectionDefinitionImplementation()
+        "DataType"          -> DataTypeImplementation()
+        "Dependency"        -> DependencyImplementation()
+        "Documentation"     -> DocumentationImplementation(body = body!!)
+        "Element"           -> ElementImplementation()
+        "FeatureTyping"     -> FeatureTypingImplementation(typedFeature= Resolved(id=source?.firstOrNull()?.id), type=Resolved(id = target?.firstOrNull()?.id))
+        "Function"          -> FunctionImplementation()
+        "InterfaceDefinition" -> InterfaceDefinitionImplementation()
+        "InterfaceUsage"    -> InterfaceUsageImplementation()
+        "NamespaceImport"   -> NamespaceImportImplementation(importedNamespace = Resolved(id=target?.firstOrNull()?.id, str=importedNamespace, ref=null))
+        "MembershipImport"  -> MembershipImportImplementation(importedNamespace = Resolved(id= target?.firstOrNull()?.id, str=importedNamespace, ref=null), importedMemberName = Resolved(id=null, ref=null, str=importedMemberName))
+        "Metaclass"         -> MetaclassImplementation()
+        "MetadataFeature"   -> MetadataFeatureImplementation()
+        "Multiplicity"      -> MultiplicityImplementation()
+        "Namespace"         -> NamespaceImplementation()
+        "Specialization"    -> SpecializationImplementation(specific= Resolved(id = source?.firstOrNull()?.id), general= Resolved(id = target?.firstOrNull()?.id))
+        "Subsetting"        -> SubsettingImplementation(subsettingFeature= Resolved(id= source?.firstOrNull()?.id), subsettedFeature= Resolved(id= target?.firstOrNull()?.id))
+        "Type"              -> TypeImplementation()
+        "Feature"           -> FeatureImplementation(direction = enumValueOf<Feature.FeatureDirectionKind>(direction?:"IN"))
+        "Invariant"         -> InvariantImplementation()
+        "Package"           -> PackageImplementation(declaredName=declaredName, declaredShortName = declaredShortName, isLibraryElement = isLibraryElement == true, isStandard = isStandard == true)
+        "PartUsage"         -> PartUsageImplementation()
+        "PartDefinition"    -> PartDefinitionImplementation()
+        "PortUsage"         -> PortUsageImplementation()
+        "PortDefinition"    -> PortDefinitionImplementation()
+        "Redefinition"      -> RedefinitionImplementation()
+        "Relationship"      -> RelationshipImplementation()
+        "ReferenceSubsetting" -> ReferenceSubsettingImplementation()
+        "RequirementUsage"   -> RequirementUsageImplementation()
+        "RequirementDefinition" -> RequirementDefinitionImplementation()
+        "Subclassification" -> SubclassifierImplementation()
+        "TextualRepresentation" -> TextualRepresentationImplementation(body = body!!, language = language!!)
         else             -> throw Exception("Element with unknown type '$type' in response; must be valid entity type.")
     }
+    element.elementId = elementId
     element.declaredName = declaredName
     element.declaredShortName = declaredShortName
     element.isLibraryElement = isLibraryElement == true
     element.isStandard = isStandard == true
     element.owner = Resolved(str=null, id=owner?.id, ref=null)
-    ownedElements.forEach {
+    ownedElement.forEach {
         element.ownedElement.add(Resolved(str=null, id= it.id, ref=null))
     }
     if (element is Relationship && element !is Import) {
@@ -129,24 +134,26 @@ fun ElementDAO.toElement(): Element {
     if (element is NamespaceImportImplementation) {
         element.importedNamespace.str = importedNamespace
         element.target.first().str = importedNamespace
-        element.target.first().id = target?.first()?.id
-        element.source.first().id = source?.first()?.id
-        // element.importedMemberName = if (importedMemberName==null) null else Identity(str=importedMemberName!!)
+        element.target.first().id = target?.firstOrNull()?.id
+        element.source.first().id = source?.firstOrNull()?.id
+        // element.importedMemberName = if (importedMemberName==null) null else Identity (str=importedMemberName!!)
     }
-    if (element is Feature && body != null) {
-        val bodydata = body?.split("##")
-        if (bodydata?.size == 3) {
-            element.typeConstraint = bodydata[0].split(",").toMutableList()
-            element.typeConstraint.forEach {it.trim()}
-            element.unitConstraint = bodydata[1].trim()
-            element.expression = bodydata[2].trim()
+    if (element is Feature) {
+        if (body != null) {
+            val bodydata = body?.split("##")
+            if (bodydata?.size == 3) {
+                element.typeConstraint = bodydata[0].split(",").toMutableList()
+                element.typeConstraint.forEach { it.trim() }
+                element.unitConstraint = bodydata[1].trim()
+                element.expression = bodydata[2].trim()
+            }
         }
-        element.isEnd = isEnd?:false
-        element.isComposite = isComposite?:false
-        element.isOrdered = isOrdered?:false
-        element.isDerived = isDerived?:false
-        element.isUnique = isUnique?:false
-        element.isReadOnly = isReadOnly?:false
+        element.isEnd = isEnd == true
+        element.isComposite = isComposite == true
+        element.isOrdered = isOrdered == true
+        element.isDerived = isDerived == true
+        element.isUnique = isUnique == true
+        element.isReadOnly = isReadOnly == true
     }
     return element
 }
@@ -156,10 +163,9 @@ fun ElementDAO.toElement(): Element {
  * The DAO is used for (de)serialization.
  */
 fun Element.toDAO(): ElementData {
-    // require(model != null)
     val dao = ElementData(
         type = elementType,
-        elementId = elementId,
+        elementId = elementId!!,
         declaredName = declaredName,
         declaredShortName = declaredShortName,
         name = name,
@@ -168,9 +174,11 @@ fun Element.toDAO(): ElementData {
         isLibraryElement = isLibraryElement,
         isStandard = isStandard
     )
+    dao.isLibraryElement = isLibraryElement
+    dao.isStandard = isStandard
 
     ownedElement.forEach {
-        dao.ownedElements.add(Identified(it.id))
+        dao.ownedElement.add(Identified(it.id))
     }
 
     if (this is Relationship) {
@@ -187,6 +195,7 @@ fun Element.toDAO(): ElementData {
             dao.isComposite = isComposite
             dao.isOrdered = isOrdered
             dao.isReadOnly = isReadOnly
+            dao.isDerived = isDerived
         }
         is TextualRepresentation -> { dao.body = body; dao.language = language }
         is Comment -> { dao.body = body }
@@ -201,12 +210,14 @@ fun Element.toDAO(): ElementData {
 }
 
 
-fun ElementResponse.toElementData() = ElementData(
-    elementId = id,
+fun ElementDAO.toElementData() = ElementData(
+    elementId = elementId,
     type = type,
+    declaredName = declaredName,
+    declaredShortName = declaredShortName,
     name = name,
     shortName = shortName,
-    ownedElements = mutableListOf<Identified>().also { list -> ownedElements.forEach { list.add(Identified(it.id)) }},
+    ownedElement = mutableListOf<Identified>().also { list -> ownedElement.forEach { list.add(Identified(it.id)) }},
     owner = Identified(owner?.id),
     direction = direction.toString(),
     importedMemberName = importedMemberName,

@@ -1,10 +1,11 @@
 package sysmltests.constraintnettests
 
-import com.github.tukcps.sysmd.compiler.loadSysMD
-import com.github.tukcps.sysmd.services.session.SessionManager.testSession
 import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.services.resolve.resolveVar
+import util.mockup.loadKerML
+import util.mockup.loadSysMLv2
 import org.junit.jupiter.api.Disabled
+import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -12,24 +13,24 @@ import kotlin.test.assertTrue
 
 class IteTests {
 
-    @Test fun iteTest() = testSession {
-        loadSysMD(input = """
-                attribute a: ScalarValues::Real(1.0 .. 1.0); 
-                attribute b: ScalarValues::Real(2.0); 
-                attribute c: ScalarValues::Real(3.0);
-                attribute value2: ScalarValues::Real(1 .. 100) = a + ITE( (b > 1.0) and (b < 100.0), 10.0, 20.0);
+    @Test fun iteTest() = testSession("ScalarValues") {
+        loadKerML(input = """
+                feature a: ScalarValues::Real {:>> range = "1.0 .. 1.0";} 
+                feature b: ScalarValues::Real(2.0); 
+                feature c: ScalarValues::Real(3.0);
+                feature value2: ScalarValues::Real = a + ITE( (b > 1.0) and (b < 100.0), 10.0, 20.0) {:>> range = "1 .. 100";} 
             """.trimIndent(), catchExceptions = false)
         settings.catchExceptions = false
         propagate()
         assertEquals(0, status.exceptions.size, status.exceptions.toString())
     }
 
-    @Test fun iteTestInteger() = testSession {
-        loadSysMD(input = """
-                attribute a: ScalarValues::Integer(1..1); 
-                attribute b: ScalarValues::Integer(2..2); 
-                attribute c: ScalarValues::Integer(3..3);
-                attribute value2: ScalarValues::Integer(1 .. 100) = a + ITE( (b > 1) and (b < 100), 10, 20);
+    @Test fun iteTestInteger() = testSession("ScalarValues") {
+        loadKerML(input ="""
+                feature a: ScalarValues::Integer {:>> range = "1..1";}
+                feature b: ScalarValues::Integer {:>> range = "2..2";}
+                feature c: ScalarValues::Integer {:>> range = "3..3";}
+                feature value2: ScalarValues::Integer = a + ITE( (b > 1) and (b < 100), 10, 20) {:>> range = "1 .. 100";}
             """.trimIndent(), catchExceptions = false)
         settings.catchExceptions = false
         propagate()
@@ -37,12 +38,12 @@ class IteTests {
     }
 
     @Test @Disabled
-    fun nestedITETest() = testSession("ScalarValues","SI", "ISO26262") {
-        loadSysMD("""   
+    fun nestedITETest() = testSession("ScalarValues", "SI", "ISO26262") {
+        loadSysMLv2("""   
             package Smartgrid{
-                import ISO26262::*;
-                import SI::*;
-                import ScalarValues::*;
+                private import ISO26262::*;
+                private import SI::*;
+                private import ScalarValues::*;
                 part def microgrid isA Component;
                 part def AASsystem isA Component;
                 part def EhealthAsystem isA Component;
@@ -108,12 +109,12 @@ class IteTests {
     }
 
     @Test @Disabled
-    fun ITERuntimeTest() = testSession {
-        loadSysMD("""  
+    fun ITERuntimeTest() = testSession("ScalarValues") {
+        loadKerML("""  
             import ScalarValues::*;
-            attribute x: Real(0.2..0.8);
-            attribute cond: Boolean = if x <= 0.3 ? true else false;
-            attribute res: Real = if cond? 2.0 else 0.0.
+            feature x: Real(0.2..0.8);
+            feature cond: Boolean = if x <= 0.3 ? true else false;
+            feature res: Real = if cond? 2.0 else 0.0.
            """)
         propagate()
         val x = global.resolveVar("x")

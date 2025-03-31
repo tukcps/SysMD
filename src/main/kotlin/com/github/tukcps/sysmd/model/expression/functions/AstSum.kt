@@ -1,19 +1,13 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import com.github.tukcps.aadd.*
-import com.github.tukcps.aadd.values.IntegerRange
-import com.github.tukcps.aadd.values.Range
+import io.github.tukcps.aadd.AADD
+import io.github.tukcps.aadd.IDD
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.quantities.Quantity
-import com.github.tukcps.sysmd.quantities.VectorDimensionError
 import com.github.tukcps.sysmd.quantities.VectorQuantity
-import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.session.Session
-import kotlin.math.max
-import kotlin.math.min
-import kotlin.math.roundToLong
 
 /**
  * Calculates Sum of all values of a vector
@@ -41,13 +35,13 @@ internal class AstSum(
     override fun evalUp() {
         when (value.upQuantity.value) {
             is AADD -> {
-                var sum = model.builder.scalar(0.0)
+                var sum = model.builder.real(0.0)
                 value.upQuantity.values.forEach { sum += it.asAadd() }
                 upQuantity = Quantity(sum, value.upQuantity.unit, value.upQuantity.unitSpec)
             }
 
             is IDD -> {
-                var sum = model.builder.scalar(0)
+                var sum = model.builder.integer(0)
                 value.upQuantity.values.forEach { sum += it.asIdd() }
                 upQuantity = Quantity(sum)
             }
@@ -102,7 +96,4 @@ internal class AstSum(
         for (p in parameters) parClone.add(p.clone())
         return AstSum(namespace, model, parClone)
     }
-
-    override fun toExpressionString() = "sum(${getParam(0).toExpressionString()})"
-
 }

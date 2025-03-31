@@ -3,8 +3,7 @@ package com.github.tukcps.sysmd.model.kerml.implementation
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.exceptions.SysMDError
 import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.services.report
-import java.util.*
+import com.github.tukcps.sysmd.services.session.report
 
 
 /**
@@ -22,17 +21,13 @@ import java.util.*
  * its owned sub-Namespaces.
  */
 class MembershipImportImplementation(
-    id: UUID = UUID.randomUUID(),
-    owner: Resolved<Element> = Resolved(),
     importedNamespace: Resolved<Namespace> = Resolved(),
     override var importedMemberName: Resolved<Element> = Resolved(),
-    override var visibility: Import.VisibilityKind = Import.VisibilityKind.Public,
+    override var visibility: Import.VisibilityKind = Import.VisibilityKind.Private,
     override var isRecursive: Boolean = true,                            // False by default in SysMLv2
     override var isImportAll: Boolean = false,
     elementType: String = "MembershipImport"
 ): MembershipImport, RelationshipImplementation(
-    elementId = id, ownedElement = mutableListOf(), owner = owner,
-    source = mutableListOf(Resolved(owner)),
     target = mutableListOf(Resolved(importedNamespace)),
     elementType = elementType
 ) {
@@ -42,7 +37,7 @@ class MembershipImportImplementation(
     @Suppress("UNCHECKED_CAST")
     override var importedNamespace: Resolved<Namespace>
         get() = try { target[0] as Resolved<Namespace>
-        } catch (e: Exception) { model?.report(SysMDError("Problem with import"))
+        } catch (_: Exception) { model?.report(SysMDError("Problem with import"))
             Resolved(model!!.global) }
         set(value) { target[0].ref = value.ref; target[0].str = value.str; target[0].id = value.id }
 
@@ -50,7 +45,6 @@ class MembershipImportImplementation(
 
     override fun clone() : MembershipImport{
         return MembershipImportImplementation(
-            owner = Resolved(owner),
             importedNamespace = Resolved(importedNamespace),
             visibility = visibility,
             isRecursive = isRecursive,
@@ -66,7 +60,7 @@ class MembershipImportImplementation(
             model?.report( SemanticError("imports can have only a single source"))
         if (importOwningNamespace !is Namespace)
             model?.report(SemanticError( "only Packages and Namespaces can import"))
-        if (target.size < 1)
+        if (target.isEmpty())
             model?.report(SemanticError( "import: nothing imported"))
         target.forEach {
             if(it.ref !is Namespace?)

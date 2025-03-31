@@ -1,7 +1,9 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import com.github.tukcps.aadd.AADD
-import com.github.tukcps.aadd.IDD
+import io.github.tukcps.aadd.AADD
+import io.github.tukcps.aadd.IDD
+import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.PLUS
+import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.TIMES
 import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.model.expression.AstBinOp
@@ -11,12 +13,9 @@ import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.getOwnedElementsOfType
-import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.PLUS
-import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.TIMES
 import com.github.tukcps.sysmd.quantities.Quantity
-import com.github.tukcps.sysmd.services.resolve.findAllOwnedElements
-import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.resolve.resolve
+import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.session.Session
 
 /**
@@ -75,9 +74,7 @@ internal class AstSumHasA(
                     elem.ast?.evalUp()
                 } else
                     elem.variable?.ast?.evalUp()
-            } catch (ignore: Exception) {
-                println()
-            }
+            } catch (_: Exception) { }
         }
         evalUp()
     }
@@ -117,15 +114,6 @@ internal class AstSumHasA(
         return getSubclassDependencyStrings(namespace, propertyAst.first())
     }
 
-    override fun <T> runDepthFirst(block: AstNode.() -> T): T {
-        val elements = namespace.getOwnedElementsOfType<Element>()
-        for (element in elements) {
-//            try { model.getProperty(model.selfId, Identification(null, propertyName))!!.ast!!.runDepthFirst(block) }
-//            catch (ignore: Exception){ } // No property found, we can do nothing or recurse.
-        }
-        return this.run(block)
-    }
-
     override fun clone(): AstSumHasA {
         return AstSumHasA(model, namespace, listOf(propertyAst.first().clone()), transitive)
     }
@@ -140,8 +128,7 @@ internal class AstSumHasA(
 fun Session.initSumOverComposition(element: Namespace, propertyAST: AstNode, transitive: Boolean, isReal: Boolean = true): AstNode {
     var ast: AstNode? = null
     var isRealSum = isReal //indicates if the property is a real or an int
-    var owned = element.findAllOwnedElements().filterIsInstance<Feature>().filterNot { it.specializes(repo.scalarType) }
-    for (elementIterator in element.findAllOwnedElements().filterIsInstance<Feature>().filterNot { it.specializes(repo.scalarType) }) {
+    for (elementIterator in element.getOwnedElementsOfType<Feature>().filterNot { it.specializes(repo.scalarType) }) {
         var newAstNode: AstNode = propertyAST.clone()
         var astNodeUsed = false
         for (leaf in newAstNode.getLeaves().filter { it.qualifiedName != null }) {
@@ -193,7 +180,7 @@ fun Session.initSumOverComposition(element: Namespace, propertyAST: AstNode, tra
         }
     }
     return ast ?: if (isRealSum)
-        AstLeaf(this, Quantity(builder.scalar(0.0), "?"))
+        AstLeaf(this, Quantity(builder.real(0.0), "?"))
     else
-        AstLeaf(this, Quantity(builder.scalar(0)))
+        AstLeaf(this, Quantity(builder.integer(0)))
 }

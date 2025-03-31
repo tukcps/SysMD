@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,21 +19,26 @@ import com.github.tukcps.sysmd.ui.composables.TreeViewModel
 import com.github.tukcps.sysmd.ui.composables.TreeViewPlus
 import com.github.tukcps.sysmd.ui.helper.fitMaxWidth
 import com.github.tukcps.sysmd.ui.viewmodel.MyIcons
-import com.github.tukcps.sysmd.ui.viewmodel.TabsModel
 
 @Composable
-fun DecompositionTree(composition: MutableState<TreeViewModel>, tabsModel: TabsModel) {
+fun DecompositionTree(
+    composition: MutableState<TreeViewModel>,
+) {
     Column(Modifier.padding(start = 5.dp)) {
         var collapsed by remember { mutableStateOf(true) }
         val standards = remember { mutableStateOf(false) }
         val annotations = remember { mutableStateOf(false) }
-        Row(Modifier.padding(start = 5.dp).height(20.dp).fillMaxWidth().clickable { collapsed = !collapsed }) {
-            Icon(imageVector = MyIcons.Menu, "Filters", modifier = Modifier.height(16.dp).align(Alignment.CenterVertically))
-            Text(" Filters", modifier = Modifier.align(Alignment.CenterVertically))
+        Row(Modifier.padding(start = 5.dp).height(24.dp).fillMaxWidth().clickable { collapsed = !collapsed }) {
+            Icon(imageVector = MyIcons.Menu, "Filters", modifier = Modifier.size(16.dp).align(Alignment.CenterVertically))
+            Text(" Filters",
+                modifier = Modifier.padding(bottom = 2.dp).align(Alignment.CenterVertically),
+                fontSize = MaterialTheme.typography.bodyMedium.fontSize,
+                lineHeight = MaterialTheme.typography.bodyMedium.lineHeight
+            )
         }
 
         if (!collapsed) {
-            Column(modifier = Modifier.padding(start=20.dp)) {
+            Column(modifier = Modifier.padding(start=10.dp)) {
                 ButtonSelection(standards, "Standard libraries")
                 ButtonSelection(annotations, "Annotations")
             }
@@ -42,7 +48,7 @@ fun DecompositionTree(composition: MutableState<TreeViewModel>, tabsModel: TabsM
             Spacer(modifier = Modifier.padding(8.dp).height(1.dp).fitMaxWidth().background(Color.DarkGray))
         }
 
-        TreeViewPlus(composition, tabsModel) {
+        TreeViewPlus(composition) {
             !   (
                     ((!standards.value) && it.name.endsWith("(standard)"))  ||
                     ((!annotations.value) && it.name.startsWith("AnnotatingElement"))

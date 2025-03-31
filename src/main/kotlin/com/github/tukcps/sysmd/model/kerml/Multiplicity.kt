@@ -1,7 +1,5 @@
 package com.github.tukcps.sysmd.model.kerml
 
-import com.github.tukcps.sysmd.cspsolver.Variable
-
 
 /**
  * The multiplicity is a Feature that is an integer range or set.

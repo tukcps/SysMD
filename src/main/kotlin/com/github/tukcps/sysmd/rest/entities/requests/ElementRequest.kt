@@ -1,8 +1,8 @@
 package com.github.tukcps.sysmd.rest.entities.requests
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.github.tukcps.aadd.values.*
-import com.github.tukcps.sysmd.exceptions.RequestInvalidException
+import io.github.tukcps.aadd.values.*
+import com.github.tukcps.sysmd.rest.exceptions.RequestInvalidException
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.*
 import java.util.*
@@ -53,52 +53,44 @@ class ElementRequest {
     fun toElement(): Element {
         val element = when (type) {
             "NamespaceImport"-> NamespaceImportImplementation(
-                elementId=id, owner =
-                Resolved(owner),
                 importedNamespace = Resolved(id=target?.firstOrNull(), str=importedNamespace, ref=null))
             "MembershipImport" -> MembershipImportImplementation(
-                id=id, owner = Resolved(owner),
                 importedMemberName = Resolved(id=null, ref=null, str=importedMemberName))
             "Multiplicity" -> MultiplicityImplementation(
-                multiplicity = if (valueSpecs.size!=0) IntegerRange(valueSpecs[0] as String).toString() else IntegerRange(1, 1).toString()
+                multiplicity = if (valueSpecs.isNotEmpty()) IntegerRange(valueSpecs[0] as String).toString() else IntegerRange(1, 1).toString()
             )
 
             "Specialization" -> SpecializationImplementation(
-                elementId = id,
                 specific = Resolved<Type>(id = source?.get(0)!!, null, null),
                 general = Resolved<Type>(id = target?.get(0)!!, null, null)
             )
 
             "Classifier",           // Classifier is deprecated and only needed for modeling purposes
-            "Class" -> ClassImplementation(elementId = id, declaredName = name, declaredShortName = shortName)
+            "Class" -> ClassImplementation(declaredName = name, declaredShortName = shortName)
 
             "Feature" -> FeatureImplementation(
-                elementId = id,
                 declaredName = name,
                 declaredShortName = shortName,
                 direction = direction ?: Feature.FeatureDirectionKind.IN
             )
 
-            "Package" -> PackageImplementation(elementId = id, declaredName = name, declaredShortName = shortName)
-            "Documentation" -> DocumentationImplementation(elementId = id, declaredName = name, declaredShortName = name, body = body!!)
+            "Package" -> PackageImplementation(declaredName = name, declaredShortName = shortName)
+            "Documentation" -> DocumentationImplementation(declaredName = name, declaredShortName = name, body = body!!)
             "AnnotatingElement" -> AnnotatingElementImplementation(
-                elementId = id,
                 declaredName = name,
                 declaredShortName = name,
                 body = body!!
             )
 
             "TextualRepresentation" -> TextualRepresentationImplementation(
-                elementId = id,
                 declaredName = name,
                 declaredShortName = shortName,
                 body = body!!,
                 language = language!!
             )
 
-            "Comment" -> CommentImplementation(elementId = id, declaredName = name, declaredShortName = shortName, body = body!!)
+            "Comment" -> CommentImplementation(declaredName = name, declaredShortName = shortName, body = body!!)
             "Relationship" -> RelationshipImplementation(
-                elementId = id,
                 declaredName = name,
                 declaredShortName = shortName,
                 source = source?.toIdentityList() ?: mutableListOf(),
@@ -106,7 +98,6 @@ class ElementRequest {
             )
 
             "Association" -> AssociationImplementation(
-                elementId = id,
                 declaredName = name,
                 declaredShortName = shortName,
                 sources = source?.toIdentityList() ?: mutableListOf(),
@@ -115,6 +106,7 @@ class ElementRequest {
 
             else -> throw RequestInvalidException("Invalid type in request: '$type'")
         }
+        element.elementId = id
         element.owner = Resolved(owner)
         return element
     }
@@ -136,7 +128,7 @@ fun ElementRequest.update(element: Element) : Element {
 
     when(element) {
         is Multiplicity -> {
-            val range = if (valueSpecs.size!=0) IntegerRange(valueSpecs[0] as String) else IntegerRange(1, 1)
+            val range = if (valueSpecs.isNotEmpty()) IntegerRange(valueSpecs[0] as String) else IntegerRange(1, 1)
             element.typeConstraint = mutableListOf(range.toString())
         }
 

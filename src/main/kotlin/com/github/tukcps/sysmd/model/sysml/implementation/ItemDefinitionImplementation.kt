@@ -5,12 +5,10 @@ import com.github.tukcps.sysmd.model.sysml.ItemDefinition
 import java.util.UUID
 
 class ItemDefinitionImplementation(
-    elementId: UUID = UUID.randomUUID(),
-    elementType: String = "ItemDefinition",
     declaredName: String? = null,
     declaredShortName: String? = null,
+    elementType: String = "ItemDefinition"
 ): ItemDefinition, ClassImplementation(
-    elementId = elementId,
     declaredName = declaredName,
     declaredShortName = declaredShortName,
     elementType = elementType

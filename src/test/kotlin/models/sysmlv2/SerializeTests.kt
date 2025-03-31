@@ -1,6 +1,6 @@
 package models.sysmlv2
 
-import com.github.tukcps.sysmd.model.kerml.implementation.CalculationDefinitionImplementation
+import com.github.tukcps.sysmd.model.sysml.implementation.CalculationDefinitionImplementation
 import com.github.tukcps.sysmd.model.sysml.implementation.*
 import com.github.tukcps.sysmd.services.repositories.local.toDAO
 import com.github.tukcps.sysmd.services.repositories.local.toElement
@@ -16,10 +16,9 @@ class SerializeTests {
     @Test
     fun serializePartUsage() {
         val element = PartUsageImplementation(
-            elementId = uuid,
             declaredName = "name",
             declaredShortName = "shortName"
-        )
+        ).also { it.elementId = uuid }
         val serializedElement = element.toDAO()
         assertEquals(uuid, serializedElement.elementId)
         assertEquals("name", serializedElement.declaredName)
@@ -35,10 +34,9 @@ class SerializeTests {
     @Test
     fun serializePartDefinition() {
         val element = PartDefinitionImplementation(
-            elementId = uuid,
             declaredName = "name",
             declaredShortName = "shortName"
-        )
+        ).also { it.elementId = uuid }
         val serializedElement = element.toDAO()
         assertEquals(uuid, serializedElement.elementId)
         assertEquals("name", serializedElement.declaredName)
@@ -54,10 +52,9 @@ class SerializeTests {
     @Test
     fun serializePortDefinition() {
         val element = PortDefinitionImplementation(
-            elementId = uuid,
             declaredName = "name",
             declaredShortName = "shortName"
-        )
+        ).also { it.elementId = uuid }
         val serializedElement = element.toDAO()
         assertEquals(uuid, serializedElement.elementId)
         assertEquals("name", serializedElement.declaredName)
@@ -74,10 +71,9 @@ class SerializeTests {
     @Test
     fun serializePortUsage() {
         val element = PortUsageImplementation(
-            elementId = uuid,
             declaredName = "name",
             declaredShortName = "shortName"
-        )
+        ).also { it.elementId = uuid }
         val serializedElement = element.toDAO()
         assertEquals(uuid, serializedElement.elementId)
         assertEquals("name", serializedElement.declaredName)
@@ -94,10 +90,9 @@ class SerializeTests {
     @Test
     fun serializeRequirementUsage() {
         val element = RequirementUsageImplementation(
-            elementId = uuid,
             declaredName = "name",
             declaredShortName = "shortName"
-        )
+        ).also { it.elementId = uuid }
         val serializedElement = element.toDAO()
         assertEquals(uuid, serializedElement.elementId)
         assertEquals("name", serializedElement.declaredName)
@@ -115,10 +110,9 @@ class SerializeTests {
     @Test
     fun serializeConnectionDefinition() {
         val element = ConnectionDefinitionImplementation(
-            elementId = uuid,
             declaredName = "name",
             declaredShortName = "shortName"
-        )
+        ).also { it.elementId = uuid }
         val serializedElement = element.toDAO()
         assertEquals(uuid, serializedElement.elementId)
         assertEquals("name", serializedElement.declaredName)
@@ -135,10 +129,9 @@ class SerializeTests {
     @Test
     fun serializeConnectionUsage() {
         val element = ConnectionUsageImplementation(
-            elementId = uuid,
             declaredName = "name",
             declaredShortName = "shortName"
-        )
+        ).also { it.elementId = uuid }
         val serializedElement = element.toDAO()
         assertEquals(uuid, serializedElement.elementId)
         assertEquals("name", serializedElement.declaredName)
@@ -154,10 +147,9 @@ class SerializeTests {
     @Test
     fun serializeInterfaceDefinition() {
         val element = InterfaceDefinitionImplementation(
-            elementId = uuid,
             declaredName = "name",
             declaredShortName = "shortName"
-        )
+        ).also { it.elementId = uuid }
         val serializedElement = element.toDAO()
         assertEquals(uuid, serializedElement.elementId)
         assertEquals("name", serializedElement.declaredName)
@@ -174,10 +166,9 @@ class SerializeTests {
     @Test
     fun serializeInterfaceUsage() {
         val element = InterfaceUsageImplementation(
-            elementId = uuid,
             declaredName = "name",
             declaredShortName = "shortName"
-        )
+        ).also { it.elementId = uuid }
         val serializedElement = element.toDAO()
         assertEquals(uuid, serializedElement.elementId)
         assertEquals("name", serializedElement.declaredName)
@@ -194,10 +185,9 @@ class SerializeTests {
     @Test
     fun serializeAllocationDefinition() {
         val element = AllocationDefinitionImplementation(
-            elementId = uuid,
             declaredName = "name",
             declaredShortName = "shortName"
-        )
+        ).also { it.elementId = uuid }
         val serializedElement = element.toDAO()
         assertEquals(uuid, serializedElement.elementId)
         assertEquals("name", serializedElement.declaredName)
@@ -214,10 +204,9 @@ class SerializeTests {
     @Test
     fun serializeAllocationUsage() {
         val element = AllocationUsageImplementation(
-            elementId = uuid,
             declaredName = "name",
             declaredShortName = "shortName"
-        )
+        ).also { it.elementId = uuid }
         val serializedElement = element.toDAO()
         assertEquals(uuid, serializedElement.elementId)
         assertEquals("name", serializedElement.declaredName)
@@ -235,10 +224,9 @@ class SerializeTests {
     @Test
     fun serializeCalculationDefinition() {
         val element = CalculationDefinitionImplementation(
-            elementId = uuid,
             declaredName = "name",
             declaredShortName = "shortName"
-        )
+        ).also { it.elementId = uuid }
         val serializedElement = element.toDAO()
         assertEquals(uuid, serializedElement.elementId)
         assertEquals("name", serializedElement.declaredName)

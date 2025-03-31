@@ -6,7 +6,6 @@ import com.github.tukcps.sysmd.cspsolver.VariableImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 
 class RelatedExpression(
-    name: String? = null,
     dependency: String,
     valueSpecs: MutableList<Any?>,
     val createdBy: Variable,
@@ -14,7 +13,6 @@ class RelatedExpression(
     val reason: String = ""
 ): VariableImplementation(FeatureImplementation(), BaseType.Bool){
     init {
-        this.name = name
         this.feature.expression = dependency
         this.valueSpecs = valueSpecs
     }

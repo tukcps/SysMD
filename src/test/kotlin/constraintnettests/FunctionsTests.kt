@@ -1,16 +1,17 @@
 package constraintnettests
 
-import com.github.tukcps.aadd.IDD
-import com.github.tukcps.sysmd.compiler.loadSysMD
+import io.github.tukcps.aadd.IDD
 import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
-import com.github.tukcps.sysmd.services.session.SessionManager.testSession
+import util.mockup.loadKerML
+import util.mockup.loadSysMLv2
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
+import util.testSession
 import kotlin.math.*
 
 /**
@@ -19,18 +20,18 @@ import kotlin.math.*
 class FunctionsTests {
 
     @Test
-    fun absTestReal() = testSession {
-        loadSysMD("""
-                feature qa: ScalarValues::Real(5.0 .. 5.0); 
-                feature qb: ScalarValues::Real(1.0 .. 5.0); 
-                feature qc: ScalarValues::Real(0.0 .. 1.0); 
-                feature qd: ScalarValues::Real(0.0 .. 0.0); 
-                feature qe: ScalarValues::Real(-1.0 .. 5.0); 
-                feature qf: ScalarValues::Real(-5.0 .. 5.0); 
-                feature qg: ScalarValues::Real(-5.0 .. 1.0); 
-                feature qh: ScalarValues::Real(-5.0 .. -1.0); 
-                feature qi: ScalarValues::Real(-5.0 .. 0.0); 
-                feature qj: ScalarValues::Real(-5.0 .. -5.0); 
+    fun absTestReal() = testSession("ScalarValues") {
+        loadKerML("""
+                feature qa: ScalarValues::Real {:>> range = "5.0 .. 5.0";}
+                feature qb: ScalarValues::Real {:>> range = "1.0 .. 5.0";} 
+                feature qc: ScalarValues::Real {:>> range = "0.0 .. 1.0";}
+                feature qd: ScalarValues::Real {:>> range = "0.0 .. 0.0";} 
+                feature qe: ScalarValues::Real {:>> range = "-1.0 .. 5.0";} 
+                feature qf: ScalarValues::Real {:>> range = "-5.0 .. 5.0";}
+                feature qg: ScalarValues::Real {:>> range = "-5.0 .. 1.0";}
+                feature qh: ScalarValues::Real {:>> range = "-5.0 .. -1.0";}
+                feature qi: ScalarValues::Real {:>> range = "-5.0 .. 0.0";}
+                feature qj: ScalarValues::Real {:>> range = "-5.0 .. -5.0";} 
                 feature a: ScalarValues::Real = abs(qa); 
                 feature b: ScalarValues::Real = abs(qb); 
                 feature c: ScalarValues::Real = abs(qc); 
@@ -41,7 +42,7 @@ class FunctionsTests {
                 feature h: ScalarValues::Real = abs(qh); 
                 feature i: ScalarValues::Real = abs(qi); 
                 feature j: ScalarValues::Real = abs(qj);
-            """.trimIndent()
+            """
         )
         propagate()
         assertEquals(5.0, global.resolveVar("a")!!.aadd().getRange().min, 0.00001)
@@ -68,11 +69,11 @@ class FunctionsTests {
     }
 
     @Test
-    fun absTestInteger() = testSession {
-        loadSysMD("""
-            feature qa: ScalarValues::Integer(5 .. 5);
+    fun absTestInteger() = testSession("ScalarValues") {
+        loadKerML("""
+            feature qa: ScalarValues::Integer {:>> range = "5 .. 5";}
             feature a: ScalarValues::Integer = abs(qa);
-            """.trimIndent())
+            """)
         propagate()
         assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
         assertEquals(5, global.resolve<Feature>("a")!!.variable!!.idd().getRange().min)
@@ -84,15 +85,15 @@ class FunctionsTests {
      * Test of the function toReal(x) : Boolean -> ScalarValues::Real.
      */
     @Test
-    fun toRealTest() = testSession {
-        loadSysMD("""
+    fun toRealTest() = testSession("ScalarValues") {
+        loadKerML("""
                 feature a: ScalarValues::Boolean = true; 
                 feature b: ScalarValues::Real = toReal(a); 
                 feature c: ScalarValues::Boolean = false; 
                 feature d: ScalarValues::Real = toReal(c);  
                 feature e: ScalarValues::Boolean;
                 feature f: ScalarValues::Real = toReal(e);
-        """.trimIndent())
+        """)
         assertEquals(0, status.exceptions.size, status.exceptions.toString())
         val b = global.resolve<Feature>("b")!!.variable!!
         val d = global.resolve<Feature>("d")!!.variable!!
@@ -109,9 +110,9 @@ class FunctionsTests {
 
     /** ConstNet shall compute bottom-up with pow2 in real and model.builder.range */
     @Test
-    fun evalUpWithPow2_real_range() = testSession {
-        loadSysMD("""
-            feature a: ScalarValues::Real(1.0 .. 5.0);
+    fun evalUpWithPow2_real_range() = testSession("ScalarValues") {
+        loadKerML("""
+            feature a: ScalarValues::Real {:>> range = "1.0 .. 5.0";}
             feature b: ScalarValues::Real = power2(a);"""
         )
         val b = global.resolveVar("b")
@@ -125,10 +126,9 @@ class FunctionsTests {
 
     /** ConstNet shall compute bottom-up with pow2 in real and value */
     @Test
-    fun evalUpWithPow2_real_value() = testSession {
-        loadSysMD(
-            """
-            feature a: ScalarValues::Real(1.0 .. 5.0) = 3.0;
+    fun evalUpWithPow2_real_value() = testSession("ScalarValues") {
+        loadKerML("""
+            feature a: ScalarValues::Real = 3.0 {:>> range = "1.0 .. 5.0";}
             feature b: ScalarValues::Real = power2(a); """
         )
         assertEquals(8.0, global.resolve<Feature>("b")!!.variable!!.aadd().getRange().min, 0.00001)
@@ -139,10 +139,9 @@ class FunctionsTests {
 
     /** ConstNet shall compute bottom-up with pow2 and negative values*/
     @Test
-    fun evalUpWithPow2_real_negative() = testSession {
-        loadSysMD(
-            """
-            feature a: ScalarValues::Real(-2.0 .. -1.0);
+    fun evalUpWithPow2_real_negative() = testSession("ScalarValues") {
+        loadKerML("""
+            feature a: ScalarValues::Real {:>> range = "-2.0 .. -1.0";}
             feature b: ScalarValues::Real = power2(a);"""
         )
         assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
@@ -153,10 +152,9 @@ class FunctionsTests {
 
     /** ConstNet shall compute bottom-up with pow2 with zero*/
     @Test
-    fun evalUpWithPow2_real_zero() = testSession {
-        loadSysMD(
-            """
-            feature a: ScalarValues::Real(0.0 .. 0.0);
+    fun evalUpWithPow2_real_zero() = testSession("ScalarValues") {
+        loadKerML("""
+            feature a: ScalarValues::Real {:>> range = "0.0 .. 0.0";}
             feature b: ScalarValues::Real = power2(a); """
         )
         assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
@@ -167,10 +165,9 @@ class FunctionsTests {
 
     /** ConstNet shall compute bottom-up with pow2 in int and model.builder.range*/
     @Test
-    fun evalUpWithPow2_int_range() = testSession {
-        loadSysMD(
-            """
-            feature a: ScalarValues::Integer(1 .. 5);
+    fun evalUpWithPow2_int_range() = testSession("ScalarValues") {
+        loadKerML("""
+            feature a: ScalarValues::Integer {:>> range = "1 .. 5";}
             feature b: ScalarValues::Integer = power2(a); """
         )
         initialize()
@@ -183,10 +180,9 @@ class FunctionsTests {
 
     /** ConstNet shall compute bottom-up with pow2 in int and model.builder.range*/
     @Test
-    fun evalUpWithPow2_int_value() = testSession {
-        loadSysMD(
-            """
-            feature a: ScalarValues::Integer(1 .. 5) = 3;
+    fun evalUpWithPow2_int_value() = testSession("ScalarValues") {
+        loadKerML("""
+            feature a: ScalarValues::Integer = 3 {:>> range = "1 .. 5";}
             feature b: ScalarValues::Integer = power2(a); """
         )
         assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
@@ -198,8 +194,8 @@ class FunctionsTests {
 
     /** ConstNet shall compute bottom-up with exp in real and model.builder.range */
     @Test
-    fun evalUpWithExp_real_range() = testSession {
-        loadSysMD("feature b: ScalarValues::Real = exp([1.0 .. 5.0]);")
+    fun evalUpWithExp_real_range() = testSession("ScalarValues") {
+        loadKerML("feature b: ScalarValues::Real = exp([1.0 .. 5.0]);")
         propagate()
         assertEquals(0, status.exceptions.size, "Error message: ${status.exceptions}")
         assertEquals(Math.E, global.resolveVar("b")!!.min(), 0.00001)
@@ -209,10 +205,9 @@ class FunctionsTests {
 
     /** ConstNet shall compute bottom-up with pow2 in real and value */
     @Test
-    fun evalUpWithExp_real_value() = testSession {
-        loadSysMD(
-            """
-            feature a: ScalarValues::Real(1.0 .. 5.0) = 3.0;
+    fun evalUpWithExp_real_value() = testSession("ScalarValues") {
+        loadKerML("""
+            feature a: ScalarValues::Real = 3.0 {:>> range = "1.0 .. 5.0";}
             feature b: ScalarValues::Real = exp(a);"""
         )
         propagate()
@@ -224,10 +219,9 @@ class FunctionsTests {
 
     /** ConstNet shall compute bottom-up with pow2 with negative value*/
     @Test
-    fun evalUpWithExp_real_negative() = testSession {
-        loadSysMD(
-            """
-            feature a: ScalarValues::Real(-3.0 .. -1.0);
+    fun evalUpWithExp_real_negative() = testSession("ScalarValues") {
+        loadKerML("""
+            feature a: ScalarValues::Real {:>> range = "-3.0 .. -1.0";}
             feature b: ScalarValues::Real = exp(a);"""
         )
         propagate()
@@ -239,10 +233,9 @@ class FunctionsTests {
 
     /** ConstNet shall compute bottom-up with pow2 and zero */
     @Test
-    fun evalUpWithExp_real_zero() = testSession {
-        loadSysMD(
-            """
-            feature a: ScalarValues::Real(0.0 .. 0.0);
+    fun evalUpWithExp_real_zero() = testSession("ScalarValues") {
+        loadKerML("""
+            feature a: ScalarValues::Real{:>> range = "0.0 .. 0.0";}
             feature b: ScalarValues::Real = exp(a);"""
         )
         propagate()
@@ -254,8 +247,8 @@ class FunctionsTests {
 
     /** ConstNet shall compute bottom-up with exp in int and model.builder.range */
     @Test
-    fun evalUpWithExp_int_range() = testSession {
-        loadSysMD("feature b: ScalarValues::Integer = exp([1 .. 5]).")
+    fun evalUpWithExp_int_range() = testSession("ScalarValues") {
+        loadKerML("feature b: ScalarValues::Integer = exp([1 .. 5]).")
         propagate()
         assertEquals(0, status.exceptions.size, "Error message: ${status.exceptions}")
         assertEquals(floor(Math.E).toLong(), global.resolveVar("b")!!.idd().getRange().min)
@@ -265,10 +258,9 @@ class FunctionsTests {
 
     /** ConstNet shall compute bottom-up with pow2 in int and value */
     @Test
-    fun evalUpWithExp_int_value() = testSession {
-        loadSysMD(
-            """
-            feature a: ScalarValues::Integer(1 .. 5) = 3;
+    fun evalUpWithExp_int_value() = testSession("ScalarValues") {
+        loadKerML("""
+            feature a: ScalarValues::Integer = 3 {:>> range = "1 .. 5";}
             feature b: ScalarValues::Integer = exp(a);"""
         )
         assertEquals(0, status.exceptions.size, "Error message: ${status.exceptions}")
@@ -281,11 +273,10 @@ class FunctionsTests {
 
     /** ConstNet shall compute bottom-up with ln in real and model.builder.range */
     @Test
-    fun evalUpWithLog_real_range() = testSession {
-        loadSysMD(
-            """
-            feature a: ScalarValues::Real(1.0 .. 5.0).
-            feature b: ScalarValues::Real = ln(a)."""
+    fun evalUpWithLog_real_range() = testSession("ScalarValues") {
+        loadKerML("""
+            feature a: ScalarValues::Real {:>> range = "1.0 .. 5.0";}
+            feature b: ScalarValues::Real = ln(a);"""
         )
         propagate()
         assertEquals(ln(1.0), global.resolveVar("b")!!.aadd().getRange().min, 0.00001)
@@ -296,11 +287,10 @@ class FunctionsTests {
 
     /** ConstNet shall compute bottom-up with ln in real and value */
     @Test
-    fun evalUpWithLog_real_value() = testSession {
-        loadSysMD(
-            """
-            feature a: ScalarValues::Real(1.0 .. 5.0) = 3.0.
-            feature b: ScalarValues::Real = ln(a)."""
+    fun evalUpWithLog_real_value() = testSession("ScalarValues") {
+        loadKerML("""
+            feature a: ScalarValues::Real = 3.0 {:>> range = "1.0 .. 5.0";}
+            feature b: ScalarValues::Real = ln(a);"""
         )
         propagate()
         assertEquals(ln(3.0), global.resolveVar("b")!!.aadd().getRange().min, 0.00001)
@@ -310,26 +300,24 @@ class FunctionsTests {
     }
 
     /** ConstNet shall compute bottom-up with ln in real and negative numbers => not possible */
-    @Test // @Disabled //must be deactivated because of evalDown of Power function
-    fun evalUpWithLog_real_negative() = testSession {
-        loadSysMD(
-            """
-            feature a: ScalarValues::Real(-10.0 .. -5.0);
-            feature b: ScalarValues::Real = ln(a);"""
-        )
+    @Test
+    fun evalUpWithLog_real_negative() = testSession("ScalarValues") {
+        loadKerML("""
+            feature a: ScalarValues::Real {:>> range = "-10.0 .. -5.0";}
+            feature b: ScalarValues::Real = ln(a);
+        """)
+        val b = global.resolveVar("b")
         propagate()
-        assertEquals(1, status.exceptions.size, "Error messages: ${status.exceptions}")
-       // assert("Log only possible for values greater than zero" in status.exceptions.elementAt(0).toString())
+        assertTrue(b!!.vectorQuantity.value.asAadd().isEmpty())
+        assertEquals(1, status.exceptions.size)
     }
 
     /** ConstNet shall compute bottom-up with ln in int and model.builder.range */
     @Test
-    fun evalUpWithLog_int_range() = testSession {
-        loadSysMD(
-            """
-            feature a: ScalarValues::Integer(1 .. 5).
-            feature b: ScalarValues::Integer = ln(a)."""
-        )
+    fun evalUpWithLog_int_range() = testSession("ScalarValues") {
+        loadKerML("""
+            feature a: ScalarValues::Integer {:>> range = "1 .. 5";}
+            feature b: ScalarValues::Integer = ln(a);""")
         propagate()
         assertEquals(floor(ln(1.0)).toLong(), global.resolveVar("b")!!.idd().getRange().min)
         assertEquals(ceil(ln(5.0)).toLong(), global.resolveVar("b")!!.idd().getRange().max)
@@ -339,10 +327,9 @@ class FunctionsTests {
 
     /** ConstNet shall compute bottom-up with ln in int and value */
     @Test
-    fun evalUpWithLog_int_value() = testSession {
-        loadSysMD(
-            """
-            feature a: ScalarValues::Integer(1 .. 5) = 3;
+    fun evalUpWithLog_int_value() = testSession("ScalarValues") {
+        loadKerML("""
+            feature a: ScalarValues::Integer = 3 {:>> range = "1 .. 5";}
             feature b: ScalarValues::Integer = ln(a);"""
         )
         propagate()
@@ -354,11 +341,11 @@ class FunctionsTests {
 
     /** ConstNet shall compute bottom-up with sqrt in real and model.builder.range */
     @Test
-    fun evalUpWithSqrt_real_range() = testSession {
-        loadSysMD(
-            """
-            feature a: ScalarValues::Real(2.0 .. 9.0);
+    fun evalUpWithSqrt_real_range() = testSession("ScalarValues") {
+        loadKerML("""
+            feature a: ScalarValues::Real {:>> range = "2.0 .. 9.0";}
             feature b: ScalarValues::Real = sqrt(a);"""
+
         )
         propagate()
         assertEquals(sqrt(2.0), global.resolveVar("b")!!.aadd().getRange().min, 0.00001)
@@ -370,12 +357,10 @@ class FunctionsTests {
 
     /** ConstNet shall compute bottom-up with sqrt in real and value */
     @Test
-    fun propagateWithSqrt_real_value() = testSession {
-        loadSysMD(
-            """
-            feature a: ScalarValues::Real(2.0 .. 5.0) = 3.0;
-            feature b: ScalarValues::Real = sqrt(a);"""
-        )
+    fun propagateWithSqrt_real_value() = testSession("ScalarValues") {
+        loadKerML("""
+            feature a: ScalarValues::Real = 3.0 {:>> range = "2.0 .. 5.0";}
+            feature b: ScalarValues::Real = sqrt(a);""")
         propagate()
         assertEquals(sqrt(3.0), global.resolveVar("b")!!.min(), 0.00001)
         assertEquals(sqrt(3.0), global.resolveVar("b")!!.max(), 0.00001)
@@ -385,24 +370,22 @@ class FunctionsTests {
 
     /** ConstNet shall compute bottom-up with sqrt and negative value.This should lead to an error*/
     @Test
-    fun propagateWithSqrt_real_negative() = testSession {
-        loadSysMD(
-            """
-            feature a: ScalarValues::Real(-10.0 .. -5.0);
-            feature b: ScalarValues::Real = sqrt( a );"""
-        )
+    fun propagateWithSqrt_real_negative() = testSession("ScalarValues") {
+        loadKerML("""
+            feature a: ScalarValues::Real {:>> range = "-10.0 .. -5.0";}
+            feature b: ScalarValues::Real = sqrt( a );
+            """)
         propagate()
         assertEquals(1, status.exceptions.size, "Error messages: ${status.exceptions}")
-        assertTrue("Sqrt only possible for values greater or equal than zero" in status.exceptions.toString())
+        assertTrue("dependency of b is not satisfiable in element b" in status.exceptions.toString())
     }
 
     /** ConstNet shall compute bottom-up with sqrt in int and model.builder.range */
     @Test
-    fun evalUpWithSqrt_int_range() = testSession {
-            loadSysMD("""
-            feature a: ScalarValues::Integer(2 .. 9);
-            feature b: ScalarValues::Integer = sqrt(a);"""
-            )
+    fun evalUpWithSqrt_int_range() = testSession("ScalarValues") {
+            loadKerML("""
+            feature a: ScalarValues::Integer {:>> range = "2 .. 9";}
+            feature b: ScalarValues::Integer = sqrt(a);""")
             propagate()
             assertEquals(floor(sqrt(2.0)).toLong(), global.resolve<Feature>("b")!!.variable!!.idd().getRange().min)
             assertEquals(ceil(sqrt(9.0)).toLong(), global.resolve<Feature>("b")!!.variable!!.idd().getRange().max)
@@ -412,11 +395,10 @@ class FunctionsTests {
 
     /** ConstNet shall compute bottom-up with sqrt in int **/
     @Test
-    fun evalUpWithSqrt_int_value() = testSession {
-        loadSysMD(
-            """
-            feature a: ScalarValues::Integer(2 .. 9) = 3.
-            feature b: ScalarValues::Integer = sqrt(a)."""
+    fun evalUpWithSqrt_int_value() = testSession("ScalarValues") {
+        loadKerML("""
+            feature a: ScalarValues::Integer = 3 {:>> range = "2 .. 9";}
+            feature b: ScalarValues::Integer = sqrt(a); """
         )
         propagate()
         assertEquals(floor(sqrt(3.0)).toLong(), global.resolveVar("b")!!.idd().getRange().min)
@@ -427,11 +409,10 @@ class FunctionsTests {
 
     /** ConstNet shall compute bottom-up with sqr in real and model.builder.range */
     @Test
-    fun evalUpWithSqr_real_range() = testSession {
-        loadSysMD(
-            """
-            feature a: ScalarValues::Real(2.0 .. 9.0).
-            feature b: ScalarValues::Real = sqr(a)."""
+    fun evalUpWithSqr_real_range() = testSession("ScalarValues") {
+        loadKerML("""
+            feature a: ScalarValues::Real {:>> range = "2.0 .. 9.0";} 
+            feature b: ScalarValues::Real = sqr(a); """
         )
         propagate()
         assertEquals(4.0, global.resolveVar("b")!!.aadd().getRange().min, 0.00001)
@@ -442,10 +423,10 @@ class FunctionsTests {
 
     /** ConstNet shall compute bottom-up with sqr in real and value */
     @Test
-    fun evalUpWithSqr_real_value() = testSession {
-        loadSysMD("""
-            feature a: ScalarValues::Real(1.0 .. 5.0) = 3.0.
-            feature b: ScalarValues::Real = sqr(a)."""
+    fun evalUpWithSqr_real_value() = testSession("ScalarValues") {
+        loadKerML("""
+            feature a: ScalarValues::Real = 3.0 {:>> range = "1.0 .. 5.0";} 
+            feature b: ScalarValues::Real = sqr(a);"""
         )
         propagate()
         assertEquals(9.0, global.resolve<Feature>("b")!!.variable!!.aadd().getRange().min, 0.00001)
@@ -456,10 +437,10 @@ class FunctionsTests {
 
     /** ConstNet shall compute bottom-up with sqr in int and model.builder.range */
     @Test
-    fun evalUpWithSqr_int_range() = testSession {
-        loadSysMD("""
-            feature a: ScalarValues::Integer(2 .. 9).
-            feature b: ScalarValues::Integer = sqr(a)."""
+    fun evalUpWithSqr_int_range() = testSession("ScalarValues") {
+        loadKerML("""
+            feature a: ScalarValues::Integer {:>> range = "2 .. 9";} 
+            feature b: ScalarValues::Integer = sqr(a);"""
         )
         propagate()
         assertEquals(4, (global.resolve<Feature>("b")!!.variable!!.idd() as IDD.Leaf).value.min)
@@ -470,10 +451,10 @@ class FunctionsTests {
 
     /** ConstNet shall compute bottom-up with sqr in int and value */
     @Test
-    fun evalUpWithSqr_int_value() = testSession {
-        loadSysMD("""
-            feature a: ScalarValues::Integer(2 .. 9) = 3 .
-            feature b: ScalarValues::Integer = sqr(a)."""
+    fun evalUpWithSqr_int_value() = testSession("ScalarValues") {
+        loadKerML("""
+            feature a: ScalarValues::Integer = 3 {:>> range = "2 .. 9";}  
+            feature b: ScalarValues::Integer = sqr(a); """
         )
         assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
         propagate()
@@ -484,12 +465,12 @@ class FunctionsTests {
     }
 
     @Test
-    fun evalUpWithPowB_real_value() = testSession {
-        loadSysMD(
-            """
-            feature a: ScalarValues::Real(3.0 .. 3.0).
-            feature b: ScalarValues::Real(4.0 .. 4.0).
-            feature c: ScalarValues::Real = power(a, b)."""
+    fun evalUpWithPowB_real_value() = testSession("ScalarValues") {
+        loadKerML(
+           """
+            feature a: ScalarValues::Real {:>> range = "3.0 .. 3.0";} 
+            feature b: ScalarValues::Real {:>> range = "4.0 .. 4.0";} 
+            feature c: ScalarValues::Real = power(a, b); """
         )
         val c = global.resolveVar("c") !!
         assertEquals(81.0, c.aadd().getRange().min, 0.000001)
@@ -499,11 +480,11 @@ class FunctionsTests {
     }
 
     @Test
-    fun evalUpWithPowB_real_range() = testSession {
-        loadSysMD(
+    fun evalUpWithPowB_real_range() = testSession("ScalarValues") {
+        loadKerML(
             """
-            feature a: ScalarValues::Real(1.5 .. 3.5); 
-            feature b: ScalarValues::Real(2.5 .. 4.5); 
+            feature a: ScalarValues::Real {:>> range = "1.5 .. 3.5";}
+            feature b: ScalarValues::Real {:>> range = "2.5 .. 4.5";}
             feature c: ScalarValues::Real = power(a, b); """
         )
         propagate()
@@ -514,8 +495,8 @@ class FunctionsTests {
     }
 
     @Test
-    fun evalUpWithPowB_int_value() = testSession {
-        loadSysMD("""
+    fun evalUpWithPowB_int_value() = testSession("ScalarValues") {
+        loadKerML("""
             feature a: ScalarValues::Integer = 3;
             feature b: ScalarValues::Integer = 3;
             feature c: ScalarValues::Integer = power(a, b);"""
@@ -528,8 +509,8 @@ class FunctionsTests {
     }
 
     @Test
-    fun evalUpWithPow_int_range() = testSession {
-        loadSysMD("""
+    fun evalUpWithPow_int_range() = testSession("ScalarValues") {
+        loadKerML("""
             feature a: ScalarValues::Integer = oneOf(2 .. 3);
             feature b: ScalarValues::Integer = oneOf(3 .. 4);
             feature c: ScalarValues::Integer = power(a, b); """
@@ -543,8 +524,8 @@ class FunctionsTests {
     }
 
     @Test
-    fun evalUpPowerNegativeBase() = testSession {
-        loadSysMD("""
+    fun evalUpPowerNegativeBase() = testSession("ScalarValues") {
+        loadKerML("""
             feature i: ScalarValues::Real = 1.0;
             feature a: ScalarValues::Real = pow(-5.0,1.0);"""
         )
@@ -554,19 +535,18 @@ class FunctionsTests {
     }
 
     @Test
-    fun evalUpPowerNegativeBase2() = testSession {
-        loadSysMD("""
-            feature i: ScalarValues::Real = 1.0.
-            feature a: ScalarValues::Real = pow(-1.0,2.0)."""
-        )
+    fun evalUpPowerNegativeBase2() = testSession("ScalarValues") {
+        loadKerML("""
+            feature i: ScalarValues::Real = 1.0;
+            feature a: ScalarValues::Real = pow(-1.0,2.0);""")
         propagate()
         assertEquals(1.0, global.resolveVar("a")!!.aadd().getRange().min, 0.00001)
         assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
     }
 
     @Test
-    fun evalUpPowerSpecialCase() = testSession {
-        loadSysMD(""" 
+    fun evalUpPowerSpecialCase() = testSession("ScalarValues") {
+        loadKerML(""" 
             feature a: ScalarValues::Real = oneOf(0.1..2.0); 
             feature b: ScalarValues::Real = pow(a, [1.0..2.0]);""")
         propagate()
@@ -580,14 +560,13 @@ class FunctionsTests {
     }
 
     @Test
-    fun sumEvalUp1() = testSession {
-        loadSysMD("""
+    fun sumEvalUp1() = testSession("ScalarValues") {
+        loadKerML("""
             feature i: ScalarValues::Real; 
             feature a: ScalarValues::Real = oneOf(1.0..3.0);
             feature b: ScalarValues::Real = oneOf(3.0..5.0);
             feature sum: ScalarValues::Real = sum_i( a, b, i );
-            """
-        )
+            """)
         propagate()
         assertEquals(15.0, global.resolveVar("sum")!!.aadd().getRange().max, 0.00001)
         assertEquals(3.0, global.resolveVar("sum")!!.aadd().getRange().min, 0.00001)
@@ -595,16 +574,15 @@ class FunctionsTests {
     }
 
     @Test
-    fun sumEvalUp2() = testSession {
-        loadSysMD(
+    fun sumEvalUp2() = testSession("ScalarValues") {
+        loadKerML(
             """
             feature i: ScalarValues::Real;
             feature a: ScalarValues::Real = oneOf(0.0..0.0);
             feature b: ScalarValues::Real = oneOf(1.0..2.0);
             feature s: ScalarValues::Real = oneOf(4.0..5.0);
             feature t: ScalarValues::Real = oneOf(2.0..2.0);
-            feature sum: ScalarValues::Real = sum_i( a, b, s-t*i );""".trimIndent()
-        )
+            feature sum: ScalarValues::Real = sum_i( a, b, s-t*i );""")
         propagate()
         assertEquals(9.0, global.resolveVar("sum")!!.aadd().getRange().max, 0.00001)
         assertEquals(6.0, global.resolveVar("sum")!!.aadd().getRange().min, 0.00001)
@@ -612,13 +590,12 @@ class FunctionsTests {
     }
 
     @Test
-    fun sumEvalDown() = testSession {
-        loadSysMD("""
+    fun sumEvalDown() = testSession("ScalarValues") {
+        loadKerML("""
             feature i: ScalarValues::Real;
             feature a: ScalarValues::Real = oneOf(1.0 .. 3.0);
             feature b: ScalarValues::Real = oneOf(1.0 .. 5.0);
-            feature sum: ScalarValues::Real(3.0..10.0) = sum_i( a, b, i );"""
-        )
+            feature sum: ScalarValues::Real = sum_i( a, b, i ){:>> range = "3.0..10.0";}""")
         propagate()
         assertEquals(0, status.exceptions.size, status.exceptions.toString())
         assertEquals(3.0, global.resolveVar("sum")!!.aadd().getRange().min, 0.00001)
@@ -632,14 +609,14 @@ class FunctionsTests {
     }
 
     @Test
-    fun sumEvalDown2() = testSession {
-        loadSysMD(
+    fun sumEvalDown2() = testSession("ScalarValues") {
+        loadKerML(
             """
             feature i: ScalarValues::Real;
-            feature a: ScalarValues::Real(0..6);
-            feature b: ScalarValues::Real(3..5);
-            feature sum: ScalarValues::Real(3.0..14.0) = sum_i( a, b, i );"""
-        )
+            feature a: ScalarValues::Real {:>> range = "0..6";} 
+            feature b: ScalarValues::Real {:>> range = "3..5";} 
+            feature sum: ScalarValues::Real = sum_i( a, b, i ) {:>> range = "3.0..14.0";}
+            """)
         propagate()
         assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
         assertEquals(3.0, global.resolveVar("sum")!!.aadd().getRange().min, 0.00001)
@@ -654,14 +631,13 @@ class FunctionsTests {
     //Calculations with evalDown do not work
     @Disabled
     @Test
-    fun sumEvalDownWithMultiplication() = testSession {
-        loadSysMD(
-            """
+    fun sumEvalDownWithMultiplication() = testSession("ScalarValues") {
+        loadKerML("""
             feature i: ScalarValues::Real;
             feature a: ScalarValues::Real;
             feature s: ScalarValues::Real = 10.0;
             feature b: ScalarValues::Real = oneOf(3.0 .. 5.0);
-            feature sum: ScalarValues::Real(30.0..140.0) = sum_i( a, b, s*i );"""
+            feature sum: ScalarValues::Real = sum_i( a, b, s*i ) {:>> range = "30.0..140.0";}"""
         )
         propagate()
         assertEquals(0, status.exceptions.size, status.exceptions.toString())
@@ -676,14 +652,13 @@ class FunctionsTests {
 
     //Calculations with evalDown do not work
     @Test
-    fun sumWithNegative() = testSession {
-        loadSysMD(
+    fun sumWithNegative() = testSession("ScalarValues") {
+        loadKerML(
             """
             feature i: ScalarValues::Real;
-            feature a: ScalarValues::Real(1.0..1.0);
-            feature b: ScalarValues::Real(5.0..5.0);
-            feature sum: ScalarValues::Real = sum_i( a, b, pow(-1.0,i)*i );"""
-        )
+            feature a: ScalarValues::Real {:>> range = "1.0..1.0";}
+            feature b: ScalarValues::Real {:>> range = "5.0..5.0";}
+            feature sum: ScalarValues::Real = sum_i( a, b, pow(-1.0,i)*i );""")
         propagate()
         assertEquals(-3.0, global.resolveVar("sum")!!.aadd().getRange().min, 0.00001)
         assertEquals(-3.0, global.resolveVar("sum")!!.aadd().getRange().max, 0.00001)
@@ -692,12 +667,12 @@ class FunctionsTests {
 
     //Calculations with evalDown do not work
     @Test
-    fun sumWithNegativeTest2() = testSession {
-        loadSysMD(
+    fun sumWithNegativeTest2() = testSession("ScalarValues") {
+        loadKerML(
             """
             feature i: ScalarValues::Real;
-            feature a: ScalarValues::Real(-3.0..0.0);
-            feature b: ScalarValues::Real(0.0..3.0);
+            feature a: ScalarValues::Real {:>> range = "-3.0..0.0";}
+            feature b: ScalarValues::Real {:>> range = "0.0..3.0";}
             feature sum: ScalarValues::Real = sum_i( a, b, pow(-1.0,i)*(1.0-sqr(i)) );"""
         )
         propagate()
@@ -708,13 +683,13 @@ class FunctionsTests {
 
     //Calculations with evalDown do not work
     @Test
-    fun sumWithNegativeTest3() = testSession {
-        loadSysMD(
+    fun sumWithNegativeTest3() = testSession("ScalarValues") {
+        loadKerML(
             """
-            feature i: ScalarValues::Real.
-            feature a: ScalarValues::Real(-3.0..0.0).
-            feature b: ScalarValues::Real(0.0..3.0).
-            feature sum: ScalarValues::Real = sum_i( a, b, -pow(-1.0,i)*(1.0-sqr(i)) )."""
+            feature i: ScalarValues::Real;
+            feature a: ScalarValues::Real {:>> range = "-3.0..0.0";}
+            feature b: ScalarValues::Real {:>> range = "0.0..3.0";}
+            feature sum: ScalarValues::Real = sum_i( a, b, -pow(-1.0,i)*(1.0-sqr(i)) );"""
         )
         propagate()
         assertEquals(-11.0, global.resolveVar("sum")!!.aadd().getRange().min, 0.00001)
@@ -724,15 +699,12 @@ class FunctionsTests {
 
     //Calculations with evalDown do not work
     @Test
-    fun sumWithNegativeTest4() = testSession {
-        loadSysMD(
-            """
+    fun sumWithNegativeTest4() = testSession("ScalarValues") {
+        loadKerML("""
             feature i: ScalarValues::Real;
-            feature a: ScalarValues::Real(-3.0..0.0);
-            feature b: ScalarValues::Real(0.0..3.0);
-            feature sum: ScalarValues::Real = sum_i( a, b, -pow(-1.0,i));"""
-        )
-
+            feature a: ScalarValues::Real {:>> range = "-3.0..0.0";}
+            feature b: ScalarValues::Real {:>> range = "0.0..3.0";}
+            feature sum: ScalarValues::Real = sum_i( a, b, -pow(-1.0,i));""")
         propagate()
         assertEquals(-1.0, global.resolveVar("sum")!!.aadd().getRange().min, 0.00001)
         assertEquals(1.0, global.resolveVar("sum")!!.aadd().getRange().max, 0.00001)
@@ -740,14 +712,12 @@ class FunctionsTests {
     }
 
     @Test
-    fun sumEvalDownInt() = testSession {
-        loadSysMD(
-            """
+    fun sumEvalDownInt() = testSession("ScalarValues") {
+        loadKerML("""
              feature i: ScalarValues::Integer;
              feature a: ScalarValues::Integer = oneOf(1..3);
              feature b: ScalarValues::Integer = oneOf(3..4);
-             feature sum: ScalarValues::Integer(3..10) = sum_i( a, b, i );"""
-        )
+             feature sum: ScalarValues::Integer = sum_i( a, b, i ) {:>> range = "3..10";}""")
         propagate()
         assertEquals(0, status.exceptions.size, status.exceptions.toString())
         assertEquals(3, global.resolveVar("sum")!!.idd().getRange().min)
@@ -760,16 +730,12 @@ class FunctionsTests {
 
     @Disabled //Does not work for ScalarValues::Integer
     @Test
-    fun sumEvalDownInt2() = testSession {
-        loadSysMD(
-            """
+    fun sumEvalDownInt2() = testSession("ScalarValues") {
+        loadKerML("""
             feature i: ScalarValues::Integer;
             feature a: ScalarValues::Integer;
             feature b: ScalarValues::Integer = oneOf(3..5);
-            feature sum: ScalarValues::Integer(3..14) = sum_i( a, b, i );"""
-        )
-
-        initialize()
+            feature sum: ScalarValues::Integer = sum_i( a, b, i ) {:>> range = "3..14";}""")
         propagate()
         assertEquals(0, status.exceptions.size, status.exceptions.toString())
         assertEquals(9, global.resolveVar("sum")!!.idd().getRange().min)
@@ -782,13 +748,13 @@ class FunctionsTests {
     }
 
     @Test
-    fun maxTest1() = testSession {
-        loadSysMD(
+    fun maxTest1() = testSession("ScalarValues") {
+        loadKerML(
             input = """
-            feature a: ScalarValues::Real(0..1);
-            feature b: ScalarValues::Real(1..2);
+            feature a: ScalarValues::Real {:>> range = "0..1";}
+            feature b: ScalarValues::Real {:>> range = "1..2";}
             feature c: ScalarValues::Real = max(a,b);
-            """.trimIndent(), catchExceptions = true
+            """, catchExceptions = true
         )
         propagate()
         assertEquals(0, status.exceptions.size, status.exceptions.toString())
@@ -799,10 +765,10 @@ class FunctionsTests {
     }
 
     @Test
-    fun maxTest1EvalDown() = testSession {
-        loadSysMD(input = """
-            feature a: ScalarValues::Real(1..7);
-            feature b: ScalarValues::Real(8.0..8.0) = max(7.0,2.0+a);
+    fun maxTest1EvalDown() = testSession("ScalarValues") {
+        loadKerML(input = """
+            feature a: ScalarValues::Real {:>> range = "1..7";}
+            feature b: ScalarValues::Real = max(7.0,2.0+a) {:>> range = "8.0..8.0";}
             """.trimIndent(), catchExceptions = true
         )
         propagate()
@@ -814,13 +780,11 @@ class FunctionsTests {
     }
 
     @Test
-    fun maxTest1bEvalDown() = testSession {
-        loadSysMD(
-            input = """
+    fun maxTest1bEvalDown() = testSession("ScalarValues") {
+        loadKerML(input = """
             feature a: ScalarValues::Real = oneOf(1.0 .. 7.0);
-            feature b: ScalarValues::Real(8.0..8.0) = max(8.0, 2.0+a);
-            """.trimIndent(), catchExceptions = true
-        )
+            feature b: ScalarValues::Real = max(8.0, 2.0+a) {:>> range = "8.0..8.0";}
+            """.trimIndent(), catchExceptions = true)
         propagate()
         assertEquals(0, status.exceptions.size, status.exceptions.toString())
         val result = global.resolveVar("a")
@@ -830,12 +794,12 @@ class FunctionsTests {
     }
 
     @Test
-    fun maxTest2() = testSession {
-        loadSysMD(input = """
-            feature a: ScalarValues::Real(0..5) = sqrt(9.0);
-            feature b: ScalarValues::Real(1..6) = sqrt(4.0);
+    fun maxTest2() = testSession("ScalarValues") {
+        loadKerML(input = """
+            feature a: ScalarValues::Real = sqrt(9.0) {:>> range = "0..5";}
+            feature b: ScalarValues::Real = sqrt(4.0) {:>> range = "1..6";}
             feature c: ScalarValues::Real = max(a,b);
-            """.trimIndent())
+            """)
         propagate()
         assertEquals(0, status.exceptions.size, status.exceptions.toString())
         val result = global.resolveVar("c")
@@ -845,11 +809,11 @@ class FunctionsTests {
     }
 
     @Test
-    fun maxTest2EvalDown() = testSession {
-        loadSysMD(input = """
-            feature a: ScalarValues::Real(0..6) = sqrt(9.0);
-            feature b: ScalarValues::Real(1..6);
-            feature c: ScalarValues::Real(4.0..4.0) = max(a,b);
+    fun maxTest2EvalDown() = testSession("ScalarValues") {
+        loadKerML(input = """
+            feature a: ScalarValues::Real = sqrt(9.0) {:>> range = "0..6";}
+            feature b: ScalarValues::Real {:>> range = "1..6";}
+            feature c: ScalarValues::Real = max(a,b) {:>> range = "4.0..4.0";}
             """.trimIndent())
         propagate()
         assertEquals(0, status.exceptions.size, status.exceptions.toString())
@@ -860,12 +824,12 @@ class FunctionsTests {
     }
 
     @Test
-    fun maxTest3() = testSession {
-        loadSysMD(input = """
-            feature a: ScalarValues::Real(0..5) = 4.0;
-            feature b: ScalarValues::Real(1..6) = 6.0;
+    fun maxTest3() = testSession("ScalarValues") {
+        loadKerML(input = """
+            feature a: ScalarValues::Real = 4.0 {:>> range = "0..5";}
+            feature b: ScalarValues::Real = 6.0 {:>> range = "1..6";}
             feature c: ScalarValues::Real = max(sqrt(9.0)+a,sqrt(4.0)+b);
-            """.trimIndent())
+            """)
         propagate()
         assertEquals(0, status.exceptions.size, status.exceptions.toString())
         val result = global.resolveVar("c")
@@ -876,10 +840,10 @@ class FunctionsTests {
 
 
     @Test
-    fun maxTest4() = testSession {
-        loadSysMD(input = """
+    fun maxTest4() = testSession("ScalarValues") {
+        loadKerML(input = """
                   feature c: ScalarValues::Real = max(sqrt(9.0)+3.0,sqrt(4.0)+5.0);
-            """.trimIndent())
+            """)
         propagate()
         assertEquals(0, status.exceptions.size, status.exceptions.toString())
         val result = global.resolveVar("c")
@@ -889,13 +853,141 @@ class FunctionsTests {
     }
 
     @Test
-    fun minTest1() = testSession {
-        loadSysMD(
+    fun maxTestMultipleParams1() = testSession("ScalarValues") {
+        loadKerML("""
+            feature a: ScalarValues::Real {:>> range = "0..1";}
+            feature b: ScalarValues::Real {:>> range = "1..2";}
+            feature c: ScalarValues::Real {:>> range = "3..4";}
+            feature d: ScalarValues::Real {:>> range = "4..5";}
+            feature e: ScalarValues::Real = max(a, b, c, d);
+        """)
+        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        val result = global.resolveVar("e")
+        assertEquals(4.0, result!!.vectorQuantity.getMinAsDouble(), 0.000001)
+        assertEquals(5.0, result.vectorQuantity.getMaxAsDouble(), 0.000001)
+        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+    }
+
+    @Test
+    fun maxTestMultipleParamsInt1() = testSession("ScalarValues") {
+        loadKerML(
             input = """
-            feature a: ScalarValues::Real(0..1);
-            feature b: ScalarValues::Real(1..2);
-            feature c: ScalarValues::Real = min(a,b);
+            feature a: ScalarValues::Integer {:>> range = "0..1";}
+            feature b: ScalarValues::Integer {:>> range = "1..2";}
+            feature c: ScalarValues::Integer {:>> range = "3..4";}
+            feature d: ScalarValues::Integer {:>> range = "4..5";}
+            feature e: ScalarValues::Integer = max(a,b,c,d);
+            """, catchExceptions = true
+        )
+        propagate()
+        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        val result = global.resolveVar("e")
+        assertEquals(4, result!!.vectorQuantity.value.asIdd().min)
+        assertEquals(5, result.vectorQuantity.value.asIdd().max)
+        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+    }
+
+    @Disabled
+    @Test
+    fun maxTestMultipleParams2() = testSession("ScalarValues") {
+        loadKerML(input ="""
+            feature a: ScalarValues::Real {:>> range = "0..1";}
+            feature b: ScalarValues::Real {:>> range = "1..2";}
+            feature c: ScalarValues::Real {:>> range = "2..3";}
+            feature d: ScalarValues::Real {:>> range = "3..7";}
+            feature e: ScalarValues::Real = max(a,b,c,d) {:>> range = "4..4";}
             """.trimIndent(), catchExceptions = true
+        )
+        propagate()
+        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        val result = global.resolveVar("d")
+        assertEquals(4.0, result!!.vectorQuantity.getMinAsDouble(), 0.000001)
+        assertEquals(4.0, result.vectorQuantity.getMaxAsDouble(), 0.000001)
+        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+    }
+
+    @Test
+    fun maxTestMultipleParams2Integer() = testSession("ScalarValues") {
+        loadKerML(
+            input ="""
+            feature a: ScalarValues::Integer {:>> range = "0..1";}
+            feature b: ScalarValues::Integer {:>> range = "1..2";}
+            feature c: ScalarValues::Integer {:>> range = "2..3";}
+            feature d: ScalarValues::Integer {:>> range = "3..7";}
+            feature e: ScalarValues::Integer= max(a,b,c,d) {:>> range = "4..4";}
+            """.trimIndent(), catchExceptions = true
+        )
+        propagate()
+        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        val result = global.resolveVar("d")
+        assertEquals(4, result!!.vectorQuantity.value.asIdd().min)
+        assertEquals(4, result.vectorQuantity.value.asIdd().max)
+        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+    }
+
+    @Test
+    fun maxTestMultipleParams3() = testSession("ScalarValues") {
+        loadKerML(
+            input = """
+            feature a: ScalarValues::Real {:>> range = "0..7";}
+            feature b: ScalarValues::Real {:>> range = "1..6";}
+            feature c: ScalarValues::Real {:>> range = "2..5";}
+            feature d: ScalarValues::Real {:>> range = "3..4";}
+            feature e: ScalarValues::Real = max(a,b,c,d) {:>> range = "3..4";}
+            """.trimIndent(), catchExceptions = true
+        )
+        propagate()
+        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        val result = global.resolveVar("a")
+        assertEquals(0.0, result!!.vectorQuantity.getMinAsDouble(), 0.000001)
+        assertEquals(4.0, result.vectorQuantity.getMaxAsDouble(), 0.000001)
+        val result1 = global.resolveVar("b")
+        assertEquals(1.0, result1!!.vectorQuantity.getMinAsDouble(), 0.000001)
+        assertEquals(4.0, result1.vectorQuantity.getMaxAsDouble(), 0.000001)
+        val result2 = global.resolveVar("c")
+        assertEquals(2.0, result2!!.vectorQuantity.getMinAsDouble(), 0.000001)
+        assertEquals(4.0, result2.vectorQuantity.getMaxAsDouble(), 0.000001)
+        val result3 = global.resolveVar("d")
+        assertEquals(3.0, result3!!.vectorQuantity.getMinAsDouble(), 0.000001)
+        assertEquals(4.0, result3.vectorQuantity.getMaxAsDouble(), 0.000001)
+        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+    }
+
+    @Test
+    fun maxTestMultipleParams3Integer() = testSession("ScalarValues") {
+        loadKerML(
+            input = """
+            feature a: ScalarValues::Integer {:>> range = "0..7";}
+            feature b: ScalarValues::Integer {:>> range = "1..6";}
+            feature c: ScalarValues::Integer {:>> range = "2..5";}
+            feature d: ScalarValues::Integer {:>> range = "3..4";}
+            feature e: ScalarValues::Integer = max(a,b,c,d) {:>> range = "3..4";}
+            """.trimIndent(), catchExceptions = true
+        )
+        propagate()
+        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        val result = global.resolveVar("a")
+        assertEquals(0, result!!.vectorQuantity.value.asIdd().min)
+        assertEquals(4, result.vectorQuantity.value.asIdd().max)
+        val result1 = global.resolveVar("b")
+        assertEquals(1, result1!!.vectorQuantity.value.asIdd().min)
+        assertEquals(4, result1.vectorQuantity.value.asIdd().max)
+        val result2 = global.resolveVar("c")
+        assertEquals(2, result2!!.vectorQuantity.value.asIdd().min)
+        assertEquals(4, result2.vectorQuantity.value.asIdd().max)
+        val result3 = global.resolveVar("d")
+        assertEquals(3, result3!!.vectorQuantity.value.asIdd().min)
+        assertEquals(4, result3.vectorQuantity.value.asIdd().max)
+        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+    }
+
+    @Test
+    fun minTest1() = testSession("ScalarValues") {
+        loadKerML(input = """
+            feature a: ScalarValues::Real {:>> range = "0..1";}
+            feature b: ScalarValues::Real {:>> range = "1..2";}
+            feature c: ScalarValues::Real = min(a,b);
+            """, catchExceptions = true
         )
         propagate()
         assertEquals(0, status.exceptions.size, status.exceptions.toString())
@@ -906,11 +998,10 @@ class FunctionsTests {
     }
 
     @Test
-    fun minTest1EvalDown() = testSession {
-        loadSysMD(
-            input = """
-            feature a: ScalarValues::Real(1..8);
-            feature b: ScalarValues::Real(6.0..6.0) = min(8.0,a);
+    fun minTest1EvalDown() = testSession("ScalarValues") {
+        loadKerML(input = """
+            feature a: ScalarValues::Real {:>> range = "1..8";}
+            feature b: ScalarValues::Real = min(8.0,a) {:>> range = "6.0..6.0";}
             """.trimIndent(), catchExceptions = true
         )
         propagate()
@@ -922,13 +1013,13 @@ class FunctionsTests {
     }
 
     @Test
-    fun minTest2() = testSession {
-        loadSysMD(
+    fun minTest2() = testSession("ScalarValues") {
+        loadKerML(
             input = """
-            feature a: ScalarValues::Real(0..5) = sqrt(9.0);
-            feature b: ScalarValues::Real(1..6) = sqrt(4.0);
+            feature a: ScalarValues::Real = sqrt(9.0) {:>> range = "0..5";}
+            feature b: ScalarValues::Real = sqrt(4.0) {:>> range = "1..6";}
             feature c: ScalarValues::Real = min(a,b);
-            """.trimIndent(), catchExceptions = true
+            """, catchExceptions = true
         )
         propagate()
         assertEquals(0, status.exceptions.size, status.exceptions.toString())
@@ -939,12 +1030,12 @@ class FunctionsTests {
     }
 
     @Test
-    fun minTest2EvalDown() = testSession {
-        loadSysMD(
+    fun minTest2EvalDown() = testSession("ScalarValues") {
+        loadKerML(
             input = """
-            feature a: ScalarValues::Real(0..6) = 3.0;
-            feature b: ScalarValues::Real(1..6);
-            feature c: ScalarValues::Real(3.0..3.0) = min(a,b);
+            feature a: ScalarValues::Real = 3.0 {:>> range = "0..6";}
+            feature b: ScalarValues::Real {:>> range = "1..6";}
+            feature c: ScalarValues::Real = min(a,b) {:>> range = "3.0..3.0";}
             """.trimIndent(), catchExceptions = true
         )
         propagate()
@@ -956,13 +1047,12 @@ class FunctionsTests {
     }
 
     @Test
-    fun minTest3() = testSession {
-        loadSysMD(
-            input = """
-            feature a: ScalarValues::Real(0..5) = 4.0;
-            feature b: ScalarValues::Real(1..6) = 6.0;
+    fun minTest3() = testSession("ScalarValues") {
+        loadKerML(input = """
+            feature a: ScalarValues::Real = 4.0 {:>> range = "0..5";}
+            feature b: ScalarValues::Real = 6.0 {:>> range = "1..6";}
             feature c: ScalarValues::Real = min(sqrt(9.0)+a,sqrt(4.0)+b);
-            """.trimIndent(), catchExceptions = true
+            """, catchExceptions = true
         )
         propagate()
         assertEquals(0, status.exceptions.size, status.exceptions.toString())
@@ -974,10 +1064,10 @@ class FunctionsTests {
 
 
     @Test
-    fun minTest4() = testSession {
-        loadSysMD(input = """
+    fun minTest4() = testSession("ScalarValues") {
+        loadKerML(input = """
             feature c: ScalarValues::Real = min(sqrt(9.0)+3.0,sqrt(4.0)+5.0);
-            """.trimIndent())
+            """)
         propagate()
         assertEquals(0, status.exceptions.size, status.exceptions.toString())
         val result = global.resolveVar("c")
@@ -985,13 +1075,148 @@ class FunctionsTests {
         assertEquals(6.0, result.vectorQuantity.getMaxAsDouble(), 0.000001)
         assertEquals(0, status.exceptions.size, status.exceptions.toString())
     }
+
     @Test
-    fun minTestOneValue1() = testSession {
-        loadSysMD(
+    fun minTestMultipleParams1() = testSession("ScalarValues") {
+        loadKerML(
             input = """
-            feature a: ScalarValues::Real(0.5..1);
-            feature c: ScalarValues::Real = min(a);
+            feature a: ScalarValues::Real {:>> range = "0..1";}
+            feature b: ScalarValues::Real {:>> range = "1..2";}
+            feature c: ScalarValues::Real {:>> range = "3..4";}
+            feature d: ScalarValues::Real {:>> range = "4..5";}
+            feature e: ScalarValues::Real = min(a,b,c,d);
+            """, catchExceptions = true
+        )
+        propagate()
+        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        val result = global.resolveVar("e")
+        assertEquals(0.0, result!!.vectorQuantity.getMinAsDouble(), 0.000001)
+        assertEquals(1.0, result.vectorQuantity.getMaxAsDouble(), 0.000001)
+        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+    }
+
+    @Test
+    fun minTestMultipleParamsInt1() = testSession("ScalarValues") {
+        loadKerML(
+            input = """
+            feature a: ScalarValues::Integer {:>> range = "0..1";}
+            feature b: ScalarValues::Integer {:>> range = "1..2";}
+            feature c: ScalarValues::Integer {:>> range = "3..4";}
+            feature d: ScalarValues::Integer {:>> range = "4..5";}
+            feature e: ScalarValues::Integer = min(a,b,c,d);
+            """, catchExceptions = true
+        )
+        propagate()
+        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        val result = global.resolveVar("e")
+        assertEquals(0, result!!.vectorQuantity.value.asIdd().min)
+        assertEquals(1, result.vectorQuantity.value.asIdd().max)
+        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+    }
+
+    @Test
+    fun minTestMultipleParams2() = testSession("ScalarValues") {
+        loadKerML(
+            input = """
+            feature a: ScalarValues::Real {:>> range = "-3..1";}
+            feature b: ScalarValues::Real {:>> range = "1..2";}
+            feature c: ScalarValues::Real {:>> range = "2..3";}
+            feature d: ScalarValues::Real {:>> range = "3..7";}
+            feature e: ScalarValues::Real = min(a,b,c,d) {:>> range = "0..0";}
             """.trimIndent(), catchExceptions = true
+        )
+        propagate()
+        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        val result = global.resolveVar("a")
+        assertEquals(0.0, result!!.vectorQuantity.getMinAsDouble(), 0.000001)
+        assertEquals(0.0, result.vectorQuantity.getMaxAsDouble(), 0.000001)
+        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+    }
+
+    @Test
+    fun minTestMultipleParams2Integer() = testSession("ScalarValues") {
+        loadKerML(
+            input ="""
+            feature a: ScalarValues::Integer {:>> range = "-3..1";}
+            feature b: ScalarValues::Integer {:>> range = "1..2";}
+            feature c: ScalarValues::Integer {:>> range = "2..3";}
+            feature d: ScalarValues::Integer {:>> range = "3..7";}
+            feature e: ScalarValues::Integer = min(a,b,c,d) {:>> range = "0..0";}
+            """.trimIndent(), catchExceptions = true
+        )
+        propagate()
+        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        val result = global.resolveVar("a")
+        assertEquals(0, result!!.vectorQuantity.value.asIdd().min)
+        assertEquals(0, result.vectorQuantity.value.asIdd().max)
+        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+    }
+
+    @Test
+    fun minTestMultipleParams3() = testSession("ScalarValues") {
+        loadKerML("""
+            feature a: ScalarValues::Real {:>> range = "0..7";}
+            feature b: ScalarValues::Real {:>> range = "1..6";}
+            feature c: ScalarValues::Real {:>> range = "2..5";}
+            feature d: ScalarValues::Real {:>> range = "3..4";}
+            feature e: ScalarValues::Real = min(a,b,c,d) {:>> range = "4..5";}
+        """)
+        val e = global.resolveVar("e")!!
+        assertEquals(4.0, e.vectorQuantity.getMinAsDouble(), 0.000001)
+        assertEquals(4.0, e.vectorQuantity.getMinAsDouble(), 0.000001)
+        propagate()
+        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        val result = global.resolveVar("a")
+        assertEquals(4.0, result!!.vectorQuantity.getMinAsDouble(), 0.000001)
+        assertEquals(7.0, result.vectorQuantity.getMaxAsDouble(), 0.000001)
+        val result1 = global.resolveVar("b")
+        assertEquals(4.0, result1!!.vectorQuantity.getMinAsDouble(), 0.000001)
+        assertEquals(6.0, result1.vectorQuantity.getMaxAsDouble(), 0.000001)
+        val result2 = global.resolveVar("c")
+        assertEquals(4.0, result2!!.vectorQuantity.getMinAsDouble(), 0.000001)
+        assertEquals(5.0, result2.vectorQuantity.getMaxAsDouble(), 0.000001)
+        val result3 = global.resolveVar("d")
+        assertEquals(4.0, result3!!.vectorQuantity.getMinAsDouble(), 0.000001)
+        assertEquals(4.0, result3.vectorQuantity.getMaxAsDouble(), 0.000001)
+        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+    }
+
+
+    @Test @Disabled
+    fun minTestMultipleParams3Integer() = testSession("ScalarValues") {
+        loadKerML(input = """
+            feature a: ScalarValues::Integer {:>> range = "0..7";}
+            feature b: ScalarValues::Integer {:>> range = "1..6";}
+            feature c: ScalarValues::Integer {:>> range = "2..5";}
+            feature d: ScalarValues::Integer {:>> range = "3..4";}
+            feature e: ScalarValues::Integer = min(a,b,c,d) {:>> range = "4..5";}
+            """.trimIndent(), catchExceptions = true
+        )
+        propagate()
+        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        val result = global.resolveVar("a")
+        assertEquals(4, result!!.vectorQuantity.value.asIdd().min)
+        assertEquals(7, result.vectorQuantity.value.asIdd().max)
+        val result1 = global.resolveVar("b")
+        assertEquals(4, result1!!.vectorQuantity.value.asIdd().min)
+        assertEquals(6, result1.vectorQuantity.value.asIdd().max)
+        val result2 = global.resolveVar("c")
+        assertEquals(4, result2!!.vectorQuantity.value.asIdd().min)
+        assertEquals(5, result2.vectorQuantity.value.asIdd().max)
+        val result3 = global.resolveVar("d")
+        assertEquals(4, result3!!.vectorQuantity.value.asIdd().min)
+        assertEquals(4, result3.vectorQuantity.value.asIdd().max)
+        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+    }
+
+
+
+    @Test
+    fun minTestOneValue1() = testSession("ScalarValues") {
+        loadKerML(input ="""
+            feature a: ScalarValues::Real {:>> range = "0.5..1";}
+            feature c: ScalarValues::Real = min(a);
+            """, catchExceptions = true
         )
         propagate()
         assertEquals(0, status.exceptions.size, status.exceptions.toString())
@@ -1003,12 +1228,12 @@ class FunctionsTests {
     }
 
     @Test
-    fun maxTestOneValue1() = testSession {
-        loadSysMD(
-            input = """
-            feature a: ScalarValues::Real(0..1.5);
+    fun maxTestOneValue1() = testSession("ScalarValues") {
+        loadKerML(
+            input ="""
+            feature a: ScalarValues::Real {:>> range = "0..1.5";}
             feature c: ScalarValues::Real = max(a);
-            """.trimIndent(), catchExceptions = true
+            """, catchExceptions = true
         )
         propagate()
         assertEquals(0, status.exceptions.size, status.exceptions.toString())
@@ -1020,11 +1245,11 @@ class FunctionsTests {
     }
 
     @Test
-    fun minTestOneValueInt1() = testSession {
-        loadSysMD(input = """
-            feature a: ScalarValues::Integer(0..1);
+    fun minTestOneValueInt1() = testSession("ScalarValues") {
+        loadKerML(input = """
+            feature a: ScalarValues::Integer {:>> range = "0..1";}
             feature c: ScalarValues::Integer = min(a);
-            """.trimIndent(), catchExceptions = true
+            """, catchExceptions = true
         )
         propagate()
         assertEquals(0, status.exceptions.size, status.exceptions.toString())
@@ -1035,12 +1260,11 @@ class FunctionsTests {
         assertEquals(0, status.exceptions.size, status.exceptions.toString())
     }
     @Test
-    fun maxTestOneValueInt1() = testSession {
-        loadSysMD(
-            input = """
-            feature a: ScalarValues::Integer(0..1);
+    fun maxTestOneValueInt1() = testSession("ScalarValues") {
+        loadKerML(input = """
+            feature a: ScalarValues::Integer {:>> range = "0..1";}
             feature c: ScalarValues::Integer = max(a);
-            """.trimIndent(), catchExceptions = true
+            """, catchExceptions = true
         )
         propagate()
         assertEquals(0, status.exceptions.size, status.exceptions.toString())
@@ -1051,19 +1275,20 @@ class FunctionsTests {
         assertEquals(0, status.exceptions.size, status.exceptions.toString())
     }
 
+
     @Test
-    fun byParts() = testSession(loadKerML = false) {
-        loadSysMD(input = """
-            package ScalarValues { datatype ScalarValue; datatype Integer :> ScalarValue; datatype Real :> ScalarValue; }    
+    fun byParts() = testSession("Occurrences") {
+        loadKerML(input =
+        """
             class c {
-                feature a: ScalarValues::Real(0..10); 
+                feature a: ScalarValues::Real {:>> range = "0..10";}
             }
             class c1 :> c {
-                feature a: ScalarValues::Real(0..5); 
+                feature a: ScalarValues::Real {:>> range = "0..5";}
             }
 
             class c2 :> c {
-                feature a: ScalarValues::Real(0..2); 
+                feature a: ScalarValues::Real {:>> range = "0..2";}
             }
             
             class b {
@@ -1071,8 +1296,7 @@ class FunctionsTests {
                 feature cElemen2: c2; 
                 feature a:ScalarValues::Real = byParts(a); 
             }
-            """.trimIndent(), catchExceptions = true
-        )
+            """)
         assertEquals(0, status.exceptions.size, status.exceptions.toString())
         propagate()
         assertEquals(0, status.exceptions.size, status.exceptions.toString())
@@ -1080,5 +1304,154 @@ class FunctionsTests {
         assertEquals(0.0, result!!.vectorQuantity.getMinAsDouble(), 0.000001)
         assertEquals(5.0, result.vectorQuantity.getMaxAsDouble(), 0.000001)
         assertEquals(0, status.exceptions.size, status.exceptions.toString())
+    }
+
+    @Test
+    fun assertTestStepInterpolationEvalDOwn() = testSession("Calculations", "SI", "Parts") {
+        loadSysMLv2("""
+        attribute Avail : SI::Quantity {:>> unit = "%"; :>> range = "0.0..100.0";} 
+        attribute level: ScalarValues::Integer = stepInterpolation(Avail, 0.0, 2, 0.9, 3, 0.95, 4, 1.0, 5) { :>> range = "4..4"; }
+        """
+        )
+        propagate()
+        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        val test2 = global.resolveVar("Avail")
+        assertEquals(0.95, test2!!.vectorQuantity.value.asAadd().min,0.0001)
+        assertEquals(1.0, test2.vectorQuantity.value.asAadd().max,0.0001)
+    }
+    @Test
+    fun assertTestStepInterpolationEvalDOwn2() = testSession("Calculations", "SI", "Parts") {
+        loadSysMLv2(
+            """
+        attribute reliability: SI::Quantity {:>> unit = "%"; :>> range = "0.0..100.0";}
+        attribute ASIlFromReliability: ScalarValues::Integer = stepInterpolation(reliability, 0.0, 1, 0.99, 2, 0.995, 3, 0.999, 4) {:>> range = "3..4";} 
+        """
+        )
+        propagate()
+        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        val test2 = global.resolveVar("reliability")
+        assertEquals(0.995, test2!!.vectorQuantity.value.asAadd().min,0.000001)
+        assertEquals(1.0, test2.vectorQuantity.value.asAadd().max,0.000001)
+        // val testr = global.resolveVar("Controller1::ASIlFromReliability")
+        // assertEquals(1, testr!!.vectorQuantity.value.asIdd().min)
+    }
+
+    @Test
+    fun assertTestStepInterpolationEvalDOwnInteger() = testSession("Calculations", "SI", "Parts") {
+        loadSysMLv2("""
+        attribute Avail : ScalarValues::Integer {:>> range = "0..100";} 
+        attribute level: ScalarValues::Integer = stepInterpolation(Avail, 0, 2, 90, 3, 95, 4, 100, 5) { :>> range = "5..5"; }
+        """
+        )
+        propagate()
+        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        val test2 = global.resolveVar("Avail")
+        assertEquals(100, test2!!.vectorQuantity.value.asIdd().min)
+        assertEquals(100, test2.vectorQuantity.value.asIdd().max)
+    }
+    @Test
+    fun evalDownUDF() = testSession("Calculations", "SI", "Parts") {
+        loadSysMLv2("""
+        calc def calcASIL {
+            in attribute severity:        ScalarValues::Integer { :>> range = "0..3";}
+            in attribute exposure:        ScalarValues::Integer { :>> range = "0..4";}
+            in attribute controllability: ScalarValues::Integer { :>> range = "0..3";}
+            attribute    sum:             ScalarValues::Integer = severity + exposure + controllability;
+            attribute    sumAdapted:      ScalarValues::Integer = if controllability == 0 ? 0 else if severity == 0 ? 0 else sum; // special case for S0 and C0 the ASIL is always QM (0)
+            return       result:          ScalarValues::Integer = max(sum-6,0);   
+        }  
+        
+        attribute severity: ScalarValues::Integer = 3;     
+        attribute exposure: ScalarValues::Integer = 4;
+        attribute controllability: ScalarValues::Integer {:>> range = "0..3";}
+        attribute ASILCalculated: ScalarValues::Integer = calcASIL(severity,exposure,controllability) {:>> range = "4..4";}           
+        """)
+        propagate()
+        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        val test2 = global.resolveVar("controllability")
+        assertEquals(3, test2!!.vectorQuantity.value.asIdd().min)
+    }
+
+    @Test
+    fun evalDownUDF2() = testSession("Calculations", "SI") {
+        loadSysMLv2("""
+        calc def calcASIL {
+            in attribute severity:        ScalarValues::Integer { :>> range = "0..3";}
+            in attribute exposure:        ScalarValues::Integer { :>> range = "0..4";}
+            in attribute controllability: ScalarValues::Integer { :>> range = "0..3";}
+            attribute    sum:             ScalarValues::Integer = severity + exposure + controllability;
+            attribute    sumAdapted:      ScalarValues::Integer = if controllability == 0 ? 0 else if severity == 0 ? 0 else sum; // special case for S0 and C0 the ASIL is always QM (0)
+            return       result:          ScalarValues::Integer = max(sum-6,0);   
+        }  
+        attribute severity: ScalarValues::Integer {:>> range = "2..2";}       
+        attribute exposure: ScalarValues::Integer {:>> range = "3..3";}
+        attribute controllability: ScalarValues::Integer {:>> range = "0..3";}
+        attribute ASILCalculated: ScalarValues::Integer = calcASIL(severity,exposure,controllability) {:>> range = "0..0";}
+        """)
+        propagate()
+        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        val test2 = global.resolveVar("controllability")
+        assertEquals(0, test2!!.vectorQuantity.value.asIdd().min)
+        assertEquals(1, test2.vectorQuantity.value.asIdd().max)
+    }
+
+    @Test
+    fun evalUpAndDownUDFInt() = testSession("Calculations", "SI", "Parts") {
+        loadSysMLv2(""" 
+        attribute a: ScalarValues::Integer {:>> range = "0..4";}
+        attribute ASILFromAvailability: ScalarValues::Integer = a {:>> range = "0..4";}
+        assert ASIL {ASILFromAvailability == 4}   
+              """
+        )
+        propagate()
+        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        val test2 = global.resolveVar("ASILFromAvailability")
+        assertEquals(4, test2!!.vectorQuantity.value.asIdd().min)
+        assertEquals(4, test2.vectorQuantity.value.asIdd().max)
+        //assertEquals(0.999, test2!!.vectorQuantity.value.asAadd().min)
+        //assertEquals(1.0, test2.vectorQuantity.value.asAadd().max)
+    }
+    @Test
+    fun evalUpAndDownUDFReal() = testSession("Calculations", "SI", "Parts") {
+        loadSysMLv2(""" 
+        attribute a: ScalarValues::Real {:>> range = "0.0..4.0";}
+        attribute ASILFromAvailability: ScalarValues::Real = a {:>> range = "0.0..4.0";}
+        assert ASIL {ASILFromAvailability == 4.0}   
+              """
+        )
+        propagate()
+        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        val test2 = global.resolveVar("ASILFromAvailability")
+        assertEquals(4.0, test2!!.vectorQuantity.value.asAadd().min)
+        assertEquals(4.0, test2.vectorQuantity.value.asAadd().max)
+        //assertEquals(0.999, test2!!.vectorQuantity.value.asAadd().min)
+        //assertEquals(1.0, test2.vectorQuantity.value.asAadd().max)
+    }
+
+    @Test
+    fun evalDownUDF3() = testSession("Calculations", "SI", "Parts") {
+        loadSysMLv2(""" 
+            calc def ASIL_from_Avail {
+                in attribute Avail: SI::Quantity  { :>> unit = "%";} 
+                return level: ScalarValues::Integer =  stepInterpolation(Avail, 0.0, 1, 0.99, 2, 0.995, 3, 0.999, 4);
+            }  
+                
+            calc def ASIL_from_Reliab {
+                in attribute Reliab: SI::Quantity { :>> unit = "%";} 
+                return level: ScalarValues::Integer = stepInterpolation(Reliab, 0.0, 1, 0.99, 2, 0.995, 3, 0.999, 4);
+            }
+            attribute availability: SI::Quantity {:>> unit = "%"; :>> range = "90.0..100.0";}
+            attribute reliability: SI::Quantity {:>> unit = "%"; :>> range = "99.9..100.0";}
+            attribute ASILFromAvailability: ScalarValues::Integer = ASIL_from_Avail(availability) {:>> range = "0..4";}
+            attribute ASIlFromReliability: ScalarValues::Integer = ASIL_from_Reliab(reliability) {:>> range = "0..4";}
+            assert ASIL {ASIlFromReliability == ASILFromAvailability}  
+        """)
+        propagate()
+        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        val test2 = global.resolveVar("ASILFromAvailability")
+        assertEquals(4, test2!!.vectorQuantity.value.asIdd().min)
+        assertEquals(4, test2.vectorQuantity.value.asIdd().max)
+        //assertEquals(0.999, test2!!.vectorQuantity.value.asAadd().min)
+        //assertEquals(1.0, test2.vectorQuantity.value.asAadd().max)
     }
 }

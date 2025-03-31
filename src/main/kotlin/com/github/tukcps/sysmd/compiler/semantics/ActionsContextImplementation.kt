@@ -1,8 +1,6 @@
 package com.github.tukcps.sysmd.compiler.semantics
 
-import com.github.tukcps.aadd.values.IntegerRange
-import com.github.tukcps.sysmd.compiler.parser.QualifiedName
-import com.github.tukcps.sysmd.compiler.parser.firstName
+import io.github.tukcps.aadd.values.IntegerRange
 import com.github.tukcps.sysmd.compiler.scanner.Token
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.model.expression.AstNode
@@ -10,7 +8,9 @@ import com.github.tukcps.sysmd.model.expression.functions.*
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.Annotation
 import com.github.tukcps.sysmd.model.kerml.implementation.*
-import com.github.tukcps.sysmd.services.report
+import com.github.tukcps.sysmd.model.util.QualifiedName
+import com.github.tukcps.sysmd.model.util.SimpleName
+import com.github.tukcps.sysmd.services.session.report
 import com.github.tukcps.sysmd.services.session.Session
 import java.util.*
 
@@ -19,7 +19,7 @@ import java.util.*
  * This class provides methods that add KerML-Element instances to
  * the KerML model in a session.
  * @param model the KerML model in use in a Session
- * between the textual representation element and the generated elements are added.
+ * between the textual representation element and the generated elements is added.
  * @param textualRepresentation the textual representation that is parsed.
  *
  * The semantic actions add KerML elements to an owner in the KerML model.
@@ -37,27 +37,27 @@ import java.util.*
  */
 open class ActionsContextImplementation(
     final override val model: Session,
-    final override val textualRepresentation: TextualRepresentation,
-    override val owners: Stack<Resolved<Element>> = Stack<Resolved<Element>>(), // A stack of Identifications of all nested elements
-    override val generateAnnotations: Boolean = false,
-    override var expression: Feature? = null,
-    override var visibilityKind: Token.Kind = Token.Kind.PUBLIC
+    final override var textualRepresentation: TextualRepresentation? = null,
+    final override val owners: Stack<Resolved<Element>> = Stack<Resolved<Element>>(), // A stack all nexted element's Identifications
+    final override val generateAnnotations: Boolean = false,
+    final override var expression: Feature? = null,
+    final override var visibilityKind: Token.Kind? = null
 ): ActionsContext {
+
+    init {
+        owners.push(Resolved(model.global))
+    }
 
     /** set with the prefixes of a definition or declaration */
     override val prefixes = mutableSetOf<Token.Kind>()
 
-    init {
-        initOwners()
-        if (textualRepresentation.language.firstName() !in setOf("SysMD", "SysML", "KerML")) {
-            model.report("SysMD parser called with textual representation that is not tagged with language SysMD, SysML, KerML")
-        }
-    }
-
-    /** Initializes owner stack */
-    final override fun initOwners() {
+    /**
+     * Initializes the owner stack
+     * @param ownerPrefix a string with owners separated by '::'
+     */
+    final override fun initOwners(ownerPrefix: String) {
         owners.empty()
-        val ownersPrefixes = textualRepresentation.getOwnerPrefix().split("::")
+        val ownersPrefixes = ownerPrefix.split("::")
         owners.push(Resolved(ref = model.global))
         ownersPrefixes.forEach {
             pushOwner(Resolved(it))
@@ -74,7 +74,15 @@ open class ActionsContextImplementation(
     }
 
     /**
-     * Removes the top name from the owners stack
+     * Pushes an owner on the stack that maintains hierarchical ownership hierarchy
+     * @param owner the owner of new elements until pop
+     */
+    override fun pushOwner(owner: Element) {
+        owners.push(Resolved(ref = owner))
+    }
+
+    /**
+     * Removes the top name from the owners' stack
      */
     override fun popOwner(): Resolved<Element> =
         if (owners.peek().ref != model.global)
@@ -89,11 +97,32 @@ open class ActionsContextImplementation(
     override fun ownerName(): QualifiedName {
         var s = ""
         owners.forEach {
-            s += if (it.ref != null) it.ref?.escapedName() + "::"
-            else "${it.str}::"
+            if (it.ref != model.global) {
+                s += if (it.ref != null) it.ref?.escapedName() + "::"
+                else "${it.str}::"
+            }
         }
         s = s.removeSuffix("::")
         return s
+    }
+
+    /**
+     * Generates the owner's name, with owned element's name added.
+     * If the simple name is null, only the owner's name is returned.
+     * @param owned name of an owned element or null
+     * @return generated qualified name of an owned element or owner
+     */
+    override fun qualifiedName(owned: SimpleName?): QualifiedName {
+        var s = ""
+        owners.forEach {
+            if (it.ref?.name != "Global")
+                s += if (it.ref != null) it.ref?.escapedName() + "::"
+                else "${it.str}::"
+        }
+        return if (owned == null)
+            s.removeSuffix("::")
+        else
+            s+owned
     }
 
 
@@ -111,25 +140,23 @@ open class ActionsContextImplementation(
      */
     override fun toEffectiveName(name: QualifiedName): QualifiedName {
         return when {
-            textualRepresentation.getOwnerPrefix() == "Global" && name.isNotEmpty() -> name
-            name.isNotEmpty() -> "${textualRepresentation.getOwnerPrefix()}::$name"
-            else -> textualRepresentation.getOwnerPrefix()
+            textualRepresentation?.getOwnerPrefix() == "Global" && name.isNotEmpty() -> name
+            name.isNotEmpty() -> "${textualRepresentation?.getOwnerPrefix()}::$name"
+            else -> textualRepresentation?.getOwnerPrefix()?:""
         }
     }
 
     override fun addSpecialization(owner: Type, type: QualifiedName): Specialization {
         val specialization = SpecializationImplementation(
-            owner = Resolved(owner),
             specific = Resolved(owner),
             general = Resolved(type)
-        )
+        ).also { it.owner = Resolved(owner) }
         model.addUnownedElement(element = specialization, startOfOwnerPath = owner)
         return specialization
     }
 
     override fun addFeatureTyping(owner: Feature, type: QualifiedName): FeatureTyping {
         val featureTyping = FeatureTypingImplementation(
-            owner = Resolved(owner),
             typedFeature = Resolved(owner),
             type = Resolved(type)
         )
@@ -140,7 +167,6 @@ open class ActionsContextImplementation(
     override fun addMultiplicity(owner: Feature, integerRange: IntegerRange): Multiplicity {
         val multiplicity = MultiplicityImplementation(
             name = "range",
-            owner = Resolved(owner),
         ).also {
             it.typeConstraint = mutableListOf(integerRange.toString())
         }
@@ -150,11 +176,10 @@ open class ActionsContextImplementation(
     }
 
     /**
-     * Adds an implied Annotation between an annotating element and an allement.
+     * Adds an implied Annotation between an annotating element and an element.
      */
     override fun addAnnotation(owner: AnnotatingElement, annotatedElement: Element): Annotation {
         val annotation = AnnotationImplementation(
-            owner = Resolved(owner),
             annotatingElement = Resolved(ref=owner),
             annotatedElement = Resolved(ref=annotatedElement)
         )
@@ -174,7 +199,6 @@ open class ActionsContextImplementation(
         referencedFeature: QualifiedName
     ) {
         val reference = ReferenceSubsettingImplementation(
-            owner = Resolved(),
             referencingFeature = Resolved(),
             referencedFeature = Resolved(str = referencedFeature)
         )
@@ -194,31 +218,10 @@ open class ActionsContextImplementation(
         redefinedFeature: QualifiedName
     ) {
         val redefinition = RedefinitionImplementation(
-            owner = Resolved(ref = owner),
             redefiningFeature = Resolved(ref = owner),
             redefinedFeature = Resolved(str = redefinedFeature)
         )
         model.addUnownedElement(element = redefinition, path = pathFromOwnerToRedefinedFeature, startOfOwnerPath = owner)
-    }
-
-
-    /**
-     * Service function that adds an implicit feature.
-     *  @param owner the owner of the feature
-     *  @param type the class of which the feature instances have to be
-     *  @param rangeOfMultiplicity the range
-     *  @return The created feature.
-     */
-    override fun addFeature(
-        owner: Element,
-        feature: Feature,
-        type: QualifiedName,
-        rangeOfMultiplicity: IntegerRange
-    ) {
-        addFeatureTyping(feature, type)
-        addMultiplicity(feature, rangeOfMultiplicity)
-        model.addUnownedElement(feature, startOfOwnerPath = owner)
-        if (generateAnnotations) addAnnotation(textualRepresentation, feature)
     }
 
 
@@ -271,7 +274,7 @@ open class ActionsContextImplementation(
             "min" -> return AstMin(model, param)
             "abs" -> return AstAbs(model, param)
             "intersect" -> return AstIntersect(model, param)
-            "bySubclasses" -> return AstBySubclasses(model, namespace, param)
+            "bySpecializations" -> return AstBySpecializations(model, namespace, param)
             "byParts" -> return AstByParts(model, namespace, param)
             "byImplements" -> return AstByImplements(model, namespace, param)
             "linear" -> return AstLinear(model, param)

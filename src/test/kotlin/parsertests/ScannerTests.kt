@@ -16,7 +16,8 @@ class ScannerTests {
             // test 
             /******* */   
         """.trimIndent()
-        REGULAR_COMMENT.consume()
+        assertEquals(REGULAR_COMMENT, token.kind)
+        nextToken()
         assertEquals(EOF, token.kind)
 
         input = """
@@ -156,10 +157,12 @@ class ScannerTests {
     }
 
     @Test fun specialTerminals() = Scanner().run {
-        input = "  : :> ::>  :>> "
-        assertEquals(DP, token.kind)
+        input = "  : typed by :> ::>  :>> "
+        assertEquals(TYPED_BY, token.kind)
         nextToken()
-        assertEquals(SPECIALIZES, token.kind)
+        assertEquals(TYPED_BY, token.kind)
+        nextToken()
+        assertEquals(DPGT, token.kind)
         nextToken()
         assertEquals(REFERENCES, token.kind)
         nextToken()

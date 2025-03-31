@@ -1,6 +1,6 @@
 package com.github.tukcps.sysmd.model.expression
 
-import com.github.tukcps.aadd.*
+import io.github.tukcps.aadd.*
 import com.github.tukcps.sysmd.cspsolver.Variable
 import kotlin.math.absoluteValue
 import kotlin.math.ulp

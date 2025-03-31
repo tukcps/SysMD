@@ -2,12 +2,13 @@ package kermltests
 
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.TypeImplementation
-import com.github.tukcps.sysmd.compiler.loadSysMD
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolve
-import com.github.tukcps.sysmd.services.session.SessionManager.testSession
+import util.mockup.loadKerML
+import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -15,77 +16,88 @@ import kotlin.test.assertTrue
 class ClassTests {
 
     /**
-     * hasA features are inherited.
+     * Default specializes Occurrence.
      */
-    @Test fun classTestViaSysMD() = testSession(loadKerML = false) {
-        settings.catchExceptions = false
-        loadSysMD("""
-                class a :> Base::Anything;
-                class b :> a.
-            """.trimIndent())
-        initialize() // Shall set isA.ref.name to 'a'.
+    @Test
+    fun classBasic() = testSession {
+        loadKerML("""
+            namespace Occurrences { type Occurrence :> Base::Anything; }
+            class a; 
+        """)
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
-        val b = global.resolve<TypeImplementation>("b")
+        val a = global.resolve<Class>("a")
+        val occ = global.resolve<Type>("Occurrences::Occurrence")
+        assertNotNull(a)
+        assertNotNull(occ)
+        val specialization = a.getOwnedElementOfType<Specialization>()
+        assertNotNull(specialization)
+        assertEquals(occ, specialization.general.ref)
+        assertEquals(global.resolve<Type>("Occurrences::Occurrence"), a.allSupertypes().first())
+    }
+
+    /**
+     * Specialization other than Base::Anything
+     */
+    @Test
+    fun classTestViaSysMD() = testSession {
+        loadKerML("""
+            namespace Occurrences { type Occurrence :> Base::Anything; }
+            class a; 
+            class b :> a.
+        """)
+        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        val b = global.resolve<Class>("b")
         assertEquals("a", b?.allSupertypes()?.first()?.declaredName)
     }
 
     /**
-     * isA specifies superclass; via parser.
+     * A class' specialization is an occurrence. Else, an error is reported.
      */
-    @Test fun isATestParser() = testSession(loadKerML = false) {
-        loadSysMD("class a :> Base::Anything;")
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
-        val a = global.resolve<Element>("a") as TypeImplementation
+    @Test fun isATestParser() = testSession("Occurrences") {
+        loadKerML("""
+            class a :> Base::Anything   ;
+        """)
+        val a = global.resolve<Class>("a")
         assertNotNull(a)
-        assertTrue(any in a.allSupertypes())
+        assertTrue(anything in a.allSupertypes(true))
+        a.checkConstraints()
+        assertFalse(status.exceptions.isEmpty(), status.exceptions.toString())
     }
 
 
-    @Test
-    fun debug() = testSession(loadKerML = false) {
-        +"""package x {
-                class a :> Base::Anything; 
-            }
-            package y {
-                package a; 
-            }
-         """.trimIndent()
-        val a = global.resolve<Classifier>("x::a")
-        assertNotNull(a)
-        val b = global.resolve<Package>("y::a")
-        assertNotNull(b)
-    }
-
-    @Test fun tessSupertypeCreation() = testSession (loadKerML = false) {
-        loadSysMD(input = """
-        class x :> Base::Anything; 
-        class y :> x; 
-        """.trimIndent())
+    @Test fun tessSupertypeCreation() = testSession ("Occurrences") {
+        loadKerML("""
+            class x :> Base::Anything; 
+            class y :> x; 
+        """)
         val y = global.resolve<Class>("y")
         assertEquals("x", y?.allSupertypes()?.first()?.qualifiedName)
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
     }
 
-    @Test fun testSuperclassCannotBeItself() = testSession(loadKerML = false) {
-        loadSysMD("class A :> A.")
+    @Test fun testSuperclassCannotBeItself() = testSession("Occurrences") {
+        loadKerML("class A :> A;")
         val a = global.resolve<Type>("A")
         assertNotNull(a)
         assertTrue(status.exceptions.isNotEmpty(), status.exceptions.toString())
     }
 
-    @Test fun testSuperclassCannotBeItselfUpdate() = testSession(loadKerML = false) {
-        loadSysMD("""
+    @Test fun testSuperclassCannotBeItselfUpdate() = testSession("Occurrences") {
+        loadKerML("""
             class B :> Base::Anything; 
             class A :> A; 
-        """.trimIndent())
+        """)
         initialize()
         assertTrue(status.exceptions.isNotEmpty(), status.exceptions.toString())
     }
 
-    @Test fun testSuperclassCannotBeItselfCyclic() = testSession(loadKerML = false) {
-        loadSysMD("""
-            class A :> B;
-            class B :> A;
+    /**
+     * Type definitions must not be cyclic if their multiplicity is larger than 0.
+     */
+    @Test fun testSuperclassCannotBeItselfCyclic() = testSession {
+        loadKerML("""
+            type A :> B [1];
+            type B :> A [1];
         """.trimIndent())
         assertTrue(status.exceptions.isNotEmpty(), status.exceptions.toString())
     }
@@ -93,37 +105,34 @@ class ClassTests {
     /**
      * A Feature shall not be considered as a Class for Classification.
      */
-    @Test fun testSuperclassMustBeClassifiable() = testSession {
-        loadSysMD("""
-            class A :> Base::thing; // Superclass must be Classifier, but not a Feature. 
-        """.trimIndent()
-        )
-        val a = global.resolve<Type>("A")!!
-        assertNotNull(a.allSupertypes().first())
+    @Test fun testSuperclassMustBeClassifiable() = testSession("Base") {
+        loadKerML("""
+            type c :> Base::things; // Superclass must be Classifier, but not a Feature. 
+        """)
+        val a = global.resolve<Type>("c")!!
+        assertNotNull(a.allSupertypes().firstOrNull())
         assertTrue(status.exceptions.isNotEmpty(), status.exceptions.toString())
     }
 
-    @Test fun testOrderOfIsAIsIrrelevant() = testSession(loadKerML = false) {
-        loadSysMD("""
+    @Test fun testOrderOfIsAIsIrrelevant() = testSession("Occurrences") {
+        loadKerML("""
             class A :> B; 
-            class B :> Base::Anything; 
-        """.trimIndent())
+            class B; 
+        """)
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val a = global.resolve<TypeImplementation>("A")!!
         val b = global.resolve<TypeImplementation>("B")!!
         assertTrue(b in a.allSupertypes())
-        assertTrue(any in b.allSupertypes())
+        assertTrue(anything in b.allSupertypes(transitive = true))
     }
 
 
-    @Test
-    fun testTwoSuperclasses() = testSession(loadKerML = false) {
-        loadSysMD("""
-            package ScalarValues { datatype ScalarValue; datatype Integer :> ScalarValue; }
+    @Test fun testTwoSuperclasses() = testSession("Occurrences") {
+        loadKerML("""
             class A { feature a; }
             class B { feature b; }
             class AB :> A, B; 
-        """.trimIndent())
+        """)
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val ab = global.resolve<Class>("AB")
         assertNotNull(ab)

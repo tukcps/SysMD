@@ -2,15 +2,12 @@ package com.github.tukcps.sysmd.model.sysml.implementation
 
 import com.github.tukcps.sysmd.model.kerml.Resolved
 import com.github.tukcps.sysmd.model.sysml.InterfaceDefinition
-import java.util.UUID
 
 class InterfaceDefinitionImplementation(
-    elementId: UUID = UUID.randomUUID(),
     declaredName: String? = null,
     declaredShortName: String? = null,
     elementType: String = "InterfaceDefinition"
 ) : InterfaceDefinition, ConnectionDefinitionImplementation(
-    elementId = elementId,
     declaredName = declaredName,
     declaredShortName = declaredShortName,
     elementType =elementType

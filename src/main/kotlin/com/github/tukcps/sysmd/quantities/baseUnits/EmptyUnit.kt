@@ -6,7 +6,7 @@ import com.github.tukcps.sysmd.quantities.Prefix
 
 
 open class EmptyUnit(name: String, symbol: String, prefix: Prefix, convFac: Double = 1.0, exponent: Int = 1) :
-    BaseUnit(name, symbol, prefix, "emptiness", convFac, exponent) {
+    BaseUnit(name, symbol, prefix, "Emptiness", convFac, exponent) {
 
     /**
      * generate UnitObjects and add them to the UnitList

@@ -1,15 +1,17 @@
 package parsertests
 
+import com.github.tukcps.sysmd.compiler.importMD
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
 import com.github.tukcps.sysmd.model.kerml.implementation.AnnotatingElementImplementation
-import com.github.tukcps.sysmd.compiler.importMD
-import com.github.tukcps.sysmd.services.session.SessionManager.testSession
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolve
-import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.Test
-
+import io.github.tukcps.sysmlv2.interchange.InterchangeProject
+import util.testSession
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 /**
  * Tests for the Markdown-Import into a model.
@@ -20,9 +22,9 @@ class ImportMDTests {
 
 
     /**
-     * MD titles with same text shall be allowed.
+     * MD titles with the same text shall be allowed.
      */
-    @Test fun importMD_equal_headings_allowed() = testSession(loadKerML = false) {
+    @Test fun importMD_equal_headings_allowed() = testSession {
         val input = """
             # H1
             asdf asdf
@@ -42,7 +44,7 @@ class ImportMDTests {
         assertTrue( (fileAnnotation.ownedElement.last().ref as TextualRepresentation).body.contains("text"))
     }
 
-    @Test fun importMD() = testSession(loadKerML = false) {
+    @Test fun importMarkdown() = testSession {
         val input = """
             # H1
             
@@ -64,7 +66,7 @@ class ImportMDTests {
     }
 
 
-    @Test fun importMdWithEmptyDocumentationAfterCode() = testSession(loadKerML = false) {
+    @Test fun importMdWithEmptyDocumentationAfterCode() = testSession {
         val input = """
             # H1
             ## H2 
@@ -82,7 +84,7 @@ class ImportMDTests {
     /**
      * The language shall be passed including parameters.
      */
-    @Test fun importMdWithLanguageAndNamespace() = testSession(loadKerML = false) {
+    @Test fun importMdWithLanguageAndNamespace() = testSession {
         val input = """
             # H1
             ## H2 
@@ -91,17 +93,17 @@ class ImportMDTests {
             Test isA Package.
             ```            
         """.trimIndent()
-        // Create File annotating element ...
+        // Create File annotating the element ...
         val fileAnnotation = create(AnnotatingElementImplementation(declaredName="test", body="input source name"), global)
         // Parse it, creates Textual representations inside.
         importMD(input, fileAnnotation)
         assertEquals(7, get().size)
-        // Last one is SysMD with Language set to SysMD::A::B
+        // The last one is SysMD with the Language set to SysMD::A::B
         assertTrue((fileAnnotation.ownedElement.last().ref as TextualRepresentation).language == "SysMD::A::B")
         assertTrue((fileAnnotation.ownedElement.last().ref as TextualRepresentation).getOwnerPrefix() == "A::B")
     }
 
-    @Test fun importMdWithNoTrailingTicks() = testSession(loadKerML = false) {
+    @Test fun importMdWithNoTrailingTicks() = testSession {
         val input = """
             # H1
             ## H2 
@@ -115,7 +117,7 @@ class ImportMDTests {
     }
 
 
-    @Test fun importMdMergesTitleAndBody() = testSession(loadKerML = false) {
+    @Test fun importMdMergesTitleAndBody() = testSession {
         val input = """
             # H1
             asdf1
@@ -128,13 +130,13 @@ class ImportMDTests {
         assertEquals(6, get().size)
     }
 
-    @Test fun importMdAndCompile() = testSession(loadKerML = false) {
+    @Test fun importMdAndCompile() = testSession {
         val input = """
             # H1
             ## H2 
             *asdf* or _asdf_
-            ```
-            Package Test.
+            ```KerML
+            package Test;
         """.trimIndent()
         // The SysMD file name, represented as annotation.
         val fileAnnotation = create(AnnotatingElementImplementation(declaredName = "test"), global)
@@ -143,7 +145,7 @@ class ImportMDTests {
         importMD(input, fileAnnotation)
         assertEquals(7, get().size)
         for (it in get().filterIsInstance<TextualRepresentation>()) {
-            if (it.language == "SysMD") {
+            if (it.language == "KerML") {
                 it.compile()
             }
         }
@@ -152,30 +154,11 @@ class ImportMDTests {
         assertNotNull(test)
     }
 
-    @Test fun importMdWithYamlHeader() = testSession(loadKerML = false) {
+    @Test fun importMdWithYamlHeader2() = testSession {
         val input = """
             --- 
             title: Test of Yaml Header
-            maintainer: Christoph Grimm
-            name: sysmdtest
-            --- 
-        """.trimIndent()
-        // The SysMD file name, represented as annotation.
-        val fileAnnotation = create(AnnotatingElementImplementation(declaredName="test"), global)
-        // Import the resulting segments of TextualRepresentation / Documentation in MD into the model
-        // They shall become owned elements of the file.
-        importMD(input, fileAnnotation)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
-        assertTrue(project.maintainer.first() == "Christoph Grimm")
-        assertTrue(project.name == "sysmdtest")
-    }
-
-    @Test fun importMdWithYamlHeader2() = testSession(loadKerML = false) {
-        val input = """
-            --- 
-            title: Test of Yaml Header
-            maintainer: Christoph Grimm
-            name: sysmdtest.md
+            author: Christoph Grimm
             --- 
             
             [toc]

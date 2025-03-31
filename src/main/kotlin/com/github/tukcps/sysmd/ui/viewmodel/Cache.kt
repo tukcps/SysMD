@@ -10,7 +10,7 @@ import java.util.*
  */
 class Cache<K, V>(val size: Int = 50) {
     private val cache = HashMap<K, V>()
-    var insertionOrder = LinkedList<K>()
+    private var insertionOrder = LinkedList<K>()
 
     fun put(key: K, value: V): K? {
         var evictedKey: K? = null
@@ -20,7 +20,6 @@ class Cache<K, V>(val size: Int = 50) {
         }
         cache[key] = value
         insertionOrder.addLast(key)
-
 
         return evictedKey
     }
@@ -32,4 +31,4 @@ class Cache<K, V>(val size: Int = 50) {
     }
 }
 
-val cache = Cache<String, ImageBitmap>((settings.imagesToCache))
+val imageCache = Cache<String, ImageBitmap>(settings.imagesToCache)

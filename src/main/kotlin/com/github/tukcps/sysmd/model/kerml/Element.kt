@@ -1,7 +1,7 @@
 package com.github.tukcps.sysmd.model.kerml
 
-import com.github.tukcps.sysmd.compiler.parser.QualifiedName
-import com.github.tukcps.sysmd.compiler.parser.SimpleName
+import com.github.tukcps.sysmd.model.util.QualifiedName
+import com.github.tukcps.sysmd.model.util.SimpleName
 import com.github.tukcps.sysmd.services.ModelServices
 import java.util.*
 
@@ -15,7 +15,7 @@ interface Element: ModelServices {
      * A unique id of the Element that remains unchained over the whole lifecycle of the element.
      * We use UUIDv4 as suggested in SysMLv2 Std, except for library elements for which we use UUIDv5.
      */
-    var elementId: UUID
+    var elementId: UUID?
 
     /** Tool-specific ids; not used */
     var aliasIds: Collection<String>
@@ -40,15 +40,26 @@ interface Element: ModelServices {
     fun escapedName(): String?
 
     /** Path from root namespace to this element */
-    val qualifiedName: QualifiedName
+    val qualifiedName: QualifiedName?
 
     /**
+     * Path including unnamed elements to this element.
+     */
+    fun path(): String
+
+    /**
+     * Needed for path
+     */
+    fun positionOf(element: Element): Int?
+
+
+        /**
      * Reified Relationships from which owner, owningNamespace, etc. are derived.
      * Contains reified relationships that relate the element with its owned elements.
      */
     @Suppress("UNCHECKED_CAST")
-    val ownedRelationship: List<Resolved<Relationship>>
-        get() = ownedElement.filter { it.ref is Relationship } as List<Resolved<Relationship>>
+    val ownedRelationship: List<Relationship>
+        get() = getOwnedElementsOfType<Relationship>()
 
     /** The ownership is modeled by a set of owned elements.*/
     var ownedElement: MutableList<Resolved<Element>>
@@ -67,7 +78,6 @@ interface Element: ModelServices {
 
     /** Whether (all) implied relationships are included or not */
     var isImpliedIncluded: Boolean
-
 
     /**
      * Is true for elements that are added, but are not subject to persistence and/or exchange of
@@ -94,6 +104,8 @@ interface Element: ModelServices {
     fun addOwnedElement(element: Element)
     fun setOwner(owningElement: Element)
     fun getOwner(): Element? = owner.ref
+
+    fun updateFrom(template: Element)
 }
 
 
@@ -153,5 +165,5 @@ inline fun <reified T> Element.getOwned(name: SimpleName): T? {
  */
 inline fun <reified T> Element.getOwnedByIndex(i: Int): T? {
     val element = ownedElement.getOrNull(i)?.ref
-    return if (element is T) element else null
+    return element as? T
 }

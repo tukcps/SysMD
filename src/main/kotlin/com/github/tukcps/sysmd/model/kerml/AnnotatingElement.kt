@@ -15,5 +15,6 @@ interface AnnotatingElement: Element {
      * The annotated element is defined by an annotation (relationship) or, if no annotation
      * is available, is the owning element.
      */
-    fun annotatedElement(): Element
+    fun annotation(): List<Annotation> = getOwnedElementsOfType<Annotation>()
+    fun annotatedElement(): List<Element>
 }

@@ -4,13 +4,13 @@ import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.SpecializationImplementation
-import com.github.tukcps.sysmd.compiler.loadSysMD
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.resolve.resolve
-import com.github.tukcps.sysmd.services.session.SessionManager.testSession
+import com.github.tukcps.sysmd.services.resolve.resolveVar
+import util.mockup.loadKerML
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import util.testSession
 import kotlin.test.assertTrue
 
 /**
@@ -27,7 +27,8 @@ class VariableInteractionTest {
      * analyzed separately.
      */
     @Test
-    fun expressionParseTest() = testSession {
+    fun expressionParseTest() = testSession("ScalarValues") {
+        initialize(1)
         val a = create(FeatureImplementation(declaredName ="a", typeConstraint = mutableListOf("2.0 .. 3.0")), global)
         create(SpecializationImplementation(a, repo.realType!!), a)
         val b = create(FeatureImplementation(declaredName ="b", typeConstraint = mutableListOf("3.0 .. 4.0")), global)
@@ -43,8 +44,8 @@ class VariableInteractionTest {
 
     /** A property value can become constrained from a dependency value (here: scalar) */
     @Test
-    fun evalUpPropertyDirectTest() = testSession {
-        +"feature speed: ScalarValues::Real(2.0 .. 22.0) = 5.0+6.0;"
+    fun evalUpPropertyDirectTest() = testSession("ScalarValues") {
+        loadKerML("feature speed: ScalarValues::Real = 5.0+6.0 {:>> range = \"2.0 .. 22.0\";}")
         val speed = global.resolve<Feature>("speed")!!.variable
         assertEquals(11.0, speed!!.min(), 0.000001)
         assertEquals(11.0, speed.max(), 0.000001)
@@ -53,10 +54,10 @@ class VariableInteractionTest {
 
     /** A property can constrain a dependency such that its own constraints can be fulfilled */
     @Test
-    fun evalDownPropertyTest() = testSession {
-         loadSysMD("""
-             feature speed2: ScalarValues::Real(10.0 .. 10000.0);
-             feature speed:  ScalarValues::Real(-100.0 ..200.0) = speed2;""")
+    fun evalDownPropertyTest() = testSession("ScalarValues") {
+         loadKerML("""
+             feature speed2: ScalarValues::Real {:>> range = "10.0 .. 10000.0";}
+             feature speed:  ScalarValues::Real = speed2 {:>> range = "-100.0 ..200.0";}""")
         propagate()
         assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
         val speed = global.resolve<Feature>("speed")!!.variable!!.aadd().getRange()

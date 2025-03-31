@@ -18,20 +18,16 @@ import java.util.*
  * The annotatedElement of this Annotation, when it is also its owningRelatedElement.
  */
 open class AnnotationImplementation(
-    elementId: UUID = UUID.randomUUID(),
     declaredName: String? = null,
     declaredShortName: String? = null,
     annotatingElement: Resolved<AnnotatingElement>? = null,
     annotatedElement:  Resolved<Element>? = null,
-    ownedElements: MutableList<Resolved<Element>> = mutableListOf(),
-    owner: Resolved<Element> = Resolved(),
     elementType: String = "Annotation"
 ): Annotation, RelationshipImplementation(
-    elementId=elementId, declaredName=declaredName, declaredShortName=declaredShortName,
+    declaredName=declaredName,
+    declaredShortName=declaredShortName,
     source = if (annotatingElement!= null) mutableListOf(annotatingElement) else mutableListOf(),
     target = if (annotatedElement != null) mutableListOf(annotatedElement) else mutableListOf(),
-    ownedElement=ownedElements,
-    owner = owner,
     elementType = elementType
 ) {
     @Suppress("UNCHECKED_CAST")
@@ -47,8 +43,6 @@ open class AnnotationImplementation(
             declaredShortName=declaredShortName,
             annotatedElement = annotatedElement,
             annotatingElement = annotatingElement,
-            ownedElements = Resolved.copyOfIdentityList(ownedElement),
-            owner = Resolved(owner)
         )
     }
 

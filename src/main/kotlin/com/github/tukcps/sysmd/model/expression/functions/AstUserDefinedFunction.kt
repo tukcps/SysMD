@@ -1,15 +1,15 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import com.github.tukcps.aadd.AADD
-import com.github.tukcps.aadd.BDD
-import com.github.tukcps.aadd.IDD
-import com.github.tukcps.aadd.StrDD
+import io.github.tukcps.aadd.AADD
+import io.github.tukcps.aadd.BDD
+import io.github.tukcps.aadd.IDD
+import io.github.tukcps.aadd.StrDD
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.model.expression.*
 import com.github.tukcps.sysmd.model.kerml.Feature
+import com.github.tukcps.sysmd.model.kerml.Function
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.getOwnedElementsOfType
-import com.github.tukcps.sysmd.model.kerml.implementation.CalculationDefinitionImplementation
 import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.quantities.Unit
 import com.github.tukcps.sysmd.quantities.VectorQuantity
@@ -29,7 +29,7 @@ internal class AstUserDefinedFunction(
     args: ArrayList<AstNode>,
     functionName: String
 ) : AstFunction(functionName, model, 0, args) {
-    private lateinit var function: CalculationDefinitionImplementation
+    private lateinit var function: Function
     private lateinit var functionInputs: MutableMap<String, VectorQuantity>
     private lateinit var functionCalculations: List<Feature>
     private lateinit var inputParamPositions: MutableMap<String, Int>
@@ -50,7 +50,7 @@ internal class AstUserDefinedFunction(
             else -> throw SemanticError("UserDefinedFunction must have Real, Boolean or Integer result")
         }
         // Get Function with given name
-        val resultResolvingFunctionName = namespace.resolve<CalculationDefinitionImplementation>(name)
+        val resultResolvingFunctionName = namespace.resolve<Function>(name)
         if (resultResolvingFunctionName != null)
             function = resultResolvingFunctionName
         else
@@ -62,11 +62,12 @@ internal class AstUserDefinedFunction(
         val expectedFunctionInputs =
             function.getOwnedElementsOfType<Feature>().filter { it.direction == Feature.FeatureDirectionKind.IN }
         if (expectedFunctionInputs.size != parameters.size)
-            throw SemanticError("Function $name expects ${expectedFunctionInputs.size} parameters, but ${parameters.size} parameters given")
+            throw SemanticError("Function $name expects ${expectedFunctionInputs.size} parameters, but ${parameters.size} parameters given", this.function)
         parameters.indices.forEach {
-            //test if units are matching
-            //create Quantity, to make Unit of expectedFunctionInputs canonical. After that it can be compared with the unit of the parameter
-            val expectedUnit = Quantity(model.builder.scalar(1.0), Unit(expectedFunctionInputs[it].unitConstraint?:"?")).unit
+            // Test if units are matching
+            // create Quantity, to make Unit of expectedFunctionInputs canonical.
+            // After that it can be compared with the unit of the parameter
+            val expectedUnit = Quantity(model.builder.real(1.0), Unit(expectedFunctionInputs[it].unitConstraint?:"?")).unit
             if (expectedUnit != parameters[it].upQuantity.unit)
                 throw SemanticError("Unit error for function $name: for the ${it + 1}. parameter the unit ${expectedFunctionInputs[it].unitConstraint} was expected, but the unit is ${parameters[it].upQuantity.unit}")
             functionInputs[expectedFunctionInputs[it].escapedName()!!] = parameters[it].upQuantity
@@ -127,9 +128,11 @@ internal class AstUserDefinedFunction(
                 node.parameters.forEach { parameters.add(buildAst(it)) }
                 when (node.name) {
                     "ITE" -> return AstIte(model, parameters)
+                    "allOf" -> return AstAllOf(model, parameters)
+                    "anyOf" -> return AstAnyOf(model, parameters)
                     "sum_i" -> return AstSumI(namespace, model, parameters)
+                    "sum" -> return AstSum(namespace, model, parameters)
                     "characterizedResult" -> return AstCharacterizedResult(model, namespace, parameters)
-                    "userDefinedFunction" -> return AstUserDefinedFunction(model, namespace, parameters, "userDefinedFunction")
                     "ln" -> return AstLn(model, parameters)
                     "exp" -> return AstExp(model, parameters)
                     "sqr" -> return AstSqr(model, parameters)
@@ -142,8 +145,8 @@ internal class AstUserDefinedFunction(
                     "power" -> return AstPower(model, parameters)
                     "powb" -> return AstPower(model, parameters)
                     "pow" -> return AstPower(model, parameters)
-                    "sin" -> return AstSin(model, parameters)
-                    "cos" -> return AstCos(model, parameters)
+                    "sin" -> return AstSin(model,parameters)
+                    "cos" -> return AstCos(model,parameters)
                     "toReal" -> return AstToReal(model, parameters)
                     "DateTime" -> return AstDateTime(model, parameters)
                     "Date" -> return AstDate(model, parameters)
@@ -153,17 +156,17 @@ internal class AstUserDefinedFunction(
                     "min" -> return AstMin(model, parameters)
                     "abs" -> return AstAbs(model, parameters)
                     "intersect" -> return AstIntersect(model, parameters)
-                    "bySubclasses" -> return AstBySubclasses(model, namespace, parameters)
+                    "bySpecializations" -> return AstBySpecializations(model, namespace, parameters)
                     "byParts" -> return AstByParts(model, namespace, parameters)
                     "byImplements" -> return AstByImplements(model, namespace, parameters)
                     "linear" -> return AstLinear(model, parameters)
-                    "step" -> return AstStepInterpolation(model, parameters)
-                    "Real" -> return AstReal(model, parameters)
-                    "Integer" -> return AstInteger(model, parameters)
-                    "norm" -> return AstNormalizeVector(model, parameters)
-                    "angle" -> return AstVectorAngle(model, parameters)
-                    "cityBlockDistance" -> return AstCityBlockDistance(model, parameters)
-                    "quantityOfVectorAtPosition" -> return AstQuantityOfVectorAtPosition(model, parameters)
+                    "stepInterpolation" -> return AstStepInterpolation(model,parameters)
+                    "ToReal" -> return AstReal(model, parameters)
+                    "ToInteger" -> return AstInteger(model, parameters)
+                    "norm" -> return AstNormalizeVector(model,parameters)
+                    "angle" -> return AstVectorAngle(model,parameters)
+                    "cityBlockDistance" -> return AstCityBlockDistance(model,parameters)
+                    "quantityOfVectorAtPosition" -> return AstQuantityOfVectorAtPosition(model,parameters)
                     else -> return AstUserDefinedFunction(model, namespace, parameters, node.name)
                 }
             }

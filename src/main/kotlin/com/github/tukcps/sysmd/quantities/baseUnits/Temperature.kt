@@ -1,14 +1,17 @@
 package com.github.tukcps.sysmd.quantities.baseUnits
 
+import io.github.tukcps.aadd.DD
+import io.github.tukcps.aadd.functions.div
+import io.github.tukcps.aadd.functions.minus
+import io.github.tukcps.aadd.functions.plus
+import io.github.tukcps.aadd.functions.times
 import com.github.tukcps.sysmd.quantities.BaseUnit
 import com.github.tukcps.sysmd.quantities.NoPrefix
 import com.github.tukcps.sysmd.quantities.Prefix
-import com.github.tukcps.aadd.*
-import com.github.tukcps.aadd.functions.*
 
 
 open class Temperature(name: String, symbol: String, prefix: Prefix, convFac: Double = 1.0, exponent: Int = 1) :
-    BaseUnit(name, symbol, prefix, "temperature", convFac, exponent) {
+    BaseUnit(name, symbol, prefix, "Temperature", convFac, exponent) {
 
     /**
      * generate UnitObjects and add them to the UnitList
@@ -21,7 +24,7 @@ open class Temperature(name: String, symbol: String, prefix: Prefix, convFac: Do
         return Temperature(name, symbol, prefix, convFac, exponentValue)
     }
 
-    fun convertTo(inputValue: DD, destinationTemperature: Temperature): DD {
+    fun convertTo(inputValue: DD<*>, destinationTemperature: Temperature): DD<*> {
         return when (destinationTemperature.name) {
             "degree celsius" -> {
                 (inputValue - 273.15) / destinationTemperature.prefix.factor
@@ -35,7 +38,7 @@ open class Temperature(name: String, symbol: String, prefix: Prefix, convFac: Do
         }
     }
 
-    fun toKelvin(value: DD): DD {
+    fun toKelvin(value: DD<*>): DD<*> {
         if (name == "degree fahrenheit")
             return (value - 32.0) * 5.0 / 9.0 + 273.15
         if (name == "degree celsius")

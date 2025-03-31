@@ -63,6 +63,7 @@ abstract class AstFunction(
         evalDown()
         for (p in parameters)
             // if (!p.isBool) // uncomment for hotfix of the latest issue with ITE
+            if(this !is AstIte) //evalDown for ITE params makes no sense
                 p.evalDownRec()
     }
 
@@ -99,16 +100,16 @@ abstract class AstFunction(
     }
 
     override fun clone(): AstFunction {
-        // clone this first, creates klon with same type as this and shallow copy
-        val klon: AstFunction = super.clone() as AstFunction
+        // clone this first, creates clone with same type as this and shallow copy
+        val clone: AstFunction = super.clone() as AstFunction
 
         // deep-clone parameters
         val parClone = ArrayList<AstNode>()
         for (p in parameters) parClone.add(p)
 
-        // add cloned parameters to klon
-        klon.parameters = parClone
-        return klon
+        // add cloned parameters to clone
+        clone.parameters = parClone
+        return clone
     }
 
     override fun toString(): String {
@@ -120,10 +121,5 @@ abstract class AstFunction(
         return s
     }
 
-    override fun toExpressionString(): String {
-        var str = "$name("
-        for (p in parameters) str += p.toExpressionString() + ", "
-        str = str.dropLast(2)
-        return "$str)"
-    }
+    override fun toExpressionString() = "$name(${parameters.joinToString(", ") { it.toExpressionString() }})"
 }

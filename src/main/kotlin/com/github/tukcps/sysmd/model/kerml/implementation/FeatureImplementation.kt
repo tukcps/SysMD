@@ -1,21 +1,18 @@
 package com.github.tukcps.sysmd.model.kerml.implementation
 
-import com.github.tukcps.aadd.values.IntegerRange
+import io.github.tukcps.aadd.values.IntegerRange
 import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.compiler.parser.SimpleName
+import com.github.tukcps.sysmd.model.util.SimpleName
 import java.util.*
 
 /**
  * A feature definition including Multiplicity, as in KerML (mostly).
  */
 open class FeatureImplementation(
-    elementId: UUID = UUID.randomUUID(),
     declaredName: SimpleName? = null,
     declaredShortName: String? = null,
-    ownedElement: MutableList<Resolved<Element>> = mutableListOf(),
-    owner: Resolved<Element> = Resolved(),
     final override var direction: Feature.FeatureDirectionKind = Feature.FeatureDirectionKind.IN,
     final override var isEnd: Boolean = false,
     final override var isComposite: Boolean = true,
@@ -32,11 +29,8 @@ open class FeatureImplementation(
     override var typeConstraint: MutableList<String> = mutableListOf(),
     override var expression: String? = null,
 ): Feature, TypeImplementation(
-    elementId = elementId,
     declaredName = declaredName,
     declaredShortName = declaredShortName,
-    ownedElement = ownedElement,
-    owner = owner,
     textualRepresentation = textualRepresentation,
     elementType = elementType
 ){
@@ -55,7 +49,7 @@ open class FeatureImplementation(
 
     /** Getter and setter for the specified multiplicity. */
     override var multiplicity: IntegerRange
-        get() = multiplicityProperty?.variable?.intSpecs?.get(0) ?: IntegerRange(1, 1 )
+        get() = IntegerRange(multiplicityProperty?.typeConstraint?.firstOrNull()?:"1..1")
         set(value) { multiplicityProperty?.variable?.valueSpecs = mutableListOf(value)}
 
     /**
@@ -64,7 +58,7 @@ open class FeatureImplementation(
      */
     override fun resolveNames(): Boolean {
         //
-        // We also need to add a multiplicity as property.
+        // We also need to add multiplicity as property.
         // Add multiplicity as owned property is done in create-function of Session!
         //
         updated = super.resolveNames() or updated

@@ -3,8 +3,8 @@ package com.github.tukcps.sysmd.model.kerml.implementation
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.exceptions.SysMDError
 import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.compiler.parser.SimpleName
-import com.github.tukcps.sysmd.services.report
+import com.github.tukcps.sysmd.model.util.SimpleName
+import com.github.tukcps.sysmd.services.session.report
 import java.util.*
 
 
@@ -23,23 +23,19 @@ import java.util.*
  * its owned sub-Namespaces.
  */
 class NamespaceImportImplementation(
-    elementId: UUID = UUID.randomUUID(),
-    owner: Resolved<Element> = Resolved(),
     declaredName: SimpleName? = null,
     declaredShortName: SimpleName? = null,
+    importingNamespace: Resolved<Element> = Resolved(),
     importedNamespace: Resolved<Namespace> = Resolved(),
-    override var visibility: Import.VisibilityKind = Import.VisibilityKind.Public,
-    override var isRecursive: Boolean = true,                            // False by default in SysMLv2
+    override var visibility: Import.VisibilityKind = Import.VisibilityKind.Private,
+    override var isRecursive: Boolean = true,              // False by default in SysMLv2
     override var isImportAll: Boolean = false,
     elementType: String = "NamespaceImport"
 ): NamespaceImport, RelationshipImplementation(
-    elementId = elementId,
-    ownedElement = mutableListOf(),
-    owner = owner,
     declaredName=declaredName,
     declaredShortName = declaredShortName,
-    source = mutableListOf(owner),
-    target = mutableListOf(Resolved(importedNamespace)),
+    source = mutableListOf(importingNamespace),
+    target = mutableListOf(importedNamespace),
     elementType = elementType
 ) {
     override val importOwningNamespace: Namespace?
@@ -56,12 +52,11 @@ class NamespaceImportImplementation(
 
     override fun clone() : NamespaceImport {
         return NamespaceImportImplementation(
-            owner = Resolved(owner),
-            importedNamespace = Resolved(importedNamespace),
             visibility = visibility,
             isRecursive = isRecursive,
             isImportAll = isImportAll
         ).also {
+            it.importedNamespace = Resolved(importedNamespace)
             it.model = model
         }
     }
