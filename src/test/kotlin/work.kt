@@ -44,10 +44,10 @@ class WorkInProgress {
         loadLibrary("Occurrences.md")
         loadLibrary("Links.md")
         loadLibrary("KerML.md")
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val end2 = System.currentTimeMillis()
         initialize(5)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val end3 = System.currentTimeMillis()
         val duration2 = end2 - start2
         val duration3 = end3 - end2

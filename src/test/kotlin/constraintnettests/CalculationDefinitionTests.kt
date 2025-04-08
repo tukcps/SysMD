@@ -22,7 +22,7 @@ class CalculationDefinitionTests {
             }
             attribute a: ScalarValues::Real = f(2.0); 
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val f = global.resolve<CalculationDefinition>("f")
         val a = global.resolve<AttributeUsage>("a")
         assertNotNull(f)
@@ -56,7 +56,7 @@ class CalculationDefinitionTests {
             attribute c: SI::Speed = Velocity(a,b);
             attribute c2: SI::Speed = Velocity(10.0 [m/s],b);
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assert(global.resolveVar("Velocity::v1")!!.feature.direction == Feature.FeatureDirectionKind.IN)
         assert(global.resolveVar("Velocity::v2")!!.feature.direction == Feature.FeatureDirectionKind.IN)
         assert(global.resolveVar("Velocity::a")!!.feature.direction == Feature.FeatureDirectionKind.INOUT)
@@ -81,7 +81,7 @@ class CalculationDefinitionTests {
             attribute c1: SI::Energy = Energy(a1,b1);
          """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assert(10000.0 in global.resolveVar("c")!!.vectorQuantity.aadd().getRange())
         assert(40.0 in global.resolveVar("c1")!!.vectorQuantity.aadd().getRange())
     }
@@ -101,7 +101,7 @@ class CalculationDefinitionTests {
             attribute c1: SI::Length = Distance(a,b1);
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assert(15.0 in global.resolveVar("c")!!.vectorQuantity.aadd().getRange())
         assert(5.0 in global.resolveVar("c1")!!.vectorQuantity.aadd().getRange())
     }
@@ -126,7 +126,7 @@ class CalculationDefinitionTests {
             attribute e1: ScalarValues::Integer = SumOfFourValues(d,c,b,a);
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assert(30 in global.resolveVar("e")!!.vectorQuantity.idd().getRange())
         assert(30 in global.resolveVar("e1")!!.vectorQuantity.idd().getRange())
     }
@@ -152,7 +152,7 @@ class CalculationDefinitionTests {
             attribute e2: ScalarValues::Integer = SumOfFourValues(8,7,6,d2) {:>> range = "40..40";}
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals(14, global.resolveVar("d1")!!.vectorQuantity.idd().getRange().min)
         assertEquals(14, global.resolveVar("d1")!!.vectorQuantity.idd().getRange().max)
         assert(14 in global.resolveVar("d1")!!.vectorQuantity.idd().getRange())
@@ -178,7 +178,7 @@ class CalculationDefinitionTests {
              }    
              """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals(13, global.resolveVar("Test::TestModule::d1")!!.vectorQuantity.idd().getRange().min)
         assertEquals(13, global.resolveVar("Test::TestModule::d1")!!.vectorQuantity.idd().getRange().max)
         assert(13 in global.resolveVar("Test::TestModule::d1")!!.vectorQuantity.idd().getRange())
@@ -204,7 +204,7 @@ class CalculationDefinitionTests {
              }    
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals(14.0, global.resolveVar("Test::TestModule::d1")!!.vectorQuantity.aadd().getRange().min, 0.000001)
         assertEquals(14.0, global.resolveVar("Test::TestModule::d1")!!.vectorQuantity.aadd().getRange().max, 0.000001)
         assert(14.0 in global.resolveVar("Test::TestModule::d1")!!.vectorQuantity.aadd().getRange())
@@ -235,7 +235,7 @@ class CalculationDefinitionTests {
             }
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals(6, global.resolveVar("Test::TestModule::x")!!.vectorQuantity.idd().getRange().min)
         assertEquals(7, global.resolveVar("Test::TestModule::y")!!.vectorQuantity.idd().getRange().max)
         // assert(7 in global.resolveVar("Test::TestModule::b1")!!.vectorQuantity.idd().getRange())
@@ -268,7 +268,7 @@ class CalculationDefinitionTests {
              } 
              """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Error messages: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
         assertEquals(14.0, global.resolveVar("TestModule::d1")!!.vectorQuantity.aadd().getRange().min,0.000001)
         assertEquals(14.0, global.resolveVar("TestModule::d1")!!.vectorQuantity.aadd().getRange().max,0.000001)
         assert(14.0 in global.resolveVar("TestModule::d1")!!.vectorQuantity.aadd().getRange())
@@ -298,7 +298,7 @@ class CalculationDefinitionTests {
                  } 
              """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Error messages: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
         assertEquals(7.0, global.resolveVar("TestModule::b")!!.vectorQuantity.aadd().getRange().min,0.000001)
         assertEquals(7.0, global.resolveVar("TestModule::b")!!.vectorQuantity.aadd().getRange().max,0.000001)
         assert(7.0 in global.resolveVar("TestModule::b")!!.vectorQuantity.aadd().getRange())
@@ -330,7 +330,7 @@ class CalculationDefinitionTests {
         val a = global.resolve<AttributeUsage>("Test::TestModule::a")
         val b = global.resolve<AttributeUsage>("Test::TestModule::b")
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assert(10000.0 in global.resolveVar("Test::TestModule::c")!!.vectorQuantity.aadd().getRange())
         //sqrt could be positive or negative value
         assertEquals(-10.0, global.resolveVar("Test::TestModule::a")!!.vectorQuantity.aadd().getRange().min,0.000001)
@@ -353,7 +353,7 @@ class CalculationDefinitionTests {
             attribute a: ScalarValues::Integer = ConvertASILtoInt("QM"); 
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         //sqrt could be positive or negative value
         assertEquals(1, global.resolveVar("a")!!.vectorQuantity.idd().getRange().min)
     }
@@ -370,7 +370,7 @@ class CalculationDefinitionTests {
             attribute a: ScalarValues::String = ConvertIntToASIL(1);
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals("A", global.resolveVar("a")!!.vectorQuantity.value.asStrDD().toString())
     }
 
@@ -396,7 +396,7 @@ class CalculationDefinitionTests {
             attribute a: ScalarValues::String = ASILDecomposition("A","QM");                
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         //sqrt could be positive or negative value
         assertEquals("A", global.resolveVar("a")!!.vectorQuantity.value.asStrDD().toString())
     }
@@ -414,7 +414,7 @@ class CalculationDefinitionTests {
              """
         )
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         //sqrt could be positive or negative value
         assertEquals(2, global.resolveVar("e")!!.vectorQuantity.idd().getRange().min)
     }
@@ -432,7 +432,7 @@ class CalculationDefinitionTests {
              """
         )
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         //sqrt could be positive or negative value
         assertEquals(0, global.resolveVar("e")!!.vectorQuantity.idd().getRange().min)
     }
@@ -444,7 +444,7 @@ class CalculationDefinitionTests {
             attribute f: ScalarValues::String("A") = if i==0 ? "QM" else if i==1 ? "A" else "B";      
              """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         //sqrt could be positive or negative value
         assertEquals(1, global.resolveVar("i")!!.vectorQuantity.idd().getRange().min)
     }

@@ -26,7 +26,7 @@ class AttributeTests {
             /* members */
         }
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
 
         val attributeDef1 = global.resolve<AttributeDefinition>("AttributeDef1")
         assertNotNull(attributeDef1)
@@ -48,7 +48,7 @@ class AttributeTests {
         attribute attribute1 : AttributeDef1;
 
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
 
         val attributeDef1 = global.resolve<AttributeDefinition>("AttributeDef1")
         assertNotNull(attributeDef1)

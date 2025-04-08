@@ -32,8 +32,6 @@ class SettingsViewModel {
     val defaultColor = mutableStateOf("")
     val fontWeight = mutableStateOf("")
     val fontFamily = mutableStateOf("")
-    val colorList = listOf("Blue", "Green", "Red", "Yellow", "Cyan", "Magenta")
-    val fontFamilyList = listOf("jetbrainsMono")
     val colorMap: HashMap<Color, String> = hashMapOf(
         Color.Blue to "Blue",
         Color.Green to "Green",

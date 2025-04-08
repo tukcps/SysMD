@@ -19,7 +19,7 @@ class ClassifierTests {
             classifier c :> a, b; 
         """)
         checkOwnership()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val a = global.resolve<Classifier>("a")
         assertTrue(a?.isAbstract == true)
         val c = global.resolve<Classifier>("c")

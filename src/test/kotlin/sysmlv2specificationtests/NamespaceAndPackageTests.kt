@@ -22,7 +22,7 @@ class NamespaceAndPackageTests {
         loadSysMLv2("""
             package Package1;
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -38,7 +38,7 @@ class NamespaceAndPackageTests {
             package Package2;
         }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -56,7 +56,7 @@ class NamespaceAndPackageTests {
             part part2 : Part2;
         }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
 
         val partDef2 = global.resolve<PartDefinition>("Package1::Part2")
         assertNotNull(partDef2)
@@ -79,7 +79,7 @@ class NamespaceAndPackageTests {
             alias Package2Alias for Package2;
         }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -96,7 +96,7 @@ class NamespaceAndPackageTests {
             private import Package3::*;
         }
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -112,7 +112,7 @@ class NamespaceAndPackageTests {
             private import Package0::Package1::**;
         }
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -128,7 +128,7 @@ class NamespaceAndPackageTests {
             /* members */
         }
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -147,7 +147,7 @@ class NamespaceAndPackageTests {
             part part2 : PartDef2;
         }
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
 
         val partDef2 = global.resolve<PartDefinition>("Package1::PartDef2")
         assertNotNull(partDef2)

@@ -2,6 +2,7 @@ package quantitytests
 
 import io.github.tukcps.aadd.DDBuilder
 import com.github.tukcps.sysmd.cspsolver.propagate
+import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.exceptions.SysMDInfo
 import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.quantities.Representer
@@ -27,7 +28,7 @@ class QuantityToStringTests {
         propagate()
         assertEquals("4..9", global.resolveVar("a")!!.vectorQuantity.toString())
         assertEquals("0..1000", global.resolveVar("b")!!.vectorQuantity.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     @Test
@@ -80,7 +81,7 @@ class QuantityToStringTests {
         assertEquals("1e9", global.resolveVar("q")!!.vectorQuantity.toString())
         assertEquals("10e9", global.resolveVar("r")!!.vectorQuantity.toString())
         assertEquals("0", global.resolveVar("s")!!.vectorQuantity.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     @Test
@@ -124,7 +125,7 @@ class QuantityToStringTests {
         assertEquals("500e6", global.resolveVar("p")!!.vectorQuantity.toString())
         assertEquals("5e9", global.resolveVar("q")!!.vectorQuantity.toString())
         assertEquals("50e9", global.resolveVar("r")!!.vectorQuantity.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
 
@@ -138,7 +139,7 @@ class QuantityToStringTests {
         )
         initialize()
         propagate()
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals("0.04..10000 N", global.resolveVar("result")!!.vectorQuantity.toString())
     }
 
@@ -154,7 +155,7 @@ class QuantityToStringTests {
         initialize()
         propagate()
         assertEquals("1..10000 F", global.resolveVar("result")!!.vectorQuantity.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     @Test
@@ -167,7 +168,7 @@ class QuantityToStringTests {
         initialize()
         propagate()
         assertEquals("4..1000 kat", global.resolveVar("result")!!.vectorQuantity.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
 
@@ -183,7 +184,7 @@ class QuantityToStringTests {
         initialize()
         propagate()
         assertEquals("1 mΩ", global.resolveVar("result")!!.vectorQuantity.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     @Test
@@ -198,7 +199,7 @@ class QuantityToStringTests {
         initialize()
         propagate()
         assertEquals("1 MS", global.resolveVar("result")!!.vectorQuantity.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     @Test
@@ -210,7 +211,7 @@ class QuantityToStringTests {
         )
         initialize()
         propagate()
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals("1 GC", global.resolveVar("result")!!.vectorQuantity.toString())
     }
 
@@ -227,7 +228,7 @@ class QuantityToStringTests {
         initialize()
         propagate()
         assertEquals("4..9 TV", global.resolveVar("result")!!.vectorQuantity.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     @Test
@@ -242,7 +243,7 @@ class QuantityToStringTests {
         initialize()
         propagate()
         assertEquals("2..6 mH", global.resolveVar("result")!!.vectorQuantity.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     @Test
@@ -257,7 +258,7 @@ class QuantityToStringTests {
         initialize()
         propagate()
         assertEquals("2..6 kWb", global.resolveVar("result")!!.vectorQuantity.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
 
@@ -272,7 +273,7 @@ class QuantityToStringTests {
         initialize()
         propagate()
         assertEquals("1..2 nT", global.resolveVar("result")!!.vectorQuantity.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     @Test
@@ -285,7 +286,7 @@ class QuantityToStringTests {
         )
         propagate()
         assertEquals("20 μW", global.resolveVar("result")!!.vectorQuantity.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     @Test
@@ -296,7 +297,7 @@ class QuantityToStringTests {
                     feature result: SI::Speed = a/b."""
         )
         propagate()
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals("20 m/s", global.resolveVar("result")!!.vectorQuantity.toString())
     }
 
@@ -309,7 +310,7 @@ class QuantityToStringTests {
         )
         propagate()
         assertEquals("20 m/s^2", global.resolveVar("result")!!.vectorQuantity.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     @Test
@@ -321,7 +322,7 @@ class QuantityToStringTests {
         )
         propagate()
         assertEquals("2..3 ha", global.resolveVar("result")!!.vectorQuantity.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     @Test
@@ -332,7 +333,7 @@ class QuantityToStringTests {
         )
         propagate()
         assertEquals("11 cm", global.resolveVar("result")!!.vectorQuantity.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     @Test
@@ -343,7 +344,7 @@ class QuantityToStringTests {
         )
         propagate()
         assertEquals("5 cm", global.resolveVar("result")!!.vectorQuantity.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     @Test
@@ -353,7 +354,7 @@ class QuantityToStringTests {
             feature result: SI::Volume = a.""")
         propagate()
         assertEquals("50 l", global.resolveVar("result")!!.vectorQuantity.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     @Test
@@ -367,7 +368,7 @@ class QuantityToStringTests {
         assertEquals("0..130 km / h", global.resolveVar("a")!!.vectorQuantity.toString())
         assertEquals("1 s", global.resolveVar("b")!!.vectorQuantity.toString())
         assertEquals("0..36.11111 m", global.resolveVar("result")!!.vectorQuantity.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     @Test //not satisfiable
@@ -381,7 +382,7 @@ class QuantityToStringTests {
         assertEquals("∅", global.resolveVar("a")!!.vectorQuantity.toString())
         assertEquals("∅", global.resolveVar("b")!!.vectorQuantity.toString())
         assertEquals("∅", global.resolveVar("result")!!.vectorQuantity.toString())
-        assertTrue(status.exceptions.any { it !is SysMDInfo }, status.exceptions.toString())
+        assertTrue(status.issues.any { it.kind.ordinal >= Issue.Kind.WARN.ordinal }, status.issues.toString())
     }
 
     @Test
@@ -392,7 +393,7 @@ class QuantityToStringTests {
         propagate()
         val representer = Representer()
         assertEquals(Representer.InputType.NormalNumbers, representer.returnInputType(global.resolveVar("a")!!.vectorQuantity.values[0].asAadd()))
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     @Test
@@ -403,7 +404,7 @@ class QuantityToStringTests {
         propagate()
         val representer = Representer()
         assertEquals(Representer.InputType.CloseRange, representer.returnInputType(global.resolveVar("a")!!.vectorQuantity.values[0].asAadd()))
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     @Test
@@ -414,6 +415,6 @@ class QuantityToStringTests {
         propagate()
         val representer = Representer()
         assertEquals(Representer.InputType.CloseRange, representer.returnInputType(global.resolveVar("a")!!.vectorQuantity.values[0].asAadd()))
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 }

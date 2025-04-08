@@ -22,7 +22,7 @@ class IteTests {
             """.trimIndent(), catchExceptions = false)
         settings.catchExceptions = false
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test fun iteTestInteger() = testSession("ScalarValues") {
@@ -34,7 +34,7 @@ class IteTests {
             """.trimIndent(), catchExceptions = false)
         settings.catchExceptions = false
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test @Disabled
@@ -105,7 +105,7 @@ class IteTests {
             }
            """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
     }
 
     @Test @Disabled
@@ -124,6 +124,6 @@ class IteTests {
         assertTrue(cond!!.bdd().height() < 2)
         assertTrue(res!!.aadd().height() < 2)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
     }
 }

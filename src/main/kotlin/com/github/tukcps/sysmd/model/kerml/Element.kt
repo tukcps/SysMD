@@ -48,7 +48,7 @@ interface Element: ModelServices {
     fun path(): String
 
     /**
-     * Needed for path
+     * Needed for the path
      */
     fun positionOf(element: Element): Int?
 
@@ -57,7 +57,6 @@ interface Element: ModelServices {
      * Reified Relationships from which owner, owningNamespace, etc. are derived.
      * Contains reified relationships that relate the element with its owned elements.
      */
-    @Suppress("UNCHECKED_CAST")
     val ownedRelationship: List<Relationship>
         get() = getOwnedElementsOfType<Relationship>()
 
@@ -89,12 +88,6 @@ interface Element: ModelServices {
      * The textual representation that created this element
      */
     var textualRepresentation: MutableList<TextualRepresentation>
-
-    /**
-     * The indices in the textual representation body to make it accurate;
-     * not in standard.
-     */
-    var indices: IntRange?
 
     /**
      * Related documentation, i.e., the notebook cells before the elements textual representation.

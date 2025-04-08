@@ -58,7 +58,7 @@ class SystemCTemplatesTests {
         //Now compare all generated SystemC Files to the "ground-truth" files
         compareToFiles(Thread.currentThread().stackTrace[1].methodName, pkg.name.toString())
 
-        assertTrue(status.exceptions.isEmpty(), "Error messages: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
     }
 
     @Test @Ignore //Does not accept changes of ScalarValues
@@ -102,7 +102,7 @@ class SystemCTemplatesTests {
         //Now compare all generated SystemC Files to the "ground-truth" files
         compareToFiles(Thread.currentThread().stackTrace[1].methodName, pkg.name.toString())
 
-        assertTrue(status.exceptions.isEmpty(), "Error messages: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
     }
 
     /** Problem with connection with 2 inputs and 2 outputs */
@@ -140,7 +140,7 @@ class SystemCTemplatesTests {
             }
             """.trimIndent()
         )
-        assertTrue(status.exceptions.isEmpty(), "Errors: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Errors: ${status.issues}")
 
         val testDirectory = File("src/test/resources/toSystemC")
         val exporter = Exporter()
@@ -153,7 +153,7 @@ class SystemCTemplatesTests {
         //Now compare all generated SystemC Files to the "ground-truth" files
         compareToFiles(Thread.currentThread().stackTrace[1].methodName, pkg.name.toString())
 
-        assertTrue(status.exceptions.isEmpty(), "Error messages: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
     }
 
     @Test @Ignore //Does not accept changes of ScalarValues
@@ -201,7 +201,7 @@ class SystemCTemplatesTests {
         //Now compare all generated SystemC Files to the "ground-truth" files
         compareToFiles(Thread.currentThread().stackTrace[1].methodName, pkg.name.toString())
 
-        assertTrue(status.exceptions.isEmpty(), "Error messages: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
     }
 
     @Test
@@ -235,7 +235,7 @@ class SystemCTemplatesTests {
                 connection wire_x_y : Signal connect test::x::x_out to test::y::y_in; 
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), "Error messages: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
 
 
         val testDirectory = File("src/test/resources/toSystemC")
@@ -249,7 +249,7 @@ class SystemCTemplatesTests {
         //Now compare all generated SystemC Files to the "ground-truth" files
         compareToFiles(Thread.currentThread().stackTrace[1].methodName, pkg.name.toString())
 
-        assertTrue(status.exceptions.isEmpty(), "Error messages: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
     }
 
 
@@ -318,7 +318,7 @@ class SystemCTemplatesTests {
         }
         """)
         initialize()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val testDirectory = File("src/test/resources/toSystemC")
         val exporter = Exporter()
 
@@ -330,7 +330,7 @@ class SystemCTemplatesTests {
         //Now compare all generated SystemC Files to the "ground-truth" files
         compareToFiles(Thread.currentThread().stackTrace[1].methodName, pkg.name.toString())
 
-        assertTrue(status.exceptions.isEmpty(), "Error messages: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
     }
 
     /**Ensures that:
@@ -415,7 +415,7 @@ class SystemCTemplatesTests {
         }
         """)
         initialize()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val testDirectory = File("src/test/resources/toSystemC")
         val exporter = Exporter()
 
@@ -427,7 +427,7 @@ class SystemCTemplatesTests {
         //Now compare all generated SystemC Files to the "ground-truth" files
         compareToFiles(Thread.currentThread().stackTrace[1].methodName, pkg.name.toString())
 
-        assertTrue(status.exceptions.isEmpty(), "Error messages: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
     }
 
     /**Checks that Channels are located at the correct location in the SystemC Project**/
@@ -464,7 +464,7 @@ class SystemCTemplatesTests {
             """.trimIndent()
         )
 
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val testDirectory = File("src/test/resources/toSystemC")
         val exporter = Exporter()
 
@@ -476,7 +476,7 @@ class SystemCTemplatesTests {
         //Now compare all generated SystemC Files to the "ground-truth" files
         compareToFiles(Thread.currentThread().stackTrace[1].methodName, pkg.name.toString())
 
-        assertTrue(status.exceptions.isEmpty(), "Error messages: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
     }
 
     /**Checks that ports are only connected only once and to one Channel only.
@@ -528,7 +528,7 @@ class SystemCTemplatesTests {
         }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val testDirectory = File("src/test/resources/toSystemC")
         val exporter = Exporter()
 
@@ -539,7 +539,7 @@ class SystemCTemplatesTests {
         //Now compare all generated SystemC Files to the "ground-truth" files
         compareToFiles(Thread.currentThread().stackTrace[1].methodName, pkg.name.toString())
 
-        assertTrue(status.exceptions.isEmpty(), "Error messages: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
     }
 
     private fun compareToFiles(folderName: String, packageName: String){

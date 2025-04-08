@@ -18,14 +18,14 @@ class AllOnePropagationTests {
                 feature b: ScalarValues::Real = oneOf(1.5 .. 2.5) {:>> range = "1 .. 2";}
             """)
         propagate()
-        assertTrue(status.exceptions.isNotEmpty(), "an error shall be reported as the constraints cannot be satisfied all")
+        assertTrue(status.issues.isNotEmpty(), "an error shall be reported as the constraints cannot be satisfied all")
         val a = global.resolve<Feature>("a")!!.variable!!
         val b = global.resolve<Feature>("b")!!.variable!!
         assertEquals(1.0, a.min(), 0.000001)
         assertEquals(2.0, a.max(), 0.000001)
         assertEquals(1.5, b.min(), 0.000001)
         assertEquals(2.0, b.max(), 0.000001)
-        assertEquals(1, status.exceptions.size, status.exceptions.toString())
+        assertEquals(1, status.issues.size, status.issues.toString())
     }
 
     @Test fun allOnePropagationTestInt() = testSession("ScalarValues") {
@@ -35,14 +35,14 @@ class AllOnePropagationTests {
             feature b: ScalarValues::Integer = oneOf(5 .. 15) {:>> range = "1 .. 10";}
         """)
         propagate()
-        assertTrue(status.exceptions.isNotEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isNotEmpty(), status.issues.toString())
         val a = global.resolve<Feature>("a")!!.variable!!
         val b = global.resolve<Feature>("b")!!.variable!!
         assertEquals(1.0, a.min(), 0.000001)
         assertEquals(10.0, a.max(), 0.000001)
         assertEquals(5.0, b.min(), 0.000001)
         assertEquals(10.0, b.max(), 0.000001)
-        assertEquals(1, status.exceptions.size)
+        assertEquals(1, status.issues.size)
     }
 
 
@@ -55,7 +55,7 @@ class AllOnePropagationTests {
                 }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val a = global.resolve<Feature>("a")!!.variable!!
         assertEquals(1.0, a.min(), 0.000001)
         assertEquals(10.0, a.max(), 0.000001)
@@ -71,13 +71,13 @@ class AllOnePropagationTests {
                 feature b: ScalarValues::Integer = oneOf(5 .. 15) {:>> range = "1 .. 10";}
         """)
         propagate()
-        assertTrue(status.exceptions.isNotEmpty(), "Not satisfiability for all shall be reported")
+        assertTrue(status.issues.isNotEmpty(), "Not satisfiability for all shall be reported")
         val a = global.resolve<Feature>("a")!!.variable!!
         val b = global.resolve<Feature>("b")!!.variable!!
         assertEquals(1.0, a.min(), 0.000001)
         assertEquals(10.0, a.max(), 0.000001)
         assertEquals(5.0, b.min(), 0.000001)
         assertEquals(10.0, b.max(), 0.000001)
-        assertEquals(1, status.exceptions.size, status.exceptions.toString())
+        assertEquals(1, status.issues.size, status.issues.toString())
     }
 }

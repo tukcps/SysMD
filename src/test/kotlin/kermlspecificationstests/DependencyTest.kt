@@ -22,7 +22,7 @@ class DependencyTest {
             dependency 'Service Layer'
                 to 'Data Layer', 'External Interface Layer';
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -39,6 +39,6 @@ class DependencyTest {
                 * not its name. */
             }
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 }

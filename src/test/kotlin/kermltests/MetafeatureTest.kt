@@ -22,7 +22,7 @@ class MetafeatureTest {
             }
             metadata d : m ; 
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val m = global.resolve<Metaclass>("m")
         assertNotNull(m)
         val d = global.resolve<MetadataFeature>("d")
@@ -39,7 +39,7 @@ class MetafeatureTest {
                 x = "test"; 
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val m = global.resolve<Metaclass>("m")
         assertNotNull(m)
         val d = global.resolve<MetadataFeature>("d")
@@ -62,7 +62,7 @@ class MetafeatureTest {
                 x = "test"; 
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val m = global.resolve<Metaclass>("m")
         assertNotNull(m)
         val d = global.getOwnedElementsOfType<MetadataFeature>().first()
@@ -83,7 +83,7 @@ class MetafeatureTest {
             }
             @m { x = "test"; }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val m = global.resolve<Metaclass>("m")
         assertNotNull(m)
         val d = global.getOwnedElementsOfType<MetadataFeature>().first()

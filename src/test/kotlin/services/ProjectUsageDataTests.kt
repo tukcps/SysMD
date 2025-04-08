@@ -109,23 +109,23 @@ class ProjectUsageDataTests {
     fun repeatedLoadingOfNonStandardProject() = testSession {
         val before = get().filter { it !is Specialization }.size
         checkOwnership()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         loadProject("ISO26262", initialize = false)
         checkOwnership()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         loadProject("ISO26262", initialize = false)
         checkOwnership()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         initialize()
         initialize()
         checkOwnership()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val noElements = get().filter { it !is Specialization }.size
         val beforeHash = get().associateBy { it.qualifiedName }
         loadProject("ISO26262", initialize = false)
         initialize()
         checkOwnership()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals(noElements, get().filter { it !is Specialization }.size)
         reset()
         assertEquals(before, get().filter { it !is Specialization }.size)
@@ -134,7 +134,7 @@ class ProjectUsageDataTests {
         val after = get().filter { it !is Specialization }.size
         assertEquals(noElements, after)
         checkOwnership()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val diff = get().filter { it.qualifiedName !in beforeHash.keys }
         if (diff.isNotEmpty()) {
             println("Added ${diff.size} Elements after reset:")

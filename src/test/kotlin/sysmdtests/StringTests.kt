@@ -17,7 +17,7 @@ class StringTests {
     fun stringSyntax() = testSession("ScalarValues") {
         loadKerML("""feature label1: ScalarValues::String = "string value1";""")
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val label1 = global.resolve<Feature>("label1")!!.variable!!
         assertEquals(label1.dependency, "\"string value1\"")
     }

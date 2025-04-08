@@ -41,6 +41,19 @@ fun SysMLv2.OccurrenceDefinition() {
  *      OccurrenceUsagePrefix = BasicUsagePrefix 'individual'?
  *          PortionKind? UsageExtensionKeyword*
  *
+ *      PortionKind = 'snapshot' | 'timeslice'
+ */
+fun SysMLv2.OccurrenceUsagePrefix() {
+    BasicUsagePrefix()
+    INDIVIDUAL.optional { semantics.prefixes.add(INDIVIDUAL)}
+    when(token.kind) { // PortionKind?
+        SNAPSHOT ->  { consume(); semantics.prefixes.add(SNAPSHOT) }
+        TIMESLICE -> { consume(); semantics.prefixes.add(TIMESLICE) }
+        else -> { }
+    }
+}
+
+/**
  *      OccurrenceUsage = OccurrenceUsagePrefix 'occurrence' Usage
  */
 fun SysMLv2.OccurrenceUsage() {
@@ -51,13 +64,9 @@ fun SysMLv2.OccurrenceUsage() {
 }
 
 /**
- *      IndividualUsage : OccurrenceUsage = BasicUsagePrefix 'individual'?
- *          UsageExtensionKeyword* Usage
  *
  *      PortionUsage = BasicUsagePrefix 'individual'? PortionKind
  *          UsageExtensionKeyword* Usage
- *
- *      PortionKind = 'snapshot' | 'timeslice'
  *
  *      EventOccurrenceUsage = OccurrenceUsagePrefix 'event'
  *          ( OwnedReferenceSubsetting FeatureSpecializationPart?

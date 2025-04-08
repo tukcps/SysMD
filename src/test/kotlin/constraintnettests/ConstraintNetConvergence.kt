@@ -28,7 +28,7 @@ class ConstraintNetConvergence {
                     feature volume:  ScalarValues::Real = 4.0/3.0 * 3.14159265359 * r*r*r; 
                     feature density: ScalarValues::Real = 1.0; 
                  """)
-            assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+            assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
             initialize()
             propagate()
             assertEquals(4.0/3.0*PI*1E9,
@@ -68,7 +68,7 @@ class ConstraintNetConvergence {
                     feature density: ScalarValues::Real = 1.0; 
                     """)
             propagate()
-            assertEquals(0, status.exceptions.size, status.exceptions.toString())
+            assertEquals(0, status.issues.size, status.issues.toString())
             assertEquals(41.88749E5, global.resolveVar("volume")!!.vectorQuantity.getMinAsDouble(), 0.01E5)
         }
     }

@@ -50,7 +50,7 @@ class ParserTests {
         """
         semantics.initOwners("Global")
         parse()
-        assertTrue(model.status.exceptions.isEmpty(), model.status.exceptions.toString())
+        assertTrue(model.status.issues.isEmpty(), model.status.issues.toString())
     }
 
     @Test
@@ -61,7 +61,7 @@ class ParserTests {
                 part branch [1 .. 8];
              }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val tree = global.resolve<Namespace>("tree")!!
         assertNotNull(tree)
         val branch = tree.resolve<Element>("branch")

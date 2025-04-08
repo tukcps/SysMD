@@ -4,11 +4,12 @@ import com.github.tukcps.sysmd.compiler.semantics.ActionsContext
 import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
 import com.github.tukcps.sysmd.model.expression.Invariant
 import com.github.tukcps.sysmd.model.util.SimpleName
-import java.util.UUID
 
 
 class InvariantActions<T: Invariant>(
     context: ActionsContext,
     creator: (SimpleName?, SimpleName?) -> T,
     defaultType: MutableList<String> = mutableListOf("ScalarValues::Boolean")
-): FeatureActions<Invariant>(context, creator, defaultType)
+): FeatureActions<Invariant>(context, creator, defaultType) {
+    var isNegated = false
+}

@@ -1,8 +1,6 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.BDD
-import io.github.tukcps.aadd.IDD
+import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.model.expression.AstLeaf
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.model.kerml.Association
@@ -12,14 +10,16 @@ import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.services.getRelationshipsTo
-import com.github.tukcps.sysmd.services.session.report
 import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.session.Session
+import io.github.tukcps.aadd.AADD
+import io.github.tukcps.aadd.BDD
+import io.github.tukcps.aadd.IDD
 
 /**
  * The function basically works the same way as bySubclasses, but instead of subclass relationship it uses the
- * implements sources of the relationship Component --> implements (Connector) --> Function.
+ * 'implements' sources of the relationship Component --> implements (Connector) --> Function.
  */
 class AstByImplements(model: Session, namespace: Namespace, args: ArrayList<AstNode>) :
     AstFunction("byImplements", model, 1, args) {
@@ -36,15 +36,15 @@ class AstByImplements(model: Session, namespace: Namespace, args: ArrayList<AstN
         propertyName = (getParam(0) as AstLeaf).qualifiedName!!
 
         feature = inNameSpace.resolve<Feature>(propertyName!!)
-        if (feature == null) model.report(this.feature, "Could not find property '$propertyName'")
+        if (feature == null) model.status.error( "Could not resolve name '$propertyName'", element = feature, kind = Issue.Kind.ERROR_UNRESOLVED_NAME)
 
         implementsAssociation = model.global.resolve<Association>("ISO26262::implements")
         if (implementsAssociation == null)
-            model.report(this.feature, "Could not find Association 'implements' in model.")
+            model.status.error("Could not find Association 'implements' in model.", element = feature)
 
         implements = model.getRelationshipsTo(feature?.owner?.ref!!, "*", implementsAssociation).firstOrNull() as Connector?
         if (implements == null)
-            model.report(this.feature, "could not find suitable connector typed by 'implements'")
+            model.status.error("could not find suitable connector typed by 'implements'", element = feature)
 
         component = implements!!.source.firstOrNull()?.ref as Namespace
         function = implements!!.target.firstOrNull()?.ref as Namespace

@@ -26,23 +26,23 @@ class UpdateNotificationsTests {
             // Just collect the "updates" without calling the method propagate.
          get().filterIsInstance<Feature>().forEach {
             if (it.variable?.updated == true)
-                status.updates[it.elementId!!] = it.variable?.vectorQuantity.toString()
+                status.updatedValues[it.elementId!!] = it.variable?.vectorQuantity.toString()
         }
-        status.updates.clear()
+        status.updatedValues.clear()
         // println(status.updates)
         // 8 updates might be there from the packages; p1, p2 eventually. Min. p3.
         // Number might vary depending on extensions of packages.
         //  assertEquals(3, status.updates.size)
         propagate() // No additional updates.
-        assertEquals(1, status.updates.size) // No additional updates, all stable
+        assertEquals(1, status.updatedValues.size) // No additional updates, all stable
         propagate()
-        status.updates.clear()
+        status.updatedValues.clear()
         get().forEach { it.updated = false }
         // Change a variable
         loadKerML("feature p1: ScalarValues::Real {:>> range = \"2.0 ..3.0\";}")
-        assertEquals(0, status.updates.size)
+        assertEquals(0, status.updatedValues.size)
         propagate()
-        assertEquals(1, status.updates.size)
+        assertEquals(1, status.updatedValues.size)
     }
 
     @Test

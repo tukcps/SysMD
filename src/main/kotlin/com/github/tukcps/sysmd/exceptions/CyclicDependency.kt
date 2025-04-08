@@ -7,11 +7,9 @@ import com.github.tukcps.sysmd.model.kerml.Element
  * E.g., a type that is defined by itself.
  */
 class CyclicDependency(
-    message: String,
-    element: Element,
+    message: String = "A definition has been cyclic",
+    element: Element? = null,
 ): SysMDError(
     message = message,
-    textualRepresentation = element.textualRepresentation.firstOrNull(),
     element = element,
-    priority = 3,
 )

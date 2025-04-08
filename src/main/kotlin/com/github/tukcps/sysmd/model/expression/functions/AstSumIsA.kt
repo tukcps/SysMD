@@ -44,7 +44,7 @@ internal class AstSumIsA(
         generatedAst = if (namespace is Type)
             model.initAstSumSubclasses(namespace, propertyAst.first(), transitive)
         else {
-            model.report(SemanticError("function 'sumOverSubclasses' can only be used in type", namespace))
+            model.status.error("function 'sumOverSubclasses' can only be used in type", element = namespace)
             null
         }
 

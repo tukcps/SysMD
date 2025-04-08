@@ -97,7 +97,7 @@ class TestBenchTests {
 
         exporter.toSystemC(pathIn = testDirectory.path, tbLibFolder = "")
 
-        Assertions.assertTrue(status.exceptions.isEmpty(), "Error messages: ${status.exceptions}")
+        Assertions.assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
     }
 
 }

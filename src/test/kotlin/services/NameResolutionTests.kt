@@ -77,7 +77,7 @@ class NameResolutionTests {
                 type a :> Base::Anything { feature X: Base::Anything; } 
                 type b :> a;
             """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val bX = global.resolve<Element>("b::X")
         assertNotNull(bX)
     }

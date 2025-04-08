@@ -1,7 +1,5 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import io.github.tukcps.aadd.DD
-import io.github.tukcps.aadd.functions.ite
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.model.expression.AstLeaf
 import com.github.tukcps.sysmd.model.expression.AstNode
@@ -12,10 +10,11 @@ import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.quantities.VectorDimensionError
 import com.github.tukcps.sysmd.quantities.VectorQuantity
-import com.github.tukcps.sysmd.services.session.report
 import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.session.Session
+import io.github.tukcps.aadd.DD
+import io.github.tukcps.aadd.functions.ite
 
 /**
  * Computes the range of a property given as parameter in all parts.
@@ -45,7 +44,7 @@ class  AstByParts(model: Session, namespace: Namespace, args: ArrayList<AstNode>
                 val newPartProperty = part.resolveVar(propertyName)
                     ?: throw SemanticError("Missing value $propertyName in ${part.qualifiedName}")
                 if (newPartProperty.vectorQuantity.unit != quantity.unit)
-                    model.report(inNameSpace, "Different units in different subclasses")
+                    model.status.error( "Different units in different subclasses", element = inNameSpace)
                 result = chooser.ite(result.clone(), newPartProperty.vectorQuantity.values[0])
             }
             this.upQuantity = VectorQuantity(result, quantity.unit.clone())

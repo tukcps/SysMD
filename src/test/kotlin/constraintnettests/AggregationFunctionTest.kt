@@ -2,7 +2,7 @@ package constraintnettests
 
 import util.testSession
 import com.github.tukcps.sysmd.cspsolver.propagate
-import com.github.tukcps.sysmd.exceptions.SysMDInfo
+import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
@@ -34,7 +34,7 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
         assertEquals(0.01, global.resolveVar("l::c3::p3")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(0.5, global.resolveVar("l::c3::p3")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
         assertEquals(0.01, global.resolveVar("l::c3::p4")!!.vectorQuantity.getMinAsDouble(), 0.0001)
@@ -59,7 +59,7 @@ class AggregationFunctionTest {
         propagate()
         // val c3 = global.resolveName<Class>("l::c3")
         // val a = global.resolveName<Feature>("l::c3::a")
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
         assertEquals(0.1, global.resolveVar("l::c3::a::p")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(1.0, global.resolveVar("l::c3::a::p")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
     }
@@ -81,7 +81,7 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
         assertEquals(1, global.resolveVar("l::c3::p3")!!.vectorQuantity.value.asIdd().getRange().min)
         assertEquals(25, global.resolveVar("l::c3::p3")!!.vectorQuantity.value.asIdd().getRange().max)
         assertEquals(1, global.resolveVar("l::c3::p4")!!.vectorQuantity.value.asIdd().getRange().min)
@@ -104,7 +104,7 @@ class AggregationFunctionTest {
             }"""
         )
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
         assertEquals(1, global.resolveVar("l::c3::a::p")!!.vectorQuantity.value.asIdd().getRange().min)
         assertEquals(5, global.resolveVar("l::c3::a::p")!!.vectorQuantity.value.asIdd().getRange().max)
     }
@@ -128,7 +128,7 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(0.32, global.resolveVar("l::c3::p3")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(0.32, global.resolveVar("l::c3::p3")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
         assertEquals(0.32, global.resolveVar("l::c3::p4")!!.vectorQuantity.getMinAsDouble(), 0.0001)
@@ -147,7 +147,7 @@ class AggregationFunctionTest {
                     feature p3: ScalarValues::Real = productOverParts(p) {:>> range = "0.32..0.32";}
                 }""")
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
         assertEquals(0.5, global.resolveVar("c3::p2::p")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(0.5, global.resolveVar("c3::p2::p")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
     }
@@ -171,7 +171,7 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
         assertEquals(0.10, global.resolveVar("l::c3::p3")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(0.10, global.resolveVar("l::c3::p3")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
         assertEquals(0.10, global.resolveVar("l::c3::p4")!!.vectorQuantity.getMinAsDouble(), 0.0001)
@@ -197,7 +197,7 @@ class AggregationFunctionTest {
                 }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
         assertEquals(0.5, global.resolveVar("l::c3::p2::p")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(0.5, global.resolveVar("l::c3::p2::p")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
 
@@ -220,7 +220,7 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
         assertEquals(1.0, global.resolveVar("c3::p3")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(32.0, global.resolveVar("c3::p3")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
         assertEquals(1.0, global.resolveVar("c3::p4")!!.vectorQuantity.getMinAsDouble(), 0.0001)
@@ -244,7 +244,7 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
         assertEquals(1.0, global.resolveVar("l::c2::c::p")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(2.828427, global.resolveVar("l::c2::c::p")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
     }
@@ -272,7 +272,7 @@ class AggregationFunctionTest {
                 }
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
         assertEquals(0.03125, global.resolveVar("l::c3::p3")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(2.25, global.resolveVar("l::c3::p3")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
         assertEquals(0.25, global.resolveVar("l::c3::p4")!!.vectorQuantity.getMinAsDouble(), 0.0001)
@@ -302,7 +302,7 @@ class AggregationFunctionTest {
             }
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
         assertEquals(8.4852813742, global.resolveVar("l::c4::p")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(144.0, global.resolveVar("l::c4::p")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
     }
@@ -332,7 +332,7 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
         assertEquals(0.03125, global.resolveVar("l::c3::p3")!!.vectorQuantity.getMinAsDouble(), 0.000001)
         assertEquals(2.25, global.resolveVar("l::c3::p3")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
         assertEquals(0.25, global.resolveVar("l::c3::p4")!!.vectorQuantity.getMinAsDouble(), 0.0001)
@@ -364,7 +364,7 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
         assertEquals(0.5, global.resolveVar("l::c3::c::q")!!.vectorQuantity.getMinAsDouble(), 0.000001)
         assertEquals(36.00, global.resolveVar("l::c3::c::q")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
     }
@@ -386,7 +386,7 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
         assertEquals(0.1, global.resolveVar("l::c3::p3")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(1.0, global.resolveVar("l::c3::p3")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
         assertEquals(0.1, global.resolveVar("l::c3::p4")!!.vectorQuantity.getMinAsDouble(), 0.0001)
@@ -409,7 +409,7 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
         assertEquals(0.05, global.resolveVar("l::c3::a::p")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(0.25, global.resolveVar("l::c3::a::p")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
     }
@@ -431,7 +431,7 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
         assertEquals(1, global.resolveVar("l::c3::p3")!!.vectorQuantity.value.asIdd().min)
         assertEquals(10, global.resolveVar("l::c3::p3")!!.vectorQuantity.value.asIdd().max)
         assertEquals(1, global.resolveVar("l::c3::p4")!!.vectorQuantity.value.asIdd().min)
@@ -452,7 +452,7 @@ class AggregationFunctionTest {
                  }
         """)
         propagate()
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(0, global.resolveVar("l::c3::a::p")!!.vectorQuantity.value.asIdd().min)
         assertEquals(5, global.resolveVar("l::c3::a::p")!!.vectorQuantity.value.asIdd().max)
     }
@@ -476,7 +476,7 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(2.1, global.resolveVar("l::c3::p3")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(2.1, global.resolveVar("l::c3::p3")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
         assertEquals(2.1, global.resolveVar("l::c3::p4")!!.vectorQuantity.getMinAsDouble(), 0.0001)
@@ -501,7 +501,7 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
         assertEquals(0.5, global.resolveVar("l::c3::p2::p")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(0.5, global.resolveVar("l::c3::p2::p")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
     }
@@ -525,7 +525,7 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
         assertEquals(0.7, global.resolveVar("l::c3::p3")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(0.7, global.resolveVar("l::c3::p3")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
         assertEquals(0.7, global.resolveVar("l::c3::p4")!!.vectorQuantity.getMinAsDouble(), 0.0001)
@@ -550,7 +550,7 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
         assertEquals(0.5, global.resolveVar("l::c3::p2::p")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(0.5, global.resolveVar("l::c3::p2::p")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
     }
@@ -574,7 +574,7 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
         assertEquals(3.0, global.resolveVar("l::c3::p3")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(10.0, global.resolveVar("l::c3::p3")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
         assertEquals(1.0, global.resolveVar("l::c3::p4")!!.vectorQuantity.getMinAsDouble(), 0.0001)
@@ -598,7 +598,7 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
         assertEquals(4.0, global.resolveVar("l::c2::c::p")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(6.0, global.resolveVar("l::c2::c::p")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
     }
@@ -626,7 +626,7 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
         assertEquals(2.5, global.resolveVar("l::c3::p3")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(8.0, global.resolveVar("l::c3::p3")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
         assertEquals(1.5, global.resolveVar("l::c3::p4")!!.vectorQuantity.getMinAsDouble(), 0.0001)
@@ -655,7 +655,7 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
         assertEquals(3.0, global.resolveVar("l::c3::c::p")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(13.0, global.resolveVar("l::c3::c::p")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
     }
@@ -685,7 +685,7 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
         assertEquals(2.5, global.resolveVar("l::c3::p3")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(8.0, global.resolveVar("l::c3::p3")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
         assertEquals(1.5, global.resolveVar("l::c3::p4")!!.vectorQuantity.getMinAsDouble(), 0.0001)
@@ -717,7 +717,7 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
         assertEquals(3.0, global.resolveVar("l::c3::c::p")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(13.0, global.resolveVar("l::c3::c::p")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
     }
@@ -742,7 +742,7 @@ class AggregationFunctionTest {
                  }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals(0.06,
             global.resolveVar("l::c1::securityOfSupply")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(0.08,
@@ -772,7 +772,7 @@ class AggregationFunctionTest {
                  }
         """)
         propagate()
-        // assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        // assertTrue(status.reports.isEmpty(), "Exceptions: ${status.reports}")
         assertEquals(0.3,
             global.resolveVar("l::c3::securityOfSupply")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(0.3,
@@ -798,7 +798,7 @@ class AggregationFunctionTest {
                  }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
         assertEquals(6, global.resolveVar("l::c1::securityOfSupply")!!.vectorQuantity.value.asIdd().min)
         assertEquals(8, global.resolveVar("l::c1::securityOfSupply")!!.vectorQuantity.value.asIdd().max)
     }
@@ -823,7 +823,7 @@ class AggregationFunctionTest {
              l::c1 hasA
                 feature result: ScalarValues::Integer = productOverSubclasses(securityOfSupply) {:>> range = "6..6";}""")
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
         assertEquals(3, global.resolveVar("l::c3::securityOfSupply")!!.vectorQuantity.value.asIdd().max)
         assertEquals(3, global.resolveVar("l::c3::securityOfSupply")!!.vectorQuantity.value.asIdd().min)
     }
@@ -854,7 +854,7 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
         assertEquals(0.48, global.resolveVar("l::c1::securityOfSupply1")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(0.56, global.resolveVar("l::c1::securityOfSupply1")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
         assertEquals(0.48, global.resolveVar("l::c1::securityOfSupply2")!!.vectorQuantity.getMinAsDouble(), 0.0001)
@@ -880,7 +880,7 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        // assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        // assertTrue(status.reports.isEmpty(), "Exceptions: ${status.reports}")
         assertEquals(0.06666, global.resolveVar("l::c2::securityOfSupply")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(0.2, global.resolveVar("l::c2::securityOfSupply")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
     }
@@ -906,7 +906,7 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
         assertEquals(0.664,
             global.resolveVar("l::c1::resultingSecurityOfSupply")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(0.664,
@@ -937,7 +937,7 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        // assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        // assertTrue(status.reports.isEmpty(), "Exceptions: ${status.reports}")
         assertEquals(0.2, global.resolveVar("l::c2::securityOfSupply")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(0.2, global.resolveVar("l::c2::securityOfSupply")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
     }
@@ -966,7 +966,7 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
         assertEquals(0.042,
             global.resolveVar("l::c1::resultingSecurityOfSupply")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(0.042,
@@ -1000,8 +1000,8 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.any { it !is SysMDInfo }, "Reports: ${status.exceptions}")
-        // assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.any { it.kind.ordinal > Issue.Kind.WARN.ordinal }, "Reports: ${status.issues}")
+        // assertTrue(status.reports.isEmpty(), "Exceptions: ${status.reports}")
         assertEquals(0.8, global.resolveVar("l::c2::a")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(0.8, global.resolveVar("l::c2::a")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
     }
@@ -1026,7 +1026,7 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
         assertEquals(0.5, global.resolveVar("l::c1::securityOfSupply")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(0.6, global.resolveVar("l::c1::securityOfSupply")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
         assertEquals(0.5, global.resolveVar("l::c1::securityOfSupply2")!!.vectorQuantity.getMinAsDouble(), 0.0001)
@@ -1052,8 +1052,8 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.any { it !is SysMDInfo }, "Reports: ${status.exceptions}")
-        // assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.any { it.kind.ordinal >= Issue.Kind.WARN.ordinal }, "Reports: ${status.issues}")
+        // assertTrue(status.reports.isEmpty(), "Exceptions: ${status.reports}")
         assertEquals(0.3,
             global.resolveVar("l::c3::securityOfSupply")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(0.3,
@@ -1080,7 +1080,7 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
         assertEquals(1.4,
             global.resolve<Feature>("l::c1::securityOfSupply")!!.variable!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(1.5,
@@ -1112,7 +1112,7 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
         assertEquals(1.4, global.resolveVar("l::c1::securityOfSupply")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(1.5, global.resolveVar("l::c1::securityOfSupply")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
         assertEquals(1.4, global.resolveVar("l::c1::securityOfSupply2")!!.vectorQuantity.getMinAsDouble(), 0.0001)
@@ -1138,7 +1138,7 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
         assertEquals(5, global.resolveVar("l::c1::securityOfSupply")!!.vectorQuantity.idd().min)
         assertEquals(6, global.resolveVar("l::c1::securityOfSupply")!!.vectorQuantity.idd().max)
     }
@@ -1162,9 +1162,9 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.any{ it !is SysMDInfo }, "Reports: ${status.exceptions}")
+        assertTrue(status.issues.any{ it.kind.ordinal >= Issue.Kind.WARN.ordinal }, "Reports: ${status.issues}")
         // there are, however, exceptions:
-        // assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        // assertTrue(status.reports.isEmpty(), "Exceptions: ${status.reports}")
         assertEquals(0.3,
             global.resolveVar("l::c3::securityOfSupply")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(0.3,
@@ -1193,7 +1193,7 @@ class AggregationFunctionTest {
         """)
         // print(resolveName<Expression>("l::c2::securityOfSupply"))
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
         assertEquals(0.9, global.resolveVar("l::c1::resultingSecurityOfSupply")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(0.9, global.resolveVar("l::c1::resultingSecurityOfSupply")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
         assertEquals(2.2, global.resolveVar("l::c1::resultingSecurityOfSupply2")!!.vectorQuantity.getMinAsDouble(), 0.0001)
@@ -1220,8 +1220,7 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.any { it !is SysMDInfo}, "Exceptions: ${status.exceptions}")
-        // assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.any { it.kind.ordinal == Issue.Kind.WARN_INCONSISTENCY.ordinal }, "${status.issues}")
         assertEquals(0.3, global.resolveVar("l::c4::securityOfSupply")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(0.3, global.resolveVar("l::c4::securityOfSupply")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
     }
@@ -1250,7 +1249,7 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
         assertEquals(1.05, global.resolveVar("l::c1::resultingSecurityOfSupply")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(1.05, global.resolveVar("l::c1::resultingSecurityOfSupply")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
         assertEquals(0.4, global.resolveVar("l::c1::resultingSecurityOfSupply2")!!.vectorQuantity.getMinAsDouble(), 0.0001)
@@ -1280,8 +1279,7 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.any { it !is SysMDInfo }, "Exceptions: ${status.exceptions}")
-        // assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.any { it.kind.ordinal >= Issue.Kind.WARN.ordinal }, "Reports: ${status.issues}")
         assertEquals(0.7, global.resolveVar("l::c4::a")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(0.7, global.resolveVar("l::c4::a")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
     }
@@ -1311,7 +1309,7 @@ class AggregationFunctionTest {
              }
         """)
         propagate()
-        assertEquals(0, status.exceptions.size, "Reports: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Reports: ${status.issues}")
         assertEquals(0.9, global.resolveVar("l::c1::securityOfSupply")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(0.9, global.resolveVar("l::c1::securityOfSupply")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
         assertEquals("m", global.resolveVar("l::c1::securityOfSupply")!!.vectorQuantity.unit.toString())
@@ -1368,7 +1366,7 @@ class AggregationFunctionTest {
                 }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
         assertEquals(0.57, global.resolveVar("RealizabilityMetric::value")!!.vectorQuantity.getMinAsDouble(), 0.00001)
         assertEquals(0.57, global.resolveVar("RealizabilityMetric::value")!!.vectorQuantity.getMaxAsDouble(), 0.00001)
         assertEquals(1.00, global.resolveVar("RealizabilityMetric::weightsum")!!.vectorQuantity.getMaxAsDouble(), 0.00001)
@@ -1398,7 +1396,7 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Exceptions: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
         assertEquals(0.29, global.resolveVar("Realizability::value")!!.vectorQuantity.getMinAsDouble(), 0.00001)
         assertEquals(0.29, global.resolveVar("Realizability::value")!!.vectorQuantity.getMaxAsDouble(), 0.00001)
         assertEquals(0.29, global.resolveVar("Realizability::value2")!!.vectorQuantity.getMinAsDouble(), 0.00001)

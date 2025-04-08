@@ -25,6 +25,9 @@ class Token(
         else -> kind.toString()
     }
 
+    /**
+     * An enumeration of all token's kind
+     */
     enum class Kind {
         // Just for passing information; not really tokens
         ERROR, WHITESPACE, COMMENT,
@@ -33,11 +36,11 @@ class Token(
         INTEGER_LIT, FLOAT_LIT, STRING_LIT, NAME_LIT,
 
         // SysML & SysMD Keywords for Types and Identification
-        DEFINES, ONE, WHEN, HAS_A,
+        DEFINES, ONE, HAS_A,
 
         // SysML & KerML Keywords
         ABOUT, ABSTRACT, ACCEPT, ACTION, ACTOR, ALIAS, ALL, ALLOCATION, ALLOCATE, ASSOC, ASSERT, ASSUME, ATTRIBUTE,
-        BEHAVIOR, BINDING, BY,
+        BEHAVIOR, BINDING, BOOL, BY,
         CALC, CHAINS, CLASS, CLASSIFIER, CONJUGATE, CONJUGATES, CONNECT, COMPOSITE, CONJUGATION, CONNECTION, CONNECTOR, CONSTRAINT,
         DATATYPE, DECISION, DEF, DEFAULT, DO, DOC, DEPENDENCY, DERIVED, DIFFERENCES, DISJOINT, DISJOINING,
         ELSE, END, ENTRY, ENUM, EXIT, EXPR,
@@ -51,8 +54,8 @@ class Token(
         OCCURRENCE, OF, ORDERED, OUT,
         PACKAGE, PART, PERFORM, PORT, PORTION, PREDICATE, PRIVATE, PROTECTED, PUBLIC,
         READONLY, REF, REGULAR_COMMENT, RELATIONSHIP, REQUIRE, REP, RETURN, REDEFINES, REFERENCES, REQUIREMENT,
-        SATISFY, SEND, SPECIALIZATION, SPECIALIZES, STAKEHOLDER, STANDARD, STATE, STEP, STRUCT, STRUCTURE, SUBJECT, SUCCESSION, SUBSETS, SUBTYPE,
-        THEN, TO, TRANSITION, TYPE, TYPED,
+        SATISFY, SEND, SNAPSHOT, SPECIALIZATION, SPECIALIZES, STAKEHOLDER, STANDARD, STATE, STEP, STRUCT, STRUCTURE, SUBJECT, SUCCESSION, SUBSETS, SUBTYPE,
+        THEN, TIMESLICE, TO, TRANSITION, TYPE, TYPED,
         UNIQUE, UNIONS, VARIATION,
         // SysMLv2 Keywords Digital Twin
         MEASURABLE, CONTROLLABLE, VARIABLE,
@@ -153,6 +156,7 @@ class Token(
             "attribute" to Kind.ATTRIBUTE,
             "behavior" to Kind.BEHAVIOR,
             "binding" to Kind.BINDING,
+            "bool" to Kind.BOOL,
             "by" to Kind.BY,
             "calc" to Kind.CALC,                // SysML
             "chains" to Kind.CHAINS,
@@ -238,6 +242,7 @@ class Token(
             "require" to Kind.REQUIRE,
             "satisfy" to Kind.SATISFY,
             "send" to Kind.SEND,
+            "snapshot" to Kind.SNAPSHOT,
             "specialization" to Kind.SPECIALIZATION,
             "stakeholder" to Kind.STAKEHOLDER,
             "standard" to Kind.STANDARD,
@@ -249,6 +254,7 @@ class Token(
             "subsets" to Kind.SUBSETS,
             "succession" to Kind.SUCCESSION,
             "subtype" to Kind.SUBTYPE,
+            "timeslice" to Kind.TIMESLICE,
             "transition" to Kind.TRANSITION,
             "true" to Kind.TRUE,
             "to" to Kind.TO,
@@ -262,7 +268,6 @@ class Token(
             "unique" to Kind.UNIQUE,
             "unions" to Kind.UNIONS,
             "package" to Kind.PACKAGE,
-            "when" to Kind.WHEN,
             "part" to Kind.PART,
             "measurable" to Kind.MEASURABLE,
             "controllable" to Kind.CONTROLLABLE,

@@ -33,7 +33,7 @@ class FailedTests {
             """
         )
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Error messages: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
     }
 
     // The operations exp, power2, sqrt, ln .. are not supported in combination with units yet
@@ -48,7 +48,7 @@ class FailedTests {
             }
             """
         )
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     @Test
@@ -63,7 +63,7 @@ class FailedTests {
             }
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
 
@@ -78,7 +78,7 @@ class FailedTests {
             }
         """)
         // p::i::p is wrongly identified in initialization --> resolveName issue?
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         propagate()
         // println("p="+global.resolveName<Expression>("p::i::p"))
         assertEquals(1001.0, global.resolveVar("p::i::p")!!.vectorQuantity.getMaxAsDouble(), 0.00001)
@@ -96,13 +96,13 @@ class FailedTests {
             feature p2:  SI::Length = 1.0 km; 
             feature p3:  SI::Length = p + p2;
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         // println(status.errors)
         // println(resolveName<Expression>("p::a::p3"))
         assertEquals(1001.0, global.resolveVar("p3")!!.vectorQuantity.getMinAsDouble(), 0.001)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         // Also check unit of down !!! it is not m.
     }
 
@@ -122,9 +122,9 @@ class FailedTests {
                 }
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals(1001.0, global.resolveVar("p::a::p3")!!.vectorQuantity.getMinAsDouble(), 0.001)
     }
 
@@ -152,7 +152,7 @@ class FailedTests {
         assertEquals(2.0, p.min, 0.00001)
         assertEquals(3.0, p2.min, 0.00001)
         assertEquals("False", p3.toString())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
 
@@ -170,9 +170,9 @@ class FailedTests {
         """)
         assertEquals(9.9*1.9, global.resolveVar("V")!!.min(), 0.00001)
         assertEquals(10.1*2.1, global.resolveVar("V")!!.max(), 0.00001)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         // println("V = " + global.resolveName<Expression>("V") + " ")
         assertEquals(9.9*1.9, global.resolveVar("V")!!.min(), 0.00001)
         assertEquals(21.21, global.resolveVar("V")!!.max(), 0.00001)
@@ -185,7 +185,7 @@ class FailedTests {
             feature b: ScalarValues::Real(3..5); 
             feature sum: ScalarValues::Real(9..10) = a+b;""")
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals(9.0, global.resolveVar("sum")!!.aadd().min, 0.00001)
         assertEquals(10.0, global.resolveVar("sum")!!.aadd().max, 0.000001)
         assertEquals(4.0, global.resolveVar("a")!!.aadd().getRange().min,0.0001)
@@ -227,7 +227,7 @@ class FailedTests {
         propagate()
         assertEquals(60.0, global.resolveVar("MAC_notb")!!.aadd().getRange().min, 0.00001)
         assertEquals(60.0, global.resolveVar("MAC_notb")!!.aadd().getRange().max, 0.00001)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 }
 

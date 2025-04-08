@@ -23,11 +23,11 @@ class ErrorHandlingTests {
             p.variable = VariableImplementation(p)
             p.resolveNames()
             p.variable?.compileExpression()
-            assertNotEquals(0, status.exceptions.size)
+            assertNotEquals(0, status.issues.size)
     }
 
     /**
-     * Errors are saved in the model.status.exceptions, with
+     * Errors are saved in the model.status.reports, with
      * the id of the last correctly recognized element as key, and with the line number.
      */
     @Test
@@ -36,7 +36,7 @@ class ErrorHandlingTests {
             package p;
             p defines isA.
         """)
-        assertTrue(status.exceptions.isNotEmpty())
+        assertTrue(status.issues.isNotEmpty())
     }
 
 
@@ -44,7 +44,7 @@ class ErrorHandlingTests {
     fun missingSuperClassError() = testSession {
         loadKerML("Engine :>.")
         propagate()
-        assertTrue(status.exceptions.isNotEmpty())
+        assertTrue(status.issues.isNotEmpty())
     }
 
     @Test
@@ -54,7 +54,7 @@ class ErrorHandlingTests {
             Porsche911 isA SportsCar.
         """)
         propagate()
-        assertEquals(1, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(1, status.issues.size, "Error messages: ${status.issues}")
     }
 
 
@@ -69,7 +69,7 @@ class ErrorHandlingTests {
             type
         """)
         propagate()
-        assertTrue(status.exceptions.isNotEmpty(), "Error messages: ${status.exceptions}")
-        assertNotNull(status.exceptions.first().textualRepresentation)
+        assertTrue(status.issues.isNotEmpty(), "Error messages: ${status.issues}")
+        assertNotNull(status.issues.first().input)
     }
 }

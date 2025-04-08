@@ -24,7 +24,7 @@ class ClassTests {
             namespace Occurrences { type Occurrence :> Base::Anything; }
             class a; 
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val a = global.resolve<Class>("a")
         val occ = global.resolve<Type>("Occurrences::Occurrence")
         assertNotNull(a)
@@ -45,7 +45,7 @@ class ClassTests {
             class a; 
             class b :> a.
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val b = global.resolve<Class>("b")
         assertEquals("a", b?.allSupertypes()?.first()?.declaredName)
     }
@@ -61,7 +61,7 @@ class ClassTests {
         assertNotNull(a)
         assertTrue(anything in a.allSupertypes(true))
         a.checkConstraints()
-        assertFalse(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertFalse(status.issues.isEmpty(), status.issues.toString())
     }
 
 
@@ -72,14 +72,14 @@ class ClassTests {
         """)
         val y = global.resolve<Class>("y")
         assertEquals("x", y?.allSupertypes()?.first()?.qualifiedName)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     @Test fun testSuperclassCannotBeItself() = testSession("Occurrences") {
         loadKerML("class A :> A;")
         val a = global.resolve<Type>("A")
         assertNotNull(a)
-        assertTrue(status.exceptions.isNotEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isNotEmpty(), status.issues.toString())
     }
 
     @Test fun testSuperclassCannotBeItselfUpdate() = testSession("Occurrences") {
@@ -88,7 +88,7 @@ class ClassTests {
             class A :> A; 
         """)
         initialize()
-        assertTrue(status.exceptions.isNotEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isNotEmpty(), status.issues.toString())
     }
 
     /**
@@ -99,7 +99,7 @@ class ClassTests {
             type A :> B [1];
             type B :> A [1];
         """.trimIndent())
-        assertTrue(status.exceptions.isNotEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isNotEmpty(), status.issues.toString())
     }
 
     /**
@@ -111,7 +111,7 @@ class ClassTests {
         """)
         val a = global.resolve<Type>("c")!!
         assertNotNull(a.allSupertypes().firstOrNull())
-        assertTrue(status.exceptions.isNotEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isNotEmpty(), status.issues.toString())
     }
 
     @Test fun testOrderOfIsAIsIrrelevant() = testSession("Occurrences") {
@@ -119,7 +119,7 @@ class ClassTests {
             class A :> B; 
             class B; 
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val a = global.resolve<TypeImplementation>("A")!!
         val b = global.resolve<TypeImplementation>("B")!!
         assertTrue(b in a.allSupertypes())
@@ -133,7 +133,7 @@ class ClassTests {
             class B { feature b; }
             class AB :> A, B; 
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val ab = global.resolve<Class>("AB")
         assertNotNull(ab)
         assertEquals(2, ab.allSupertypes().size)

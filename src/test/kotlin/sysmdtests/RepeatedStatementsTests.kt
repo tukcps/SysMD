@@ -18,7 +18,7 @@ class RepeatedStatementsTests {
                 class A; 
                 class A; 
         """)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -26,7 +26,7 @@ class RepeatedStatementsTests {
         settings.catchExceptions=false
         loadKerML("class A;")
         loadKerML("class A;")
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -36,6 +36,6 @@ class RepeatedStatementsTests {
                 feature A; 
                 feature A; 
         """)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 }

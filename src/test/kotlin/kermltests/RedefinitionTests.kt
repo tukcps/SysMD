@@ -33,7 +33,7 @@ class RedefinitionTests {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals(1, global.resolveVar("quantityDimension::quantityPowerFactors::exponent")!!.vectorQuantity.idd().getRange().max)
         assertEquals("m", global.resolveVar("quantityDimension::quantityPowerFactors::unit")!!.vectorQuantity.value.asStrDD().toString())
         assertEquals("m", global.resolveVar("lengthPF::unit")!!.vectorQuantity.value.asStrDD().toString())
@@ -54,7 +54,7 @@ class RedefinitionTests {
             feature redefinedOld: Old { :>> a = "new"; }
             feature ownsOld: OwnsOld { :>> ownedOld = redefinedOld; } 
         """)
-        assertTrue(status.exceptions.isEmpty(), "${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "${status.issues}")
         assertEquals("new", global.resolveVars("ownsOld::ownedOld::a")[0]!!.vectorQuantity.value.asStrDD().toString())
     }
 }

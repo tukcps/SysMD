@@ -36,15 +36,6 @@ Also, in the folder 'doc' some documentation is provided.
 - [Modeling of time and date](doc/Time.md)
 
 ## Running SysMD Notebook
-
-### via Installer
-
-1. Make shure you have at least Java 21 installed on your Computer.
-2. Download the Installer of the SysMD Notebook from the "Releases" page in GitHub.
-3. Run the Installer  and use the SysMD Notebook.
-
-### via Build System
-
 To run the frontend, just use the build system Gradle: 
 
 ```

@@ -25,7 +25,7 @@ class DependencyStringTest {
             feature x3: Real = 1.0 + 2.0;
             feature z: Real = 1.0 + 2.0;
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val x = global.resolveVar("x") !!
         assertEquals("1.0 + 2.0", x.dependency)
         val x2 = global.resolveVar("x2") !!

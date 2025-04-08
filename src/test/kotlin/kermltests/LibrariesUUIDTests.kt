@@ -57,7 +57,7 @@ class LibrariesUUIDTests {
                 }
             """)
 
-        // assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        // assertTrue(status.reports.isEmpty(), status.reports.toString())
         val x = global.resolve<Package>("x::p")
         assertNotNull(x)
         assertTrue(x.isLibraryElement)
@@ -120,7 +120,7 @@ class LibrariesUUIDTests {
                 }; 
             """)
         initialize()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val x = global.resolve<Package>("x")
         assertNotNull(x)
         assertTrue(x.isLibraryElement)
@@ -139,21 +139,21 @@ class LibrariesUUIDTests {
     @Test
     fun loadScalarValuesTest2() = testSession {
         LibraryRepository.loadLibraryFromResources("ScalarValues", listOf("Base", "ScalarValues"))
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     @Test
     fun loadLinksTest() = testSession {
         LibraryRepository.get("Links")
         initialize()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     @Test
     fun loadOccurrencesTest() = testSession {
         LibraryRepository.get("Occurrences")
         initialize()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     @Test
@@ -163,7 +163,7 @@ class LibrariesUUIDTests {
             feature x { feature xx; }
             feature y: Base::Anything [1] redefines xx;  
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -172,11 +172,11 @@ class LibrariesUUIDTests {
      */
     @Test
     fun basicSessionTest() = testSession("KerML") {
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertTrue(5 <= global.getOwnedElementsOfType<Element>().size)
         checkLibraryElementIds()
         checkOwnership()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
 
@@ -186,15 +186,15 @@ class LibrariesUUIDTests {
      */
     @Test
     fun basicSessionWithReload() = testSession("KerMLLibraries") {
-        assertTrue(status.exceptions.isEmpty(), "Error messages: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
         assertTrue(5 <= global.getOwnedElementsOfType<Element>().size)
         checkLibraryElementIds()
-        assertTrue(status.exceptions.isEmpty(), "Error messages: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
         checkOwnership()
-        assertTrue(status.exceptions.isEmpty(), "Error messages: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
         loadLibrary("ScalarValues")
         checkOwnership()
         checkLibraryElementIds()
-        assertTrue(status.exceptions.isEmpty(), "Error messages: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
     }
 }

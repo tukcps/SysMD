@@ -21,7 +21,6 @@ import com.github.tukcps.sysmd.ui.composables.TooltipInstant
 import com.github.tukcps.sysmd.ui.dialogs.DeleteCellDialog
 import com.github.tukcps.sysmd.ui.styles.VerticalScrollbar
 import com.github.tukcps.sysmd.ui.viewmodel.EditorTabModel
-import com.github.tukcps.sysmd.ui.viewmodel.SysMDViewModel
 
 enum class MoveRequest { Up, Down }
 
@@ -49,8 +48,6 @@ fun CellList(
     // If the ElementList scrolling is enabled/disabled (disabling can happen when the suggestion dropDown Menu is active)
     val enableElementListScrolling = remember { mutableStateOf(true) }
 
-    val sysMDViewModel = remember { mutableStateOf(SysMDViewModel(session = editorTabModel.sessionState.value)) }
-
     /** Action: Delete a single element; opens confirm dialog */
     fun onDeleteRequest(i: Int) {
         index.value = i
@@ -61,7 +58,6 @@ fun CellList(
     /** Optional dialog for confirmation of deletion */
     if (showConfirmDelete.value)
         DeleteCellDialog(showConfirmDelete, editorTabModel, index)
-
 
     /** The list with cells */
     Box(modifier = Modifier.background(MaterialTheme.colorScheme.background).fillMaxHeight()) {
@@ -105,10 +101,9 @@ fun CellList(
                             onMoveRequest = editorTabModel::onMoveRequest,
                             internalRefReference = editorTabModel.references,
                             enableElementListScrolling = enableElementListScrolling,
-                            sysMDViewModel = sysMDViewModel
                         )
 
-                        /* Add at end */
+                        /* Add after the end */
                         if (index == editorTabModel.cells.size - 1) {
                             TooltipInstant(
                                 tooltipText = "Click to add a cell at the end",

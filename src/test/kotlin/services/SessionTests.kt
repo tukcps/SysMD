@@ -60,7 +60,7 @@ class SessionTests {
     fun loadProject() {
         val session = startSession()
         session.loadProject("Base")
-        assertTrue(session.status.exceptions.isEmpty())
+        assertTrue(session.status.issues.isEmpty())
     }
 
     @Test
@@ -69,7 +69,7 @@ class SessionTests {
             namespace test; 
         """)
         initialize()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val test = global.resolve<Namespace>("test")
         assertNotNull(test)
     }
@@ -80,7 +80,7 @@ class SessionTests {
             part test; 
         """)
         initialize()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val test = global.resolve<PartUsage>("test")
         assertNotNull(test)
     }
@@ -96,7 +96,7 @@ class SessionTests {
             }
         """)
         initialize()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p = global.resolve<MetadataFeature>("p")
         assertNotNull(p)
         assertEquals("p", p.name)

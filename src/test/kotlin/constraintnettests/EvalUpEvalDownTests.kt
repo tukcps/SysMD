@@ -25,7 +25,7 @@ class EvalUpEvalDownTests {
             feature x: ScalarValues::Real; 
             feature y: ScalarValues::Real = x { :>> range = "1.0 .. 2.0";}"""
         )
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         propagate()
         // now, both x and y must be 1..2
         assertEquals(1.0, global.resolve<Feature>("y")!!.variable!!.min(), 0.00001)
@@ -45,7 +45,7 @@ class EvalUpEvalDownTests {
             feature x: ScalarValues::Real { :>> range = "1.5 .. 2.5";}
             feature y: ScalarValues::Real = x { :>> range = "1.0 .. 2.0";}"""
         )
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         propagate()
         assertEquals(1.5, global.resolve<Feature>("y")!!.variable!!.aadd().getRange().min, 0.00001)
         assertEquals(2.0, global.resolve<Feature>("y")!!.variable!!.aadd().getRange().max, 0.00001)

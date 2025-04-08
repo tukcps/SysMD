@@ -124,7 +124,7 @@ fun Element.generateName(): String {
             is Feature         -> { "$elementType $nameStr ${if (this.isEnd) "(end)" else ""}" +
                 if (variable != null) " = ${variable!!.vectorQuantity}" else ""
             }
-            else -> if (owningNamespace == null) "Root" else "$elementType $nameStr ${if (this.isStandard) "(standard)" else ""}"
+            else -> if (owningNamespace == null) "Root" else "$elementType $nameStr ${if (this.isLibraryElement) "(library)" else ""}"
         }
     } catch (issue: Exception) {
         return "( problem with '${escapedName()}': $issue)"

@@ -1,8 +1,6 @@
 package com.github.tukcps.sysmd.model.kerml
 
-import com.github.tukcps.sysmd.exceptions.CyclicDependency
-import com.github.tukcps.sysmd.exceptions.SemanticError
-import com.github.tukcps.sysmd.services.session.report
+import com.github.tukcps.sysmd.exceptions.Issue.Kind
 
 
 /**
@@ -46,14 +44,14 @@ interface Type: Namespace {
             return true
         generalization.forEach {
             if (depth > 200) {
-                model?.report(SemanticError( "Cyclic dependency in inheritance of $supertype ", element = this))
+                model?.status?.error("Cyclic dependency in inheritance of $supertype ", kind=Kind.ERROR_CYCLIC_DEPENDENCY, element = this)
             } else {
 
                 if (it.ref == null) {
                     if (it.id != null)
                         it.ref = model?.get(it.id!!) as Type?
                     if (it.ref == null)
-                        model?.report(SemanticError("Error trying to find generalization of ${this.qualifiedName}",this))
+                        model?.status?.error("Error trying to find generalization of ${this.qualifiedName}", kind = Kind.ERROR_UNRESOLVED_NAME, element = this)
                     else
                         return (it.ref!!.specializes(supertype, depth+1))
                 } else
@@ -75,7 +73,8 @@ interface Type: Namespace {
         val supertypes = generalization.mapNotNull { it.ref }.toMutableList()
 
         if (this in supertypes || this in visited) {
-            model?.report(CyclicDependency(message = "Cyclic dependency in definition of type ${this.qualifiedName}", element = this))
+            model?.status?.error(
+                "Cyclic dependency in definition of type ${this.qualifiedName}", kind = Kind.ERROR_CYCLIC_DEPENDENCY, element = this)
             return listOf()
         }
         if (transitive) {

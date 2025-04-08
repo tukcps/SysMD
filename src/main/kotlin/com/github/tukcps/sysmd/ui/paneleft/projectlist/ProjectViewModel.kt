@@ -1,4 +1,4 @@
-package com.github.tukcps.sysmd.ui.projectlist
+package com.github.tukcps.sysmd.ui.paneleft.projectlist
 
 import androidx.compose.runtime.*
 import com.github.tukcps.sysmd.services.repositories.local.ProjectData

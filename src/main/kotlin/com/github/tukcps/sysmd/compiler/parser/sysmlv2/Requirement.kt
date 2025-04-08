@@ -18,6 +18,7 @@ import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Resolved
 import com.github.tukcps.sysmd.model.kerml.Type
+import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.sysml.RequirementUsage
 
 /**
@@ -92,9 +93,9 @@ fun SysMLv2.RequirementUsage() {
  *      SubjectUsage = 'subject' UsageExtensionKeyword* Usage
  */
 fun SysMLv2.SubjectUsage() {
-    val subject = semantics.featureActions()
+    val subject = FeatureActions<Feature>(semantics, ::FeatureImplementation, mutableListOf("Base::Anything"))
     SUBJECT.consume()
-    Usage(subject as FeatureActions<Feature>)
+    Usage(subject)
 }
 
 /**

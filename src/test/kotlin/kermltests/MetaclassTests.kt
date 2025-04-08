@@ -16,7 +16,7 @@ class MetaclassTests {
         loadKerML("""
             metaclass c; 
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val c = global.resolve<Metaclass>("c")
         assertEquals("c", c?.declaredName)
         // val objects = global.resolve<Type>("MetaObjects::MetaObject")
@@ -31,7 +31,7 @@ class MetaclassTests {
                 feature f; 
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val c = global.resolve<Metaclass>("c")
         assertNotNull(c)
         val f = global.resolve<Feature>("c::f")

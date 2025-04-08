@@ -32,7 +32,7 @@ class ConnectionTests {
             part c;
             connect(a, b, c); 
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -45,7 +45,7 @@ class ConnectionTests {
             part b;
             connect a to b; 
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val c = global.getOwnedElementOfType<ConnectionUsage>()
         assertTrue(c != null)
         assertEquals(1, c.from.size)
@@ -59,7 +59,7 @@ class ConnectionTests {
             part b;
             connection c connect a to b; 
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val c = global.resolve<ConnectionUsage> ("c")
         assertTrue(c != null)
         assertEquals(1, c.from.size)
@@ -74,7 +74,7 @@ class ConnectionTests {
             part c;
             connection d connect (a, b, c); 
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val d = global.resolve<ConnectionUsage> ("d")
         assertTrue(d != null)
         assertEquals(3, d.from.size)
@@ -88,7 +88,7 @@ class ConnectionTests {
             part b;
             connection c : C connect a to b;  
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val c = global.resolve<ConnectionDefinition> ("C")
         assertNotNull(c)
         val ci = global.resolve<ConnectionUsage> ("c")
@@ -104,7 +104,7 @@ class ConnectionTests {
             connection def C :> C1; 
             connection c : C connect a to b;  
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val c = global.resolve<ConnectionDefinition> ("C")
         assertNotNull(c)
         val ci = global.resolve<ConnectionUsage> ("c")
@@ -120,7 +120,7 @@ class ConnectionTests {
             interface d connect (a, b, c); 
         """.trimIndent())
         val c = global.resolve<ConnectionUsage> ("d")
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertTrue(c != null)
         assertEquals(3, c.from.size)
     }
@@ -134,7 +134,7 @@ class ConnectionTests {
             interface def C :> C1; 
             interface c : C connect a to b;  
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val c = global.resolve<ConnectionDefinition> ("C")
         assertNotNull(c)
         val ci = global.resolve<ConnectionUsage> ("c")
@@ -157,7 +157,7 @@ class ConnectionTests {
                 connection c : C connect a to b;  
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
 
         val a = global.resolve<PartUsage> ("connection_example::a")
         assertNotNull(a)
@@ -176,7 +176,7 @@ class ConnectionTests {
             }
         """.trimIndent())
 
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
 
@@ -186,7 +186,7 @@ class ConnectionTests {
      */
     @Test
     fun testSignalsPkg() = testSession("Signals") {
-        assertTrue(status.exceptions.isEmpty(), "Errors: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Errors: ${status.issues}")
         initialize()
         val effectChain = global.resolveVar("Signals::EffectChain::inoutIsEqual") !!
         assertEquals(XBool.True, effectChain.boolSpecs.first())
@@ -208,7 +208,7 @@ class ConnectionTests {
                 end feature target: ScalarValues::Real references b::y; 
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), "Errors: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Errors: ${status.issues}")
         val a = global.resolve<Feature>("a")
         val b = global.resolve<Feature>("b")
         val c = global.resolve<Connector>("c")
@@ -218,7 +218,7 @@ class ConnectionTests {
         val source2 = global.resolve<Element>("c::source")
         assertNotNull(source2)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Error messages: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
         assertEquals(3.0, global.resolve<Feature>("a::x")!!.variable!!.min(),0.00001)
         assertEquals(3.0, global.resolve<Feature>("b::y")!!.variable!!.min(),0.00001)
         assertEquals(3.0, global.resolve<Feature>("b::y")!!.variable!!.max(),0.00001)
@@ -244,6 +244,6 @@ class ConnectionTests {
         assertNotNull(c)
         assertEquals(3, c.ownedElement.size)
         assertTrue(c.specializes(repo.links))
-        assertTrue(status.exceptions.isEmpty(), "Errors: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Errors: ${status.issues}")
     }
 }

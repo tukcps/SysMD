@@ -4,7 +4,7 @@ import io.github.tukcps.aadd.AADD
 import io.github.tukcps.aadd.IDD
 import io.github.tukcps.aadd.StrDD
 import com.github.tukcps.sysmd.cspsolver.Variable
-import com.github.tukcps.sysmd.exceptions.SysMDInternalError
+import com.github.tukcps.sysmd.exceptions.SysMDFatalInternalError
 import com.github.tukcps.sysmd.exports.systemCElements.DataType
 import com.github.tukcps.sysmd.exports.systemCElements.PortType
 import com.github.tukcps.sysmd.model.kerml.Element
@@ -37,7 +37,7 @@ fun isVariable(feature : Feature) : Boolean {
             }
         }
 
-        else ->  throw SysMDInternalError("This check is not supported for Expressions of data type \"${feature.type.firstOrNull()?.str}\"")
+        else ->  throw SysMDFatalInternalError("This check is not supported for Expressions of data type \"${feature.type.firstOrNull()?.str}\"")
     }
 }
 
@@ -54,7 +54,7 @@ fun isVariableWithoutValues(feature : Feature) : Boolean {
         feature.model!!.repo.integerType in feature.allSupertypes(true)-> feature.variable!!.dependency.isEmpty() && feature.variable!!.intSpecs[0].toString().contains("MAX")
         feature.model!!.repo.stringType in feature.allSupertypes(true)-> (feature.variable!!.vectorQuantity.value as StrDD.Leaf).value.isEmpty()
         feature.model!!.repo.booleanType in feature.allSupertypes(true)-> feature.variable!!.dependency.isEmpty() == true
-        else -> throw SysMDInternalError("Cannot perform this Variable Check on a Expression with Data Type \"${feature.type.firstOrNull()?.str}\"")
+        else -> throw SysMDFatalInternalError("Cannot perform this Variable Check on a Expression with Data Type \"${feature.type.firstOrNull()?.str}\"")
     }
 }
 
@@ -71,7 +71,7 @@ fun dependencyStringToMinMax(dependency: String) : Pair<Double,Double>{
 
         return Pair(min,max)
     } else {
-        throw SysMDInternalError("Cannot extract min/max values from an empty dependency String!")
+        throw SysMDFatalInternalError("Cannot extract min/max values from an empty dependency String!")
     }
 }
 
@@ -95,7 +95,7 @@ fun getMultiplicity(element : Element) : MultiplicityImplementation {
         if(it.ref is MultiplicityImplementation) return it.ref as MultiplicityImplementation
     }
 
-    throw SysMDInternalError("No Multiplicity found for Element: ${element.declaredName}")
+    throw SysMDFatalInternalError("No Multiplicity found for Element: ${element.declaredName}")
 }
 
 /**
@@ -107,7 +107,7 @@ fun getFeatureTyping(element : Element) : FeatureTypingImplementation {
         if(it.ref is FeatureTypingImplementation) return it.ref as FeatureTypingImplementation
     }
 
-    throw SysMDInternalError("No FeatureTyping found for Element: ${element.declaredName}")
+    throw SysMDFatalInternalError("No FeatureTyping found for Element: ${element.declaredName}")
 }
 
 /**
@@ -120,7 +120,7 @@ fun getElementOfType(element : Element, type : String) : Element {
         if(it.ref!!.javaClass.simpleName == type) return it.ref as Element
     }
 
-    throw SysMDInternalError("No FeatureTyping found for Element: ${element.declaredName}")
+    throw SysMDFatalInternalError("No FeatureTyping found for Element: ${element.declaredName}")
 }
 
 /**
@@ -132,7 +132,7 @@ fun FeatureTypingImplementation.toDataType() : DataType {
         "ScalarValues::Integer" -> DataType.INT
         "ScalarValues::Boolean" -> DataType.BOOLEAN
         "ScalarValues::String" -> DataType.STRING
-        else -> throw SysMDInternalError("The FeatureTypingImplementation \"${this.declaredName}\" has no known and translatable data type.")
+        else -> throw SysMDFatalInternalError("The FeatureTypingImplementation \"${this.declaredName}\" has no known and translatable data type.")
     }
 }
 

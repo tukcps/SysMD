@@ -1,7 +1,9 @@
 package com.github.tukcps.sysmd.model.kerml.implementation
 
-import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.services.session.report
+import com.github.tukcps.sysmd.model.kerml.Element
+import com.github.tukcps.sysmd.model.kerml.Feature
+import com.github.tukcps.sysmd.model.kerml.ReferenceSubsetting
+import com.github.tukcps.sysmd.model.kerml.Resolved
 
 @Suppress("UNCHECKED_CAST")
 class ReferenceSubsettingImplementation(
@@ -45,6 +47,6 @@ class ReferenceSubsettingImplementation(
             super.setOwner(owningElement)
             referencingFeature = Resolved(owningElement)
         } else
-            owningElement.model?.report("Attempt to add a reference to a non-feature element")
+            owningElement.model?.status?.fatal("Attempt to add a reference to a non-feature element", element = owningElement)
     }
 }

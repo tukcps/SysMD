@@ -23,7 +23,7 @@ class AttributeTests {
             attribute a: ScalarValues::Boolean;
             attribute b: ScalarValues::Boolean; 
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         propagate()
         val a = global.resolveVar("a")
         val b = global.resolveVar("b")
@@ -39,7 +39,7 @@ class AttributeTests {
                 attribute b: ScalarValues::Boolean(false);
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val a = global.resolveVar("a")
         val b = global.resolveVar("b")
         assertTrue((a!!.vectorQuantity.value is BDD.Leaf))
@@ -73,7 +73,7 @@ class AttributeTests {
                 }
         """)
         propagate()
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     @Test
@@ -87,7 +87,7 @@ class AttributeTests {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals(0.0, global.resolveVar("P1::a")!!.vectorQuantity.aadd().getRange().min,0.000001)
         assertEquals(20.0, global.resolveVar("P1::a")!!.vectorQuantity.aadd().getRange().max,0.000001)
         assertEquals(3.0, global.resolveVar("P2::a")!!.vectorQuantity.aadd().getRange().min,0.000001)
@@ -107,7 +107,7 @@ class AttributeTests {
             part def P3 :> P1; 
         """)
         propagate()
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(0.0, global.resolveVar("P1::a")!!.vectorQuantity.aadd().getRange().min,0.000001)
         assertEquals(20.0, global.resolveVar("P1::a")!!.vectorQuantity.aadd().getRange().max,0.000001)
         assertEquals(3.0, global.resolveVar("P2::a")!!.vectorQuantity.aadd().getRange().min,0.000001)
@@ -127,12 +127,12 @@ class AttributeTests {
             part def P3 :> P1; 
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals(0.0, global.resolveVar("P1::a")!!.vectorQuantity.aadd().getRange().min,0.000001)
         assertEquals(20.0, global.resolveVar("P1::a")!!.vectorQuantity.aadd().getRange().max,0.000001)
         assertEquals(3.0, global.resolveVar("P2::a")!!.vectorQuantity.aadd().getRange().min,0.000001)
         assertEquals(3.0, global.resolveVar("P2::a")!!.vectorQuantity.aadd().getRange().max,0.000001)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals("Real",global.resolveVar("P2::a")!!.baseType.name)
     }
 
@@ -149,7 +149,7 @@ class AttributeTests {
             }
         """)
         propagate()
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals("Real",global.resolveVar("aa::b")!!.baseType.name)
         assertEquals("Real",global.resolveVar("aa::c")!!.baseType.name)
     }
@@ -170,7 +170,7 @@ class AttributeTests {
             }
         """)
         propagate()
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals("Real",global.resolveVar("test::quantityDimension::quantityPowerFactors::quantity")!!.baseType.name)
         assertEquals(3.0, global.resolveVar("test::quantityDimension::quantityPowerFactors::quantity")!!.vectorQuantity.aadd().getRange().max,0.000001)
     }
@@ -195,10 +195,10 @@ class AttributeTests {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals(1, global.resolveVar("lengthPF::exponent")!!.vectorQuantity.idd().getRange().min)
         assertEquals(1, global.resolveVar("quantityDimension::quantityPowerFactors::exponent")!!.vectorQuantity.idd().getRange().max)
-        assertTrue(status.exceptions.isEmpty(), "${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "${status.issues}")
     }
 
     @Test
@@ -213,7 +213,7 @@ class AttributeTests {
             attribute redefinedOld: Old { :>> a = "new"; }
             attribute ownsOld: OwnsOld { :>> ownedOld = redefinedOld; }
         """)
-        assertTrue(status.exceptions.isEmpty(), "${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "${status.issues}")
         val redefinedOldA = global.resolve<Element>("redefinedOld::a")
         assertNotNull(redefinedOldA)
         propagate()
@@ -242,7 +242,7 @@ class AttributeTests {
         assertEquals(1, global.resolveVars("quantityDimension::quantityPowerFactors::exponent")[0]!!.idd().max)
         assertEquals(1, global.resolveVars("quantityDimension::quantityPowerFactors::exponent")[1]!!.idd().max)
         assertEquals(-2, global.resolveVars("quantityDimension::quantityPowerFactors::exponent")[2]!!.idd().max)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     // In SI::Mass there is not the right type stored for unit and range (Base::Anything instead of String
@@ -255,7 +255,7 @@ class AttributeTests {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "${status.issues}")
         val a = global.resolve<Feature>("a")
         assertNotNull(a)
         assertEquals("String",global.resolveVar("a::range")!!.baseType.name)
@@ -278,7 +278,7 @@ class AttributeTests {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "${status.issues}")
         assertEquals(1.0, global.resolveVar("a")!!.aadd().min,0.000001)
     }
 
@@ -295,7 +295,7 @@ class AttributeTests {
             }
         """)
         propagate()
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("a")!!.aadd().min,0.000001)
     }
 
@@ -312,7 +312,7 @@ class AttributeTests {
             }
         """)
         propagate()
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("a")!!.aadd().min,0.000001)
     }
 
@@ -329,7 +329,7 @@ class AttributeTests {
             }
         """.trimIndent())
         propagate()
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("a")!!.aadd().min,0.000001)
     }
 }

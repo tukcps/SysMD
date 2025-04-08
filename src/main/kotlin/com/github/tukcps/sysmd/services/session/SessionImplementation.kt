@@ -2,6 +2,7 @@ package com.github.tukcps.sysmd.services.session
 
 import com.fasterxml.uuid.Generators
 import com.github.tukcps.sysmd.cspsolver.DiscreteSolver
+import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.exceptions.SysMDError
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.model.kerml.*
@@ -78,7 +79,7 @@ class SessionImplementation(
         require(global === this[global.elementId!!])
         require(anything.owner.ref == baseLibrary)
 
-        status.updates.clear()
+        status.updatedValues.clear()
         loadLibraries()
 
         if (project != null) {
@@ -116,7 +117,7 @@ class SessionImplementation(
             dSolver = DiscreteSolver(this)
 
             loadLibraries()
-            status.updates.clear()
+            status.updatedValues.clear()
             if (settings.initialize)
                 initialize(1)
 
@@ -128,7 +129,7 @@ class SessionImplementation(
             repo.stringType = null
             repo.schedule.clear()
         } catch (_: Exception) {
-            report("Error during reset; it is recommended to re-start SysMD!")
+            status.fatal("Error during reset; it is recommended to re-start SysMD!")
         }
     }
 
@@ -146,7 +147,7 @@ class SessionImplementation(
                 try {
                     loadProject(it.resource.toString(), initialize = false, setProject = false)
                 } catch (error: Exception) {
-                    report("in usage ${it.resource}: " + (error.message ?: "unknown error"))
+                    status.fatal("Error in usage ${it.resource}: " + (error.message ?: "unknown error"))
                 }
             }
         }
@@ -209,7 +210,7 @@ class SessionImplementation(
                     resolved.owner.ref = element
                     owned.ref = resolved
                 } else
-                    report("could not resolve owned element id of ${element.elementType} ${element.qualifiedName}")
+                    status.fatal("could not resolve owned element id of ${element.elementType} ${element.qualifiedName}")
             }
 
             // resolve ID to reference relationship's sources and targets
@@ -301,7 +302,7 @@ class SessionImplementation(
         if (existingElement != null) {
             existingElement.updateFrom(element)
             if (existingElement.updated)
-                status.updates[existingElement.elementId!!] = "updated: '${existingElement.qualifiedName}'"
+                status.updatedValues[existingElement.elementId!!] = "updated: '${existingElement.qualifiedName}'"
             element.ownedElement.forEach { newOwned ->
                 var ownedInExisting = false
                 existingElement.ownedElement.forEach { existingOwned ->
@@ -331,12 +332,10 @@ class SessionImplementation(
                     throw SysMDError(
                         element = element,
                         message = "'${element.qualifiedName}' changes the type of the element '${existingWithSameName.qualifiedName}; will lead to problems.'; suggestion: reset for complete update.")
-                    // delete(existingWithSameName)
-                    // return create(element, owner)
                 }
                 existingWithSameName.updateFrom(element)
                 if (existingWithSameName.updated)
-                    status.updates[existingWithSameName.elementId!!] = "updated: '${existingWithSameName.qualifiedName}'"
+                    status.updatedValues[existingWithSameName.elementId!!] = "updated: '${existingWithSameName.qualifiedName}'"
                 return existingWithSameName as T
             }
         }
@@ -533,11 +532,11 @@ class SessionImplementation(
                 // Quite annoying ... -- should be optional for debugging. Not by default.
                 // reportInfo(found, "Overwritten '${element.identification.toName()}' with new information.")
                 if (found.javaClass != element.javaClass) {
-                    report(element, "'${element.qualifiedName}' cannot change the type of the element '${found.qualifiedName}'; suggestion: reset for complete update.")
+                    status.warn(Issue.Kind.WARN,"'${element.qualifiedName}' cannot change the type of the element '${found.qualifiedName}'; suggestion: reset for complete update.", element = element)
                 }
                 found.updateFrom(element)
                 if (found.updated)
-                    status.updates[found.elementId!!] = "updated: '${found.qualifiedName}'"
+                    status.updatedValues[found.elementId!!] = "updated: '${found.qualifiedName}'"
                 @Suppress("UNCHECKED_CAST")
                 return found as T
             }

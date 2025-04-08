@@ -1,6 +1,6 @@
 @file:Suppress("FunctionName")
 
-package com.github.tukcps.sysmd.ui.projectlist
+package com.github.tukcps.sysmd.ui.paneleft.projectlist
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.fillMaxWidth

@@ -10,12 +10,10 @@ import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
 import com.github.tukcps.sysmd.model.kerml.getOwned
 import com.github.tukcps.sysmd.model.kerml.implementation.AnnotatingElementImplementation
-import com.github.tukcps.sysmd.model.kerml.implementation.TextualRepresentationImplementation
 import com.github.tukcps.sysmd.model.util.dropFirstName
 import com.github.tukcps.sysmd.rest.RESTRepository.getCellsForUi
 import com.github.tukcps.sysmd.rest.RESTRepository.getCommit
 import com.github.tukcps.sysmd.rest.RESTRepository.getElementById
-import com.github.tukcps.sysmd.services.repositories.local.ElementData
 import com.github.tukcps.sysmd.services.repositories.local.SysMDElementNavigationService.getElements
 import com.github.tukcps.sysmd.services.repositories.local.toElement
 import com.github.tukcps.sysmd.services.session.Session
@@ -24,14 +22,12 @@ import com.github.tukcps.sysmd.ui.viewmodel.TextualRepresentationViewModel.Compa
 import com.github.tukcps.sysmd.ui.viewmodel.TextualRepresentationViewModel.Companion.language
 import io.github.tukcps.sysmlv2.api.entities.Commit
 import io.github.tukcps.sysmlv2.api.entities.ElementDAO
-import io.github.tukcps.sysmlv2.api.entities.Identified
 import io.github.tukcps.sysmlv2.api.entities.Project
 import org.commonmark.Extension
 import org.commonmark.ext.front.matter.YamlFrontMatterExtension
 import org.commonmark.ext.gfm.tables.TablesExtension
 import org.commonmark.parser.Parser
 import java.io.File
-import java.util.*
 
 
 /**
@@ -93,7 +89,7 @@ class EditorTabModel(
             } else ""
             if (e.language.value !in setOf(Language.MARKDOWN, Language.YAML))
                 str += "```$languageStr\n"
-            str += e.body.value.text.trimEnd('\n') + "\n"
+            str += e.body.text.trimEnd('\n') + "\n"
             if (e.language.value !in setOf(Language.MARKDOWN, Language.YAML))
                 str += "```\n"
         }
@@ -120,8 +116,7 @@ class EditorTabModel(
                 if (e is TextualRepresentation) {
                     val elementModel = TextualRepresentationViewModel(
                         sessionState = sessionState,
-                        body = mutableStateOf(TextFieldValue(e.body)),
-                        textualRepresentation = e,
+                        bodyState = mutableStateOf(TextFieldValue(e.body)),
                         refreshTrees = refreshTrees
                     )
                     e.language.let { string ->
@@ -180,13 +175,8 @@ class EditorTabModel(
             TextualRepresentationViewModel(
                 sessionState = sessionState,
                 refreshTrees = refreshTrees,
-                textualRepresentation = TextualRepresentationImplementation(language = "Markdown", body = ""),
-                body = mutableStateOf(TextFieldValue()),
+                bodyState = mutableStateOf(TextFieldValue()),
             )
-        sessionState.value.create(
-            textualRepresentationViewModel.textualRepresentation,
-            sessionState.value.global
-        )
         cells.add(index, textualRepresentationViewModel)
     }
 
@@ -224,8 +214,7 @@ class EditorTabModel(
                 elementModel = TextualRepresentationViewModel(
                     sessionState = mutableStateOf(kerMlModel),
                     language = mutableStateOf(Language.SYS_MD),
-                    body = mutableStateOf(TextFieldValue(text = element.body)),
-                    textualRepresentation = element,
+                    bodyState = mutableStateOf(TextFieldValue(text = element.body)),
                     refreshTrees = refreshTrees
                 )
                 when (e.language) {
@@ -249,7 +238,7 @@ class EditorTabModel(
     fun compile() {
         sessionState.value.loadUsages()
         cells.forEach { cell ->
-            sessionState.value.status.exceptions.clear()
+            sessionState.value.status.reset()
             cell.compile(propagate = false)
         }
         cells.forEach { it.display() }
@@ -270,9 +259,8 @@ class EditorTabModel(
      * This also affects the error messages and results.
      */
     fun reset() {
-        for (element in cells) {
-            element.clearView()
-            element.textualRepresentation.model = sessionState.value
+        for (cell in cells) {
+            cell.clearView()
         }
     }
 
@@ -296,70 +284,6 @@ class EditorTabModel(
         doPostCommit.value = (bodyEdited || languageChanged.value)
     }
 
-    fun setUpCommit(commitName: String, commitDescription: String) {
-        val ownedElements = mutableListOf<Identified>()
-
-        // Create the AE
-        val annotatedElement = ElementData(
-            elementId = UUID.randomUUID(),
-            name = "$commitName.md",
-            type = "AnnotatingElement",
-            ownedElement = ownedElements,
-            body = ""
-        )
-        newCommitElementsDaoList.add(annotatedElement)
-
-        // TextualRepresentation information
-        var id: UUID?
-        var name: String?
-        var shortName: String?
-        val type = "TextualRepresentation"
-        var owner: UUID?
-        var language: String
-        var body: String
-
-        var elementDAO: ElementDAO
-        // Create ElementDAOList from Textual Representation View Model
-        for (elementViewModel in cells) {
-            /**
-             *  Comparing bodies to identify Updated elements that should keep their ID requires high time execution
-             *  Even with the implementation of versions for each Element ( cells ).
-             *  It will not make sense because we won't be able to
-             *  identify edited cells without comparing Bodies ( which is what we want to avoid.)
-             */
-
-            /**
-            preserves the same ID over different Commits
-             */
-
-            //id = elementViewModel.textualRepresentation.id
-            /**
-             * Always creates new IDs also for the same elements in the new Commit  ->  avoids override
-             */
-            id = UUID.randomUUID() // if not, edits or delete will overwrite previous Versions.
-            name = elementViewModel.textualRepresentation.declaredName
-            shortName = elementViewModel.textualRepresentation.declaredShortName
-            owner = annotatedElement.elementId
-            language = elementViewModel.language.value.toString()
-            body = elementViewModel.body.value.text
-
-            // new ElementDAO
-            elementDAO = ElementData(
-                elementId = id,
-                name = name,
-                shortName = shortName,
-                type = type,
-                owner = Identified(owner),
-                language = language,
-                body = body
-            )
-
-            // Elements UUID for
-            ownedElements.add(Identified(id!!))
-            newCommitElementsDaoList.add(elementDAO)
-        }
-        println("====> New Number of ElementDAOs: " + newCommitElementsDaoList.size)
-    }
 
     /**
      * Commits to the DataBase
@@ -374,8 +298,8 @@ class EditorTabModel(
         cells.filter { it.language.value == Language.MARKDOWN }.forEach {
             val extensions: List<Extension> = listOf(TablesExtension.create(), YamlFrontMatterExtension.create())
             val parser = Parser.builder().extensions(extensions).build()
-            val string = it.textualRepresentation.body.ifEmpty { it.body.value.annotatedString.text }
-            val document = parser.parse(string)
+            val string = it.body.text.ifEmpty { it.body.annotatedString.text }
+            val document = parser.parse(string.toString())
             references.generateRefReferenceOfElements(it, document)
         }
         references.generateHeadingNumbering()

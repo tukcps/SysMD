@@ -5,13 +5,14 @@ package com.github.tukcps.sysmd.compiler.parser.kerml
 import com.github.tukcps.sysmd.compiler.KerML
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.compiler.semantics.Identification
-import com.github.tukcps.sysmd.compiler.semantics.kerml.MembershipActions
+import com.github.tukcps.sysmd.compiler.semantics.kerml.*
 import com.github.tukcps.sysmd.exceptions.SyntaxError
 import com.github.tukcps.sysmd.exceptions.throwSyntaxError
+import com.github.tukcps.sysmd.model.kerml.Dependency
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Relationship
 import com.github.tukcps.sysmd.model.kerml.Resolved
-import com.github.tukcps.sysmd.model.kerml.implementation.MembershipImplementation
+import com.github.tukcps.sysmd.model.kerml.implementation.*
 
 /**
  * An identification, following the conventions of SysML v2 textual:
@@ -72,7 +73,7 @@ fun KerML.RelationshipOwnedElement() {
  *          RelationshipBody
  */
 fun KerML.Dependency() {
-    val dependency = semantics.dependencyActions()
+    val dependency = DependencyActions<Dependency>(semantics, ::DependencyImplementation)
     DEPENDENCY.consume()
     optional({ token.kind == NAME_LIT && nextToken.kind in setOf(FROM, LCBRACE) }) {
         Identification().also { dependency.create(it) }
@@ -162,7 +163,7 @@ fun KerML.NamespaceBodyElement() {
  *          REGULAR_COMMENT
  */
 internal fun KerML.Comment() {
-    val comment = semantics.commentActions()
+    val comment = CommentActions(semantics, ::CommentImplementation)
     comment.create(Identification(null, null))
     COMMENT.optional {
         optional(NAME_LIT) {
@@ -182,7 +183,7 @@ internal fun KerML.Comment() {
  *          REGULAR_COMMENT
  */
 internal fun KerML.Documentation() {
-    val doc = semantics.documentationActions()
+    val doc = DocumentationActions(semantics)
     DOC.consume()
     Identification().also { doc.create(it) }
     REGULAR_COMMENT.consume().also { doc.created?.body = consumedToken.string.trim() }
@@ -195,7 +196,7 @@ internal fun KerML.Documentation() {
  *          REGULAR_COMMENT
  */
 internal fun KerML.TextualRepresentation() {
-    val rep = semantics.textualRepresentationActions()
+    val rep = AnnotatingElementActions(semantics, ::TextualRepresentationImplementation)
     rep.create(Identification(null, null))
     optional(REP) {
         REP.consume()
@@ -210,7 +211,7 @@ internal fun KerML.TextualRepresentation() {
  *      Namespace :- "namespace" Identification Body
  */
 internal fun KerML.Namespace() {
-    val namespace = semantics.namespaceActions()
+    val namespace = NamespaceActions(semantics, ::NamespaceImplementation)
     NAMESPACE.consume()
     Identification().also { namespace.create(it) }
     Body(Resolved(null, namespace.created, null))
@@ -293,18 +294,18 @@ internal fun KerML.Body(owner: Resolved<Element>) {
  *      Import = "import" ["all"] [Identification ":"] QualifiedName "::" ("*"| "**") Body
  */
 internal fun KerML.Import() {
-    val import = semantics.importActions()
-    IMPORT.consume().also   { import!!.create(Identification(null, null)) }
-    ALL.optional            { import?.all = true }
+    val import = ImportActions(semantics)
+    IMPORT.consume().also   { import.create(Identification(null, null)) }
+    ALL.optional            { import.all = true }
 
-    QualifiedName().also    { import!!.setImportedNamespace(it) }
+    QualifiedName().also    { import.setImportedNamespace(it) }
     optional(DPDP, consume = true) {
         alternatives {
-            STARSTAR starts { import?.isRecursive = true; STARSTAR.consume() }
+            STARSTAR starts { import.isRecursive = true; STARSTAR.consume() }
             TIMES starts { TIMES.consume() }
         }
     }
-    Body(Resolved(import?.created!!))
+    Body(Resolved(import.created!!))
 }
 
 /**
@@ -401,10 +402,6 @@ fun KerML.AnnotatingElement() {
  *          | Subsetting | Redefinition | TypeFeaturing
  */
 
-val nonFeatureElementStart = annotatingElementStart +
-    setOf(DEPENDENCY, NAMESPACE, TYPE, CLASSIFIER, DATATYPE, CLASS, STRUCT, METACLASS, ASSOC,
-    INTERACTION, BEHAVIOR, FUNCTION, PREDICATE, PACKAGE, LIBRARY, STANDARD
-    ) + specializationStart + DISJOINING_START + CONJUGATION_START
 fun KerML.NonFeatureElement() {
     alternatives {
         annotatingElementStart starts { AnnotatingElement() }

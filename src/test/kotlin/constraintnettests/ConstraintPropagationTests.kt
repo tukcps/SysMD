@@ -31,7 +31,7 @@ class ConstraintPropagationTests {
             assertEquals(2000.0, global.resolveVar("b")!!.vectorQuantity.valuesIn("cm")[0].asAadd().getRange().max, 0.00001)
             assertEquals(-10.0, global.resolveVar("c")!!.aadd().getRange().min, 0.00001)
             assertEquals(30.0, global.resolveVar("c")!!.aadd().getRange().max, 0.00001)
-            assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+            assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         }
     }
 
@@ -40,7 +40,7 @@ class ConstraintPropagationTests {
     fun evalUpNoOperation() {
         testSession("SI") {
             loadKerML("feature a: SI::Length = 1.0 m;")
-            assertEquals(0, status.exceptions.size, status.exceptions.toString())
+            assertEquals(0, status.issues.size, status.issues.toString())
             val a = global.resolveVar("a") !!
             a.ast!!.evalUpRec()
             assertEquals("m", global.resolveVar("a")!!.vectorQuantity.unit.toString())
@@ -57,7 +57,7 @@ class ConstraintPropagationTests {
         initialize()
         propagate()
         assertEquals("1..20 mV", global.resolveVar("a")!!.vectorQuantity.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /**
@@ -74,7 +74,7 @@ class ConstraintPropagationTests {
         assertEquals(5.0, global.resolveVar("b")!!.max(), 0.00001)
         assertEquals(2.0, global.resolveVar("c")!!.aadd().getRange().min, 0.00001)
         assertEquals(10.0, global.resolveVar("c")!!.aadd().getRange().max, 0.00001)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /**
@@ -94,7 +94,7 @@ class ConstraintPropagationTests {
         assertEquals(4.0, global.resolveVar("b")!!.max(), 0.00001)
         assertEquals(100.0, global.resolveVar("c")!!.min(), 0.00001)
         assertEquals(200.0, global.resolveVar("c")!!.max(), 0.00001)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
 
@@ -113,7 +113,7 @@ class ConstraintPropagationTests {
             propagate()
             assertEquals(1.0, global.resolveVar("b")!!.aadd().getRange().min, 0.00001)
             assertEquals(1.0, global.resolveVar("b")!!.aadd().getRange().max, 0.00001)
-            assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+            assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         }
     }
 
@@ -129,7 +129,7 @@ class ConstraintPropagationTests {
         propagate()
         assertEquals(0.26666, global.resolveVar("Baseplate::depth")!!.vectorQuantity.getMinAsDouble(), 0.001)
         assertEquals(0.26666, global.resolveVar("Baseplate::width")!!.vectorQuantity.getMinAsDouble(), 0.001)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
 
@@ -146,7 +146,7 @@ class ConstraintPropagationTests {
         val a = global.resolveVar("a") !!
         a.ast!!.evalDown()
         assertTrue(Range(-5.0..8.0) in (global.resolveVar("b")!!.vectorQuantity.values[0] as AADD).getRange())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
 
@@ -159,10 +159,10 @@ class ConstraintPropagationTests {
             feature c: SI::Mass  {:>> range = "2.0..5.0";}
             feature d: SI::Quantity(10.0) {:>> unit = "s^2";} ;
             feature a: SI::Force = b*c/d {:>> unit = "kN";}""")
-        assertEquals(0, status.exceptions.size, "Error message: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error message: ${status.issues}")
         val pta = global.resolveVar("a")!!
         pta.ast!!.evalUpRec()
-        assertEquals(0, status.exceptions.size, "Error message: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error message: ${status.issues}")
 
         // Bug: The unit Kg is saved as g, but the value is kept in the original value.
         // Hence, 2..5 kg becomes 2..5 g.
@@ -170,7 +170,7 @@ class ConstraintPropagationTests {
         assertEquals("0.002..0.05 kN", (global.resolveVar("a")!!.vectorQuantity.toString()))
         assertEquals(0.002, (global.resolveVar("a")!!.aadd().getRange().min), 0.000001)
         assertEquals(0.05, (global.resolveVar("a")!!.aadd().getRange().max), 0.000001)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /** ConstNet shall compute bottom-up with ranges and units. */
@@ -188,7 +188,7 @@ class ConstraintPropagationTests {
         assertEquals(2.0, global.resolveVar("a")!!.min(), 0.0001)
         assertEquals(50.0, global.resolveVar("a")!!.max(), 0.0001)
         assertEquals("kg m / s^2", global.resolveVar("a")!!.vectorQuantity.unit.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /*  ################### EVAL DOWN SECTION ################### */
@@ -210,7 +210,7 @@ class ConstraintPropagationTests {
             assertEquals(Range(-10.0..20.0), global.resolveVar("b")!!.rangeSpecs[0])
             assertEquals(7.0, global.resolveVar("b")!!.aadd().getRange().min, 0.00001)
             assertEquals(8.0, global.resolveVar("b")!!.aadd().getRange().max, 0.00001)
-            assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+            assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /**
@@ -228,7 +228,7 @@ class ConstraintPropagationTests {
         global.resolveVar("a")!!.ast!!.evalDownRec()
         assertEquals(5.0, global.resolveVar("b")!!.aadd().getRange().min, 0.00001)
         assertEquals(5.0, global.resolveVar("b")!!.aadd().getRange().max, 0.00001)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /* ################### EVAL UP SECTION ################### */
@@ -261,7 +261,7 @@ class ConstraintPropagationTests {
         assertEquals(1.0, global.resolveVar("b")!!.aadd().getRange().max, 0.0001)
         assertEquals(2.0, global.resolveVar("c")!!.aadd().getRange().max, 0.0001)
         assertEquals(3.0, global.resolveVar("d")!!.aadd().getRange().max, 0.0001)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /** ConstNet shall compute top-down with scalars. */
@@ -276,7 +276,7 @@ class ConstraintPropagationTests {
         a.ast!!.evalDownRec()
         assertEquals(1.0, global.resolveVar("b")!!.aadd().getRange().min, 0.00001)
         assertEquals(1.0, global.resolveVar("b")!!.aadd().getRange().max, 0.00001)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /** ConstNet shall compute top-down with scalars. */
@@ -295,7 +295,7 @@ class ConstraintPropagationTests {
         assertEquals(200.0, global.resolveVar("b")!!.aadd().getRange().max, 0.00001)
         assertEquals(-10.0, global.resolveVar("c")!!.aadd().getRange().min, 0.00001)
         assertEquals(30.0, global.resolveVar("c")!!.aadd().getRange().max, 0.00001)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /** ConstNet shall compute bottom-up with ranges. */
@@ -314,7 +314,7 @@ class ConstraintPropagationTests {
             // only outside tests display((displayTree("a", p.getVar("a").value)))
             // println(resolveName<Expression>("a")!!.quantity.value.toIteString())
             assertEquals(10.25, (global.resolveVar("a")!!.aadd() as AADD.Leaf).value.central)
-            assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+            assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         }
     }
 
@@ -330,7 +330,7 @@ class ConstraintPropagationTests {
             assertEquals(33.33333333333334, global.resolveVar("a")!!.vectorQuantity.getMinAsDouble(), 0.00000001)
             assertEquals(200.0, global.resolveVar("a")!!.vectorQuantity.getMaxAsDouble(), 0.00000001)
             assertEquals("1 / s", global.resolveVar("a")!!.vectorQuantity.unit.toString())
-            assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+            assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         }
     }
 
@@ -347,7 +347,7 @@ class ConstraintPropagationTests {
         assertEquals(20.0, global.resolveVar("a")!!.min(), 0.0001)
         assertEquals(120.0, global.resolveVar("a")!!.max(), 0.0001)
         assertEquals("m^3", global.resolveVar("a")!!.vectorQuantity.unit.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /** ConstNet shall compute buttom-up with ranges and units. */
@@ -362,7 +362,7 @@ class ConstraintPropagationTests {
             assertEquals(4003.002, global.resolveVar("a")!!.aadd().getRange().max, 0.0001)
             assertEquals(1002.001, global.resolveVar("a")!!.aadd().getRange().min, 0.0001)
             assertEquals("m", global.resolveVar("a")!!.vectorQuantity.unit.toString())
-            assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+            assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         }
     }
 
@@ -374,12 +374,12 @@ class ConstraintPropagationTests {
             loadKerML("feature c: SI::Length = [2.0 .. 3.0] [m];")
             loadKerML("feature d: SI::Length = [1.0 .. 4.0] [m];")
             loadKerML("feature a: SI::Length = b-c-d;")
-            assertEquals(0, status.exceptions.size, status.exceptions.toString())
+            assertEquals(0, status.issues.size, status.issues.toString())
             propagate()
             assertEquals(-6.0, global.resolveVar("a")!!.aadd().getRange().min, 0.00001)
             assertEquals(-1.0, global.resolveVar("a")!!.aadd().getRange().max, 0.00001)
             assertEquals("m", global.resolveVar("a")!!.vectorQuantity.unit.toString())
-            assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+            assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         }
     }
 
@@ -389,10 +389,10 @@ class ConstraintPropagationTests {
             loadKerML("feature b: SI::Length = [1.0 .. 2.0] [m];")
             loadKerML("feature c: SI::Length = [3.0 .. 4.0] [m];")
             loadKerML("feature d: ScalarValues::Boolean = c!=b;")
-            assertEquals(0, status.exceptions.size, status.exceptions.toString())
+            assertEquals(0, status.issues.size, status.issues.toString())
             propagate()
             assertEquals("True", global.resolveVar("d")!!.bdd().toString())
-            assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+            assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         }
     }
 
@@ -404,10 +404,10 @@ class ConstraintPropagationTests {
                 feature c: ScalarValues::Integer = 1;
                 feature d: ScalarValues::Boolean = b!=c;
                 """)
-            assertEquals(0, status.exceptions.size, status.exceptions.toString())
+            assertEquals(0, status.issues.size, status.issues.toString())
             propagate()
             assertEquals("False", global.resolveVar("d")!!.bdd().toString())
-            assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+            assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         }
     }
 
@@ -419,10 +419,10 @@ class ConstraintPropagationTests {
                 feature c: SI::Length = 1.0 m;
                 feature d: ScalarValues::Boolean = b!=c;
             """)
-            assertEquals(0, status.exceptions.size, status.exceptions.toString())
+            assertEquals(0, status.issues.size, status.issues.toString())
             propagate()
             assertEquals("False", global.resolveVar("d")!!.bdd().toString())
-            assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+            assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         }
     }
 
@@ -432,10 +432,10 @@ class ConstraintPropagationTests {
             loadKerML("feature b: SI::Length = 1.0 m ;")
             loadKerML("feature c: SI::Length = 1.0 m;")
             loadKerML("feature d: ScalarValues::Boolean = b==c;")
-            assertEquals(0, status.exceptions.size, status.exceptions.toString())
+            assertEquals(0, status.issues.size, status.issues.toString())
             propagate()
             assertEquals("True", global.resolveVar("d")!!.bdd().toString())
-            assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+            assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         }
     }
 }

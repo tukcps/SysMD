@@ -8,10 +8,8 @@ import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.SysMLv2Semantics
 import com.github.tukcps.sysmd.services.session.Session
 
 class SysMLv2(
-    model: Session,                                 // model in which the results will be returned.
-    indices: IntRange? = null,                      // allows us to select a subset to be parsed, i.e., an expression.
-    generateAnnotations: Boolean = false
-) : KerML(model, indices, generateAnnotations) {
+    model: Session                                 // model in which the results will be returned.
+) : KerML(model) {
 
     // A class that implements the semantic actions of SysML v2 productions
     var sysMLSemantics = SysMLv2Semantics(semantics)

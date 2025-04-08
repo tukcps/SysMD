@@ -22,7 +22,7 @@ class DefinitionTests {
         loadSysMLv2("""
         part def PartDef1;
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
 
         val partDef1 = global.resolve<PartDefinition>("PartDef1")
         assertNotNull(partDef1)
@@ -39,7 +39,7 @@ class DefinitionTests {
         loadSysMLv2("""
         part def <PD2> PartDef2;
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
 
         val partDef2 = global.resolve<PartDefinition>("PartDef2")
         assertNotNull(partDef2)
@@ -63,7 +63,7 @@ class DefinitionTests {
             }
         }
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
 
         //val partDef3 = global.resolve<PartDefinition>("PartDef3")
         //assertNotNull(partDef3)
@@ -80,7 +80,7 @@ class DefinitionTests {
         loadSysMLv2("""
         abstract part def PartDef1;
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
 
         val partDef1 = global.resolve<PartDefinition>("PartDef1")
         assertNotNull(partDef1)
@@ -98,6 +98,6 @@ class DefinitionTests {
         loadSysMLv2("""
         variation part def PartDef1;
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 }

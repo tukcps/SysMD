@@ -1,9 +1,10 @@
 package com.github.tukcps.sysmd.model.expression
 
-import com.github.tukcps.sysmd.model.kerml.Feature
-
 
 /**
- * An invariant is an expression of type Boolean that must evaluate to "True".
+ * An invariant is an expression of type Boolean that must always evaluate to "True";
+ * or to "False" if isNegates is true
  */
-interface Invariant: BooleanExpression
+interface Invariant: BooleanExpression {
+    var isNegated: Boolean
+}

@@ -30,7 +30,7 @@ class ImportsTests {
                 }
             }
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -52,7 +52,7 @@ class ImportsTests {
                 private import N4::*;
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -88,7 +88,7 @@ class ImportsTests {
                 // (Note that N8 itself is not imported.)
             }
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -126,6 +126,6 @@ class ImportsTests {
                 }
             }
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 }

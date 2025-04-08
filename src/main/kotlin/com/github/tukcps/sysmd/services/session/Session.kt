@@ -28,15 +28,15 @@ interface Session {
 
     /**
      * A session from the user's perspective is combined with a modeling project.
-     * Then, project references to project with its associated data.
-     * However, a session can also be used to process a single unit of compilation,
-     * e.g., to find certain elements. Then, project can be null.
+     * Then, project references to a project with its associated data.
+     * However, a session can also be used independently.
+     * Then, a project can be null.
      */
     var project: ProjectData?
 
     /**
      * The libraries loaded; can also be a Scenario that implies multiple libraries,
-     * e.g. SysMLLibraries
+     * e.g., SysMLLibraries
      */
     val libraries: List<String>
 

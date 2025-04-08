@@ -29,7 +29,7 @@ class PartTests {
         }
         """.trimIndent())
 
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val partDef1 = global.resolve<Element>("PartDef1")
         assertNotNull(partDef1)
 
@@ -52,7 +52,7 @@ class PartTests {
             /* members */
         }
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
 
         val partDef1 = global.resolve<Element>("PartDef1")
         assertNotNull(partDef1)
@@ -89,7 +89,7 @@ class PartTests {
             port p5 : PortDef5;
         }
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
 
         val p0 = global.resolve<Element>("part1::p0")
         assertNotNull(p0)

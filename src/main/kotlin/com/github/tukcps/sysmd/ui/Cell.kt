@@ -16,7 +16,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
@@ -26,17 +25,12 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.tukcps.sysmd.ui.composables.SysMDTooltipArea
-import com.github.tukcps.sysmd.ui.composables.TreeViewModel
-import com.github.tukcps.sysmd.ui.rendering.*
 import com.github.tukcps.sysmd.ui.styles.AppTheme
 import com.github.tukcps.sysmd.ui.viewmodel.InternalRefReference
 import com.github.tukcps.sysmd.ui.viewmodel.MyIcons
-import com.github.tukcps.sysmd.ui.viewmodel.SysMDViewModel
 import com.github.tukcps.sysmd.ui.viewmodel.TextualRepresentationViewModel
 import com.github.tukcps.sysmd.ui.viewmodel.TextualRepresentationViewModel.Companion.Language.*
 import com.github.tukcps.sysmd.ui.viewmodel.TextualRepresentationViewModel.Companion.compilableLanguages
-import org.jetbrains.skia.Image
-import kotlin.math.roundToInt
 
 
 /**
@@ -58,53 +52,14 @@ fun Cell(
     cellWasChanged: MutableState<Boolean>,
     internalRefReference: InternalRefReference,
     enableElementListScrolling: MutableState<Boolean>,
-    sysMDViewModel: MutableState<SysMDViewModel>,
 ) {
     val collapsed = mutableStateOf(collapsedElementIds[index] == true)
     val hidden = mutableStateOf(hiddenElementIds[index] == true)
-    val imageChecked = remember { mutableStateOf(false) }
-    val treeViewModel = remember { mutableStateOf<TreeViewModel.Item?>(null) }
-    val image = remember { mutableStateOf<Image?>(null) }
-    var languageChangeBuffer by remember { mutableStateOf(model.language.value) }
-    
+
     fun isSelected(): Boolean = (index == selectedIndex.value && selectedItem.value)
-    
-    fun createImage(className: String, relationshipType: String) {
-        imageChecked.value = true
-        val isA = relationshipType == "isA"
-        val items =
-            if (isA) sysMDViewModel.value.inheritance.value.items else sysMDViewModel.value.composition.value.items
-        treeViewModel.value = items.firstOrNull {
-            it.name == className
-        }
-        if (treeViewModel.value == null && className.isNotEmpty()) {
-            treeViewModel.value = items.firstOrNull {
-                it.name.contains(className)
-            }
-        }
-        if (treeViewModel.value != null) {
-            val treeNodeModel = convertToTreeNodeModel(treeViewModel.value!!.item.node)
-            determineChildsWidth(treeNodeModel)
-            
-            image.value = ImageComposeScene(
-                content = { treeView(Modifier, treeNodeModel, true) },
-                width = getTreeViewWidth(treeNodeModel).roundToInt(),
-                height = getTreeViewHeight(treeNodeModel).roundToInt()
-            ).render()
-        } else {
-            image.value = null
-        }
-    }
-    
+
     fun onLanguageChange() {}
-    
-    fun resetImageView() {
-        imageChecked.value = false
-        image.value = null
-        sysMDViewModel.value = SysMDViewModel(session = model.sessionState.value)
-    }
-    
-    
+
     // Lambda that is called upon edit icon
     val changeEditStatusDescription = {
         val changedIndex = selectedIndex.value != index
@@ -150,7 +105,6 @@ fun Cell(
                 ) {
                     Column {
                         // Pencil ... edit the element
-
                         SysMDTooltipArea(tooltipText = "Enable/Disable editing of the cell") {
                             IconButton(
                                 modifier = Modifier.height(18.dp).width(18.dp).padding(1.dp),
@@ -200,10 +154,7 @@ fun Cell(
                             SysMDTooltipArea(tooltipText = "Compile and solve this cell") {
                                 IconButton(
                                     modifier = Modifier.height(18.dp).width(18.dp).padding(1.dp),
-                                    onClick = {
-                                        model.compile()
-                                        resetImageView()
-                                    }
+                                    onClick = { model.compile() }
                                 ) {
                                     Icon(
                                         Icons.Filled.Calculate,
@@ -240,7 +191,7 @@ fun Cell(
                         // Spacer(modifier = Modifier.width(18.dp))
                         if (index == selectedIndex.value && selectedItem.value) {
                             Column {
-                                LanguageDropdown(model.language, model.namespace, model.body, ::onLanguageChange)
+                                LanguageDropdown(model.language, model.namespace, model.bodyState, ::onLanguageChange)
 
                                 Row(modifier = Modifier.onGloballyPositioned { coordinates ->
                                     mainRowWidth = with(density) { coordinates.size.width.toDp() }
@@ -248,7 +199,7 @@ fun Cell(
                                 {
                                     Editor(
                                         mainRowWidth,
-                                        model.body,
+                                        model.bodyState,
                                         model.annotations,
                                         model.resultsAnnotations,
                                         readOnly = false,
@@ -261,7 +212,7 @@ fun Cell(
                         } else {
                             if (model.sessionState.value.project?.directory != null)
                             when(model.language.value) {
-                                YAML -> Frontmatter(model.sessionState.value.project!!.directory!!, model.body)
+                                YAML -> Frontmatter(model.sessionState.value.project!!.directory!!, model.bodyState)
                                 in setOf(KerML, SYS_MD, SYS_ML) -> {
                                     Column {
                                         Row(Modifier.background(MaterialTheme.colorScheme.background)
@@ -280,7 +231,7 @@ fun Cell(
                                         }
                                         Editor(
                                             mainRowWidth,
-                                            model.body,
+                                            model.bodyState,
                                             model.annotations,
                                             model.resultsAnnotations,
                                             readOnly = true,
@@ -295,7 +246,7 @@ fun Cell(
                                     Column(Modifier.padding(start = 6.dp)) {
                                         markdownRendering(
                                             model.sessionState.value.project!!.directory!!,
-                                            model.body.value.text,
+                                            model.body.text,
                                             internalRefReference
                                         )
                                     }
@@ -359,7 +310,7 @@ fun Cell(
                                 MARKDOWN, YAML -> {
                                     markdownRendering(
                                         model.sessionState.value.project!!.directory!!,
-                                        model.body.value.text.trim().lines()[0] + " (...)",
+                                        model.body.text.trim().lines()[0] + " (...)",
                                         internalRefReference
                                     )
                                 }
@@ -371,7 +322,7 @@ fun Cell(
                                         Editor(
                                             mainRowWidth,
                                             mutableStateOf(
-                                                TextFieldValue(model.body.value.text.trim().lines()[0] + " (...)")
+                                                TextFieldValue(model.body.text.trim().lines()[0] + " (...)")
                                             ),
                                             model.annotations,
                                             model.resultsAnnotations,

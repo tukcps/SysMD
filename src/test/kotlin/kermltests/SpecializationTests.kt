@@ -13,7 +13,7 @@ class SpecializationTests {
             type t2 :> Base::Anything;
             specialization a subtype t1 specializes t2; 
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     @Test fun specializationTest2() = testSession {
@@ -22,6 +22,6 @@ class SpecializationTests {
             type t2 :> Base::Anything;
             subtype t1 specializes t2; 
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 }

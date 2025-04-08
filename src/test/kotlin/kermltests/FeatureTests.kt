@@ -18,7 +18,7 @@ class FeatureTests {
         loadKerML("""
                 feature f;   
             """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -29,11 +29,11 @@ class FeatureTests {
     @Test
     fun stringLiteralsTest() = testSession("ScalarValues") {
         loadKerML("""feature x: ScalarValues::String = "test2" ;""")
-        assertEquals(0, status.exceptions.size, "error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "error messages: ${status.issues}")
         val feature = global.resolve<Feature>("x")
         assertEquals("x", feature!!.declaredName)
         assertEquals("\"test2\"", feature.variable!!.dependency.trim())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     @Test
@@ -76,7 +76,7 @@ class FeatureTests {
             composite feature f4;
             out portion feature f5; 
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val f1 = global.resolve<Feature>("f1")
         assertEquals( Feature.FeatureDirectionKind.OUT, f1?.direction)
         val f2 = global.resolve<Feature>("f2")
@@ -103,7 +103,7 @@ class FeatureTests {
                 }; 
                 feature f : a, b;
             """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val f = global.resolve<Feature>("f")
         assertEquals( 2, f!!.type.size)
         val fc = global.resolve<Feature>("f::c")
@@ -115,7 +115,7 @@ class FeatureTests {
         loadKerML("""
             feature f: ScalarValues::Real;
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val f = global.resolve<Feature>("f")
         assertEquals( builder.Reals, f?.variable?.vectorQuantity?.value)
     }
@@ -125,7 +125,7 @@ class FeatureTests {
         loadKerML("""
             feature f: ScalarValues::Real = 1.0;
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val f = global.resolve<Feature>("f")
         assertEquals(1.0 , f?.variable?.max())
     }
@@ -136,7 +136,7 @@ class FeatureTests {
             feature f: ScalarValues::Real = 1.0;
             feature g: ScalarValues::Real = f+1.0;
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val g = global.resolve<Feature>("g")
         assertEquals(2.0 , g?.variable?.max()!!, 0.000001)
     }
@@ -147,7 +147,7 @@ class FeatureTests {
         loadKerML("""
                 feature f: SI::Length [mm] = 1.0 [m];
             """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val f = global.resolve<Feature>("f")
         assertNotNull(f)
         assertTrue(f.isFeatureWithValue())
@@ -161,7 +161,7 @@ class FeatureTests {
         loadKerML("""
                 feature f: SI::Length(1.0 .. 2000.0) [mm] = 1.0 m;
             """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val f = global.resolve<Feature>("f")
         assertEquals(1000.0 , f!!.variable!!.max(), 0.000001)
         assertEquals("m", f.variable!!.vectorQuantity.unit.toString())
@@ -174,7 +174,7 @@ class FeatureTests {
                 feature f: ScalarValues::Integer[2 .. 4] (1 .. 2) [m] = 1; 
             """)
         val f = global.resolve<Feature>("f")!!
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals("Declared name not correct", "f", f.declaredName)
         assertTrue(f.isFeatureWithValue())
         assertEquals("Unit saved incorrectly", "m", f.unitConstraint)
@@ -187,7 +187,7 @@ class FeatureTests {
                 feature f: ScalarValues::Integer(0 .. 2) = 1; 
             """)
         val f = global.resolve<Feature>("f")!!
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals("Declared name not correct", "f", f.declaredName)
         assertTrue(f.isFeatureWithValue())
         assertEquals("Expression saved incorrectly", "1", f.expression)
@@ -207,7 +207,7 @@ class FeatureTests {
                     feature f2 redefines c::f [1];
                 }
             """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val c = global.resolve<Type>("c")
         val c2 = global.resolve<Type>("c2")
         val c2f = global.resolve<Feature>("c2::f2")
@@ -234,7 +234,7 @@ class FeatureTests {
                 }
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         Assertions.assertEquals(0.0, global.resolveVar("f1::a")!!.vectorQuantity.aadd().getRange().min, 0.000001)
         Assertions.assertEquals(20.0, global.resolveVar("f1::a")!!.vectorQuantity.aadd().getRange().max, 0.000001)
         Assertions.assertEquals(3.0, global.resolveVar("f2::a")!!.vectorQuantity.aadd().getRange().min, 0.000001)
@@ -252,7 +252,7 @@ class FeatureTests {
                     feature redefines f [2]; // c::f not inherited, instead replaced by redef. 
                 }
             """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val c = global.resolve<Type>("c")
         val c2 = global.resolve<Type>("c2")
         val c2f = global.resolve<Feature>("c2::f")
@@ -278,7 +278,7 @@ class FeatureTests {
         val f2 = global.getOwned<Feature>("referencingFeature")
         val reference = f2!!.getOwnedElementsOfType<ReferenceSubsetting>()
         assertTrue(reference.isNotEmpty())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
 
@@ -294,7 +294,7 @@ class FeatureTests {
                 datatype Natural :> Integer; 
             }	
         """)
-        assertTrue(status.exceptions.isEmpty(), "${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "${status.issues}")
         val integerRange = global.resolve<Feature>("ScalarValues::Integer::range")
         assertNotNull(integerRange)
         assertEquals("String",global.resolveVar("ScalarValues::Real::range")!!.baseType.name)

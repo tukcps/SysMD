@@ -1,13 +1,12 @@
 package models.kerml
 
 import com.github.tukcps.sysmd.cspsolver.propagate
-import com.github.tukcps.sysmd.exceptions.SysMDError
+import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.*
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.session.loadLibrary
-import com.github.tukcps.sysmd.services.session.loadProject
 import io.github.tukcps.aadd.values.IntegerRange
 import io.github.tukcps.sysmlv2.api.entities.getElements
 import util.mockup.loadKerML
@@ -30,7 +29,7 @@ class ExportProjectTests {
         assertNotNull(classifier.getOwnedElementOfType<Specialization>())
         assertNotNull(classifier.getOwnedElementOfType<Specialization>()?.elementId)
         initialize()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val record = export()
         assertNotNull(record)
 
@@ -59,7 +58,7 @@ class ExportProjectTests {
             assertNotNull(classifier.getOwnedElementOfType<Specialization>())
             assertNotNull(classifier.getOwnedElementOfType<Specialization>()?.elementId)
             initialize()
-            assertEquals(0, status.exceptions.size, status.exceptions.toString())
+            assertEquals(0, status.issues.size, status.issues.toString())
             export = export().getElements()
         }
         testSession {
@@ -83,7 +82,7 @@ class ExportProjectTests {
         val f = create(FeatureImplementation(declaredName ="f"), p)
         create(MultiplicityImplementation(multiplicity = IntegerRange(1,3).toString()), f)
         initialize(2)
-        assertTrue(status.exceptions.none { it is SysMDError }, status.exceptions.toString())
+        assertTrue(status.issues.none { it.kind.ordinal >= Issue.Kind.ERROR.ordinal }, status.issues.toString())
         val record = export()
         assertNotNull(record)
 
@@ -113,7 +112,7 @@ class ExportProjectTests {
             create(MultiplicityImplementation(multiplicity = IntegerRange(1,3).toString()), f)
             create(SpecializationImplementation(general = Resolved("Base::Anything"), specific = Resolved(ref = f)), f)
             initialize()
-            assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+            assertTrue(status.issues.isEmpty(), status.issues.toString())
             export = export().getElements()
         }
         testSession {
@@ -140,7 +139,7 @@ class ExportProjectTests {
         var export: List<io.github.tukcps.sysmlv2.api.entities.ElementDAO> = emptyList()
         testSession("ScalarValues") {
             initialize()
-            assertEquals(0, status.exceptions.size, status.exceptions.toString())
+            assertEquals(0, status.issues.size, status.issues.toString())
             export = export().getElements()
         }
         testSession("ScalarValues") {

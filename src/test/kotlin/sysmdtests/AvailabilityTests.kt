@@ -39,7 +39,7 @@ class AvailabilityTests {
                 }
             }
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         propagate()
         // println(global.resolveName<Namespace>(qualifiedName = "t::c1") !!.resolveName<Expression>("Availability")!!.bdd().toIteString())
         assertEquals(3, global.resolve<Namespace>(qualifiedName = "t::c1") !!.resolveVar("Availability")!!.bdd().height())
@@ -64,7 +64,7 @@ class AvailabilityTests {
             }
         """.trimIndent()
         )
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         propagate()
         val tc1 = global.resolve<Type>("c1")!!
         assertEquals(builder.True, estimateFeature(tc1, "Availability").bdd())
@@ -85,7 +85,7 @@ class AvailabilityTests {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val tc1 = global.resolve<Type>("t::c1")!!
         assertEquals(builder.True, estimateFeature(tc1, "Availability").bdd())
     }
@@ -104,7 +104,7 @@ class AvailabilityTests {
                 feature Availability: ScalarValues::Boolean = if T>2040.0 ? true else false; 
             }
             """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         propagate()
         val tc1 = global.resolve<Namespace>("c1") !!
         global.resolve<Namespace>("c2") !!
@@ -114,7 +114,7 @@ class AvailabilityTests {
         var tc1Availability = global.resolveVar("c1::Availability")?.bdd()
         assertEquals(XBool.False, tc1Availability as XBool)
         loadKerML("feature T: ScalarValues::Real(2050); ")
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         tc1Availability = global.resolveVar("c1::Availability")?.bdd()
         assertEquals(True, tc1Availability as XBool)
         assertEquals(2050.0, global.resolveVar("T")!!.min(), 0.01)
@@ -127,6 +127,6 @@ class AvailabilityTests {
                 feature a: ScalarValues::Real = ITE(Context::timeOfProcurement > 2030.0, 10.0, 20.0); 
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 }

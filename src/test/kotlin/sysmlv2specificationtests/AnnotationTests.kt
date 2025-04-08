@@ -18,7 +18,7 @@ class AnnotationTests {
         comment Comment1
         /*This is a comment.*/
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     @Test
@@ -26,7 +26,7 @@ class AnnotationTests {
         loadSysMLv2("""
         /*This is a comment.*/
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     @Test
@@ -36,7 +36,7 @@ class AnnotationTests {
         /* The annotated element
         * is attribute1. */
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     @Test
@@ -45,7 +45,7 @@ class AnnotationTests {
         doc Document1
         /*This is documentation.*/
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     @Test
@@ -54,7 +54,7 @@ class AnnotationTests {
         comment about part1::attribute1
         /* The annotated element * is attribute1. */
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
 }

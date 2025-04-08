@@ -1,6 +1,6 @@
 @file:Suppress("FunctionName")
 
-package com.github.tukcps.sysmd.ui
+package com.github.tukcps.sysmd.ui.paneleft
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -20,6 +20,10 @@ import com.github.tukcps.sysmd.ui.composables.TreeViewPlus
 import com.github.tukcps.sysmd.ui.helper.fitMaxWidth
 import com.github.tukcps.sysmd.ui.viewmodel.MyIcons
 
+/**
+ * The tree view with the ownership (de-)composition, i.e., starting with the root namespace
+ * @param composition view model of the tree
+ */
 @Composable
 fun DecompositionTree(
     composition: MutableState<TreeViewModel>,
@@ -39,7 +43,7 @@ fun DecompositionTree(
 
         if (!collapsed) {
             Column(modifier = Modifier.padding(start=10.dp)) {
-                ButtonSelection(standards, "Standard libraries")
+                ButtonSelection(standards, "Libraries")
                 ButtonSelection(annotations, "Annotations")
             }
         }
@@ -50,7 +54,7 @@ fun DecompositionTree(
 
         TreeViewPlus(composition) {
             !   (
-                    ((!standards.value) && it.name.endsWith("(standard)"))  ||
+                    ((!standards.value) && it.name.endsWith("(library)"))  ||
                     ((!annotations.value) && it.name.startsWith("AnnotatingElement"))
                 )
         }

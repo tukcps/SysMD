@@ -23,7 +23,7 @@ class VectorTests {
                 feature c: SI::Mass  = (-5.0, -1.0, 3.0) kg {:>> range = "-5.0..-1.0,-1.0..2.0, 2.0..4.0";}
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val a = global.resolve<Feature>("a")!!.variable!!
         val b = global.resolve<Feature>("b")!!.variable!!
         val c = global.resolve<Feature>("c")!!.variable!!
@@ -48,8 +48,8 @@ class VectorTests {
                 feature a: SI::Mass = (0.5,1.5) kg {:>> range = "0.0..1.0,1.0..2.0, 3.0..4.0";}
             """)
         propagate()
-        assertTrue(status.exceptions.isNotEmpty() , status.exceptions.toString())
-        assertEquals("Internal error: Problem with vector size: Vector size of 2 does not match Constraint size of 3", status.exceptions.first().message)
+        assertTrue(status.issues.isNotEmpty() , status.issues.toString())
+        assertEquals("Problem with vector size: Vector size of 2 does not match Constraint size of 3", status.issues.first().message)
     }
 
     @Test fun vectorDefineTestInt() = testSession("ScalarValues") {
@@ -59,7 +59,7 @@ class VectorTests {
             feature c: ScalarValues::Integer = (-5, -1, 3) {:>> range = "-5..-1,-1..2, 2..4";}
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val a = global.resolve<Feature>("a")!!.variable!!
         val b = global.resolve<Feature>("b")!!.variable!!
         val c = global.resolve<Feature>("c")!!.variable!!
@@ -84,8 +84,8 @@ class VectorTests {
                 feature b: ScalarValues::Integer = (0,1)  {:>> range = "0..1,1..2,0..3";}
             """)
         propagate()
-        assertTrue(status.exceptions.isNotEmpty() , "An error should be reported")
-        assertEquals("Internal error: Problem with vector size: Vector size of 2 does not match Constraint size of 3", status.exceptions.first().message)
+        assertTrue(status.issues.isNotEmpty() , "An error should be reported")
+        assertEquals("Problem with vector size: Vector size of 2 does not match Constraint size of 3", status.issues.first().message)
     }
 
     @Test fun vectorPlusTestReal() = testSession("SI") {
@@ -95,7 +95,7 @@ class VectorTests {
                 feature c: SI::Mass = a + b;
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("c")!!
         assertEquals(0.0, c.vectorQuantity.values[0].asAadd().min, 0.000001)
         assertEquals(2.0, c.vectorQuantity.values[0].asAadd().max, 0.000001)
@@ -112,7 +112,7 @@ class VectorTests {
                 feature c: ScalarValues::Integer  = a + b;
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("c")!!
         assertEquals(0, c.vectorQuantity.values[0].asIdd().min)
         assertEquals(2, c.vectorQuantity.values[0].asIdd().max)
@@ -129,7 +129,7 @@ class VectorTests {
                 feature c: SI::Mass = a - b;
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("c")!!
         assertEquals(-1.0, c.vectorQuantity.values[0].asAadd().min, 0.000001)
         assertEquals(1.0, c.vectorQuantity.values[0].asAadd().max, 0.000001)
@@ -146,7 +146,7 @@ class VectorTests {
                 feature c: ScalarValues::Integer  = a - b;
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("c")!!
         assertEquals(-1, c.vectorQuantity.values[0].asIdd().min)
         assertEquals(1, c.vectorQuantity.values[0].asIdd().max)
@@ -163,7 +163,7 @@ class VectorTests {
                 feature c: SI::Mass = a * b;
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("c")!!
         assertEquals(-12.0, c.vectorQuantity.values[0].asAadd().min, 0.000001)
         assertEquals(18.0, c.vectorQuantity.values[0].asAadd().max, 0.000001)
@@ -179,7 +179,7 @@ class VectorTests {
                 feature b: SI::Mass = sum(a);
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val b = global.resolveVar("b")!!
         assertEquals(10.0, b.vectorQuantity.values[0].asAadd().min, 0.000001)
         assertEquals(38.0, b.vectorQuantity.values[0].asAadd().max, 0.000001)
@@ -191,7 +191,7 @@ class VectorTests {
                 feature b: ScalarValues::Integer = sum(a);
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val b = global.resolveVar("b")!!
         assertEquals(10, b.vectorQuantity.values[0].asIdd().min)
         assertEquals(38, b.vectorQuantity.values[0].asIdd().max)
@@ -203,7 +203,7 @@ class VectorTests {
                 feature b: ScalarValues::Integer = sum(a) {:>> range = "20..20";}
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val a = global.resolveVar("a")!!
         assertEquals(6, a.vectorQuantity.values[0].asIdd().min)
         assertEquals(6, a.vectorQuantity.values[0].asIdd().max)
@@ -219,7 +219,7 @@ class VectorTests {
                 feature b: ScalarValues::Integer = sum(a) {:>> range = "60..80";}
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val a = global.resolveVar("a")!!
         assertEquals(5, a.vectorQuantity.values[0].asIdd().min)
         assertEquals(10, a.vectorQuantity.values[0].asIdd().max)
@@ -235,7 +235,7 @@ class VectorTests {
                 feature b: SI::Mass = sum(a);
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val b = global.resolveVar("b")!!
         assertEquals(5.0, b.vectorQuantity.values[0].asAadd().min, 0.000001)
         assertEquals(10.0, b.vectorQuantity.values[0].asAadd().max, 0.000001)
@@ -247,7 +247,7 @@ class VectorTests {
                 feature b: ScalarValues::Real = sum(a) {:>> range = "20..20";}
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val a = global.resolveVar("a")!!
         assertEquals(6.0, a.vectorQuantity.values[0].asAadd().min, 0.000001)
         assertEquals(6.0, a.vectorQuantity.values[0].asAadd().max, 0.000001)
@@ -263,7 +263,7 @@ class VectorTests {
                 feature b: ScalarValues::Real = sum(a) {:>> range = "60..80";}
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val a = global.resolveVar("a")!!
         assertEquals(5.0, a.vectorQuantity.values[0].asAadd().min, 0.000001)
         assertEquals(10.0, a.vectorQuantity.values[0].asAadd().max, 0.000001)
@@ -283,7 +283,7 @@ class VectorTests {
                 feature c: ScalarValues::Real = a ^ b;
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("c")!!
         assertEquals(0.0, c.vectorQuantity.values[0].asAadd().min, 0.000001)
         assertEquals(1.0, c.vectorQuantity.values[0].asAadd().max, 0.000001)
@@ -301,7 +301,7 @@ class VectorTests {
                 feature c: ScalarValues::Integer  = a ^ b;
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("c")!!
         assertEquals(0, c.vectorQuantity.values[0].asIdd().min)
         assertEquals(1, c.vectorQuantity.values[0].asIdd().max)
@@ -317,7 +317,7 @@ class VectorTests {
                 feature c: SI::Mass = -a;
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("c")!!
         assertEquals(-1.0, c.vectorQuantity.values[0].asAadd().min, 0.000001)
         assertEquals(0.0, c.vectorQuantity.values[0].asAadd().max, 0.000001)
@@ -333,7 +333,7 @@ class VectorTests {
                 feature c: ScalarValues::Integer  = -a;
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("c")!!
         assertEquals(-1, c.vectorQuantity.values[0].asIdd().min)
         assertEquals(0, c.vectorQuantity.values[0].asIdd().max)
@@ -349,7 +349,7 @@ class VectorTests {
                 feature c: SI::Mass = abs(a);
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("c")!!
         assertEquals(5.0, c.vectorQuantity.values[0].asAadd().min, 0.000001)
         assertEquals(5.0, c.vectorQuantity.values[0].asAadd().max, 0.000001)
@@ -363,7 +363,7 @@ class VectorTests {
                 feature c: SI::Mass = cityBlockDistance(a,b);
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("c")!!
         assertEquals(5.0, c.vectorQuantity.values[0].asAadd().min, 0.000001)
         assertEquals(5.0, c.vectorQuantity.values[0].asAadd().max, 0.000001)
@@ -376,7 +376,7 @@ class VectorTests {
                 feature b: ScalarValues::Integer {:>> range = "5..5,-3..-3,4..4";}
                 feature c: ScalarValues::Integer = cityBlockDistance(a,b); """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("c")!!
         assertEquals(5, c.vectorQuantity.values[0].asIdd().min)
         assertEquals(5, c.vectorQuantity.values[0].asIdd().max)
@@ -389,7 +389,7 @@ class VectorTests {
                 feature c: ScalarValues::Integer  = abs(a);
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("c")!!
         assertEquals(5, c.vectorQuantity.values[0].asIdd().min)
         assertEquals(5, c.vectorQuantity.values[0].asIdd().max)
@@ -402,7 +402,7 @@ class VectorTests {
                 feature c: SI::Mass = floor(a);
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("c")!!
         assertEquals(0.0, c.vectorQuantity.values[0].asAadd().min, 0.000001)
         assertEquals(1.0, c.vectorQuantity.values[0].asAadd().max, 0.000001)
@@ -418,7 +418,7 @@ class VectorTests {
                 feature c: SI::Mass = ceil(a);
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("c")!!
         assertEquals(1.0, c.vectorQuantity.values[0].asAadd().min, 0.000001)
         assertEquals(2.0, c.vectorQuantity.values[0].asAadd().max, 0.000001)
@@ -434,7 +434,7 @@ class VectorTests {
                 feature c: SI::Length = sqrt(a);
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("c")!!
 
         assertEquals(1.0, c.vectorQuantity.values[0].asAadd().min, 0.000001)
@@ -451,7 +451,7 @@ class VectorTests {
                 feature c: ScalarValues::Integer  = sqrt(a);
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("c")!!
         assertEquals(1, c.vectorQuantity.values[0].asIdd().min)
         assertEquals(2, c.vectorQuantity.values[0].asIdd().max)
@@ -467,7 +467,7 @@ class VectorTests {
                 feature c: SI::Area = sqr(a);
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("c")!!
 
         assertEquals(1.0, c.vectorQuantity.values[0].asAadd().min, 0.000001)
@@ -484,7 +484,7 @@ class VectorTests {
                 feature c: ScalarValues::Integer  = sqr(a);
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("c")!!
         assertEquals(1, c.vectorQuantity.values[0].asIdd().min)
         assertEquals(16, c.vectorQuantity.values[0].asIdd().max)
@@ -500,7 +500,7 @@ class VectorTests {
                 feature c: ScalarValues::Real = ln(a);
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("c")!!
 
         assertEquals(0.0, c.vectorQuantity.values[0].asAadd().min, 0.000001)
@@ -517,7 +517,7 @@ class VectorTests {
                 feature c: ScalarValues::Real = pow2(a);
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("c")!!
 
         assertEquals(2.0, c.vectorQuantity.values[0].asAadd().min, 0.000001)
@@ -534,7 +534,7 @@ class VectorTests {
                 feature c: ScalarValues::Integer  = pow2(a);
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("c")!!
         assertEquals(2, c.vectorQuantity.values[0].asIdd().min)
         assertEquals(16, c.vectorQuantity.values[0].asIdd().max)
@@ -552,7 +552,7 @@ class VectorTests {
                 feature d: ScalarValues::Real = (4.0,5.0,6.0) {:>> range = "1..4,0..5,6..10";}
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val a = global.resolveVar("a")!!
         val b = global.resolveVar("b")!!
         val c = global.resolveVar("c")!!
@@ -570,7 +570,7 @@ class VectorTests {
                 feature c: SI::Speed = (1.0,3.0,4.0) [km/h] {:>> unit = "km / h"; :>> range = "1..4,0..5,4..10";}
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val a = global.resolveVar("a")!!
         val b = global.resolveVar("b")!!
         val c = global.resolveVar("c")!!
@@ -586,7 +586,7 @@ class VectorTests {
                 feature c: ScalarValues::Real = a cross b;
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("c")!!
         assertEquals(40.0, c.vectorQuantity.values[0].asAadd().min, 0.000001)
         assertEquals(40.0, c.vectorQuantity.values[0].asAadd().max, 0.000001)
@@ -603,7 +603,7 @@ class VectorTests {
                 feature c: ScalarValues::Integer  = a cross b;
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("c")!!
         assertEquals(40, c.vectorQuantity.values[0].asIdd().min)
         assertEquals(40, c.vectorQuantity.values[0].asIdd().max)
@@ -623,7 +623,7 @@ class VectorTests {
             """
         )
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("c")!!
         assertEquals(15.0, c.vectorQuantity.values[0].asAadd().min, 0.000001)
         assertEquals(72.0, c.vectorQuantity.values[0].asAadd().max, 0.000001)
@@ -640,7 +640,7 @@ class VectorTests {
                 feature c: ScalarValues::Integer  = a cross b;
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("c")!!
         assertEquals(15, c.vectorQuantity.values[0].asIdd().min)
         assertEquals(72, c.vectorQuantity.values[0].asIdd().max)
@@ -658,7 +658,7 @@ class VectorTests {
                 feature c: ScalarValues::Real = a dot b;
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("c")!!
         assertEquals(-29.0, c.vectorQuantity.values[0].asAadd().min, 0.000001)
         assertEquals(25.0, c.vectorQuantity.values[0].asAadd().max, 0.000001)
@@ -672,7 +672,7 @@ class VectorTests {
                 feature c: ScalarValues::Integer  = a dot b;
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("c")!!
         assertEquals(-29, c.vectorQuantity.values[0].asIdd().min)
         assertEquals(25, c.vectorQuantity.values[0].asIdd().max)
@@ -687,7 +687,7 @@ class VectorTests {
                 feature d: ScalarValues::Real = norm(b);
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("c")!!
         val d = global.resolveVar("d")!!
         assertEquals(0.0, c.vectorQuantity.values[0].asAadd().min, 0.000001)
@@ -711,7 +711,7 @@ class VectorTests {
                 feature c: SI::Quantity = angle(a,b) {:>> unit = "°";}
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("c")!!
         assertEquals("45 °", c.vectorQuantity.toString())
         assertEquals(1,c.vectorQuantity.values.size)
@@ -724,7 +724,7 @@ class VectorTests {
                 feature c: SI::Quantity = angle(a,b) {:>> unit = "°";}
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("c")!!
         assertEquals(0.0, c.vectorQuantity.values[0].asAadd().min, 0.000001)
         assertEquals(0.0, c.vectorQuantity.values[0].asAadd().max, 0.000001)
@@ -738,7 +738,7 @@ class VectorTests {
                 feature c: SI::Quantity = angle(a,b) {:>> unit = "°";}
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("c")!!
         assertEquals("180 °", c.vectorQuantity.toString())
         assertEquals(1,c.vectorQuantity.values.size)
@@ -751,7 +751,7 @@ class VectorTests {
                 feature c: SI::Quantity = angle(a,b) {:>> unit = "°";}
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("c")!!
         assertEquals("85.33527 °", c.vectorQuantity.toString())
         assertEquals(1,c.vectorQuantity.values.size)
@@ -765,7 +765,7 @@ class VectorTests {
                 feature c: SI::Quantity = angle(a,b) {:>> unit = "°";}
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("c")!!
         assertEquals("90 °", c.vectorQuantity.toString())
         assertEquals(1,c.vectorQuantity.values.size)
@@ -782,7 +782,7 @@ class VectorTests {
             }
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
     }
 
     @Test fun vectorPositionAccessTest() = testSession("ScalarValues") {
@@ -791,7 +791,7 @@ class VectorTests {
                 feature b: ScalarValues::Real = a[1];
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("b")!!
         assertEquals("5", c.vectorQuantity.toString())
         assertEquals(1,c.vectorQuantity.values.size)
@@ -803,7 +803,7 @@ class VectorTests {
                 feature b: ScalarValues::Real = a[1..2];
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("b")!!
         assertEquals(5.0, c.vectorQuantity.values[0].asAadd().max, 0.00001)
         assertEquals(10.0, c.vectorQuantity.values[1].asAadd().max, 0.0001)
@@ -817,7 +817,7 @@ class VectorTests {
                 feature c: ScalarValues::Real = a[1]+b[2];
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("c")!!
         assert(12.0 in c.vectorQuantity.values[0].asAadd())
         assertEquals(1,c.vectorQuantity.values.size)
@@ -830,7 +830,7 @@ class VectorTests {
                 feature a[1]: ScalarValues::Real = 2..2;
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty() , status.exceptions.toString())
+        assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("a")!!
         assert(2.0 in c.vectorQuantity.values[1].asAadd())
         assertEquals(3,c.vectorQuantity.values.size)

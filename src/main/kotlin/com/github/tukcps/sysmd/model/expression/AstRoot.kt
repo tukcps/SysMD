@@ -1,20 +1,19 @@
 
 package com.github.tukcps.sysmd.model.expression
 
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.DD
-import io.github.tukcps.aadd.IDD
-import io.github.tukcps.aadd.values.XBool
-import com.github.tukcps.sysmd.cspsolver.Variable.BaseType
 import com.github.tukcps.sysmd.cspsolver.Variable
+import com.github.tukcps.sysmd.cspsolver.Variable.BaseType
+import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.exceptions.SysMDError
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.quantities.VectorDimensionError
 import com.github.tukcps.sysmd.quantities.VectorQuantity
-import com.github.tukcps.sysmd.services.session.reportInconsistency
-import com.github.tukcps.sysmd.services.session.reportInfo
 import com.github.tukcps.sysmd.services.session.Session
+import io.github.tukcps.aadd.AADD
+import io.github.tukcps.aadd.DD
+import io.github.tukcps.aadd.IDD
+import io.github.tukcps.aadd.values.XBool
 import java.util.*
 
 typealias DDLeaf=DD.Leaf<*>
@@ -50,10 +49,7 @@ class AstRoot(
         leaves = dependency.getLeaves()
         variable.ast = this
         if(variable.baseType == BaseType.Real && variable.vectorQuantity.unit.clone().toSI()!=upQuantity.unit.clone().toSI())
-            model.reportInconsistency(variable.feature, "Unit of ${variable.feature.escapedName()} (${variable.vectorQuantity.unit}) does not match the unit of the dependency (${upQuantity.unit})")
-        val a = variable.vectorQuantity
-        val b = upQuantity
-        //val c = a.constrain(b)
+            model.status.inconsistency(element = variable.feature, message = "Unit of ${variable.feature.escapedName()} (${variable.vectorQuantity.unit}) does not match the unit of the dependency (${upQuantity.unit})")
         variable.vectorQuantity.values = upQuantity.values
         variable.vectorQuantity.unit = upQuantity.unit
 
@@ -77,7 +73,7 @@ class AstRoot(
                     if(variable.intSpecs.size!=dependency.upQuantity.values.size && variable.intSpecs.size!=1)
                         throw VectorDimensionError("Vector size of ${dependency.upQuantity.values.size} does not match constraint size of ${variable.rangeSpecs.size}")
                     if (variable.vectorQuantity.values.any { it == model.builder.Empty })
-                        model.reportInconsistency(variable.feature, "dependency of ${variable.feature.escapedName()} is not satisfiable")
+                        model.status.inconsistency(element = variable.feature, message = "dependency of ${variable.feature.escapedName()} is not satisfiable")
                 } else if (variable.baseType == BaseType.Real && variable.feature.isSufficient) {
                     // Convert the rangeSpecs to a VectorQuantity
                     val values = mutableListOf<AADD>()
@@ -88,7 +84,7 @@ class AstRoot(
                         throw VectorDimensionError("Vector size of ${dependency.upQuantity.values.size} does not match constraint size of ${variable.rangeSpecs.size}")
                     if(variable.rangeSpecs.size == dependency.upQuantity.values.size)
                         if (variable.rangeSpecs.indices.any{variable.rangeSpecs[it] !in (dependency.upQuantity.values[it] as AADD).getRange()})
-                            model.reportInfo(variable.feature, "Dependency for ${variable.feature.escapedName()} cannot be satisfied for all values of range.")
+                            model.status.warn(Issue.Kind.WARN_INCONSISTENCY,"Dependency for ${variable.feature.escapedName()} cannot be satisfied for all values of range.", element = variable.feature)
                 } else
                     throw SemanticError("${variable.name}: expect expression of type Real", variable.feature)
             }
@@ -111,7 +107,7 @@ class AstRoot(
                         throw VectorDimensionError("Vector size of ${dependency.upQuantity.values.size} does not match Constraint size of ${variable.rangeSpecs.size}")
                     if(variable.rangeSpecs.size == dependency.upQuantity.values.size)
                         if (variable.rangeSpecs.indices.any{variable.intSpecs[it] !in (dependency.upQuantity.values[it] as IDD).getRange()})
-                            model.reportInfo(variable.feature, "Dependency for ${variable.name} cannot be satisfied for all values of range.")
+                            model.status.warn( Issue.Kind.WARN_INCONSISTENCY,"Dependency for ${variable.name} cannot be satisfied for all values of range.", element = variable.feature)
                 } else
                     throw SemanticError("${variable.feature.qualifiedName}: expect expression of type Integer", variable.feature)
             }

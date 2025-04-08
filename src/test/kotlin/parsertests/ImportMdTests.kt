@@ -6,7 +6,6 @@ import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
 import com.github.tukcps.sysmd.model.kerml.implementation.AnnotatingElementImplementation
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolve
-import io.github.tukcps.sysmlv2.interchange.InterchangeProject
 import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -39,7 +38,7 @@ class ImportMDTests {
         val fileAnnotation = create(AnnotatingElementImplementation(declaredName="test"), global)
         importMD(input, fileAnnotation)
         initialize()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals(4, fileAnnotation.ownedElement.size)
         assertTrue( (fileAnnotation.ownedElement.last().ref as TextualRepresentation).body.contains("text"))
     }
@@ -177,6 +176,6 @@ class ImportMDTests {
         // Import the resulting segments of TextualRepresentation / Documentation in MD into the model
         // They shall become owned elements of the file.
         importMD(input, fileAnnotation)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 }

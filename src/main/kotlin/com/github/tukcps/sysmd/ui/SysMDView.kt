@@ -20,9 +20,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.github.tukcps.sysmd.ui.agenda.Agenda
+import com.github.tukcps.sysmd.ui.paneright.Board
 import com.github.tukcps.sysmd.ui.composables.*
 import com.github.tukcps.sysmd.ui.dialogs.messageProjectAlreadyExits
+import com.github.tukcps.sysmd.ui.paneleft.NavigationPanel
 import com.github.tukcps.sysmd.ui.styles.AppTheme
 import com.github.tukcps.sysmd.ui.styles.VerticalSplittable
 import com.github.tukcps.sysmd.ui.viewmodel.SysMDViewModel
@@ -47,12 +48,12 @@ data class DisplayState(
  * Animates the size of the given panel, represented by PanelState object
  */
 @Composable
-internal fun panelSizeAnimation(panelState: PanelState): Dp {
-    val animatedSize = if (panelState.splitter.isResizing) {
-        if (panelState.isExpanded) panelState.expandedSize else panelState.collapsedSize
+internal fun panelSizeAnimation(paneState: PaneState): Dp {
+    val animatedSize = if (paneState.splitter.isResizing) {
+        if (paneState.isExpanded) paneState.expandedSize else paneState.collapsedSize
     } else {
         animateDpAsState(
-            if (panelState.isExpanded) panelState.expandedSize else panelState.collapsedSize,
+            if (paneState.isExpanded) paneState.expandedSize else paneState.collapsedSize,
             SpringSpec(stiffness = Spring.StiffnessLow)
         ).value
     }
@@ -62,9 +63,9 @@ internal fun panelSizeAnimation(panelState: PanelState): Dp {
 /**
  * Manages and checks the sizes of a panel represented by PanelState object
  */
-internal fun checkPanelResize(panelState: PanelState, changeSize: Dp) {
-    panelState.expandedSize =
-        (panelState.expandedSize + changeSize).coerceAtLeast(panelState.expandedSizeMin)
+internal fun checkPanelResize(paneState: PaneState, changeSize: Dp) {
+    paneState.expandedSize =
+        (paneState.expandedSize + changeSize).coerceAtLeast(paneState.expandedSizeMin)
 }
 
 
@@ -84,16 +85,16 @@ fun SysMDView(model: SysMDViewModel) {
     val editorTabsModel = sysMDViewModel.editorTabsViewModel
 
     // State of the left resizable panel
-    val leftPanelState = remember { PanelState(true) }
+    val leftPaneState = remember { PaneState(true) }
 
     // Animation for the left panel
-    val leftPanelAnimatedSize = panelSizeAnimation(leftPanelState)
+    val leftPanelAnimatedSize = panelSizeAnimation(leftPaneState)
 
     // State of the right resizable panel
-    val rightPanelState = remember { PanelState(false) }
+    val rightPaneState = remember { PaneState(false) }
 
     // Animation for the right panel
-    val rightPanelAnimatedSize = panelSizeAnimation(rightPanelState)
+    val rightPaneAnimatedSize = panelSizeAnimation(rightPaneState)
 
     /**
      * Controls the state of the tab list in the editor
@@ -110,10 +111,10 @@ fun SysMDView(model: SysMDViewModel) {
 
                 //TODO find more elegant and clean solution
                 VerticalSplittable(Modifier.fillMaxSize(),
-                    leftPanelState.splitter, onResizeLeft = { checkPanelResize(leftPanelState, it) },
+                    leftPaneState.splitter, onResizeLeft = { checkPanelResize(leftPaneState, it) },
                     /* Negating the Dp value in 'it' is necessary, as vertical splitter resizing is hard coded
                        depending on the drag direction */
-                    rightPanelState.splitter, onResizeRight = { checkPanelResize(rightPanelState, -it) }
+                    rightPaneState.splitter, onResizeRight = { checkPanelResize(rightPaneState, -it) }
                 ) {
                     if (sysMDViewModel.showDialogProjectAlreadyExits.value)
                         messageProjectAlreadyExits(sysMDViewModel.showDialogProjectAlreadyExits)
@@ -123,7 +124,7 @@ fun SysMDView(model: SysMDViewModel) {
                         sysMDViewModel.agendaIsEmpty,
                         ResizablePanelSide.LEFT_SIDE,
                         Modifier.width(leftPanelAnimatedSize).fillMaxHeight(),
-                        leftPanelState
+                        leftPaneState
                     ) {
                         NavigationPanel(sysMDViewModel)
                     }
@@ -145,9 +146,9 @@ fun SysMDView(model: SysMDViewModel) {
                     ResizablePanel(
                         sysMDViewModel.agendaIsEmpty,
                         ResizablePanelSide.RIGHT_SIDE,
-                        Modifier.width(rightPanelAnimatedSize).fillMaxHeight()
+                        Modifier.width(rightPaneAnimatedSize).fillMaxHeight()
                             .background(MaterialTheme.colorScheme.background),
-                        rightPanelState
+                        rightPaneState
                     ) {
                         Column {
                             Row(
@@ -159,13 +160,14 @@ fun SysMDView(model: SysMDViewModel) {
                                 Text(" Issue-Board ", fontSize = AppTheme.fontSize)
                             }
                             Row {
-                                Agenda(sysMDViewModel.agenda, editorTabsModel.active)
+                                Board(sysMDViewModel.agenda, editorTabsModel)
                             }
                         }
                     }
                 }
             }
         }
+        // Here, we could add some drag and drop functionality
         // DropBox(window, model.tabsModel::create)
     }
 }

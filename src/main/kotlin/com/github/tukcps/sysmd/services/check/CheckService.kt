@@ -1,10 +1,9 @@
 package com.github.tukcps.sysmd.services.check
 
 import com.fasterxml.uuid.Generators
+import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.exceptions.SysMDException
 import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.services.session.report
-import com.github.tukcps.sysmd.services.session.reportInfo
 import com.github.tukcps.sysmd.services.session.Session
 import java.util.*
 
@@ -42,9 +41,9 @@ fun checkConsistency(
         }
         if ( it is Specialization && !it.isLibraryElement ) {
             if (it.general.id != null && map[it.general.id] == null)
-                throw  Exception("($info) Type '${it.qualifiedName}' has unknown superclass id.")
+                throw  SysMDException("($info) Type '${it.qualifiedName}' has unknown superclass id.")
             if (it.specific.id != null && map[it.specific.id] == null)
-                throw  Exception("($info) Type '${it.qualifiedName}' has unknown subclass id.")
+                throw  SysMDException("($info) Type '${it.qualifiedName}' has unknown subclass id.")
         }
     }
 }
@@ -56,10 +55,10 @@ fun checkConsistency(
  */
 fun checkConsistency(elements: HashMap<UUID, Element>, global: UUID, info: String?= "") {
     if (elements[global] == null)
-        throw Exception("($info) Inconsistent elements: no Global.")
+        throw SysMDException("($info) Inconsistent elements: no Global.")
     elements.forEach {
         if (it.value.elementId != global && it.value.owner.ref?.elementId !in elements.keys)
-            throw Exception("($info) Inconsistent element detected (owner not in elements): $it")
+            throw SysMDException("($info) Inconsistent element detected (owner not in elements): $it")
     }
 }
 
@@ -78,14 +77,19 @@ fun Session.checkNameResolutionSuccessful() {
             if (! it.isLibraryElement && !( it is Feature && it.referencedFeature != null))
                 it.generalization.forEach { supertype ->
                     if (supertype.ref == null)
-                        reportInfo(it, "The type '${supertype.str}' is not defined -- give a definition!")
+                        status.warn(kind=Issue.Kind.WARN_UNRESOLVED_TYPE, message = "The type '${supertype.str}' is not defined -- give a definition!", element = it)
                 }
         }
     }
 
     // Checks whether all elements without owner could be merged
     getUnownedElements().forEach {
-        report(SysMDException(message = "Could not resolve owning package '${it.startOfPath.qualifiedName}::${it.path}' for adding ${it.element.escapedName()?:it.element.elementType} ", priority = 5))
+        status.warn(
+            kind = Issue.Kind.WARN_UNRESOLVED_OWNER,
+            message = "Could not resolve owning package '${it.startOfPath.qualifiedName}::${it.path}' for adding ${it.element.escapedName()?:it.element.elementType} ",
+            element = it.element,
+            cause = SysMDException("Could not resolve owning package or element"),
+        )
     }
 }
 
@@ -108,7 +112,7 @@ fun Session.checkConsistencyOfBuilders() {
         }
         if (element is Specialization)
             if (element.general.ref != null && element.general.ref?.model?.builder != builder)
-                report(element, "Inconsistent builder: in Specialization $element")
+                status.fatal("Inconsistent builder: in Specialization $element", element = element)
     }
 }
 
@@ -122,10 +126,10 @@ fun Session.checkOwnership() {
         if (element.owner.ref != null) {
             val ownedByOwner = element.owner.ref?.ownedElement?.associateBy { it.id }?.keys
             if (element.owner.ref != null && element.owner.id != null && element.owner.ref != get(element.owner.id!!)) {
-                report(element, "owner id and ref not consistent")
+                status.fatal("owner id and ref not consistent", element = element)
             }
             if (ownedByOwner != null && element.elementId !in ownedByOwner)
-                report(element, "owner '${element.owner.ref?.escapedName()?:element.owner.ref?.elementType}' does not refer correctly to owned element '${element.escapedName()?:element.elementType}'")
+                status.fatal("owner '${element.owner.ref?.escapedName()?:element.owner.ref?.elementType}' does not refer correctly to owned element '${element.escapedName()?:element.elementType}'", element = element)
         }
     }
 }
@@ -143,7 +147,7 @@ internal fun Session.checkLibraryElementIds() {
         {
             val uuid5 = Generators.nameBasedGenerator().generate(element.qualifiedName)
             if (element.elementId != uuid5)
-                report(element, "Library element ${element.qualifiedName} does not have correct UUID5")
+                status.warn(Issue.Kind.WARN,"Library element ${element.qualifiedName} does not have correct UUID5", element = element)
         }
     }
 }

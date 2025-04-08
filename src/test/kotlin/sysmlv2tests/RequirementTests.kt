@@ -27,7 +27,7 @@ class RequirementTests {
             }
         """.trimIndent())
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val ass = global.resolveVar("test::ass")
         assertEquals(builder.NaB, ass!!.vectorQuantity.value)
     }
@@ -45,7 +45,7 @@ class RequirementTests {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val ass = global.resolveVar("test::ass")
         assertEquals(builder.True, ass!!.vectorQuantity.value)
     }
@@ -63,7 +63,7 @@ class RequirementTests {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val r = global.resolve<Feature>("test::r")
         assertEquals(builder.True, r!!.variable!!.vectorQuantity.value)
         val const = global.resolve<Type>("Requirements::RequirementUsage")
@@ -86,7 +86,7 @@ class RequirementTests {
         """.trimIndent()
         )
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val r = global.resolve<Feature>("test::r")
         assertEquals(builder.True, r!!.variable!!.vectorQuantity.value)
         assertTrue(r.specializes(global.resolve<Type>("ScalarValues::Boolean")) )
@@ -106,7 +106,7 @@ class RequirementTests {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val test = global.resolve<Feature>("test")
         assertNotNull(test)
         val testR = global.resolve<Feature>("test::r")
@@ -122,7 +122,7 @@ class RequirementTests {
                 attribute a: ScalarValues::Real; 
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
 
     }
 }

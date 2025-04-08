@@ -282,7 +282,7 @@ class HoodSysmlParserTest {
                 }
             """
         )
-        assertTrue(model.status.exceptions.isEmpty(), model.status.exceptions.toString())
+        assertTrue(model.status.issues.isEmpty(), model.status.issues.toString())
         val owningPackage = parser.getTopLevelPackage(model, "testPackage")
         val parts = owningPackage!!.getOwnedElementsOfType<PartUsage>()
         val part1 = parts[0]

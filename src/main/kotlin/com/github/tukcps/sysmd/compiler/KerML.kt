@@ -2,8 +2,6 @@
 
 package com.github.tukcps.sysmd.compiler
 
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.IDD
 import com.github.tukcps.sysmd.compiler.parser.kerml.ConstInt
 import com.github.tukcps.sysmd.compiler.parser.kerml.ConstReal
 import com.github.tukcps.sysmd.compiler.parser.kerml.NamespaceBodyElement
@@ -12,15 +10,14 @@ import com.github.tukcps.sysmd.compiler.parser.util.ParserProductionRules
 import com.github.tukcps.sysmd.compiler.scanner.Token
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.compiler.semantics.SemanticActions
-import com.github.tukcps.sysmd.compiler.semantics.SemanticActionsImplementation
 import com.github.tukcps.sysmd.exceptions.SyntaxError
-import com.github.tukcps.sysmd.exceptions.SysMDError
 import com.github.tukcps.sysmd.exceptions.SysMDException
 import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
 import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.quantities.Quantity
-import com.github.tukcps.sysmd.services.session.report
 import com.github.tukcps.sysmd.services.session.Session
+import io.github.tukcps.aadd.AADD
+import io.github.tukcps.aadd.IDD
 
 
 /**
@@ -40,37 +37,37 @@ import com.github.tukcps.sysmd.services.session.Session
  * Details for these functions are given in the KParser class.
  * Examples for application of the parser are in the unit test.
  * Parameters are:
- * @param model: the model in which the result will be saved; by default the memory-only model
- * @param indices: can restrict parsing of the textualRepresentation's body to a substring, if given
- * @param generateAnnotations: if true, the semantics will generate annotations that link the textual
+ * @param model: the model in which the result will be saved; by default, the memory-only model
  * representation and the generated elements.
  */
 open class KerML(
     val model: Session,                                 // model in which the results will be returned.
-    indices: IntRange? = null,                          // allows us to select a subset to be parsed, i.e., an expression.
-    val generateAnnotations: Boolean = false
-) : ParserProductionRules(indices) {
+) : ParserProductionRules() {
 
-    var ownerPrefix: String? = null
-    var semantics: SemanticActions = SemanticActionsImplementation(model, generateAnnotations = generateAnnotations)
+    var semantics: SemanticActions = SemanticActions(model, compiler = this)
 
     /**
      * Parses the body of the textual representation while considering the owner prefix.
      */
+    @Deprecated("Use parse with string input instead")
     fun parse(textualRepresentation: TextualRepresentation) {
         this.input = textualRepresentation.body
-        ownerPrefix = textualRepresentation.getOwnerPrefix()
-        semantics.initOwners(ownerPrefix!!)
-        semantics.textualRepresentation = textualRepresentation
+        semantics.initOwners(textualRepresentation.getOwnerPrefix())
         parse()
     }
 
     /**
-     * Parsers an input directly.
-     * No TextualRepresentation is created, and no annotations, etc.
+     * Parses an input directly.
+     * No TextualRepresentation is needed, and no annotations, etc.
+     * @param input the char sequence that is parsed
+     * @param ownerQualifiedName the qualified name of the package that gives the scope.
      */
-    fun parse(input: CharSequence) {
+    fun parse(
+        input: CharSequence,
+        ownerQualifiedName: QualifiedName = "Global",
+    ){
         this.input = input
+        semantics.initOwners(ownerQualifiedName)
         parse()
     }
 
@@ -87,20 +84,20 @@ open class KerML(
                 NamespaceBodyElement()   // KerML textual
             } catch (exception: Exception) {
                 handleError(exception)
-                semantics.initOwners(ownerPrefix?:"::Global")
+                semantics.initOwners("Global")
             }
         }
         try {
             EOF.consume()
         } catch (exception: Exception) {
             handleError(exception)
-            semantics.initOwners(ownerPrefix?:"::Global")
+            semantics.initOwners("Global")
         }
     }
 
 
     /**
-     * QualifiedNameList :- QualifiedName ( "," QualifiedName )*
+     *      QualifiedNameList :- QualifiedName ("," QualifiedName )*
      * Semantics: returns a list of identifications that have been parsed.
      */
     fun QualifiedNameList(): MutableList<QualifiedName> {
@@ -111,7 +108,6 @@ open class KerML(
         }
         return result
     }
-
 
 
     /**
@@ -168,9 +164,9 @@ open class KerML(
 
         // report error.
         if (exception is SysMDException) {
-            model.report(semantics.textualRepresentation, exception.message, exception)
+            model.status.error(exception.message, this, cause = exception, kind = exception.kind)
         } else
-            model.report(SysMDError(textualRepresentation = semantics.textualRepresentation, message = "Exception: ${exception.message}", cause = exception))
+            model.status.fatal(exception.message?: "Unknown error",  this, cause = exception)
         // Skip input until we get the next DOT (=end of triple) or RCURBRACE or EOF.
         while (token.kind != SEMICOLON && token.kind != EOF && token.kind != RCURBRACE)
             consume()
@@ -178,7 +174,7 @@ open class KerML(
     }
 
     override fun toString(): String {
-        return "Parser at token '${token.string}' in line ${token.lineNo}; exceptions: ${model.status.exceptions.size}"
+        return "Parser at token '${token.string}' in line ${token.lineNo}; #issues: ${model.status.issues.size}"
     }
 
     /**

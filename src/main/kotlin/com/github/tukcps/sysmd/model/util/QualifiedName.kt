@@ -7,6 +7,9 @@ fun QualifiedName(str: String): QualifiedName {
     return str
 }
 
+/**
+ * Removes the remainder after removing the first simple name of a qualified name.
+ */
 fun QualifiedName.dropFirstName() : QualifiedName {
     val asArray = this.split("::")
     val reducedArray =  asArray.subList(1, asArray.lastIndex+1)

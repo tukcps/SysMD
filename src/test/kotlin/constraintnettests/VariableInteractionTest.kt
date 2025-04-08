@@ -37,7 +37,7 @@ class VariableInteractionTest {
         create(SpecializationImplementation(c, repo.realType!!), c)
         initialize()
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         assertEquals(8.0, global.resolveVar("c")!!.aadd().getRange().max, 0.0001)
         assertEquals(7.0, global.resolveVar("c")!!.aadd().getRange().min, 0.0001)
     }
@@ -59,7 +59,7 @@ class VariableInteractionTest {
              feature speed2: ScalarValues::Real {:>> range = "10.0 .. 10000.0";}
              feature speed:  ScalarValues::Real = speed2 {:>> range = "-100.0 ..200.0";}""")
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val speed = global.resolve<Feature>("speed")!!.variable!!.aadd().getRange()
         assertEquals(10.0, speed.min, 0.0000001)
         assertEquals(200.0, speed.max, 0.0000001)

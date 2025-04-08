@@ -33,7 +33,7 @@ class ConsistencyAfterLoadingLibrariesTests {
                     assertEquals(global.elementId, it.elementId)
                 }
             }
-            assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+            assertTrue(status.issues.isEmpty(), status.issues.toString())
             assertEquals(1, globals)
         }
     }
@@ -96,7 +96,7 @@ class ConsistencyAfterLoadingLibrariesTests {
         checkForOneGlobal(this)
         checkLibraryElementIds()
         checkForParent(this)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals(1, elements.size)
     }
 
@@ -113,7 +113,7 @@ class ConsistencyAfterLoadingLibrariesTests {
         checkForOneGlobal(this)
         checkLibraryElementIds()
         checkForParent(this)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals(3, elements.size, elements.toString())
     }
 
@@ -125,7 +125,7 @@ class ConsistencyAfterLoadingLibrariesTests {
         checkForOneGlobal(this)
         checkLibraryElementIds()
         checkForParent(this)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals(4, elements.size)
     }
 
@@ -137,7 +137,7 @@ class ConsistencyAfterLoadingLibrariesTests {
         val elements = global.getOwnedElementsOfType<Element>()
         checkForOneGlobal(this)
         checkForParent(this)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals(2, elements.size)
     }
 
@@ -150,11 +150,11 @@ class ConsistencyAfterLoadingLibrariesTests {
         session.initialize()
         val elements = session.export().map { it.payloadElementSnapshot!! }
         // val sources = elements.filter { it.declaredName in setOf("source", "target") }
-        assertTrue(session.status.exceptions.isEmpty(), session.status.exceptions.toString())
+        assertTrue(session.status.issues.isEmpty(), session.status.issues.toString())
         checkForOneGlobal(session)
         session.checkOwnership()
         session.checkLibraryElementIds()
-        assertTrue(session.status.exceptions.isEmpty(), session.status.exceptions.toString())
+        assertTrue(session.status.issues.isEmpty(), session.status.issues.toString())
 
         val session2 = SessionImplementation(libraries = mutableListOf())
         session2.import(elements)
@@ -162,7 +162,7 @@ class ConsistencyAfterLoadingLibrariesTests {
         // val sources2 = elements2.filter { it.declaredName in setOf("source", "target") }
         session2.checkOwnership()
         session.checkLibraryElementIds()
-        assertTrue(session2.status.exceptions.isEmpty(), session2.status.exceptions.toString())
+        assertTrue(session2.status.issues.isEmpty(), session2.status.issues.toString())
     }
 
 
@@ -171,12 +171,12 @@ class ConsistencyAfterLoadingLibrariesTests {
     fun readISO26262FromRepository() = testSession("ISO26262") {
         val implements = global.resolve<Association>("ISO26262::implements")
         assertNotNull(implements)
-        assertTrue(status.exceptions.isEmpty(), "${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "${status.issues}")
         assertTrue(4 <= global.getOwnedElementsOfType<Element>().size)
         checkForOneGlobal(this)
         settings.initialize = true
         initialize()
         checkOwnership()
-        assertTrue(status.exceptions.isEmpty(), "${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "${status.issues}")
     }
 }

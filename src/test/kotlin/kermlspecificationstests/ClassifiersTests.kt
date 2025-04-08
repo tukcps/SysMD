@@ -22,7 +22,7 @@ class ClassifiersTests {
                 }
                 classifier Child specializes Person;
             """.trimIndent())
-            assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+            assertTrue(status.issues.isEmpty(), status.issues.toString())
         }
 
     /**
@@ -40,7 +40,7 @@ class ClassifiersTests {
                 subclassifier C specializes A;
                 subclassifier C specializes B;
             """.trimIndent())
-            assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+            assertTrue(status.issues.isEmpty(), status.issues.toString())
         }
 
     /**
@@ -57,7 +57,7 @@ class ClassifiersTests {
                 classifier B;
                 classifier C specializes A, B;
             """)
-            assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+            assertTrue(status.issues.isEmpty(), status.issues.toString())
         }
 
 }

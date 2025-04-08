@@ -65,7 +65,7 @@ class FunctionsTests {
         assertEquals(5.0, global.resolveVar("i")!!.aadd().getRange().max, 0.00001)
         assertEquals(5.0, global.resolveVar("j")!!.aadd().getRange().min, 0.00001)
         assertEquals(5.0, global.resolveVar("j")!!.aadd().getRange().max, 0.00001)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     @Test
@@ -75,7 +75,7 @@ class FunctionsTests {
             feature a: ScalarValues::Integer = abs(qa);
             """)
         propagate()
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(5, global.resolve<Feature>("a")!!.variable!!.idd().getRange().min)
         assertEquals(5, global.resolve<Feature>("a")!!.variable!!.idd().getRange().max)
     }
@@ -94,7 +94,7 @@ class FunctionsTests {
                 feature e: ScalarValues::Boolean;
                 feature f: ScalarValues::Real = toReal(e);
         """)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val b = global.resolve<Feature>("b")!!.variable!!
         val d = global.resolve<Feature>("d")!!.variable!!
         val f = global.resolve<Feature>("f")!!.variable!!
@@ -120,8 +120,8 @@ class FunctionsTests {
         assertEquals(2.0, global.resolveVar("b")!!.min(), 0.00001)
         assertEquals(32.0, global.resolveVar("b")!!.max(), 0.00001)
         assertEquals("1", global.resolveVar("b")!!.vectorQuantity.unit.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /** ConstNet shall compute bottom-up with pow2 in real and value */
@@ -134,7 +134,7 @@ class FunctionsTests {
         assertEquals(8.0, global.resolve<Feature>("b")!!.variable!!.aadd().getRange().min, 0.00001)
         assertEquals(8.0, global.resolve<Feature>("b")!!.variable!!.aadd().getRange().max, 0.00001)
         assertEquals("1", global.resolve<Feature>("b")!!.variable!!.vectorQuantity.unit.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /** ConstNet shall compute bottom-up with pow2 and negative values*/
@@ -144,7 +144,7 @@ class FunctionsTests {
             feature a: ScalarValues::Real {:>> range = "-2.0 .. -1.0";}
             feature b: ScalarValues::Real = power2(a);"""
         )
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(0.25, global.resolveVar("b")!!.aadd().min, 0.0001)
         assertEquals(0.5, global.resolveVar("b")!!.aadd().max, 0.0001)
         assertEquals("1", global.resolveVar("b")!!.vectorQuantity.unit.toString())
@@ -157,7 +157,7 @@ class FunctionsTests {
             feature a: ScalarValues::Real {:>> range = "0.0 .. 0.0";}
             feature b: ScalarValues::Real = power2(a); """
         )
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("b")!!.aadd().min, 0.0001)
         assertEquals(1.0, global.resolveVar("b")!!.aadd().max, 0.0001)
         assertEquals("1", global.resolveVar("b")!!.vectorQuantity.unit.toString())
@@ -175,7 +175,7 @@ class FunctionsTests {
         assertEquals(2, (global.resolveVar("b")!!.idd() as IDD.Leaf).value.min)
         assertEquals(32, (global.resolveVar("b")!!.idd() as IDD.Leaf).value.max)
         assertEquals("1", global.resolveVar("b")!!.vectorQuantity.unit.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /** ConstNet shall compute bottom-up with pow2 in int and model.builder.range*/
@@ -185,7 +185,7 @@ class FunctionsTests {
             feature a: ScalarValues::Integer = 3 {:>> range = "1 .. 5";}
             feature b: ScalarValues::Integer = power2(a); """
         )
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         propagate()
         assertEquals(8, (global.resolveVar("b")!!.idd() as IDD.Leaf).value.min)
         assertEquals(8, (global.resolveVar("b")!!.idd() as IDD.Leaf).value.max)
@@ -197,7 +197,7 @@ class FunctionsTests {
     fun evalUpWithExp_real_range() = testSession("ScalarValues") {
         loadKerML("feature b: ScalarValues::Real = exp([1.0 .. 5.0]);")
         propagate()
-        assertEquals(0, status.exceptions.size, "Error message: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error message: ${status.issues}")
         assertEquals(Math.E, global.resolveVar("b")!!.min(), 0.00001)
         assertEquals(Math.E.pow(5), global.resolveVar("b")!!.max(), 0.00001)
         assertEquals("1", global.resolveVar("b")!!.vectorQuantity.unit.toString())
@@ -211,7 +211,7 @@ class FunctionsTests {
             feature b: ScalarValues::Real = exp(a);"""
         )
         propagate()
-        assertEquals(0, status.exceptions.size, "Error message: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error message: ${status.issues}")
         assertEquals(Math.E.pow(3), global.resolve<Feature>("b")!!.variable!!.aadd().getRange().min, 0.00001)
         assertEquals(Math.E.pow(3), global.resolve<Feature>("b")!!.variable!!.aadd().getRange().max, 0.00001)
         assertEquals("1", global.resolve<Feature>("b")!!.variable!!.vectorQuantity.unit.toString())
@@ -225,7 +225,7 @@ class FunctionsTests {
             feature b: ScalarValues::Real = exp(a);"""
         )
         propagate()
-        assertEquals(0, status.exceptions.size, "Error message: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error message: ${status.issues}")
         assertEquals(Math.E.pow(-3), global.resolveVar("b")!!.aadd().getRange().min, 0.00001)
         assertEquals(Math.E.pow(-1), global.resolveVar("b")!!.aadd().getRange().max, 0.00001)
         assertEquals("1", global.resolveVar("b")!!.vectorQuantity.unit.toString())
@@ -239,7 +239,7 @@ class FunctionsTests {
             feature b: ScalarValues::Real = exp(a);"""
         )
         propagate()
-        assertEquals(0, status.exceptions.size, "Error message: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error message: ${status.issues}")
         assertEquals(1.0, global.resolveVar("b")!!.aadd().getRange().min, 0.00001)
         assertEquals(1.0, global.resolveVar("b")!!.aadd().getRange().max, 0.00001)
         assertEquals("1", global.resolveVar("b")!!.vectorQuantity.unit.toString())
@@ -250,7 +250,7 @@ class FunctionsTests {
     fun evalUpWithExp_int_range() = testSession("ScalarValues") {
         loadKerML("feature b: ScalarValues::Integer = exp([1 .. 5]).")
         propagate()
-        assertEquals(0, status.exceptions.size, "Error message: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error message: ${status.issues}")
         assertEquals(floor(Math.E).toLong(), global.resolveVar("b")!!.idd().getRange().min)
         assertEquals(ceil(Math.E.pow(5)).toLong(), global.resolveVar("b")!!.idd().getRange().max)
         assertEquals("1", global.resolveVar("b")!!.vectorQuantity.unit.toString())
@@ -263,9 +263,9 @@ class FunctionsTests {
             feature a: ScalarValues::Integer = 3 {:>> range = "1 .. 5";}
             feature b: ScalarValues::Integer = exp(a);"""
         )
-        assertEquals(0, status.exceptions.size, "Error message: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error message: ${status.issues}")
         propagate()
-        assertEquals(0, status.exceptions.size, "Error message: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error message: ${status.issues}")
         assertEquals(floor(Math.E.pow(3)).toLong(), global.resolveVar("b")!!.idd().getRange().min)
         assertEquals(ceil(Math.E.pow(3)).toLong(), global.resolveVar("b")!!.idd().getRange().max)
         assertEquals("1", global.resolveVar("b")!!.vectorQuantity.unit.toString())
@@ -282,7 +282,7 @@ class FunctionsTests {
         assertEquals(ln(1.0), global.resolveVar("b")!!.aadd().getRange().min, 0.00001)
         assertEquals(ln(5.0), global.resolveVar("b")!!.aadd().getRange().max, 0.00001)
         assertEquals("1", global.resolveVar("b")!!.vectorQuantity.unit.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /** ConstNet shall compute bottom-up with ln in real and value */
@@ -296,7 +296,7 @@ class FunctionsTests {
         assertEquals(ln(3.0), global.resolveVar("b")!!.aadd().getRange().min, 0.00001)
         assertEquals(ln(3.0), global.resolveVar("b")!!.aadd().getRange().max, 0.00001)
         assertEquals("1", global.resolveVar("b")!!.vectorQuantity.unit.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /** ConstNet shall compute bottom-up with ln in real and negative numbers => not possible */
@@ -309,7 +309,7 @@ class FunctionsTests {
         val b = global.resolveVar("b")
         propagate()
         assertTrue(b!!.vectorQuantity.value.asAadd().isEmpty())
-        assertEquals(1, status.exceptions.size)
+        assertEquals(1, status.issues.size)
     }
 
     /** ConstNet shall compute bottom-up with ln in int and model.builder.range */
@@ -322,7 +322,7 @@ class FunctionsTests {
         assertEquals(floor(ln(1.0)).toLong(), global.resolveVar("b")!!.idd().getRange().min)
         assertEquals(ceil(ln(5.0)).toLong(), global.resolveVar("b")!!.idd().getRange().max)
         assertEquals("1", global.resolveVar("b")!!.vectorQuantity.unit.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /** ConstNet shall compute bottom-up with ln in int and value */
@@ -336,7 +336,7 @@ class FunctionsTests {
         assertEquals(floor(ln(3.0)).toLong(), global.resolveVar("b")!!.idd().getRange().min)
         assertEquals(ceil(ln(3.0)).toLong(), global.resolveVar("b")!!.idd().getRange().max)
         assertEquals("1", global.resolveVar("b")!!.vectorQuantity.unit.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /** ConstNet shall compute bottom-up with sqrt in real and model.builder.range */
@@ -352,7 +352,7 @@ class FunctionsTests {
         //AADD returns bigger result for upper border
         assert(sqrt(9.0) <= global.resolveVar("b")!!.aadd().getRange().max)
         assertEquals("1", global.resolveVar("b")!!.vectorQuantity.unit.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /** ConstNet shall compute bottom-up with sqrt in real and value */
@@ -365,7 +365,7 @@ class FunctionsTests {
         assertEquals(sqrt(3.0), global.resolveVar("b")!!.min(), 0.00001)
         assertEquals(sqrt(3.0), global.resolveVar("b")!!.max(), 0.00001)
         assertEquals("1", global.resolveVar("b")!!.vectorQuantity.unit.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /** ConstNet shall compute bottom-up with sqrt and negative value.This should lead to an error*/
@@ -376,8 +376,8 @@ class FunctionsTests {
             feature b: ScalarValues::Real = sqrt( a );
             """)
         propagate()
-        assertEquals(1, status.exceptions.size, "Error messages: ${status.exceptions}")
-        assertTrue("dependency of b is not satisfiable in element b" in status.exceptions.toString())
+        assertEquals(1, status.issues.size, "Issues: ${status.issues}")
+        assertTrue("dependency of b is not satisfiable in element b" in status.issues.first().message)
     }
 
     /** ConstNet shall compute bottom-up with sqrt in int and model.builder.range */
@@ -390,7 +390,7 @@ class FunctionsTests {
             assertEquals(floor(sqrt(2.0)).toLong(), global.resolve<Feature>("b")!!.variable!!.idd().getRange().min)
             assertEquals(ceil(sqrt(9.0)).toLong(), global.resolve<Feature>("b")!!.variable!!.idd().getRange().max)
             assertEquals("1", global.resolve<Feature>("b")!!.variable!!.vectorQuantity.unit.toString())
-            assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+            assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /** ConstNet shall compute bottom-up with sqrt in int **/
@@ -404,7 +404,7 @@ class FunctionsTests {
         assertEquals(floor(sqrt(3.0)).toLong(), global.resolveVar("b")!!.idd().getRange().min)
         assertEquals(ceil(sqrt(3.0)).toLong(), global.resolveVar("b")!!.idd().getRange().max)
         assertEquals("1", global.resolveVar("b")!!.vectorQuantity.unit.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /** ConstNet shall compute bottom-up with sqr in real and model.builder.range */
@@ -418,7 +418,7 @@ class FunctionsTests {
         assertEquals(4.0, global.resolveVar("b")!!.aadd().getRange().min, 0.00001)
         assertEquals(81.0, global.resolveVar("b")!!.aadd().getRange().max, 0.00001)
         assertEquals("1", global.resolveVar("b")!!.vectorQuantity.unit.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /** ConstNet shall compute bottom-up with sqr in real and value */
@@ -432,7 +432,7 @@ class FunctionsTests {
         assertEquals(9.0, global.resolve<Feature>("b")!!.variable!!.aadd().getRange().min, 0.00001)
         assertEquals(9.0, global.resolve<Feature>("b")!!.variable!!.aadd().getRange().max, 0.00001)
         assertEquals("1", global.resolve<Feature>("b")!!.variable!!.vectorQuantity.unit.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /** ConstNet shall compute bottom-up with sqr in int and model.builder.range */
@@ -446,7 +446,7 @@ class FunctionsTests {
         assertEquals(4, (global.resolve<Feature>("b")!!.variable!!.idd() as IDD.Leaf).value.min)
         assertEquals(81, (global.resolve<Feature>("b")!!.variable!!.idd() as IDD.Leaf).value.max)
         assertEquals("1", global.resolve<Feature>("b")!!.variable!!.vectorQuantity.unit.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /** ConstNet shall compute bottom-up with sqr in int and value */
@@ -456,9 +456,9 @@ class FunctionsTests {
             feature a: ScalarValues::Integer = 3 {:>> range = "2 .. 9";}  
             feature b: ScalarValues::Integer = sqr(a); """
         )
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         propagate()
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(9, (global.resolve<Feature>("b")!!.variable!!.idd() as IDD.Leaf).value.min)
         assertEquals(9, (global.resolve<Feature>("b")!!.variable!!.idd() as IDD.Leaf).value.max)
         assertEquals("1", global.resolve<Feature>("b")!!.variable!!.vectorQuantity.unit.toString())
@@ -476,7 +476,7 @@ class FunctionsTests {
         assertEquals(81.0, c.aadd().getRange().min, 0.000001)
         assertEquals(81.0, c.aadd().getRange().max, 0.000001)
         assertEquals("1", c.vectorQuantity.unit.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     @Test
@@ -491,7 +491,7 @@ class FunctionsTests {
         assertEquals(1.5.pow(2.5), global.resolveVar("c")!!.min(), 0.000001)
         assertEquals(3.5.pow(4.5), global.resolveVar("c")!!.max(), 0.000001)
         assertEquals("1", global.resolveVar("b")!!.vectorQuantity.unit.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     @Test
@@ -505,7 +505,7 @@ class FunctionsTests {
         assertEquals(27, global.resolveVar("c")!!.idd().getRange().min)
         assertEquals(27, global.resolveVar("c")!!.idd().getRange().max)
         assertEquals("1", global.resolveVar("b")!!.vectorQuantity.unit.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     @Test
@@ -520,7 +520,7 @@ class FunctionsTests {
         assertEquals(81, c.idd().getRange().max)
         assertEquals("1", global.resolveVar("b")!!.vectorQuantity.unit.toString())
         assertEquals("1", global.resolveVar("b")!!.vectorQuantity.unit.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     @Test
@@ -531,7 +531,7 @@ class FunctionsTests {
         )
         propagate()
         assertEquals(-5.0, global.resolveVar("a")!!.aadd().getRange().min, 0.00001)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     @Test
@@ -541,7 +541,7 @@ class FunctionsTests {
             feature a: ScalarValues::Real = pow(-1.0,2.0);""")
         propagate()
         assertEquals(1.0, global.resolveVar("a")!!.aadd().getRange().min, 0.00001)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     @Test
@@ -550,7 +550,7 @@ class FunctionsTests {
             feature a: ScalarValues::Real = oneOf(0.1..2.0); 
             feature b: ScalarValues::Real = pow(a, [1.0..2.0]);""")
         propagate()
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         val a = global.resolveVar("a")!!
         val b = global.resolveVar("b")!!
         assertEquals(0.1, a.vectorQuantity.getMinAsDouble(), 0.0001)
@@ -570,7 +570,7 @@ class FunctionsTests {
         propagate()
         assertEquals(15.0, global.resolveVar("sum")!!.aadd().getRange().max, 0.00001)
         assertEquals(3.0, global.resolveVar("sum")!!.aadd().getRange().min, 0.00001)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     @Test
@@ -597,7 +597,7 @@ class FunctionsTests {
             feature b: ScalarValues::Real = oneOf(1.0 .. 5.0);
             feature sum: ScalarValues::Real = sum_i( a, b, i ){:>> range = "3.0..10.0";}""")
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         assertEquals(3.0, global.resolveVar("sum")!!.aadd().getRange().min, 0.00001)
         assertEquals(10.0, global.resolveVar("sum")!!.aadd().getRange().max, 0.00001)
         assertEquals(1.0, global.resolveVar("a")!!.aadd().getRange().min, 0.00001)
@@ -605,7 +605,7 @@ class FunctionsTests {
         assertEquals(1.5, global.resolveVar("b")!!.aadd().getRange().min, 0.00001)
         // with int the borders would be 3 and 4, but rounding makes the intervals bigger
         assertEquals(4.5, global.resolveVar("b")!!.aadd().getRange().max, 0.00001)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     @Test
@@ -618,14 +618,14 @@ class FunctionsTests {
             feature sum: ScalarValues::Real = sum_i( a, b, i ) {:>> range = "3.0..14.0";}
             """)
         propagate()
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(3.0, global.resolveVar("sum")!!.aadd().getRange().min, 0.00001)
         assertEquals(14.0, global.resolveVar("sum")!!.aadd().getRange().max, 0.00001)
         assertEquals(3.0, global.resolveVar("b")!!.aadd().getRange().min, 0.00001)
         assertEquals(5.0, global.resolveVar("b")!!.aadd().getRange().max, 0.00001)
         assertEquals(0.0, global.resolveVar("a")!!.aadd().getRange().min, 0.00001)
         assertEquals(5.5, global.resolveVar("a")!!.aadd().getRange().max, 0.00001)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     //Calculations with evalDown do not work
@@ -640,14 +640,14 @@ class FunctionsTests {
             feature sum: ScalarValues::Real = sum_i( a, b, s*i ) {:>> range = "30.0..140.0";}"""
         )
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         assertEquals(30.0, global.resolveVar("sum")!!.aadd().getRange().min, 0.00001)
         assertEquals(140.0, global.resolveVar("sum")!!.aadd().getRange().max, 0.00001)
         assertEquals(3.0, global.resolve<Feature>("b")!!.variable!!.aadd().getRange().min, 0.00001)
         assertEquals(5.0, global.resolve<Feature>("b")!!.variable!!.aadd().getRange().max, 0.00001)
         assertEquals(1.5, global.resolveVar("a")!!.aadd().getRange().min, 0.00001)
         assertEquals(3.5, global.resolveVar("a")!!.aadd().getRange().max, 0.00001)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     //Calculations with evalDown do not work
@@ -719,7 +719,7 @@ class FunctionsTests {
              feature b: ScalarValues::Integer = oneOf(3..4);
              feature sum: ScalarValues::Integer = sum_i( a, b, i ) {:>> range = "3..10";}""")
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         assertEquals(3, global.resolveVar("sum")!!.idd().getRange().min)
         assertEquals(10, global.resolveVar("sum")!!.idd().getRange().max)
         assertEquals(1, global.resolveVar("a")!!.idd().getRange().min)
@@ -737,14 +737,14 @@ class FunctionsTests {
             feature b: ScalarValues::Integer = oneOf(3..5);
             feature sum: ScalarValues::Integer = sum_i( a, b, i ) {:>> range = "3..14";}""")
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         assertEquals(9, global.resolveVar("sum")!!.idd().getRange().min)
         assertEquals(10, global.resolveVar("sum")!!.idd().getRange().max)
         assertEquals(2, global.resolveVar("a")!!.idd().getRange().min)
         assertEquals(3, global.resolveVar("a")!!.idd().getRange().max)
         assertEquals(3, global.resolveVar("b")!!.idd().getRange().min)
         assertEquals(5, global.resolveVar("b")!!.idd().getRange().max)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     @Test
@@ -757,11 +757,11 @@ class FunctionsTests {
             """, catchExceptions = true
         )
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val result = global.resolveVar("c")
         assertEquals(1.0, result!!.vectorQuantity.getMinAsDouble(), 0.000001)
         assertEquals(2.0, result.vectorQuantity.getMaxAsDouble(), 0.000001)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -772,11 +772,11 @@ class FunctionsTests {
             """.trimIndent(), catchExceptions = true
         )
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val result = global.resolveVar("a")
         assertEquals(6.0, result!!.vectorQuantity.getMinAsDouble(), 0.000001)
         assertEquals(6.0, result.vectorQuantity.getMaxAsDouble(), 0.000001)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -786,11 +786,11 @@ class FunctionsTests {
             feature b: ScalarValues::Real = max(8.0, 2.0+a) {:>> range = "8.0..8.0";}
             """.trimIndent(), catchExceptions = true)
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val result = global.resolveVar("a")
         assertEquals(1.0, result!!.vectorQuantity.getMinAsDouble(), 0.000001)
         assertEquals(6.0, result.vectorQuantity.getMaxAsDouble(), 0.000001)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -801,11 +801,11 @@ class FunctionsTests {
             feature c: ScalarValues::Real = max(a,b);
             """)
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val result = global.resolveVar("c")
         assertEquals(3.0, result!!.vectorQuantity.getMinAsDouble(), 0.000001)
         assertEquals(3.0, result.vectorQuantity.getMaxAsDouble(), 0.000001)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -816,11 +816,11 @@ class FunctionsTests {
             feature c: ScalarValues::Real = max(a,b) {:>> range = "4.0..4.0";}
             """.trimIndent())
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val result = global.resolveVar("b")
         assertEquals(4.0, result!!.vectorQuantity.getMinAsDouble(), 0.000001)
         assertEquals(4.0, result.vectorQuantity.getMaxAsDouble(), 0.000001)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -831,11 +831,11 @@ class FunctionsTests {
             feature c: ScalarValues::Real = max(sqrt(9.0)+a,sqrt(4.0)+b);
             """)
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val result = global.resolveVar("c")
         assertEquals(8.0, result!!.vectorQuantity.getMinAsDouble(), 0.000001)
         assertEquals(8.0, result.vectorQuantity.getMaxAsDouble(), 0.000001)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
 
@@ -845,11 +845,11 @@ class FunctionsTests {
                   feature c: ScalarValues::Real = max(sqrt(9.0)+3.0,sqrt(4.0)+5.0);
             """)
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val result = global.resolveVar("c")
         assertEquals(7.0, result!!.vectorQuantity.getMinAsDouble(), 0.000001)
         assertEquals(7.0, result.vectorQuantity.getMaxAsDouble(), 0.000001)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -861,11 +861,11 @@ class FunctionsTests {
             feature d: ScalarValues::Real {:>> range = "4..5";}
             feature e: ScalarValues::Real = max(a, b, c, d);
         """)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val result = global.resolveVar("e")
         assertEquals(4.0, result!!.vectorQuantity.getMinAsDouble(), 0.000001)
         assertEquals(5.0, result.vectorQuantity.getMaxAsDouble(), 0.000001)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -880,11 +880,11 @@ class FunctionsTests {
             """, catchExceptions = true
         )
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val result = global.resolveVar("e")
         assertEquals(4, result!!.vectorQuantity.value.asIdd().min)
         assertEquals(5, result.vectorQuantity.value.asIdd().max)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Disabled
@@ -899,11 +899,11 @@ class FunctionsTests {
             """.trimIndent(), catchExceptions = true
         )
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val result = global.resolveVar("d")
         assertEquals(4.0, result!!.vectorQuantity.getMinAsDouble(), 0.000001)
         assertEquals(4.0, result.vectorQuantity.getMaxAsDouble(), 0.000001)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -918,11 +918,11 @@ class FunctionsTests {
             """.trimIndent(), catchExceptions = true
         )
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val result = global.resolveVar("d")
         assertEquals(4, result!!.vectorQuantity.value.asIdd().min)
         assertEquals(4, result.vectorQuantity.value.asIdd().max)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -937,7 +937,7 @@ class FunctionsTests {
             """.trimIndent(), catchExceptions = true
         )
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val result = global.resolveVar("a")
         assertEquals(0.0, result!!.vectorQuantity.getMinAsDouble(), 0.000001)
         assertEquals(4.0, result.vectorQuantity.getMaxAsDouble(), 0.000001)
@@ -950,7 +950,7 @@ class FunctionsTests {
         val result3 = global.resolveVar("d")
         assertEquals(3.0, result3!!.vectorQuantity.getMinAsDouble(), 0.000001)
         assertEquals(4.0, result3.vectorQuantity.getMaxAsDouble(), 0.000001)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -965,7 +965,7 @@ class FunctionsTests {
             """.trimIndent(), catchExceptions = true
         )
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val result = global.resolveVar("a")
         assertEquals(0, result!!.vectorQuantity.value.asIdd().min)
         assertEquals(4, result.vectorQuantity.value.asIdd().max)
@@ -978,7 +978,7 @@ class FunctionsTests {
         val result3 = global.resolveVar("d")
         assertEquals(3, result3!!.vectorQuantity.value.asIdd().min)
         assertEquals(4, result3.vectorQuantity.value.asIdd().max)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -990,11 +990,11 @@ class FunctionsTests {
             """, catchExceptions = true
         )
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val result = global.resolveVar("c")
         assertEquals(0.0, result!!.vectorQuantity.getMinAsDouble(), 0.000001)
         assertEquals(1.0, result.vectorQuantity.getMaxAsDouble(), 0.000001)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -1005,11 +1005,11 @@ class FunctionsTests {
             """.trimIndent(), catchExceptions = true
         )
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val result = global.resolveVar("a")
         assertEquals(6.0, result!!.vectorQuantity.getMinAsDouble(), 0.000001)
         assertEquals(6.0, result.vectorQuantity.getMaxAsDouble(), 0.000001)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -1022,11 +1022,11 @@ class FunctionsTests {
             """, catchExceptions = true
         )
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val result = global.resolveVar("c")
         assertEquals(2.0, result!!.vectorQuantity.getMinAsDouble(), 0.000001)
         assertEquals(2.0, result.vectorQuantity.getMaxAsDouble(), 0.000001)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -1039,11 +1039,11 @@ class FunctionsTests {
             """.trimIndent(), catchExceptions = true
         )
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val result = global.resolveVar("b")
         assertEquals(3.0, result!!.vectorQuantity.getMinAsDouble(), 0.000001)
         assertEquals(6.0, result.vectorQuantity.getMaxAsDouble(), 0.000001)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -1055,11 +1055,11 @@ class FunctionsTests {
             """, catchExceptions = true
         )
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val result = global.resolveVar("c")
         assertEquals(7.0, result!!.vectorQuantity.getMinAsDouble(), 0.000001)
         assertEquals(7.0, result.vectorQuantity.getMaxAsDouble(), 0.000001)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
 
@@ -1069,11 +1069,11 @@ class FunctionsTests {
             feature c: ScalarValues::Real = min(sqrt(9.0)+3.0,sqrt(4.0)+5.0);
             """)
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val result = global.resolveVar("c")
         assertEquals(6.0, result!!.vectorQuantity.getMinAsDouble(), 0.000001)
         assertEquals(6.0, result.vectorQuantity.getMaxAsDouble(), 0.000001)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -1088,11 +1088,11 @@ class FunctionsTests {
             """, catchExceptions = true
         )
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val result = global.resolveVar("e")
         assertEquals(0.0, result!!.vectorQuantity.getMinAsDouble(), 0.000001)
         assertEquals(1.0, result.vectorQuantity.getMaxAsDouble(), 0.000001)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -1107,11 +1107,11 @@ class FunctionsTests {
             """, catchExceptions = true
         )
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val result = global.resolveVar("e")
         assertEquals(0, result!!.vectorQuantity.value.asIdd().min)
         assertEquals(1, result.vectorQuantity.value.asIdd().max)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -1126,11 +1126,11 @@ class FunctionsTests {
             """.trimIndent(), catchExceptions = true
         )
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val result = global.resolveVar("a")
         assertEquals(0.0, result!!.vectorQuantity.getMinAsDouble(), 0.000001)
         assertEquals(0.0, result.vectorQuantity.getMaxAsDouble(), 0.000001)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -1145,11 +1145,11 @@ class FunctionsTests {
             """.trimIndent(), catchExceptions = true
         )
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val result = global.resolveVar("a")
         assertEquals(0, result!!.vectorQuantity.value.asIdd().min)
         assertEquals(0, result.vectorQuantity.value.asIdd().max)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -1165,7 +1165,7 @@ class FunctionsTests {
         assertEquals(4.0, e.vectorQuantity.getMinAsDouble(), 0.000001)
         assertEquals(4.0, e.vectorQuantity.getMinAsDouble(), 0.000001)
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val result = global.resolveVar("a")
         assertEquals(4.0, result!!.vectorQuantity.getMinAsDouble(), 0.000001)
         assertEquals(7.0, result.vectorQuantity.getMaxAsDouble(), 0.000001)
@@ -1178,7 +1178,7 @@ class FunctionsTests {
         val result3 = global.resolveVar("d")
         assertEquals(4.0, result3!!.vectorQuantity.getMinAsDouble(), 0.000001)
         assertEquals(4.0, result3.vectorQuantity.getMaxAsDouble(), 0.000001)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
 
@@ -1193,7 +1193,7 @@ class FunctionsTests {
             """.trimIndent(), catchExceptions = true
         )
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val result = global.resolveVar("a")
         assertEquals(4, result!!.vectorQuantity.value.asIdd().min)
         assertEquals(7, result.vectorQuantity.value.asIdd().max)
@@ -1206,7 +1206,7 @@ class FunctionsTests {
         val result3 = global.resolveVar("d")
         assertEquals(4, result3!!.vectorQuantity.value.asIdd().min)
         assertEquals(4, result3.vectorQuantity.value.asIdd().max)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
 
@@ -1219,12 +1219,12 @@ class FunctionsTests {
             """, catchExceptions = true
         )
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val result = global.resolveVar("c")
         assertEquals(0.5, result!!.vectorQuantity.getMinAsDouble(), 0.000001)
         assertEquals(0.5, result.vectorQuantity.getMaxAsDouble(), 0.000001)
         assertEquals(1, result.vectorQuantity.values.size )
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -1236,12 +1236,12 @@ class FunctionsTests {
             """, catchExceptions = true
         )
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val result = global.resolveVar("c")
         assertEquals(1.5, result!!.vectorQuantity.getMinAsDouble(), 0.000001)
         assertEquals(1.5, result.vectorQuantity.getMaxAsDouble(), 0.000001)
         assertEquals(1, result.vectorQuantity.values.size )
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -1252,12 +1252,12 @@ class FunctionsTests {
             """, catchExceptions = true
         )
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val result = global.resolveVar("c")
         assertEquals(0, result!!.vectorQuantity.value.asIdd().min)
         assertEquals(0, result.vectorQuantity.value.asIdd().max)
         assertEquals(1, result.vectorQuantity.values.size )
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
     @Test
     fun maxTestOneValueInt1() = testSession("ScalarValues") {
@@ -1267,12 +1267,12 @@ class FunctionsTests {
             """, catchExceptions = true
         )
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val result = global.resolveVar("c")
         assertEquals(1, result!!.vectorQuantity.value.asIdd().min)
         assertEquals(1, result.vectorQuantity.value.asIdd().max)
         assertEquals(1, result.vectorQuantity.values.size )
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
 
@@ -1297,13 +1297,13 @@ class FunctionsTests {
                 feature a:ScalarValues::Real = byParts(a); 
             }
             """)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val result = global.resolveVar("b::a")
         assertEquals(0.0, result!!.vectorQuantity.getMinAsDouble(), 0.000001)
         assertEquals(5.0, result.vectorQuantity.getMaxAsDouble(), 0.000001)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -1314,7 +1314,7 @@ class FunctionsTests {
         """
         )
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val test2 = global.resolveVar("Avail")
         assertEquals(0.95, test2!!.vectorQuantity.value.asAadd().min,0.0001)
         assertEquals(1.0, test2.vectorQuantity.value.asAadd().max,0.0001)
@@ -1328,7 +1328,7 @@ class FunctionsTests {
         """
         )
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val test2 = global.resolveVar("reliability")
         assertEquals(0.995, test2!!.vectorQuantity.value.asAadd().min,0.000001)
         assertEquals(1.0, test2.vectorQuantity.value.asAadd().max,0.000001)
@@ -1344,7 +1344,7 @@ class FunctionsTests {
         """
         )
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val test2 = global.resolveVar("Avail")
         assertEquals(100, test2!!.vectorQuantity.value.asIdd().min)
         assertEquals(100, test2.vectorQuantity.value.asIdd().max)
@@ -1367,7 +1367,7 @@ class FunctionsTests {
         attribute ASILCalculated: ScalarValues::Integer = calcASIL(severity,exposure,controllability) {:>> range = "4..4";}           
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val test2 = global.resolveVar("controllability")
         assertEquals(3, test2!!.vectorQuantity.value.asIdd().min)
     }
@@ -1389,7 +1389,7 @@ class FunctionsTests {
         attribute ASILCalculated: ScalarValues::Integer = calcASIL(severity,exposure,controllability) {:>> range = "0..0";}
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val test2 = global.resolveVar("controllability")
         assertEquals(0, test2!!.vectorQuantity.value.asIdd().min)
         assertEquals(1, test2.vectorQuantity.value.asIdd().max)
@@ -1398,13 +1398,12 @@ class FunctionsTests {
     @Test
     fun evalUpAndDownUDFInt() = testSession("Calculations", "SI", "Parts") {
         loadSysMLv2(""" 
-        attribute a: ScalarValues::Integer {:>> range = "0..4";}
-        attribute ASILFromAvailability: ScalarValues::Integer = a {:>> range = "0..4";}
-        assert ASIL {ASILFromAvailability == 4}   
-              """
-        )
+            attribute a: ScalarValues::Integer {:>> range = "0..4";}
+            attribute ASILFromAvailability: ScalarValues::Integer = a {:>> range = "0..4";}
+            assert ASIL {ASILFromAvailability == 4}   
+        """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val test2 = global.resolveVar("ASILFromAvailability")
         assertEquals(4, test2!!.vectorQuantity.value.asIdd().min)
         assertEquals(4, test2.vectorQuantity.value.asIdd().max)
@@ -1414,13 +1413,12 @@ class FunctionsTests {
     @Test
     fun evalUpAndDownUDFReal() = testSession("Calculations", "SI", "Parts") {
         loadSysMLv2(""" 
-        attribute a: ScalarValues::Real {:>> range = "0.0..4.0";}
-        attribute ASILFromAvailability: ScalarValues::Real = a {:>> range = "0.0..4.0";}
-        assert ASIL {ASILFromAvailability == 4.0}   
-              """
-        )
+            attribute a: ScalarValues::Real {:>> range = "0.0..4.0";}
+            attribute ASILFromAvailability: ScalarValues::Real = a {:>> range = "0.0..4.0";}
+            assert ASIL {ASILFromAvailability == 4.0}   
+        """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val test2 = global.resolveVar("ASILFromAvailability")
         assertEquals(4.0, test2!!.vectorQuantity.value.asAadd().min)
         assertEquals(4.0, test2.vectorQuantity.value.asAadd().max)
@@ -1447,7 +1445,7 @@ class FunctionsTests {
             assert ASIL {ASIlFromReliability == ASILFromAvailability}  
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val test2 = global.resolveVar("ASILFromAvailability")
         assertEquals(4, test2!!.vectorQuantity.value.asIdd().min)
         assertEquals(4, test2.vectorQuantity.value.asIdd().max)

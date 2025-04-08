@@ -20,7 +20,7 @@ class ItemAndOccurrenceUsageTests {
         loadSysMLv2("""
             item p; 
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p = global.resolve<ItemUsage>("p")
         assertNotNull(p)
         // assertTrue(p.superclass?.ref?.qualifiedName == "Items::Item")
@@ -35,7 +35,7 @@ class ItemAndOccurrenceUsageTests {
             item def p1; 
             item def p2 :> p1; 
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p2 = global.resolve<ItemDefinition>("p2")
         assertNotNull(p2)
         assertTrue(p2.allSupertypes().first().qualifiedName == "p1")
@@ -49,7 +49,7 @@ class ItemAndOccurrenceUsageTests {
         loadSysMLv2("""
             occurrence p; 
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p = global.resolve<OccurrenceUsage>("p")
         assertNotNull(p)
         assertEquals("Occurrences::Occurrence", p.allSupertypes().first().qualifiedName)
@@ -64,7 +64,7 @@ class ItemAndOccurrenceUsageTests {
             occurrence def p1; 
             occurrence def p2 :> p1; 
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p2 = global.resolve<OccurrenceDefinition>("p2")
         assertNotNull(p2)
         assertTrue(p2.allSupertypes().first().qualifiedName == "p1")

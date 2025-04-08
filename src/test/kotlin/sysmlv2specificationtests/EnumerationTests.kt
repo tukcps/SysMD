@@ -21,7 +21,7 @@ class EnumerationTests {
         enum def EnumerationDef1;
 
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -39,6 +39,6 @@ class EnumerationTests {
             enum enum2;
         }
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 }

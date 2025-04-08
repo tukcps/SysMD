@@ -20,6 +20,13 @@ interface ModelServices:
     var model: Session?
 
     /**
+     * The indices in the input string during a parse run.
+     */
+    var indices: IntRange?
+
+    var input: CharSequence?
+
+    /**
      * Resolves the names and UUID used in Identity to references and UUID.
      * It returns 'true' if a field was updated; the function is overridden
      * by other classes and used during initialization.

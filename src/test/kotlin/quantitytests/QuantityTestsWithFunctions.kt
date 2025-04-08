@@ -18,7 +18,7 @@ class QuantityTestsWithFunctions {
            feature b: SI::Length  = sqrt(a); 
         """)
         propagate()
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals("m", global.resolveVar("b")!!.vectorQuantity.unit.toString())
         assertEquals(2.0, global.resolveVar("b")!!.vectorQuantity.getMinAsDouble(), 0.00001)
         assertEquals(3.0, global.resolveVar("b")!!.vectorQuantity.getMaxAsDouble(), 0.00001)
@@ -33,7 +33,7 @@ class QuantityTestsWithFunctions {
             feature b: SI::ElectricalResistance = sqrt(a); """
         )
         propagate()
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals("2..3 Ω", global.resolveVar("b")!!.vectorQuantity.toString())
     }
 
@@ -47,7 +47,7 @@ class QuantityTestsWithFunctions {
         )
         propagate()
         assertEquals("kg m^3 / A^2 s^3", global.resolveVar("b")!!.vectorQuantity.unit.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /** Quantity with sqrt */
@@ -60,7 +60,7 @@ class QuantityTestsWithFunctions {
         )
         propagate()
         assertEquals("kg^6 m^7 / A^7 s^16", global.resolveVar("b")!!.vectorQuantity.unit.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /** Quantity with no unit */
@@ -74,7 +74,7 @@ class QuantityTestsWithFunctions {
 
         propagate()
         assertEquals("400e30..8.1e33", global.resolveVar("b")!!.vectorQuantity.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /** Quantity with sqr */
@@ -88,7 +88,7 @@ class QuantityTestsWithFunctions {
 
         propagate()
         assertEquals("m^2", global.resolveVar("b")!!.vectorQuantity.unit.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /** Quantity with sqr */
@@ -102,7 +102,7 @@ class QuantityTestsWithFunctions {
         propagate()
         assertEquals("kg^2 m^4 / A^4 s^6", global.resolveVar("b")!!.vectorQuantity.unit.toString())
         assertEquals("ElectricalResistance", global.resolveVar("a")!!.vectorQuantity.getDimension())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /** Quantity with sqr */
@@ -114,7 +114,7 @@ class QuantityTestsWithFunctions {
             feature b: SI::Quantity =sqr(a){:>> unit = "Ohm^2 m^2"; :>> range = "2.0 .. 9.0";}""")
         propagate()
         assertEquals("kg^2 m^6 / A^4 s^6", global.resolveVar("b")!!.vectorQuantity.unit.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /**
@@ -129,7 +129,7 @@ class QuantityTestsWithFunctions {
         )
         propagate()
         assertEquals("kg^12 m^14 / A^14 s^32", global.resolveVar("b")!!.vectorQuantity.unit.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     @Test
@@ -139,7 +139,7 @@ class QuantityTestsWithFunctions {
             feature b: ScalarValues::Real=sin(a);
             feature c: ScalarValues::Real=cos(a);""")
         propagate()
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(0.479425538604203,global.resolveVar("b")!!.vectorQuantity.value.asAadd().min, 0.0001)
         assertEquals(0.8775825618903725,global.resolveVar("c")!!.vectorQuantity.value.asAadd().min, 0.0001)
     }
@@ -151,7 +151,7 @@ class QuantityTestsWithFunctions {
             feature b: ScalarValues::Real=sin(a);
             feature c: ScalarValues::Real=cos(a);""")
             propagate()
-            assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+            assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
             assertEquals(0.8414709848078965,global.resolveVar("b")!!.vectorQuantity.value.asAadd().min, 0.0001)
             assertEquals(0.5403023058681394,global.resolveVar("c")!!.vectorQuantity.value.asAadd().min, 0.0001)
         }
@@ -164,7 +164,7 @@ class QuantityTestsWithFunctions {
             feature c: ScalarValues::Real=cos(a); """
         )
         propagate()
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(0.479425538604203,global.resolveVar("b")!!.vectorQuantity.value.asAadd().min, 0.0001)
         assertEquals(0.8414709848078965,global.resolveVar("b")!!.vectorQuantity.value.asAadd().max, 0.0001)
         assertEquals(0.5403023058681394,global.resolveVar("c")!!.vectorQuantity.value.asAadd().min, 0.0001)
@@ -185,7 +185,7 @@ class QuantityTestsWithFunctions {
         assertEquals("m", global.resolveVar("b")!!.vectorQuantity.unit.toString())
         assertEquals(2.0, global.resolveVar("b")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(2.0, global.resolveVar("b")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     @Test
@@ -199,7 +199,7 @@ class QuantityTestsWithFunctions {
         propagate()
         assertEquals(2, global.resolveVar("b")!!.vectorQuantity.value.asIdd().min)
         assertEquals(3, global.resolveVar("b")!!.vectorQuantity.value.asIdd().max)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /**
@@ -216,7 +216,7 @@ class QuantityTestsWithFunctions {
         assertEquals("m", global.resolveVar("b")!!.vectorQuantity.unit.toString())
         assertEquals(1.0, global.resolveVar("b")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(4.0, global.resolveVar("b")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     @Test
@@ -230,7 +230,7 @@ class QuantityTestsWithFunctions {
         propagate()
         assertEquals(1, global.resolveVar("b")!!.vectorQuantity.value.asIdd().min)
         assertEquals(2, global.resolveVar("b")!!.vectorQuantity.value.asIdd().max)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     @Test
@@ -242,7 +242,7 @@ class QuantityTestsWithFunctions {
         propagate()
         assertEquals(-3, global.resolveVar("b")!!.vectorQuantity.value.asIdd().min)
         assertEquals(-1, global.resolveVar("b")!!.vectorQuantity.value.asIdd().max)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /**
@@ -259,7 +259,7 @@ class QuantityTestsWithFunctions {
         val y = global.resolveVar("y")!!
         assertEquals(2.0, y.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(2.0, y.vectorQuantity.getMaxAsDouble(), 0.0001)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /**
@@ -276,7 +276,7 @@ class QuantityTestsWithFunctions {
         val y = global.resolveVar("y")!!
         assertEquals(2.0, y.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(2.0, y.vectorQuantity.getMaxAsDouble(), 0.0001)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
 
@@ -293,7 +293,7 @@ class QuantityTestsWithFunctions {
         val y = global.resolveVar("y")!!
         assertEquals(1.0, y.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(1.0, y.vectorQuantity.getMaxAsDouble(), 0.0001)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
 
@@ -311,7 +311,7 @@ class QuantityTestsWithFunctions {
         val y = global.resolveVar("y")!!
         assertEquals(1.0, y.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(1.0, y.vectorQuantity.getMaxAsDouble(), 0.0001)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /**
@@ -325,7 +325,7 @@ class QuantityTestsWithFunctions {
                 feature y: ScalarValues::Real = a^b;
             """)
         assertEquals(125.0, global.resolveVar("y")!!.vectorQuantity.getMinAsDouble(), 0.0001)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /**
@@ -339,7 +339,7 @@ class QuantityTestsWithFunctions {
                 feature y: ScalarValues::Integer = a^b;
             """)
         assertEquals(125, global.resolveVar("y")!!.vectorQuantity.idd().getRange().min)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /**
@@ -355,7 +355,7 @@ class QuantityTestsWithFunctions {
         propagate()
         assertEquals(5.0, global.resolveVar("a")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(5.0, global.resolveVar("a")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /**
@@ -371,7 +371,7 @@ class QuantityTestsWithFunctions {
         propagate()
         assertEquals(5, global.resolveVar("a")!!.vectorQuantity.idd().getRange().min)
         assertEquals(5, global.resolveVar("a")!!.vectorQuantity.idd().getRange().max)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     @Test
@@ -382,7 +382,7 @@ class QuantityTestsWithFunctions {
             feature t2: SI::Quantity = t1{:>> unit = "min^2";}"""
         )
         propagate()
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(3600.0, global.resolveVar("t2")!!.aadd().getRange().max, 0.0001)
     }
 
@@ -393,7 +393,7 @@ class QuantityTestsWithFunctions {
                 feature t2: SI::Acceleration  = t1;
             """)
         propagate()
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(0.2777777, global.resolveVar("t2")!!.aadd().getRange().min, 0.0001)
     }
 
@@ -404,7 +404,7 @@ class QuantityTestsWithFunctions {
                 feature t2: SI::Quantity = t1 {:>> unit = "mN/dm^2";}
             """)
         propagate()
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(10.0, global.resolveVar("t2")!!.aadd().getRange().min, 0.0001)
     }
 
@@ -415,7 +415,7 @@ class QuantityTestsWithFunctions {
             """)
         propagate()
         assertEquals("Hallo", global.resolveVar("name")!!.vectorQuantity.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     @Test
@@ -427,6 +427,6 @@ class QuantityTestsWithFunctions {
          /*feature t: SI::Acceleration( - 9.81) [m/s^2];*/)
         propagate()
         assertEquals("-9.81 m/s^2", global.resolveVar("s")!!.vectorQuantity.toString())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 }

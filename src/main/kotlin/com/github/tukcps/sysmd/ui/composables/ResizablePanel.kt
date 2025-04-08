@@ -40,7 +40,7 @@ object PanelSize {
 /**
  * The state of collapsable panel.
  */
-internal class PanelState(isExpanded: Boolean) {
+internal class PaneState(isExpanded: Boolean) {
     val collapsedSize = PanelSize.COLLAPSED_SIZE
     var expandedSize by mutableStateOf(300.dp)
     val expandedSizeMin = PanelSize.EXPANDED_SIZE_MIN
@@ -68,7 +68,7 @@ internal fun ResizablePanel(
     agendaIsEmpty: MutableState<Boolean>,
     panelPosition: ResizablePanelSide = ResizablePanelSide.LEFT_SIDE,
     modifier: Modifier,
-    state: PanelState,
+    state: PaneState,
     content: @Composable () -> Unit,
 ) {
     // After recompile and with the occurrence of an error, the agenda is shown directly

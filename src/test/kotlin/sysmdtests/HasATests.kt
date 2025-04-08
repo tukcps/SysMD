@@ -20,7 +20,7 @@ class HasATests {
      */
     @Test fun sysMdCreatesValueFeature() = testSession("ScalarValues") {
         loadKerML("feature x: ScalarValues::Real;")
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         assertNotNull(get().filterIsInstance<Feature>().find { it.declaredName == "x" })
     }
 
@@ -35,7 +35,7 @@ class HasATests {
             feature b: SI::ElectricCurrent (2.0 .. 4.0) [A]; 
         }        
         """)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
 
@@ -86,7 +86,7 @@ class HasATests {
         assertEquals(IntegerRange(1, 3), b1.multiplicity, "Multiplicity must be 1..3")
 
         loadSysMD("""b hasA feature x: a [1 .. 2].""")
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val b2 = global.resolve<Feature>("b::x")!!
         assertEquals(IntegerRange(1, 2), b2.multiplicity, "An already existing feature shall be updated")
     }
@@ -97,7 +97,7 @@ class HasATests {
      */
     @Test fun multiplicityTest() = testSession("ScalarValues") {
         loadKerML("feature y: Base::Anything [2 .. 3]; ")
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val y = global.resolve<Feature>("y")
         loadKerML("feature y: Base::Anything [3 .. 4]; ")
         assertEquals(IntegerRange(3, 4), y?.multiplicity)
@@ -109,7 +109,7 @@ class HasATests {
         loadKerML("""
             package X { feature pi: ScalarValues::Real = 3.14; }
         """.trimIndent())
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val x = global.getOwnedElement("X")
         assertNotNull(x)
         val pi = x.getOwnedElement("pi")
@@ -126,7 +126,7 @@ class HasATests {
                 connector conn: ISO26262::implements from c to f; 
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val c = global.resolve<Feature>("c")
         assertNotNull(c)
         val f = global.resolve<Feature>("f")
@@ -146,7 +146,7 @@ class HasATests {
                 connector f: ISO26262::implements from x to funktion;
             } // = it implements funktion.
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val x = global.getOwned<Element>("x")
         assertNotNull(x)
         val f = x.getOwned<Connector>("f")
@@ -172,7 +172,7 @@ class HasATests {
             feature b: ScalarValues::Real;  
             connector c: Signal from a to b; 
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val c = global.getOwned<Connector>("c")
         assertNotNull(c)
         assertEquals(1, c.target.size)

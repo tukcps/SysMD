@@ -15,7 +15,7 @@ class AnnotationsTests {
         loadKerML("""
             comment /* comment on something */ 
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val comment = global.getOwnedElementOfType<AnnotatingElement>()
         assertTrue(comment is Comment)
         assertEquals( "comment on something", comment.body)
@@ -26,7 +26,7 @@ class AnnotationsTests {
         loadKerML("""
             comment test /* comment on something */ 
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val comment = global.getOwnedElementOfType<AnnotatingElement>()
         assertTrue(comment is Comment)
         assertEquals( "comment on something", comment.body)
@@ -39,7 +39,7 @@ class AnnotationsTests {
                 namespace x; 
                 comment test about x /* comment on something */ 
             """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val comment = global.getOwnedElementOfType<AnnotatingElement>()
         assertTrue(comment is Comment)
         assertEquals( "comment on something", comment.body)
@@ -56,7 +56,7 @@ class AnnotationsTests {
             namespace y; 
             comment test about x, y /* comment on something */
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val comment = global.getOwnedElementOfType<AnnotatingElement>()
         assertTrue(comment is Comment)
         assertEquals( "comment on something", comment.body)
@@ -74,7 +74,7 @@ class AnnotationsTests {
         loadKerML("""
             doc test /* comment on something */ 
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val doc = global.getOwnedElementOfType<AnnotatingElement>()
         assertTrue(doc is Documentation)
         assertEquals( "comment on something", doc.body)
@@ -86,7 +86,7 @@ class AnnotationsTests {
         loadKerML("""
             rep test language some /* code on something */ 
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val rep = global.getOwnedElementOfType<AnnotatingElement>()
         assertTrue(rep is TextualRepresentation)
         assertEquals( "code on something", rep.body)
@@ -99,7 +99,7 @@ class AnnotationsTests {
         loadKerML("""
             language sysmd /* code on something */ 
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val rep = global.getOwnedElementOfType<AnnotatingElement>()
         assertTrue(rep is TextualRepresentation)
         assertEquals( "code on something", rep.body)
@@ -112,7 +112,7 @@ class AnnotationsTests {
         loadKerML("""
             rep test language ltl /* ltl expressions */ 
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val rep = global.getOwnedElementOfType<AnnotatingElement>()
         assertTrue(rep is TextualRepresentation)
         assertEquals( "ltl", rep.language)

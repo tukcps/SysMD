@@ -106,7 +106,7 @@ class KerMLModelTests {
         val p2 = FeatureImplementation(declaredName = "name")
         val p2Created = create(p2, global)
         create(SpecializationImplementation(p2Created, "ScalarValues::Real"), p2Created)
-        assertEquals(1, status.updates.size)
+        assertEquals(1, status.updatedValues.size)
     }
 
 
@@ -122,7 +122,7 @@ class KerMLModelTests {
             it.elementId = pkg.elementId!!
         }
         create(pkg2, global)
-        assertEquals(1, status.updates.size)
+        assertEquals(1, status.updatedValues.size)
     }
 
 
@@ -138,7 +138,7 @@ class KerMLModelTests {
         val updated = create(pkg2, global)
         assertEquals(pkg, updated)
         assertEquals("test", pkg.declaredShortName)
-        assertEquals(1, status.updates.size)
+        assertEquals(1, status.updatedValues.size)
     }
 
     /** A second class with the same name in the same element is not allowed. */
@@ -160,7 +160,7 @@ class KerMLModelTests {
         val elem1 = create(ElementImplementation(declaredName="a"), global)
         elem1.updated = false
         create(ElementImplementation(declaredName="a"), global)
-        assertEquals(0, status.updates.size)
+        assertEquals(0, status.updatedValues.size)
     }
 
     /**
@@ -171,7 +171,7 @@ class KerMLModelTests {
         val elem1 = create(ElementImplementation(declaredName="a"), global)
         elem1.updated = false
         val elem2 = create(ElementImplementation(declaredName="a", declaredShortName = "short"), global)
-        assertEquals(1, status.updates.size)
+        assertEquals(1, status.updatedValues.size)
         assertEquals(elem1, elem2)
     }
 
@@ -184,7 +184,7 @@ class KerMLModelTests {
         elem1.updated = false
         val update = ElementImplementation(elementId = elem1.elementId, declaredName = "b")
         val elem2 = create(update, global)
-        assertEquals(1, status.updates.size)
+        assertEquals(1, status.updatedValues.size)
         assertEquals( "b", elem1.declaredName )
         assertEquals(elem1, elem2)
     }
@@ -256,7 +256,7 @@ class KerMLModelTests {
             type a :> Base::Anything { feature x [1..2]; }
             type b :> a; 
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val ax = global.resolve<Feature>("a::x")!!
         val bx = global.resolve<Feature>("b::x")!!
         assertEquals(1, ax.ownedElement.filter { it.ref is Specialization }.size)

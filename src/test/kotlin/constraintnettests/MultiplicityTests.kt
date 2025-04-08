@@ -22,7 +22,7 @@ class MultiplicityTests {
                 feature v: ScalarValues::Integer(1) = p::multiplicity;
         """.trimIndent())
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p = global.resolve<Feature>("p")
         val m = p?.resolve<Multiplicity>("multiplicity")
         val v = global.resolve<Feature>("v")!!.variable
@@ -40,7 +40,7 @@ class MultiplicityTests {
            feature p [0 .. 2];
            feature v: ScalarValues::Integer(2) = p::multiplicity*2;
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         propagate()
         val p = global.resolve<Feature>("p")
         val m = p?.resolve<Multiplicity>("multiplicity")?.variable
@@ -64,7 +64,7 @@ class MultiplicityTests {
                 }
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val weight = global.resolveVar("b::weight")
         assertNotNull(weight)
         assertEquals(0L, global.resolve<Feature>("b::partC::multiplicity")!!.variable!!.vectorQuantity.value.asIdd().min)
@@ -86,7 +86,7 @@ class MultiplicityTests {
                 }
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val w = global.resolveVar("b::weight")
         assertNotNull(w)
         assertEquals(0, global.resolveVar("b::partC::multiplicity")!!.vectorQuantity.value.asIdd().min)

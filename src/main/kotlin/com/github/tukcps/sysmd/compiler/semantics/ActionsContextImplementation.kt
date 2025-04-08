@@ -1,6 +1,6 @@
 package com.github.tukcps.sysmd.compiler.semantics
 
-import io.github.tukcps.aadd.values.IntegerRange
+import com.github.tukcps.sysmd.compiler.KerML
 import com.github.tukcps.sysmd.compiler.scanner.Token
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.model.expression.AstNode
@@ -10,8 +10,8 @@ import com.github.tukcps.sysmd.model.kerml.Annotation
 import com.github.tukcps.sysmd.model.kerml.implementation.*
 import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.model.util.SimpleName
-import com.github.tukcps.sysmd.services.session.report
 import com.github.tukcps.sysmd.services.session.Session
+import io.github.tukcps.aadd.values.IntegerRange
 import java.util.*
 
 
@@ -20,10 +20,9 @@ import java.util.*
  * the KerML model in a session.
  * @param model the KerML model in use in a Session
  * between the textual representation element and the generated elements is added.
- * @param textualRepresentation the textual representation that is parsed.
  *
  * The semantic actions add KerML elements to an owner in the KerML model.
- * As the owner is not completely known, we maintain a stack of names of owner:```owners```.
+ * As the owner is not completely known, we maintain a stack of names of the owner:```owners```.
  * Each action has the parameters:
  * - owner (optional, if known), Identity that can also contain reference and/or id.
  * - element to be added if not created by the action.
@@ -37,9 +36,8 @@ import java.util.*
  */
 open class ActionsContextImplementation(
     final override val model: Session,
-    final override var textualRepresentation: TextualRepresentation? = null,
+    final override val compiler: KerML,
     final override val owners: Stack<Resolved<Element>> = Stack<Resolved<Element>>(), // A stack all nexted element's Identifications
-    final override val generateAnnotations: Boolean = false,
     final override var expression: Feature? = null,
     final override var visibilityKind: Token.Kind? = null
 ): ActionsContext {
@@ -56,11 +54,12 @@ open class ActionsContextImplementation(
      * @param ownerPrefix a string with owners separated by '::'
      */
     final override fun initOwners(ownerPrefix: String) {
-        owners.empty()
+        owners.clear()
         val ownersPrefixes = ownerPrefix.split("::")
         owners.push(Resolved(ref = model.global))
         ownersPrefixes.forEach {
-            pushOwner(Resolved(it))
+            if (it.isNotEmpty())
+                pushOwner(Resolved(it))
         }
     }
 
@@ -140,9 +139,9 @@ open class ActionsContextImplementation(
      */
     override fun toEffectiveName(name: QualifiedName): QualifiedName {
         return when {
-            textualRepresentation?.getOwnerPrefix() == "Global" && name.isNotEmpty() -> name
-            name.isNotEmpty() -> "${textualRepresentation?.getOwnerPrefix()}::$name"
-            else -> textualRepresentation?.getOwnerPrefix()?:""
+            ownerName() == "Global" && name.isNotEmpty() -> name
+            name.isNotEmpty() -> "${ownerName()}::$name"
+            else -> ownerName()
         }
     }
 
@@ -279,9 +278,7 @@ open class ActionsContextImplementation(
             "byImplements" -> return AstByImplements(model, namespace, param)
             "linear" -> return AstLinear(model, param)
             "stepInterpolation" -> return AstStepInterpolation(model,param)
-            "Real" -> { semantics.model.report(semantics.expression, "Deprecated: Real; use ToReal"); return AstReal(model, param)}
             "ToReal" -> return AstReal(model, param)
-            "Integer" -> { semantics.model.report(semantics.expression, "Deprecated: Integer; use ToInteger"); return AstInteger(model, param)}
             "ToInteger" -> return AstInteger(model, param)
             "norm" -> return AstNormalizeVector(model,param)
             "angle" -> return AstVectorAngle(model,param)

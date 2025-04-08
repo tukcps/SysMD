@@ -16,9 +16,9 @@ class ErrorReportingTests {
     @Test
     fun reportNotTwice() = testSession("ScalarValues") {
         loadKerML("""Global a b c.""".trimIndent())
-        val nr = status.exceptions.size
+        val nr = status.issues.size
         loadKerML("""Global a b c.""".trimIndent())
-        assertEquals(nr, status.exceptions.size)
+        assertEquals(nr, status.issues.size)
     }
 
     // Unsure whether we need this error or if we simply shall return an empty set.
@@ -30,13 +30,13 @@ class ErrorReportingTests {
         val x = global.resolveVar("x")
         assertEquals(builder.Empty, x?.aadd())
         // shall we report an error? eventually, a user wants exactly this.
-        // assertTrue(status.exceptions.isNotEmpty() )
+        // assertTrue(status.reports.isNotEmpty() )
     }
 
     @Test
     fun reportTypeIncompatible() = testSession("ScalarValues") {
         loadKerML("feature x: Real(2.0 .. 3.0) = 1 + 2.0.")
-        assertTrue(status.exceptions.isNotEmpty())
+        assertTrue(status.issues.isNotEmpty())
     }
 
     @Test
@@ -44,6 +44,6 @@ class ErrorReportingTests {
         loadKerML("""
             xx::yyy hasA feature p: Base::Anything. 
         """.trimIndent())
-        assertTrue(status.exceptions.isNotEmpty())
+        assertTrue(status.issues.isNotEmpty())
     }
 }

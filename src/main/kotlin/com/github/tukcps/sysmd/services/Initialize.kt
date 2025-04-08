@@ -18,8 +18,6 @@ import com.github.tukcps.sysmd.services.inheritance.*
 import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.session.Session
 import com.github.tukcps.sysmd.services.session.getAllOfClass
-import com.github.tukcps.sysmd.services.session.report
-import com.github.tukcps.sysmd.services.session.reportInconsistency
 import java.util.LinkedList
 import kotlin.math.abs
 
@@ -71,11 +69,9 @@ fun Session.initialize(level: Int = 100) {
             if (level > 7) get().filterIsInstance<Type>().forEach { checkConsistencyOfInheritance(it) }
         } catch (error: Exception) {
             if (error is SysMDException)
-                report(error)
+                status.error(message = error.message, cause = error)
             else
-                report(SemanticError(message = "Initialization failed (${error}) ", cause = error))
-            if (!settings.catchExceptions)
-                throw error
+                status.error(message = "Initialization failed (${error}) ", cause = SysMDException("Initialization failed", cause = error))
         }
     }
 }
@@ -131,11 +127,11 @@ internal fun Session.resolveAllNames() {
         elementsIdentified.forEach { dropUnownedElement(it) }
     } while (!stable && iterations > 0)
     if (!stable)
-        report(SysMDInfo("Not enough iterations in initialization; increase no. of iterations", element = global))
+        status.info("Not enough iterations in initialization; increase no. of iterations", element = global)
 
     get().forEach {
         if (it != global && it.owningNamespace == null) {
-            report(it, "Element for which an owner could not be resolved: $it")
+            status.error("Element for which an owner could not be resolved: $it", element =  it)
         }
     }
 
@@ -260,7 +256,7 @@ private fun Session.initVariables() {
                 repo.schedule += it
             }
         } catch (exception: Exception) {
-            report(InternalError(message = exception.message?:"Error during scheduling of constraints", cause = exception))
+            status.error(message = exception.message?:"Error during scheduling of constraints", cause = exception)
             computed += it
             notComputed -= it
             // schedule+=it --- we do not schedule an erroneous dependency.
@@ -286,7 +282,7 @@ private fun Session.initVariables() {
         try {
             it.ast?.evalUpRec()
         } catch (exception: Exception) {
-            report(exception)
+            status.error(exception.message?:"Problem during initialization", cause = exception)
         }
     }
 
@@ -353,7 +349,7 @@ fun Session.checkConsistencyOfInheritance(element: Type) {
                     // Checks for supertype and subclass property
                     // Basic requirement for inheritance must hold in all cases otherwise something went wrong before ...
                     if (superclassFeature in owned.allSupertypes(true))
-                        reportInconsistency(owned, "INCONSISTENCY: specialization ${owned.escapedName()} has feature that must be specialization of feature of its general class ${supertype.escapedName()}")
+                        status.inconsistency("specialization ${owned.escapedName()} has feature that must be specialization of feature of its general class ${supertype.escapedName()}", element = owned)
                     when {
                         owned.specializes(repo.realType) -> {
                             //Convert Ranges or owned and supertype to SI
@@ -373,14 +369,14 @@ fun Session.checkConsistencyOfInheritance(element: Type) {
                                     )
                                     val superClassRange = Quantity(extendedRangeSuperclass, superclassFeature.unitConstraint?:"").getRange()
                                     if (ownedRange !in superClassRange && ownedRange != Range.Reals)
-                                        reportInconsistency(
-                                            owned,
-                                            "INCONSISTENCY: value ${owned.typeConstraint} of specialization must be refinement of general ${superclassFeature.escapedName()} with value ${superclassFeature.typeConstraint}"
+                                        status.inconsistency(
+                                            "value ${owned.typeConstraint} of specialization must be refinement of general ${superclassFeature.escapedName()} with value ${superclassFeature.typeConstraint}",
+                                            element = owned
                                         )
                                     if ((owned.type[0].ref != null && !owned.type[0].ref!!.specializes(superclassFeature.type[0].ref) && owned.type[0].ref != superclassFeature.type[0].ref))
-                                        reportInconsistency(
-                                            owned,
-                                            "INCONSISTENCY: Type of specialization ${owned.type} of '${superclassFeature.escapedName()}' must be the same as '${superclassFeature.type}'"
+                                        status.inconsistency(
+                                            "Type of specialization ${owned.type} of '${superclassFeature.escapedName()}' must be the same as '${superclassFeature.type}'",
+                                            element = owned
                                         )
                                 }
                             }
@@ -393,9 +389,9 @@ fun Session.checkConsistencyOfInheritance(element: Type) {
                                             owned.typeConstraint[it]
                                         ) != IntegerRange.Integers
                                     )
-                                        reportInconsistency(
-                                            owned,
-                                            "INCONSISTENCY: subclass value ${owned.typeConstraint} of ${owned.escapedName()} must be refinement of supertype value ${superclassFeature.typeConstraint}"
+                                        status.inconsistency(
+                                            "subclass value ${owned.typeConstraint} of ${owned.escapedName()} must be refinement of supertype value ${superclassFeature.typeConstraint}",
+                                            element = owned
                                         )
                                 }
                             }
@@ -409,11 +405,9 @@ fun Session.checkConsistencyOfInheritance(element: Type) {
                     }
                 }
                 if (superclassFeature is Feature && owned.multiplicity !in superclassFeature.multiplicity)
-                    report(
-                        SysMDInconsistency(
-                            message = "INCONSISTENCY: ${owned.qualifiedName}'s multiplicity (${owned.multiplicity}) must be subset of supertype ${superclassFeature.qualifiedName}'s multiplicity (${superclassFeature.multiplicity}).",
-                            element = superclassFeature
-                        )
+                    status.inconsistency(
+                        message = "INCONSISTENCY: ${owned.qualifiedName}'s multiplicity (${owned.multiplicity}) must be subset of supertype ${superclassFeature.qualifiedName}'s multiplicity (${superclassFeature.multiplicity}).",
+                        element = superclassFeature
                     )
             }
         }

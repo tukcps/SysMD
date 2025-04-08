@@ -14,7 +14,7 @@ class VariableTests {
                 feature x: ScalarValues::Boolean;
                 feature y: ScalarValues::Boolean = if x ? true else false;
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val y = global.resolve<Feature>("y") !!.variable !!
         assertEquals(XBool.X, y.vectorQuantity.value as XBool)
      }
@@ -25,7 +25,7 @@ class VariableTests {
                 feature x: ScalarValues::Boolean = false;
                 feature y: ScalarValues::Boolean = if x ? true else false. 
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val y = global.resolve<Feature>("y")!!.variable!!
         assertEquals(XBool.False, y.vectorQuantity.value as XBool)
     }
@@ -36,7 +36,7 @@ class VariableTests {
                feature x: ScalarValues::Boolean;
                feature y: ScalarValues::Real = if x ? 1.0 else 2.0;
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val y = global.resolve<Feature>("y")!!.variable!!
         assertEquals(1.0, y.vectorQuantity.getMinAsDouble(), 0.00001)
         assertEquals(2.0, y.vectorQuantity.getMaxAsDouble(), 0.00001)
@@ -48,7 +48,7 @@ class VariableTests {
                feature x: ScalarValues::Boolean;
                feature y: ScalarValues::Integer = if x ? 1 else 2;
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val y = global.resolve<Feature>("y")!!.variable!!
         assertEquals(1.0, y.vectorQuantity.getMinAsDouble(), 0.00001)
         assertEquals(2.0, y.vectorQuantity.getMaxAsDouble(), 0.00001)

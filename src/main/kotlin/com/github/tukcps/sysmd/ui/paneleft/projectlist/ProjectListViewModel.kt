@@ -1,4 +1,4 @@
-package com.github.tukcps.sysmd.ui.projectlist
+package com.github.tukcps.sysmd.ui.paneleft.projectlist
 
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateListOf

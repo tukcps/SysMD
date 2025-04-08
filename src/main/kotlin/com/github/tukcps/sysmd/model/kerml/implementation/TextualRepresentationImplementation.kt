@@ -5,6 +5,7 @@ import com.github.tukcps.sysmd.compiler.SysMD
 import com.github.tukcps.sysmd.compiler.SysMLv2
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
+import com.github.tukcps.sysmd.model.util.dropFirstName
 import com.github.tukcps.sysmd.model.util.firstName
 
 
@@ -33,11 +34,11 @@ class TextualRepresentationImplementation(
     /**
      * Runs the parser depending on the language field.
      */
-    override fun compile(generateAnnotations: Boolean) {
+    override fun compile() {
         when (language.firstName()) {
-            "SysMD" -> SysMD(model!!, generateAnnotations = generateAnnotations).parse(this)
-            "KerML" -> KerML(model!!, generateAnnotations = generateAnnotations).parse(this)
-            "SysML" -> SysMLv2(model!!, generateAnnotations = generateAnnotations).parse(this)
+            "SysMD" -> SysMD(model!!).parse(this.body, language.dropFirstName())
+            "KerML" -> KerML(model!!).parse(this.body, language.dropFirstName())
+            "SysML" -> SysMLv2(model!!).parse(this.body, language.dropFirstName())
         }
     }
 

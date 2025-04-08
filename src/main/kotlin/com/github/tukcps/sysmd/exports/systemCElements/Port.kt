@@ -1,6 +1,6 @@
 package com.github.tukcps.sysmd.exports.systemCElements
 
-import com.github.tukcps.sysmd.exceptions.SysMDInternalError
+import com.github.tukcps.sysmd.exceptions.SysMDFatalInternalError
 import java.io.File
 import java.io.PrintWriter
 
@@ -143,7 +143,7 @@ class Port(val portName : String, val fullQualifiedName : String, val portType :
                             when(portType) {
                                PortType.SOURCE -> "target_socket"
                                PortType.TARGET -> "initiator_socket"
-                               PortType.BIDIRECTIONAL -> throw SysMDInternalError("INOUT Ports cannot be used with TLM Channels!")
+                               PortType.BIDIRECTIONAL -> throw SysMDFatalInternalError("INOUT Ports cannot be used with TLM Channels!")
                             }
                         }${
                             if (channel.inputPorts.size > 1) "[${channel.getPortBinding(portType)}]" else ""
@@ -158,7 +158,7 @@ class Port(val portName : String, val fullQualifiedName : String, val portType :
                                 when(portType) {
                                     PortType.SOURCE -> "target_socket"
                                     PortType.TARGET -> "initiator_socket"
-                                    PortType.BIDIRECTIONAL -> throw SysMDInternalError("INOUT Ports cannot be used with TLM Channels!")
+                                    PortType.BIDIRECTIONAL -> throw SysMDFatalInternalError("INOUT Ports cannot be used with TLM Channels!")
                                 }
                             }${
                                 if (channel.inputPorts.size > 1) "[${channel.getPortBinding(portType)}] " else ""

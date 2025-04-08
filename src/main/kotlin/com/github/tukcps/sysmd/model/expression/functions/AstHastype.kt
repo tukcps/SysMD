@@ -41,7 +41,7 @@ class AstHasType(
                 if (supertype in subtype.allSupertypes(true)) model.builder.True else model.builder.False
             )
         } else
-            model.report(owningNamespace, "Evaluation of hasType not possible as parameters are no types.")
+            model.status.error("Evaluation of hasType not possible as parameters are no types.", element = owningNamespace)
     }
 
     override fun evalDown() {

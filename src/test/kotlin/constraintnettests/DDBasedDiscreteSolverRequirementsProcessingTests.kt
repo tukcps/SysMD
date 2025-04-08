@@ -25,7 +25,7 @@ class DDBasedDiscreteSolverRequirementsProcessingTests {
     fun restrictInteger2() = testSession("ScalarValues") {
         loadKerML("""                
             feature weight: ScalarValues::Integer {:>> range = "0..50";}
-            feature r: ScalarValues::Boolean = weight <= 30 {:>> spec = "true";}
+            inv r { weight <= 30 }
         """)
         propagate()
         val r = global.resolveVar("r")

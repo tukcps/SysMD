@@ -1,23 +1,24 @@
 package parsertests
 
-import io.github.tukcps.aadd.values.IntegerRange
 import com.github.tukcps.sysmd.compiler.KerML
 import com.github.tukcps.sysmd.compiler.semantics.Identification
 import com.github.tukcps.sysmd.compiler.semantics.SemanticActions
 import com.github.tukcps.sysmd.compiler.semantics.kerml.ClassActions
 import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
+import com.github.tukcps.sysmd.compiler.semantics.kerml.NamespaceActions
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.ClassImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
-import com.github.tukcps.sysmd.model.kerml.implementation.TextualRepresentationImplementation
+import com.github.tukcps.sysmd.model.kerml.implementation.PackageImplementation
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.session.SessionImplementation
+import io.github.tukcps.aadd.values.IntegerRange
 import util.testSession
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import kotlin.test.assertEquals
 
 /**
  * Tests of the semantic actions.
@@ -27,8 +28,7 @@ class ActionsContextTests {
     /** Helper that sets up a valid semantics object */
     private fun testSemantics(): SemanticActions {
         val model = SessionImplementation()
-        val textualRepresentation = model.create(TextualRepresentationImplementation(language = "SysMD", body = ""), model.global)
-        return KerML(model = model).semantics.also { it.textualRepresentation = textualRepresentation }
+        return KerML(model = model).semantics
     }
 
 
@@ -42,7 +42,7 @@ class ActionsContextTests {
             model.initialize(1)
             val klass = model.global.resolve<Class>("klass")
             assertNotNull(klass)
-            assertTrue(model.status.exceptions.isEmpty(), model.status.exceptions.toString())
+            assertTrue(model.status.issues.isEmpty(), model.status.issues.toString())
         }
     }
 
@@ -52,14 +52,14 @@ class ActionsContextTests {
     @Test
     fun testAddClassInPackage() {
         testSemantics().run {
-            val semantics = packageActions()
+            val semantics = NamespaceActions(this, ::PackageImplementation)
             semantics.create(Identification("pkg"))
             pushOwner(Resolved(semantics.created!!))
             val actions = ClassActions<Class>(this, ::ClassImplementation)
             actions.create(Identification("klass"))
             actions.addSpecialization(mutableListOf("Base::Anything"))
             model.initialize(1)
-            assertTrue(model.status.exceptions.isEmpty(), model.status.exceptions.toString())
+            assertTrue(model.status.issues.isEmpty(), model.status.issues.toString())
             assertNotNull(model.global.resolve<Class>("pkg::klass"))
         }
     }
@@ -99,8 +99,6 @@ class ActionsContextTests {
         val multiplicity = feature.getOwnedElementOfType<Multiplicity>()
         assertNotNull(multiplicity)
         assertEquals("[2 .. 3]", multiplicity.typeConstraint.firstOrNull())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
-
-
 }

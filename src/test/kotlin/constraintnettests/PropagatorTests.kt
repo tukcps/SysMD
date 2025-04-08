@@ -24,24 +24,23 @@ class PropagatorTests {
                 """
         )
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     //Test if all don't cares are found
     @Test
     fun propagationByPropagatorsDontCareTest()  = testSession("ScalarValues") {
-        loadKerML(input = """
-                feature a: ScalarValues::Boolean;
-                feature b: ScalarValues::Boolean {:>> spec = "false";}
-                feature c: ScalarValues::Boolean {:>> spec = "true";}
-                feature y: ScalarValues::Boolean  = (a and c) or (not(b) and not(a)) {:>> spec = "true";}
-                feature z: ScalarValues::Boolean {:>> spec = "true";}
-            """
-        )
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        loadKerML("""
+            feature a: ScalarValues::Boolean;
+            inv b false; 
+            inv c; 
+            feature y: ScalarValues::Boolean  = (a and c) or (not(b) and not(a)) {:>> spec = "true";}
+            inv z; 
+        """)
+        assertEquals(0, status.issues.size, status.issues.toString())
         initialize()
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         assertEquals(1, global.resolveVar("a")!!.vectorQuantity.value.numInternalNodes())
     }
 
@@ -57,7 +56,7 @@ class PropagatorTests {
                 """
         ).run {
             propagate()
-            assertEquals(0, status.exceptions.size, status.exceptions.toString())
+            assertEquals(0, status.issues.size, status.issues.toString())
             assertEquals(true, global.resolveVar("f")!!.vectorQuantity.value is BDD.Leaf)
         }
     }

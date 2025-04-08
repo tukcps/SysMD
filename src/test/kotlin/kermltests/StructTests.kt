@@ -15,7 +15,7 @@ class StructTests {
         loadKerML("""
                 struct s; 
             """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val s = global.resolve<Structure>("s")
         assertNotNull(s)
         assertEquals("Occurrence", s.ownedSpecialization.firstOrNull()?.target?.firstOrNull()?.ref?.declaredName )

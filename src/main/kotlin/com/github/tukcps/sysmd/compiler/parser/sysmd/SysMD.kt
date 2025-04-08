@@ -39,7 +39,7 @@ fun SysMD.Triple() {
         HAS_A then { ElementList() }
         DEFINES then { DefinitionList() }
         others {
-            semantics.initOwners(ownerPrefix?:"SysMD::Global")
+            semantics.initOwners("Global")
             throw SyntaxError(this@Triple,
                 "Expecting a SysMD triple (isA, hasA, uses, imports, defines, user-defined, but read $consumedToken"
             )

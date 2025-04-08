@@ -22,7 +22,7 @@ class AllocationTests {
             part c; 
             allocate(a, b, c); 
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val c = global.getOwnedElementOfType<AllocationUsage>()
         assertTrue(c != null)
         assertEquals(3, c.source.size)
@@ -36,7 +36,7 @@ class AllocationTests {
             part b;
             allocate a to b; 
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val c = global.getOwnedElementOfType<AllocationUsage>()
         assertTrue(c != null)
         assertEquals(1, c.from.size)
@@ -50,7 +50,7 @@ class AllocationTests {
             part b; 
             allocation c allocate a to b; 
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val c = global.resolve<AllocationUsage> ("c")
         assertNotNull(c)
         assertEquals(1, c.from.size)
@@ -65,7 +65,7 @@ class AllocationTests {
             part d; 
             allocation c allocate (a, b, d); 
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val c = global.resolve<AllocationUsage> ("c")
         assertNotNull(c)
         assertEquals(3, c.from.size)
@@ -79,7 +79,7 @@ class AllocationTests {
             allocation def C; 
             allocation c : C allocate a to b;  
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val c = global.resolve<ConnectionDefinition> ("C")
         assertNotNull(c)
         val ci = global.resolve<AllocationUsage> ("c")
@@ -95,7 +95,7 @@ class AllocationTests {
             allocation def C :> C1; 
             allocation c : C allocate a to b;  
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val c = global.resolve<ConnectionDefinition> ("C")
         assertNotNull(c)
         val ci = global.resolve<ConnectionUsage> ("c")

@@ -40,7 +40,6 @@ fun SysMLv2.RefPrefix() {
     DERIVED.optional()
     END.optional()
 }
-val refPrefixStart = setOf(IN, OUT, INOUT, ABSTRACT, VARIATION, READONLY, DERIVED, END)
 
 /**
  *      BasicUsagePrefix = RefPrefix 'ref'?
@@ -49,7 +48,6 @@ fun SysMLv2.BasicUsagePrefix() {
     RefPrefix()
     REF.optional()
 }
-val basicUsagePrefixStart = refPrefixStart + REF
 
 /**
  *      UsageExtensionKeyword = PrefixMetadataMember
@@ -65,7 +63,6 @@ fun SysMLv2.UsagePrefix() {
     BasicUsagePrefix()
     // optional { UsageExtensionKeyword() }
 }
-val usagePrefixStart = basicUsagePrefixStart
 
 /**
  *      Usage = UsageDeclaration UsageCompletion
@@ -88,8 +85,7 @@ internal fun SysMLv2.UsageDeclaration(feature: FeatureActions<Feature>) {
     TypeConstraint().also {   feature.addTypeConstraint(it) }
     UnitConstraint().also { feature.addUnitConstraint(it) }
 }
-fun SysMLv2.usageDeclarationStarts() = setOf(LCBRACE, TYPED_BY, REFERENCES, REDEFINES).starts()
-        || (token.kind == NAME_LIT && nextToken.kind in setOf(TYPED_BY, LT, SEMICOLON))
+
 
 /**
  *      UsageCompletion = ValuePart? UsageBody
@@ -123,7 +119,6 @@ fun SysMLv2.ReferenceUsage() {
     Usage(referenceUsage)
     referenceUsage.finish()
 }
-fun SysMLv2.referenceUsageStarts() = usageStarts() // + refPrefixStart + REF
 
 /**
  *      VariantReference = OwnedReferenceSubsetting FeatureSpecialization* UsageBody

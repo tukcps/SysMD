@@ -1,24 +1,26 @@
 
 import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.exceptions.ElementNotFoundException
-import com.github.tukcps.sysmd.exceptions.SysMDInfo
+import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.SpecializationImplementation
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
-import com.github.tukcps.sysmd.services.session.*
+import com.github.tukcps.sysmd.services.session.getAllOfClass
+import com.github.tukcps.sysmd.services.session.loadLibrary
 import io.github.tukcps.aadd.functions.numInternalNodes
 import io.github.tukcps.aadd.values.IntegerRange
 import io.github.tukcps.aadd.values.XBool
 import io.github.tukcps.aadd.values.XBool.Companion.True
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Disabled
-import util.*
+import util.findDifferenceById
 import util.mockup.loadKerML
 import util.mockup.loadSysMD
 import util.mockup.loadSysMLv2
+import util.testSession
 import kotlin.test.*
 
 class IssuesAndRegressions {
@@ -33,7 +35,7 @@ class IssuesAndRegressions {
             feature e: ScalarValues::Integer(4..5) = min(a,b,c,d);
         """)
         propagate()
-        Assertions.assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        Assertions.assertEquals(0, status.issues.size, status.issues.toString())
         val result = global.resolveVar("a")
         Assertions.assertEquals(4, result!!.vectorQuantity.value.asIdd().min)
         Assertions.assertEquals(7, result.vectorQuantity.value.asIdd().max)
@@ -46,7 +48,7 @@ class IssuesAndRegressions {
         val result3 = global.resolveVar("d")
         Assertions.assertEquals(4, result3!!.vectorQuantity.value.asIdd().min)
         Assertions.assertEquals(4, result3.vectorQuantity.value.asIdd().max)
-        Assertions.assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        Assertions.assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     /** Issue #247 in Gitlab */
@@ -57,7 +59,7 @@ class IssuesAndRegressions {
                feature car : Vehicle [1..1];
             }
         """)
-        assertTrue(status.exceptions.isNotEmpty(), "A feature may not be typed by a class that is its owner.")
+        assertTrue(status.issues.isNotEmpty(), "A feature may not be typed by a class that is its owner.")
     }
 
     /** Issue #247 v2 in Gitlab: This is OK. */
@@ -68,7 +70,7 @@ class IssuesAndRegressions {
                    type Car :> Vehicle;
                 }
             """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
 
@@ -88,7 +90,7 @@ class IssuesAndRegressions {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val price = global.resolveVar("Car::carPrice")!!
         assertEquals(3.0, price.min(), 0.000001)
         assertEquals(3.0, price.max(), 0.000001)
@@ -101,11 +103,11 @@ class IssuesAndRegressions {
     @Test fun elementsNotAppearTwice() = testSession("Base") {
         loadLibrary("ScalarValues")
         initialize()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val elements = get()
         loadLibrary("ScalarValues")
         initialize()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val elements2 = get()
         assertEquals(elements.size, elements2.size)
     }
@@ -120,7 +122,7 @@ class IssuesAndRegressions {
         loadLibrary("Occurrences")
         loadLibrary("KerML")
         initialize()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val first = mutableListOf<Element>().also { it.addAll(get()) }
 
         loadLibrary("Base")
@@ -130,7 +132,7 @@ class IssuesAndRegressions {
         loadLibrary("KerML")
         initialize()
         val second = get()
-        assertEquals(0, status.exceptions.size)
+        assertEquals(0, status.issues.size)
 
         val diff = findDifferenceById(first, second)
         assertTrue(diff.isEmpty())
@@ -144,12 +146,12 @@ class IssuesAndRegressions {
     fun featuresAndMultiplicitiesNotAppearTwice1() = testSession("ScalarValues") {
         loadKerML("package ScalarValues { datatype Integer; }; feature x; ", false)
         initialize()
-        assertTrue(status.exceptions.isEmpty())
+        assertTrue(status.issues.isEmpty())
         val multiplicities1 = getAllOfClass<Multiplicity>()
         val elem1 = getAllOfClass<Element>()
         loadKerML("feature x; ", false)
         initialize()
-        assertEquals(0, status.exceptions.size)
+        assertEquals(0, status.issues.size)
         val multiplicities2 = getAllOfClass<Multiplicity>()
         val elem2 = getAllOfClass<Element>()
         assertEquals(multiplicities1.size, multiplicities2.size)
@@ -161,14 +163,14 @@ class IssuesAndRegressions {
     fun featuresAndMultiplicitiesNotAppearTwice3() = testSession("Occurrences") {
         loadKerML("package ScalarValues { datatype Integer; }; class x { feature y;}")
         initialize()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val multiplicities1 = getAllOfClass<Multiplicity>()
         val imports1 = getAllOfClass<Import>()
         val specs1 = getAllOfClass<Specialization>()
         val elem1 = getAllOfClass<Element>()
         loadKerML("class x { feature y; } ")
         initialize()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val multiplicities2 = getAllOfClass<Multiplicity>()
         val imports2 = getAllOfClass<Import>()
         val elem2 = getAllOfClass<Element>()
@@ -197,7 +199,7 @@ class IssuesAndRegressions {
                     }
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val vehicle = global.resolve<Namespace>("Vehicle") !!
         val mass =vehicle.resolveVar("mass")!!
         assertTrue(mass.vectorQuantity.getMinAsDouble() in 9.99..10.01)
@@ -217,7 +219,7 @@ class IssuesAndRegressions {
                 }
             """)
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val test = global.resolve<Type>("Test") !!
         val comp = test.resolve<Feature>("comp") !!
         assertEquals(1, comp.getOwnedElementsOfType<Multiplicity>().size) // Just the multiplicity
@@ -237,7 +239,7 @@ class IssuesAndRegressions {
                 }
             }""")
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val multi = global.resolve<Feature>("ExampleDesign::Chassis::wheels::multiplicity")!!.variable
         assertNotNull(multi)
         assertEquals(2L, multi.min())
@@ -248,13 +250,13 @@ class IssuesAndRegressions {
     @Test
     fun variableUnknownIsReportedAsError() = testSession("ScalarValues") {
         loadKerML(input = "feature x: ScalarValues::Real = yyy;")
-        assertTrue(status.exceptions.first() is ElementNotFoundException, "There shall be error reporting yyy not defined.")
+        assertTrue(status.issues.firstOrNull()?.cause is ElementNotFoundException, "There shall be error reporting yyy not defined.")
     }
 
     @Test
     fun typeUnknownIsReportedAsError() = testSession {
         loadKerML(input = " feature x: YYY;")
-        assertTrue(status.exceptions.find { it is SysMDInfo }?.message?.contains("YYY") == true,
+        assertTrue(status.issues.find { it.kind.ordinal >= Issue.Kind.WARN.ordinal }?.message?.contains("YYY") == true,
             "There shall be error reporting that YYY is not defined.")
     }
 
@@ -271,7 +273,7 @@ class IssuesAndRegressions {
                 feature sensor [4..4];
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val s1 = global.resolve<Feature>("Device::sensor")
         val s2 = global.resolve<Feature>("DeviceB::sensor")
         val s3 = global.resolve<Feature>("DeviceA::sensor")
@@ -296,7 +298,7 @@ class IssuesAndRegressions {
         loadSysMD("""
                 b::f1 hasA feature f: Base::Anything;
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val inherited = global.resolve<Element>( "b::f1")
         assertNotNull(inherited)
         val inheritedUpdated = global.resolve<Element>("b::f1::f")
@@ -318,7 +320,7 @@ class IssuesAndRegressions {
             """)
         val bF1 = global.resolve<Feature>("b::f1")
         assertNotNull(bF1)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     @Test
@@ -328,7 +330,7 @@ class IssuesAndRegressions {
             class B :> C;
             class C :> A;
         """)
-        assertTrue(status.exceptions.isNotEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isNotEmpty(), status.issues.toString())
     }
 
     /**
@@ -337,7 +339,7 @@ class IssuesAndRegressions {
     @Test
     fun issue136NoErrorOnUndeclaredFeatureClass() = testSession {
         loadKerML("A hasA feature B: Base::Anything.")
-        assertTrue(status.exceptions.isNotEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isNotEmpty(), status.issues.toString())
     }
 
     @Test
@@ -348,7 +350,7 @@ class IssuesAndRegressions {
             A::B hasA feature C:  Base::Anything.
             A::B::C hasA feature D:  Base::Anything.
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -364,7 +366,7 @@ class IssuesAndRegressions {
             }
         """)
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         loadKerML("""
             private import ScalarValues;
             package X {
@@ -375,7 +377,7 @@ class IssuesAndRegressions {
         propagate()
         val x = global.resolveVar("X::x")
         val y = global.resolveVar("X::y")
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         assertEquals(20.0, x?.vectorQuantity?.getMinAsDouble()!!, 0.0001)
         assertEquals(40.0, y?.vectorQuantity?.getMinAsDouble()!!, 0.0001)
     }
@@ -396,7 +398,7 @@ class IssuesAndRegressions {
             }
             """.trimIndent())
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         loadSysMD("""
             X::Z hasA feature x: Real = 10.0.
             """.trimIndent())
@@ -408,7 +410,7 @@ class IssuesAndRegressions {
         //  val generated = getOwnedElement(textualRepresentation,"Generated elements") as Annotation?
 
         val x = global.resolveVar("X::Z::x")
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         assertEquals(10.0, x?.vectorQuantity?.getMinAsDouble()!!, 0.0001)
     }
 
@@ -439,7 +441,7 @@ class IssuesAndRegressions {
             feature c: Real(2..2) = a*b;
         """)
         propagate()
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(2.0, global.resolveVar("b")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(2.0, global.resolveVar("b")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
         assertEquals(1.0, global.resolveVar("a")!!.vectorQuantity.getMinAsDouble(), 0.0001)
@@ -455,11 +457,11 @@ class IssuesAndRegressions {
             feature c: ScalarValues::Real(2..2) = max(a,b);
             """.trimIndent(), catchExceptions = true)
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val result = global.resolveVar("b")
         assertEquals(2.0,result!!.vectorQuantity.getMinAsDouble(),0.000001)
         assertEquals(2.0,result.vectorQuantity.getMaxAsDouble(),0.000001)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
 
@@ -478,7 +480,7 @@ class IssuesAndRegressions {
                         }
                     """
         loadKerML(model)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         var volume = global.resolve<Feature>("PartWithVolume::volume")!!.variable
         val height = global.resolve<Feature>("PartWithVolume::height")!!.variable
         assertNotNull(height)
@@ -498,7 +500,7 @@ class IssuesAndRegressions {
         assertEquals(1.21, volume.vectorQuantity.getMaxAsDouble(), 0.001)
         loadKerML(model)
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         assertEquals(1.0, volume.vectorQuantity.getMinAsDouble(), 0.000001)
         assertEquals(1.21, volume.vectorQuantity.getMaxAsDouble(), 0.001)
     }
@@ -512,7 +514,7 @@ class IssuesAndRegressions {
                 }
             }
         """.trimIndent())
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val a = global.resolve<Package>("a")
         val ab = global.resolve<Type>("a::b")
         val abc = global.resolve<Type>("a::b::c")
@@ -536,7 +538,7 @@ class IssuesAndRegressions {
                     feature property: ScalarValues::Real = 4.0; // property: Real(0 .. *) = 4.0. works
                 }
             """)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val result = global.resolve<Feature>("Car::property")!!.variable
         assertEquals(4.0, result!!.vectorQuantity.getMinAsDouble(), 0.000001)
     }
@@ -551,7 +553,7 @@ class IssuesAndRegressions {
             class P specializes Test;
         """.trimIndent())
         propagate()
-        assertTrue(status.exceptions.isNotEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isNotEmpty(), status.issues.toString())
     }
 
     /**
@@ -565,7 +567,7 @@ class IssuesAndRegressions {
             feature x: a; // Here, a Type is needed. And a feature is a type ...
         """.trimIndent())
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Features should be OK for typing features?")
+        assertTrue(status.issues.isEmpty(), "Features should be OK for typing features?")
     }
 
     //Did not yet create new issue. Issue #184 is the nearest thematically.
@@ -578,7 +580,7 @@ class IssuesAndRegressions {
             feature r: ScalarValues::Boolean(true) = weight <= (weightBoundary1 + weightBoundary2);
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val wb1 = global.resolveVar("weightBoundary1")!!
         val wb2 = global.resolveVar("weightBoundary2")!!
 
@@ -596,7 +598,7 @@ class IssuesAndRegressions {
         val pp = global.resolve<Element>("p::p") // there is no p in p.
         propagate()
         assertEquals("p", pp!!.escapedName())
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test fun issue189nameResolutionIncorrect3() = testSession {
@@ -611,8 +613,8 @@ class IssuesAndRegressions {
             package x;
             type a :> x;
         """)
-        assertEquals(1, status.exceptions.size, status.exceptions.toString())
-        assertTrue(status.exceptions.toString().contains("type"))
+        assertEquals(1, status.issues.size, status.issues.toString())
+        assertTrue(status.issues.firstOrNull()?.message?.contains("type") == true)
     }
 
     /**
@@ -650,11 +652,11 @@ class IssuesAndRegressions {
                 assert enoughPower { drive::power > 0.0 kW }
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val drive = global.resolve<Feature>("archExample::drive")
         assertNotNull(drive)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         // val engine = global.resolveName<Type>("archExample::Engine")
         // val power = global.resolveName<Expression>("archExample::drive::power")
         val enoughPower = global.resolveVar("archExample::enoughPower")
@@ -672,7 +674,7 @@ class IssuesAndRegressions {
         """)
         propagate()
         // println(status.numberOfPropagateIterations)
-        assertTrue( status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue( status.issues.isEmpty(), status.issues.toString())
     }
 
     @Test
@@ -683,7 +685,7 @@ class IssuesAndRegressions {
                 }
                 type Test2 :> Test;
             """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     @Test
@@ -699,7 +701,7 @@ class IssuesAndRegressions {
                 }
                 feature s1: Real = sumOverParts(s);
         }""")
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals(3.0, global.resolveVar("p::s1")!!.min(), 0.0001)
     }
 
@@ -724,9 +726,9 @@ class IssuesAndRegressions {
             attribute y4: ScalarValues::Real = [1.0..3.0];
             attribute r4: ScalarValues::Boolean = x4 <= y4;
         """)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         global.resolveVar("x1")!!
         global.resolveVar("y1")!!
         val r1 = global.resolveVar("r1")!!
@@ -768,9 +770,9 @@ class IssuesAndRegressions {
             attribute r1: ScalarValues::Boolean = x1 <= y1;
             """
         )
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         global.resolveVar("x1")!!
         global.resolveVar("y1")!!
         val r1 = global.resolveVar("r1")!!
@@ -790,9 +792,9 @@ class IssuesAndRegressions {
             //attribute r3: ScalarValues::Boolean = r1 and r2;
             """
         )
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         global.resolveVar("x1")!!
         global.resolveVar("y1")!!
         val r1 = global.resolveVar("r1")!!
@@ -821,9 +823,9 @@ class IssuesAndRegressions {
             attribute r4: ScalarValues::Boolean = x1 <= y1;
             """
         )
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         global.resolveVar("x1")!!
         global.resolveVar("y1")!!
         val r1 = global.resolveVar("r1")!!
@@ -863,9 +865,9 @@ class IssuesAndRegressions {
             //attribute rn: ScalarValues::Boolean = z1 > x1;
             """
         )
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val x1 = global.resolveVar("x1")!!
         val y1 = global.resolveVar("y1")!!
         //val r1 = global.resolveName<Expression>("r1")!!
@@ -898,9 +900,9 @@ class IssuesAndRegressions {
             attribute rn: ScalarValues::Boolean = x2 <= y2;
             """
         )
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val x1 = global.resolveVar("x1")!!
         val y1 = global.resolveVar("y1")!!
         val r1 = global.resolveVar("r1")!!
@@ -928,7 +930,7 @@ class IssuesAndRegressions {
                 inv a2 { x <= 96.0 }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         global.resolveVar("x")
     }
 
@@ -951,7 +953,7 @@ class IssuesAndRegressions {
             """.trimIndent(), catchExceptions = true
         )
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     /**
@@ -978,7 +980,7 @@ class IssuesAndRegressions {
             """.trimIndent(), catchExceptions = true
         )
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     /**
@@ -1000,7 +1002,7 @@ class IssuesAndRegressions {
                 subject testRef references testPart;
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val ref = global.resolve<Feature>("testReq::testRef")
         val testPart = global.resolve<Feature>("testPart")
         val testReq = global.getOwnedElement("testReq")
@@ -1023,6 +1025,6 @@ class IssuesAndRegressions {
                 part def detectLongDistanceCollision :> accSystem::avoidCollision;
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 }

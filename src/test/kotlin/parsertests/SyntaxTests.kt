@@ -21,7 +21,7 @@ class SyntaxTests {
     @Test
     fun parsePackageTest() = testSession {
         loadSysMD("""Global hasA package test.""")
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals(0, getUnownedElements().size)
         assertEquals(0, astNodes.size)
     }
@@ -36,7 +36,7 @@ class SyntaxTests {
             input = """
                 class x :> Base::Anything;
             """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertNotNull(getUnownedElements().find { it.element.declaredName == "x" })
         assertEquals(global, getUnownedElements().first().startOfPath)
         assertEquals(0, astNodes.size)
@@ -50,7 +50,7 @@ class SyntaxTests {
         val abc = getUnownedElements().first().element
         assertEquals("abc", abc.declaredShortName)
         assertEquals(null, abc.declaredName)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString() )
+        assertEquals(0, status.issues.size, status.issues.toString() )
         assertEquals(0, astNodes.size)
     }
 
@@ -61,7 +61,7 @@ class SyntaxTests {
         val abc = getUnownedElements().first().element
         assertEquals("shortName", abc.declaredShortName)
         assertEquals("longName", abc.declaredName)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString() )
+        assertEquals(0, status.issues.size, status.issues.toString() )
         assertEquals(0, astNodes.size)
     }
 
@@ -72,7 +72,7 @@ class SyntaxTests {
             hello::car hasA 
                 feature p: ScalarValues::Real = Global::hello::world::x + 2.0.
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertTrue("hello::car" in getUnownedElements().map { it.path })
 
         assertEquals(4, astNodes.size)
@@ -84,7 +84,7 @@ class SyntaxTests {
      */
     @Test fun parseFeature()  = testSession(initialize = false) {
         loadSysMD("a::b hasA feature x : Base::Anything.")
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertTrue(getUnownedElements().find { it.path?.endsWith("a::b") == true }?.element is Feature)
         assertEquals(0, astNodes.size)
     }
@@ -104,7 +104,7 @@ class SyntaxTests {
         loadSysMD("""
                 test::e hasA private import space.
             """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals("space", (getUnownedElements().first().element as Import).importedNamespace.str  )
 
         assertEquals(0, astNodes.size)
@@ -116,7 +116,7 @@ class SyntaxTests {
     @Test
     fun commentTest() = testSession(initialize = false) {
         loadSysMD("""Global hasA feature x: Base::Anything. // comment""")
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertTrue(getUnownedElements().find { it.startOfPath == global}?.element is Feature)
 
         assertEquals(0, astNodes.size)
@@ -134,7 +134,7 @@ class SyntaxTests {
                 feature y: ScalarValues::Boolean = false or if x? true else false;
                 feature z: ScalarValues::Boolean = if x? true else false;
             """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
 
         assertEquals(setOf("y", "z"), astNodes.mapNotNull { (it.value as? AstRoot)?.feature?.name }.toSet())
         assertEquals(2 + 2 + 2*4, astNodes.size)
@@ -151,7 +151,7 @@ class SyntaxTests {
         assertEquals("m", r.unitConstraint)
         assertEquals("2", i.expression?.trim())
         assertEquals("SI::Length", r.type.first().str)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
 
         assertEquals(setOf("i", "r"), astNodes.mapNotNull { (it.value as? AstRoot)?.feature?.name }.toSet())
         assertEquals(2 + 2, astNodes.size)

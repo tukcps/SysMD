@@ -1,7 +1,9 @@
 package com.github.tukcps.sysmd.ui.viewmodel
 
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import com.github.tukcps.sysmd.compiler.importMD
 import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.services.initialize
@@ -9,26 +11,27 @@ import com.github.tukcps.sysmd.services.session.Session
 import com.github.tukcps.sysmd.services.session.SessionManager
 import com.github.tukcps.sysmd.services.session.SessionManager.projectService
 import com.github.tukcps.sysmd.services.session.loadSysMDFromFile
-import com.github.tukcps.sysmd.ui.agenda.AgendaViewModel
+import com.github.tukcps.sysmd.ui.paneright.BoardViewModel
 import com.github.tukcps.sysmd.ui.composables.TreeViewModel
 
 
 /**
  * View model for overall application
- * @param session Session in which the KerML model is edited, computed, ...
+ * @param sessionParam Session in which the KerML model is edited, computed, ...
  */
 class SysMDViewModel(
-    session: Session
+    sessionParam: Session
 ) {
     // The main window with editable files
-    var kerMlModel = mutableStateOf(session)
-    val editorTabsViewModel = EditorTabsViewModel(kerMlModel, ::refreshTrees)
-    val agenda = AgendaViewModel(kerMlModel)
+    var sessionState = mutableStateOf(sessionParam)
+    var session: Session by sessionState
+    val editorTabsViewModel = EditorTabsViewModel(sessionState, ::refreshTrees)
+    val agenda = BoardViewModel(sessionState)
     var agendaIsEmpty = mutableStateOf(agenda.isEmpty())
 
     // The selectable tree views
-    val composition = mutableStateOf(TreeViewModel(HasATree(mutableStateOf(kerMlModel.value.global)), null, null, null, null, false))
-    val inheritance = mutableStateOf(TreeViewModel(IsATree(mutableStateOf(kerMlModel.value.anything)), null, null, null, null, false))
+    val composition = mutableStateOf(TreeViewModel(HasATree(mutableStateOf(session.global)), null, null, null, null, false))
+    val inheritance = mutableStateOf(TreeViewModel(IsATree(mutableStateOf(session.anything)), null, null, null, null, false))
 
     val showSettingsDialog: MutableState<Boolean> = mutableStateOf(false)
     val reconnectionRequired:MutableState<Boolean> = mutableStateOf(false)
@@ -46,17 +49,17 @@ class SysMDViewModel(
      */
     fun reset() {
         // clean repo, brute force ...
-        val project = kerMlModel.value.project
+        val project = session.project
         projectService.reset()
 
         // start a new session.
-        kerMlModel.value.endSession()
+        session.endSession()
 
         if (project != null) {
             // Re-start project
-            kerMlModel.value = SessionManager.startSession(project = project)
-            kerMlModel.value.project!!.getIndex().forEach { file ->
-                kerMlModel.value.loadSysMDFromFile(file, compile = false, 0)
+            session = SessionManager.startSession(project = project)
+            session.project!!.getIndex().forEach { file ->
+                session.loadSysMDFromFile(file, compile = false, 0)
             }
         }
         // reset the UI
@@ -70,8 +73,8 @@ class SysMDViewModel(
      * This function should be called after each change in the KerML model of a session.
      */
     fun refreshTrees() {
-        composition.value = TreeViewModel(HasATree(mutableStateOf(kerMlModel.value.global)), sort = false)
-        inheritance.value = TreeViewModel(IsATree(mutableStateOf(kerMlModel.value.anything)), sort = false)
+        composition.value = TreeViewModel(HasATree(mutableStateOf(session.global)), sort = false)
+        inheritance.value = TreeViewModel(IsATree(mutableStateOf(session.anything)), sort = false)
         agenda.clear()
         agenda.update()
         agendaIsEmpty.value = agenda.isEmpty()
@@ -82,24 +85,25 @@ class SysMDViewModel(
      */
     fun compile(solve: Boolean = true) {
         agenda.clear()
-        kerMlModel.value.status.exceptions.clear()
+        session.status.reset()
         editorTabsViewModel.editorTabs.forEach {
             it.cells.forEach { cell ->
                 if (cell.language.value == TextualRepresentationViewModel.Companion.Language.YAML) {
-                    kerMlModel.value.importMD(cell.body.value.text, null)
+                    session.importMD(cell.body.text, null)
                 }
             }
         }
-        kerMlModel.value.loadUsages()
-        editorTabsViewModel.editorTabs.forEach {
-            it.cells.forEach { cell ->
+        session.loadUsages()
+        editorTabsViewModel.editorTabs.forEach { tab ->
+            tab.cells.forEach { cell ->
                 cell.compile(propagate = false)
             }
         }
-        kerMlModel.value.initialize()
-        if (solve) kerMlModel.value.propagate()
-        editorTabsViewModel.editorTabs.forEach { editorTabModel ->
-            editorTabModel.cells.forEach { cell -> cell.display() }
+        session.initialize()
+        if (solve) session.propagate()
+        editorTabsViewModel.editorTabs.forEach { tab ->
+            tab.cells.forEach { cell ->
+                cell.display() }
         }
         refreshTrees()  // refreshes tree-views and agenda
     }

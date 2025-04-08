@@ -28,7 +28,7 @@ class TutorialExamples {
         val pc2p = global.resolve<Feature>("p::c2::p")
         val p = pc2p?.resolve<Feature>("p")    // Was an issue: p search inside p does not resolve to p.
         assertEquals(p, pc2p)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
 
@@ -48,7 +48,7 @@ class TutorialExamples {
                }
            }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         propagate()
         val p = global.resolveVar("Reason::General::p")!!
         assertEquals(p.vectorQuantity.getMaxAsDouble(), 3.0, 0.000001)
@@ -75,9 +75,9 @@ class TutorialExamples {
                 }
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val mass = global.resolveVar("Example::Car::totalMass")!!
         assertEquals(800.0, mass.vectorQuantity.getMaxAsDouble(), 0.00001)
         assertEquals(50.0, mass.vectorQuantity.getMinAsDouble(), 0.00001)
@@ -88,7 +88,7 @@ class TutorialExamples {
         loadSysMLv2("""
             attribute x: ScalarValues::Boolean(true) = 1.0 < 2.0 + 1.0;
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         propagate()
         val x = global.resolveVar("x")!!
         assertEquals(builder.True, x.vectorQuantity.value)
@@ -108,7 +108,7 @@ class TutorialExamples {
         """)
 
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
 
         val volume = global.resolve<Feature>("partWithVolume::volume")!!.variable!!
         val height = global.resolve<Feature>("partWithVolume::height")!!.variable!!
@@ -152,7 +152,7 @@ class TutorialExamples {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val summerWheel = global.resolveVar("SummerWheel::totalMass") !!
         val winterWheel = global.resolveVar("WinterWheel::totalMass") !!
         assertEquals(30.0, summerWheel.vectorQuantity.getMinAsDouble(), 0.0000001)

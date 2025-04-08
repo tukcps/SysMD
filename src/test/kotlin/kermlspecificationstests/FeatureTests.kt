@@ -19,7 +19,7 @@ class FeatureTests {
             feature f;
             feature g;
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -41,7 +41,7 @@ class FeatureTests {
             // Equivalent declaration:
             feature x1 subsets g typed by A subsets f typed by B;
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -57,7 +57,7 @@ class FeatureTests {
             abstract feature person : Person; // Default subsets Base::things.
             feature child subsets person;
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -74,7 +74,7 @@ class FeatureTests {
             // specializes is not possible following standard -- type? Bug in test? 
             feature redefines children[0];
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -94,7 +94,7 @@ class FeatureTests {
             typing f typed by B;
             typing g : A;
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -117,7 +117,7 @@ class FeatureTests {
             specialization Sub subset parent subsets person;
             specialization subset mother subsets parent;
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -139,7 +139,7 @@ class FeatureTests {
             
             redefinition LegalRecord::guardian redefines parent;
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -157,7 +157,7 @@ class FeatureTests {
                 feature age[1] : ScalarValues::Integer;
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -178,7 +178,7 @@ class FeatureTests {
                 member feature g featured by A;
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -195,7 +195,7 @@ class FeatureTests {
             
             feature u subsets s;
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
 }

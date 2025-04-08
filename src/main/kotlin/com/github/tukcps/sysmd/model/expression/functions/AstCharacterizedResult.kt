@@ -2,7 +2,7 @@ package com.github.tukcps.sysmd.model.expression.functions
 
 
 import com.github.tukcps.sysmd.exceptions.SemanticError
-import com.github.tukcps.sysmd.exceptions.SysMDInternalError
+import com.github.tukcps.sysmd.exceptions.SysMDFatalInternalError
 import com.github.tukcps.sysmd.imports.JsonImporter
 import com.github.tukcps.sysmd.imports.Result
 import com.github.tukcps.sysmd.model.expression.AstLeaf
@@ -11,7 +11,6 @@ import com.github.tukcps.sysmd.model.expression.AstRoot
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.quantities.Unit
-import com.github.tukcps.sysmd.services.session.report
 import com.github.tukcps.sysmd.services.session.Session
 import java.io.File
 
@@ -33,7 +32,7 @@ internal class AstCharacterizedResult (
         // Set standard file path for result.json for the case user does not specify own one
          filePath = (
                 this.namespace.owner.ref?.declaredName ?: if(parameters.size == 1) {
-                    throw SysMDInternalError("Could not find a package name for the result folder. Please pass the Path to the result.json directly as a second Argument or put the Attribute into a proper Package.")
+                    throw SysMDFatalInternalError("Could not find a package name for the result folder. Please pass the Path to the result.json directly as a second Argument or put the Attribute into a proper Package.")
                 } else "COULD_NOT_DERIVE_PATH"
          ) + "/testbenches/results.json"
 
@@ -91,15 +90,15 @@ internal class AstCharacterizedResult (
                                         "The values from the JSON file could not be used and are replaced with an [-Inf,+Inf] Interval.")
                             }
                         } catch (e : Exception) {
-                            model.report(e)
+                            model.status.error(e.message?:"(unknown issue with characterization import)", cause = e)
                         }
                     }
                 }
             } else {
-                throw SysMDInternalError("No Result file found for attribute: ${((this.root as AstRoot).dependency as AstCharacterizedResult).name}")
+                throw SysMDFatalInternalError("No Result file found for attribute: ${((this.root as AstRoot).dependency as AstCharacterizedResult).name}")
             }
         } catch (e : Exception){
-            model.report(e.message.toString())
+            model.status.fatal(e.message.toString(), cause = e)
         }
 
     }

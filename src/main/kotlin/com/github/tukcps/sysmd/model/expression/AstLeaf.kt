@@ -6,11 +6,11 @@ import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.cspsolver.VariableImplementation
 import com.github.tukcps.sysmd.exceptions.ElementNotFoundException
+import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.quantities.VectorDimensionError
 import com.github.tukcps.sysmd.quantities.VectorQuantity
-import com.github.tukcps.sysmd.services.session.reportInfo
 import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.session.Session
 
@@ -143,7 +143,7 @@ class AstLeaf private constructor (
                         throw VectorDimensionError("Vector size of ${downQuantity.values.size} does not match Constraint size of ${variable!!.rangeSpecs.size}")
                     if (variable!!.rangeSpecs.size == downQuantity.values.size)
                         if (variable!!.rangeSpecs.indices.any { variable!!.rangeSpecs[it] !in (downQuantity.values[it] as AADD).getRange() })
-                            model.reportInfo(variable!!.feature, "Cannot be satisfied for all values.")
+                            model.status.warn(Issue.Kind.WARN_INCONSISTENCY,"Cannot be satisfied for all values.", element =  variable?.feature)
                 }
                 variable!!.checkEvent()
             }
@@ -154,7 +154,7 @@ class AstLeaf private constructor (
                         throw VectorDimensionError("Vector size of ${downQuantity.values.size} does not match Constraint size of ${variable!!.rangeSpecs.size}")
                     if (variable!!.intSpecs.size == downQuantity.values.size)
                         if (variable!!.intSpecs.indices.any { variable!!.intSpecs[it] !in (downQuantity.values[it] as IDD).getRange() })
-                            model.reportInfo(variable!!.feature, "Cannot be satisfied for all values.")
+                            model.status.warn(Issue.Kind.WARN_INCONSISTENCY,"Cannot be satisfied for all values.", element =  variable?.feature)
                 }
                 variable!!.checkEvent()
             }

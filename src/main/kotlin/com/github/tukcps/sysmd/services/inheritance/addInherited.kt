@@ -4,7 +4,6 @@ import com.github.tukcps.sysmd.compiler.semantics.Identification
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureTypingImplementation
-import com.github.tukcps.sysmd.services.session.reportInconsistency
 import com.github.tukcps.sysmd.services.session.Session
 
 /**
@@ -26,7 +25,7 @@ fun Type.addInheritedToSubtypes(calls: Int = 0) {
  */
 fun Type.addInheritedFeatures() {
     // "Clone" features of superclass iff not there!
-    // Type element must be part of model
+    // Type element must be part of the model
     require(model != null)
     if (this is Feature && (referencedFeature != null || isDerived)) return
 
@@ -63,7 +62,7 @@ fun Type.addInheritedFeatures() {
                                     .firstOrNull()?.ref?.qualifiedName in listOf("Base::DataValue", "Base::Anything")
                     }
                     if (type.ref == null) {
-                        type.ref = model!!.get(type.id!!) as Type?
+                        type.ref = model!![type.id!!] as Type?
                     }
                     //Add all types of refined property
                     val typing = FeatureTypingImplementation(
@@ -80,7 +79,7 @@ fun Type.addInheritedFeatures() {
             local.typeConstraint = feature.typeConstraint
             local.unitConstraint = feature.unitConstraint
             local.isSufficient = feature.isSufficient
-            if(local.name=="range" || local.name=="spec"){ //range for Integer, Real, spec for Boolean
+            if(local.name=="range"){ //range for Integer, Real, spec for Boolean
                 if(local.owner.ref is Feature) {
                     // remove """ and " " from the string
                     val specString = local.expression!!.replace("\"", "").replace(" ", "")
@@ -121,7 +120,7 @@ fun Session.getAllInheritedFeatures(type: Type): Collection<Feature> =
 
 
 /**
- * @return the joined set of properties in case of inheritance, where
+ * @return the joined set of properties in case of inheritance:
  * - properties are added if present in a single properties sets
  * - properties are intersected if present in both properties sets
  * - an exception is thrown if a property is present in both, but the inherited is not a
@@ -144,13 +143,13 @@ private fun Session.mergeFeatures(own: Collection<Feature>, inherited: Collectio
                 //    reportError(o, "INTERNAL ERROR: ${o.ofClass.str} was not resolved property.")
 
                 if ( i in o.allSupertypes(true) )
-                    reportInconsistency(o, "subclass type  of '${o.qualifiedName}' must be subclass of '${i.qualifiedName}'")
+                    status.inconsistency("subclass type  of '${o.qualifiedName}' must be subclass of '${i.qualifiedName}'", element = o)
 
                 //if(o::class != i::class )
                 //    reportInconsistency(i,"Value Feature may not override Part")
 
                 if (o.multiplicity !in i.multiplicity)
-                    reportInconsistency(o, "multiplicity of subclass '${i.qualifiedName}' must be subset of superclass '${o.qualifiedName}'.")
+                    status.inconsistency("multiplicity of subclass '${i.qualifiedName}' must be subset of superclass '${o.qualifiedName}'", element = o)
 
                 /*
                 when (o.quantity.value) {

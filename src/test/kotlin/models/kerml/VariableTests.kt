@@ -58,7 +58,7 @@ class VariableTests {
     /** The property maintains a root node that has a list of AstLeaves */
     @Test fun leavesListCreationTest() = testSession("ScalarValues") {
         loadKerML("feature a: ScalarValues::Real; feature b :ScalarValues::Real; feature c: ScalarValues::Real; feature x: ScalarValues::Real = a+b+c.")
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         assertEquals(3, global.resolveVar("x")!!.ast!!.leaves.size)
     }
 }

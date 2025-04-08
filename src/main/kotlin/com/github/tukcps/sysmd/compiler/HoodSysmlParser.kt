@@ -2,7 +2,6 @@ package com.github.tukcps.sysmd.compiler
 
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.getOwnedElementsOfType
-import com.github.tukcps.sysmd.model.kerml.implementation.TextualRepresentationImplementation
 import com.github.tukcps.sysmd.model.sysml.ActionUsage
 import com.github.tukcps.sysmd.model.sysml.AttributeDefinition
 import com.github.tukcps.sysmd.services.initialize
@@ -14,11 +13,9 @@ typealias KerMLPackage = com.github.tukcps.sysmd.model.kerml.Package
 class HoodSysmlParser {
     fun parseString(sysmlText: String): Session {
         val model = SessionImplementation()
-        val input = TextualRepresentationImplementation(body = sysmlText, language = "SysML")
         val parser = SysMLv2(model)
-        parser.parse(input)
+        parser.parse(sysmlText)
         model.initialize(5)
-        // model.propagate()
         return model
     }
 

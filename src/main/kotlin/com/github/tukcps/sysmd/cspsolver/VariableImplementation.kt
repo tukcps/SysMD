@@ -1,5 +1,18 @@
 package com.github.tukcps.sysmd.cspsolver
 
+import com.github.tukcps.sysmd.compiler.KerML
+import com.github.tukcps.sysmd.compiler.parser.kerml.Expression
+import com.github.tukcps.sysmd.cspsolver.Variable.BaseType
+import com.github.tukcps.sysmd.exceptions.ExpressionError
+import com.github.tukcps.sysmd.exceptions.Issue
+import com.github.tukcps.sysmd.exceptions.SemanticError
+import com.github.tukcps.sysmd.exceptions.SysMDError
+import com.github.tukcps.sysmd.model.expression.AstRoot
+import com.github.tukcps.sysmd.model.expression.Invariant
+import com.github.tukcps.sysmd.model.kerml.Feature
+import com.github.tukcps.sysmd.model.kerml.Type
+import com.github.tukcps.sysmd.quantities.Quantity
+import com.github.tukcps.sysmd.quantities.VectorQuantity
 import io.github.tukcps.aadd.AADD
 import io.github.tukcps.aadd.BDD
 import io.github.tukcps.aadd.IDD
@@ -7,19 +20,6 @@ import io.github.tukcps.aadd.StrDD
 import io.github.tukcps.aadd.values.IntegerRange
 import io.github.tukcps.aadd.values.Range
 import io.github.tukcps.aadd.values.XBool
-import com.github.tukcps.sysmd.compiler.KerML
-import com.github.tukcps.sysmd.compiler.parser.kerml.Expression
-import com.github.tukcps.sysmd.cspsolver.Variable.BaseType
-import com.github.tukcps.sysmd.exceptions.ExpressionError
-import com.github.tukcps.sysmd.exceptions.SemanticError
-import com.github.tukcps.sysmd.exceptions.SysMDError
-import com.github.tukcps.sysmd.exceptions.TypeExpected
-import com.github.tukcps.sysmd.model.expression.AstRoot
-import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.kerml.Type
-import com.github.tukcps.sysmd.quantities.Quantity
-import com.github.tukcps.sysmd.quantities.VectorQuantity
-import com.github.tukcps.sysmd.services.session.report
 import java.util.*
 
 
@@ -66,10 +66,10 @@ open class VariableImplementation (
     /** A getter for a string representation of the value, with field for serialization. */
     override var valueStr: String = ""
         get() {
-            if (vectorQuantity.values.size > 1)
-                field = vectorQuantity.values.toString()
+            field = if (vectorQuantity.values.size > 1)
+                vectorQuantity.values.toString()
             else
-                field = vectorQuantity.value.toString()
+                vectorQuantity.value.toString()
             return field
         }
 
@@ -102,7 +102,7 @@ open class VariableImplementation (
             when  {
                 // must go to feature, classifier
                 feature.type.firstOrNull()?.ref !is Type -> {
-                    feature.model!!.report(TypeExpected("expected specialization of ScalarValue, but got: '${feature.type.firstOrNull()?.str}'", element=feature))
+                    feature.model?.status?.fatal("expected specialization of ScalarValue, but got: '${feature.type.firstOrNull()?.str}'", element=feature)
                     valueSpecs = mutableListOf(Range.Reals)
                     val values = mutableListOf<AADD>()
                     rangeSpecs.forEach{values.add(feature.model!!.builder.real(it, elementId.toString()))}
@@ -154,6 +154,12 @@ open class VariableImplementation (
                         ranges.add(XBool.X)
                         values.add(feature.model!!.builder.variable(elementId.toString(), elementId.toString()))
                     }
+                    if (feature is Invariant) {
+                        if ((feature as Invariant).isNegated)
+                            feature.typeConstraint = mutableListOf("False")
+                        else
+                            feature.typeConstraint = mutableListOf("True")
+                    }
                     feature.typeConstraint.forEach {
                         when (it.trim()) {
                             "True", "true" -> {
@@ -191,7 +197,7 @@ open class VariableImplementation (
                 }
 
                 else -> {
-                    feature.model!!.report(feature, "no suitable type found for value $qualifiedName; assuming Real")
+                    feature.model!!.status.warn( Issue.Kind.WARN_UNRESOLVED_TYPE, "no type found for $qualifiedName; assuming Real", element = feature)
                     vectorQuantity = Quantity(feature.model!!.builder.Reals, unitSpec)
                 }
             }
@@ -300,7 +306,7 @@ open class VariableImplementation (
         } as T
 
     /**
-     * Returns max value of position index of VectorQuantity
+     * Returns max value of VectorQuantity's position index
      */
     override fun <T: Number> max(index: Int): T =
         when (vectorQuantity.values.getOrNull(index)) {
@@ -323,19 +329,13 @@ open class VariableImplementation (
 
                 // The parsing itself, can throw exceptions that are caught optionally below.
                 if (feature.model?.repo?.scalarType == null)
-                    feature.model?.report(
-                        feature,
-                        "Could not resolve ScalarValues::ScalarValue -- add usage of ScalarValues"
-                    )
+                    feature.model?.status?.error("Could not resolve ScalarValues::ScalarValue -- add usage of ScalarValues", element = feature, kind = Issue.Kind.ERROR_UNRESOLVED_NAME)
                 feature.type.forEach {
                     if (it.ref == null)
-                        feature.model!!.report(
-                            feature,
-                            "Could not resolve Type '${feature.generalization.firstOrNull()?.str}' of feature ${feature.qualifiedName}"
-                        )
+                        feature.model?.status?.error("Could not resolve Type '${feature.generalization.firstOrNull()?.str}' of feature ${feature.qualifiedName}", element = feature, kind = Issue.Kind.ERROR_UNRESOLVED_NAME)
                 }
                 if (!feature.specializes(feature.model?.repo?.scalarType))
-                    feature.model?.report(feature, "Expected subtype of ScalarValues::ScalarValue")
+                    feature.model?.status?.error("Expected subtype of ScalarValues::ScalarValue", element = feature)
 
                 if (dependency.isNotBlank()) {
                     // set the scope to the element to which the property belongs.
@@ -367,10 +367,8 @@ open class VariableImplementation (
             }
         } catch (exception: Exception) {
             ast = null
-            feature.model?.report(
-                feature, "Error in expression '$dependency' of ${feature.qualifiedName}; problem: ${exception.message}",
-                exception
-            )
+            feature.model?.status?.error(
+                 "Error in expression '$dependency' of ${feature.qualifiedName}; problem: ${exception.message}", element = feature, cause = exception)
         }
     }
 }

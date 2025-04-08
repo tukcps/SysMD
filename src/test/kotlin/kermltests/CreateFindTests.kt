@@ -25,7 +25,7 @@ class CreateFindTests {
         loadKerML("""
                     package x { class y; } 
             """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val x1 = global.resolve<Package>("x")!!
         assertNotNull(x1)
         assertNotNull(x1.resolve<Class>("y"))

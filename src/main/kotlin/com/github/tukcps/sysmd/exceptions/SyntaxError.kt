@@ -12,22 +12,11 @@ class SyntaxError(
     message: String,
 ) : SysMDError(
     message = message,
-    priority = 3,
-    textualRepresentation = parser?.semantics?.textualRepresentation,
+    kind = Issue.Kind.ERROR_SYNTACTICAL,
+    input = parser?.input,
     token = parser?.token,
-    element = parser?.semantics?.owners?.peek()?.ref
-) {
-    override val explanation
-        get() = SyntaxError.explanation
-
-    companion object {
-        val explanation = """
-            This error has been caused during parsing the textual representation. 
-            Check the syntax around the current token given above. 
-            If there is an error before this error, first fix the error before this one.
-        """.trimIndent()
-    }
-}
+    element = parser?.semantics?.owners?.peek()?.ref,
+)
 
 
 fun KerML.throwSyntaxError(

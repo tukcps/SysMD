@@ -1,6 +1,6 @@
 @file:Suppress("FunctionName")
 
-package com.github.tukcps.sysmd.ui.projectlist
+package com.github.tukcps.sysmd.ui.paneleft.projectlist
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -46,7 +46,7 @@ fun UpdateProjectDialog(
     )
 
     /** We collect new data here and add/update after validation */
-    val newProjectViewModel = projectListViewModel.projectToUpdate.value?.copy()?:ProjectViewModel(
+    val newProjectViewModel = projectListViewModel.projectToUpdate.value?.copy()?: ProjectViewModel(
         sessionState = projectListViewModel.sessionState,
         projectListViewModel.editorTabsViewModel,
         reset = projectListViewModel.reset,

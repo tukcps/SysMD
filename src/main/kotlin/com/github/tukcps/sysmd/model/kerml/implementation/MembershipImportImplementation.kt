@@ -1,9 +1,7 @@
 package com.github.tukcps.sysmd.model.kerml.implementation
 
-import com.github.tukcps.sysmd.exceptions.SemanticError
-import com.github.tukcps.sysmd.exceptions.SysMDError
+import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.services.session.report
 
 
 /**
@@ -37,7 +35,7 @@ class MembershipImportImplementation(
     @Suppress("UNCHECKED_CAST")
     override var importedNamespace: Resolved<Namespace>
         get() = try { target[0] as Resolved<Namespace>
-        } catch (_: Exception) { model?.report(SysMDError("Problem with import"))
+        } catch (_: Exception) { model?.status?.fatal("Problem with import")
             Resolved(model!!.global) }
         set(value) { target[0].ref = value.ref; target[0].str = value.str; target[0].id = value.id }
 
@@ -57,14 +55,14 @@ class MembershipImportImplementation(
     override fun resolveNames(): Boolean {
         updated = super.resolveNames() or updated
         if (source.size > 1)
-            model?.report( SemanticError("imports can have only a single source"))
+            model?.status?.error("imports can have only a single source", kind = Issue.Kind.ERROR_SEMANTIC)
         if (importOwningNamespace !is Namespace)
-            model?.report(SemanticError( "only Packages and Namespaces can import"))
+            model?.status?.error("only Packages and Namespaces can import", kind = Issue.Kind.ERROR_SEMANTIC)
         if (target.isEmpty())
-            model?.report(SemanticError( "import: nothing imported"))
+            model?.status?.error("import: nothing imported", kind = Issue.Kind.ERROR_SEMANTIC)
         target.forEach {
             if(it.ref !is Namespace?)
-                model?.report(SemanticError( "only Packages and Namespaces can be imported"))
+                model?.status?.error("only Packages and Namespaces can be imported", kind = Issue.Kind.ERROR_SEMANTIC)
         }
 
         updated = importedNamespace.resolveIdentity(owningNamespace!!)

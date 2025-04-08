@@ -3,6 +3,8 @@ package api
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.github.tukcps.sysmd.SysMdRunner
 import com.github.tukcps.sysmd.rest.Rest
+import com.github.tukcps.sysmd.rest.entities.requests.IndexEntry
+import com.github.tukcps.sysmd.rest.entities.requests.SessionIndexRequest
 import com.github.tukcps.sysmd.rest.entities.response.SessionResponse
 import com.github.tukcps.sysmd.services.repositories.local.ProjectData
 import com.github.tukcps.sysmd.services.session.SessionManager
@@ -15,6 +17,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.test.annotation.DirtiesContext
 import util.mockup.MockupSysMDProjectService
 import util.testSession
+import kotlin.test.Ignore
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
@@ -78,7 +81,7 @@ class RestAPISessionServiceTest {
     fun startSessionTest() {
         projectService.createProject("startSessionTest")
         val projects = projectService.getProjects()
-        val response = Rest.post("/session/", projects.first().id.toString(), null)
+        val response = Rest.post("/session", projects.first().name, null)
     }
 
     @Test
@@ -98,5 +101,14 @@ class RestAPISessionServiceTest {
         val session = SessionManager.startSession(project)
         val response = Rest.put("/session/code", """{ "body": "package test;" }""", sessionId = session.id.toString())
         assertEquals(HttpStatus.OK.value(), response.statusCode.value())
+    }
+
+    @Test @Ignore
+    fun putSessionIndexTest() = testSession("Base") {
+        val indexEntry1 = IndexEntry("file2.md", content = "Hello World!")
+        val request = SessionIndexRequest(mutableListOf(indexEntry1))
+        val asJson = jsonMapper.writeValueAsString(request)
+        val response = Rest.put("/session/index", asJson, sessionId = id.toString())
+        assertEquals(HttpStatus.CREATED.value(), response.statusCode.value())
     }
 }

@@ -28,7 +28,7 @@ class DiscreteContinuousTests {
                     }
                 }
             """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         propagate()
 
         assertEquals(VectorQuantity(builder.real(1.0..2.0), "km"),

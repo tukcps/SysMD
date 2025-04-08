@@ -41,7 +41,7 @@ class MultiplePropertiesPropagation {
             feature y: ScalarValues::Real = x {:>> range = "1 .. 100";}
             feature z: ScalarValues::Real = y;""")
         // y should be 1 .. 10 via y = x.
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         propagate()
         assertEquals(10.0, global.resolveVar("y")!!.max(), 0.000001)
     }

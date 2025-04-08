@@ -6,9 +6,11 @@ import com.github.tukcps.sysmd.compiler.SysMLv2
 import com.github.tukcps.sysmd.compiler.parser.kerml.*
 import com.github.tukcps.sysmd.compiler.parser.util.Unsupported
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
+import com.github.tukcps.sysmd.compiler.semantics.kerml.NamespaceActions
 import com.github.tukcps.sysmd.exceptions.throwSyntaxError
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.Resolved
+import com.github.tukcps.sysmd.model.kerml.implementation.PackageImplementation
 
 /**
  *      Package = PrefixMetadataMember* PackageDeclaration PackageBody
@@ -16,7 +18,7 @@ import com.github.tukcps.sysmd.model.kerml.Resolved
  *      PackageDeclaration = 'package' Identification
  */
 fun SysMLv2.Package() {
-    val pkg = semantics.packageActions()
+    val pkg = NamespaceActions(semantics, ::PackageImplementation)
     STANDARD.optional { semantics.prefixes.add(STANDARD) }
     LIBRARY.optional  { semantics.prefixes.add(LIBRARY) }
     PACKAGE.consume()

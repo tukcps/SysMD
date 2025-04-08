@@ -64,7 +64,10 @@ open class ElementImplementation(
 
     final override var isTransient: Boolean = false
 
-    /** The textual representation by which it was generated; could also be retrieved via generated relationship */
+    /** The input of the compiler that generated the element */
+    final override var input: CharSequence? = null
+
+    /** The range of the input by which it was generated */
     final override var indices: IntRange? = null
 
     /**
@@ -160,6 +163,7 @@ open class ElementImplementation(
         ).also {
             it.updated = updated
             it.isTransient = isTransient
+            it.input = input
         }
     }
 
@@ -186,6 +190,7 @@ open class ElementImplementation(
         hasBeenChanged = template.hasBeenChanged
         isStandard = template.isStandard
         isLibraryElement = template.isLibraryElement
+        input = template.input
     }
 
     /** A useful name, lexically correct, generated from name or short name */

@@ -105,7 +105,7 @@ open class SysMdRunner: CommandLineRunner {
             try {
                 init()
                 logger.info("Starting SysMD ${AppTheme.version} with options '$args'")
-                val sysMdViewModel = SysMDViewModel(session = session)
+                val sysMdViewModel = SysMDViewModel(session)
                 application {
                     val showDialog = remember { mutableStateOf(false) }
                     val showSettingsDialog = sysMdViewModel.showSettingsDialog
@@ -188,7 +188,7 @@ open class SysMdRunner: CommandLineRunner {
                             if (menuState.renderClicked.value){
                                 val selectedElementValue = selectedElement?.value
                                 if(selectedElementValue is StateUsage){
-                                    val diagramsPath =  sysMdViewModel.kerMlModel.value.project!!.directory!!.resolve("diagrams")
+                                    val diagramsPath =  sysMdViewModel.sessionState.value.project!!.directory!!.resolve("diagrams")
                                     showStateDiagramImagePopup(selectedElementValue, diagramsPath, menuState.renderClicked)
                                 }
                             }

@@ -2,9 +2,7 @@ package util.mockup
 
 import com.github.tukcps.sysmd.compiler.SysMD
 import com.github.tukcps.sysmd.exceptions.SysMDError
-import com.github.tukcps.sysmd.model.kerml.implementation.TextualRepresentationImplementation
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.session.report
 import com.github.tukcps.sysmd.services.session.Session
 
 
@@ -12,24 +10,12 @@ import com.github.tukcps.sysmd.services.session.Session
  * Loads a SysMD model from an input string into the session.
  * NOTE: Rather useful for test purposes and only used there.
  * @param input A SysMD language sting; pure SysMD without interwoven MD.
- * @param createTextualRepresentation the name of textual representation that will be created in the KerML model
- * be turned off by setting catchExceptions to false.
  */
-fun Session.loadSysMD(
-    input: String,
-    createTextualRepresentation: String? = null,
-    generateAnnotations: Boolean = false
-){
-    var rep = TextualRepresentationImplementation(declaredName = createTextualRepresentation, language = "SysMD", body=input)
-    if (createTextualRepresentation != null) rep = create(rep, global)
-    SysMD(
-        model = this,
-        generateAnnotations = (createTextualRepresentation != null) && generateAnnotations
-    ).parse(rep)
-
+fun Session.loadSysMD(input: String){
+    SysMD(this).parse(input)
     try {
         if (settings.initialize) initialize()
     }  catch (exception: SysMDError) {
-        report(exception)
+        status.fatal("Initialization failed", cause = exception)
     }
 }

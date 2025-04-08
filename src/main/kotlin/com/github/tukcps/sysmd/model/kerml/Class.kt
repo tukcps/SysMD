@@ -1,6 +1,5 @@
 package com.github.tukcps.sysmd.model.kerml
 
-import com.github.tukcps.sysmd.services.session.reportInfo
 
 interface Class: Classifier {
 
@@ -16,6 +15,6 @@ interface Class: Classifier {
                 ok = true
         }
         if (!ok)
-            model!!.reportInfo(this, "Class '${this.qualifiedName}' must specialize Occurrences::Occurrence")
+            model?.status?.info("Class '${this.qualifiedName}' must specialize Occurrences::Occurrence", element = this)
     }
 }

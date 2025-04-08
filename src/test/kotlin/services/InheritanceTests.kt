@@ -1,9 +1,7 @@
 package services
 
-import io.github.tukcps.aadd.values.IntegerRange
-import io.github.tukcps.aadd.values.Range
 import com.github.tukcps.sysmd.cspsolver.propagate
-import com.github.tukcps.sysmd.exceptions.SysMDInconsistency
+import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.kerml.getOwnedElement
@@ -13,6 +11,8 @@ import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.findAllOwnedElements
 import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
+import io.github.tukcps.aadd.values.IntegerRange
+import io.github.tukcps.aadd.values.Range
 import util.mockup.loadKerML
 import util.mockup.loadSysMD
 import util.testSession
@@ -34,7 +34,7 @@ class InheritanceTests {
         """)
         // element 2 has a property inherited
         // it has the name p and is actually the one from element
-        assertTrue(status.exceptions.isEmpty(), "Error messages: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
         val t2 = global.resolve<Type>("t2")
         assertNotNull(t2)
         val t2features = t2.getOwnedElementsOfType<Feature>()
@@ -58,7 +58,7 @@ class InheritanceTests {
         """)
         // element 2 has a property inherited
         // it has the name p and is actually the one from element
-        assertTrue(status.exceptions.isEmpty(), "${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "${status.issues}")
         val t2 = global.resolve<Type>("t2")
         assertNotNull(t2)
         val t2features = t2.getOwnedElementsOfType<Feature>()
@@ -87,7 +87,7 @@ class InheritanceTests {
             }
             feature f: t; 
         """)
-        assertTrue(status.exceptions.isEmpty(), "${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "${status.issues}")
         val ff = global.resolve<Feature>("f::f")
         assertNotNull(ff)
     }
@@ -109,7 +109,7 @@ class InheritanceTests {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "${status.issues}")
         val t1 = global.resolve<Type>("t1")
         val t1f = t1?.resolve<Feature>("f")
         val t2 = global.resolve<Type>("t2")
@@ -136,16 +136,16 @@ class InheritanceTests {
                 } """)
         propagate()
         // TODO: Propagate must also consider restrictions of superclasses even iff no dependency is computed.
-        assertTrue(status.exceptions.any { it  is SysMDInconsistency })
-        assertEquals(1, status.exceptions.size)
+        assertTrue(status.issues.any { it.kind  == Issue.Kind.WARN_INCONSISTENCY })
+        assertEquals(1, status.issues.size)
     }
 
 
     /**
      * Values are propagated across inherited elements.
      * Inherited properties can be accessed by
-     * - its name
-     * - the name of the superclass.name
+     *  - its name
+     *  - the name of the superclass.name
      */
     @Test
     fun findInheritedPropertiesTest4() = testSession("ScalarValues") {
@@ -160,7 +160,7 @@ class InheritanceTests {
                     feature p3: ScalarValues::Real(1 .. 4) = p;
                 }
             }""")
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         val elem2 = global.resolve<Type>("lib::elem2")
         assertTrue(elem2!!.resolveVar("p2")!!.aadd().getRange() in Range(1.499 .. 2.001) )
     }
@@ -177,7 +177,7 @@ class InheritanceTests {
             }
             class e2 :> e1; 
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val e2 = global.resolve<Type>("e2")
         assertNotNull(e2)
         val e =  e2.resolveVar("p")
@@ -194,7 +194,7 @@ class InheritanceTests {
             type c2 :> c1; 
             type c3 :> c2.
             """)
-        assertEquals(0, status.exceptions.size, "Error message: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error message: ${status.issues}")
         val c3 = global.resolve<Type>("c3")
         val allSupertypes = c3?.allSupertypes(transitive = true)
         assertEquals(3, allSupertypes!!.size)
@@ -211,7 +211,7 @@ class InheritanceTests {
                     type e3 specializes e; 
                 }
         """)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val e3 = global.resolve<Type>("InheritHas::e3") !!
         val hasAOfE3 = e3.getOwnedElement("p")
         assertNotNull(hasAOfE3)
@@ -235,7 +235,7 @@ class InheritanceTests {
                     }
                 }
             """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val e2 = global.resolve<Type>("find::e2")!!
         val e = global.resolve<Type>("find::e")
         assertNotNull(e)
@@ -258,7 +258,7 @@ class InheritanceTests {
             type b :> c;
             type c :> Base::Anything;
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val a = global.resolve<Type>("a")!!
         val b = global.resolve<Type>("b")!!
         val c = global.resolve<Type>("c")!!
@@ -280,7 +280,7 @@ class InheritanceTests {
             type b :> c;
             type a :> b;
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val a = global.resolve<Type>("a")!!
         val b = global.resolve<Type>("b")!!
         val c = global.resolve<Type>("c")!!
@@ -322,10 +322,11 @@ class InheritanceTests {
             """)
         val zy = global.resolve<Feature>("z::y")
         val xy = global.resolve<Feature>("x::y")
+        assertNotNull(zy)
         assertTrue(zy !== xy)
-        assertTrue(zy!!.multiplicityProperty !== xy!!.multiplicityProperty)
-        assertTrue(zy.multiplicity !== xy.multiplicity)
-        assertTrue(zy.ownedSpecialization !== xy.ownedSpecialization)
+        assertTrue(zy.multiplicityProperty !== xy?.multiplicityProperty)
+        assertTrue(zy.multiplicity !== xy?.multiplicity)
+        assertTrue(zy.ownedSpecialization !== xy?.ownedSpecialization)
         assertTrue(zy.isTransient)
     }
 
@@ -343,7 +344,9 @@ class InheritanceTests {
             """)
         val zy = global.resolve<Feature>("z::y")
         val xy = global.resolve<Feature>("x::y")
-        assertTrue(zy!!.variable !== xy!!.variable, "Inherited values are independent variables")
+        assertNotNull(zy)
+        assertNotNull(xy)
+        assertTrue(zy.variable !== xy.variable, "Inherited values are independent variables")
         // assertTrue(zy!!.multiplicity !== xy!!.multiplicity)
         // assertTrue(zy!!.expression !== xy!!.expression)
         assertTrue(zy.ownedSpecialization !== xy.ownedSpecialization)
@@ -365,7 +368,7 @@ class InheritanceTests {
             C::a hasA feature x [3..4].
         """)
         initialize()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val aax = global.resolve<Feature>("A::a::x")
         val bax = global.resolve<Feature>("B::a::x")
         val cax = global.resolve<Feature>("C::a::x")
@@ -391,7 +394,7 @@ class InheritanceTests {
                 feature a { feature x [3..4]; }
             }
         """.trimIndent())
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val aax = global.resolve<Feature>("A::a::x")
         val bax = global.resolve<Feature>("B::a::x")
         val cax = global.resolve<Feature>("C::a::x")
@@ -416,7 +419,7 @@ class InheritanceTests {
                 // Expected behavior:  re-evaluate dependency in new scope, but without changing diameter of Coin. 
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         propagate()
         val oneEuroCircumference = global.resolveVar("oneEuroCoin::circumference")!!
         val oneEuroDiameter = global.resolveVar("oneEuroCoin::diameter")!!
@@ -447,7 +450,7 @@ class InheritanceTests {
                 // Expected:  re-evaluate dependency in new scope, but without changing diameter of Coin. 
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         propagate()
         val oneEuroCircumference = global.resolveVar("OneEuroCoin::circumference")!!
         val oneEuroDiameter = global.resolveVar("OneEuroCoin::diameter")!!
@@ -508,7 +511,7 @@ class InheritanceTests {
         assertEquals(1.0, global.resolve<Feature>("a::p")!!.variable!!.max())
         assertEquals(2.0, global.resolve<Feature>("b::p")!!.variable!!.min())
         assertEquals(2.0, global.resolve<Feature>("b::p")!!.variable!!.max())
-        assertTrue(status.exceptions.first() is SysMDInconsistency)
+        assertEquals(status.issues.firstOrNull()?.kind, Issue.Kind.WARN_INCONSISTENCY)
     }
 
     /**
@@ -521,7 +524,7 @@ class InheritanceTests {
             type b :> a; 
             type x :> Base::Anything { feature a: ScalarValues::Real(2) = b::p; }
         """)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         propagate()
         // 'a' is 2 and propagated to b::p (that is then 2)
         // 'b::p' is NOT propagated to the superclass 'a'.
@@ -545,7 +548,7 @@ class InheritanceTests {
             }
         """)
         // The inconsistency / violation of Liskov Principle must be reported.
-        assertEquals(1, status.exceptions.filterIsInstance<SysMDInconsistency>().size)
+        assertEquals(status.issues.firstOrNull()?.kind, Issue.Kind.WARN)
     }
 
     @Test fun realConstraintTest2() = testSession("ScalarValues") {
@@ -557,7 +560,7 @@ class InheritanceTests {
         """)
         // The inconsistency / violation of Liskov Principle must be reported.
         propagate()
-        assertEquals(0, status.exceptions.size)
+        assertEquals(0, status.issues.size)
     }
 
 
@@ -570,7 +573,7 @@ class InheritanceTests {
         """)
         // The inconsistency / violation of Liskov Principle must be reported.
         propagate()
-        assertEquals(0, status.exceptions.size)
+        assertEquals(0, status.issues.size)
         assertEquals(Range(1.5, 1.5), global.resolve<Feature>("Test::sub::v")?.variable?.vectorQuantity?.value?.asAadd()?.getRange())
     }
 
@@ -584,7 +587,7 @@ class InheritanceTests {
         """.trimIndent()))
         // The inconsistency / violation of Liskov Principle must be reported.
         propagate()
-        assertEquals(1, status.exceptions.filterIsInstance<SysMDInconsistency>().size)
+        assertEquals(status.issues.firstOrNull()?.kind, Issue.Kind.WARN_INCONSISTENCY)
         val v = global.resolve<Feature>("Test::n::v")?.variable?.vectorQuantity
         assertEquals(IntegerRange(6, 6), v?.value?.asIdd()?.getRange())
     }
@@ -598,7 +601,7 @@ class InheritanceTests {
                 feature v: ScalarValues::Integer(2..2); 
             }
         """.trimIndent()))
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals(IntegerRange(2, 2), global.resolve<Feature>("n::v")?.variable?.vectorQuantity?.value?.asIdd()?.getRange())
     }
 
@@ -634,7 +637,7 @@ class InheritanceTests {
             """.trimIndent()
         )
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val vwWheels = global.resolve<Feature>("VW::wheels")
         assertNotNull(vwWheels)
         assertEquals(IntegerRange(1.0, 4.0), vwWheels.multiplicity)
@@ -647,11 +650,11 @@ class InheritanceTests {
     @Test
     fun issue_featureInheritanceMultiplicity2() = testSession("ScalarValues") {
         loadKerML("""
-                type Car  :> Base::Anything { feature wheels: Base::Anything [1..4]; }
-                type Audi :> Car { feature wheels:  Base::Anything[2 .. 5]; }
-            """)
+            type Car  :> Base::Anything { feature wheels: Base::Anything [1..4]; }
+            type Audi :> Car { feature wheels:  Base::Anything[2 .. 5]; }
+        """)
         propagate()
-        assertTrue(status.exceptions.first() is SysMDInconsistency) // Inconsistency !!!
+        assertEquals(status.issues.firstOrNull()?.kind, Issue.Kind.WARN_INCONSISTENCY) // Inconsistency !!!
         val audiWheels = global.resolve<Feature>("Audi::wheels")
         assertEquals(IntegerRange(2, 5), audiWheels?.multiplicity)
     }
@@ -668,7 +671,7 @@ class InheritanceTests {
             type Audi :> Car { feature wheels: Base::Anything [2 .. 4]; }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val audiWheels = global.resolve<Feature>("Audi::wheels")
         val vwWheels = global.resolve<Feature>("VW::wheels")
         val carWheels = global.resolve<Feature>("Car::wheels")
@@ -688,7 +691,7 @@ class InheritanceTests {
                 feature x: ScalarValues::Real; 
             }
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
 
@@ -702,6 +705,6 @@ class InheritanceTests {
             class special :> general; 
         """.trimIndent())
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 }

@@ -41,11 +41,6 @@ import com.github.tukcps.sysmd.ui.styles.AppTheme
 import com.github.tukcps.sysmd.ui.styles.Fonts
 import org.jetbrains.skiko.currentNanoTime
 
-class Inconsistency(
-    val name : String,
-    val line : Int,
-)
-
 /**
  * Holds data and methods to realize a delay between key presses.
  * Can be used to avoid registering a single key press as multiple or

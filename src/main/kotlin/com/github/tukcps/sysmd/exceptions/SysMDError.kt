@@ -4,26 +4,24 @@ import com.github.tukcps.sysmd.compiler.KerML
 import com.github.tukcps.sysmd.compiler.scanner.Scanner
 import com.github.tukcps.sysmd.compiler.scanner.Token
 import com.github.tukcps.sysmd.model.kerml.Element
-import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
 
 
 /**
  * General error class that is also used for persisting the error list.
  * Each entry has:
  * @param message Mandatory textual description
- * @param textualRepresentation the textual representation in which the error has occurred
  * @param token the token where the error has occurred
  * @param element the element in which the error has occurred
  * @param
  */
 open class SysMDError(
     message: String,
-    textualRepresentation: TextualRepresentation? = null,
+    input: CharSequence? = null,
     token: Token? = null,
+    kind: Issue.Kind = Issue.Kind.ERROR,
     element: Element? = null,
     cause: Throwable? = null,
-    priority: Int = 2
-) : SysMDException(message, textualRepresentation, token, element, cause, priority = priority)
+) : SysMDException(message, input, token, kind, element, cause)
 
 
 /**
@@ -33,12 +31,9 @@ open class SysMDError(
 class LexicalError(
     scanner: Scanner,
     message: String,
-) : SysMDError(message = message, priority = 3) {
+) : SysMDError(message = message, input = scanner.input, token = scanner.token) {
     init {
-        if (scanner is KerML) {
-            textualRepresentation = scanner.semantics.textualRepresentation
-            token = scanner.token
-        }
+        if (scanner is KerML) { token = scanner.token }
     }
     companion object {
         val explanation = """
@@ -58,14 +53,11 @@ open class SemanticError(message: String, element: Element? = null, cause: Throw
         message,
         cause = cause,
         element = element,
-        priority = 2
 ){
     init {
-        if (textualRepresentation != null)
-            this.textualRepresentation = element?.textualRepresentation?.firstOrNull()
         if (cause is SysMDException && cause.element != null) {
             this.element = cause.element
-            this.textualRepresentation = cause.textualRepresentation
+            this.input = cause.input
         }
     }
     companion object {
@@ -85,11 +77,7 @@ class ExpressionError internal constructor(msg: String, element: Element? = null
 /**
  * Internal problem caused exception; e.g. due to inconsistent internal data structures.
  */
-class InternalError(message: String, cause: Throwable? = null) : SysMDError(message, cause = cause) {
-    init {
-        priority = 2
-    }
-}
+class InternalError(message: String, cause: Throwable? = null) : SysMDError(message, cause = cause)
 
 
 /**
@@ -97,16 +85,12 @@ class InternalError(message: String, cause: Throwable? = null) : SysMDError(mess
  *
  * Use more precise exception class derived from this class if possible
  */
-open class StaticException(textualRepresentation: TextualRepresentation?, message: String, cause: Throwable? = null) :
+open class StaticException(message: String, cause: Throwable? = null) :
     SysMDError(
         message = message,
-        textualRepresentation = textualRepresentation,
         cause = cause
-    ) {
-    init {
-        priority = 2
-    }
-}
+    )
+
 
 /**
  * Exception for initialization problems.
@@ -114,29 +98,19 @@ open class StaticException(textualRepresentation: TextualRepresentation?, messag
  * For import errors use [ImportException]
  */
 class InitialisationException(
-    textualRepresentation: TextualRepresentation?,
     message: String,
     cause: Throwable? = null
-) :
-    StaticException(textualRepresentation, message, cause) {
-    init {
-        priority = 3
-    }
-}
+) : StaticException(message, cause)
 
 /**
  * Exception for import errors.
  */
 class ImportException(
-    textualRepresentation: TextualRepresentation?,
     message: String,
     cause: Throwable?
 ) :
-    StaticException(textualRepresentation, message, cause) {
-    init {
-        priority = 3
-    }
-}
+    StaticException(message, cause)
+
 
 /**
  * Exception for problems occurring during constraint evaluation, propagation
@@ -145,11 +119,11 @@ class ImportException(
  * Consider creating a request for more specific error class.
  */
 open class SolverException(
-    textualRepresentation: TextualRepresentation?,
     message: String,
     element: Element?,
     cause: Throwable?,
-) : SysMDError(textualRepresentation = textualRepresentation, message = message, element = element, cause = cause, priority = 2)
+) : SysMDError(message = message, element = element, cause = cause)
+
 
 /**
  * Issues like ranges or missing specifications of elements are caught with this exception.
@@ -157,12 +131,11 @@ open class SolverException(
  * Beware that this class and its subclasses are **not** to be used for actual errors!
  */
 open class ExportIssue(
-    textualRepresentation: TextualRepresentation?,
     message: String,
     cause: Throwable?,
     element: Element?
 ) : SysMDException(
-    message = message, textualRepresentation = textualRepresentation, cause = cause, element = element, priority = 2
+    message = message, cause = cause, element = element
 ) {
     companion object {
         val explanation = """
@@ -178,12 +151,10 @@ open class ExportIssue(
  * and should be defined when exporting
  */
 class ClassificationIssue(
-    textualRepresentation: TextualRepresentation?,
     message: String,
     cause: Throwable?,
     element: Element?
 ) : ExportIssue(
-    textualRepresentation = textualRepresentation,
     message = message,
     cause = cause,
     element = element
@@ -194,12 +165,10 @@ class ClassificationIssue(
  * a single value for export
  */
 class ParametrisationIssue(
-    textualRepresentation: TextualRepresentation?,
     message: String,
     cause: Throwable?,
     element: Element?
 ) : ExportIssue(
-    textualRepresentation = textualRepresentation,
     message = message,
     cause = cause,
     element = element
@@ -207,12 +176,10 @@ class ParametrisationIssue(
 
 //TODO specify reason for this exception
 class SpecificationIssue(
-    textualRepresentation: TextualRepresentation?,
     message: String,
     cause: Throwable?,
     element: Element?
 ) : ExportIssue(
-    textualRepresentation = textualRepresentation,
     message = message,
     cause = cause,
     element = element
@@ -225,12 +192,10 @@ class SpecificationIssue(
  */
 open class InheritanceException(
     message: String,
-    textualRepresentation: TextualRepresentation? = null,
     element: Element? = null,
     cause: Throwable? = null
 ) : SolverException(
     message = message,
-    textualRepresentation = textualRepresentation,
     element = element,
     cause = cause
 )

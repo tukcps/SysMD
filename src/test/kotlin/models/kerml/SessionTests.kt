@@ -18,7 +18,7 @@ class SessionTests {
     @Test
     fun initScalarValuesTest() = testSession("ScalarValues", initialize = false) {
         initialize()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val real = global.resolve<Element>("ScalarValues::Real")
         assertNotNull(real)
     }
@@ -39,7 +39,7 @@ class SessionTests {
                         datatype Quality specializes Real; 
                     }
             """)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val real = global.resolve<Element>("ScalarValues::Real")
         assertNotNull(real)
     }

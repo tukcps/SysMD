@@ -18,7 +18,7 @@ class ConditionsTests {
         loadKerML("""
                 feature x: ScalarValues::Boolean;
          """)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val x = global.resolve<Feature>("x")!!
         val indexX = builder.conds.indexes[x.variable!!.elementId.toString()]
         assertNotNull(indexX)
@@ -35,7 +35,7 @@ class ConditionsTests {
             """.trimIndent(),
             catchExceptions = false
         )
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val x = global.resolve<Feature>("x")!!
         val y = global.resolve<Feature>("y")!!
         val indexX = builder.conds.indexes[x.elementId.toString()]

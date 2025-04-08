@@ -1,8 +1,9 @@
 package kermltests
 
+import com.github.tukcps.sysmd.compiler.KerML
 import io.github.tukcps.aadd.values.IntegerRange
 import com.github.tukcps.sysmd.compiler.semantics.Identification
-import com.github.tukcps.sysmd.compiler.semantics.SemanticActionsImplementation
+import com.github.tukcps.sysmd.compiler.semantics.SemanticActions
 import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
 import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.model.kerml.Feature
@@ -25,7 +26,7 @@ class MultiplicitiesTests {
                 datatype Natural :> Integer;;
             }
         """)
-        val context = SemanticActionsImplementation(this)
+        val context = SemanticActions(this, KerML(this))
         context.initOwners("Global")
         val actions = FeatureActions<Feature>(context, creator = ::FeatureImplementation, mutableListOf("Base::Anything"))
         actions.create(Identification(name="f"))

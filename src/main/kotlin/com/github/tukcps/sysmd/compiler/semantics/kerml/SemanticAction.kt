@@ -28,18 +28,16 @@ open class SemanticAction<T: Element>(
      * @param identification name and short name
      */
     open fun create(identification: Identification) {
-
         created = creator(identification.name, identification.shortName)
+        created?.input = context.compiler.input
         if (context.owners.peek().ref != null)
             context.model.addUnownedElement(created!!, startOfOwnerPath = context.owners.peek().ref!!)
         else
             context.model.addUnownedElement(created!!, context.ownerName())
 
-        if (context.textualRepresentation != null) {
-            created?.textualRepresentation = mutableListOf(context.textualRepresentation!!)
-            if (context.generateAnnotations)
-                context.addAnnotation(context.textualRepresentation!!, created!!)
-        }
+        context.model.status.createdElements.add(
+            context.qualifiedName(identification.name?:identification.shortName)
+        )
     }
 
     /**

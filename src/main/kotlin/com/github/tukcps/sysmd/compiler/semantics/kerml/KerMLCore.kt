@@ -1,6 +1,5 @@
 package com.github.tukcps.sysmd.compiler.semantics.kerml
 
-import io.github.tukcps.aadd.values.IntegerRange
 import com.github.tukcps.sysmd.compiler.scanner.Token
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.END
 import com.github.tukcps.sysmd.compiler.semantics.ActionsContext
@@ -11,6 +10,7 @@ import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.*
 import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.model.util.SimpleName
+import io.github.tukcps.aadd.values.IntegerRange
 
 /**
  * Semantic action for the declaration of a Type.
@@ -208,6 +208,9 @@ open class FeatureActions<T: Feature>(
     }
 
     override fun finish() {
+        if (created == null)
+            create(Identification())
+        
         if (created != null) {
             val typing = context.model.getUnownedElements().filter { it.element is FeatureTyping && it.startOfPath == this.created }
             if (typing.isEmpty()) {

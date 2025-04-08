@@ -51,7 +51,7 @@ class LibrariesTest {
         assertNotNull(global.resolve<Classifier>("Base::DataValue"))
         checkLibraryElementIds()
         checkOwnership()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
@@ -66,7 +66,7 @@ class LibrariesTest {
         propagate()
         checkLibraryElementIds()
         checkOwnership()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
@@ -78,7 +78,7 @@ class LibrariesTest {
         propagate()
         checkLibraryElementIds()
         checkOwnership()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
 
@@ -94,39 +94,39 @@ class LibrariesTest {
         assertEquals(Generators.nameBasedGenerator().generate("KerML::Kernel::DataType"), dataType.elementId)
         checkConsistency(repo.elements.values, checkForNoTransients = false)
         checkOwnership()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
 
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
     fun linksTest() = testSession {
         loadLibrary("Links")
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertNotNull(global.resolve<Association>("Links::Link"))
         assertNotNull(global.resolve<Association>("Links::BinaryLink"))
         checkLibraryElementIds()
         checkOwnership()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
     fun linksTest2() = testSession("Links") {
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertNotNull(global.resolve<Association>("Links::Link"))
         assertNotNull(global.resolve<Association>("Links::BinaryLink"))
         initialize()
         checkLibraryElementIds()
         checkOwnership()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
     fun occurrencesTest2() = testSession("Occurrences") {
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertNotNull(global.resolve<ClassImplementation>("Occurrences::Occurrence"))
         checkOwnership()
         checkLibraryElementIds()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
@@ -134,11 +134,11 @@ class LibrariesTest {
         loadLibrary("Objects")
         initialize()
         assertNotNull(global.resolve("Objects::Object"))
-        assertTrue(status.exceptions.isEmpty(),  status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(),  status.issues.toString())
         checkConsistency(repo.elements.values, checkForNoTransients = false)
         checkOwnership()
         checkLibraryElementIds()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
@@ -149,7 +149,7 @@ class LibrariesTest {
         checkConsistency(repo.elements.values, checkForNoTransients = false)
         checkOwnership()
         checkLibraryElementIds()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -165,9 +165,9 @@ class LibrariesTest {
                 }
             }
             """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         checkLibraryElementIds()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
@@ -180,9 +180,9 @@ class LibrariesTest {
                     }
                 }
             """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         checkLibraryElementIds()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
@@ -224,7 +224,7 @@ class LibrariesTest {
             """)
         val links = global.resolve<Association>("ISO26262::implements")
         assertNotNull(links)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
@@ -253,7 +253,7 @@ class LibrariesTest {
                     */ 
                 }
             """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     @Test
@@ -736,7 +736,7 @@ class LibrariesTest {
             """)
         initialize()
         initialize()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         checkLibraryElementIds()
     }
 
@@ -746,8 +746,8 @@ class LibrariesTest {
         initialize()
         loadLibrary("KerML")
         initialize()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         checkLibraryElementIds()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 }

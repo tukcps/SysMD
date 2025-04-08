@@ -15,10 +15,8 @@ interface TextualRepresentation: AnnotatingElement {
 
     /**
      * Runs the parser depending on the language field.
-     * @param generateAnnotations if true, the parser will add annotations that
-     * link the generated elements with the textual representation
      */
-    fun compile(generateAnnotations: Boolean = true)
+    fun compile()
     override fun clone(): TextualRepresentation
 
     fun getOwnerPrefix(): QualifiedName {

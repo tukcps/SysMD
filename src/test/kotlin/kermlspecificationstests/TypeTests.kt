@@ -18,7 +18,7 @@ class TypeTests {
         loadKerML("""
             type A specializes Base::Anything;
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -33,7 +33,7 @@ class TypeTests {
             type A1 specializes A;
             type A2 specializes A;
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -47,7 +47,7 @@ class TypeTests {
             // This Type has exactly one instance.
             type Singleton[1] specializes Base::Anything;
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -64,7 +64,7 @@ class TypeTests {
             type C specializes A, B;
             type f :> Base::things;
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -86,7 +86,7 @@ class TypeTests {
                 // f and g, but not h.
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -102,7 +102,7 @@ class TypeTests {
             
             conjugation c1 conjugate Conjugate1 conjugates Original;
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -118,7 +118,7 @@ class TypeTests {
             
             disjoining Disj disjoint A from B;
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -136,7 +136,7 @@ class TypeTests {
                 feature age[1] : ScalarValues::Integer;
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -157,7 +157,7 @@ class TypeTests {
                 member feature g featured by A;
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
 }

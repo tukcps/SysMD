@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package com.github.tukcps.sysmd.ui
 
 import androidx.compose.runtime.Composable

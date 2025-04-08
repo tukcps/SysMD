@@ -29,9 +29,11 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import java.net.MalformedURLException
 import java.util.*
-import kotlin.collections.ArrayList
-import kotlin.io.path.createFile
 import kotlin.io.path.writeText
+import org.springframework.web.multipart.MultipartFile
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+import org.apache.commons.io.FilenameUtils // You may need to add this dependency
 
 
 /**
@@ -132,7 +134,7 @@ class SessionController {
      * - The code is _not_ saved, only compiled.
      * @param level the level to which the compiler will analyze, from 0 (nothing) to 7 (constraint propagation).
      */
-    //class Code(var body: String = "") // Needed for valid JSON
+    // class Code (var body: String = "") // Needed for valid JSON
     // Easier to pass everything in a request body -> not sure if it fits under requests
     data class CodeRequest(
         val language: String = "SysML",
@@ -151,7 +153,7 @@ class SessionController {
         val session = SessionManager.getSession(sessionId)
 
         TextualRepresentationImplementation(language = request.language, body = request.code).also { it.model = session }
-            .compile(generateAnnotations = false)
+            .compile()
 
         session!!.initialize(request.level)
 
@@ -165,12 +167,12 @@ class SessionController {
      * - Puts all model files into the project-directory of the session and updates the index of a project.
      */
     @CrossOrigin
-    @ResponseStatus(HttpStatus.OK)
+    @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Puts all model files into a project. Old index and files are overwritten.")
     @PutMapping(path = ["/session/index"], produces = [MediaType.APPLICATION_JSON_VALUE])
     fun putIndexedFiles(
         @RequestHeader(value = "SessionId", required = true) sessionId: UUID,
-        sessionIndexRequest: SessionIndexRequest
+        @RequestBody sessionIndexRequest: SessionIndexRequest
     ): ResponseEntity<SessionIndexResponse> {
         val session = SessionManager.getSession(sessionId)
         val project = session?.project
@@ -178,12 +180,13 @@ class SessionController {
         val responseContent = SessionIndexResponse()
         sessionIndexRequest.files.forEach { file ->
             project.addIndex(file.filename, file.filename)
-            val createdFile = project.directory?.resolve(file.filename)?.createFile()
-            createdFile?.writeText(file.content)
+            val fileToWrite = project.directory?.resolve(file.filename)
+            fileToWrite?.writeText(file.content)
         }
-        val response = ResponseEntity(responseContent, HttpStatus.OK)
+        val response = ResponseEntity(responseContent, HttpStatus.CREATED)
         return response
     }
+
 
     /**
      * **Get a list of all (documentation) names files related to a project**
@@ -206,7 +209,7 @@ class SessionController {
     }
 
     /**
-     * **Get a list of all cells of a project**
+     * **Get a list of a project's cells
      * -  i.e., pictures in a project.**
      *
      * `GET /session/files`
@@ -259,6 +262,45 @@ class SessionController {
             }
         } catch (_: MalformedURLException) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
+        }
+    }
+
+    /**
+     * Post a file
+     * `POST /session/files`
+     */
+    @CrossOrigin
+    @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Uploads a document file, typically a picture in .png format, to the project.")
+    @PostMapping(path = ["/session/files"], consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+    fun uploadFile(
+        @RequestHeader(value = "SessionId", required = true) sessionId: UUID,
+        @Parameter(description = "File to be uploaded.", required = true) @RequestParam("file") file: MultipartFile
+    ): ResponseEntity<Map<String, String>> {
+        try {
+            val session = SessionManager.getSession(sessionId)
+            val filesDirectory = session?.project?.directory?.resolve("Files")
+
+            // Create directory if it doesn't exist
+            if (filesDirectory == null || !Files.exists(filesDirectory)) {
+                Files.createDirectories(filesDirectory!!)
+            }
+
+            // Generate a safe filename or use original
+            val filename = file.originalFilename?.let {
+                FilenameUtils.getBaseName(it) + "_" + System.currentTimeMillis() + "." + FilenameUtils.getExtension(it)
+            } ?: ("file_" + System.currentTimeMillis() + ".png")
+
+            val targetPath = filesDirectory.resolve(filename)
+
+            // Copy the file content
+            Files.copy(file.inputStream, targetPath, StandardCopyOption.REPLACE_EXISTING)
+
+            return ResponseEntity.status(HttpStatus.CREATED)
+                .body(mapOf("filename" to filename))
+        } catch (e: Exception) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(mapOf("error" to "Failed to upload file: ${e.message}"))
         }
     }
 

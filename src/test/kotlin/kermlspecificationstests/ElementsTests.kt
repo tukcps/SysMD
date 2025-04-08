@@ -18,7 +18,7 @@ class ElementsTests {
             classifier <c123> AClassifier;
             feature aFeature;
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -38,6 +38,6 @@ class ElementsTests {
                 }
             }
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 }

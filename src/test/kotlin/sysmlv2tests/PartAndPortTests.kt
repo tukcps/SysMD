@@ -23,7 +23,7 @@ class PartAndPortTests {
         loadSysMLv2("""
             port p; 
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p = global.resolve<PortUsage>("p")
         assertNotNull(p)
     }
@@ -36,7 +36,7 @@ class PartAndPortTests {
         loadSysMLv2("""
             out port p; 
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p = global.resolve<PortUsage>("p")
         assertNotNull(p)
     }
@@ -49,7 +49,7 @@ class PartAndPortTests {
         loadSysMLv2("""
             port def <short> p; 
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p = global.resolve<PortDefinition>("p")
         assertNotNull(p)
         assertTrue(p.allSupertypes().first().qualifiedName == "Ports::Port")
@@ -68,7 +68,7 @@ class PartAndPortTests {
             port def p2 :> p1;
             out port p3 : p2; 
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p2 = global.resolve<PortDefinition>("p2")
         assertNotNull(p2)
         assertTrue(p2.allSupertypes().first().qualifiedName == "p1")
@@ -84,7 +84,7 @@ class PartAndPortTests {
         loadSysMLv2("""
             part p; 
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p = global.resolve<PartUsage>("p")
         assertNotNull(p)
         assertTrue(p.allSupertypes().first().qualifiedName == "Parts::Part")
@@ -99,7 +99,7 @@ class PartAndPortTests {
             part def p1; 
             part def p2 :> p1; 
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p2 = global.resolve<PartDefinition>("p2")
         assertNotNull(p2)
         assertTrue(p2.allSupertypes().first().qualifiedName == "p1")

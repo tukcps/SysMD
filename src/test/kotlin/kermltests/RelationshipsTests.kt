@@ -21,7 +21,7 @@ class RelationshipsTests {
                 comment b /* b */ 
                 dependency d from a to b;
             """)
-        // assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        // assertEquals(0, status.reports.size, status.reports.toString())
         val d = global.resolve<Dependency>("d")
         assertNotNull(d)
         assertEquals("d", d.name)
@@ -36,7 +36,7 @@ class RelationshipsTests {
                 comment b /* b */ 
                 dependency a to b;
             """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val d = global.getOwnedElementOfType<Dependency>()
         assertNotNull(d)
         assertEquals("a", d.client.first().ref!!.name)
@@ -52,7 +52,7 @@ class RelationshipsTests {
                     dependency a to b;
                 }
             """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val d = global.resolve<Namespace>("n")?.getOwnedElementOfType<Dependency>()
         assertNotNull(d)
         assertEquals("a", d.client.first().ref!!.name)
@@ -72,7 +72,7 @@ class RelationshipsTests {
             namespace A { private import B; }  
             type B :> Base::Anything;
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val a = global.resolve<Namespace>("A")
         val b = global.resolve<Type>("B")
         val imp = a?.getOwnedElementsOfType<Import>()?.first()
@@ -95,10 +95,10 @@ class RelationshipsTests {
             assoc rel :> Links::Link; 
             connector rr: rel from a to b; 
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val rr = global.resolve<Connector>("rr")
         assertNotNull(rr)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val a = global.resolve<Element>("a")
         assertNotNull(a)
         val rel = global.resolve<Element>("rel") as Type
@@ -115,7 +115,7 @@ class RelationshipsTests {
         loadKerML("""
             assoc rel :> Links::Link; 
             """)
-        // assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        // assertEquals(0, status.reports.size, status.reports.toString())
         val rel = global.resolve<Element>("rel")
         val binLink = global.resolve<Element>("Links::BinaryLink")
         assertNotNull(rel)
@@ -137,7 +137,7 @@ class RelationshipsTests {
                 end feature a: A [1 .. 2] :>> source; 
                 end feature b: B :>> target;
             }""")
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val rel = global.resolve<Association>("rel")
         val a = global.resolve<Feature>("rel::a")
         val b = global.resolve<Feature>("rel::b")
@@ -156,7 +156,7 @@ class RelationshipsTests {
                 end feature b: B; 
             }
         """, catchExceptions = false)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val rel = global.resolve<Association>("rel")
         assertNotNull(rel)
     }
@@ -174,7 +174,7 @@ class RelationshipsTests {
                 }
                 connector r from bb to aa;
             """)
-        // assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        // assertTrue(status.reports.isEmpty(), status.reports.toString())
         val link = global.resolve<Association>("Links::Link")
         assertNotNull(link)
         val r = global.resolve<Connector>("r")
@@ -183,7 +183,7 @@ class RelationshipsTests {
         assertNotNull(source)
         val rel = global.resolve<Association>("rel")
         assertNotNull(rel)
-        // assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        // assertTrue(status.reports.isEmpty(), status.reports.toString())
         assertNotNull(rel)
         val relFromSource = findRelationshipsFrom(source, "*", rel).toList()
         assertEquals(1, relFromSource[0].target.size)
@@ -202,7 +202,7 @@ class RelationshipsTests {
             }
             connector r: rel from bb, aa to aa, bb;
         """, catchExceptions = false)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val source = global.resolve<Feature>("bb")
         val rel = global.resolve<Association>("rel")
         val r = global.resolve<Connector>("r")
@@ -226,6 +226,6 @@ class RelationshipsTests {
         """)
         val rel = global.resolve<Association>("rel")
         assertNotNull(rel)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 }

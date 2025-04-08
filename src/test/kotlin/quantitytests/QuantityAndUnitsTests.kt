@@ -1116,7 +1116,7 @@ class UnitTests {
         )
         initialize()
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -1163,7 +1163,7 @@ class UnitTests {
         propagate()
         assertEquals(1609459200.0,
             global.resolveVar("date1")!!.vectorQuantity.value.asAadd().getRange().max, 0.00001)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -1178,7 +1178,7 @@ class UnitTests {
         propagate()
         assertEquals("2022", global.resolveVar("year")!!.vectorQuantity.toString())
         assertEquals("2222", global.resolveVar("yearResult")!!.vectorQuantity.toString())
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -1192,7 +1192,7 @@ class UnitTests {
 
         propagate()
         assertEquals(2.0, global.resolveVar("result")!!.vectorQuantity.valuesIn("a")[0].asAadd().min, 0.001)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -1201,7 +1201,7 @@ class UnitTests {
         propagate()
         assertEquals(1635591601.0,
             global.resolveVar("date1")!!.vectorQuantity.value.asAadd().getRange().max, 0.00001)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -1209,7 +1209,7 @@ class UnitTests {
         loadKerML("""feature date: SI::Time [DateTime] = DateTime("2021-10-10T00:00");""")
         propagate()
         assertEquals("2021-10-10T00:00", global.resolveVar("date")!!.vectorQuantity.toString())
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
 
@@ -1229,7 +1229,7 @@ class UnitTests {
             global.resolveVar("date2")!!.vectorQuantity.value.asAadd().getRange().max, 0.00001)
         assertEquals(60.0,
             global.resolveVar("datediff")!!.vectorQuantity.value.asAadd().getRange().max, 0.00001)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -1247,7 +1247,7 @@ class UnitTests {
         assertEquals(1633914000.0,
             global.resolveVar("date2")!!.vectorQuantity.value.asAadd().getRange().max, 0.00001)
         assertEquals("24 h", global.resolveVar("datediff")!!.vectorQuantity.toString())
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -1259,7 +1259,7 @@ class UnitTests {
         )
         propagate()
         assertEquals("2022-10-10T03:00", global.resolveVar("dateResult")!!.vectorQuantity.toString())
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -1273,7 +1273,7 @@ class UnitTests {
         propagate()
         assertEquals("2022-10-10", global.resolveVar("date")!!.vectorQuantity.toString())
         assertEquals("2022-10-11", global.resolveVar("dateResult")!!.vectorQuantity.toString())
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -1286,7 +1286,7 @@ class UnitTests {
         propagate()
         assertEquals("2022-10", global.resolveVar("month")!!.vectorQuantity.toString())
         assertEquals("2022-11", global.resolveVar("monthResult")!!.vectorQuantity.toString())
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -1300,7 +1300,7 @@ class UnitTests {
         propagate()
         assertEquals("2022-10", global.resolveVar("month")!!.vectorQuantity.toString())
         assertEquals("2052-10", global.resolveVar("monthResult")!!.vectorQuantity.toString())
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -1314,7 +1314,7 @@ class UnitTests {
         assertEquals("2021-10", global.resolveVar("month1")!!.vectorQuantity.toString())
         assertEquals("2023-10", global.resolveVar("month2")!!.vectorQuantity.toString())
         assertEquals("2 a", global.resolveVar("time")!!.vectorQuantity.toString())
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -1357,7 +1357,7 @@ class UnitTests {
                 feature result2: ScalarValues::Real[1] = ln(ratio)/ln(10.0);
                 feature result3: ScalarValues::Real = power2(ratio);
                 feature result3: ScalarValues::Real = power2(ratio);""")
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         propagate()
         assertEquals(0.1, global.resolveVar("percentage")!!.vectorQuantity.getMinAsDouble(), 0.0000001)
         assertEquals(1.0, global.resolveVar("number")!!.vectorQuantity.getMinAsDouble(), 0.0000001)
@@ -1369,6 +1369,6 @@ class UnitTests {
         )
         assertEquals(1.0, global.resolveVar("result2")!!.vectorQuantity.getMinAsDouble(), 0.0000001)
         assertEquals(1024.0, global.resolveVar("result3")!!.vectorQuantity.getMinAsDouble(), 0.0000001)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 }

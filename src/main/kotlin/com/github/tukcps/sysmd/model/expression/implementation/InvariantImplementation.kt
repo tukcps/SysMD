@@ -5,7 +5,6 @@ import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.util.SimpleName
-import java.util.*
 
 class InvariantImplementation(
     declaredName: SimpleName? = null,
@@ -24,4 +23,6 @@ class InvariantImplementation(
     typeConstraint = mutableListOf("true"),
     expression = expression,
     elementType = elementType,
-)
+) {
+    override var isNegated: Boolean = false
+}

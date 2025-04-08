@@ -1,8 +1,6 @@
 package com.github.tukcps.sysmd.model.kerml
 
-import com.github.tukcps.sysmd.exceptions.FeatureExpected
-import com.github.tukcps.sysmd.exceptions.NamespaceExpected
-import com.github.tukcps.sysmd.exceptions.TypeExpected
+import com.github.tukcps.sysmd.exceptions.SysMDFatalTypeExpected
 import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.services.resolve.resolve
 import io.github.tukcps.sysmlv2.api.entities.Identified
@@ -110,15 +108,15 @@ fun checkTypeOfT(namespace: Namespace, ref: Element, expected: Resolved.RefType)
     when(expected) {
         Resolved.RefType.TYPE -> {
             if (ref !is Type)
-                throw TypeExpected("Expecting a type, but '${ref.escapedName()}' is not a type.", element = namespace)
+                throw SysMDFatalTypeExpected("Expecting a type, but '${ref.escapedName()}' is not a type.", element = namespace)
         }
         Resolved.RefType.NAMESPACE -> {
             if (ref !is Namespace)
-                throw NamespaceExpected("Expecting a kind of namespace, but '${ref.escapedName()}' is not a namespace.", element = namespace)
+                throw SysMDFatalTypeExpected("Expecting a kind of namespace, but '${ref.escapedName()}' is not a namespace.", element = namespace)
         }
         Resolved.RefType.FEATURE -> {
             if (ref !is Feature)
-                throw FeatureExpected("Expecting a feature in ${namespace.escapedName()}, but '${ref.escapedName()}' is not a feature.", element = namespace)
+                throw SysMDFatalTypeExpected("Expecting a feature in ${namespace.escapedName()}, but '${ref.escapedName()}' is not a feature.", element = namespace)
         }
         else -> return
     }

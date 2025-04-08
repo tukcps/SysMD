@@ -19,7 +19,7 @@ class TypeTests {
         loadKerML("""
            type a :> Base::Anything;  
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val a = global.resolve<Type>("a")
         assertNotNull(a)
         assertTrue(a.getOwnedElementOfType<Specialization>()?.general?.ref == anything)
@@ -32,7 +32,7 @@ class TypeTests {
             type B :> Base::Anything { feature b; }
             type AB :> A, B; 
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val ab = global.resolve<TypeImplementation>("AB")
         assertNotNull(ab)
         assertEquals(2, ab.allSupertypes().size)
@@ -48,6 +48,6 @@ class TypeTests {
             type A :> p::t; 
         """)
         val pt = global.resolve<Type>("p::t")
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 }

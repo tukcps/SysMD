@@ -21,7 +21,7 @@ class AnnotationsTests {
             comment Comment1 about A, B
                 /* This is the comment body text. */
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -38,6 +38,6 @@ class AnnotationsTests {
                 /* This is also a comment about N. */
             }
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 }

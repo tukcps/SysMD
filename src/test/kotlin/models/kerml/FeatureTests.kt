@@ -27,7 +27,7 @@ class FeatureTests {
         val kerml = feature.toTextualRepresentation()
         loadKerML(kerml!!)
         val f = global.resolve<Feature>("f")
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals("Declared name saved incorrectly", "f", f?.declaredName)
         assertTrue(f?.isFeatureWithValue() == true )
         assertEquals("Unit saved incorrectly", "m", f?.unitConstraint)

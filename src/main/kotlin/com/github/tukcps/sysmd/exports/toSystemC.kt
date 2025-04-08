@@ -1,6 +1,6 @@
 package com.github.tukcps.sysmd.exports
 
-import com.github.tukcps.sysmd.exceptions.SysMDInternalError
+import com.github.tukcps.sysmd.exceptions.SysMDFatalInternalError
 import com.github.tukcps.sysmd.exports.systemCElements.*
 import com.github.tukcps.sysmd.model.expression.AstBinOp
 import com.github.tukcps.sysmd.model.expression.implementation.InvariantImplementation
@@ -478,7 +478,7 @@ class Exporter {
                         variables.add(Variable(expression, DataType.BOOLEAN, ::dependencyStringToMinMax))
                     }
                 }
-                else -> throw SysMDInternalError("Unsupported type of expression: ${expression.declaredName}")
+                else -> throw SysMDFatalInternalError("Unsupported type of expression: ${expression.declaredName}")
             }
         }
     }
@@ -520,7 +520,7 @@ class Exporter {
                                 "Signal" in element.type.map { it.str }       -> ChannelType.PRIMITIVE
                                 "ComplexSignal" in element.type.map { it.str } -> ChannelType.HIERARCHICAL
                                 "Bus" in element.type.map { it.str }-> ChannelType.TLM
-                                else -> throw SysMDInternalError("No matching channel type found for: ${element.declaredName}")
+                                else -> throw SysMDFatalInternalError("No matching channel type found for: ${element.declaredName}")
                             }
                         ).apply {
                             //Add the Ports to the Channel
@@ -618,7 +618,7 @@ class Exporter {
                         invariantName = element.declaredName.toString(),
                         invariantString = element.expression?:""
                     )
-                ) ?: throw SysMDInternalError("No Requirement found to add Invariant ${element.declaredName.toString()} to.")
+                ) ?: throw SysMDFatalInternalError("No Requirement found to add Invariant ${element.declaredName.toString()} to.")
             }
         }
 
@@ -644,7 +644,7 @@ class Exporter {
                isInherited = element.isTransient,
                module = allModules[element.path().substringBeforeLast("::")].let { it1 ->
                    it1 ?: allModules[element.path().substringBeforeLast("::") + "_CLASS"].let { it2 ->
-                       it2 ?: throw SysMDInternalError("No Module found for Port: ${element.declaredName}")
+                       it2 ?: throw SysMDFatalInternalError("No Module found for Port: ${element.declaredName}")
                    }
                }
            ).let {
@@ -684,7 +684,7 @@ class Exporter {
                     module = allModules[element.qualifiedName + "_CLASS"].let { mod1 ->
                         (if(mod1?.useSuperClass == true) mod1.superClassModule else mod1) ?:allModules[element.type.first().ref!!.qualifiedName].let { mod2 ->
                             mod2 ?: allModules[element.type.first().ref!!.qualifiedName + "_CLASS"].let { mod3 ->
-                                mod3 ?: throw SysMDInternalError("No Module found for Usage: ${element.declaredName}")
+                                mod3 ?: throw SysMDFatalInternalError("No Module found for Usage: ${element.declaredName}")
                             }
                         }
                     }
@@ -699,7 +699,7 @@ class Exporter {
                     className = element.name.toString() + "_CLASS",
                     amount = 1,
                     module = allModules[element.qualifiedName + "_CLASS"].let { mod1 ->
-                            mod1 ?: throw SysMDInternalError("No Module found for Usage: ${element.declaredName}")
+                            mod1 ?: throw SysMDFatalInternalError("No Module found for Usage: ${element.declaredName}")
                         }
                ).apply { this.module.moduleUsages.add(this) } //Add this Usage to the module
             }
@@ -711,7 +711,7 @@ class Exporter {
                     mod1?.subModules?.add(usage.apply { instanceLocation = mod1.fullQualifiedName })
                         ?: allModules[element.path().substringBeforeLast("::") + "_CLASS"].let { mod2 ->
                             mod2?.subModules?.add(usage.apply { instanceLocation = mod2.fullQualifiedName })
-                                ?: throw SysMDInternalError("No Module found to add this Usage to: ${element.declaredName}")
+                                ?: throw SysMDFatalInternalError("No Module found to add this Usage to: ${element.declaredName}")
                         }
                 }
             }
@@ -757,7 +757,7 @@ class Exporter {
                 allPorts[port.ref!!.qualifiedName]?.apply{
                     associatedChannels.add(channel) //Inform this port about the Channel it connects to
                 } ?:
-                throw SysMDInternalError("There was no Port Object found for: ${port.ref!!.declaredName}")
+                throw SysMDFatalInternalError("There was no Port Object found for: ${port.ref!!.declaredName}")
             )
         } else if (port.ref!! is Feature){
             //There exists no Port object yet - Create one and add it to the portList
@@ -770,7 +770,7 @@ class Exporter {
                     isInherited = port.ref!!.isTransient,
                     module = allModules[port.ref!!.path().substringBeforeLast("::")].let { module1 ->
                         module1 ?: allModules[port.ref!!.path().substringBeforeLast("::") + "_CLASS"].let { module2 ->
-                            module2 ?: throw SysMDInternalError("No Module found with Full Qualified Name \"${port.ref!!.qualifiedName}\" " +
+                            module2 ?: throw SysMDFatalInternalError("No Module found with Full Qualified Name \"${port.ref!!.qualifiedName}\" " +
                                     "was found for Port \"${port.ref!!.declaredName.toString()}\"")
                         }
                     }
@@ -779,7 +779,7 @@ class Exporter {
                     allPorts[this.fullQualifiedName] = this //Add this newly created Port to the allPorts Map
                 }
             )
-        }else throw SysMDInternalError("The Element ${port.ref!!.declaredName} was neither a PortUsage nor an ExpressionImplementation" +
+        }else throw SysMDFatalInternalError("The Element ${port.ref!!.declaredName} was neither a PortUsage nor an ExpressionImplementation" +
                 "and therefor could not be added to Channel ${channel.channelName}.")
     }
 

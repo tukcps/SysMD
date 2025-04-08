@@ -24,7 +24,7 @@ fun AnnotationsView(
 ) {
     Row {
         Column(modifier = Modifier.fillMaxWidth().padding(start = 36.dp)) {
-            if (showInfo.value && model.displayItems.size > 0) {
+            if (showInfo.value && model.displayItems.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(
                     modifier = Modifier.background(AppTheme.colors.infoContainer.copy(0.5f))
@@ -42,9 +42,7 @@ fun AnnotationsView(
                         item.text.startsWith("ERROR") -> {
                             Row(
                                 modifier = Modifier.background(
-                                    MaterialTheme.colorScheme.errorContainer.copy(
-                                        0.5f
-                                    )
+                                    MaterialTheme.colorScheme.errorContainer.copy(0.5f)
                                 ).fillMaxWidth().padding(start = 70.dp)
                             ) {
                                 Text(
@@ -58,9 +56,7 @@ fun AnnotationsView(
                         item.text.startsWith("INFO") ->
                             Row(
                                 modifier = Modifier.background(
-                                    AppTheme.colors.warningContainer.copy(
-                                        0.5f
-                                    )
+                                    AppTheme.colors.warningContainer.copy(0.5f)
                                 ).fillMaxWidth().padding(start = 70.dp)
                             ) {
                                 Text(

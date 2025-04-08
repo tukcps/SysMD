@@ -18,7 +18,7 @@ class CalculationTests {
         loadSysMLv2("""
             calc def CalcDef1;
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -37,7 +37,7 @@ class CalculationTests {
                 return v_f : ScalarValues::Real;
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
 
@@ -53,7 +53,7 @@ class CalculationTests {
                 return nextState; 
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
 
@@ -72,6 +72,6 @@ class CalculationTests {
                 return : ScalarValues::Real = a+b; // Return value has no name. 
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 }

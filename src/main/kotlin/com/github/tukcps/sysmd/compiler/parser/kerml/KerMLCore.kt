@@ -6,21 +6,13 @@ package com.github.tukcps.sysmd.compiler.parser.kerml
 import io.github.tukcps.aadd.values.IntegerRange
 import com.github.tukcps.sysmd.compiler.KerML
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
-import com.github.tukcps.sysmd.compiler.semantics.kerml.ClassActions
-import com.github.tukcps.sysmd.compiler.semantics.kerml.ClassifierActions
-import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
-import com.github.tukcps.sysmd.compiler.semantics.kerml.RelationshipActionsImpl
-import com.github.tukcps.sysmd.compiler.semantics.kerml.TypeActions
 import com.github.tukcps.sysmd.compiler.semantics.Identification
+import com.github.tukcps.sysmd.compiler.semantics.kerml.*
 import com.github.tukcps.sysmd.exceptions.SyntaxError
 import com.github.tukcps.sysmd.exceptions.throwSyntaxError
 import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.model.kerml.implementation.ClassImplementation
-import com.github.tukcps.sysmd.model.kerml.implementation.ClassifierImplementation
-import com.github.tukcps.sysmd.model.kerml.implementation.ConjugationImplementation
-import com.github.tukcps.sysmd.model.kerml.implementation.TypeImplementation
+import com.github.tukcps.sysmd.model.kerml.implementation.*
 import com.github.tukcps.sysmd.model.util.QualifiedName
-import com.github.tukcps.sysmd.services.session.reportInfo
 
 /**
  * SPECIALIZES is a pseudo-lexical element that is either
@@ -58,7 +50,7 @@ fun KerML.ConjugationPart(): MutableList<String> {
         COMMA.consume()
         QualifiedName().also { result.add(it) }
     }
-    model.reportInfo(model.global, "Not yet supported: Conjugation")
+    model.status.info("Not yet supported: Conjugation", this)
     return result
 }
 
@@ -202,7 +194,7 @@ fun KerML.ClassifierDeclaration(classifier: ClassifierActions<Classifier>) {
  *      DataType :- "datatype" Identification ["specializes" QualifiedName] Body
  */
 fun KerML.Datatype() {
-    val datatype = semantics.datatypeActions()
+    val datatype = DataTypeActions<DataType>(semantics, ::DataTypeImplementation)
     DATATYPE.consume()
     @Suppress("UNCHECKED_CAST")
     ClassifierDeclaration(datatype as ClassifierActions<Classifier>)
@@ -329,7 +321,7 @@ fun KerML.Disjoining() {
  *          ValuePart? TypeBody
  */
 fun KerML.Feature() {
-    val feature = semantics.featureActions()
+    val feature = FeatureActions<Feature>(semantics, ::FeatureImplementation, mutableListOf("Base::Anything"))
     FEATURE.optional()
     FeatureDeclaration(feature)
     optional(valuePartStart) {
@@ -598,9 +590,9 @@ fun KerML.TypeBodyElement() {
     MemberPrefix()
     noOrMore(HASHTAG) { PrefixMetadataMember()}
     alternatives {
-        nonFeatureElementStart starts    { NonFeatureElement() }
+        nonFeatureElementStart starts       { NonFeatureElement() }
         FEATURE_PREFIX_START   starts       { FeatureElement() }
-        featureElementStart starts       { FeatureElement() }
+        featureElementStart starts          { FeatureElement() }
         ALIAS starts                        { AliasMember() }
         IMPORT starts                       { Import() }
     }

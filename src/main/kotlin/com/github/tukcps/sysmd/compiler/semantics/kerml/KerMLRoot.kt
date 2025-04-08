@@ -9,7 +9,6 @@ import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.*
 import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.model.util.SimpleName
-import com.github.tukcps.sysmd.services.session.reportInfo
 
 /**
  * Class with functions that add a comment.
@@ -130,7 +129,7 @@ class ImportActions(
     override fun create(identification: Identification) {
         super.create(identification)
         if (context.visibilityKind == null) {
-            context.model.reportInfo(created!!, "import must be either explicit public or private")
+            context.model.status.info("import must be either explicit public or private", context.compiler)
         }
         setImportingNamespace(context.ownerName())
     }

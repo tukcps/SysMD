@@ -21,7 +21,7 @@ class StateTests {
                 state s;  
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val s = global.resolve<StateUsage>("a::s")
         assertNotNull(s)
     }
@@ -36,7 +36,7 @@ class StateTests {
                 }
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val s = global.resolve<StateUsage>("a::s")
         assertNotNull(s)
         assertEquals("States::StateAction", s.allSupertypes().first().qualifiedName)
@@ -58,7 +58,7 @@ class StateTests {
                 }
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val s = global.resolve<StateUsage>("a::s")
         assertNotNull(s)
         assertTrue("States::StateAction" in s.allSupertypes().map { it.qualifiedName })
@@ -135,6 +135,6 @@ class StateTests {
                 interface i connect PartA::outPortA to PartB::inPortB;
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 }

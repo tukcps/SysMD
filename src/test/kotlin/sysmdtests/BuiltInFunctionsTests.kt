@@ -26,7 +26,7 @@ class BuiltInFunctionsTests {
             feature a: ScalarValues::Real = b + c * d;
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val a = global.resolve<Feature>("a")
         assertEquals(3, a!!.variable!!.ast!!.getLeaves().size)
     }
@@ -37,7 +37,7 @@ class BuiltInFunctionsTests {
             feature b: ScalarValues::Boolean = hasA(Global, a);
             """)
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val b = global.resolve<Feature>("b")!!
         assertEquals(builder.True, b.variable!!.vectorQuantity.value)
     }
@@ -48,7 +48,7 @@ class BuiltInFunctionsTests {
             feature b: ScalarValues::Boolean = hasA(Global, c).
             """)
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val b = global.resolve<Feature>("b")!!
         assertEquals(builder.False, b.variable!!.vectorQuantity.value)
     }
@@ -59,7 +59,7 @@ class BuiltInFunctionsTests {
                 feature b: ScalarValues::Boolean = a hastype ScalarValues::Real;
                 """)
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val b = global.resolve<Feature>("b") !!
         assertEquals(builder.True, b.variable!!.vectorQuantity.value)
     }
@@ -70,7 +70,7 @@ class BuiltInFunctionsTests {
                 feature b: ScalarValues::Boolean = a hastype ScalarValues::Real;
                 """)
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val b = global.resolve<Feature>("b") !!
         assertEquals(builder.False, b.variable!!.vectorQuantity.value)
     }
@@ -81,7 +81,7 @@ class BuiltInFunctionsTests {
                 feature b: ScalarValues::Boolean = a hastype ScalarValues::ScalarValue;
                 """)
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val b = global.resolve<Feature>("b") !!
         assertEquals(builder.True, b.variable!!.vectorQuantity.value)
     }
@@ -90,7 +90,7 @@ class BuiltInFunctionsTests {
     fun oneOfOperationTest3() = testSession("ScalarValues") {
         loadKerML("feature r: ScalarValues::Real = oneOf(1.0 .. 2.0);")
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val r = global.resolve<Feature>("r") !!
         assertEquals(Range(1.0 .. 2.0), r.variable!!.vectorQuantity.value.asAadd().getRange())
     }
@@ -101,7 +101,7 @@ class BuiltInFunctionsTests {
     fun allOfOperationTest4() = testSession("ScalarValues") {
         loadKerML("feature r: ScalarValues::Real(1.5) = allOf(1.0 .. 2.0);")
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val r = global.resolve<Feature>("r") !!
         assertEquals(Range(1.0 .. 2.0), r.variable!!.vectorQuantity.value.asAadd().getRange())
     }
@@ -111,7 +111,7 @@ class BuiltInFunctionsTests {
     fun oneOfOperationTest() = testSession("ScalarValues") {
         loadKerML("feature r: ScalarValues::Real(1.0) = oneOf(1.0 .. 2.0);")
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val r = global.resolve<Feature>("r") !!
         assertEquals(Range(1.0 .. 1.0), r.variable!!.vectorQuantity.value.asAadd().getRange())
     }
@@ -120,7 +120,7 @@ class BuiltInFunctionsTests {
     fun anyOfOperationTest() = testSession("ScalarValues") {
         loadKerML("feature r: ScalarValues::Real = anyOf(1.0 .. 2.0);")
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val r = global.resolve<Feature>("r") !!
         assertEquals(Range(1.0 .. 2.0), r.variable!!.vectorQuantity.value.asAadd().getRange())
     }

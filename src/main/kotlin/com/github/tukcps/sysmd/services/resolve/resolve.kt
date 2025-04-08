@@ -1,15 +1,10 @@
 package com.github.tukcps.sysmd.services.resolve
 
 import com.github.tukcps.sysmd.exceptions.ElementNotFoundException
+import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.exceptions.SysMDError
 import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.model.util.QualifiedName
-import com.github.tukcps.sysmd.model.util.SimpleName
-import com.github.tukcps.sysmd.model.util.dropFirstName
-import com.github.tukcps.sysmd.model.util.firstName
-import com.github.tukcps.sysmd.model.util.hasNoName
-import com.github.tukcps.sysmd.model.util.isSimpleName
-import com.github.tukcps.sysmd.services.session.report
+import com.github.tukcps.sysmd.model.util.*
 
 
 /**
@@ -35,8 +30,10 @@ inline fun <reified T: Element> Namespace.resolve(
     if (found is T?)
         return found
 
-    model?.report(found,"'$qualifiedName' could be resolved, but is of wrong type",
-        cause = ElementNotFoundException(this, "'$qualifiedName' could be resolved, but is of wrong type"))
+    model?.status?.error("'$qualifiedName' could be resolved, but is of wrong type", element = found,
+        cause = ElementNotFoundException(this, "'$qualifiedName' could be resolved, but is of wrong type"),
+        kind = Issue.Kind.ERROR_UNRESOLVED_NAME
+    )
     return null
 }
 
@@ -153,7 +150,7 @@ fun Namespace.findAllOwnedElements(z: Int=0): Collection<Element> {
     if (this is Type) {
         allSupertypes().forEach { superclass ->
             if (this == superclass)
-                model?.report(this, "Cyclic supertype: ${this.qualifiedName}")
+                model?.status?.error("Cyclic supertype: ${this.qualifiedName}", element = this)
             else {
                 val inherited = if (superclass !is Anything) superclass.findAllOwnedElements(z + 1)
                 else emptySet()
@@ -180,9 +177,7 @@ private fun mergeOwnedElements(own: Collection<Element>, inherited: Collection<E
 
     for (i in inherited) {
         var overridden = false
-        own.forEach { o ->
-            overridden = true
-        }
+        own.forEach { _ -> overridden = true }
         if (!overridden)
             merged.add(i)
     }

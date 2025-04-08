@@ -13,7 +13,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
  * @property hasChildren true if node has children
  * @property ignoreChildren if set, no children of node will be displayed
  * @property name Name of the node that will be displayed
- * @property children Method that returns a list of children of same type (TreeViewNodeModel)
+ * @property children Method that returns a list of the same type's children (TreeViewNodeModel)
  */
 interface TreeViewNodeModel {
     val hasChildren: Boolean
@@ -66,7 +66,7 @@ class TreeViewModel(
                 selectedItem.value = index
             }
             is ItemType.Item -> {
-                if (onOpen != null) onOpen(item.node)
+                onOpen?.let { it(item.node) }
                 selectedItem.value = index
             }
         }

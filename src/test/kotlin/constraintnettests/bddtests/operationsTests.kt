@@ -107,7 +107,7 @@ internal class OperationTests /*: DDBuilderIF by Global.context */{
             loadKerML("feature b: ScalarValues::Boolean;")
             loadKerML("feature c: ScalarValues::Boolean;")
             loadKerML("feature y: ScalarValues::Boolean = (a and c) or (not(b) and not(a));")
-            assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+            assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
             assertEquals(XBool.X, global.resolveVar("a")!!.boolSpecs[0])
             assertEquals(2, global.resolveVar("y")!!.vectorQuantity.value.height())
             // 1) a auf True setzen
@@ -124,7 +124,7 @@ internal class OperationTests /*: DDBuilderIF by Global.context */{
             feature b: ScalarValues::Boolean;
             feature c: ScalarValues::Boolean;
             feature y: ScalarValues::Boolean = (a and c) or (not(b) and not(a));""")
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val a = global.resolveVar("a")!!
         val b = global.resolveVar("b")!!
         val c = global.resolveVar("c")!!
@@ -152,7 +152,7 @@ internal class OperationTests /*: DDBuilderIF by Global.context */{
                 feature b: ScalarValues::Boolean(false);
                 feature d: ScalarValues::Boolean;
             """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals(null, global.resolve<Feature>("a")!!.variable!!.ast)
         assertEquals(null, global.resolve<Feature>( "b")!!.variable!!.ast)
         assertEquals(null, global.resolve<Feature>( "d")!!.variable!!.ast)
@@ -172,7 +172,7 @@ internal class OperationTests /*: DDBuilderIF by Global.context */{
             feature c: ScalarValues::Boolean(true);
             feature y: ScalarValues::Boolean = (a and c) or (not(b) and not(a));
             feature z: ScalarValues::Boolean(true).""")
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         propagate()
         val y = global.resolve<Feature>("y")!!.variable!!
         val a = global.resolve<Feature>("a")!!.variable!!
@@ -183,7 +183,7 @@ internal class OperationTests /*: DDBuilderIF by Global.context */{
         val tst = y.vectorQuantity.bdd().intersect(a.vectorQuantity.bdd())
         val tstEval = tst.evaluate()
         val brk2 = 2
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         //println(this.getProperties().forEach { println(it.toString()) })
     }
 }

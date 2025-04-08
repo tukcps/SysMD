@@ -20,7 +20,7 @@ class UsageTests {
         part def PartDef1;
         part part1 : PartDef1;
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
 
         val partDef1 = global.resolve<PartDefinition>("PartDef1")
         assertNotNull(partDef1)
@@ -40,7 +40,7 @@ class UsageTests {
         part def <PD2> PartDef2;
         part <'p#2'> part2 : PartDef2;
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
 
         val partDef2 = global.resolve<PartDefinition>("PartDef2")
         assertNotNull(partDef2)
@@ -61,7 +61,7 @@ class UsageTests {
             }
         }
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
 
         val partDef3 = global.resolve<PartDefinition>("PartDef3")
         assertNotNull(partDef3)
@@ -87,7 +87,7 @@ class UsageTests {
             alias partAlias2 for part1;
         }
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
 
         val partDef1 = global.resolve<PartDefinition>("PartDef1")
         assertNotNull(partDef1)
@@ -108,7 +108,7 @@ class UsageTests {
         part def PartDef1;
         variation part part1 : PartDef1;
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
 
         val partDef1 = global.resolve<PartDefinition>("PartDef1")
         assertNotNull(partDef1)
@@ -127,7 +127,7 @@ class UsageTests {
             part part2 : Part2 [0..*];
         }
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -144,7 +144,7 @@ class UsageTests {
             part part2 : Part2 [0..*];
         }
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -162,6 +162,6 @@ class UsageTests {
             connect part2 to part3;
             part part3;
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 }

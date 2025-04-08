@@ -1,6 +1,6 @@
 package com.github.tukcps.sysmd.exports.systemCElements
 
-import com.github.tukcps.sysmd.exceptions.SysMDInternalError
+import com.github.tukcps.sysmd.exceptions.SysMDFatalInternalError
 import java.io.File
 import java.io.PrintWriter
 
@@ -72,12 +72,12 @@ class Channel(//Name of the Channel
         //If a conflict is found, throw an Exception
         inputPorts.forEach {pt ->
             if(channelDataType != pt.dataType){
-                throw SysMDInternalError("Some ports of channel \"${channelName}\" use unequal data types!")
+                throw SysMDFatalInternalError("Some ports of channel \"${channelName}\" use unequal data types!")
             }
         }
         outputPorts.forEach {pt ->
             if(channelDataType != pt.dataType){
-                throw SysMDInternalError("Some ports of channel \"${channelName}\" use unequal data types!")
+                throw SysMDFatalInternalError("Some ports of channel \"${channelName}\" use unequal data types!")
             }
         }
     }
@@ -278,7 +278,7 @@ class Channel(//Name of the Channel
                 }
             }
 
-            else -> throw SysMDInternalError("No Port Binding supported for INOUT Ports!")
+            else -> throw SysMDFatalInternalError("No Port Binding supported for INOUT Ports!")
         }
     }
 

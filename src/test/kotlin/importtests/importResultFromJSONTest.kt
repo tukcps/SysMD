@@ -2,6 +2,7 @@ package importtests
 
 import util.testSession
 import com.github.tukcps.sysmd.cspsolver.propagate
+import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import util.mockup.loadSysMLv2
 import java.io.File
@@ -64,10 +65,10 @@ class ImportTest {
             """.trimIndent()
         )
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals(28.5, global.resolveVar("test::myAmplifier::gain")!!.aadd().min,0.00001)
         assertEquals(28.5,global.resolveVar("test::myAmplifier::gain")!!.aadd().max,0.00001)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     @Test
@@ -112,7 +113,7 @@ class ImportTest {
         propagate()
 
         assertTrue(global.resolveVar("test::myAmplifier::gain")!!.aadd().isEmpty())
-        assertEquals(1, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(1, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /*************************************************************************
@@ -154,7 +155,7 @@ class ImportTest {
             }
         """)
         propagate()
-        assertEquals(1, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(1, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(26.0, global.resolveVar("test::myAmplifier::gain")!!.aadd().min,0.00001)
         assertEquals(35.0,global.resolveVar("test::myAmplifier::gain")!!.aadd().max,0.00001)
     }
@@ -199,7 +200,7 @@ class ImportTest {
         propagate()
         assertEquals(26.0, global.resolveVar("test::myAmplifier::gain")!!.aadd().min, 0.00001)
         assertEquals(35.0,global.resolveVar("test::myAmplifier::gain")!!.aadd().max, 0.00001)
-        assertEquals(1, status.exceptions.size, status.exceptions.toString())
+        assertEquals(1, status.issues.filter { it.kind == Issue.Kind.ERROR }.size)
     }
 
     @Test
@@ -244,7 +245,7 @@ class ImportTest {
 
         assertEquals(26.0, global.resolveVar("test::myAmplifier::gain")!!.rangeSpecs[0].min,0.00001)
         assertEquals(35.0,global.resolveVar("test::myAmplifier::gain")!!.rangeSpecs[0].max,0.00001)
-        assertEquals(1, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(1, status.issues.size, "Error messages: ${status.issues}")
     }
 
 
@@ -277,7 +278,7 @@ class ImportTest {
 
         assertEquals(28.5, global.resolveVar("gain")!!.aadd().min,0.00001)
         assertEquals(28.5,global.resolveVar("gain")!!.aadd().max,0.00001)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     private fun writeJson(attrFQN: Any, resultUnit: String, resultValue: Double) {

@@ -2,25 +2,24 @@ package com.github.tukcps.sysmd.exceptions
 
 import com.github.tukcps.sysmd.compiler.scanner.Token
 import com.github.tukcps.sysmd.model.kerml.Element
-import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
 
 
 /**
- * General exception class that is also used for persisting in the list of errors/issues.
+ * General exception class that holds information for debugging SysMD and as well to generate error messages.
  * Each entry has:
- * @param message Mandatory textual description
- * @param textualRepresentation the textual representation in which the error has occurred
- * @param token the token where the error has occurred
- * @param element the element in which the error has occurred
- * @param cause the initial exception that caused the SysMD exception
+ * @param message Mandatory textual description; for error message
+ * @param input The input sequence that caused the issue, if known.
+ * @param token The input token where the error has occurred, if known.
+ * @param element path of the element in which the error has occurred; for debugging
+ * @param cause the initial exception that caused the SysMD exception; for debugging
  */
 open class SysMDException(
     override var message: String,
-    var textualRepresentation: TextualRepresentation? = null,
+    var input: CharSequence? = null,
     var token: Token? = null,
+    var kind: Issue.Kind = Issue.Kind.ERROR,
     var element: Element? = null,
     override val cause: Throwable? = null,
-    var priority: Int,
 ): Exception(message, cause) {
 
     /**
@@ -31,7 +30,7 @@ open class SysMDException(
         return when (other) {
             null -> false
             !is SysMDException -> false
-            else -> message == other.message && element?.qualifiedName == other.element?.qualifiedName && token?.lineNo == other.token?.lineNo
+            else -> message == other.message && input == other.input && token?.lineNo == other.token?.lineNo
         }
     }
 
@@ -42,7 +41,7 @@ open class SysMDException(
         var result = message.hashCode()
         // result = 31 * result + (textualRepresentation?.hashCode() ?: 0)
         result = 31 * result + (token?.lineNo?.hashCode() ?: 0)
-        result = 31 * result + (element?.qualifiedName?.hashCode() ?: 0)
+        result = 31 * result + (input?.hashCode() ?: 0)
         return result
     }
 
@@ -55,7 +54,7 @@ open class SysMDException(
             string += "Line ${token!!.lineNo}, near '${token!!.string}' "
         }
         if (element != null) {
-            string += "in '${element!!.escapedName()?:element?.elementType}': "
+            string += "in '${element}': "
         }
         string += message
         return string
@@ -66,5 +65,4 @@ open class SysMDException(
     companion object {
         const val EXPLANATION = "An exception inside SysMD that is not specifically classified."
     }
-
 }

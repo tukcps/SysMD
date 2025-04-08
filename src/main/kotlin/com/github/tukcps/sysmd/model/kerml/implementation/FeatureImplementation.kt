@@ -5,7 +5,6 @@ import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.util.SimpleName
-import java.util.*
 
 /**
  * A feature definition including Multiplicity, as in KerML (mostly).
@@ -118,7 +117,7 @@ open class FeatureImplementation(
     override var variable: Variable?
         get() = variables.firstOrNull()
         set(value) { variables = mutableListOf(value) }
-    // For nested attributes multiple variables are needed
+    // For nested attributes, multiple variables are needed
     override var variables: MutableList<Variable?> = mutableListOf()
 }
 

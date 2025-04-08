@@ -61,7 +61,7 @@ class ExportImportSessionTests {
                 type B :> Base::Anything;
                 type A :> Base::Anything { private import B; } // Import is created in A 
             """)
-            assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+            assertTrue(status.issues.isEmpty(), status.issues.toString())
             val a = global.resolve<Type>("A")!!
             val b = global.resolve<Type>("B")!!
 
@@ -86,7 +86,7 @@ class ExportImportSessionTests {
             // Restore it from DB ... and check again
             // loadProject("test", initialize = false)
             import(export)
-            assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+            assertTrue(status.issues.isEmpty(), status.issues.toString())
             val a = global.resolve<Type>("A")!!
             val b = global.resolve<Type>("B")!!
             val imp = a.getOwnedElementsOfType<Import>().first()

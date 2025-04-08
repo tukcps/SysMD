@@ -28,16 +28,25 @@ fun KerML.Expression(): AstNode {
 }
 
 /**
+ *      BooleanExpression =
+ *          FeaturePrefix 'bool' FeatureDeclaration ValuePart? FunctionBody
+ */
+fun KerML.BooleanExpression(): AstNode {
+    TODO()
+}
+
+
+/**
  * conditionalExpression :- IF expression ? expression ELSE expression
  */
 fun KerML.ConditionalExpression(): AstNode? {
     val action = semantics.conditionalExpressionActions()
     IF.consume()
-    Expression().also { action?.condExpr = it }
+    Expression().also { action.condExpr = it }
     QUESTION.consume()
-    Expression().also { action?.thenExpr = it }
+    Expression().also { action.thenExpr = it }
     ELSE.consume()
-    Expression().also { action?.elseExpr = it; return action?.run() }
+    Expression().also { action.elseExpr = it; return action.run() }
 }
 
 /**

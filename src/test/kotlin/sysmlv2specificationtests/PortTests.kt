@@ -25,7 +25,7 @@ class PortTests {
         /* members */
         }
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
 
         val portDef1 = global.resolve<PortDefinition>("PortDef1")
         assertNotNull(portDef1)
@@ -49,7 +49,7 @@ class PortTests {
             /* members */
         }
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
 
         val port1 = global.resolve<PortUsage>("port1")
         assertNotNull(port1)

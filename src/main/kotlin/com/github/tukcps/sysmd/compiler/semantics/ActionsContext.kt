@@ -1,13 +1,14 @@
 package com.github.tukcps.sysmd.compiler.semantics
 
-import io.github.tukcps.aadd.values.IntegerRange
+import com.github.tukcps.sysmd.compiler.KerML
+import com.github.tukcps.sysmd.compiler.scanner.Token
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.Annotation
 import com.github.tukcps.sysmd.model.util.QualifiedName
-import com.github.tukcps.sysmd.compiler.scanner.Token
 import com.github.tukcps.sysmd.model.util.SimpleName
 import com.github.tukcps.sysmd.services.session.Session
+import io.github.tukcps.aadd.values.IntegerRange
 import java.util.*
 
 /**
@@ -25,7 +26,7 @@ import java.util.*
  */
 interface ActionsContext {
     val model: Session
-    var textualRepresentation: TextualRepresentation?
+    val compiler: KerML
     var visibilityKind: Token.Kind?
     val prefixes: MutableSet<Token.Kind>
     val owners: Stack<Resolved<Element>>
@@ -65,7 +66,4 @@ interface ActionsContext {
     // Context if string of an expression is re-evaluated
     var namespace: Namespace          // owning namespace of expression
     var expression: Feature?          // owning feature of an expression
-
-    val generateAnnotations: Boolean
-    val inLibrary get() = (owners.peek().ref?.isLibraryElement == true || Token.Kind.LIBRARY in prefixes || Token.Kind.STANDARD in prefixes)
 }

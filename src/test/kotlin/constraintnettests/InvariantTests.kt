@@ -24,7 +24,7 @@ class InvariantTests {
                 }
             }
         """)
-        assertTrue(status.exceptions.isEmpty())
+        assertTrue(status.issues.isEmpty())
         propagate()
         assertEquals(0, global.resolve<Feature>("a::b::weight")!!.variable!!.vectorQuantity.value.asIdd().min)
         assertEquals(30, global.resolve<Feature>("a::b::weight")!!.variable!!.vectorQuantity.value.asIdd().max)
@@ -113,8 +113,9 @@ class InvariantTests {
         loadKerML("""   
                 feature a: ScalarValues::Real {:>> range = "1..5";}
                 feature b: ScalarValues::Real {:>> range = "4..6";}
-                inv c {a == b}
-        """.trimIndent())
+                inv c { a == b }
+        """)
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         propagate()
         assertEquals(4.0, global.resolve<Feature>("a")!!.variable!!.vectorQuantity.value.asAadd().min, 0.00001)
         assertEquals(5.0, global.resolve<Feature>("a")!!.variable!!.vectorQuantity.value.asAadd().max, 0.00001)
@@ -132,7 +133,7 @@ class InvariantTests {
             feature c: ScalarValues::Integer = if b == 6 ? 7 else 6;"""
         )
         propagate()
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(6, global.resolve<Feature>("c")!!.variable!!.idd().getRange().min)
         assertEquals(6, global.resolve<Feature>("c")!!.variable!!.idd().getRange().max)
     }
@@ -147,7 +148,7 @@ class InvariantTests {
             feature c: ScalarValues::Real = if b == 6.0 ? 7.0 else 6.0."""
         )
         propagate()
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(6.0, global.resolve<Feature>("c")!!.variable!!.aadd().getRange().min)
         assertEquals(6.0, global.resolve<Feature>("c")!!.variable!!.aadd().getRange().max)
     }
@@ -160,7 +161,7 @@ class InvariantTests {
             feature c: ScalarValues::Boolean = (a == b) {:>> spec = "true";}"""
         )
         propagate()
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(5, global.resolve<Feature>("a")!!.variable!!.idd().getRange().min)
         assertEquals(5, global.resolve<Feature>("a")!!.variable!!.idd().getRange().max)
     }

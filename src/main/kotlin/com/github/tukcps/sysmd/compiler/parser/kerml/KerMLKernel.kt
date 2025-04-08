@@ -5,9 +5,11 @@ package com.github.tukcps.sysmd.compiler.parser.kerml
 import com.github.tukcps.sysmd.compiler.KerML
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.compiler.semantics.Identification
+import com.github.tukcps.sysmd.compiler.semantics.expression.InvariantActions
 import com.github.tukcps.sysmd.compiler.semantics.kerml.*
 import com.github.tukcps.sysmd.cspsolver.VariableImplementation
 import com.github.tukcps.sysmd.model.expression.AstRoot
+import com.github.tukcps.sysmd.model.expression.implementation.InvariantImplementation
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.*
 
@@ -18,7 +20,7 @@ import com.github.tukcps.sysmd.model.kerml.implementation.*
  *      Association = TypePrefix 'assoc' ClassifierDeclaration TypeBody
  */
 fun KerML.Association() {
-    val association = semantics.associationActions()!!
+    val association = semantics.associationActions()
     ASSOC.consume()
     ClassifierDeclaration(association as ClassifierActions<Classifier>)
     TypeBody(Resolved(association.created!!))
@@ -68,7 +70,7 @@ fun KerML.AssociationStructure() {
  *          ( OwnedMultiplicity )?
  */
 fun KerML.Connector() {
-    val connector = semantics.connectorActions()
+    val connector = ConnectorActions<Connector>(semantics, ::ConnectorImplementation)
 
     CONNECTOR.consume()
     Identification().also { connector.create(it)  }
@@ -103,7 +105,6 @@ fun KerML.Connector() {
  *          )
  *          OwnedExpression
  */
-val valuePartStart = setOf(EQ, DPEQ, DEFAULT)
 fun KerML.ValuePart(feature: SemanticAction<Feature>) {
     when(token.kind) {
         EQ ->       EQ.consume()
@@ -136,6 +137,17 @@ fun KerML.OwnedExpression(feature: SemanticAction<Feature>) {
         feature.created?.expression = input.subSequence(feature.created?.indices!!).toString().trim()
     }
 }
+fun KerML.OwnedExpression(owner: Feature) {
+    val iBeforeExpression = token.indices.first
+    owner.variable = VariableImplementation(owner)
+    semantics.expression = owner
+    Expression().also {
+        owner.variable?.ast = AstRoot(model, semantics.expression!!, it)
+        owner.indices = iBeforeExpression..consumedToken.indices.last
+        owner.expression = input.subSequence(owner.indices!!).toString().trim()
+    }
+}
+
 
 /**
  * 8.2.5.12 Metadata Concrete Syntax
@@ -143,7 +155,7 @@ fun KerML.OwnedExpression(feature: SemanticAction<Feature>) {
  *      Metaclass = TypePrefix 'metaclass' ClassifierDeclaration TypeBody
  */
 fun KerML.Metaclass() {
-    val metaclass = MetaclassActions<MetaclassImplementation>(this.semantics, ::MetaclassImplementation, mutableListOf("Base::Anything"))
+    val metaclass = MetaclassActions(this.semantics, ::MetaclassImplementation, mutableListOf("Base::Anything"))
     METACLASS.consume()
     ClassifierDeclaration(metaclass as ClassifierActions<Classifier>)
     TypeBody(Resolved(ref=metaclass.created!!))
@@ -259,7 +271,7 @@ fun KerML.MetadataBodyFeatureMember() {
  *  Note: OwnedRedefinition is a simple name that is defined in the general class and that is redefined.
  */
 fun KerML.MetadataBodyFeature() {
-    val metadataBodyFeature = semantics.featureActions()
+    val metadataBodyFeature = FeatureActions<Feature>(semantics, ::FeatureImplementation, mutableListOf("Base::Anything"))
     FEATURE.optional()
     REDEFINES.optional()
     NAME_LIT.consume().also { metadataBodyFeature.create(Identification(name=consumedToken.string))}
@@ -281,19 +293,16 @@ fun KerML.MetadataBodyFeature() {
  *  Note: Expression must be of type Boolean and must be satisfied
  */
 fun KerML.Invariant() {
-    val invariant = semantics.invariantActions()
+    val invariant = InvariantActions(semantics, ::InvariantImplementation)
     INV.consume()
     Identification().also { invariant.create(it) }
-
-    LCURBRACE.consume()
-    val iBeforeExpression = token.indices.first
-    Expression().also {
-        invariant.created!!.featureWithValue = AstRoot(model, invariant.created!!, it)
-        invariant.created!!.indices = iBeforeExpression .. consumedToken.indices.last
-        invariant.created!!.expression = input.subSequence(invariant.created!!.indices!!).toString().trim()
-    }
-    RCURBRACE.consume()
     invariant.finish()
+    alternatives {
+        TRUE then { invariant.created?.isNegated = false }
+        FALSE then { invariant.created?.isNegated = true }
+        others {  invariant.created?.isNegated = false }
+    }
+    FunctionBody(Resolved(invariant.created!!))
 }
 
 /**
@@ -303,7 +312,7 @@ fun KerML.Invariant() {
  *      PackageDeclaration = 'package' Identification
  */
 fun KerML.Package() {
-    val pkg = semantics.packageActions()
+    val pkg = NamespaceActions(semantics, ::PackageImplementation)
     PACKAGE.consume()
     Identification().also { pkg.create(it) }
     Body(Resolved(null, pkg.created, null))
@@ -336,7 +345,7 @@ fun KerML.PackageBody(owner: Resolved<Namespace>) {
  *          ( 'standard' )? 'library' ( PrefixMetadataMember )* PackageDeclaration PackageBody
  */
 fun KerML.LibraryPackage() {
-    val pkg = semantics.packageActions()
+    val pkg = NamespaceActions(semantics, ::PackageImplementation)
     STANDARD.optional       { semantics.prefixes.add(STANDARD) }
     LIBRARY.consume().also  { semantics.prefixes.add(LIBRARY) }
     PACKAGE.consume()
@@ -352,7 +361,7 @@ fun KerML.LibraryPackage() {
  *      Function = TypePrefix 'function' ClassifierDeclaration FunctionBody
  */
 fun KerML.Function() {
-    val function = semantics.functionActions()
+    val function = FunctionActions<FunctionImplementation>(semantics, ::FunctionImplementation)
     FUNCTION.consume()
     ClassifierDeclaration(function as ClassifierActions<Classifier>)
     FunctionBody(Resolved(function.created!!))
@@ -442,13 +451,16 @@ internal fun KerML.FunctionBody(owner: Resolved<Element>) {
     alternatives {
         LCURBRACE then {
             semantics.pushOwner(owner)
-            oneOrMoreUntil(RCURBRACE) {
+            noOrMore(typeBodyElementStarts+HASHTAG+RETURN) {
                 MemberPrefix()
                 noOrMore(HASHTAG) { PrefixMetadataMember() }
                 alternatives {
                     RETURN then  { semantics.prefixes.add(OUT); Feature() }
-                    others       { TypeBodyElement() }
+                    typeBodyElementStarts then { TypeBodyElement() }
                 }
+            }
+            if (token.kind != RCURBRACE) {
+                OwnedExpression(owner.ref as Feature)
             }
             semantics.popOwner()
             RCURBRACE.consume()

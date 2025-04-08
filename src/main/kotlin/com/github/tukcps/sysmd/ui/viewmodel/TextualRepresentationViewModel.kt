@@ -4,16 +4,20 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.text.input.TextFieldValue
+import com.github.tukcps.sysmd.compiler.KerML
+import com.github.tukcps.sysmd.compiler.SysMD
+import com.github.tukcps.sysmd.compiler.SysMLv2
 import com.github.tukcps.sysmd.cspsolver.propagate
-import com.github.tukcps.sysmd.exceptions.SysMDError
+import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.exceptions.SysMDException
 import com.github.tukcps.sysmd.imports.ResultAnnotation
-import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.model.kerml.Annotation
+import com.github.tukcps.sysmd.model.kerml.Classifier
+import com.github.tukcps.sysmd.model.kerml.Element
+import com.github.tukcps.sysmd.model.kerml.Feature
+import com.github.tukcps.sysmd.model.kerml.Multiplicity
 import com.github.tukcps.sysmd.model.sysml.implementation.CalculationDefinitionImplementation
 import com.github.tukcps.sysmd.services.inheritance.getAllInheritedFeatures
 import com.github.tukcps.sysmd.services.session.Session
-import com.github.tukcps.sysmd.services.session.report
 import com.github.tukcps.sysmd.ui.inCompile
 import io.github.tukcps.aadd.values.IntegerRange
 
@@ -37,16 +41,10 @@ open class TextualRepresentationViewModel(
     var namespace: MutableState<String> = mutableStateOf("Global"),
 
     // The editable description as text field.
-    val body: MutableState<TextFieldValue> = mutableStateOf(TextFieldValue()),
+    val bodyState: MutableState<TextFieldValue> = mutableStateOf(TextFieldValue()),
 
     // Per line, an annotation and corresponding line number as a hashmap.
     val annotations: SnapshotStateMap<Int, String> = mutableStateMapOf(),
-
-    /**
-     * The annotations to be shown on mouseover in code parts
-     * (after "Analyze", yellow background)
-     */
-    var textualRepresentation: TextualRepresentation,
 
     /**
      * Additional text to be displayed as "info", e.g., analysis results by "show".
@@ -58,14 +56,11 @@ open class TextualRepresentationViewModel(
      */
     private var displayElement: Element? = null
 ) {
-    
+    val session: Session by sessionState
+    var body: TextFieldValue by bodyState
+
     //Simulation results annotations; for displaying simulation results right to the Editor field
     val resultsAnnotations : MutableList<ResultAnnotation> = mutableListOf()
-
-    init {
-        language.value = TextualRepresentationViewModel.language[textualRepresentation.language.split("::").firstOrNull()] ?:Language.MARKDOWN
-    }
-
 
     /** Clears annotations on features, but not the lines. */
     fun clearView() {
@@ -81,28 +76,28 @@ open class TextualRepresentationViewModel(
      */
     fun compile(propagate: Boolean = true) {
         clearView()
-        textualRepresentation.body = this.body.value.text
         if (language.value in compilableLanguages) {
             try {
                 // Parse model & compute propagation
-                textualRepresentation.language = "${language.value}::${namespace.value}"
-                textualRepresentation.compile(generateAnnotations = true)
+                when (language.value) {
+                    Language.KerML -> KerML(session).parse(body.text, namespace.value)
+                    Language.SYS_MD -> SysMD(session).parse(body.text, namespace.value)
+                    Language.SYS_ML -> SysMLv2(session).parse(body.text, namespace.value)
+                    else -> {}
+                }
+
                 if (propagate) {
-                    sessionState.value.propagate()
-                    refreshTrees()
+                    session.propagate()
                     display()
+                    refreshTrees()
                 }
             } catch (error: Exception) {
                 if (error is SysMDException) {
-                    sessionState.value.report(error)
+                    session.status.fatal(error.message, cause = error)
                 } else
-                    sessionState.value.report(SysMDError(message = error.message?:"(unknown error)"))
+                    session.status.fatal(message = error.message?:"(unknown error)")
             }
-            // Update and show the display part with results
         }
-
-        // refresh the tree views and the agenda
-        refreshTrees()
     }
 
 
@@ -111,23 +106,22 @@ open class TextualRepresentationViewModel(
      */
     fun display() {
         // Update annotations (error messages in the shape of a bell near line no.).
-        sessionState.value.status.exceptions.forEach {
-            if (it.textualRepresentation == this.textualRepresentation) {
-                if (it.token?.lineNo != null )
-                    annotations[it.token!!.lineNo - 1] = it.message
-            }
+        session.status.issues.forEach {
+            if (it.input == body.text && it.token?.lineNo != null)
+                annotations[it.token!!.lineNo - 1] = it.message
         }
 
         // Update displayed items, part's errors and properties of Display class
         displayItems.clear()
         try {
-            val annotations = textualRepresentation.getOwnedElementsOfType<Annotation>()
-            annotations.forEach { annotation ->
-                when (val target = annotation.annotatedElement.ref) {
+            session.get()
+                .filter { it.input == body.text }
+                .forEach { element ->
+                    when (element) {
                     is Classifier -> {
-                        if (target !is CalculationDefinitionImplementation){
-                            displayItems.add(TextFieldValue("Definition ${target.path()} created or updated "))
-                            sessionState.value.getAllInheritedFeatures(target).forEach {
+                        if (element !is CalculationDefinitionImplementation){
+                            displayItems.add(TextFieldValue("Definition ${element.path()} created or updated "))
+                            session.getAllInheritedFeatures(element).forEach {
                                 when (it) {
                                     is Classifier -> displayItems.add(TextFieldValue("   Type: ${it.escapedName()}"))
                                     else    -> {
@@ -144,24 +138,26 @@ open class TextualRepresentationViewModel(
                     }
 
                     is Feature -> {
-                        // kerMlModel.value.getAllInheritedFeatures(target).forEach {
-                           if ((target.variable != null) && !(target is Multiplicity && target.variable!!.vectorQuantity.idd().getRange() == IntegerRange(1, 1)))
-                                displayItems.add (TextFieldValue("    ${target.path()} = ${target.variable!!.vectorQuantity}"))
-                        //}
+                        if ((element.variable != null) && !(element is Multiplicity && element.variable!!.vectorQuantity.idd().getRange() == IntegerRange(1, 1))) {
+                            if (element.variable!!.isVectorQuantityInitialized )
+                                displayItems.add(TextFieldValue("    ${element.path()} = ${element.variable!!.vectorQuantity}"))
+                            else
+                                displayItems.add(TextFieldValue("    ${element.path()} = (not computed/reset?)"))
+                        }
                     }
                 }
             }
 
             // Errors to be displayed.
-            sessionState.value.status.exceptions.forEach {
-                if (it.textualRepresentation == this.textualRepresentation && it.priority > 1)
-                    displayItems.add(TextFieldValue("ERROR: $it"))
+            session.status.issues.forEach {
+                if (it.input == body.text && it.kind.ordinal >= Issue.Kind.ERROR.ordinal)
+                    displayItems.add(TextFieldValue("ERROR: ${it.message}"))
             }
 
             // Other infos ...
-            sessionState.value.status.exceptions.forEach {
-                if (it.textualRepresentation == this.textualRepresentation && it.priority <= 1)
-                    displayItems.add(TextFieldValue("INFO: $it"))
+            session.status.issues.forEach {
+                if (it.input == body.text && it.kind.ordinal < Issue.Kind.ERROR.ordinal)
+                    displayItems.add(TextFieldValue("INFO: ${it.message}"))
             }
         } catch (ignore: Exception) {
             displayItems.add(TextFieldValue("ERROR in display reporting ($ignore). "))

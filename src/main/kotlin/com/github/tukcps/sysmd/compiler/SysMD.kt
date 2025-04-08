@@ -5,17 +5,16 @@ import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.EOF
 import com.github.tukcps.sysmd.services.session.Session
 
 
+/**
+ * A SysMD Parser.
+ * @param model model in which the results will be returned.
+ */
 class SysMD(
-    model: Session,                                 // model in which the results will be returned.
-                                                    // the textual representation, in which parsing is done.
-    indices: IntRange? = null,                      // allows us to select a subset to be parsed, i.e., an expression.
-    generateAnnotations: Boolean = false
-) : KerML(model, indices, generateAnnotations) {
+    model: Session
+) : KerML(model) {
     override fun parse() {
-
         noOrMore(stop = EOF) {
             Triple()
         }
-
     }
 }

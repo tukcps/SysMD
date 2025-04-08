@@ -34,6 +34,6 @@ class BasicSyntaxTest {
                 }
         """.trimIndent()
             )
-            assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+            assertTrue(status.issues.isEmpty(), status.issues.toString())
         }
 }

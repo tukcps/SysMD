@@ -21,7 +21,7 @@ class AllocationTests {
         loadSysMLv2("""
         allocation def AllocationDef1;
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
 
         val allocationDef1 = global.resolve<AllocationDefinition>("AllocationDef1")
         assertNotNull(allocationDef1)
@@ -48,7 +48,7 @@ class AllocationTests {
             part part3 :Part3;
         }
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
 
         val allocationDef1 = global.resolve<AllocationDefinition>("AllocationDef1")
         assertNotNull(allocationDef1)
@@ -76,7 +76,7 @@ class AllocationTests {
                 allocate part3 to part2;
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -94,7 +94,7 @@ class AllocationTests {
             part part2 : Part2;
             allocate part1 to part2;
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -125,6 +125,6 @@ class AllocationTests {
                 allocate part1.action1 to part2.action2;
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 }

@@ -23,7 +23,7 @@ class ActionTests {
         loadSysMLv2("""
             action def ActionDef1;
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val actionDef1 = global.resolve<ActionDefinition>("ActionDef1")
         assertNotNull(actionDef1)
     }
@@ -41,7 +41,7 @@ class ActionTests {
             action def ActionDef1;
             action action1 : ActionDef1;
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
 
         //val actionDef1 = global.resolve<ActionDefinition>("ActionDef1")
         //assertNotNull(actionDef1)
@@ -74,7 +74,7 @@ class ActionTests {
                 out param2 : ItemDef2;
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
 
         val itemDef1 = global.resolve<ItemDefinition>("ItemDef1")
         assertNotNull(itemDef1)
@@ -107,7 +107,7 @@ class ActionTests {
                 }
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
 
         //val actionDef1 = global.resolve<ActionDefinition>("Action1")
         //assertNotNull(actionDef1)
@@ -153,7 +153,7 @@ class ActionTests {
             
         }
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
 }

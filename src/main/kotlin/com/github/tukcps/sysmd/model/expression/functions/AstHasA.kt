@@ -29,7 +29,7 @@ class AstHasA(
                 Quantity(model.builder.True)
             else Quantity(model.builder.False)
         } else
-            model.report(null, "Evaluation of hasA() not possible as parameter not a namespace.")
+            model.status.error("Evaluation of hasA() not possible as parameter not a namespace.")
     }
 
     override fun evalDown() {}

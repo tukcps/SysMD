@@ -25,7 +25,7 @@ class ItemTests {
                 /* members */
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
 
         val itemDef1 = global.resolve<ItemDefinition>("ItemDef1")
         assertNotNull(itemDef1)
@@ -49,7 +49,7 @@ class ItemTests {
                 /* members */
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
 
         val itemDef1 = global.resolve<ItemDefinition>("ItemDef1")
         assertNotNull(itemDef1)

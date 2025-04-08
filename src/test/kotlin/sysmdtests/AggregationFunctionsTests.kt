@@ -25,7 +25,7 @@ class AggregationFunctionsTests {
                 feature p3: ScalarValues::Real = sumOverParts(p); 
             }
         """)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         // println(resolveName<Expression>(global, "c3::p3"))
         assertEquals(5.0, global.resolveVar("c3::p3")!!.vectorQuantity.getMinAsDouble(), 0.000001)
     }
@@ -44,7 +44,7 @@ class AggregationFunctionsTests {
                 feature b:  c2[2..3];
                 feature p3: ScalarValues::Real = sumOverParts(p); 
             }""")
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         propagate()
         assertEquals(5.0, global.resolveVar("c3::p3")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(10.0, global.resolveVar("c3::p3")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
@@ -70,7 +70,7 @@ class AggregationFunctionsTests {
                     feature p3: ScalarValues::Real = sumOverParts(p). 
                 }
             }""")
-        assertTrue(status.exceptions.isEmpty(), "Error messages: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
         propagate()
         // println(resolveName<Expression>("l::c3::p3"))
         assertEquals(1.0, global.resolveVar("l::c3::p3")!!.vectorQuantity.getMinAsDouble(), 0.0001)
@@ -102,7 +102,7 @@ class AggregationFunctionsTests {
                 }
             }
             """)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         propagate()
         // println(resolveName<Expression>("l::c3::p3"))
         assertEquals(11.0, global.resolveVar("l::c3::p3")!!.vectorQuantity.getMinAsDouble(), 0.0001)

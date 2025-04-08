@@ -90,7 +90,7 @@ class KerMLBddTests {
                 feature c: ScalarValues::Boolean(false);
                 feature bdd: ScalarValues::Boolean(true) = a and (b or c);
         """.trimIndent())
-        assertEquals(0, status.exceptions.size, "Messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Messages: ${status.issues}")
         propagate()
         val result = global.resolveVar("bdd")!!.ast!!.solveAst()
         assertTrue(result as BDD === builder.True)

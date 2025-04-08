@@ -18,7 +18,7 @@ class InterfaceTests {
         loadSysMLv2("""
         interface def C1; 
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -38,7 +38,7 @@ class InterfaceTests {
             end port2 : Port2;
         }
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
 }

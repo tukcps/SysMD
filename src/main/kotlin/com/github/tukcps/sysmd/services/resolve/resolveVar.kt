@@ -5,7 +5,6 @@ import com.github.tukcps.sysmd.exceptions.ElementNotFoundException
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.util.QualifiedName
-import com.github.tukcps.sysmd.services.session.report
 
 
 /**
@@ -25,9 +24,8 @@ fun Namespace.resolveVars(qualifiedName: QualifiedName, searchInSuperClass: Bool
     if (found is Feature && found.variable is Variable)
         return found.variables
 
-    model?.report(found!!,"'$qualifiedName' could be resolved, but is of wrong type",
-        cause = ElementNotFoundException(this, "'$qualifiedName' could be resolved, but is of wrong type")
-    )
+    model?.status?.error("'$qualifiedName' could be resolved, but is of wrong type", element = found,
+        cause = ElementNotFoundException(this, "'$qualifiedName' could be resolved, but is of wrong type"))
     return emptyList()
 }
 

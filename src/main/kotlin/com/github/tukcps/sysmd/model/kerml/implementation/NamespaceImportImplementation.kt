@@ -1,11 +1,8 @@
 package com.github.tukcps.sysmd.model.kerml.implementation
 
-import com.github.tukcps.sysmd.exceptions.SemanticError
-import com.github.tukcps.sysmd.exceptions.SysMDError
+import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.util.SimpleName
-import com.github.tukcps.sysmd.services.session.report
-import java.util.*
 
 
 /**
@@ -16,8 +13,6 @@ import java.util.*
  * If no importedMemberName is given, then all visible Memberships are imported from the importedNamespace.
  * If isRecursive = true, then visible Memberships are also recursively imported from all visible ownedMembers
  * of the Namespace that are also Namespaces.
- * @param importedMemberName If an importedMemberName is given, then the Membership whose effectiveMemberName is that name is
- * imported from the importedNamespace, if it is visible.
  * @param isRecursive If isRecursive = true and the imported
  * memberElement is a Namespace, then visible Memberships are also recursively imported from that Namespace and
  * its owned sub-Namespaces.
@@ -44,7 +39,7 @@ class NamespaceImportImplementation(
     @Suppress("UNCHECKED_CAST")
     override var importedNamespace: Resolved<Namespace>
         get() = try { target[0] as Resolved<Namespace>
-        } catch (e: Exception) { model?.report(SysMDError("Problem with import"))
+        } catch (e: Exception) { model?.status?.fatal("Problem with import", cause = e)
             Resolved(model!!.global) }
         set(value) { target[0].ref = value.ref; target[0].str = value.str; target[0].id = value.id }
 
@@ -64,14 +59,14 @@ class NamespaceImportImplementation(
     override fun resolveNames(): Boolean {
         updated = super.resolveNames() or updated
         if (source.size > 1)
-            model?.report( SemanticError("imports can have only a single source"))
+            model?.status?.error("imports can have only a single source", kind = Issue.Kind.ERROR_SEMANTIC)
         if (importOwningNamespace !is Namespace)
-            model?.report(SemanticError( "only Packages and Namespaces can import"))
+            model?.status?.error("only Packages and Namespaces can import", kind = Issue.Kind.ERROR_SEMANTIC)
         if (target.size < 1)
-            model?.report(SemanticError( "import: nothing imported"))
+            model?.status?.error("import: nothing imported", kind = Issue.Kind.ERROR_SEMANTIC)
         target.forEach {
             if(it.ref !is Namespace?)
-                model?.report(SemanticError( "only Packages and Namespaces can be imported"))
+                model?.status?.error("only Packages and Namespaces can be imported", kind = Issue.Kind.ERROR_SEMANTIC)
         }
 
         updated = importedNamespace.resolveIdentity(owningNamespace!!)

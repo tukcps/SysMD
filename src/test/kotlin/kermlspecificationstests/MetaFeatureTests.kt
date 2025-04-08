@@ -27,7 +27,7 @@ class MetaFeatureTests {
                 feature approver[1] : String;
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val securityRelated = global.resolve<Metaclass>("SecurityRelated")
         assertNotNull(securityRelated)
         val approvalAnnotation = global.resolve<Metaclass>("ApprovalAnnotation")
@@ -47,7 +47,7 @@ class MetaFeatureTests {
                 feature redefines approver = "John Smith";
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val approvalAnnotation = global.getOwnedElementOfType<MetadataFeature>()
         assertNotNull(approvalAnnotation)
         val approver = approvalAnnotation.resolve<Feature>("approver")

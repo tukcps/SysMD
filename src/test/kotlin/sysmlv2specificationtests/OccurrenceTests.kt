@@ -27,7 +27,7 @@ class OccurrenceTests {
             /* members */
         }
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
 
         val occurrenceDef1 = global.resolve<OccurrenceDefinition>("OccurrenceDef1")
         assertNotNull(occurrenceDef1)
@@ -51,7 +51,7 @@ class OccurrenceTests {
             /* members */
         }
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
 
         val occurrenceDef1 = global.resolve<OccurrenceDefinition>("OccurrenceDef1")
         assertNotNull(occurrenceDef1)
@@ -76,7 +76,7 @@ class OccurrenceTests {
         occurrence def OccurrenceDef1;
         individual def 'OccurrenceDef1-1' :> OccurrenceDef1;
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
 
         val occurrenceDef1 = global.resolve<OccurrenceDefinition>("OccurrenceDef1")
         //assertNotNull(occurrenceDef1)
@@ -98,7 +98,7 @@ class OccurrenceTests {
         occurrence def OccurrenceDef1;
         timeslice timeslice1 : OccurrenceDef1;
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -114,6 +114,6 @@ class OccurrenceTests {
         occurrence def OccurrenceDef1;
         snapshot snapshot1 : OccurrenceDef1;
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 }

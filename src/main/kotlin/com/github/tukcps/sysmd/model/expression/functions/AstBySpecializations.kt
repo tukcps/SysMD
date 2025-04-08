@@ -50,7 +50,7 @@ class AstBySpecializations(model: Session, namespace: Namespace, args: ArrayList
                 val newSubclassProperty = subclass.resolveVar(propertyName)
                     ?: throw SemanticError("Missing value $propertyName in ${subclass.qualifiedName}")
                 if (newSubclassProperty.vectorQuantity.unit != quantity.unit)
-                    model.report(inNameSpace, "different units in different subclasses")
+                    model.status.error("different units in different subclasses", element = inNameSpace)
                 result = chooser.ite(result, newSubclassProperty.vectorQuantity.values[0])
             }
             this.upQuantity = VectorQuantity(result, quantity.unit.clone())

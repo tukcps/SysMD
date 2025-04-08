@@ -28,7 +28,7 @@ class PredefinedFunctionsTests {
                 feature test4: ScalarValues::Real = power2(5.0);
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals(ln(5.0), global.resolveVar("test1")!!.vectorQuantity.getMinAsDouble(), 0.00001)
         assertEquals(sqrt(5.0), global.resolveVar("test2")!!.vectorQuantity.getMinAsDouble(), 0.00001)
         assertEquals(exp(5.0), global.resolveVar("test3")!!.vectorQuantity.getMinAsDouble(), 0.00001)
@@ -41,7 +41,7 @@ class PredefinedFunctionsTests {
             feature p: ScalarValues::Real = [1.0 .. 2.0] + 2.0;
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals(3.0, global.resolveVar("p")!!.min(), 0.001)
     }
 
@@ -54,7 +54,7 @@ class PredefinedFunctionsTests {
                 feature p: ScalarValues::Real = linear(T, 2000.0, 10.0, 2010.0, 20.0);
                 """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p = global.resolveVar("p")
         assertTrue(15.0 in p?.vectorQuantity?.aadd()?.getRange()!!)
         assertTrue(p.vectorQuantity.getMinAsDouble() > 14.9)
@@ -68,7 +68,7 @@ class PredefinedFunctionsTests {
                 feature p: ScalarValues::Real = linear(T, 2000.0, 20.0, 2010.0, 10.0);
                 """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p = global.resolveVar("p")
         assertTrue(20.0 in p?.vectorQuantity?.aadd()?.getRange()!!)
         assertTrue(p.vectorQuantity.getMinAsDouble() > 19.9)
@@ -82,7 +82,7 @@ class PredefinedFunctionsTests {
                 feature p: ScalarValues::Real = linear(T, 2000.0, 20.0, 2010.0, 10.0);
                 """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p = global.resolveVar("p")
         assertTrue(10.0 in p?.vectorQuantity?.aadd()?.getRange()!!)
         assertTrue(p.vectorQuantity.getMinAsDouble() > 9.9)
@@ -96,7 +96,7 @@ class PredefinedFunctionsTests {
                 feature p: ScalarValues::Real(15.0..15.0) = linear(T, 2000.0, 10.0, 2010.0, 20.0);
                 """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val t = global.resolveVar("T")
         assertTrue(2005.0 in t?.vectorQuantity?.aadd()?.getRange()!!)
         assertTrue(t.vectorQuantity.getMinAsDouble() > 2004.9)
@@ -110,7 +110,7 @@ class PredefinedFunctionsTests {
                 feature p: ScalarValues::Real = linear(T, 2000.0, 10.0, 2010.0, 20.0, 2020.0, 0.0);
                 """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p = global.resolveVar("p")
         assertEquals(p!!.vectorQuantity.getMinAsDouble(), 10.0, 0.000001)
         assertEquals(p.vectorQuantity.getMaxAsDouble(), 10.0, 0.000001)
@@ -123,7 +123,7 @@ class PredefinedFunctionsTests {
                 feature p: ScalarValues::Real = linear(T, 2000.0, 10.0, 2010.0, 20.0, 2020.0, 0.0);
                 """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p = global.resolveVar("p")
         assertEquals(p!!.vectorQuantity.getMinAsDouble(), 15.0, 0.000001)
         assertEquals(p.vectorQuantity.getMaxAsDouble(), 15.0, 0.000001)
@@ -137,7 +137,7 @@ class PredefinedFunctionsTests {
                 feature p: ScalarValues::Real = linear(T, 2000.0, 10.0, 2010.0, 20.0, 2015.0, 0.0);
                 """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p = global.resolveVar("p")
         assertEquals(p!!.vectorQuantity.getMinAsDouble(), 15.0, 0.000001)
         assertEquals(p.vectorQuantity.getMaxAsDouble(), 15.0, 0.000001)
@@ -151,7 +151,7 @@ class PredefinedFunctionsTests {
                 feature p: ScalarValues::Real = linear(T, 2000.0, 20.0, 2010.0, 10.0, 2020.0, 30.0);
                 """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p = global.resolveVar("p")
         assertEquals(p!!.vectorQuantity.getMinAsDouble(), 20.0, 0.000001)
         assertEquals(p.vectorQuantity.getMaxAsDouble(), 20.0, 0.000001)
@@ -165,7 +165,7 @@ class PredefinedFunctionsTests {
                 feature p: ScalarValues::Real = linear(T, 2000.0, 20.0, 2010.0, 30.0, 2020.0, 40.0).
                 """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p = global.resolveVar("p")
         assertEquals(p!!.vectorQuantity.getMinAsDouble(), 20.0, 0.000001)
         assertEquals(p.vectorQuantity.getMaxAsDouble(), 20.0, 0.000001)
@@ -179,7 +179,7 @@ class PredefinedFunctionsTests {
                 feature p: ScalarValues::Real = linear(T, 2000.0, 20.0, 2010.0, 30.0, 2020.0, 10.0).
                 """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p = global.resolveVar("p")
         assertEquals(p!!.vectorQuantity.getMinAsDouble(), 20.0, 0.000001)
         assertEquals(p.vectorQuantity.getMaxAsDouble(), 20.0, 0.000001)
@@ -193,7 +193,7 @@ class PredefinedFunctionsTests {
                 feature p: ScalarValues::Real = linear(T, 2000.0, 30.0, 2010.0, 20.0, 2020.0, 10.0).
                 """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p = global.resolveVar("p")
         assertEquals(p!!.vectorQuantity.getMinAsDouble(), 10.0, 0.000001)
         assertEquals(p.vectorQuantity.getMaxAsDouble(), 10.0, 0.000001)
@@ -207,7 +207,7 @@ class PredefinedFunctionsTests {
                 feature p: ScalarValues::Real = linear(T, 2000.0, 0.0, 2010.0, 20.0, 2020.0, 10.0).
                 """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p = global.resolveVar("p")
         assertEquals(p!!.vectorQuantity.getMinAsDouble(), 10.0, 0.000001)
         assertEquals(p.vectorQuantity.getMaxAsDouble(), 10.0, 0.000001)
@@ -220,7 +220,7 @@ class PredefinedFunctionsTests {
                 feature p: ScalarValues::Real(10.0) = linear(T, 2000.0, 0.0, 2010.0, 20.0, 2020.0, 10.0);
                 """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p = global.resolveVar("T")
         assertEquals(p!!.vectorQuantity.getMinAsDouble(), 2005.0, 0.000001)
         assertEquals(p.vectorQuantity.getMaxAsDouble(), Double.MAX_VALUE, 0.000001)
@@ -233,7 +233,7 @@ class PredefinedFunctionsTests {
                 feature p: ScalarValues::Real(10.0) = linear(T, 2000.0, 0.0, 2010.0, 20.0, 2020.0, 0.0);
                 """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p = global.resolveVar("T")
         assertEquals(p!!.vectorQuantity.getMinAsDouble(), 2005.0, 0.000001)
         assertEquals(p.vectorQuantity.getMaxAsDouble(), 2015.0, 0.000001)
@@ -313,7 +313,7 @@ class PredefinedFunctionsTests {
                  feature DataRate: SI::BitRate = linear(Month("2025-01"), Month("2021-01"), [20.0 .. 80.0] [MB/s], Month("2030-01"), [100.0 .. 800.0] [MB/s]).
                 """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val t = global.resolveVar("DataRate")
         assertEquals(28.889564952844047, t!!.vectorQuantity.valuesIn("MB/s")[0].asAadd().getRange().min, tol)
         assertEquals(426.69303316094675, t.vectorQuantity.valuesIn("MB/s")[0].asAadd().getRange().max, tol)
@@ -327,7 +327,7 @@ class PredefinedFunctionsTests {
                 feature p: ScalarValues::Real = stepInterpolation(T, 2000.0, 10.0, 2010.0, 20.0).
                 """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p = global.resolveVar("p")
         assertTrue(10.0 in p?.vectorQuantity?.aadd()?.getRange()!!)
         assertTrue(p.vectorQuantity.getMinAsDouble() > 9.9)
@@ -341,7 +341,7 @@ class PredefinedFunctionsTests {
                 feature p: ScalarValues::Real = stepInterpolation(T, 2000.0, 10.0, 2010.0, 20.0).
                 """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p = global.resolveVar("p")
         assertTrue(10.0 in p?.vectorQuantity?.aadd()?.getRange()!!)
         assertTrue(p.vectorQuantity.getMinAsDouble() > 9.9)
@@ -355,7 +355,7 @@ class PredefinedFunctionsTests {
                 feature p: ScalarValues::Real = stepInterpolation(T, 2000.0, 10.0, 2010.0, 20.0).
                 """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p = global.resolveVar("p")
         assertTrue(20.0 in p?.vectorQuantity?.aadd()?.getRange()!!)
         assertTrue(p.vectorQuantity.getMinAsDouble() > 19.9)
@@ -369,7 +369,7 @@ class PredefinedFunctionsTests {
                 feature p: ScalarValues::Real = stepInterpolation(T, 2000.0, 10.0, 2010.0, 20.0, 2020.0, 0.0).
                 """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p = global.resolveVar("p")
         assertTrue(20.0 in p?.vectorQuantity?.aadd()?.getRange()!!)
         assertTrue(p.vectorQuantity.getMinAsDouble() > 19.9)
@@ -383,7 +383,7 @@ class PredefinedFunctionsTests {
                 feature p: ScalarValues::Real = stepInterpolation(T, 2000.0, 10.0, 2010.0, 20.0, 2020.0, 0.0).
                 """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p = global.resolveVar("p")
         assertTrue(0.0 in p?.vectorQuantity?.aadd()?.getRange()!!)
         assertTrue(p.vectorQuantity.getMinAsDouble() > -0.1)
@@ -398,7 +398,7 @@ class PredefinedFunctionsTests {
                 """)
         initialize()
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p = global.resolveVar("p")
         assertEquals(0, p?.vectorQuantity?.idd()?.min)
         assertEquals(0, p?.vectorQuantity?.idd()?.max)
@@ -412,7 +412,7 @@ class PredefinedFunctionsTests {
                 """)
         initialize()
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p = global.resolveVar("p")
         assertEquals(10, p?.vectorQuantity?.idd()?.min)
         assertEquals(10, p?.vectorQuantity?.idd()?.max)
@@ -425,7 +425,7 @@ class PredefinedFunctionsTests {
                 feature p: ScalarValues::Integer = stepInterpolation(T, 2000, 10, 2010, 20, 2020, 0).
                 """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p = global.resolveVar("p")
         assertEquals(10, p?.vectorQuantity?.idd()?.min)
         assertEquals(10, p?.vectorQuantity?.idd()?.max)
@@ -438,7 +438,7 @@ class PredefinedFunctionsTests {
                 feature p: ScalarValues::Integer = stepInterpolation(T, 2000, 10, 2010, 20, 2020, 0).
                 """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p = global.resolveVar("p")
         assertEquals(10, p?.vectorQuantity?.idd()?.min)
         assertEquals(10, p?.vectorQuantity?.idd()?.max)
@@ -451,7 +451,7 @@ class PredefinedFunctionsTests {
                 feature p: ScalarValues::Integer = stepInterpolation(T, 2000, 10, 2010, 20, 2020, 0).
                 """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p = global.resolveVar("p")
         assertEquals(20, p?.vectorQuantity?.idd()?.min)
         assertEquals(20, p?.vectorQuantity?.idd()?.max)
@@ -464,7 +464,7 @@ class PredefinedFunctionsTests {
                 feature p: ScalarValues::Integer = stepInterpolation(T, 2000, 10, 2010, 20, 2020, 0).
                 """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p = global.resolveVar("p")
         assertEquals(20, p?.vectorQuantity?.idd()?.min)
         assertEquals(20, p?.vectorQuantity?.idd()?.max)
@@ -478,7 +478,7 @@ class PredefinedFunctionsTests {
             """)
         propagate()
         val r = global.resolveVar("r")!!
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals(2.0, r.vectorQuantity.getMinAsDouble(), 0.00001)
         assertEquals(3.0, r.vectorQuantity.getMaxAsDouble(), 0.00001)
     }
@@ -494,7 +494,7 @@ class PredefinedFunctionsTests {
         val i = global.resolveVar("i")
         assertNotNull(i)
         val r = global.resolveVar("r")!!
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals(2, r.vectorQuantity.value.asIdd().min)
         assertEquals(3, r.vectorQuantity.value.asIdd().max)
     }
@@ -519,11 +519,11 @@ class PredefinedFunctionsTests {
 
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val r = global.resolve<Connector>("r")
         assertNotNull(r)
         val fx = global.resolveVar("f::x")!!
         assertEquals(1.0, fx.vectorQuantity.getMinAsDouble(), 0.0001)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 }

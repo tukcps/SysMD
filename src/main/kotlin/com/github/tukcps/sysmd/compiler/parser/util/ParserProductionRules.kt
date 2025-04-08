@@ -12,13 +12,13 @@ import com.github.tukcps.sysmd.exceptions.LexicalError
  *
  * Production rules are supported by the following functions (with production as lambda):
  *
- *     [ production ]  --> optional (start=TOKs) { production }
+ *     [ production ] --> optional (start=TOKs) { production }
  *
  *     ( production )* --> noOrMore (start=TOKs) { production }
  *
  *     ( production )+ --> oneOrMore (end=TOKs) { production }
  *
- *        production1   --> alternatives {
+ *        production1 --> alternatives {
  *      | production2          start(TOK)       { production1 }
  *      | production3          start(TOK, TOK)  { production2 }
  *      | ...                  start(TOK + TOK + TOK) { production3 }
@@ -141,8 +141,8 @@ abstract class ParserProductionRules(
      *  - failed, postprocessing method in case a match failed
      */
     inner class alternatives(cases: alternatives.() -> Unit) {
-        var t1: Token = token
-        var t2: Token = nextToken
+        private var t1: Token = token
+        private var t2: Token = nextToken
         private var match1: (() -> Unit)? = null
         private var consume1: Boolean? = false
         private var match2: (() -> Unit)? = null

@@ -1,10 +1,10 @@
 package com.github.tukcps.sysmd.model.kerml.implementation
 
+import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Relationship
 import com.github.tukcps.sysmd.model.kerml.Resolved
 import com.github.tukcps.sysmd.model.util.SimpleName
-import com.github.tukcps.sysmd.services.session.report
 
 
 /**
@@ -29,10 +29,10 @@ open class RelationshipImplementation(
     override fun resolveNames(): Boolean {
         updated = super.resolveNames()
         require( model != null )
-        if ( owningNamespace == null)
-            model!!.report(this, "unowned element: $this")
+        if (owningNamespace == null)
+            model?.status?.warn(Issue.Kind.WARN_UNRESOLVED_OWNER, "unowned element: $this", element = this)
 
-        // Search all sources & targets.
+        // Search all sources and targets.
         source.forEach {
             if (it.resolveIdentity(owningNamespace!!))
                 updated = true
@@ -52,7 +52,7 @@ open class RelationshipImplementation(
                 model!!.repo.targetOfRelationship[relatedElement.ref!!] = mutableSetOf()
         }
 
-        // Add found sources & targets to hashmap for faster lookup
+        // Add found sources and targets to hashmap for faster lookup
         source.forEach { relatedElement ->
             if (relatedElement.ref != null) {
                 model!!.repo.sourceOfRelationship[relatedElement.ref!!]?.add(this)

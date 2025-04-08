@@ -2,12 +2,10 @@ package com.github.tukcps.sysmd.ui.syntaxhighlighting
 
 import androidx.compose.runtime.MutableState
 import androidx.compose.ui.text.input.TextFieldValue
-import com.github.tukcps.sysmd.compiler.importMD
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.services.session.Session
 import com.github.tukcps.sysmd.services.session.SessionManager
 import com.github.tukcps.sysmd.ui.viewmodel.EditorTabsViewModel
-import com.github.tukcps.sysmd.ui.viewmodel.TextualRepresentationViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -40,7 +38,7 @@ object Indexer {
 
 
     fun indexAllTabs() {
-        indexerSession?.status?.exceptions?.clear()
+        indexerSession?.status?.reset()
         indexerSession?.loadUsages()
         editorTabsViewModel?.editorTabs?.forEach {
             it.cells.forEach { cell ->
@@ -61,7 +59,7 @@ object Indexer {
             Indexer.editorTabsViewModel = editorTabsViewModel
             indexerSession = SessionManager.startSession()
             indexAllTabs()
-            logger.info("Indexed project $editorTabsViewModel with ${indexerSession?.status?.exceptions?.size} issues")
+            logger.info("Indexed project $editorTabsViewModel with ${indexerSession?.status?.issues?.size} issues")
         } catch (e: Exception) {
             logger.info(e.message)
         }

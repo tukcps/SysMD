@@ -24,10 +24,10 @@ data class SessionStatusResponse (
     constructor(sessionStatus: SessionStatus): this(
         sessionStatus.numberOfPropagateIterations,
     ) {
-        sessionStatus.exceptions.forEach {
-            reports.add(SysMDReportModel(message = it.message, line = it.token?.lineNo, token = it.token?.string, elementId = it.element?.elementId))
+        sessionStatus.issues.forEach {
+            // reports.add(SysMDReportModel(message = it.message, line = it.token?.lineNo, token = it.token?.string, elementId = it.elementPath?.elementId))
         }
-        sessionStatus.updates.forEach {
+        sessionStatus.updatedValues.forEach {
             updates[it.key] = it.value
         }
     }

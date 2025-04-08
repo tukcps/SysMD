@@ -17,7 +17,7 @@ class AttributeTests {
     @Test
     fun testSimpleAttribute() = testSession("ScalarValues") {
         loadSysMLv2("attribute <aa> a;")
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val a = global.resolve<Feature>("a")
         assertNotNull(a)
         assertEquals("a", a.declaredName)
@@ -29,7 +29,7 @@ class AttributeTests {
         loadSysMLv2("""
             attribute <aa> a: ScalarValues::Real; 
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val a = global.resolve<Feature>("a")
         assertNotNull(a)
         assertEquals("a", a.declaredName)
@@ -43,7 +43,7 @@ class AttributeTests {
         loadSysMLv2("""
             attribute <aa> a: ScalarValues::Real [1 .. 3]; 
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val a = global.resolve<Feature>("a")
         assertNotNull(a)
         assertEquals("a", a.declaredName)
@@ -58,7 +58,7 @@ class AttributeTests {
             attribute x: SI::Speed = 10.0 [m/s];
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val x = global.resolve<Feature>("x")
         assertNotNull(x)
         val unit= x.variable?.vectorQuantity?.unit

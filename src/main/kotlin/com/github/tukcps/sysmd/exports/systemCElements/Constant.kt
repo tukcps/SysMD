@@ -1,6 +1,6 @@
 package com.github.tukcps.sysmd.exports.systemCElements
 
-import com.github.tukcps.sysmd.exceptions.SysMDInternalError
+import com.github.tukcps.sysmd.exceptions.SysMDFatalInternalError
 import com.github.tukcps.sysmd.model.kerml.Feature
 import java.io.PrintWriter
 
@@ -38,7 +38,7 @@ class Constant(expression: Feature, dataType: DataType, dependencyStringToMinMax
                 }
             }
 
-            else -> throw SysMDInternalError("The Expression uses a DataType ($dataType) which is not eligible to be used for in a Constant.")
+            else -> throw SysMDFatalInternalError("The Expression uses a DataType ($dataType) which is not eligible to be used for in a Constant.")
         }
 
         unit = expression.variable!!.unitSpec

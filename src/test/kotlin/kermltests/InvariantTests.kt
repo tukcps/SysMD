@@ -9,6 +9,7 @@ import com.github.tukcps.sysmd.services.resolve.resolve
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -16,27 +17,27 @@ class InvariantTests {
     @Test
     fun testSyntax() = testSession("ScalarValues") {
         loadKerML("""
-                feature e : ScalarValues::Boolean; 
-                inv a { e }
-            """)
+            feature e : ScalarValues::Boolean; 
+            inv a { e }
+        """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val e = global.resolve<Feature>("e")!!.variable
         val a = global.resolve<Invariant>("a")
         assertNotNull(e)
         assertNotNull(a)
-        assertTrue(e.vectorQuantity.value == XBool.True)
+        assertEquals(XBool.True, e.vectorQuantity.value as XBool)
     }
 
 
     @Test
     fun testSyntaxNoName() = testSession("ScalarValues") {
         loadKerML("""
-                feature e : ScalarValues::Boolean; 
-                inv { e }
-            """)
+            feature e : ScalarValues::Boolean; 
+            inv { e }
+        """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val e = global.resolve<Feature>("e")
         assertNotNull(e)
         val a = global.getOwnedElementOfType<Invariant>()

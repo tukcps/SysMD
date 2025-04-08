@@ -21,7 +21,7 @@ class FunctionTests {
             }
         """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val f = global.resolve<Element>("f")
         val a = global.resolve<Feature>("f::a")
         assertNotNull(f)
@@ -34,6 +34,6 @@ class FunctionTests {
             feature x: ScalarValues::Real;
             feature f: ScalarValues::Real = undefined(x); 
         """.trimIndent())
-        assertTrue(status.exceptions.isNotEmpty(), "An unknown function should be reported as error.")
+        assertTrue(status.issues.isNotEmpty(), "An unknown function should be reported as error.")
     }
 }

@@ -60,8 +60,6 @@ class SysMLv2Semantics(semantics: ActionsContext): ActionsContext by semantics  
                     pathFromOwnerToReferencingFeature = "target",
                     referencedFeature = target.first())
             }
-            if (generateAnnotations && textualRepresentation != null)
-                addAnnotation(textualRepresentation!!, created!!)
         }
     }
 

@@ -1,11 +1,9 @@
 package com.github.tukcps.sysmd.cspsolver
 
 import com.github.tukcps.sysmd.cspsolver.Variable.BaseType.Unknown
-import com.github.tukcps.sysmd.exceptions.SysMDError
+import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.model.expression.checkEvent
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.session.report
-import com.github.tukcps.sysmd.services.session.reportInfo
 import com.github.tukcps.sysmd.services.session.Session
 
 
@@ -53,7 +51,7 @@ fun Session.propagate() {
                     }
                 } catch (e: Exception) {
                     value.stable = true
-                    report(value.feature, e.message ?: "(issue in constraint propagation)", e)
+                    status.error( e.message ?: "(issue in constraint propagation)", element = value.feature, cause = e)
                 }
             }
             dSolver.advanceState()
@@ -65,14 +63,14 @@ fun Session.propagate() {
             status.numberOfPropagateIterations += 1
         } while (!modelIsStable && status.numberOfPropagateIterations < 100)
         if (!modelIsStable)
-            reportInfo(global, "Number of constraint propagation iterations exceeded; issue with: $instable. Increase it if needed.")
+            status.warn( Issue.Kind.WARN_ITERATIONS_EXCEEDED,"Number of constraint propagation iterations exceeded; issue with: $instable. Increase it if needed.")
 
         // Copy updated entries into the status map, check consistency.
         repo.schedule.forEach {
             if (it.updated)
-                status.updates[it.elementId!!] = it.valueStr
+                status.updatedValues[it.elementId!!] = it.valueStr
         }
     } catch (error: Exception) {
-        report(SysMDError("During propagation: ${error.message}", cause = error))
+        status.error("During propagation: ${error.message}", cause = error)
     }
 }

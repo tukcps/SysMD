@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap
  * They are pre-compiled.
  */
 object LibraryRepository {
-    private val libraries : ConcurrentHashMap<String, List<io.github.tukcps.sysmlv2.api.entities.ElementDAO>> = ConcurrentHashMap()
+    private val libraries : ConcurrentHashMap<String, List<ElementDAO>> = ConcurrentHashMap()
 
     fun reset() {
         libraries.clear()
@@ -25,16 +25,14 @@ object LibraryRepository {
      * The library is cached.
      * @param key name of a standard library package
      */
-    fun get(key: String): List<io.github.tukcps.sysmlv2.api.entities.ElementDAO>? {
-        return libraries.get(key)
-    }
+    fun get(key: String): List<ElementDAO>? { return libraries[key] }
 
 
     /**
      * Loads a standard library directly from the resources.
      * @param packageNames Name of the standard package. Must be in resources/library.
      */
-    fun loadLibraryFromResources(key: String, packageNames: List<String>): List<io.github.tukcps.sysmlv2.api.entities.ElementDAO> {
+    fun loadLibraryFromResources(key: String, packageNames: List<String>): List<ElementDAO> {
         logger.info("Loading libraries ($key) - $packageNames")
         try {
             val session = SessionImplementation(libraries = mutableListOf())
@@ -46,12 +44,12 @@ object LibraryRepository {
                     logger.error("Could not load library '/libraries/$it.kerml' from resources")
                 else
                     KerML(session).parse(inputString!!)
-                if (session.status.exceptions.isNotEmpty())
-                    logger.error("Error while compiling library '$it': ${session.status.exceptions.joinToString(", ")}")
+                if (session.status.issues.isNotEmpty())
+                    logger.error("Issue while compiling library '$it': ${session.status.issues.joinToString(", ")}")
             }
             session.initialize(1) // resolve and inherit, but no setup of constraint system
 
-            val elementDAO = mutableListOf<io.github.tukcps.sysmlv2.api.entities.ElementDAO>()
+            val elementDAO = mutableListOf<ElementDAO>()
             session.repo.elements.values.forEach {
                 if (it != session.global && it != session.anything)
                     elementDAO.add(it.toDAO())

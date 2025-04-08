@@ -1,12 +1,11 @@
 package com.github.tukcps.sysmd.exceptions
 
-import com.github.tukcps.sysmd.model.kerml.Element
-import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
 import com.github.tukcps.sysmd.compiler.scanner.Token
+import com.github.tukcps.sysmd.model.kerml.Element
 
 
 /**
- * General error class that is also used for persisting error list.
+ * General error class that is also used for persisting the error list.
  * Each entry has:
  * @param message Mandatory textual description
  * @param textualRepresentation the textual representation in which the error has occurred
@@ -16,8 +15,8 @@ import com.github.tukcps.sysmd.compiler.scanner.Token
  */
 open class SysMDInfo(
     message: String,
-    textualRepresentation: TextualRepresentation? = null,
+    textualRepresentation: String? = null,
     token: Token? = null,
     element: Element? = null,
     cause: Throwable? = null
-): SysMDException(message, textualRepresentation, token, element, cause, priority = 0)
+): SysMDException(message, textualRepresentation, token, kind = Issue.Kind.INFO, element = element, cause = cause)

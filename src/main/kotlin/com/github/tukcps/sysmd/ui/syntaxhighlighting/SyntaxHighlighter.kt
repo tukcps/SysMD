@@ -9,8 +9,13 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.input.TextFieldValue
 import com.github.tukcps.sysmd.compiler.scanner.Scanner
 import com.github.tukcps.sysmd.compiler.scanner.Token
-import com.github.tukcps.sysmd.ui.Inconsistency
 import kotlin.math.min
+
+
+class Inconsistency(
+    val name : String,
+    val line : Int,
+)
 
 /**
  * The Syntax Highlighter is used to apply Syntax Highlighting to the text of a TextFieldValue.

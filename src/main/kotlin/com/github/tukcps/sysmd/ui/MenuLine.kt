@@ -62,7 +62,7 @@ fun MenuLine(sysMDViewModel: SysMDViewModel) {
                 Spacer(Modifier.width(8.dp))
 
                 Text(
-                    text = "Project: ${sysMDViewModel.kerMlModel.value.project?.name?:"(no project selected)"}",
+                    text = "Project: ${sysMDViewModel.sessionState.value.project?.name?:"(no project selected)"}",
                     modifier = Modifier.padding(3.dp),
                     fontSize = AppTheme.fontSize
                 )
@@ -79,6 +79,7 @@ fun MenuLine(sysMDViewModel: SysMDViewModel) {
                     tooltipText = "Compiles textual representation",
                     onClick = {
                         composableScope.launch {
+                            sysMDViewModel.reset()
                             if (!inCompile) {
                                 inCompile = true
                                 sysMDViewModel.compile(solve = false)
@@ -97,9 +98,10 @@ fun MenuLine(sysMDViewModel: SysMDViewModel) {
                     tooltipText = "Computes constraint propagation",
                     onClick = {
                         composableScope.launch {
+                            sysMDViewModel.reset()
                             if (!inCompile) {
                                 inCompile = true
-                                sysMDViewModel.compile()
+                                sysMDViewModel.compile(solve = true)
                             }
                             inCompile = false
                         }
@@ -114,7 +116,7 @@ fun MenuLine(sysMDViewModel: SysMDViewModel) {
                     text = if(RESTRepository.onlineState.value) "Commit" else "Save",
                     tooltipText = "Saves the project in its files.",
                     onClick = {
-                        sysMDViewModel.kerMlModel.value.project?.saveToInterchangeFiles()
+                        sysMDViewModel.sessionState.value.project?.saveToInterchangeFiles()
                         sysMDViewModel.editorTabsViewModel.editorTabs.forEach { editorTabModel ->
                             editorTabModel.save()
                             editorTabModel.elementEdited.value = false

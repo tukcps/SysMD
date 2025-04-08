@@ -1,9 +1,7 @@
 standard library package ScalarValues {
     datatype ScalarValue :> Base::DataValue;
 	datatype String :> ScalarValue;
-	datatype Boolean :> ScalarValue{
-	    feature spec: String;
-	}
+	datatype Boolean :> ScalarValue;
     datatype NumericalValue :> ScalarValue;
     datatype Number :> NumericalValue;
 	datatype Complex :> Number;

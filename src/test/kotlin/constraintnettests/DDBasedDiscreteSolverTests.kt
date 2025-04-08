@@ -1,4 +1,4 @@
-@file:Suppress("UNUSED_VARIABLE")
+@file:Suppress("UNUSED_VARIABLE", "unused")
 
 package constraintnettests
 
@@ -26,18 +26,19 @@ class DDBasedDiscreteSolverTests {
                     feature q: ScalarValues::Boolean = bySpecializations(q);
                 }
                 type Variant1 :> General {
-                    feature p: ScalarValues::Boolean {:>> spec = "true";}
-                    feature q: ScalarValues::Boolean {:>> spec = "true";}
+                    inv p; 
+                    inv q; 
                 }
                 type Variant2 :> General {
-                    feature p: ScalarValues::Boolean {:>> spec = "true";}
-                    feature q: ScalarValues::Boolean {:>> spec = "false";}
+                    inv p; 
+                    inv q false; 
                 }
             """)
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         propagate()
         val v1p = global.resolveVar("Variant1::p")
         val v2p = global.resolveVar("Variant2::p")
-        assertEquals(0, status.exceptions.size, "Errors: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Errors: ${status.issues}")
         val p = global.resolveVar("General::p")!!
         val q = global.resolveVar("General::q")!!
         assertEquals(builder.True, p.vectorQuantity.value)
@@ -66,20 +67,20 @@ class DDBasedDiscreteSolverTests {
                }
            }
         """)
-        assertTrue(status.exceptions.isEmpty(), "Error messages: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
         initialize()
         propagate()
         //FIXME: Exception even before assertions...
-        assertTrue(status.exceptions.isEmpty(), "Error messages: ${status.exceptions}"
+        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}"
         ) //checking for no errors should be enough here: 'bySubclasses' will throw during initialization if something is wrong
     }
 
     @Test
     fun hasATest2() = testSession("ScalarValues") {
-        loadKerML(input = """
-                feature a: ScalarValues::Boolean {:>> spec = "true";}
-                feature b: ScalarValues::Boolean = hasA(Global, a) {:>> spec = "false";}
-                """)
+        loadKerML("""
+            inv a; 
+            inv b  { not hasA(Global, a) }
+        """)
         propagate()
         val b = global.resolve<Feature>("b")!!.variable!!
         assertEquals("Contradiction", b.vectorQuantity.value.toString()
@@ -96,7 +97,7 @@ class DDBasedDiscreteSolverTests {
             feature c2 : ScalarValues::Boolean;
             """.trimIndent()
         )
-        assertEquals(1, status.exceptions.size, status.exceptions.toString())
+        assertEquals(1, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -105,9 +106,9 @@ class DDBasedDiscreteSolverTests {
             feature x: ScalarValues::Real =[1.0..3.0].
             inv r { x > 1.0+1.0 }
         """.trimIndent())
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val x = global.resolve<Feature>("x")!!.variable!!
         // println(x)
         assertTrue(x.vectorQuantity.getMinAsDouble() <= 2.0)
@@ -124,10 +125,10 @@ class DDBasedDiscreteSolverTests {
             inv r { x >= 1.0+1.0}
         """.trimIndent()
         )
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         initialize()
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val x = global.resolveVar("x")!!
         // println(x.quantity.getMinAsDouble())
         assertTrue(x.vectorQuantity.getMinAsDouble() <= 2.0)
@@ -140,9 +141,9 @@ class DDBasedDiscreteSolverTests {
             inv r { x < 1.0+1.0 }
         """.trimIndent()
         )
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val x = global.resolve<Feature>("x")!!.variable!!
         // println(x.quantity.getMaxAsDouble())
         assertTrue(x.vectorQuantity.getMaxAsDouble() >= 2.0)
@@ -157,9 +158,9 @@ class DDBasedDiscreteSolverTests {
             inv r { x <= 1.0+1.0 }
         """.trimIndent()
         )
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val x = global.resolve<Feature>("x")!!.variable!!
         // println(x.quantity.getMaxAsDouble())
         assertTrue(x.vectorQuantity.getMaxAsDouble() >= 2.0)
@@ -174,9 +175,9 @@ class DDBasedDiscreteSolverTests {
             inv r { x == y}
         """.trimIndent()
         )
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val x = global.resolveVar("x")!!
         val y = global.resolveVar("y")!!
         val r = global.resolveVar("r")!!
@@ -190,11 +191,11 @@ class DDBasedDiscreteSolverTests {
         loadKerML(input = """
             feature x: ScalarValues::Real {:>> range = "1.0..3.0";}
             feature y: ScalarValues::Real = x+0.1;
-            feature r: ScalarValues::Boolean = x >= y {:>> spec = "true";}
+            inv r { x >= y }
             """)
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val x = global.resolveVar("x")!!
         val y = global.resolveVar("y")!!
         val r = global.resolveVar("r")!!
@@ -215,7 +216,7 @@ class DDBasedDiscreteSolverTests {
         """
         )
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
@@ -239,7 +240,7 @@ class DDBasedDiscreteSolverTests {
         //println(y!!.quantity.bdd().toIteString())
         //println(y!!.quantity.bdd().evaluate().toIteString())
         // println(builder.conds.indexes.toString())
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
 
         //(this as AgilaServiceImpl).dSolver.propagateByPath(this.getProperties())
 
@@ -319,16 +320,14 @@ class DDBasedDiscreteSolverTests {
 
     @Test
     fun tautologyTest() = testSession("ScalarValues") {
-        loadKerML(
-            """
+        loadKerML("""
             feature a: ScalarValues::Boolean;
-            feature b: ScalarValues::Boolean {:>> spec = "false";}
-            feature c: ScalarValues::Boolean {:>> spec = "true";}
-            feature y: ScalarValues::Boolean = (a and c) or (not(b) and not(a)) {:>> spec = "true";}
-            feature z: ScalarValues::Boolean = a and c {:>> spec = "false";}
-        """.trimIndent()
-        )
-        //val disc = solver.discSolver
+            inv b false; 
+            inv c; 
+            inv y { (a and c) or (not(b) and not(a)) }
+            inv z false { a and c }
+        """)
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         initialize()
         propagate()
         val y = global.resolveVar("z")
@@ -341,10 +340,11 @@ class DDBasedDiscreteSolverTests {
     @Test
     fun exampleTest() = testSession("ScalarValues") {
         loadKerML("""
-                feature a: ScalarValues::Boolean = true;
+                inv a { true }
                 feature b: ScalarValues::Boolean;
-                feature c: ScalarValues::Boolean = a and b {:>> spec = "true";}
-            """.trimIndent())
+                inv c { a and b }
+            """)
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         //val disc = solver.discSolver
         propagate()
         val a = global.resolveVar("a")
@@ -353,25 +353,22 @@ class DDBasedDiscreteSolverTests {
         assertEquals(builder.True, b!!.vectorQuantity.bdd())
         val c = global.resolveVar("c")
         assertEquals(builder.True, c!!.vectorQuantity.bdd())
-        //println(getProperties().toString())
-        // println("break")
     }
 
     @Test
     fun exampleTest2() = testSession("ScalarValues") {
         loadKerML("""
-                feature a: ScalarValues::Boolean = true;
+                inv a { true }
                 feature b: ScalarValues::Boolean;
                 feature c: ScalarValues::Boolean = a and b;
-            """.trimIndent())
-        //val disc = solver.discSolver
+            """)
         propagate()
         val a = global.resolveVar("a")
         assertEquals(builder.True, a!!.vectorQuantity.bdd())
         val b = global.resolveVar("b")
-        assertTrue(b!!.vectorQuantity.bdd() === b!!.vectorQuantity.value.builder.Bool)
+        assertTrue(b!!.vectorQuantity.bdd() === b.vectorQuantity.value.builder.Bool)
         val c = global.resolveVar("c")
-        assertTrue(c!!.vectorQuantity.bdd() === c!!.vectorQuantity.value.builder.Bool)
+        assertTrue(c!!.vectorQuantity.bdd() === c.vectorQuantity.value.builder.Bool)
 
     }
 
@@ -379,15 +376,15 @@ class DDBasedDiscreteSolverTests {
     @Test
     fun logicOperatorsAndTest() = testSession("ScalarValues") {
         loadKerML("""
-            feature a1: ScalarValues::Boolean {:>> spec = "true";}
+            inv a1; 
             feature b1: ScalarValues::Boolean;
-            feature c1: ScalarValues::Boolean = a1 and b1 {:>> spec = "true";}
+            inv c1 { a1 and b1 }
             feature a2: ScalarValues::Boolean;
             feature b2: ScalarValues::Boolean;
             feature c2: ScalarValues::Boolean = a2 and b2;
             feature a3: ScalarValues::Boolean;
             feature b3: ScalarValues::Boolean;
-            feature c3: ScalarValues::Boolean = a3 and b3 {:>> spec = "true";}
+            inv c3 { a3 and b3 }
         """)
         propagate()
         val a1 = global.resolveVar("a1")
@@ -422,7 +419,7 @@ class DDBasedDiscreteSolverTests {
         loadKerML("""
             feature a: ScalarValues::Boolean;
             feature b: ScalarValues::Boolean;
-            feature c: ScalarValues::Boolean = a and b {:>> spec = "true";}
+            inv c { a and b }
         """)
         propagate()
         val a = global.resolveVar("a")
@@ -436,12 +433,12 @@ class DDBasedDiscreteSolverTests {
     @Test
     fun logicOperatorsOrTest() = testSession("ScalarValues") {
         loadKerML("""
-            feature a2: ScalarValues::Boolean {:>> spec = "false";}
+            inv a2 false; 
             feature b2: ScalarValues::Boolean;
-            feature c2: ScalarValues::Boolean = a2 or b2 {:>> spec = "true";}
+            inv c2 {a2 or b2 }
             feature a3: ScalarValues::Boolean;
             feature b3: ScalarValues::Boolean;
-            feature c3: ScalarValues::Boolean = a3 or b3 {:>> spec = "true";}
+            inv c3 { a3 or b3 }
             feature a4: ScalarValues::Boolean;
             feature b4: ScalarValues::Boolean;
             feature c4: ScalarValues::Boolean = a4 or b4;
@@ -468,14 +465,14 @@ class DDBasedDiscreteSolverTests {
     @Test
     fun logicOperatorsNotTest() = testSession("ScalarValues") {
         loadKerML("""
-            feature a1: ScalarValues::Boolean {:>> spec = "false";}
-            feature b1: ScalarValues::Boolean = not(a1) {:>> spec = "true";}
-            feature a2: ScalarValues::Boolean {:>> spec = "true";}
-            feature b2: ScalarValues::Boolean = not(a2) {:>> spec = "false";}
+            inv a1 false; 
+            inv b1 { not(a1) }
+            inv a2; 
+            inv b2 false { not(a2) }
             feature a5: ScalarValues::Boolean;
-            feature b5: ScalarValues::Boolean = not(a5) {:>> spec = "true";}
+            inv b5 { not(a5) }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         propagate()
         val a1 = global.resolveVar("a1")
         val a2 = global.resolveVar("a2")
@@ -494,10 +491,10 @@ class DDBasedDiscreteSolverTests {
     fun logicOperatorsITETest() = testSession("ScalarValues") {
         loadKerML("""
             feature a: ScalarValues::Boolean;
-            feature b: ScalarValues::Boolean {:>> spec = "false";}
-            feature c: ScalarValues::Boolean {:>> spec = "true";}
-            feature d: ScalarValues::Boolean = ITE(a,b,c) {:>> spec = "true";}
-            """)
+            inv b false; 
+            inv c; 
+            inv d { ITE(a,b,c) }
+        """)
         propagate()
         //TODO: hier weiter
         val a = global.resolveVar("a")
@@ -548,7 +545,7 @@ class DDBasedDiscreteSolverTests {
             }
             """.trimIndent()
         )
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         propagate()
         val ex3d = global.resolve<Namespace>("Example3::d")!!
         val tst = ex3d.resolve<Element>("test")
@@ -560,8 +557,8 @@ class DDBasedDiscreteSolverTests {
     fun semanticTest() = testSession("ScalarValues") {
         loadKerML("""
             feature a: ScalarValues::Boolean;
-            feature b: ScalarValues::Boolean {:>> spec = "true";}
-            feature c: ScalarValues::Boolean {:>> spec = "false";}
+            inv b; 
+            inv c false; 
             feature d: ScalarValues::Boolean = true or false;
             feature e: ScalarValues::Boolean = true or false {:>> spec = "true";}
             feature f: ScalarValues::Boolean = true or false {:>> spec = "false";}
@@ -570,7 +567,7 @@ class DDBasedDiscreteSolverTests {
         // There is no exor function ... yet. Either we add one ...
         initialize()
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val a = global.resolveVar("a")
         assertTrue(a!!.valueStr.startsWith("Unknown"))
         val b = global.resolveVar("b")
@@ -585,11 +582,10 @@ class DDBasedDiscreteSolverTests {
     @Test
     fun basicUnitRecognitionTest() = testSession("ScalarValues") {
         loadKerML("""
-        feature a: ScalarValues::Boolean = false {:>> spec = "false";}
-        feature b: ScalarValues::Boolean;
-        feature c: ScalarValues::Boolean = a or b {:>> spec = "true";}
+            inv a false { false }
+            feature b: ScalarValues::Boolean;
+            inv c { a or b }
         """)
-        initialize()
         propagate()
         var a = global.resolveVar("a")
         val b = global.resolveVar("b")
@@ -608,9 +604,10 @@ class DDBasedDiscreteSolverTests {
     @Test
     fun conflictDetectionTest() = testSession("ScalarValues") {
         loadKerML("""
-            feature a: ScalarValues::Boolean {:>> spec = "true";}
-            feature b: ScalarValues::Boolean {:>> spec = "false";}
-            feature c: ScalarValues::Boolean= b {:>> spec = "true";}""")
+            inv a; 
+            inv b false;
+            inv c { b } 
+        """)
         propagate()
         assertEquals("Contradiction", (global.resolveVar("c")!!.valueStr))
         //println(status.errors.toString())
@@ -620,16 +617,19 @@ class DDBasedDiscreteSolverTests {
     fun basicDontCareRecognitionTest() = testSession("ScalarValues") {
         loadKerML("""
             feature a: ScalarValues::Boolean;
-            feature b: ScalarValues::Boolean {:>> spec = "false";}
-            feature c: ScalarValues::Boolean {:>> spec = "true";}
-            feature d: ScalarValues::Boolean = (a and c) or (not(b) and not(a)) {:>> spec = "true";}""")
-        settings.catchExceptions = false
+            inv b false; 
+            inv c; 
+            inv d { (a and c) or (not(b) and not(a)) }
+        """)
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         propagate()
         val a = global.resolveVar("a")
+        val b = global.resolveVar("b")
+        val c = global.resolveVar("c")
         val d = global.resolveVar("d")
         assertEquals(false, a!!.bdd() is BDD.Leaf)
         assertEquals(true, d!!.bdd() is BDD.Leaf)
-        //assertEquals() TODO: Test for dontcare.size == 1
+        //assertEquals() TODO: Test for don't-care.size == 1
     }
 
     @Test
@@ -640,12 +640,14 @@ class DDBasedDiscreteSolverTests {
     @Test
     fun reactToUserChangesTest() = testSession("ScalarValues") {
         loadKerML("""
-            feature arbitraryConstraint1: ScalarValues::Boolean {:>> spec = "true";}
-            feature arbitraryConstraint2: ScalarValues::Boolean {:>> spec = "false";}
+            inv arbitraryConstraint1; 
+            inv arbitraryConstraint2 false; 
             feature arbitraryConstraint3: ScalarValues::Boolean;
-            feature constr: ScalarValues::Boolean = arbitraryConstraint1 and arbitraryConstraint2 or arbitraryConstraint3 {:>> spec = "true";}"""
-        )
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+            inv constr { 
+                arbitraryConstraint1 and arbitraryConstraint2 or arbitraryConstraint3 
+            }
+        """)
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         // println("reactToUserChangesTest before initialization")
         initialize()
         // println("reactToUserChangesTest before 1. propagation")
@@ -718,7 +720,7 @@ class DDBasedDiscreteSolverTests {
                 feature enumFake: ScalarValues::Real = oneOf(1.0, 2.0, 3.0, 4.0, 7.0); 
             """.trimIndent())
             propagate()
-            assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+            assertTrue(status.issues.isEmpty(), status.issues.toString())
             val enum = global.resolveVar("enumFake")!!
 
             //println("=== CONDS ===")
@@ -779,7 +781,7 @@ class DDBasedDiscreteSolverTests {
                 inv enumConstraint { (selection1 + selection2) >= 6.0 }
             """.trimIndent())
             propagate()
-            assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+            assertTrue(status.issues.isEmpty(), status.issues.toString())
 
             val enum1 = global.resolveVar("selection1")!!
             val enum2 = global.resolveVar("selection2")!!
@@ -824,9 +826,9 @@ class DDBasedDiscreteSolverTests {
             feature prop2T : ScalarValues::Boolean(true) = prop1T or true;
             feature prop2F : ScalarValues::Boolean(false) = prop1F and false;
         """.trimIndent())
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
 
         val c = global.resolveVar("contradiction")!!
         val p1 = global.resolveVar("prop1")!!
@@ -857,9 +859,9 @@ class DDBasedDiscreteSolverTests {
             feature contradiction : ScalarValues::Boolean(true) = false;
 
         """.trimIndent())
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         propagate()
-        assertEquals(0, status.exceptions.size, status.exceptions.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
 
         val c = global.resolveVar("contradiction")!!
         val x = global.resolveVar("x")!!
@@ -882,7 +884,7 @@ class DDBasedDiscreteSolverTests {
         val n = 10
         loadKerML(chain("x", n).plus("feature y : ScalarValues::Boolean(true) = x1;").joinToString("\n"))
         propagate()
-        assertEquals(0, status.exceptions.size)
+        assertEquals(0, status.issues.size)
 
         for(i in 1 .. n)
         {
@@ -903,7 +905,7 @@ class DDBasedDiscreteSolverTests {
         val n = 13
         loadKerML(cycle("x", n).joinToString("\n"))
         propagate()
-        assertEquals(0, status.exceptions.size)
+        assertEquals(0, status.issues.size)
 
         for(i in 1 .. n)
         {
@@ -918,7 +920,7 @@ class DDBasedDiscreteSolverTests {
         val n = 4
         loadKerML(cycle("x", n).joinToString("\n"))
         propagate()
-        assertEquals(0, status.exceptions.size)
+        assertEquals(0, status.issues.size)
 
         for(i in 1 .. n)
         {

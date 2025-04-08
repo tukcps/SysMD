@@ -1,6 +1,6 @@
 @file:Suppress("FunctionName")
 
-package com.github.tukcps.sysmd.ui
+package com.github.tukcps.sysmd.ui.paneleft
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.dp
 import com.github.tukcps.sysmd.ui.composables.Tabs
 import com.github.tukcps.sysmd.ui.composables.TreeViewPlus
 import com.github.tukcps.sysmd.ui.helper.fitMaxSize
-import com.github.tukcps.sysmd.ui.projectlist.ProjectList
+import com.github.tukcps.sysmd.ui.paneleft.projectlist.ProjectList
 import com.github.tukcps.sysmd.ui.viewmodel.SysMDViewModel
 
 /**
@@ -37,7 +37,7 @@ fun NavigationPanel(
             Tabs(listOf(mutableStateOf(" Projects "), mutableStateOf(" Has-A "), mutableStateOf(" Is-A ")), selected)
             Box(Modifier.fillMaxHeight().weight(1F)){
                 when (selected.value) {
-                    0 -> ProjectList(sysMDViewModel.kerMlModel, sysMDViewModel.editorTabsViewModel, sysMDViewModel::reset)
+                    0 -> ProjectList(sysMDViewModel.sessionState, sysMDViewModel.editorTabsViewModel, sysMDViewModel::reset)
                     1 -> DecompositionTree(sysMDViewModel.composition)
                     2 -> TreeViewPlus(sysMDViewModel.inheritance)
                 }

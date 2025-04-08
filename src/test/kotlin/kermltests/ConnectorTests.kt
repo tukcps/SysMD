@@ -24,7 +24,7 @@ class ConnectorTests {
             feature b; 
             connector c from a to b;
         """)
-        // assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        // assertTrue(status.reports.isEmpty(), status.reports.toString())
         val c = global.resolve<Connector>("c")
     }
 
@@ -41,7 +41,7 @@ class ConnectorTests {
         val a = global.resolve<Feature>("a")
         val rto = getRelationshipsTo(b!!, "*", test)
         val rFrom = getRelationshipsFrom(a!!, "*", test)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertTrue(rto.isNotEmpty())
         assertTrue(rFrom.isNotEmpty())
     }
@@ -53,7 +53,7 @@ class ConnectorTests {
             class b;
             connector c from a to b;
         """)
-        assertTrue(status.exceptions.isNotEmpty(), "Class as parameter of connector shall report error")
+        assertTrue(status.issues.isNotEmpty(), "Class as parameter of connector shall report error")
         val c = global.resolve<Connector>("c")
         assertNotNull(c)
     }
@@ -85,7 +85,7 @@ class ConnectorTests {
         assertNotNull(sa)
         val sb = global.resolve<Feature>("Signal::target")
         assertNotNull(sb)
-        assertTrue(status.exceptions.isEmpty(), "Errors: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Errors: ${status.issues}")
         val effectChain = global.resolve<Feature>("Signals::EffectChain::inoutIsEqual")
         val b = global.resolve<Feature>("b")!!.variable!!
         val a = global.resolve<Feature>("a")!!.variable!!
@@ -112,7 +112,7 @@ class ConnectorTests {
         val ax = global.resolveVar("A::x")
         val bx = global.resolveVar("B::y")
         val c = global.resolve<Connector>("c")
-        assertTrue(status.exceptions.isEmpty(), "Error messages: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
         assertEquals(3.0, global.resolveVar("a::x")!!.min(),0.00001)
         assertEquals(3.0, global.resolveVar("b::y")!!.min(),0.00001)
         assertEquals(3.0, global.resolveVar("b::y")!!.max(),0.00001)

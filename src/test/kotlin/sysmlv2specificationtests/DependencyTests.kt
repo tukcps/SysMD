@@ -18,7 +18,7 @@ class DependencyTests {
         loadSysMLv2("""
         dependency Package2 to Package1;
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -32,7 +32,7 @@ class DependencyTests {
         loadSysMLv2("""
         dependency Package1, Package2 to Package3, Package4;
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     /**
@@ -49,6 +49,6 @@ class DependencyTests {
             * not its name. */
         }
         """.trimIndent())
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 }

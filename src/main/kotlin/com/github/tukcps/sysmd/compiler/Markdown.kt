@@ -5,7 +5,6 @@ import com.github.tukcps.sysmd.model.kerml.implementation.TextualRepresentationI
 import com.github.tukcps.sysmd.services.repositories.local.ProjectUsageData
 import com.github.tukcps.sysmd.services.repositories.local.getMdSource
 import com.github.tukcps.sysmd.services.session.Session
-import com.github.tukcps.sysmd.services.session.report
 import com.github.tukcps.sysmd.ui.viewmodel.TextualRepresentationViewModel.Companion.Language
 import org.commonmark.Extension
 import org.commonmark.ext.front.matter.YamlFrontMatterBlock
@@ -75,7 +74,7 @@ fun Session.importMD(input: String, createTextualRepresentationIn: AnnotatingEle
                             "usage"      -> yaml.values.firstOrNull()?.let { it.split(",").forEach { str -> project?.addUsage(ProjectUsageData(URI(str.trim()))) } }
                         }
                     } catch (e: Exception) {
-                        report(null, message = "Error while parsing YAML", cause = e)
+                        status.fatal(message = "Error while parsing YAML", cause = e)
                     }
                     yaml = yaml.next as YamlFrontMatterNode?
                 }

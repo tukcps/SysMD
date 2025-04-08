@@ -26,7 +26,7 @@ class ParseAndUseConstraintsTests {
         val a = global.resolveVar("a")!!
         val b = global.resolveVar("b")!!
         propagate()
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, a.min())
         assertEquals(2.0, a.max())
         assertEquals(1.0, b.min())
@@ -39,7 +39,7 @@ class ParseAndUseConstraintsTests {
             feature a: ScalarValues::Real {:>> range = "1 .. *";}
             feature b: ScalarValues::Real {:>> range = "* .. 2.0";}
         """)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         val a = global.resolveVar("a")!!
         val b = global.resolveVar("b")!!
         propagate()
@@ -59,7 +59,7 @@ class ParseAndUseConstraintsTests {
         """)
         val a: Feature? = global.resolve("a")
         propagate()
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1L, a?.variable?.min())
         assertEquals(2L, a?.variable?.max())
     }
@@ -75,22 +75,22 @@ class ParseAndUseConstraintsTests {
         propagate()
         assertTrue(settings.minInt >= a.min() as Long)
         assertTrue(settings.maxInt <= a.max() as Long)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
 
     @Test
     fun boolSpecTestBoolean() = testSession("ScalarValues") {
         loadKerML("""
-                feature a: ScalarValues::Boolean {:>> spec = "true";}
-                feature b: ScalarValues::Boolean {:>> spec = "false";}
-            """)
+            inv a;
+            inv b false;
+        """)
         val a = global.resolveVar("a")!!
         val b = global.resolveVar("b")!!
         propagate()
         assertEquals(builder.True, a.vectorQuantity.value)
         assertEquals(builder.False, b.vectorQuantity.value)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
 
@@ -102,7 +102,7 @@ class ParseAndUseConstraintsTests {
                 feature b: ScalarValues::Real(2); 
                 feature d: ScalarValues::Boolean = (a > b) & false; 
             """)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         propagate()
         assertEquals(builder.False, global.resolveVar("d")!!.bdd())
     }
@@ -111,7 +111,7 @@ class ParseAndUseConstraintsTests {
     @Test
     fun constantsCheck() = testSession("ScalarValues", "Math") {
         loadKerML("feature a: ScalarValues::Real = Math::pi + Math::e;")
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         propagate()
         val a = global.resolve<Feature>("a")!!.variable!!.aadd()
         assertEquals(Math.PI + Math.E, a.getRange().min, 0.00001)
@@ -128,7 +128,7 @@ class ParseAndUseConstraintsTests {
                 :>> max = 3.0;
             }
         """)
-        assertTrue(status.exceptions.isEmpty(), status.exceptions.toString())
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val b = global.resolve<Feature>("b")
         assertNotNull(b)
         assertNotNull(b.variable)
@@ -148,7 +148,7 @@ class ParseAndUseConstraintsTests {
             feature c: ScalarValues::Real(3);
             feature d: ScalarValues::Real = a+b*c;
         """)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         propagate()
         assertEquals(7.0, global.resolveVar("d")!!.vectorQuantity.getMaxAsDouble(), 0.0000001)
         // now we change 'a' to 10, and set d to any real.
@@ -159,7 +159,7 @@ class ParseAndUseConstraintsTests {
         propagate()
         val d = global.resolveVar("d")!!.vectorQuantity.value as AADD.Leaf
         assertEquals(16.0, d.central)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     // Tests of 'not' function in parser
@@ -172,7 +172,7 @@ class ParseAndUseConstraintsTests {
         propagate()
         assertEquals(builder.False, global.resolve<Feature>("a")!!.variable!!.bdd())
         assertEquals(builder.True, global.resolve<Feature>("b")!!.variable!!.bdd())
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /** The function sum_i computes the sum over an expression from an initial value to an end value */
@@ -183,9 +183,9 @@ class ParseAndUseConstraintsTests {
                 feature a: ScalarValues::Real = sum_i(1.0, 9.0, i);
             """)
         propagate()
-        assertTrue(status.exceptions.isEmpty(), "Error messages: ${status.exceptions}")
+        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
         assertEquals(45.0, global.resolveVar("a")!!.aadd().getRange().min, 0.00000001)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
 
@@ -198,7 +198,7 @@ class ParseAndUseConstraintsTests {
             """)
         propagate()
         assertEquals(45, global.resolveVar("a")!!.idd().getRange().min)
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
 
@@ -210,7 +210,7 @@ class ParseAndUseConstraintsTests {
                     feature a: ScalarValues::Real = sum_i(1.0, oneOf(7.0 .. 9.0), i);
             """)
         propagate()
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(28.0, global.resolveVar("a")!!.aadd().getRange().min, 0.00000001)
         assertEquals(45.0, global.resolveVar("a")!!.aadd().getRange().max, 0.00000001)
     }
@@ -261,7 +261,7 @@ class ParseAndUseConstraintsTests {
                 feature c: ScalarValues::Real= a - b;
             """)
         propagate()
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(0.0, global.resolveVar("c")!!.min(), .00001)
         assertEquals(0.0, global.resolveVar("c")!!.max(), .00001)
     }
@@ -280,7 +280,7 @@ class ParseAndUseConstraintsTests {
         val b = global.resolveVar("b")!!
         assertNotNull(b)
         val c = global.resolveVar("c")!!
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(-1.0, c.min(), .00001)
         assertEquals(1.0, c.max(), .00001)
     }
@@ -294,7 +294,7 @@ class ParseAndUseConstraintsTests {
             feature c: ScalarValues::Integer = a - b;
         """)
         propagate()
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(-1.0, global.resolveVar("c")!!.min(), .00001)
         assertEquals(1.0, global.resolveVar("c")!!.max(), .00001)
     }
@@ -308,7 +308,7 @@ class ParseAndUseConstraintsTests {
             feature c: ScalarValues::Real = a + b; 
         """)
         propagate()
-        assertEquals(0, status.exceptions.size, "Error messages: ${status.exceptions}")
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(7.0, global.resolveVar("c")!!.min(), .00001)
         assertEquals(14.0, global.resolveVar("c")!!.max(), .00001)
     }
@@ -323,6 +323,6 @@ class ParseAndUseConstraintsTests {
                 feature b: ScalarValues::Real;
                 feature a: ScalarValues::Real = a;
             """)
-        assertEquals(1, status.exceptions.size, status.exceptions.toString())
+        assertEquals(1, status.issues.size, status.issues.toString())
     }
 }
