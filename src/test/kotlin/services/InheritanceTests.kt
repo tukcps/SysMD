@@ -540,7 +540,7 @@ class InheritanceTests {
     }
 
 
-    @Test fun realConstraintTest() = testSession("ScalarValues") {
+    @Test fun realConstraintTest() = testSession("Occurrences") {
         loadKerML("""
             package Test { 
                 class m { feature v: ScalarValues::Real(1..5); }
@@ -548,7 +548,7 @@ class InheritanceTests {
             }
         """)
         // The inconsistency / violation of Liskov Principle must be reported.
-        assertEquals(status.issues.firstOrNull()?.kind, Issue.Kind.WARN)
+        assertEquals(Issue.Kind.WARN_INCONSISTENCY, status.issues.firstOrNull()?.kind)
     }
 
     @Test fun realConstraintTest2() = testSession("ScalarValues") {

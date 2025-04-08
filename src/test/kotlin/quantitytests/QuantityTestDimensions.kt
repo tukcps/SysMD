@@ -1,6 +1,7 @@
 package quantitytests
 
 import com.github.tukcps.sysmd.cspsolver.propagate
+import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import util.mockup.loadKerML
 import util.testSession
@@ -964,11 +965,10 @@ class QuantityTestDimensions {
     fun defineDimensionTestWrongUnit() = testSession("SI") {
         loadKerML("""
             feature Mass: SI::Mass = 10.0 [m];
-            """
-            )
+        """)
         propagate()
         assertEquals(1, status.issues.size)
-        assertEquals("Unit of Mass (kg) does not match the unit of the dependency (m) in element Mass", status.issues.elementAt(0).message)
+        assertEquals(Issue.Kind.WARN_INCONSISTENCY, status.issues.elementAt(0).kind)
     }
 
 }

@@ -2,6 +2,7 @@ package constraintnettests
 
 import io.github.tukcps.aadd.IDD
 import com.github.tukcps.sysmd.cspsolver.propagate
+import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolve
@@ -377,7 +378,7 @@ class FunctionsTests {
             """)
         propagate()
         assertEquals(1, status.issues.size, "Issues: ${status.issues}")
-        assertTrue("dependency of b is not satisfiable in element b" in status.issues.first().message)
+        assertEquals(Issue.Kind.WARN_INCONSISTENCY, status.issues.firstOrNull()?.kind)
     }
 
     /** ConstNet shall compute bottom-up with sqrt in int and model.builder.range */
