@@ -84,11 +84,15 @@ part rangeExample {
     attribute height:  Length = oneOf(10.0 .. 100.0 [cm]);
     attribute width:   Length = oneOf(1.0 .. 1.1 [m]);
     attribute length:  Length = oneOf(1.0 .. 1.1 [m]);
-    attribute volume:  Volume(1000 .. 2000) [l] = height * width * length;
-        // Same as: 
-        // assert { (volume >= 1000.0 l) and (volume <= 2000.0 l)}    
+    attribute volume:  Volume  = height * width * length {
+        :>> range = "1000.0 .. 2000.0";
+        :>> unit =  "l";  
+    }
 }
 ```
+Note that we can also use SysML v2's capabilities to create a more sophisticated _constraint_ or _requirement_ for 
+the volume -- but for being brief, we just directly add some constraints to the volume in a direct way. 
+
 _Exercise:_ Try different values, units.
 #### Example 2: Boolean values and its dependencies
 
@@ -102,6 +106,9 @@ This package is imported by default, so we don't have to import it.
         assert { a and b }
     }
 ```
+
+Again, _a_ and _b_ might be some features anywhere in a model, and _a and b_ might be part of a SysML v2 _requirement_. 
+
 #### Example 3: Hybrid (mixed Boolean/arithmetic) dependencies
 
 Let's mix Boolean and arithmetic dependencies.

@@ -439,15 +439,15 @@ class AggregationFunctionTest {
     }
 
     @Test
-    fun astSumHasATestEvalDownInt() = testSession("ScalarValues") {
+    fun astSumHasATestEvalDownInt() = testSession("ScalarValues", "Ranges") {
         loadKerML("""
                  package l {
-                     type c1:> Base::Anything { feature p: ScalarValues::Integer {:>> range = "0..1000";} }
+                     type c1:> Base::Anything { feature p: ScalarValues::Integer, Ranges::InRange {:>> range = "0 .. 1000";} }
                      type c2:> Base::Anything; 
                      type c3 :> Base::Anything {
                         feature a: l::c1 [2..2];    // 1..2 * 1..2 \n"
                         feature b: l::c2 [2..3];    // shall be 0 as no property p is not defined.
-                        feature p3: ScalarValues::Integer = sumOverParts(p) {:>> range = "1..10";} 
+                        feature p3: ScalarValues::Integer, Ranges::InRange = sumOverParts(p) {:>> range = "1..10";} 
                     }
                  }
         """)
@@ -458,14 +458,14 @@ class AggregationFunctionTest {
     }
 
     @Test
-    fun astSumHasATest2() = testSession("ScalarValues") {
+    fun astSumHasATest2() = testSession("ScalarValues", "Ranges") {
         loadKerML("""
             package l { 
                 type c1:> Base::Anything {
-                    feature p: ScalarValues::Real(0.8); 
+                    feature p: ScalarValues::Real, Ranges::InRange { :>> range = " 0.8 .. 0.8"; } 
                 }
                 type c2:> Base::Anything {
-                    feature p: ScalarValues::Real(0.5); 
+                    feature p: ScalarValues::Real, Ranges::InRange { :>> range = " 0.5 .. 0.5"; } 
                 }
                 type c3:> Base::Anything {
                     feature p1: l::c1 [2..2];
@@ -484,19 +484,19 @@ class AggregationFunctionTest {
     }
 
     @Test
-    fun astSumHasATest2EvalDown() = testSession("ScalarValues") {
+    fun astSumHasATest2EvalDown() = testSession("ScalarValues", "Ranges") {
         loadKerML("""
             package l {
                 type c1:> Base::Anything {
                     feature p: ScalarValues::Real(0.8);
                 }
                 type c2:> Base::Anything {
-                    feature p: ScalarValues::Real {:>> range = "0..10";}
+                    feature p: ScalarValues::Real, Ranges::InRange {:>> range = "0..10"; }
                 } 
                 type c3:> Base::Anything {
                     feature p1: l::c1 [2..2];
                     feature p2: l::c2;
-                    feature p3: ScalarValues::Real = sumOverParts(p) {:>> range = "2.1..2.1";}
+                    feature p3: ScalarValues::Real, Ranges::InRange = sumOverParts(p) {:>> range = "2.1..2.1";}
                 }
             }
         """)

@@ -188,7 +188,7 @@ class CalculationDefinitionTests {
     }
 
     @Test
-    fun userDefFunctionTestRealEvalDown2() = testSession("Calculations") {
+    fun userDefFunctionTestRealEvalDown2() = testSession("Calculations", "Ranges") {
         loadSysMLv2("""
              package Test {   
                  calc def SumOfFourValues {
@@ -197,9 +197,9 @@ class CalculationDefinitionTests {
                  }
                  package TestModule {
                     attribute d1: ScalarValues::Real; 
-                    attribute e1: ScalarValues::Real = SumOfFourValues(d1) {:>> range = "28.0..28.0";} 
+                    attribute e1: ScalarValues::Real, Ranges::InRange = SumOfFourValues(d1) {:>> range = "28.0..28.0";} 
                     attribute d2: ScalarValues::Real; 
-                    attribute e2: ScalarValues::Real = SumOfFourValues(d2) {:>> range = "36.0..36.0";}
+                    attribute e2: ScalarValues::Real, Ranges::InRange = SumOfFourValues(d2) {:>> range = "36.0..36.0";}
                  }
              }    
         """)
@@ -214,7 +214,7 @@ class CalculationDefinitionTests {
     }
 
     @Test
-    fun userDefFunctionTestIntegerEvalDownMultipleLevel() = testSession("Parts", "Calculations") {
+    fun userDefFunctionTestIntegerEvalDownMultipleLevel() = testSession("Parts", "Calculations", "Ranges") {
         loadSysMLv2("""
             package Test {
                  calc def SumOfFourValues {
@@ -245,7 +245,7 @@ class CalculationDefinitionTests {
     }
 
     @Test
-    fun calcDefTestRealEvalDown() = testSession("Parts", "Calculations") {
+    fun calcDefTestRealEvalDown() = testSession("Parts", "Calculations", "Ranges") {
         loadSysMLv2("""
              calc def SumOfFourValues {
                 in a : ScalarValues::Real;
@@ -263,8 +263,8 @@ class CalculationDefinitionTests {
                 attribute c2: ScalarValues::Real = 10.0; 
                 attribute d1: ScalarValues::Real; 
                 attribute d2: ScalarValues::Real; 
-                attribute e1: ScalarValues::Real = SumOfFourValues(a,b,c1,d1) {:>> range = "35.0..35.0";} 
-                attribute e2: ScalarValues::Real = SumOfFourValues(a,b,c2,d2) {:>> range = "35.0..35.0";} 
+                attribute e1: ScalarValues::Real, Ranges::InRange = SumOfFourValues(a,b,c1,d1) {:>> range = "35.0..35.0";} 
+                attribute e2: ScalarValues::Real, Ranges::InRange = SumOfFourValues(a,b,c2,d2) {:>> range = "35.0..35.0";} 
              } 
              """)
         propagate()

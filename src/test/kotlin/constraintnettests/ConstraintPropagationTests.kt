@@ -301,11 +301,11 @@ class ConstraintPropagationTests {
     /** ConstNet shall compute bottom-up with ranges. */
     @Test
     fun evalUpWithRangesTest() {
-        testSession("ScalarValues")  {
-            loadKerML("feature b: ScalarValues::Real {:>> range = \"1.0..2.0\";}")
-            loadKerML("feature c: ScalarValues::Real {:>> range = \"2.0..3.0\";}")
-            loadKerML("feature d: ScalarValues::Real {:>> range = \"3.0..4.0\";}")
-            loadKerML("feature a: ScalarValues::Real = b+c*d;")
+        testSession("Ranges")  {
+            loadKerML("feature b: ScalarValues::Real, Ranges::InRange {:>> range = \"1.0..2.0\";}")
+            loadKerML("feature c: ScalarValues::Real, Ranges::InRange {:>> range = \"2.0..3.0\";}")
+            loadKerML("feature d: ScalarValues::Real, Ranges::InRange {:>> range = \"3.0..4.0\";}")
+            loadKerML("feature a: ScalarValues::Real, Ranges::InRange = b+c*d;")
             val a = global.resolveVar("a")
             assertNotNull(a)
             assertEquals(7.0, global.resolveVar("a")!!.min(), 0.00001)

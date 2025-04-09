@@ -42,7 +42,9 @@ standard library package Ranges {
      datatype InRange {
         feature min: ScalarValues::Real; // May be redefined
         feature max: ScalarValues::Real; // May be redefined
+        feature range: ScalarValues::String; // Not final, should be really a range.
         // inv thatIsInRange { (min <= that) and (that <= max) }
+        // Automatically added by SysMD's compiler
     }
     
     datatype AllInRange :> InRange; 

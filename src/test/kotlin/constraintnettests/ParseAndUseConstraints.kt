@@ -52,10 +52,7 @@ class ParseAndUseConstraintsTests {
     @Test
     fun constraintTestInteger() = testSession("Ranges") {
         loadKerML("""
-            feature a: ScalarValues::Integer, Ranges::InRange { 
-                :>> min = 1; 
-                :>> max = 2; 
-            } 
+            feature a: ScalarValues::Integer, Ranges::InRange { :>> range = "1 .. 2"; } 
         """)
         val a: Feature? = global.resolve("a")
         propagate()
@@ -123,10 +120,7 @@ class ParseAndUseConstraintsTests {
     @Test
     fun partsAttributeWithRangeTest() = testSession("Ranges") {
         loadKerML("""
-            feature b: ScalarValues::Real, Ranges::InRange {
-                :>> min = 2.0;
-                :>> max = 3.0;
-            }
+            feature b: ScalarValues::Real, Ranges::InRange { :>> range = "2.0 .. 3.0"; }
         """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         val b = global.resolve<Feature>("b")

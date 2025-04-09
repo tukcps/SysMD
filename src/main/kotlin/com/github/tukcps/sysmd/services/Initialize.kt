@@ -180,8 +180,8 @@ private fun Session.initVariables() {
 
             feature.specializes(repo.integerType) -> {
                 feature.variable = VariableImplementation(feature, BaseType.Int)
-                if (feature.specializes(repo.inRangeType))
-                    feature.variable?.intSpec(IntegerRange(feature.getOwned<Feature>("min")?.expression+".."+feature.getOwned<Feature>("max")?.expression))
+//                if (feature.specializes(repo.inRangeType))
+//                    feature.variable?.intSpec(IntegerRange(feature.getOwned<Feature>("min")?.expression+".."+feature.getOwned<Feature>("max")?.expression))
                 variables.add(feature.variable!!)
             }
 
@@ -192,8 +192,8 @@ private fun Session.initVariables() {
 
             feature.specializes(repo.realType) -> {
                 feature.variable = VariableImplementation(feature, BaseType.Real)
-                if (feature.specializes(repo.inRangeType))
-                    feature.variable?.rangeSpec(Range(feature.getOwned<Feature>("min")?.expression+".."+feature.getOwned<Feature>("max")?.expression))
+//                if (feature.specializes(repo.inRangeType))
+//                    feature.variable?.rangeSpec(Range(feature.getOwned<Feature>("min")?.expression+".."+feature.getOwned<Feature>("max")?.expression))
                 variables.add(feature.variable!!)
             }
 
