@@ -3,6 +3,8 @@
 
 This Gradle project contains the SysMD Notebook for SysML v2. 
 The links below give a brief introduction into SysMD Notebook (Kickstart) and SysML v2. 
+Note that these Markdown-Documents with its integrated SysML v2 and KerML models can be edited (and computed!) with SysMD Notebook: 
+
 - [Kickstart UI](install/1-SysMD-Kickstart/SysMD-Kickstart.md)
 - [Kickstart_Modeling](install/1-SysMD-Kickstart/SysMD-Modeling.md)
 - [SysML v2 Tutorial](install/3-SysMLv2Tutorial/SysMLv2Tutorial.md)
