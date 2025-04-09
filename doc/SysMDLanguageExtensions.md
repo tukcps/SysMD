@@ -94,8 +94,8 @@ syntax or semantics. Standard compliant is the use of :
        in min: Real;
        in max: Real;
        feature r: Real {
-           inv minBound { self >= min }
-           inv maxBound { self <= max }
+           inv minBound { that >= min }
+           inv maxBound { that <= max }
        } 
        return r 
    } 
