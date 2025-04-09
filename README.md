@@ -46,13 +46,13 @@ Also, in the folder 'doc' some documentation is provided.
 
 ## Running SysMD Notebook
 
-### via Installer
+### Via binary installer
 
 1. Make shure you have at least Java 21 installed on your Computer.
-2. Download the Installer of the SysMD Notebook from the "Releases" page in GitHub.
+2. Download the installer of the SysMD Notebook from the releases page in GitHub (https://github.com/tukcps/SysMD/releases)
 3. Run the Installer  and use the SysMD Notebook.
 
-### via Build System
+### Via Gradle
 
 To run the frontend, just use the build system Gradle: 
 
