@@ -140,6 +140,7 @@ fun KerML.MemberPrefix() {
 fun KerML.NamespaceBodyElement() {
     MemberPrefix()      // Consume and remember them in context
     FeaturePrefix()     // Optional anyhow, we just consume and remember them in context
+    optional(HASHTAG) { PrefixMetadataMember() }
     alternatives {
         nonFeatureElementStart starts       { NonFeatureElement() }
         featureElementStart starts          { FeatureElement() }
@@ -401,8 +402,8 @@ fun KerML.AnnotatingElement() {
  *          | Subclassification | Disjoining | FeatureInverting | FeatureTyping
  *          | Subsetting | Redefinition | TypeFeaturing
  */
-
 fun KerML.NonFeatureElement() {
+    noOrMore(start = HASHTAG) { PrefixMetadataMember() }
     alternatives {
         annotatingElementStart starts { AnnotatingElement() }
         DEPENDENCY  starts { Dependency() }

@@ -60,4 +60,6 @@ class Issue(
         result = 31 * result + (elementPath?.hashCode() ?: 0)
         return result
     }
+
+    override fun toString() = message
 }

@@ -54,4 +54,13 @@ class MetaFeatureTests {
         assertNotNull(approver)
         assertEquals(""""John Smith"""", approver.expression)
     }
+
+    @Test
+    fun userDefinedKeyword() = testSession("Occurrences") {
+        loadKerML("""
+            #command behavior Save;
+        """)
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
+    }
+
 }

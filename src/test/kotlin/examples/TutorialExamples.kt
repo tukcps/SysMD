@@ -39,11 +39,11 @@ class TutorialExamples {
                class General {
                    feature p: ScalarValues::Real = bySpecializations(p);
                }
-               class Variant1 isA General {
+               class Variant1 :> General {
                    feature p: ScalarValues::Real = 2.0;
                }
 
-               class Variant2 isA General {
+               class Variant2 :> General {
                    feature p: ScalarValues::Real = 3.0; 
                }
            }
@@ -143,11 +143,11 @@ class TutorialExamples {
             }
 
             // We calculate the sum inside the specific elements
-            class SummerWheel isA Wheel {
+            class SummerWheel :> Wheel {
                 feature tire: SummerTire;
             }
             
-            class WinterWheel isA Wheel {
+            class WinterWheel :> Wheel {
                 feature tire: WinterTire;
             }
         """)

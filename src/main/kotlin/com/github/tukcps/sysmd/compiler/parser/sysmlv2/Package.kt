@@ -85,16 +85,16 @@ fun SysMLv2.DefinitionElement() {
         PACKAGE             starts { Package() }
         LIBRARY             starts { Package() }
         annotatingElementStart starts  { AnnotatingElement() }
-        DEPENDENCY          starts { Dependency() }
+        DEPENDENCY or HASHTAG starts { Dependency() }
         ATTRIBUTE then DEF  starts { AttributeDefinition() }
-        // ENUM not supported
+        ENUM starts { Unsupported("Enumerations are not yet supported") }
         OCCURRENCE then DEF starts { OccurrenceDefinition() }
         INDIVIDUAL then DEF starts { Unsupported() }
         ITEM then DEF       starts { ItemDefinition() }
         PART then DEF       starts { PartDefinition() }
         CONNECTION then DEF starts { ConnectionDefinition() }
         ALLOCATION then DEF starts { AllocationDefinition() }
-        // FLOW isn't supported
+        FLOW starts { "Flows are not yet supported" }
         INTERFACE then DEF  starts { InterfaceDefinition() }
         PORT then DEF       starts { PortDefinition() }
         ACTION then DEF     starts { ActionDefinition() }
@@ -102,7 +102,8 @@ fun SysMLv2.DefinitionElement() {
         STATE then DEF      starts { StateDefinition() }
         CONSTRAINT then DEF starts { ConstraintDefinition() }
         REQUIREMENT then DEF starts { RequirementDefinition() }
-        METADATA then DEF starts   { Unsupported() }
+        VIEW then DEF       starts { Unsupported("Views are not yet supported") }
+        METADATA then DEF starts   { MetadataDefinition() }
         others { throwSyntaxError("Invalid definition") }
     }
 }

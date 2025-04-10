@@ -16,7 +16,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
  * - also set the value standalone according to your setup
  */
 group   = "com.github.tukcps"
-version = "4.0.0"               // must be number.number.number
+version = "4.0.1"               // must be number.number.number
 val aaddVersion = "0.1.9"
 val sysmlapiVersion = "3.9.4"
 val useMavenAADD = true
@@ -33,11 +33,11 @@ if (JavaVersion.current() < JavaVersion.VERSION_21) {
 // Plugins needed: id and versions.
 plugins {
     // Plugin that checks for updates:
-    id("com.github.ben-manes.versions") version "0.51.0"
+    id("com.github.ben-manes.versions") version "0.52.0"
     id("idea")
     kotlin("jvm") version "2.1.20"
     kotlin("plugin.serialization") version "2.1.20"
-    id("org.springframework.boot") version "3.4.3"
+    id("org.springframework.boot") version "3.4.4"
     id("io.spring.dependency-management") version "1.1.7"
     alias(libs.plugins.jetbrainsCompose) apply true
     alias(libs.plugins.compose.compiler) apply true
@@ -123,7 +123,7 @@ dependencies {
 
     // compose ui tests
     testImplementation(kotlin("test"))
-    testImplementation("org.springframework.boot:spring-boot-starter-test:3.4.3") {
+    testImplementation("org.springframework.boot:spring-boot-starter-test:3.4.4") {
         exclude(group = "org.mockito", module = "mockito-core")
     }
 

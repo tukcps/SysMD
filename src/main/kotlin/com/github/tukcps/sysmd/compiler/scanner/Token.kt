@@ -56,9 +56,8 @@ class Token(
         READONLY, REF, REGULAR_COMMENT, RELATIONSHIP, REQUIRE, REP, RETURN, REDEFINES, REFERENCES, REQUIREMENT,
         SATISFY, SEND, SNAPSHOT, SPECIALIZATION, SPECIALIZES, STAKEHOLDER, STANDARD, STATE, STEP, STRUCT, STRUCTURE, SUBJECT, SUCCESSION, SUBSETS, SUBTYPE,
         THEN, TIMESLICE, TO, TRANSITION, TYPE, TYPED,
-        UNIQUE, UNIONS, VARIATION,
-        // SysMLv2 Keywords Digital Twin
-        MEASURABLE, CONTROLLABLE, VARIABLE,
+        UNIQUE, UNIONS,
+        VARIATION, VIEW,
 
         // Operators
         LCURBRACE { override fun toString() = "{" },
@@ -269,10 +268,8 @@ class Token(
             "unions" to Kind.UNIONS,
             "package" to Kind.PACKAGE,
             "part" to Kind.PART,
-            "measurable" to Kind.MEASURABLE,
-            "controllable" to Kind.CONTROLLABLE,
-            "variable" to Kind.VARIABLE,
             "variation" to Kind.VARIATION,
+            "view" to Kind.VIEW,
             "message" to Kind.MESSAGE,
             "return" to Kind.RETURN,
         )

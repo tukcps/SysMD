@@ -79,23 +79,25 @@ data class ProjectViewModel(
         project?.saveToInterchangeFiles()
     }
 
+
+    fun unsavedChangesExist(): Boolean {
+        // First, close all open tabs from the open project.
+        // This also checks that changes are saved ...
+        editorTabsViewModel.editorTabs.forEach {
+            if (it.elementEdited.value) {
+                return true
+            }
+        }
+        return false
+    }
+
     /**
      * Opens a project in the main area.
      * Before that, the method closes the open project and starts a new session.
      */
     fun openProject() {
         if (project != null) {
-            // First, close all open tabs from the open project.
-            // This also checks that changes are saved ...
-            editorTabsViewModel.editorTabs.forEach {
-                if (it.elementEdited.value) {
-                    showSaveDialog.value = true
-                }
-            }
-
-            val closeCalls = editorTabsViewModel.editorTabs.map {
-                it.close
-            }
+            val closeCalls = editorTabsViewModel.editorTabs.map { it.close }
             closeCalls.forEach { if (it != null) { it() } }
 
             activeProject.value = this
@@ -112,9 +114,7 @@ data class ProjectViewModel(
 
             //Start Coroutine to initialize the Indexes
             indexerScope.cancel()
-            indexerScope.launch {
-                Indexer.initializeIndexes(editorTabsViewModel)
-            }
+            indexerScope.launch { Indexer.initializeIndexes(editorTabsViewModel) }
         }
     }
 }

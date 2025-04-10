@@ -167,7 +167,7 @@ fun KerML.Metaclass() {
  *
  * Note: PrefixMetadataMember is a qualified Name or FeatureChain
  */
-fun KerML.PrefixMetadataFeature() {
+fun KerML.PrefixMetadataAnnotation() {
     HASHTAG.consume()
     QualifiedName()
 }
@@ -244,12 +244,15 @@ fun KerML.MetadataBody(owner: FeatureActions<Feature>) {
 }
 
 /**
- *      MetadataBodyElement = NonFeatureMember | MetadataBodyFeatureMember
- *          | AliasMember | Import
+ *      MetadataBodyElement =
+ *            NonFeatureMember
+ *          | MetadataBodyFeatureMember
+ *          | AliasMember
+ *          | Import
  */
 fun KerML.MetadataBodyElement() {
     alternatives {
-        // TODO: NonFeatureMember
+        nonFeatureElementStart starts { NonFeatureElement() }
         METADATA starts { MetadataFeature() }
         ALIAS starts { AliasMember() }
         IMPORT starts { Import() }
@@ -352,7 +355,6 @@ fun KerML.LibraryPackage() {
     Identification().also { pkg.create(it) }
     PackageBody(Resolved(null, pkg.created, null))
 }
-
 
 
 /**

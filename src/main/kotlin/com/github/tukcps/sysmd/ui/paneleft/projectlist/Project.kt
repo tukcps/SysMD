@@ -41,8 +41,8 @@ fun Project(
 
     if (projectViewModel.showSaveDialog.value) {
         SaveDialog(projectViewModel.showSaveDialog,
-            onSave = { projectListViewModel.editorTabsViewModel.save(); projectViewModel.showSaveDialog.value = false },
-            onDrop = {}
+            onSave = { projectListViewModel.editorTabsViewModel.save(); projectViewModel.openProject(); projectViewModel.showSaveDialog.value = false },
+            onDrop = { projectViewModel.openProject();  projectViewModel.showSaveDialog.value = false }
         )
     }
 
@@ -50,7 +50,9 @@ fun Project(
         modifier = Modifier
             .fillMaxWidth()
             .padding(all = 5.dp)
-            .selectable(selected = false) { projectViewModel.openProject() },
+            .selectable(selected = false) {
+                if (projectViewModel.unsavedChangesExist()) projectViewModel.showSaveDialog.value = true
+                else projectViewModel.openProject() },
         shape = RoundedCornerShape(12.dp),
     ) {
         Box {
