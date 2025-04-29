@@ -18,7 +18,7 @@ class InterfaceTest {
                 
                 port def Faucet;
                 port def FaucetInlet;
-                
+
                 interface def WaterDelivery {
                     end suppliedBy : SpigotBank[1] {
                         port hot : Spigot;
@@ -28,13 +28,12 @@ class InterfaceTest {
                         port hot : FaucetInlet;
                         port cold : FaucetInlet;
                     }
-                    
+
                     connect suppliedBy.hot to deliveredTo.hot;
                     connect suppliedBy.cold to deliveredTo.cold;
                 }	
             }
         """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-
     }
 }

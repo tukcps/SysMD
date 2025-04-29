@@ -48,7 +48,7 @@ fun UpdateProjectDialog(
     /** We collect new data here and add/update after validation */
     val newProjectViewModel = projectListViewModel.projectToUpdate.value?.copy()?: ProjectViewModel(
         sessionState = projectListViewModel.sessionState,
-        projectListViewModel.editorTabsViewModel,
+        projectListViewModel.tabsViewModel,
         reset = projectListViewModel.reset,
         project = null,
         activeProject = projectListViewModel.projectOfSession

@@ -33,6 +33,7 @@ import io.github.tukcps.aadd.values.IntegerRange
  *  @param refreshTrees lambda that refreshes the tree-views in the left panel
  */
 open class TextualRepresentationViewModel(
+    val tabViewModel: TabViewModel,
     val sessionState: MutableState<Session>,
     val refreshTrees: () -> Unit,
 
@@ -51,9 +52,7 @@ open class TextualRepresentationViewModel(
      */
     val displayItems: SnapshotStateList<TextFieldValue> = mutableStateListOf(),
 
-    /**
-     * The element with show relationship
-     */
+    /** The element with show relationship */
     private var displayElement: Element? = null
 ) {
     val session: Session by sessionState
@@ -68,6 +67,13 @@ open class TextualRepresentationViewModel(
         annotations.clear()
         displayItems.clear()
         inCompile = false   // who knows ... the semaphore to prevent starting the compiler twice.
+    }
+
+    /**
+     * Lambda for the selection of a compile run of ONLY this cell
+     */
+    val onCompile = {
+        compile()
     }
 
     /**

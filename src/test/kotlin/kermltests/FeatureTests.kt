@@ -38,11 +38,11 @@ class FeatureTests {
 
     @Test
     fun prefixesTest() = testSession {
-        loadKerML(
-            """
-               in abstract composite readonly derived feature f; 
-               out portion feature all g; 
-            """)
+        loadKerML("""
+           in abstract composite readonly derived feature f; 
+           out portion feature all g; 
+        """)
+        assertTrue(status.issues.isEmpty(), "${status.issues}")
         val f = global.resolve<Feature>("f")
         assertNotNull(f)
         assertEquals(Feature.FeatureDirectionKind.IN, f.direction)

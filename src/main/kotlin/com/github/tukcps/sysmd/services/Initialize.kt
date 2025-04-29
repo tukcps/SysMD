@@ -30,7 +30,7 @@ fun Session.initialize(level: Int = 100) {
     if (settings.initialize) {
         try {
             if (level > 0) {
-                resolveAllNames() // Calls initialize of all elements --> at least ownership should be resolved.
+                resolveAllNames() // Calls 'initialize' of each element --> at least ownership should be resolved.
                 resolveNamesInRelationships()
 
                 // Cache frequently used types for use in semantic checks
@@ -49,8 +49,8 @@ fun Session.initialize(level: Int = 100) {
                 if (it !is Redefinition)
                     it.general.ref?.subtypes?.add(it.specific.ref!!)
             }
-            if (level > 1) anything.addInheritedToSubtypes() // Calls initialize of types that will add inherited properties.
-            if (level > 2) resolveAllNames()                    // Again, update name resolution considering types and inheritance
+            if (level > 1) anything.addInheritedToSubtypes() // Calls 'initialize' of types that will add inherited properties.
+            if (level > 2) resolveAllNames()                 // Again, update name resolution considering types and inheritance
             if (level > 3) resolveNamesInRelationships()
             if (level > 4) anything.addInheritedToSubtypes() // Call add inherited again to add inherited relationships of resolved names
             if (level > 4) {
@@ -71,7 +71,7 @@ fun Session.initialize(level: Int = 100) {
             if (error is SysMDException)
                 status.error(message = error.message, cause = error)
             else
-                status.error(message = "Initialization failed (${error}) ", cause = SysMDException("Initialization failed", cause = error))
+                status.error(message = "Semantic analysis failed (${error}) ", cause = SysMDException("Initialization failed", cause = error))
         }
     }
 }
@@ -101,7 +101,7 @@ internal fun Session.resolveAllNames() {
         stable = true
         iterations--
 
-        // Check if an owner of element can be identified and
+        // Check whether the owner of each element can be identified and
         // create them in the model.
         val elementsIdentified = mutableListOf<Element>()
         getUnownedElements().forEach {
@@ -262,7 +262,7 @@ private fun Session.initVariables() {
             // schedule+=it --- we do not schedule an erroneous dependency.
         }
     }
-    // add all remaining elements to schedule
+    // add all remaining elements to the schedule
     if (iterations >= 10000)
         while (notComputed.isNotEmpty()) {
             val it = notComputed.first()

@@ -34,7 +34,7 @@ class BuiltInFunctionsTests {
     @Test fun hasAFunctionTest() = testSession("ScalarValues") {
         loadKerML(catchExceptions = false, input = """
             feature a: ScalarValues::Real = 2.0;
-            feature b: ScalarValues::Boolean = hasA(Global, a);
+            feature b: ScalarValues::Boolean = owns(Global, a);
             """)
         propagate()
         assertEquals(0, status.issues.size, status.issues.toString())
@@ -45,8 +45,8 @@ class BuiltInFunctionsTests {
     @Test fun hasAFunctionTest2() = testSession("ScalarValues") {
         loadKerML(input = """
             feature a: ScalarValues::Real = 2.0;
-            feature b: ScalarValues::Boolean = hasA(Global, c).
-            """)
+            feature b: ScalarValues::Boolean = owns(Global, c); 
+        """)
         propagate()
         assertEquals(0, status.issues.size, status.issues.toString())
         val b = global.resolve<Feature>("b")!!
@@ -55,9 +55,9 @@ class BuiltInFunctionsTests {
 
     @Test fun hastypeOperationTest() = testSession("ScalarValues") {
         loadKerML(input = """
-                feature a: ScalarValues::Real = 2.0;
-                feature b: ScalarValues::Boolean = a hastype ScalarValues::Real;
-                """)
+            feature a: ScalarValues::Real = 2.0;
+            feature b: ScalarValues::Boolean = a hastype ScalarValues::Real;
+        """)
         propagate()
         assertEquals(0, status.issues.size, status.issues.toString())
         val b = global.resolve<Feature>("b") !!

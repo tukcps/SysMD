@@ -1,12 +1,10 @@
-@file:Suppress("unused")
+package constraintnettests
 
-package parsertests
-
-import io.github.tukcps.aadd.BDD
 import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.letVar
 import com.github.tukcps.sysmd.services.resolve.resolveVar
+import io.github.tukcps.aadd.BDD
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Ignore
@@ -14,7 +12,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
-
 
 @Suppress("UNUSED_VARIABLE", "DEPRECATION")
 class KerMLBddTests {
@@ -25,7 +22,8 @@ class KerMLBddTests {
      * a BDD with just height 1, and the index of the root is the index of the variable.
      * Leaves are true and false.
      */
-    @Test fun bddVariableCreatedTest() = testSession("ScalarValues") {
+    @Test
+    fun bddVariableCreatedTest() = testSession("ScalarValues") {
         loadKerML("feature x: ScalarValues::Boolean;")
         assertTrue(global.resolveVar("x")!!.bdd().height() == 1)
         loadKerML("feature a: ScalarValues::Boolean = x;")
@@ -36,15 +34,18 @@ class KerMLBddTests {
         initialize()
         val aAndB = global.resolveVar("a")!!.bdd() and global.resolveVar("b")!!.bdd()
         initialize()
-        assertEquals(builder.False,
-            global.resolveVar("a")!!.bdd() and global.resolveVar("b")!!.bdd()  )
+        assertEquals(
+            builder.False,
+            global.resolveVar("a")!!.bdd() and global.resolveVar("b")!!.bdd()
+        )
         // println(symbolTableInfo()) ; println(conds)
     }
 
     /**
      * Domain constraint is considered properly.
      */
-    @Test fun bddVariableCreatedTestWithSubtype() = testSession("ScalarValues") {
+    @Test
+    fun bddVariableCreatedTestWithSubtype() = testSession("ScalarValues") {
         loadKerML("feature x: ScalarValues::Boolean(true).")
         val test = global.resolveVar("x")!!.bdd().evaluate()
         assertSame(global.resolveVar("x")!!.bdd().evaluate(), builder.True)
@@ -60,7 +61,8 @@ class KerMLBddTests {
 
 
 
-    @Test @Ignore
+    @Test
+    @Ignore
     fun setAndEvaluateVariableTestWithComplexBDD() {
         testSession("ScalarValues") {
             loadKerML("feature ca: ScalarValues::Boolean(false);")
@@ -84,12 +86,14 @@ class KerMLBddTests {
 
     @Test
     fun solveAstBDD() = testSession("ScalarValues") {
-        loadKerML( """
+        loadKerML(
+            """
                 feature a: ScalarValues::Boolean; 
                 feature b: ScalarValues::Boolean;
                 feature c: ScalarValues::Boolean(false);
                 feature bdd: ScalarValues::Boolean(true) = a and (b or c);
-        """.trimIndent())
+        """.trimIndent()
+        )
         assertEquals(0, status.issues.size, "Messages: ${status.issues}")
         propagate()
         val result = global.resolveVar("bdd")!!.ast!!.solveAst()
@@ -101,7 +105,8 @@ class KerMLBddTests {
         // assertTrue(builder.conds.getCondition(3) === builder.False)
     }
 
-    @Test @Ignore
+    @Test
+    @Ignore
     fun solveAstBDDFalse() = testSession("ScalarValues") {
         loadKerML(
             """
@@ -132,7 +137,8 @@ class KerMLBddTests {
         val hrm = global.resolveVar("bdd")!!.bdd().evaluate()
         val test = global.resolveVar("bdd")!!.ast!!.findAllPaths(
             global.resolveVar("bdd")!!.bdd().evaluate(),
-            global.resolveVar("bdd")!!.boolSpecs[0])
+            global.resolveVar("bdd")!!.boolSpecs[0]
+        )
         val result = global.resolveVar("bdd")!!.ast!!.solveAstWithAlternatives()
         val breakpoint = 1
     }

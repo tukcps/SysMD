@@ -3,7 +3,7 @@
 
 This is SysMD Notebook for SysML v2. 
 
-SysMD Notebook supports the creation of _executable_ requirements and specification documents in a *Notebook-like* way,
+SysMD Notebook supports the creation of requirements and specification documents and models,
 where
 
 - _Document cells_ are linked with a model in a Notebook-like way with document and code cells, and

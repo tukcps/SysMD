@@ -14,7 +14,7 @@ import com.github.tukcps.sysmd.model.kerml.implementation.PackageImplementation
 
 /**
  *      Package = PrefixMetadataMember* PackageDeclaration PackageBody
- *      LibraryPackage = ( isStandard ?= 'standard' ) 'library' PrefixMetadataMember* PackageDeclaration PackageBody
+ *      LibraryPackage = ('standard'?) 'library' PrefixMetadataMember* PackageDeclaration PackageBody
  *      PackageDeclaration = 'package' Identification
  */
 fun SysMLv2.Package() {
@@ -53,10 +53,8 @@ fun SysMLv2.PackageBodyElement( ) {
         definitionElementStarts() -> DefinitionElement()
         ALIAS.starts()            -> AliasMember()
         IMPORT.starts()           -> Import()
-        else -> {
-            FeaturePrefix() // Todo: replace by Occurrence prefix and put it in right place.
-            UsageElement()
-        }
+        usageElementStarts()      -> UsageElement()
+        else                      -> handleSyntaxError("At ${token}: Problem parsing package body element.")
     }
 }
 
@@ -103,12 +101,14 @@ fun SysMLv2.DefinitionElement() {
         CONSTRAINT then DEF starts { ConstraintDefinition() }
         REQUIREMENT then DEF starts { RequirementDefinition() }
         VIEW then DEF       starts { Unsupported("Views are not yet supported") }
+        VIEWPOINT then DEF  starts { Unsupported("Viewpoints are not yet supported") }
         METADATA then DEF starts   { MetadataDefinition() }
-        others { throwSyntaxError("Invalid definition") }
+        others { handleSyntaxError("Invalid definition") }
     }
 }
 fun SysMLv2.definitionElementStarts() = (nextToken.kind == DEF ) or
     (token.kind in setOf(PACKAGE, LIBRARY, DEPENDENCY)) or ( token.kind in annotatingElementStart)
+
 
 /**
  * 8.2.2.6.4 Body Elements
@@ -124,9 +124,10 @@ fun SysMLv2.NonOccurrenceUsageElement() {
         referenceUsageStarts() -> ReferenceUsage()
         ATTRIBUTE.starts()     -> AttributeUsage()
         enumerationUsageStarts()-> EnumerationUsage()
-        else                   -> throwSyntaxError("Invalid non-occurrence usage")
+        else                   -> handleSyntaxError("Invalid non-occurrence usage")
     }
 }
+
 fun SysMLv2.nonOccurrenceUsageStarts() = (token.kind in (mutableSetOf(ATTRIBUTE) + usagePrefixStart) )
         || referenceUsageStarts()
 
@@ -143,15 +144,19 @@ fun SysMLv2.BehaviorUsageElement() {
         CALC        -> { CalculationUsage() }
         STATE       -> { StateUsage() }
         CONSTRAINT  -> { ConstraintUsage() }
-        // Verification use case ... include use case not supported yes
         REQUIREMENT -> { RequirementUsage() }
+        CONCERN     -> { Unsupported("Concern usage not yet supported") }
+        CASE        -> { Unsupported("Case usage not yet supported") }
+        ANALYSIS    -> { Unsupported("Analysis case usage not yet supported") }
+        VERIFICATION-> { Unsupported("Verification case usage not yet supported") }
+        VIEWPOINT   -> { Unsupported("Viewpoint not yet supported") }
         PERFORM     -> { PerformActionUsage() }
         ASSERT      -> { AssertConstraintUsage() }
-        SATISFY     -> { Unsupported()}
-        else        -> { throwSyntaxError("Unknown behavior usage element")}
+        SATISFY     -> { Unsupported("Satisfy not yet unsupported")}
+        else        -> { handleSyntaxError("Unknown behavior usage element")}
     }
 }
-val behaviorUsageElementStart = setOf(ACTION, CALC, STATE, CONSTRAINT, REQUIREMENT, PERFORM, ASSERT, SATISFY)
+val behaviorUsageElementStart = setOf(ACTION, CALC, STATE, CONSTRAINT, CONCERN, CASE, ANALYSIS, VERIFICATION, VIEWPOINT, REQUIREMENT, PERFORM, ASSERT, SATISFY)
 
 /**
  *      StructureUsageElement = OccurrenceUsage | IndividualUsage | PortionUsage
@@ -162,19 +167,28 @@ val behaviorUsageElementStart = setOf(ACTION, CALC, STATE, CONSTRAINT, REQUIREME
 fun SysMLv2.StructureUsageElement() {
     FeaturePrefix()
     alternatives {
-        OCCURRENCE starts { OccurrenceUsage() }
-        INDIVIDUAL starts { IndividualUsage() }
-        ITEM    starts { ItemUsage()}
-        PART    starts { PartUsage() }
-        PORT    starts { PortUsage() }
+        OCCURRENCE  starts { OccurrenceUsage() }
+        INDIVIDUAL  starts { IndividualUsage() }
+        INDIVIDUAL then SNAPSHOT starts { PortionUsage() }
+        INDIVIDUAL then TIMESLICE starts { PortionUsage() }
+        SNAPSHOT    starts { PortionUsage() }
+        INDIVIDUAL  starts { PortionUsage() }
+        EVENT       starts { EventOccurrenceUsage() }
+        ITEM        starts { ItemUsage()}
+        PART        starts { PartUsage() }
+        VIEW        starts { Unsupported("View usage not yet supported")}
+        RENDERING   starts { Unsupported("Rendering usage not yet supported")}
+        PORT        starts { PortUsage() }
         connectionUsageStart starts { ConnectionUsage() }
-        INTERFACE starts { InterfaceUsage() }
+        INTERFACE   starts { InterfaceUsage() }
         allocationUsageStart starts { AllocationUsage() }
-        FLOW starts { FlowConnectionUsage() }
-        // ..
+        FLOW        starts { FlowConnectionUsage() }
+        SUCCESSION  starts { Unsupported("Succession flow not supported")}
+        MESSAGE     starts { Unsupported("Messages not supported")}
     }
 }
-val structureUsageElementStart = setOf(OCCURRENCE, ITEM, PART, PORT, INTERFACE, FLOW)+allocationUsageStart+connectionUsageStart
+val structureUsageElementStart = setOf(
+    OCCURRENCE, INDIVIDUAL, TIMESLICE, SNAPSHOT, EVENT, ITEM, PART, PORT, INTERFACE, FLOW, SUCCESSION, MESSAGE)+allocationUsageStart+connectionUsageStart
 
 /**
  *      OccurrenceUsageElement = StructureUsageElement | BehaviorUsageElement

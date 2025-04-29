@@ -1,6 +1,7 @@
 package parsertests
 
 import com.github.tukcps.sysmd.compiler.scanner.Scanner
+import com.github.tukcps.sysmd.compiler.scanner.Token
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -11,7 +12,7 @@ class ScannerTests {
      * The comments: //, /* */
      */
     @Test
-    fun commentsTest() = Scanner().run {
+    fun commentsTest() = Scanner(keywords = Token.kerMLKeywords).run {
         input = """
             // test 
             /******* */   
@@ -30,7 +31,7 @@ class ScannerTests {
 
     @Test
     fun sysMLScannerTest() {
-        class Parser: Scanner() {
+        class Parser: Scanner(keywords = Token.kerMLKeywords) {
             fun setInput() {
                 input = """
                 package 
@@ -58,7 +59,7 @@ class ScannerTests {
      * The comments: //, /* */
      */
     @Test
-    fun commentsSkipTest() = Scanner(skip=emptySet()).run {
+    fun commentsSkipTest() = Scanner(skip=emptySet(), keywords = Token.kerMLKeywords).run {
         input = """
             // test 
             /******* */   
@@ -89,7 +90,7 @@ class ScannerTests {
     /**
      * The literals: String, Integer
      */
-    @Test fun literalsTest() = Scanner().run {
+    @Test fun literalsTest() = Scanner(keywords = Token.kerMLKeywords).run {
         input = """ 12.5 "string literal" 123 """
         assertEquals(FLOAT_LIT, token.kind)
         assertEquals("12.5", token.string)
@@ -107,7 +108,7 @@ class ScannerTests {
     /**
      * The literals: Real
      */
-    @Test fun numLitTest() = Scanner().run {
+    @Test fun numLitTest() = Scanner(keywords = Token.kerMLKeywords).run {
         input = "10.5e10 123.456"
         assertEquals(FLOAT_LIT, token.kind)
         assertEquals(10.5e10, token.number)
@@ -121,7 +122,7 @@ class ScannerTests {
     /**
      * Identifiers/names
      */
-    @Test fun identifierTest() = Scanner().run {
+    @Test fun identifierTest() = Scanner(keywords = hashMapOf()).run {
         input = "name name_2 μr rμr"
         assertEquals(NAME_LIT, token.kind)
         assertEquals("name", token.string)
@@ -136,7 +137,7 @@ class ScannerTests {
         assertEquals("rμr", token.string)
     }
 
-    @Test fun operandsTest() = Scanner().run {
+    @Test fun operandsTest() = Scanner(keywords = Token.kerMLKeywords).run {
         input = "+ - .. <= / * &"
         assertEquals(PLUS, token.kind)
         nextToken()
@@ -156,7 +157,7 @@ class ScannerTests {
         assertEquals(EOF, token.kind)
     }
 
-    @Test fun specialTerminals() = Scanner().run {
+    @Test fun specialTerminals() = Scanner(keywords = Token.kerMLKeywords).run {
         input = "  : typed by :> ::>  :>> "
         assertEquals(TYPED_BY, token.kind)
         nextToken()
@@ -169,7 +170,7 @@ class ScannerTests {
         assertEquals(REDEFINES, token.kind)
     }
 
-    @Test fun expressionTest() = Scanner().run {
+    @Test fun expressionTest() = Scanner(keywords = Token.kerMLKeywords).run {
         input = " 2.0 + 3.0"
         assertEquals(FLOAT_LIT, token.kind)
         assertEquals(PLUS, nextToken.kind)
@@ -180,7 +181,7 @@ class ScannerTests {
         assertEquals(FLOAT_LIT, token.kind)
     }
 
-    @Test fun unrestrictedNameTest() = Scanner().run {
+    @Test fun unrestrictedNameTest() = Scanner(keywords = Token.kerMLKeywords).run {
         input = " '1.1 - This is a valid name' "
         assertEquals(NAME_LIT, token.kind)
         // val s = input.subSequence(token.indices)
@@ -188,7 +189,7 @@ class ScannerTests {
     }
 
     /** Checks if the tokens for the if-else expression are recognized */
-    @Test fun ifElseTest() = Scanner().run{
+    @Test fun ifElseTest() = Scanner(keywords = Token.kerMLKeywords).run{
         input = " if ( a ) x else y"
         assertEquals(IF, token.kind)
         nextToken()
@@ -208,7 +209,7 @@ class ScannerTests {
         assertEquals("y", token.string)
     }
 
-    @Test fun keywordsTest() = Scanner().run {
+    @Test fun keywordsTest() = Scanner(keywords = Token.sysMLv2Keywords).run {
         input = " package part specializes"
         assertEquals(PACKAGE, token.kind)
         assertEquals("package", token.string)

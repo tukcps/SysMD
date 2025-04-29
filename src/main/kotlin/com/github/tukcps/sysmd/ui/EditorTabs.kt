@@ -4,7 +4,7 @@ package com.github.tukcps.sysmd.ui
 import androidx.compose.runtime.Composable
 import com.github.tukcps.sysmd.ui.composables.Tabs
 import com.github.tukcps.sysmd.ui.dialogs.DeleteFileDialog
-import com.github.tukcps.sysmd.ui.viewmodel.EditorTabsViewModel
+import com.github.tukcps.sysmd.ui.viewmodel.TabsViewModel
 
 
 /**
@@ -13,21 +13,21 @@ import com.github.tukcps.sysmd.ui.viewmodel.EditorTabsViewModel
  * The concrete rendering of each name is done in EditorTabView.
  */
 @Composable
-fun EditorTabs(editorTabsViewModel: EditorTabsViewModel) {
+fun EditorTabs(tabsViewModel: TabsViewModel) {
 
     // on close, set openDialog
-    if (editorTabsViewModel.removeFileDialog.value) {
-        DeleteFileDialog(editorTabsViewModel.removeFileDialog, editorTabsViewModel::removeFile)
+    if (tabsViewModel.removeFileDialog.value) {
+        DeleteFileDialog(tabsViewModel.removeFileDialog, tabsViewModel::removeFile)
     }
 
-    val titles = editorTabsViewModel.editorTabs.map { it.tabTitle }.toList()
+    val titles = tabsViewModel.editorTabs.map { it.tabTitle }.toList()
     if (titles.isNotEmpty()) {
         Tabs(
-            titles, editorTabsViewModel.selectedIndex,
-            onSelection = { editorTabsViewModel.selectedIndex.value = it; },
-            onClose = { editorTabsViewModel.removeFile.value = it; editorTabsViewModel.removeFileDialog.value = true },
-            onAdd = editorTabsViewModel::addNewFile,
-            onRename = editorTabsViewModel::rename
+            titles, tabsViewModel.selectedIndex,
+            onSelection = { tabsViewModel.selectedIndex.value = it; },
+            onClose = { tabsViewModel.removeFile.value = it; tabsViewModel.removeFileDialog.value = true },
+            onAdd = tabsViewModel::addNewFile,
+            onRename = tabsViewModel::rename
         )
     } else
         EditorEmptyView()

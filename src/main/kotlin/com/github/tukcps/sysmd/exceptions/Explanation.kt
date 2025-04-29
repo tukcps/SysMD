@@ -8,7 +8,7 @@ val explanation = hashMapOf(
     INFO  to "Information",
     WARN  to "Warning",
     WARN_INCONSISTENCY to """
-        An 'inconsisteny' is reported if a model has some internal contradiction.
+        An 'inconsistency' is reported if a model has some internal contradiction.
            (1) In the inheritance from a general class, the specialization must allow all possible valuations. Hence, constraints for a specialization can only be less strict. E.g., if a part 'car' is constrained to have a weight between 100 and 1000 kg, a subclass 'van' cannot have a value that is in the range of 100 and 2000 kg.
            (2) In the computation of a value, if there is no possible valuation that satisfies all constraints. 
     """.trimIndent(),

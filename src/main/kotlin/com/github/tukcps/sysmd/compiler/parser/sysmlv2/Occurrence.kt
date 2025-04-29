@@ -11,6 +11,7 @@ import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.OccurrenceUsageActions
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Resolved
 import com.github.tukcps.sysmd.model.kerml.Type
+import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 
 /**
  * In this file we collect parser production implementations for
@@ -64,13 +65,39 @@ fun SysMLv2.OccurrenceUsage() {
 }
 
 /**
- *
- *      PortionUsage = BasicUsagePrefix 'individual'? PortionKind
+ *      PortionUsage =
+ *          BasicUsagePrefix ('individual')? PortionKind
  *          UsageExtensionKeyword* Usage
- *
- *      EventOccurrenceUsage = OccurrenceUsagePrefix 'event'
+ */
+fun SysMLv2.PortionUsage() {
+    val portionUsage = FeatureActions<Feature>(semantics, defaultType = mutableListOf("Occurrences::Occurrence"), creator = ::FeatureImplementation)
+    INDIVIDUAL.optional()
+    alternatives { // PortionKind
+        SNAPSHOT  starts { consume(); }
+        TIMESLICE starts { consume(); }
+    }
+    UsageExtensionKeyword()
+    Usage(portionUsage)
+}
+
+/**
+ *      EventOccurrenceUsage =
+ *          OccurrenceUsagePrefix 'event'
  *          ( OwnedReferenceSubsetting FeatureSpecializationPart?
- *              | 'occurrence' UsageDeclaration? )
+ *            | 'occurrence' UsageDeclaration? )
  *          UsageCompletion
  */
-
+fun SysMLv2.EventOccurrenceUsage() {
+    val eventOccurrenceUsage = FeatureActions<Feature>(semantics, defaultType = mutableListOf("Occurrences::Occurrence"), creator = ::FeatureImplementation)
+    EVENT.consume()
+    alternatives {
+        OCCURRENCE starts {
+            OCCURRENCE.consume().also { semantics.prefixes.add(OUT) }
+            UsageDeclaration(eventOccurrenceUsage)
+        }
+        // OwnedReferenceSubsetting()
+        // FeatureSpecializationPart(eventOccurrenceUsage)
+    }
+    eventOccurrenceUsage.finish()
+    UsageCompletion(eventOccurrenceUsage)
+}

@@ -62,10 +62,10 @@ Note that the tutorial
 The tutorial consists of 4 parts that stepwise introduce you to SysMLv2: 
 
 - Introduction (this file!)
-- The SysMLv2 Ecosystem and Methodology
-- KerML - the Basis of SysMLv2
-- SysMLv2 
-- API and Model Exchange
+- [The SysMLv2 Ecosystem and Methodology](ecosystem.md)
+- [KerML - the Basis of SysMLv2](kerml.md)
+- [SysMLv2](sysml.md)
+- [API and Model Exchange](api.md)
  
 ## Hands-on Examples with SysMD Notebook 
 

@@ -667,10 +667,10 @@ class VectorTests {
 
     @Test fun vectorDotProductTestInt() = testSession("ScalarValues") {
         loadKerML("""
-                feature a: ScalarValues::Integer {:>> range = "-3..4,5..7,0..1";}
-                feature b: ScalarValues::Integer {:>> range = "4..5,-2..-1,3..10";}
-                feature c: ScalarValues::Integer  = a dot b;
-            """)
+            feature a: ScalarValues::Integer {:>> range = "-3..4,5..7,0..1";}
+            feature b: ScalarValues::Integer {:>> range = "4..5,-2..-1,3..10";}
+            feature c: ScalarValues::Integer  = a dot b;
+        """)
         propagate()
         assertTrue(status.issues.isEmpty() , status.issues.toString())
         val c = global.resolveVar("c")!!

@@ -235,6 +235,7 @@ open class ActionsContextImplementation(
      */
     override fun handleFunctionCall(function: QualifiedName, param: ArrayList<AstNode>, semantics: SemanticActions): AstNode {
         when (function) {
+            "owns" -> return AstHasA(model, param, semantics)
             "ITE" -> return AstIte(model, param)
             "oneOf" -> return buildOneOfAst(model, expression = semantics.expression!!, param, semantics)
             "allOf" -> return AstAllOf(model, param)

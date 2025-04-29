@@ -79,9 +79,10 @@ class DDBasedDiscreteSolverTests {
     fun hasATest2() = testSession("ScalarValues") {
         loadKerML("""
             inv a; 
-            inv b  { not hasA(Global, a) }
+            inv b  { not owns(Global, a) }
         """)
         propagate()
+        assertTrue(status.issues.isEmpty(), "${status.issues}")
         val b = global.resolve<Feature>("b")!!.variable!!
         assertEquals("Contradiction", b.vectorQuantity.value.toString()
         ) //FIXME: want contradiction? or exception during evaluation?

@@ -42,6 +42,18 @@ class LibrariesTest {
         LibraryRepository.reset()
     }
 
+    @Test
+    fun baseLibraryOK() = testSession(initialize = false) {
+        loadKerML("""
+            standard library package Base { 
+            // Base::Anything is built-in
+            abstract feature things: Base::Anything [1..*] nonunique; 
+            abstract datatype DataValue specializes Base::Anything;
+            feature dataValues: DataValue;
+        }""")
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
+    }
+
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
     fun baseLibraryTest() = testSession {
         loadLibraryFromResources("Base", listOf("Base"))

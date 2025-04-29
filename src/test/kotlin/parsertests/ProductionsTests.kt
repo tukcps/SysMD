@@ -3,16 +3,15 @@ package parsertests
 import com.github.tukcps.sysmd.compiler.KerML
 import com.github.tukcps.sysmd.compiler.SysMD
 import com.github.tukcps.sysmd.compiler.SysMLv2
-import com.github.tukcps.sysmd.compiler.parser.kerml.ElementList
 import com.github.tukcps.sysmd.compiler.parser.kerml.Identification
 import com.github.tukcps.sysmd.compiler.parser.kerml.NamespaceBodyElement
 import com.github.tukcps.sysmd.compiler.parser.kerml.Unit
+import com.github.tukcps.sysmd.compiler.parser.sysmd.ElementList
 import com.github.tukcps.sysmd.compiler.parser.sysmlv2.RequirementDefinition
 import com.github.tukcps.sysmd.compiler.parser.sysmlv2.RequirementUsage
 import com.github.tukcps.sysmd.compiler.parser.sysmd.Triple
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.COMMA
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.EOF
-import com.github.tukcps.sysmd.model.kerml.implementation.TextualRepresentationImplementation
 import com.github.tukcps.sysmd.services.session.SessionImplementation
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -37,7 +36,6 @@ class ProductionsTests {
 
     private fun sydMDParser(): SysMD {
         val model = SessionImplementation( )
-        val textualRepresentation = model.create(TextualRepresentationImplementation(language = "SysML", body = ""), model.global)
         return SysMD(model = model)
     }
 
@@ -185,7 +183,7 @@ class ProductionsTests {
 
 
     /**
-     * Has - Relations can have **either** list of triples **or** list of occurrences.
+     * Has - Relations can have **either** a list of triples **or** list of occurrences.
      * In particular, Packages have lists of triples,
      * and Elements have lists of occurrences.
      */
@@ -221,9 +219,8 @@ class ProductionsTests {
                 feature x: Element [1..2] =  Element.
             it hasA 
                 assoc x :> Link { end feature a; end feature b; }
-                class y.
-                
-        """.trimIndent()
+                class y.     
+        """
         parse()
         assertEquals(0, model.status.issues.size, model.status.issues.toString())
     }

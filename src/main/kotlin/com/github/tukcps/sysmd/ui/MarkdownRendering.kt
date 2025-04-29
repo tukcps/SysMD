@@ -16,7 +16,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -50,8 +49,8 @@ import com.github.tukcps.sysmd.ui.styles.AppTheme
 import com.github.tukcps.sysmd.ui.styles.Fonts
 import com.github.tukcps.sysmd.ui.styles.MDTypography
 import com.github.tukcps.sysmd.ui.viewmodel.InternalRefReference
+import com.github.tukcps.sysmd.ui.viewmodel.TabsViewModel
 import com.github.tukcps.sysmd.ui.viewmodel.imageCache
-import kotlinx.coroutines.launch
 import org.commonmark.Extension
 import org.commonmark.ext.front.matter.YamlFrontMatterBlock
 import org.commonmark.ext.front.matter.YamlFrontMatterNode
@@ -80,11 +79,11 @@ import java.io.File
 import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URI
-import java.nio.file.Path
 import java.security.MessageDigest
 import java.util.regex.Pattern
 import javax.imageio.ImageIO
 import kotlin.io.path.createDirectories
+import kotlin.io.path.exists
 import kotlin.io.path.name
 import kotlin.text.Typography.bullet
 
@@ -111,15 +110,15 @@ private val parserForCell: Parser = Parser.builder().extensions(extensionForSing
 
 private var latex: String = ""
 private var latexList = ArrayList<String>()
-private lateinit var referenceModel: InternalRefReference
+internal lateinit var referenceModel: InternalRefReference
 val showDirectoryWarning = mutableStateOf(false)
 val showNoSuchFileWarning = mutableStateOf(false)
 val fileURIToOpen = mutableStateOf("")
 val showOpenFileExternalWarning = mutableStateOf(false)
-val scrollToItemActivated = mutableStateOf(false)
+val scrollToItem = mutableStateOf(0)
 
 
-//Configure a unique image name using hash function
+/** Configure a unique image name using hash function */
 fun generateFileName(filename: String): String {
     val md5 = MessageDigest.getInstance("MD5")
     val oneline = filename.replace(Regex("[\\r\\n\\s]+"), "")
@@ -134,14 +133,16 @@ fun generateFileName(filename: String): String {
 
 /**
  * Replaces LaTeX inlays before rendering a Markdown text
+ * @param tabsViewModel The main window's view model
  * @param text The Markdown text that will be rendered
  */
 @Composable
-fun markdownRendering(
-    path: Path,
+fun Markdown(
+    tabsViewModel: TabsViewModel,
     text: String = "",
     internalRefReference: InternalRefReference
 ) {
+    val path = tabsViewModel.sessionState.value.project?.directory
     referenceModel = internalRefReference
     val pattern = Pattern.compile(/* regex = */ "\\$(.+?)\\$", Pattern.DOTALL)
     val matcher = pattern.matcher(text)
@@ -173,10 +174,10 @@ fun markdownRendering(
             icon.paintIcon(null, image.graphics, 0, 0)
 
             // Cache dir there? If not, create it
-            path.resolve("Cache").createDirectories()
+            path?.resolve("Cache")?.createDirectories()
 
             // Save the image to a file
-            ImageIO.write(image, "png", path.resolve("Cache").resolve("formula$filename.png").toFile())
+            ImageIO.write(image, "png", path?.resolve("Cache")?.resolve("formula$filename.png")?.toFile())
 
             //import the image in the Markdown
             output.append("![formula$filename](/Cache/formula$filename.png)")
@@ -190,7 +191,7 @@ fun markdownRendering(
 
     val document: Node = parserForCell.parse(output.toString()) // Parses the text, document is the parse tree
 
-    MDDocument(path, document)         // Renders the MD Document
+    MDDocument(tabsViewModel, document)         // Renders the MD Document
 }
 
 /**
@@ -263,15 +264,15 @@ fun AnnotatedString.Builder.appendMarkdownChildren(
 
 
 @Composable
-fun MDDocument(path: Path, document: Node) {
-    MDBlockChildren(path, document)
+fun MDDocument(tabsViewModel: TabsViewModel, document: Node) {
+    MDBlockChildren(tabsViewModel, document)
 }
 
 /**
  * Renders a heading with a style that is defined in the global object MDTypography.
  */
 @Composable
-fun MDHeading(path: Path, heading: Heading, modifier: Modifier = Modifier) {
+fun MDHeading(tabsViewModel: TabsViewModel, heading: Heading, modifier: Modifier = Modifier) {
     val style = when (heading.level) {
         1 -> MDTypography.h1.style
         2 -> MDTypography.h2.style
@@ -279,7 +280,7 @@ fun MDHeading(path: Path, heading: Heading, modifier: Modifier = Modifier) {
         4 -> MDTypography.h4.style
         else -> {
             // Invalid header...
-            MDBlockChildren(path, heading)
+            MDBlockChildren(tabsViewModel, heading)
             return
         }
     }
@@ -304,13 +305,13 @@ fun MDHeading(path: Path, heading: Heading, modifier: Modifier = Modifier) {
         val text = buildAnnotatedString {
             appendMarkdownChildren(heading, MaterialTheme.colorScheme)
         }
-        MarkdownText(path, text, style)
+        MarkdownText(tabsViewModel, text, style)
     }
     Spacer(modifier = Modifier.height(spaceBelow))
 }
 
 @Composable
-fun MDParagraph(path: Path, paragraph: Paragraph, modifier: Modifier = Modifier) {
+fun MDParagraph(tabsViewModel: TabsViewModel, paragraph: Paragraph, modifier: Modifier = Modifier) {
     val tocRenderer = TableOfContentsRenderer(referenceModel)
     if (paragraph.firstChild is Image && paragraph.firstChild == paragraph.lastChild) {
         // Paragraph with single image
@@ -318,12 +319,12 @@ fun MDParagraph(path: Path, paragraph: Paragraph, modifier: Modifier = Modifier)
             val width = (paragraph.firstChild.lastChild as ImageAttributes).attributes["width"]?.toIntOrNull()
             val height = (paragraph.firstChild.lastChild as ImageAttributes).attributes["height"]?.toIntOrNull()
             if (width != null && height != null) {
-                MDImage(path, paragraph.firstChild as Image, modifier, maxWidth = width, maxHeight = height, hasAttributes = true)
+                MDImage(tabsViewModel, paragraph.firstChild as Image, modifier, maxWidth = width, maxHeight = height, hasAttributes = true)
             } else {
-                MDImage(path, paragraph.firstChild as Image, modifier, hasAttributes = false)
+                MDImage(tabsViewModel, paragraph.firstChild as Image, modifier, hasAttributes = false)
             }
         } else {
-            MDImage(path, paragraph.firstChild as Image, modifier, hasAttributes = false)
+            MDImage(tabsViewModel, paragraph.firstChild as Image, modifier, hasAttributes = false)
         }
     } else if (isShortTOCElement(paragraph)) {
         // normal Paragraph
@@ -335,7 +336,7 @@ fun MDParagraph(path: Path, paragraph: Paragraph, modifier: Modifier = Modifier)
                 appendMarkdownChildren(newParagraph, MaterialTheme.colorScheme)
                 pop()
             }
-            MarkdownText(path, styledText, MDTypography.bodyMedium.style)
+            MarkdownText(tabsViewModel, styledText, MDTypography.bodyMedium.style)
         }
     } else if (isElementTOCElement(paragraph)){
         //normal Paragraph
@@ -347,7 +348,7 @@ fun MDParagraph(path: Path, paragraph: Paragraph, modifier: Modifier = Modifier)
                 appendMarkdownChildren(newParagraph, MaterialTheme.colorScheme)
                 pop()
             }
-            MarkdownText(path, styledText, MDTypography.bodyMedium.style)
+            MarkdownText(tabsViewModel, styledText, MDTypography.bodyMedium.style)
         }
     }
     else {
@@ -359,7 +360,7 @@ fun MDParagraph(path: Path, paragraph: Paragraph, modifier: Modifier = Modifier)
                 appendMarkdownChildren(paragraph, MaterialTheme.colorScheme)
                 pop()
             }
-            MarkdownText(path, styledText, MDTypography.bodyMedium.style)
+            MarkdownText(tabsViewModel, styledText, MDTypography.bodyMedium.style)
         }
     }
 }
@@ -370,14 +371,14 @@ fun MDParagraph(path: Path, paragraph: Paragraph, modifier: Modifier = Modifier)
  */
 @Composable
 fun MDImage(
-    path: Path,
+    tabsViewModel: TabsViewModel,
     image: Image,
     modifier: Modifier = Modifier,
     maxWidth: Int = 700,
     maxHeight: Int = 700,
     hasAttributes: Boolean,
 ) {
-    val picture = loadFullImage(path, image.destination)
+    val picture = loadFullImage(tabsViewModel, image.destination)
     var height = picture.height.dp
     var width = picture.width.dp
     if (width < 20.dp) width = 700.dp
@@ -406,7 +407,7 @@ fun MDImage(
     }
 }
 
-//inspiration from compose-jb/examples/imageviewer
+/** inspiration from compose-jb/examples/imageviewer */
 private fun toByteArray(bitmap: BufferedImage): ByteArray {
     val baos = ByteArrayOutputStream()
     ImageIO.write(bitmap, "png", baos)
@@ -415,19 +416,23 @@ private fun toByteArray(bitmap: BufferedImage): ByteArray {
 
 /**
  * load image from local or remote source --
- * if source is determined to be local: first try to load inside of Model path then as absolute path --
+ * if source is determined to be local: first try to load inside of Model path then as an absolute path --
  * only supports JPEG, PNG, BMP, WEBMP, GIF format
  * @param source path where the Image is stored
  * @return custom Picture containing a BufferedImage and meta-data
  */
-fun loadFullImage(path: Path, source: String): Picture {
+fun loadFullImage(
+    tabsViewModel: TabsViewModel,
+    source: String
+): Picture {
     //if source is in cache
+    val path = tabsViewModel.sessionState.value.project?.directory
     var picture: Picture
-    val img: ImageBitmap? = imageCache[path.name+source]
+    val img: ImageBitmap? = imageCache[path?.name+source]
     if (img != null) {
         picture = Picture(source = source, image = img, name = getNameURL(source), width = img.width, height = img.height)
     } else {
-        // source was not in cache so try to load, first from web ...
+        // source was not in cache, so try to load first from the web...
         try {
             val url = URI(source).toURL()
             val connection: HttpURLConnection = url.openConnection() as HttpURLConnection
@@ -438,7 +443,7 @@ fun loadFullImage(path: Path, source: String): Picture {
             val input: InputStream = connection.inputStream
             val bitmap: ImageBitmap = makeFromEncoded(toByteArray(ImageIO.read(input))).toComposeImageBitmap()
 
-            imageCache.put(path.name+source, bitmap)
+            imageCache.put(path?.name+source, bitmap)
             picture = Picture(
                     source = source,
                     image = bitmap,
@@ -449,11 +454,11 @@ fun loadFullImage(path: Path, source: String): Picture {
         } catch (_: Exception) {
             try { // In File system ...
                 var imagePath = "${path}/$source"
-                if(!File(imagePath).exists()){
+                if (!File(imagePath).exists()) {
                     imagePath = source
                 }
                 val bitmap: ImageBitmap = createImageFromFile(File(imagePath)).toComposeImageBitmap()
-                imageCache.put(path.name + source, bitmap)
+                imageCache.put(path?.name + source, bitmap)
                 picture = Picture(
                     source = source,
                     image = bitmap,
@@ -508,23 +513,23 @@ private fun createImageFromFile(imagePath: File): org.jetbrains.skia.Image =
 private fun loadNonSvgImageFromFile(file: File): BufferedImage = ImageIO.read(file)
 
 @Composable
-fun MDBulletList(path: Path, bulletList: BulletList, modifier: Modifier = Modifier) {
+fun MDBulletList(tabsViewModel: TabsViewModel, bulletList: BulletList, modifier: Modifier = Modifier) {
     val marker = bullet
     Spacer(modifier.height(3.dp))
-    MDListItems(path, bulletList, modifier = modifier) {
+    MDListItems(tabsViewModel, bulletList, modifier = modifier) {
         Row {
             val bullet = buildAnnotatedString {
                 pushStyle(MDTypography.bodyMedium.style.toSpanStyle())
                 append("$marker ")
             }
-            MarkdownText(path, bullet, MDTypography.bodyMedium.style, modifier)
+            MarkdownText(tabsViewModel, bullet, MDTypography.bodyMedium.style, modifier)
             Spacer(modifier.width(10.dp))
             val text = buildAnnotatedString {
                 pushStyle(MDTypography.bodyMedium.style.toSpanStyle())
                 appendMarkdownChildren(it, MaterialTheme.colorScheme)
                 pop()
             }
-            MarkdownText(path, text, MDTypography.bodyMedium.style, modifier)
+            MarkdownText(tabsViewModel, text, MDTypography.bodyMedium.style, modifier)
         }
         Spacer(modifier.height(4.dp))
     }
@@ -532,17 +537,17 @@ fun MDBulletList(path: Path, bulletList: BulletList, modifier: Modifier = Modifi
 }
 
 @Composable
-fun MDOrderedList(path: Path, orderedList: OrderedList, modifier: Modifier = Modifier) {
+fun MDOrderedList(tabsViewModel: TabsViewModel, orderedList: OrderedList, modifier: Modifier = Modifier) {
     var number = orderedList.markerStartNumber
     val delimiter = orderedList.markerDelimiter
-    MDListItems(path, orderedList, modifier) {
+    MDListItems(tabsViewModel, orderedList, modifier) {
         val text = buildAnnotatedString {
             pushStyle(MDTypography.bodyMedium.style.toSpanStyle())
             append("${number++}$delimiter ")
             appendMarkdownChildren(it, MaterialTheme.colorScheme)
             pop()
         }
-        MarkdownText(path, text, MDTypography.bodyMedium.style, modifier)
+        MarkdownText(tabsViewModel, text, MDTypography.bodyMedium.style, modifier)
         Spacer(modifier.height(5.dp))
     }
 }
@@ -553,7 +558,7 @@ fun MDOrderedList(path: Path, orderedList: OrderedList, modifier: Modifier = Mod
  */
 @Composable
 fun MDListItems(
-    path: Path,
+    tabsViewModel: TabsViewModel,
     listBlock: ListBlock,
     modifier: Modifier = Modifier,
     item: @Composable (node: Node) -> Unit,
@@ -566,8 +571,8 @@ fun MDListItems(
             var child = listItem.firstChild
             while (child != null) {
                 when (child) {
-                    is BulletList -> MDBulletList(path, child, modifier)
-                    is OrderedList -> MDOrderedList(path, child, modifier)
+                    is BulletList -> MDBulletList(tabsViewModel, child, modifier)
+                    is OrderedList -> MDOrderedList(tabsViewModel, child, modifier)
                     else -> item(child)
                     //TODO here is probably #65
                 }
@@ -642,7 +647,10 @@ fun MDFencedCodeBlock(fencedCodeBlock: FencedCodeBlock, modifier: Modifier = Mod
 }
 
 @Composable
-fun MDYamlFrontMatter(path: Path, yamlFrontMatterBlock: YamlFrontMatterBlock) {
+fun MDYamlFrontMatter(
+    tabsViewModel: TabsViewModel,
+    yamlFrontMatterBlock: YamlFrontMatterBlock
+) {
     var yaml = yamlFrontMatterBlock.firstChild as YamlFrontMatterNode?
     var name: String? = null
     var title: String? = null
@@ -680,7 +688,7 @@ fun MDYamlFrontMatter(path: Path, yamlFrontMatterBlock: YamlFrontMatterBlock) {
         Spacer(Modifier.height(20.dp))
 
         logo?.let {
-            Image(bitmap = loadFullImage(path, logo).image, contentDescription = "logo",
+            Image(bitmap = loadFullImage(tabsViewModel, logo).image, contentDescription = "logo",
                 modifier = Modifier.align(Alignment.CenterHorizontally),
                 contentScale = ContentScale.Fit
             ) }
@@ -716,7 +724,7 @@ fun MDThematicBreak(thematicBreak: ThematicBreak, modifier: Modifier = Modifier)
 }*/
 
 @Composable
-fun MDTableBlock(path: Path, tableBlock: TableBlock) {
+fun MDTableBlock(tabsViewModel: TabsViewModel, tableBlock: TableBlock) {
     val header: TableRow = (tableBlock.firstChild.firstChild) as TableRow
     val bodyRow: TableRow = (tableBlock.lastChild.firstChild) as TableRow
     val headerEntry: MutableList<AnnotatedString> = mutableListOf()
@@ -742,24 +750,24 @@ fun MDTableBlock(path: Path, tableBlock: TableBlock) {
         tmpTableRow = tmpTableRow.next as TableRow?
     }
 
-    Table(path = path, header = headerEntry, data = body)
+    Table(tabsViewModel, header = headerEntry, data = body)
 }
 
 
 @Composable
-fun MDBlockChildren(path: Path, parent: Node) {
+fun MDBlockChildren(tabsViewModel: TabsViewModel, parent: Node) {
     var child = parent.firstChild
     while (child != null) {
         when (child) {
             is BlockQuote -> MDBlockQuote(child)
-            is Heading -> MDHeading(path, child)
-            is Paragraph -> MDParagraph(path, child)
+            is Heading -> MDHeading(tabsViewModel, child)
+            is Paragraph -> MDParagraph(tabsViewModel, child)
             is FencedCodeBlock -> MDFencedCodeBlock(child)
-            is YamlFrontMatterBlock -> MDYamlFrontMatter(path, child)
-            is Image -> MDImage(path, child, hasAttributes = false)  //Image attributes are only use if there is a single image paragraph
-            is BulletList -> MDBulletList(path, child)
-            is OrderedList -> MDOrderedList(path, child)
-            is TableBlock -> MDTableBlock(path, child)
+            is YamlFrontMatterBlock -> MDYamlFrontMatter(tabsViewModel, child)
+            is Image -> MDImage(tabsViewModel, child, hasAttributes = false)  //Image attributes are only use if there is a single image paragraph
+            is BulletList -> MDBulletList(tabsViewModel, child)
+            is OrderedList -> MDOrderedList(tabsViewModel, child)
+            is TableBlock -> MDTableBlock(tabsViewModel, child)
             is ThematicBreak -> MDThematicBreak()
             is IndentedCodeBlock -> MDIndentedCodeBlock(child)
             // all other cases are skipped
@@ -771,18 +779,18 @@ fun MDBlockChildren(path: Path, parent: Node) {
 
 
 @Composable
-fun mapOfWithLatex(path: Path, style: TextStyle): Map<String, InlineTextContent> {
+fun mapOfWithLatex(tabsViewModel: TabsViewModel, style: TextStyle): Map<String, InlineTextContent> {
     val pairsList = ArrayList<Pair<String, InlineTextContent>>()
     val imageUrlPair = Pair(TAG_IMAGE_URL,
         InlineTextContent(Placeholder(style.fontSize, style.fontSize, PlaceholderVerticalAlign.Bottom)) {
-            val picture: Picture = loadFullImage(path, it)
+            val picture: Picture = loadFullImage(tabsViewModel, it)
             Image(bitmap = picture.image, contentDescription = picture.name, alignment = Alignment.Center)
         })
     pairsList.add(imageUrlPair)
 
     for (x in latexList) {
         /*px = em * font-size*/
-        val picture: Picture = loadFullImage(path, x)
+        val picture: Picture = loadFullImage(tabsViewModel, x)
 
         val tempPair = Pair(x, InlineTextContent(
                 Placeholder(
@@ -802,7 +810,12 @@ fun mapOfWithLatex(path: Path, style: TextStyle): Map<String, InlineTextContent>
 @Suppress("EXPERIMENTAL_IS_NOT_ENABLED")
 @OptIn(ExperimentalComposeUiApi::class) //TODO rewrite pointerMoveFilter to be stable
 @Composable
-fun MarkdownText(path: Path, text: AnnotatedString, style: TextStyle, modifier: Modifier = Modifier) {
+fun MarkdownText(
+    tabsViewModel: TabsViewModel,
+    text: AnnotatedString,
+    style: TextStyle,
+    modifier: Modifier = Modifier,
+) {
     //val uriHandler = UriHandlerAmbient.current
     val layoutResult = remember { mutableStateOf<TextLayoutResult?>(null) }
     var position = Int.MAX_VALUE
@@ -825,27 +838,22 @@ fun MarkdownText(path: Path, text: AnnotatedString, style: TextStyle, modifier: 
         .then(
             if (tag == TAG_URL) {
                 Modifier.pointerInput({}){
-                        detectTapGestures(onTap = { if(url != null){ checkAfterLinkClick(url!!) }  })
+                        detectTapGestures(onTap = { if(url != null){
+                            checkAfterLinkClick(tabsViewModel, url!!) }
+                        })
                     }
             } else { Modifier }
         ),
         style = style,
-        inlineContent = mapOfWithLatex(path, style),
+        inlineContent = mapOfWithLatex(tabsViewModel, style),
         onTextLayout = { layoutResult.value = it }
     )
-    if(scrollToItemActivated.value) {
-        val index = referenceModel.getIndexOfNewActiveElement(fileURIToOpen.value)
-        val coroutineScope = rememberCoroutineScope()
-        coroutineScope.launch {
-            referenceModel.editorTabModel?.scrollState?.scrollToItem(index, 0)
-        }
-        scrollToItemActivated.value = false
-    }
 }
+
 
 @Composable
 fun Table(
-    path: Path,
+    tabsViewModel: TabsViewModel,
     header: List<AnnotatedString>? = null,
     data: List<List<AnnotatedString>>,
     headerModifier: Modifier = Modifier.background(color = MaterialTheme.colorScheme.background),
@@ -860,7 +868,7 @@ fun Table(
                         modifier = Modifier.weight(1f / header.size).border(width = 1.dp, color = Color.Gray)
                             .fillMaxHeight()
                     ) {
-                        MarkdownText(path, e, modifier = Modifier.padding(3.dp), style = MDTypography.h4.style)
+                        MarkdownText(tabsViewModel, e, modifier = Modifier.padding(3.dp), style = MDTypography.h4.style)
                     }
                 }
             }
@@ -873,7 +881,7 @@ fun Table(
                         modifier = Modifier.weight(1f / row.size).border(width = 1.dp, color = Color.Gray)
                             .fillMaxHeight()
                     ) {
-                        MarkdownText(path, e, modifier = Modifier.padding(3.dp), style = MDTypography.bodyMedium.style)
+                        MarkdownText(tabsViewModel, e, modifier = Modifier.padding(3.dp), style = MDTypography.bodyMedium.style)
                     }
                 }
             }
@@ -881,32 +889,27 @@ fun Table(
     }
 }
 
-fun checkAfterLinkClick(url:String) {
-    if(url[0]=='#') {
-        fileURIToOpen.value = url
-        scrollToItemActivated.value = true
-    }
-    else{
-        var file = File(url)
-        if(File(settings.dataFolder).resolve(file).exists())
-            file=File(settings.dataFolder).resolve(file)
 
-        if (!file.isDirectory && file.exists()){
-            if(url.contains(".md")) {
-                referenceModel.openMDFile(file)
-            } else {
-                showOpenFileExternalWarning.value=true
-                fileURIToOpen.value = url
+/**
+ * Switches to other Tab (which has file name) or opens a url.
+ * @param tabsViewModel View model of the tabs
+ * @param url a file name of the project or a url
+ */
+fun checkAfterLinkClick(tabsViewModel: TabsViewModel, url:String) {
+    if(url[0]=='#') {
+        scrollToItem.value = referenceModel.getIndexOfNewActiveElement(url)
+    } else{
+        val localFile = tabsViewModel.sessionState.value.project?.directory?.resolve(url)
+        if (localFile != null && localFile.exists()) {
+            val active = tabsViewModel.findTabIndexByName(localFile.toFile().name)
+            if (active >= 0) { 
+                tabsViewModel.selectedIndex.value = active
+                scrollToItem.value = 0
             }
-        // } else if (!file.isDirectory && !file.exists()){
-        //    showNoSuchFileWarning.value=true
-        } else if (file.isDirectory) {
-            showDirectoryWarning.value=true
-            fileURIToOpen.value = url        }
-        else {
+        } else {
             try { Desktop.getDesktop().browse(URI(url)) }
             catch (_: Exception) {
-                println("$url is not a URL")
+                logger.error("$url is not a URL")
             }
         }
     }

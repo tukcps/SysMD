@@ -1,7 +1,6 @@
 package com.github.tukcps.sysmd.compiler.scanner
 
 import com.github.tukcps.sysmd.compiler.scanner.Token.Definitions.charTokens
-import com.github.tukcps.sysmd.compiler.scanner.Token.Definitions.keywords
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import kotlin.math.pow
 
@@ -18,10 +17,14 @@ import kotlin.math.pow
  * - nextToken(): advances one token forward.
  * - nextTokenIs(Set of TokenKind): checks if a token is present and
  *   advances if the token is in the set of token passed as parameter.
+ *  @param indices Indices in the input string that shall be scanned.
+ *  @param skip Tokens that shall be skipped
+ *  @param keywords a map of keywords
  */
 open class Scanner(
     var indices: IntRange?=null,
-    val skip: Set<Token.Kind> = setOf(WHITESPACE, NOTE)
+    val skip: Set<Token.Kind> = setOf(WHITESPACE, NOTE),
+    val keywords: Map<String, Token.Kind>
 ) {
     /**
      * The input as a String. Setting it will reset i, lineNo, columnNo, token, etc.:
@@ -100,7 +103,7 @@ open class Scanner(
         token = nextToken
         do {
             nextTokenOrSkip()
-            // Special case: tokens in SysML v2 that are sequence of two "tokens", typed by = TYPED_BY = DP
+            // Special case: tokens in SysML v2 that are a sequence of two "tokens", typed by = TYPED_BY = DP
             if (token.kind == TYPED && nextToken.kind == BY) {
                 nextToken = buildToken(TYPED_BY)
                 nextToken()
@@ -349,13 +352,13 @@ open class Scanner(
 
     /**
      * Checks if the current token is in the argument.
-     * @return true, if current token is, else false
+     * @return true, if the current token is else false
      */
     fun tokenIs(t: Token.Kind): Boolean = token.kind == t
 
     /**
      * Checks if the current token is in the argument.
-     * @return true, if current token is, else false
+     * @return true, if the current token is else false
      */
     fun tokenIsNot(t: Token.Kind): Boolean = token.kind != t
 

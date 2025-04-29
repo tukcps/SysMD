@@ -19,8 +19,7 @@ https://ieeexplore.ieee.org/document/10620947
 pp. 178-183, doi: 10.1109/SOSE62659.2024.10620956.
 https://ieeexplore.ieee.org/document/10620956
 
-- V. Molnár, B. Graics, A. Vörös, S. Tonetta, L, Cristoforetti, G. Kimberly, P. Dyer, K. Giammarco, M. Koethe, J. Hester, J. Smith, and C. Grimm. 2024. 
-_Towards the Formal Verification of SysML v2 Models_. 
-In Proceedings of the ACM/IEEE 27th International Conference on Model Driven Engineering Languages and Systems (MODELS Companion '24). Association for Computing Machinery, New York, NY, USA, 1086–1095. 
-- https://doi.org/10.1145/3652620.3687820
-
+- V. Molnár, B. Graics, A. Vörös, S. Tonetta, L, Cristoforetti, G. Kimberly, P. Dyer, K. Giammarco, M. Koethe, J. Hester, J. Smith, and C. Grimm. 2024.
+_Towards the Formal Verification of SysML v2 Models_.
+In Proceedings of the ACM/IEEE 27th International Conference on Model Driven Engineering Languages and Systems (MODELS Companion '24). Association for Computing Machinery, New York, NY, USA, 1086–1095.
+https://doi.org/10.1145/3652620.3687820

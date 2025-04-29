@@ -17,7 +17,7 @@ class AssociationsTests {
      */
     @Test
     fun testAssociationDeclaration() =
-        testSession("ScalarValues", "Objects", "Occurrences", "Links") {
+        testSession("Links") {
             loadKerML("""
             	assoc A {
                     end x;
@@ -36,7 +36,7 @@ class AssociationsTests {
      */
     @Test
     fun testAssociationWithSpecialization() =
-        testSession("ScalarValues", "Base", "Objects", "Occurrences", "Links") {
+        testSession("Links") {
             loadKerML("""
                 assoc A {
                     end x;
@@ -47,7 +47,7 @@ class AssociationsTests {
                     end x1;
                     end y1[0..*] redefines y;
                 }
-            """.trimIndent())
+            """)
             assertTrue(status.issues.isEmpty(), status.issues.toString())
         }
 }

@@ -10,12 +10,12 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.github.tukcps.sysmd.ui.styles.AppTheme
-import com.github.tukcps.sysmd.ui.viewmodel.EditorTabModel
+import com.github.tukcps.sysmd.ui.viewmodel.TabViewModel
 
 
 @Composable fun DeleteCellDialog(
     showConfirmDelete: MutableState<Boolean>,
-    editorTabModel: EditorTabModel,
+    editorTabModel: TabViewModel,
     idx: MutableState<Int>,
 ) =
     AlertDialog(

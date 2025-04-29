@@ -97,7 +97,7 @@ class LibrariesUUIDTests {
         assertTrue(fMultiplicity.isLibraryElement)
         assertEquals(5, fMultiplicity.elementId!!.version())
         val mPath = fMultiplicity.path()
-        uuid5 = Generators.nameBasedGenerator().generate("x::f::multiplicity")
+        uuid5 = Generators.nameBasedGenerator().generate("x::f::cardinality")
         assertEquals(uuid5, fMultiplicity.elementId)
 
         get().forEach { element ->

@@ -14,13 +14,13 @@ class DatatypeTests {
      */
     @Test
     fun testDatatype() = testSession("ScalarValues") {
-            loadKerML("""
-                datatype IdNumber specializes ScalarValues::Integer;
-                datatype Reading { // Subtypes Base::DataValue by default
-                    feature sensorId : IdNumber; // Subsets Base::dataValues by default.
-                    feature value : ScalarValues::Real;
-                }
-            """)
-            assertTrue(status.issues.isEmpty(), status.issues.toString())
-        }
+        loadKerML("""
+            datatype IdNumber specializes ScalarValues::Integer;
+            datatype Reading { // Subtypes Base::DataValue by default
+                feature sensorId : IdNumber; // Subsets Base::dataValues by default.
+                feature value : ScalarValues::Real;
+            }
+        """)
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
+    }
 }

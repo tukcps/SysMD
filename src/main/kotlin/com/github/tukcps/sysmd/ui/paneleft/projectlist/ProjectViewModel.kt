@@ -7,7 +7,7 @@ import com.github.tukcps.sysmd.services.session.SessionManager
 import com.github.tukcps.sysmd.services.session.loadSysMDFromFile
 import com.github.tukcps.sysmd.ui.syntaxhighlighting.Indexer
 import com.github.tukcps.sysmd.ui.syntaxhighlighting.indexerScope
-import com.github.tukcps.sysmd.ui.viewmodel.EditorTabsViewModel
+import com.github.tukcps.sysmd.ui.viewmodel.TabsViewModel
 import io.github.tukcps.sysmlv2.interchange.InterchangeProject
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
@@ -19,7 +19,7 @@ import java.nio.file.Path
  */
 data class ProjectViewModel(
     val sessionState: MutableState<Session>,
-    val editorTabsViewModel: EditorTabsViewModel,
+    val tabsViewModel: TabsViewModel,
     val reset: () -> Unit,
     var project: ProjectData?,
     val activeProject: MutableState<ProjectViewModel?>,
@@ -83,7 +83,7 @@ data class ProjectViewModel(
     fun unsavedChangesExist(): Boolean {
         // First, close all open tabs from the open project.
         // This also checks that changes are saved ...
-        editorTabsViewModel.editorTabs.forEach {
+        tabsViewModel.editorTabs.forEach {
             if (it.elementEdited.value) {
                 return true
             }
@@ -97,7 +97,7 @@ data class ProjectViewModel(
      */
     fun openProject() {
         if (project != null) {
-            val closeCalls = editorTabsViewModel.editorTabs.map { it.close }
+            val closeCalls = tabsViewModel.editorTabs.map { it.close }
             closeCalls.forEach { if (it != null) { it() } }
 
             activeProject.value = this
@@ -108,13 +108,13 @@ data class ProjectViewModel(
             // Open the tabs, but don't compile
             project!!.getIndex().forEach { file ->
                 sessionState.value.loadSysMDFromFile(file, compile = false, 0)
-                editorTabsViewModel.open(file, false)
+                tabsViewModel.open(file, false)
             }
-            editorTabsViewModel.selectedIndex.value = 0
+            tabsViewModel.selectedIndex.value = 0
 
             //Start Coroutine to initialize the Indexes
             indexerScope.cancel()
-            indexerScope.launch { Indexer.initializeIndexes(editorTabsViewModel) }
+            indexerScope.launch { Indexer.initializeIndexes(tabsViewModel) }
         }
     }
 }

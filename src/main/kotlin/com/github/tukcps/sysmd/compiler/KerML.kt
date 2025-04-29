@@ -10,6 +10,7 @@ import com.github.tukcps.sysmd.compiler.parser.util.ParserProductionRules
 import com.github.tukcps.sysmd.compiler.scanner.Token
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.compiler.semantics.SemanticActions
+import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.exceptions.SyntaxError
 import com.github.tukcps.sysmd.exceptions.SysMDException
 import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
@@ -35,14 +36,15 @@ import io.github.tukcps.aadd.IDD
  *  consume()/consume(to) allow consuming a specific or arbitrary token.
  *
  * Details for these functions are given in the KParser class.
- * Examples for application of the parser are in the unit test.
+ * Examples for the use of the parser are in the unit test.
  * Parameters are:
  * @param model: the model in which the result will be saved; by default, the memory-only model
  * representation and the generated elements.
  */
 open class KerML(
     val model: Session,                                 // model in which the results will be returned.
-) : ParserProductionRules() {
+    keywords: Map<String, Token.Kind> = Token.kerMLKeywords,
+) : ParserProductionRules(keywords = keywords) {
 
     var semantics: SemanticActions = SemanticActions(model, compiler = this)
 
@@ -73,7 +75,7 @@ open class KerML(
 
 
     // Re-definition of the Parser template's error message function
-    override var error = fun(message: String) { throw SyntaxError(this, message = message) }
+    override var error = fun(message: String) { model.status.error(message = message, this) }
 
     /**
      *    RootNamespace :- ( NamespaceBodyElement )* EOF
@@ -156,8 +158,8 @@ open class KerML(
     }
 
     /**
-     * Enters an error message in the status and tries to re-sync with stream of token.
-     * It does so by reading until reaching a DOT which marks the end of a triple.
+     * Enters an error message in the status and tries to re-sync with a stream of token.
+     * It does so by reading until reaching a semicolon or curly brace.
      * @param exception Exception that was thrown and caught prior to starting error handling
      */
     internal fun handleError(exception: Exception) {
@@ -168,13 +170,46 @@ open class KerML(
         } else
             model.status.fatal(exception.message?: "Unknown error",  this, cause = exception)
         // Skip input until we get the next DOT (=end of triple) or RCURBRACE or EOF.
-        while (token.kind != SEMICOLON && token.kind != EOF && token.kind != RCURBRACE)
+        var nested = 0;
+        while (
+            (token.kind != SEMICOLON || nested > 0)
+            && token.kind != EOF
+            && (token.kind != RCURBRACE || nested <= 0))  {
+            if (token.kind == LCURBRACE) nested = nested+1;
+            if (token.kind == RCURBRACE) nested = nested-1;
             consume()
+        }
+        // If parser skips right curly brace, we need to also pop one from the owner stack.
+        // if (token.kind == RCURBRACE)
+        //    semantics.popOwner()
         consume()
+        if (token .kind == EOF)
+            model.status.error( "Unexpected end of input", this)
+    }
+
+    internal fun handleSyntaxError(message: String) {
+        model.status.error(message, this, semantics.namespace, Issue.Kind.ERROR_SYNTACTICAL)
+        // Skip input until we get the next DOT (=end of triple) or RCURBRACE or EOF.
+        var nested = 0;
+        while (
+            (token.kind != SEMICOLON || nested > 0)
+            && token.kind != EOF
+            && (token.kind != RCURBRACE || nested <= 0)
+        )  {
+            if (token.kind == LCURBRACE) nested = nested+1;
+            if (token.kind == RCURBRACE) nested = nested-1;
+            consume()
+        }
+        // If parser skips right curly brace, we need to also pop one from the owner stack.
+        // if (token.kind == RCURBRACE)
+        // semantics.popOwner()
+        consume()
+        if (token .kind == EOF)
+            model.status.error( "Unexpected end of input", this)
     }
 
     override fun toString(): String {
-        return "Parser at token '${token.string}' in line ${token.lineNo}; #issues: ${model.status.issues.size}"
+        return "Parser at '${token.string}', line ${token.lineNo}; #issues: ${model.status.issues.size}"
     }
 
     /**

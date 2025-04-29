@@ -125,7 +125,7 @@ class ImportsTests {
                     * outside of N11. */
                 }
             }
-        """.trimIndent())
+        """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 }

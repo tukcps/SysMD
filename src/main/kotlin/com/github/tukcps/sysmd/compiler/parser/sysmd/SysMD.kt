@@ -2,10 +2,11 @@
 
 package com.github.tukcps.sysmd.compiler.parser.sysmd
 
+import com.github.tukcps.sysmd.compiler.KerML
 import com.github.tukcps.sysmd.compiler.SysMD
 import com.github.tukcps.sysmd.compiler.parser.kerml.Association
 import com.github.tukcps.sysmd.compiler.parser.kerml.Class
-import com.github.tukcps.sysmd.compiler.parser.kerml.ElementList
+import com.github.tukcps.sysmd.compiler.parser.kerml.NamespaceBodyElement
 import com.github.tukcps.sysmd.compiler.parser.kerml.QualifiedName
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.ASSOC
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.CLASS
@@ -13,7 +14,9 @@ import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.DATATYPE
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.DEF
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.DEFINES
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.DOT
+import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.EOF
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.HAS_A
+import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.RCURBRACE
 import com.github.tukcps.sysmd.exceptions.SyntaxError
 import com.github.tukcps.sysmd.model.kerml.Resolved
 
@@ -46,6 +49,17 @@ fun SysMD.Triple() {
         }
     }
     semantics.popOwner()
+}
+
+
+/**
+ *      ElementList :- Element+
+ *       Deprecated (SysMD legacy): Also, an Element ending with a dot shall stop the list
+ */
+fun KerML.ElementList() {
+    oneOrMore(stop = { consumedToken.kind == DOT || token.kind == RCURBRACE || token.kind == EOF }) {
+        NamespaceBodyElement()
+    }
 }
 
 

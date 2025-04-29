@@ -16,14 +16,14 @@ import java.io.File
  * @param sessionState the state of the internal KerML model, created by the SysMD compiler
  * @param refreshTrees lambda to be called when refresh of tree views is needed.
  */
-class EditorTabsViewModel(
+class TabsViewModel(
     val sessionState: MutableState<Session>,
     private val refreshTrees: () -> Unit,
 ) {
     private val session: Session by sessionState
-    val editorTabs = mutableStateListOf<EditorTabModel>()
+    val editorTabs = mutableStateListOf<TabViewModel>()
     val selectedIndex: MutableState<Int> = mutableStateOf(0)
-    val active: EditorTabModel? get() = editorTabs.getOrNull(selectedIndex.value)
+    val active: TabViewModel? get() = editorTabs.getOrNull(selectedIndex.value)
     val removeFileDialog =  mutableStateOf(false)
     val removeFile =  mutableStateOf<Int?>(null)
 
@@ -33,7 +33,7 @@ class EditorTabsViewModel(
     fun addNewFile() {
         val maxIndex = editorTabs.size+1
         val file = sessionState.value.project?.addIndex("${sessionState.value.project!!.getIndex().size+1}", "Filename-$maxIndex.md") ?: return
-        val newTab = EditorTabModel(sessionState, refreshTrees)
+        val newTab = TabViewModel(this, sessionState, refreshTrees)
         newTab.file = file
         newTab.tabTitle.value = " " + file.name + " "
         newTab.editState.value = true
@@ -75,9 +75,9 @@ class EditorTabsViewModel(
      */
     fun open(file: File) = open(file, true)
     fun open(file: File, createFiles: Boolean) {
-        var editorTab = EditorTabModel(sessionState, refreshTrees)
+        var editorTab = TabViewModel(this, sessionState, refreshTrees)
         editorTab.openFileInNewTab = ::open
-        val existing: EditorTabModel? = editorTabs.find { tab -> tab.file == file }
+        val existing: TabViewModel? = editorTabs.find { tab -> tab.file == file }
         if (existing == null) {
             editorTab.open(file, sessionState)
             editorTab.close = { close(editorTab) }
@@ -93,7 +93,7 @@ class EditorTabsViewModel(
     }
 
     /** Closes an editor tab. */
-    fun close(tab: EditorTabModel) {
+    fun close(tab: TabViewModel) {
         try {
             editorTabs.remove(tab)
             if (tab.fileAnnotation != null)
@@ -129,7 +129,19 @@ class EditorTabsViewModel(
         tab.elementEdited.value = false
     }
 
+    /**
+     * Searches a tab by its name and returns its index in the list of tabs; -1 if not there
+     */
+    fun findTabIndexByName(name: String): Int {
+        var index = 0
+        editorTabs.forEach {
+            tab -> if (tab.file!!.name == name) return index
+            index++
+        }
+        return -1
+    }
+
     companion object {
-        private val logger = LogManager.getLogger(EditorTabsViewModel::class.java)
+        private val logger = LogManager.getLogger(TabsViewModel::class.java)
     }
 }

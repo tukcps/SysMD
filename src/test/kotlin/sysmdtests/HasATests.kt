@@ -62,12 +62,12 @@ class HasATests {
         assertEquals(4, global.resolve<Element>("hasARange::Auto")?.getOwnedElementsOfType<Feature>()?.size)
         assertEquals(1, global.resolve<Element>("hasARange::Auto")?.getOwned<Feature>("motoren")?.multiplicity?.min )
         assertEquals(2, global.resolve<Element>("hasARange::Auto")?.getOwned<Feature>("motoren")?.multiplicity?.max )
-        assertEquals(1, (global.resolve<Feature>("hasARange::Auto::motoren::multiplicity"))!!.variable!!.intSpecs[0].min )
-        assertEquals(2, (global.resolve<Feature>("hasARange::Auto::motoren::multiplicity"))!!.variable!!.intSpecs[0].max )
+        assertEquals(1, (global.resolve<Feature>("hasARange::Auto::motoren::cardinality"))!!.variable!!.intSpecs[0].min )
+        assertEquals(2, (global.resolve<Feature>("hasARange::Auto::motoren::cardinality"))!!.variable!!.intSpecs[0].max )
         assertEquals(1.0,
-            (global.resolve<Feature>("hasARange::Auto::motoren::multiplicity"))!!.variable!!.vectorQuantity.getMinAsDouble(), 0.0001 )
+            (global.resolve<Feature>("hasARange::Auto::motoren::cardinality"))!!.variable!!.vectorQuantity.getMinAsDouble(), 0.0001 )
         assertEquals(2.0,
-            (global.resolve<Feature>("hasARange::Auto::motoren::multiplicity"))!!.variable!!.vectorQuantity.getMaxAsDouble(), 0.0001 )
+            (global.resolve<Feature>("hasARange::Auto::motoren::cardinality"))!!.variable!!.vectorQuantity.getMaxAsDouble(), 0.0001 )
     }
 
 

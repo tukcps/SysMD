@@ -3,11 +3,10 @@
 package com.github.tukcps.sysmd.compiler.parser.kerml
 
 import com.github.tukcps.sysmd.compiler.KerML
+import com.github.tukcps.sysmd.compiler.scanner.Token
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.compiler.semantics.Identification
 import com.github.tukcps.sysmd.compiler.semantics.kerml.*
-import com.github.tukcps.sysmd.exceptions.SyntaxError
-import com.github.tukcps.sysmd.exceptions.throwSyntaxError
 import com.github.tukcps.sysmd.model.kerml.Dependency
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Relationship
@@ -49,6 +48,7 @@ fun KerML.RelationshipBody(owner: Resolved<Relationship>) {
             RCURBRACE.consume()
             semantics.owners.pop()
         }
+        DOT then { /* only for SysMD to end Triple */}
     }
 }
 
@@ -93,7 +93,7 @@ fun KerML.Dependency() {
  *          | TextualRepresentation
  *          | MetadataFeature
  */
-fun KerML.OwnedAnnotation() {
+fun KerML.OwnedAnnotation() =
     alternatives {
         COMMENT starts { Comment() }
         REGULAR_COMMENT starts { Comment() }
@@ -101,7 +101,7 @@ fun KerML.OwnedAnnotation() {
         REP starts { TextualRepresentation() }
         METADATA starts { MetadataFeature() }
     }
-}
+
 
 /**
  *      OwnedRelatedElement = NonFeatureElement | FeatureElement
@@ -110,7 +110,7 @@ fun KerML.OwnedRelatedElement() {
     when(token.kind) {
         in featureElementStart    -> FeatureElement()
         in nonFeatureElementStart -> NonFeatureElement()
-        else -> throwSyntaxError("At ${token.kind}: Expected a valid feature or non-feature element")
+        else -> handleSyntaxError("At ${token.kind}: Expected a feature or non-feature element")
     }
 }
 
@@ -149,7 +149,11 @@ fun KerML.NamespaceBodyElement() {
         SEMICOLON then                      { /* Empty statement */ }
         // Else, we have a SysMLv2 Statement
         others                              {
-            throw SyntaxError(this@NamespaceBodyElement, "SysML v2 statement '$token'? -- use SysML v2 compiler!")
+            if (token.string in Token.sysMLv2Keywords.keys
+                && token.string !in Token.kerMLKeywords.keys)
+                handleSyntaxError("SysML v2 statement at '$token'? -- use SysML v2 compiler!")
+            else
+                handleSyntaxError("At ${token.kind}: Expected a valid namespace body element (kind of features, non-features, alias, import)")
         }
     }
     semantics.prefixes.clear()
@@ -209,77 +213,38 @@ internal fun KerML.TextualRepresentation() {
 }
 
 /**
- *      Namespace :- "namespace" Identification Body
+ *      Namespace =
+ *          ( PrefixMetadataMember )*
+ *          NamespaceDeclaration NamespaceBody
+ *
+ *      NamespaceDeclaration : Namespace = 'namespace' Identification
  */
 internal fun KerML.Namespace() {
     val namespace = NamespaceActions(semantics, ::NamespaceImplementation)
     NAMESPACE.consume()
     Identification().also { namespace.create(it) }
-    Body(Resolved(null, namespace.created, null))
+    NamespaceBody(Resolved(null, namespace.created, null))
 }
 
+
 /**
- * Namespace =
- * ( ownedRelationship += PrefixMetadataMember )*
- * NamespaceDeclaration NamespaceBody
- *
- * NamespaceDeclaration : Namespace = 'namespace' Identification
  *
  * NamespaceBody : Namespace = ';' | '{' NamespaceBodyElement* '}'
- *
- * NamespaceBodyElement : Namespace =
- *      ownedRelationship += NamespaceMember
- *      | ownedRelationship += AliasMember
- *      | ownedRelationship += Import
- *
- * MemberPrefix : Membership =
- *      ( visibility = VisibilityIndicator )?
- * VisibilityIndicator : VisibilityKind = 'public' | 'private' | 'protected'
- * NamespaceMember : OwningMembership = NonFeatureMember | NamespaceFeatureMember
- * NonFeatureMember : OwningMembership =
- * MemberPrefix
- * ownedRelatedElement += MemberElement
- * NamespaceFeatureMember : OwningMembership =
- * MemberPrefix
- * ownedRelatedElement += FeatureElement
  */
-
-
-/**
- * Body :-
- *            "{" ElementList "}"
- *          | ";"
- *          | "."  // Only for SysMD to end Triple
- */
-internal fun KerML.Body(owner: Resolved<Element>) {
+internal fun KerML.NamespaceBody(owner: Resolved<Element>) {
     alternatives {
-        LCURBRACE then {
+        SEMICOLON starts { SEMICOLON.consume() }
+        LCURBRACE starts {
             semantics.pushOwner(owner)
-            ElementList()
-            semantics.popOwner()
+            LCURBRACE.consume()
+            noOrMore(end = { token.kind == RCURBRACE }) {
+                NamespaceBodyElement()
+            }
             RCURBRACE.consume()
+            semantics.popOwner()
         }
-        SEMICOLON then { }
-        DOT then { } // Iff Triple
     }
 }
-
-
-/**
- * ImportDeclaration RelationshipBody
- * ImportDeclaration : Import
- * MembershipImport | NamespaceImport
- *
- * MembershipImport = importedMembership = QualifiedName ( '::' isRecursive ?= '**' )?
- * NamespaceImport = importedNamespace = QualifiedName '::' '*' ( '::' isRecursive ?= '**' )? | importedNamespace = FilterPackage
- *
- * FilterPackage : Package =
- * ownedRelationship += ImportDeclaration
- * ( ownedRelationship += FilterPackageMember )+
- * FilterPackageMember : ElementFilterMembership =
- * '[' ownedRelatedElement += OwnedExpression ']'
- * { visibility = 'private' }
- */
 
 /**
  *
@@ -290,9 +255,13 @@ internal fun KerML.Body(owner: Resolved<Element>) {
  *
  *      MembershipImport = [QualifiedName] ( '::' '**'? )?
  *
- *      NamespaceImport =  [QualifiedName] '::' '*' ( '::' '**'? )? | FilterPackage
+ *      NamespaceImport =  [QualifiedName] '::' '*' ( '::' '**'? )?
+ *                         | FilterPackage
  *
- *      Import = "import" ["all"] [Identification ":"] QualifiedName "::" ("*"| "**") Body
+ *      FilterPackage  =
+ *          ImportDeclaration ( FilterPackageMember )+
+ *
+ *      FilterPackageMember = '[' OwnedExpression ']'
  */
 internal fun KerML.Import() {
     val import = ImportActions(semantics)
@@ -306,7 +275,7 @@ internal fun KerML.Import() {
             TIMES starts { TIMES.consume() }
         }
     }
-    Body(Resolved(import.created!!))
+    RelationshipBody(Resolved(import.created!!))
 }
 
 /**
@@ -325,16 +294,6 @@ internal fun KerML.AliasMember() {
         QualifiedName().also { aliasMember.addTarget(listOf(it)) }
     }
     RelationshipBody(Resolved(aliasMember.created!!))
-}
-
-/**
- *      ElementList :- Element+
- *       Deprecated (SysMD legacy): Also an Element ending with a dot shall stop the list
- */
-fun KerML.ElementList() {
-    oneOrMore(stop = { consumedToken.kind == DOT || token.kind == RCURBRACE || token.kind == EOF }) {
-        NamespaceBodyElement()
-    }
 }
 
 /**

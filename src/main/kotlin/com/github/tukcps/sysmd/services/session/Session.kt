@@ -1,6 +1,7 @@
 package com.github.tukcps.sysmd.services.session
 
 import com.github.tukcps.sysmd.cspsolver.DiscreteSolver
+import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.model.kerml.Anything
 import com.github.tukcps.sysmd.model.kerml.Element
@@ -28,7 +29,7 @@ interface Session {
 
     /**
      * A session from the user's perspective is combined with a modeling project.
-     * Then, project references to a project with its associated data.
+     * Then, the project references to a project with its associated data.
      * However, a session can also be used independently.
      * Then, a project can be null.
      */
@@ -93,22 +94,10 @@ interface Session {
     fun <T: Element> create(element: T, owner: Element): T
 
     /**
-     * Like 'create', but the created element is marked as transient.
-     * The new element can be of arbitrary subtype of ElementBase; i.e., ValueFeature, Namespace, Feature, etc.
-     * If an element with the same id or name in namespace exists, its fields will be updated.
-     * @param element The property to be created.
-     * @param owner The element in which the property will be created.
-     * @return the created element with the id field set. Note that it is not necessarily the same as the
-     * element passed as argument.
-     */
-    @Deprecated("Use transient and mark it manually as transient.")
-    fun <T: Element> createTransient(element: T, owner: Namespace): T
-
-    /**
      * Creates a new element in a namespace that becomes owner of the element.
      * The new element can be of arbitrary subtype of ElementBase; i.e., Expression, Namespace, Feature, etc.
      * If an element with the same id or name in namespace exists, the existing one will
-     * be deleted, including all its owned elements, and be replaced with the element given as argument.
+     * be deleted, including all its owned elements, and be replaced with the element given as an argument.
      * @param element The property to be created.
      * @param owner The element in which the property will be created.
      * @return the created element with the id field set. Note that it is not necessarily the same as the
@@ -173,4 +162,5 @@ interface Session {
     fun getUnownedElements(): List< UnresolvedElement >
     fun dropUnownedElement(element: Element)
     fun updateUnownedElements(unownedElement: Element, existingElement: Element)
+    fun getVariables(): List<Variable>
 }

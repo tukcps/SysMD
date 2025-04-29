@@ -1,12 +1,17 @@
 package com.github.tukcps.sysmd.rest.controller
 
 import com.github.tukcps.sysmd.configuration.OpenAPIConfig
+import com.github.tukcps.sysmd.cspsolver.Variable
+import com.github.tukcps.sysmd.cspsolver.propagate
+import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.kerml.implementation.TextualRepresentationImplementation
+import com.github.tukcps.sysmd.rest.entities.requests.CodeRequest
 import com.github.tukcps.sysmd.rest.entities.requests.SessionIndexRequest
 import com.github.tukcps.sysmd.rest.entities.response.IndexEntry
 import com.github.tukcps.sysmd.rest.entities.response.SessionIndexResponse
 import com.github.tukcps.sysmd.rest.entities.response.SessionResponse
 import com.github.tukcps.sysmd.rest.entities.response.SessionStatusResponse
+import com.github.tukcps.sysmd.rest.entities.response.VariablesResponse
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.repositories.local.ProjectData
 import com.github.tukcps.sysmd.services.repositories.local.toDAO
@@ -132,16 +137,9 @@ class SessionController {
      * - `PUT /session/code`
      * - Compiles the code given in the path variable and runs the compiler.
      * - The code is _not_ saved, only compiled.
-     * @param level the level to which the compiler will analyze, from 0 (nothing) to 7 (constraint propagation).
+     * @param request A CodeRequest entity that consists of the code and the level
+     * to which the compiler will analyze, from 0 (nothing) to 7 (constraint propagation).
      */
-    // class Code (var body: String = "") // Needed for valid JSON
-    // Easier to pass everything in a request body -> not sure if it fits under requests
-    data class CodeRequest(
-        val language: String = "SysML",
-        val level: Int = 1,
-        val code: String = ""
-    )
-
     @CrossOrigin
     @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "Compiles the code and adds generated elements to the model in the session.")
@@ -156,6 +154,7 @@ class SessionController {
             .compile()
 
         session!!.initialize(request.level)
+        if (request.level > 6) { session.propagate() }
 
         return ResponseEntity(SessionStatusResponse(session.status), HttpStatus.OK)
     }
@@ -329,6 +328,57 @@ class SessionController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
         }
     }
+
+    /**
+     * **Get all elements in the session**
+     * - `GET /session/elements`
+     */
+    @CrossOrigin
+    @ResponseStatus(HttpStatus.OK)
+    @Operation(summary = "Gets all variables of a solver run.")
+    @GetMapping(path = ["/session/variables"], produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun getAllVariables(
+        @RequestHeader(value = "SessionId", required = true) sessionId: UUID,
+    ): ResponseEntity<VariablesResponse>  {
+        try {
+            val session = SessionManager.getSession(sessionId)
+
+            if (session != null) {
+                return ResponseEntity.ok().body(VariablesResponse(session.getVariables()))
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(VariablesResponse(emptyList<Variable>()))
+            }
+        } catch (_: MalformedURLException) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
+        }
+    }
+
+
+    /**
+     * **Get all elements in the session**
+     * - `GET /session/elements/$id/subtypes`
+     */
+    @CrossOrigin
+    @ResponseStatus(HttpStatus.OK)
+    @Operation(summary = "Gets all variables of a solver run.")
+    @GetMapping(path = ["/session/elements/{elementId}/subtypes"], produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun getSubtypes(
+        @RequestHeader(value = "SessionId", required = true) sessionId: UUID,
+        @Parameter(description = "elementId of an element of kind type", required = true) @PathVariable elementId: UUID
+    ): ResponseEntity<ArrayList<ElementResponse>>  {
+        try {
+            val session = SessionManager.getSession(sessionId)
+            if (session != null) {
+                val type = session.get(elementId)
+                if (type is Type)
+                return ResponseEntity.ok().body(session.getSubtypes(type).map { ElementResponse(it.toDAO()) }.toCollection(ArrayList()))
+            }
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(arrayListOf())
+        } catch (_: MalformedURLException) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
+        }
+    }
+
 
     /**
      * Global/static constants

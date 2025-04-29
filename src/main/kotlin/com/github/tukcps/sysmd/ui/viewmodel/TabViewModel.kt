@@ -43,7 +43,8 @@ import java.io.File
  *        does not trigger any updates of any views.
  * @param refreshTrees lambda that can be called when a refresh of the tree-views is needed
  */
-class EditorTabModel(
+class TabViewModel(
+    val tabsViewModel: TabsViewModel,
     val sessionState: MutableState<Session>,
     val refreshTrees: () -> Unit
 ) {
@@ -115,6 +116,7 @@ class EditorTabModel(
                 val e = it.ref!!
                 if (e is TextualRepresentation) {
                     val elementModel = TextualRepresentationViewModel(
+                        tabViewModel = this,
                         sessionState = sessionState,
                         bodyState = mutableStateOf(TextFieldValue(e.body)),
                         refreshTrees = refreshTrees
@@ -173,6 +175,7 @@ class EditorTabModel(
     fun onAddRequest(index: Int) {
         val textualRepresentationViewModel =
             TextualRepresentationViewModel(
+                tabViewModel = this,
                 sessionState = sessionState,
                 refreshTrees = refreshTrees,
                 bodyState = mutableStateOf(TextFieldValue()),
@@ -212,6 +215,7 @@ class EditorTabModel(
             if (element is TextualRepresentation) {
                 element.model = kerMlModel
                 elementModel = TextualRepresentationViewModel(
+                    tabViewModel = this,
                     sessionState = mutableStateOf(kerMlModel),
                     language = mutableStateOf(Language.SYS_MD),
                     bodyState = mutableStateOf(TextFieldValue(text = element.body)),
@@ -268,7 +272,7 @@ class EditorTabModel(
      * Sets Up the environment for a Commit
      * Checks all the conditions before a Commit
      */
-    fun checkBeforeCommit(editorTab: EditorTabModel) {
+    fun checkBeforeCommit(editorTab: TabViewModel) {
         val bodyEdited = editorTab.elementEdited.value
         val languageChanged = mutableStateOf(false)
 

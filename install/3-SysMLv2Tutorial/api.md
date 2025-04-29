@@ -1,5 +1,5 @@
 ---
-subtitle:   SysML v2 Tutorial
+subtitle:   SysML v2 API 
 author:     RPTU Kaiserslautern-Landau, Chair of Cyber-Physical Systems
 ---
 

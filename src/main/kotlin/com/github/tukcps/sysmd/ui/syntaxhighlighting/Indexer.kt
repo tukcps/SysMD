@@ -5,7 +5,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.services.session.Session
 import com.github.tukcps.sysmd.services.session.SessionManager
-import com.github.tukcps.sysmd.ui.viewmodel.EditorTabsViewModel
+import com.github.tukcps.sysmd.ui.viewmodel.TabsViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -33,14 +33,14 @@ val indexerScope = CoroutineScope(Dispatchers.Default)
 object Indexer {
 
     var indexerSession: Session? = null
-    var editorTabsViewModel: EditorTabsViewModel? = null
+    var tabsViewModel: TabsViewModel? = null
     var updatedTextFields = mutableSetOf<TextFieldValue>()
 
 
     fun indexAllTabs() {
         indexerSession?.status?.reset()
         indexerSession?.loadUsages()
-        editorTabsViewModel?.editorTabs?.forEach {
+        tabsViewModel?.editorTabs?.forEach {
             it.cells.forEach { cell ->
                 cell.compile(propagate = false)
             }
@@ -54,12 +54,12 @@ object Indexer {
     /**
      * Initializes the Index lists by scanning all Markdown files of the SysMD data Folder
      */
-    fun initializeIndexes(editorTabsViewModel: EditorTabsViewModel) {
+    fun initializeIndexes(tabsViewModel: TabsViewModel) {
         try {
-            Indexer.editorTabsViewModel = editorTabsViewModel
+            Indexer.tabsViewModel = tabsViewModel
             indexerSession = SessionManager.startSession()
             indexAllTabs()
-            logger.info("Indexed project $editorTabsViewModel with ${indexerSession?.status?.issues?.size} issues")
+            logger.info("Indexed project $tabsViewModel with ${indexerSession?.status?.issues?.size} issues")
         } catch (e: Exception) {
             logger.info(e.message)
         }

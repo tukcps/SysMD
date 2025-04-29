@@ -110,7 +110,7 @@ open class SysMdRunner: CommandLineRunner {
                     val showDialog = remember { mutableStateOf(false) }
                     val showSettingsDialog = sysMdViewModel.showSettingsDialog
                     val openUCB = remember { mutableStateOf(false) }
-                    val tabs = sysMdViewModel.editorTabsViewModel
+                    val tabs = sysMdViewModel.tabsViewModel
 
                     loadSettings()  //actively initiate loading of the settings as otherwise the settings are only loaded after the settings window has been opened
 
@@ -156,7 +156,7 @@ open class SysMdRunner: CommandLineRunner {
                             MainView(sysMdViewModel)
                             if (showDialog.value)
                                 SaveDialog(showSaveDialog = showDialog,
-                                    onSave = { sysMdViewModel.editorTabsViewModel.save(); exitApplication() },
+                                    onSave = { sysMdViewModel.tabsViewModel.save(); exitApplication() },
                                     onDrop = { exitApplication() }
                                 )
                             if (showSettingsDialog.value)

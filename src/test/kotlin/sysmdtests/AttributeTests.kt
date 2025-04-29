@@ -35,8 +35,8 @@ class AttributeTests {
     @Test
     fun booleanAttributeTest2()  = testSession("Attributes") {
         loadSysMLv2("""
-                attribute a: ScalarValues::Boolean(true);
-                attribute b: ScalarValues::Boolean(false);
+            attribute a: ScalarValues::Boolean(true);
+            attribute b: ScalarValues::Boolean(false);
         """)
         propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())

@@ -300,25 +300,24 @@ class HoodSysmlParserTest {
 
     @Test
     fun parsesOneTransitionFromStateToState_withGuardCondition() {
-        val model = parser.parseString(
-            """
-                package testPackage{
-                	attribute def TurnOn;
-                
-                    part part1{
-                        state status{
-                            state state1;
-                            state state2;
-                            entry action initial;
-                            transition 
-                              first state1 
-                              accept TurnOn
-                              if 2 < 5 then state2;
-                        }
-                     }
-                }
-                """
-        )
+        val model = parser.parseString("""
+            package testPackage{
+                attribute def TurnOn;
+            
+                part part1{
+                    state status{
+                        state state1;
+                        state state2;
+                        entry action initial;
+                        transition 
+                          first state1 
+                          accept TurnOn
+                          if 2 < 5 then state2;
+                    }
+                 }
+            }
+        """)
+        // assertTrue(model.status.issues.isEmpty(), model.status.issues.toString())
 
         val owningPackage = parser.getTopLevelPackage(model, "testPackage")
         val parts = owningPackage!!.getOwnedElementsOfType<PartUsage>()

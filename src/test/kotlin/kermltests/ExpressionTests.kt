@@ -6,14 +6,16 @@ import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 
 class ExpressionTests {
     @Test
     fun testExpression() = testSession("ScalarValues") {
         loadKerML("""
-                feature f: ScalarValues::Real = oneOf(1.0 .. 2.0);    
-            """)
+            feature f: ScalarValues::Real = oneOf(1.0 .. 2.0);    
+        """)
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val f = global.resolve<Feature>("f")
         assertEquals(2.0, f!!.variable!!.max())
     }

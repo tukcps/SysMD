@@ -117,7 +117,7 @@ fun MenuLine(sysMDViewModel: SysMDViewModel) {
                     tooltipText = "Saves the project in its files.",
                     onClick = {
                         sysMDViewModel.sessionState.value.project?.saveToInterchangeFiles()
-                        sysMDViewModel.editorTabsViewModel.editorTabs.forEach { editorTabModel ->
+                        sysMDViewModel.tabsViewModel.editorTabs.forEach { editorTabModel ->
                             editorTabModel.save()
                             editorTabModel.elementEdited.value = false
                         }

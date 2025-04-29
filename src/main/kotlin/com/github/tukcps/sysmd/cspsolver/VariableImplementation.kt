@@ -213,7 +213,7 @@ open class VariableImplementation (
         updated = true
         stable = false
         if (str == null) return this
-        when(str.toString().trim().lowercase(Locale.US)) {
+        when(str.trim().lowercase(Locale.US)) {
             "true"          -> valueSpecs = mutableListOf(XBool.True)
             "false"         -> valueSpecs = mutableListOf(XBool.False)
             "x", "unknown"  -> valueSpecs = mutableListOf(XBool.X)
@@ -368,7 +368,7 @@ open class VariableImplementation (
         } catch (exception: Exception) {
             ast = null
             feature.model?.status?.error(
-                 "Error in expression '$dependency' of ${feature.qualifiedName}; problem: ${exception.message}", element = feature, cause = exception)
+                 "Issue in expression '$dependency' of ${feature.qualifiedName}", element = feature, cause = exception)
         }
     }
 }

@@ -13,7 +13,7 @@ class DependencyTest {
      * Kernel Modeling Language: https://www.omg.org/spec/KerML/1.0/Beta2/PDF/changebar
      */
     @Test
-    fun testDependencyDeclaration() = testSession("ScalarValues", "Base", "Objects", "Occurrences", "Links") {
+    fun testDependencyDeclaration() = testSession {
         loadKerML("""
             dependency Use
                 from 'Application Layer' to 'Service Layer';
@@ -21,7 +21,7 @@ class DependencyTest {
             // 'Service Layer' is the client of this dependency, not its name.
             dependency 'Service Layer'
                 to 'Data Layer', 'External Interface Layer';
-        """.trimIndent())
+        """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
@@ -31,14 +31,14 @@ class DependencyTest {
      * Kernel Modeling Language: https://www.omg.org/spec/KerML/1.0/Beta2/PDF/changebar
      */
     @Test
-    fun testDependencyDeclarationWithRelationshipBody() = testSession("ScalarValues", "Base", "Objects", "Occurrences", "Links") {
+    fun testDependencyDeclarationWithRelationshipBody() = testSession {
         loadKerML("""
             dependency 'Service Layer'
             to 'Data Layer', 'External Interface Layer' {
                 /* 'Service Layer' is the client of this dependency,
                 * not its name. */
             }
-        """.trimIndent())
+        """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 }

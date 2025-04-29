@@ -8,19 +8,21 @@ import com.github.tukcps.sysmd.compiler.KerML
  * It is thrown from the parser from which textual representation and current token are retrieved.
  */
 class SyntaxError(
-    parser: KerML? = null,
+    parser: KerML,
     message: String,
+    kind: Issue.Kind = Issue.Kind.ERROR_SYNTACTICAL,
 ) : SysMDError(
     message = message,
-    kind = Issue.Kind.ERROR_SYNTACTICAL,
-    input = parser?.input,
-    token = parser?.token,
-    element = parser?.semantics?.owners?.peek()?.ref,
+    kind = kind,
+    input = parser.input,
+    token = parser.token,
+    element = parser.semantics.owners.peek()?.ref,
 )
 
 
 fun KerML.throwSyntaxError(
     message: String,
+    kind: Issue.Kind = Issue.Kind.ERROR_SYNTACTICAL,
 ) {
-    throw SyntaxError(parser = this, message = message)
+    throw SyntaxError(parser = this, message = message, kind)
 }

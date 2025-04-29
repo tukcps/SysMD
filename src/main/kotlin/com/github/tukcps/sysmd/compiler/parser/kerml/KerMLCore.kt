@@ -3,16 +3,15 @@
 
 package com.github.tukcps.sysmd.compiler.parser.kerml
 
-import io.github.tukcps.aadd.values.IntegerRange
 import com.github.tukcps.sysmd.compiler.KerML
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.compiler.semantics.Identification
 import com.github.tukcps.sysmd.compiler.semantics.kerml.*
 import com.github.tukcps.sysmd.exceptions.SyntaxError
-import com.github.tukcps.sysmd.exceptions.throwSyntaxError
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.*
 import com.github.tukcps.sysmd.model.util.QualifiedName
+import io.github.tukcps.aadd.values.IntegerRange
 
 /**
  * SPECIALIZES is a pseudo-lexical element that is either
@@ -22,7 +21,7 @@ fun KerML.SPECIALIZES() {
     when(token.kind) {
         DPGT        -> { consume() }
         SPECIALIZES -> { consume() }
-        else -> throwSyntaxError("Expect ':>' or 'specializes'")
+        else -> handleSyntaxError("Expect ':>' or 'specializes'")
     }
 }
 
@@ -359,7 +358,7 @@ fun KerML.FeatureDeclaration(feature: FeatureActions<Feature>) {
         FeatureRelationshipPart()
     }
 
-    // The Following is a non-standard extension / might be replaced later by standard
+    // The Following is a non-standard extension / might be replaced later by the standard
     TypeConstraint().also { feature.addTypeConstraint(it) }
     UnitConstraint().also { feature.addUnitConstraint(it) }
     feature.addTyping(mutableListOf())

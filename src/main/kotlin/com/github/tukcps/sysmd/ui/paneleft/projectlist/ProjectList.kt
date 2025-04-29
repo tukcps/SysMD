@@ -25,24 +25,24 @@ import com.github.tukcps.sysmd.settings
 import com.github.tukcps.sysmd.ui.composables.InputField
 import com.github.tukcps.sysmd.ui.composables.SysMDTooltipArea
 import com.github.tukcps.sysmd.ui.helper.fitMaxWidth
-import com.github.tukcps.sysmd.ui.viewmodel.EditorTabsViewModel
+import com.github.tukcps.sysmd.ui.viewmodel.TabsViewModel
 import java.io.File
 
 
 /**
  * Shows a list of projects
- * @param editorTabsViewModel the model of all tabs
+ * @param tabsViewModel the model of all tabs
  * @param reset method callback for reset
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProjectList(
     sessionState: MutableState<Session>,
-    editorTabsViewModel: EditorTabsViewModel,
+    tabsViewModel: TabsViewModel,
     reset: () -> Unit
 ) {
     val dataFolder           = remember { mutableStateOf(settings.dataFolder) }
-    val projectListViewModel = remember { ProjectListViewModel(sessionState, editorTabsViewModel, reset = reset) }
+    val projectListViewModel = remember { ProjectListViewModel(sessionState, tabsViewModel, reset = reset) }
 
     if (projectListViewModel.showNewProjectDialog.value)
         UpdateProjectDialog(projectListViewModel)
