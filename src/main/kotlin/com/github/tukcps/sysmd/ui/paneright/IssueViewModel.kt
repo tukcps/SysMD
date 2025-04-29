@@ -2,7 +2,7 @@ package com.github.tukcps.sysmd.ui.paneright
 
 import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.ui.styles.AppTheme
-import com.github.tukcps.sysmd.ui.viewmodel.EditorTabsViewModel
+import com.github.tukcps.sysmd.ui.viewmodel.TabsViewModel
 
 /**
  * This class stores additional information to the qualified names of the
@@ -10,7 +10,6 @@ import com.github.tukcps.sysmd.ui.viewmodel.EditorTabsViewModel
  */
 class IssueViewModel(
     val issue: Issue? = null,
-    val wikiLink: String = ""
 ) {
     /**
      * Link to wiki
@@ -50,7 +49,7 @@ class IssueViewModel(
      * depending on the available information
      */
     fun errorOriginString(
-        editorTabsModel: EditorTabsViewModel?,
+        editorTabsModel: TabsViewModel?,
     ): String {
         // val editorTabModel = editorTabsModel?.active
         var str = "Causing input not related to particular tab"
@@ -92,23 +91,23 @@ class IssueViewModel(
      * Resolves links to wiki depending on exception class, defaults to the main page if class unknown
      */
     fun wikiLink(): String = when (issue?.kind) {
-        Issue.Kind.ERROR_SEMANTIC -> "https://cps-mediawiki.cs.rptu.de/index.php/SemanticError"
-        Issue.Kind.TRACE    -> "https://cps-mediawiki.cs.rptu.de"
-        Issue.Kind.DEBUG    -> "https://cps-mediawiki.cs.rptu.de"
-        Issue.Kind.INFO     -> "https://cps-mediawiki.cs.rptu.de/index.php/Information"
-        Issue.Kind.WARN     -> "https://cps-mediawiki.cs.rptu.de/index.php/Warning"
-        Issue.Kind.WARN_ITERATIONS_EXCEEDED -> "https://cps-mediawiki.cs.rptu.de"
-        Issue.Kind.WARN_UNRESOLVED_OWNER -> "https://cps-mediawiki.cs.rptu.de"
-        Issue.Kind.WARN_UNRESOLVED_TYPE -> "https://cps-mediawiki.cs.rptu.de"
-        Issue.Kind.WARN_INCONSISTENCY -> "https://cps-mediawiki.cs.rptu.de/index.php/Inconsistency"
-        Issue.Kind.ERROR -> "https://cps-mediawiki.cs.rptu.de/index.php/Error"
-        Issue.Kind.ERROR_TYPE_WRONG -> "https://cps-mediawiki.cs.rptu.de/index.php/Error"
-        Issue.Kind.ERROR_CYCLIC_DEPENDENCY -> "https://cps-mediawiki.cs.rptu.de/index.php/Error"
-        Issue.Kind.ERROR_UNRESOLVED_NAME -> "https://cps-mediawiki.cs.rptu.de/index.php/UnresolvedName"
-        Issue.Kind.ERROR_SYNTACTICAL -> "https://cps-mediawiki.cs.rptu.de/index.php/ErrorSyntactical"
-        Issue.Kind.ERROR_LEXICAL -> "https://cps-mediawiki.cs.rptu.de/index.php/ErrorLexical"
-        Issue.Kind.FATAL -> "https://cps-mediawiki.cs.rptu.de/index.php/Fatal"
-        null ->  "https://cps-mediawiki.cs.rptu.de"
+        Issue.Kind.ERROR_SEMANTIC -> "https://github.com/tukcps/SysMD/wiki/Error-messages#semantic-error"
+        Issue.Kind.TRACE    -> "https://github.com/tukcps/SysMD/wiki/Error-messages#error-messages-and-its-classification"
+        Issue.Kind.DEBUG    -> "https://github.com/tukcps/SysMD/wiki/Error-messages#error-messages-and-its-classification"
+        Issue.Kind.INFO     -> "https://github.com/tukcps/SysMD/wiki/Error-messages#error-messages-and-its-classification"
+        Issue.Kind.WARN     -> "https://github.com/tukcps/SysMD/wiki/Error-messages#error-messages-and-its-classification"
+        Issue.Kind.WARN_ITERATIONS_EXCEEDED -> "https://github.com/tukcps/SysMD/wiki/Error-messages#error-messages-and-its-classification"
+        Issue.Kind.WARN_UNRESOLVED_OWNER -> "https://github.com/tukcps/SysMD/wiki/Error-messages#unresolved-owner"
+        Issue.Kind.WARN_UNRESOLVED_TYPE -> "https://github.com/tukcps/SysMD/wiki/Error-messages#unresolved-type"
+        Issue.Kind.ERROR_UNRESOLVED_NAME -> "https://github.com/tukcps/SysMD/wiki/Error-messages#unresolved-name"
+        Issue.Kind.WARN_INCONSISTENCY -> "https://github.com/tukcps/SysMD/wiki/Error-messages#inconsistency"
+        Issue.Kind.ERROR -> "https://github.com/tukcps/SysMD/wiki/Error-messages#error-messages-and-its-classification"
+        Issue.Kind.ERROR_TYPE_WRONG -> "https://github.com/tukcps/SysMD/wiki/Error-messages#error-messages-and-its-classification"
+        Issue.Kind.ERROR_CYCLIC_DEPENDENCY -> "https://github.com/tukcps/SysMD/wiki/Error-messages#cyclic-dependency"
+        Issue.Kind.ERROR_SYNTACTICAL -> "https://github.com/tukcps/SysMD/wiki/Error-messages#syntax-error"
+        Issue.Kind.ERROR_LEXICAL -> "https://github.com/tukcps/SysMD/wiki/Error-messages#lexical-error"
+        Issue.Kind.FATAL -> "https://github.com/tukcps/SysMD/wiki/Error-messages#fatal-error"
+        null ->  "https://github.com/tukcps/SysMD/wiki/Error-messages#error-messages-and-its-classification"
     }
 
 

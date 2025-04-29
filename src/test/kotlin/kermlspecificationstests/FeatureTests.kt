@@ -148,7 +148,7 @@ class FeatureTests {
      * Kernel Modeling Language: https://www.omg.org/spec/KerML/1.0/Beta2/PDF/changebar
      */
     @Test
-    fun testFeatureMembership() = testSession("ScalarValues", "Base", "Objects", "Occurrences", "Links") {
+    fun testFeatureMembership() = testSession("Occurrences") {
         loadKerML("""
             feature person : Person;
             
@@ -187,7 +187,7 @@ class FeatureTests {
      * Kernel Modeling Language: https://www.omg.org/spec/KerML/1.0/Beta2/PDF/changebar
      */
     @Test
-    fun testFeatureInheritance() = testSession("ScalarValues", "Base", "Objects", "Occurrences", "Links") {
+    fun testFeatureInheritance() = testSession("Occurrences") {
         loadKerML("""
             feature s {
                 feature t;

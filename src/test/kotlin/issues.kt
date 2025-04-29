@@ -235,12 +235,12 @@ class IssuesAndRegressions {
                 class Wheels;
                 class Chassis {
                     feature  wheels: ExampleDesign::Wheels[2..6];
-                    feature numAxis: ScalarValues::Integer = wheels::multiplicity/2;
+                    feature numAxis: ScalarValues::Integer = wheels::cardinality/2;
                 }
             }""")
         propagate()
         assertEquals(0, status.issues.size, status.issues.toString())
-        val multi = global.resolve<Feature>("ExampleDesign::Chassis::wheels::multiplicity")!!.variable
+        val multi = global.resolve<Feature>("ExampleDesign::Chassis::wheels::cardinality")!!.variable
         assertNotNull(multi)
         assertEquals(2L, multi.min())
         assertEquals(6L, multi.max())
@@ -269,7 +269,7 @@ class IssuesAndRegressions {
             type DeviceA :> Device {
                 feature sensor [5..5];
             }
-            type DeviceB isA Device {
+            type DeviceB :> Device {
                 feature sensor [4..4];
             }
         """)
@@ -628,7 +628,7 @@ class IssuesAndRegressions {
             package archExample {
                 part def Vehicle :> Component {
                     part engine : Engine[1..2];
-                    attribute power: SI::Power in [kW] = engine::power * ToReal(engine::multiplicity);
+                    attribute power: SI::Power in [kW] = engine::power * ToReal(engine::cardinality);
                 }
                 // Drive is a Function that has NO subclasses; its implementation alternatives are hence not
                 // "by Subclasses, but "by Implements relationship".

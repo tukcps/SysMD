@@ -41,7 +41,7 @@ fun Project(
 
     if (projectViewModel.showSaveDialog.value) {
         SaveDialog(projectViewModel.showSaveDialog,
-            onSave = { projectListViewModel.editorTabsViewModel.save(); projectViewModel.openProject(); projectViewModel.showSaveDialog.value = false },
+            onSave = { projectListViewModel.tabsViewModel.save(); projectViewModel.openProject(); projectViewModel.showSaveDialog.value = false },
             onDrop = { projectViewModel.openProject();  projectViewModel.showSaveDialog.value = false }
         )
     }

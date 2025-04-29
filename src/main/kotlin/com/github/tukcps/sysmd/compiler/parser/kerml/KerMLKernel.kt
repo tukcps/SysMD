@@ -318,7 +318,7 @@ fun KerML.Package() {
     val pkg = NamespaceActions(semantics, ::PackageImplementation)
     PACKAGE.consume()
     Identification().also { pkg.create(it) }
-    Body(Resolved(null, pkg.created, null))
+    PackageBody(Resolved(null, pkg.created, null))
 }
 
 /**
@@ -340,6 +340,7 @@ fun KerML.PackageBody(owner: Resolved<Namespace>) {
             semantics.popOwner()
             RCURBRACE.consume()
         }
+        DOT then { /* SysMD only */ }
     }
 }
 
@@ -356,14 +357,13 @@ fun KerML.LibraryPackage() {
     PackageBody(Resolved(null, pkg.created, null))
 }
 
-
 /**
  * 8.2.5.7.1 Functions
  *
  *      Function = TypePrefix 'function' ClassifierDeclaration FunctionBody
  */
 fun KerML.Function() {
-    val function = FunctionActions<FunctionImplementation>(semantics, ::FunctionImplementation)
+    val function = FunctionActions(semantics, ::FunctionImplementation)
     FUNCTION.consume()
     ClassifierDeclaration(function as ClassifierActions<Classifier>)
     FunctionBody(Resolved(function.created!!))
@@ -396,7 +396,6 @@ fun KerML.SuccessionDeclaration(feature: FeatureActions<Feature>) {
         ALL then { FIRST.optional() }
     }
 }
-
 
 /**
  * TODO
@@ -479,7 +478,6 @@ internal fun KerML.FunctionBody(owner: Resolved<Element>) {
 fun KerML.Structure() {
     val structure = StructureActions(semantics, ::StructureImplementation)
     STRUCT.consume()
-    @Suppress("UNCHECKED_CAST")
     ClassifierDeclaration(structure as ClassifierActions<Classifier>)
     TypeBody(Resolved(structure.created!!))
     structure.finish()

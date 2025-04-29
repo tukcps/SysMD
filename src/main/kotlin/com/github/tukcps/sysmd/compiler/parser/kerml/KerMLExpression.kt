@@ -304,13 +304,6 @@ fun KerML.Value(): AstNode {
                     astNode = resultingAST
                 }
         }
-        HAS_A then {              // hasA(partName)
-            LBRACE.consume()
-            val ownerName = QualifiedName()
-            COMMA.consume()
-            val ownedName = QualifiedName()
-            RBRACE.consume().also { astNode = AstHasA(model, semantics.namespace, ownerName, ownedName) }
-        }
         NAME_LIT starts { // QualifiedName [ '(' Parameters ')' | '[' Integer ']' ]
             var name = QualifiedName()
             alternatives {

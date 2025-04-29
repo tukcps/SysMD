@@ -33,8 +33,9 @@ import com.github.tukcps.sysmd.exceptions.LexicalError
  */
 @Suppress("ClassName")
 abstract class ParserProductionRules(
-    indices: IntRange?=null
-): Scanner(indices) {
+    indices: IntRange?=null,
+    keywords: Map<String, Token.Kind>
+): Scanner(indices = indices, keywords = keywords) {
 
     open var error: (message: String) -> Unit = fun (message: String){ throw Exception(message) }
 
@@ -154,14 +155,25 @@ abstract class ParserProductionRules(
             cases()     // calls the lambda parameter which registers cases
             when {
                 match2 != null -> {     // if there is match also with lookahead terminals ...
-                    if (consume2 == true) { nextToken(); nextToken() }
-                    else { token = t1; nextToken = t2}
-                    match2?.let { it() }
+                    try {
+                        if (consume2 == true) {
+                            nextToken(); nextToken()
+                        } else {
+                            token = t1; nextToken = t2
+                        }
+                        match2?.let { it() }
+                    } catch (_: Exception) {
+                        error("error in production after $t1 $t2")
+                    }
                 }
                 match1 != null -> {     // match with only the current token ...
-                    if (consume1 == true) { nextToken(); }
-                    else token = t1
-                    match1?.let { it() }
+                    try {
+                        if (consume1 == true) {
+                            nextToken(); } else token = t1
+                        match1?.let { it() }
+                    } catch (_: Exception) {
+                        error("error in production after $t1")
+                    }
                 }
                 others != null -> others?.let { it() } // no match ...
 
@@ -300,20 +312,32 @@ abstract class ParserProductionRules(
 
     /**
      *  ( production )*
+     *  Repeats the evaluation of the lambda expression while start evaluates to true and stop evaluates to false.
+     *  The function also includes methods for error recovery that, if production throws an exception, consumes token until a recover token is found.
      *  where
-     *      @param start is a lambda that must hold before the production
-     *      @param end is a lambda that must hold after the production before next production
-     *      @param production the production rule
+     *      @param start is a lambda that must hold before the production.
+     *      @param end is a lambda that must hold after the production before the next production.
+     *      @param production the production rule.
      */
     inline fun noOrMore(
         noinline start: (() -> Boolean)? = null,
         noinline end: (() -> Boolean)? = null,
+        recover: Set<Token.Kind> = setOf(Token.Kind.SEMICOLON),
         production: () -> Unit
     ) {
         require ( end != null || start != null )
         while (start == null || start()) {
-            production()
-            if (end?.invoke() == true) break
+            try {
+                production()
+            } catch (e: Exception) {
+                error(e.message ?: "no message")
+                while (token.kind !in recover && token.kind != Token.Kind.EOF) {
+                    if (end?.invoke() == true) break
+                    nextToken()
+                }
+                nextToken() // Skip SEMICOLON ...
+            }
+            if (end?.invoke() == true || token.kind == Token.Kind.EOF) break
         }
     }
 

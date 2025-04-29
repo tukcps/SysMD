@@ -50,6 +50,7 @@ internal fun SysMLv2.DefinitionBodyItem() {
     when {
         definitionElementStarts()           -> { DefinitionElement() }
         nonOccurrenceUsageStarts()          -> { NonOccurrenceUsageElement() }
+        THEN.starts()                       -> { SourceSuccessionMember(); OccurrenceUsageElement()}
         occurrenceUsageStart.starts()       -> { OccurrenceUsageElement() }
         ALIAS.starts()                      -> { AliasMember()}
         IMPORT.starts()                     -> { Import() }

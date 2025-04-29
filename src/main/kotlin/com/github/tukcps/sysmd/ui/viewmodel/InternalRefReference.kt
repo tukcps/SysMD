@@ -6,14 +6,13 @@ import org.commonmark.node.Heading
 import org.commonmark.node.LinkReferenceDefinition
 import org.commonmark.node.Node
 import org.commonmark.node.Text
-import java.io.File
 import java.util.*
 
 /**
  * A class for generating the table of contents and references
  */
 class InternalRefReference (
-    val editorTabModel: EditorTabModel?,
+    val editorTabModel: TabViewModel?,
     onUpdateAction: ()->Unit
 ) {
     fun generateHeadingNumbering() {
@@ -101,10 +100,6 @@ class InternalRefReference (
             return ""
 
         return "#"+headingTitle.lowercase().replace(' ','-')
-    }
-
-    fun openMDFile(file: File) {
-        editorTabModel?.openFileInNewTab?.let { it(file) }
     }
 
     fun getIndexOfNewActiveElement(identifier: String):Int {

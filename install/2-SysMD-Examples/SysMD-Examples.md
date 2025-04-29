@@ -1,5 +1,6 @@
 ---
 title: SysMD Examples
+author: University of Kaiserslautern-Landau, Chair of Cyber-Physical Systems
 ---
 
 # Examples

@@ -2,14 +2,12 @@ package sysmlv2specificationtests.modelstests
 
 import util.mockup.loadSysMLv2
 import util.testSession
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
 
 class ConnectionTest {
 
-    @Ignore
     @Test
     fun testConnection() = testSession("Connections", "Parts") {
         loadSysMLv2("""
@@ -56,6 +54,5 @@ class ConnectionTest {
                 }
         """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-
     }
 }

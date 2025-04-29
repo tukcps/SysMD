@@ -29,7 +29,7 @@ fun NewCommitDialog(agilaViewModel: SysMDViewModel) {
     var chosenCommitName by agilaViewModel.chosenCommitName
     var chosenCommitDescription by agilaViewModel.chosenCommitDescription
 
-    val editorTab =  agilaViewModel.editorTabsViewModel.active
+    val editorTab =  agilaViewModel.tabsViewModel.active
 
     val confirmCreatedCommit = remember { mutableStateOf(false) }
     val confirmNoChangesToCommit = remember { mutableStateOf(false) }

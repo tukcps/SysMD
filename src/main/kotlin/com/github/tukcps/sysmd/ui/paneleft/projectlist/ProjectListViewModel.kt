@@ -9,19 +9,19 @@ import com.github.tukcps.sysmd.services.repositories.local.SysMDProjectService
 import com.github.tukcps.sysmd.services.session.Session
 import com.github.tukcps.sysmd.services.session.SessionManager.projectService
 import com.github.tukcps.sysmd.settings
-import com.github.tukcps.sysmd.ui.viewmodel.EditorTabsViewModel
+import com.github.tukcps.sysmd.ui.viewmodel.TabsViewModel
 import kotlin.io.path.Path
 import kotlin.io.path.createDirectories
 
 /**
  * The view model of the project list left.
  * @param sessionState the session with the currently edited model.
- * @param editorTabsViewModel the tabs that are currently open.
+ * @param tabsViewModel the tabs that are currently open.
  * @param reset
  */
 class ProjectListViewModel(
     var sessionState: MutableState<Session>,
-    var editorTabsViewModel: EditorTabsViewModel,
+    var tabsViewModel: TabsViewModel,
     var reset: () -> Unit
 ) {
     var showNewProjectDialog: MutableState<Boolean> = mutableStateOf(false)
@@ -44,7 +44,7 @@ class ProjectListViewModel(
         projects.forEach {
             val projectViewModel = ProjectViewModel(
                 sessionState = sessionState,
-                editorTabsViewModel = editorTabsViewModel,
+                tabsViewModel = tabsViewModel,
                 reset = reset,
                 project =  it,
                 activeProject = projectOfSession

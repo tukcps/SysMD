@@ -18,10 +18,11 @@ fun Session.estimateFeature(type: Type, qualifiedName: QualifiedName): VectorQua
 
     if (p != null) return p.vectorQuantity
 
-    val subclasses = getSubtypes(type)
+    val subtypes = type.subtypes
+        // getSubtypes(type)
     var quantity: VectorQuantity? = null
-    for (subclass in subclasses) {
-        quantity = if (subclass == subclasses.first())
+    for (subclass in subtypes) {
+        quantity = if (subclass == subtypes.first())
             estimateFeature(subclass, qualifiedName)
         else {
             val alternative = builder.variable("select_" + subclass.elementId, qualifiedName, true)

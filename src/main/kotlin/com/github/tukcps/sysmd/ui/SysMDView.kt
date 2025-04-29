@@ -82,7 +82,7 @@ fun SysMDView(model: SysMDViewModel) {
     val sysMDViewModel = remember { model }
 
     // States of the window and its components.
-    val editorTabsModel = sysMDViewModel.editorTabsViewModel
+    val editorTabsModel = sysMDViewModel.tabsViewModel
 
     // State of the left resizable panel
     val leftPaneState = remember { PaneState(true) }

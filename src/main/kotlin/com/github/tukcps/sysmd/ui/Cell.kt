@@ -154,7 +154,7 @@ fun Cell(
                             SysMDTooltipArea(tooltipText = "Compile and solve this cell") {
                                 IconButton(
                                     modifier = Modifier.height(18.dp).width(18.dp).padding(1.dp),
-                                    onClick = { model.compile() }
+                                    onClick = model.onCompile
                                 ) {
                                     Icon(
                                         Icons.Filled.Calculate,
@@ -212,7 +212,7 @@ fun Cell(
                         } else {
                             if (model.sessionState.value.project?.directory != null)
                             when(model.language.value) {
-                                YAML -> Frontmatter(model.sessionState.value.project!!.directory!!, model.bodyState)
+                                YAML -> Frontmatter(model.tabViewModel.tabsViewModel, model.bodyState)
                                 in setOf(KerML, SYS_MD, SYS_ML) -> {
                                     Column {
                                         Row(Modifier.background(MaterialTheme.colorScheme.background)
@@ -244,8 +244,8 @@ fun Cell(
                                 //else if (model.language.value == MARKDOWN)
                                 else -> {
                                     Column(Modifier.padding(start = 6.dp)) {
-                                        markdownRendering(
-                                            model.sessionState.value.project!!.directory!!,
+                                        Markdown(
+                                            model.tabViewModel.tabsViewModel,
                                             model.body.text,
                                             internalRefReference
                                         )
@@ -308,8 +308,8 @@ fun Cell(
                         Column(Modifier.background(MaterialTheme.colorScheme.background).fillMaxWidth()) {
                             when (model.language.value) {
                                 MARKDOWN, YAML -> {
-                                    markdownRendering(
-                                        model.sessionState.value.project!!.directory!!,
+                                    Markdown(
+                                        model.tabViewModel.tabsViewModel,
                                         model.body.text.trim().lines()[0] + " (...)",
                                         internalRefReference
                                     )

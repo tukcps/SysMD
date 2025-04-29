@@ -26,8 +26,7 @@ import java.awt.Desktop
 import java.net.URI
 
 @Composable
-fun displayWarningDirectoryAccess(openDialog: MutableState<Boolean>,uri:MutableState<String>)
-{
+fun displayWarningDirectoryAccess(openDialog: MutableState<Boolean>,uri:MutableState<String>) {
     DialogWindow(
         onCloseRequest = { openDialog.value=false },
         state = rememberDialogState(position = WindowPosition(Alignment.Center), size = DpSize(350.dp, 200.dp)),
@@ -87,8 +86,7 @@ fun displayWarningDirectoryAccess(openDialog: MutableState<Boolean>,uri:MutableS
 }
 
 @Composable
-fun displayWarningNoSuchFileOrDirectory(openDialog: MutableState<Boolean>)
-{
+fun displayWarningNoSuchFileOrDirectory(openDialog: MutableState<Boolean>) {
     DialogWindow(
         onCloseRequest = {openDialog.value=false },
         state = rememberDialogState(position = WindowPosition(Alignment.Center), size = DpSize(350.dp, 200.dp)),
@@ -133,8 +131,7 @@ fun displayWarningNoSuchFileOrDirectory(openDialog: MutableState<Boolean>)
 }
 
 @Composable
-fun displayWarningOpenFileWithDefaultSystemProgram(openDialog: MutableState<Boolean>, uri:MutableState<String>)
-{
+fun displayWarningOpenFileWithDefaultSystemProgram(openDialog: MutableState<Boolean>, uri:MutableState<String>) {
     DialogWindow(
         onCloseRequest = {openDialog.value=false },
         state = rememberDialogState(position = WindowPosition(Alignment.Center), size = DpSize(350.dp, 200.dp)),
@@ -189,8 +186,7 @@ fun displayWarningOpenFileWithDefaultSystemProgram(openDialog: MutableState<Bool
 }
 
 @Composable
-fun displayWarningFileDeletion(openDialog: MutableState<Boolean>, deleteFunction:()->Unit)
-{
+fun displayWarningFileDeletion(openDialog: MutableState<Boolean>, deleteFunction:()->Unit) {
     DialogWindow(
         onCloseRequest = {openDialog.value=false },
         state = rememberDialogState(position = WindowPosition(Alignment.Center), size = DpSize(350.dp, 200.dp)),
@@ -312,8 +308,7 @@ fun displayConnectionDialog(openDialog: MutableState<Boolean>, ServerAddress: Mu
                     modifier = Modifier.fillMaxSize(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
-                )
-                {
+                ) {
                     TextButton(
                         modifier = Modifier.padding(end = 15.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = AppTheme.colors.backgroundMedium),

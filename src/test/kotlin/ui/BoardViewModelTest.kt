@@ -68,7 +68,7 @@ class BoardViewModelTest {
         agenda.clear()
 
         loadKerML("""
-            class A isA C; 
+            class A :> C; 
         """)
         propagate()
 

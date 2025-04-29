@@ -13,11 +13,11 @@ class ElementsTests {
      * Kernel Modeling Language: https://www.omg.org/spec/KerML/1.0/Beta2/PDF/changebar
      */
     @Test
-    fun testElementDeclaration() = testSession("ScalarValues", "Base", "Objects", "Occurrences", "Links") {
+    fun testElementDeclaration() = testSession("Occurrences") {
         loadKerML("""
             classifier <c123> AClassifier;
             feature aFeature;
-        """.trimIndent())
+        """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
@@ -26,7 +26,7 @@ class ElementsTests {
      * Ref: Section 7.2.2 - Elements and Relationships
      */
     @Test
-    fun testElementRepresentation() = testSession("ScalarValues", "Base", "Objects", "Occurrences", "Links") {
+    fun testElementRepresentation() = testSession("Occurrences") {
         loadKerML("""
             namespace P {
                 // This is the body of the namespace, declaring its owned members.
@@ -37,7 +37,7 @@ class ElementsTests {
                     feature y;
                 }
             }
-        """.trimIndent())
+        """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 }

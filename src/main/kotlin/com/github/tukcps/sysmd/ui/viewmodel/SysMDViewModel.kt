@@ -25,7 +25,7 @@ class SysMDViewModel(
     // The main window with editable files
     var sessionState = mutableStateOf(sessionParam)
     var session: Session by sessionState
-    val editorTabsViewModel = EditorTabsViewModel(sessionState, ::refreshTrees)
+    val tabsViewModel = TabsViewModel(sessionState, ::refreshTrees)
     val agenda = BoardViewModel(sessionState)
     var agendaIsEmpty = mutableStateOf(agenda.isEmpty())
 
@@ -64,7 +64,7 @@ class SysMDViewModel(
         }
         // reset the UI
         agenda.clear()
-        editorTabsViewModel.reset()
+        tabsViewModel.reset()
         refreshTrees()
     }
 
@@ -86,7 +86,7 @@ class SysMDViewModel(
     fun compile(solve: Boolean = true) {
         agenda.clear()
         session.status.reset()
-        editorTabsViewModel.editorTabs.forEach {
+        tabsViewModel.editorTabs.forEach {
             it.cells.forEach { cell ->
                 if (cell.language.value == TextualRepresentationViewModel.Companion.Language.YAML) {
                     session.importMD(cell.body.text, null)
@@ -94,14 +94,14 @@ class SysMDViewModel(
             }
         }
         session.loadUsages()
-        editorTabsViewModel.editorTabs.forEach { tab ->
+        tabsViewModel.editorTabs.forEach { tab ->
             tab.cells.forEach { cell ->
                 cell.compile(propagate = false)
             }
         }
         session.initialize()
         if (solve) session.propagate()
-        editorTabsViewModel.editorTabs.forEach { tab ->
+        tabsViewModel.editorTabs.forEach { tab ->
             tab.cells.forEach { cell ->
                 cell.display() }
         }

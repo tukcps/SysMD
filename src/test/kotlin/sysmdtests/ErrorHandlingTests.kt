@@ -51,7 +51,7 @@ class ErrorHandlingTests {
     fun loadFailed() = testSession {
         loadKerML("""
             package SportsCar;
-            Porsche911 isA SportsCar.
+            type Porsche911 :> SportsCar;
         """)
         propagate()
         assertEquals(1, status.issues.size, "Error messages: ${status.issues}")

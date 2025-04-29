@@ -72,9 +72,9 @@ class NameResolutionTests {
      * Search from specialization
      */
     @Test
-    fun findFromSpecialization() = testSession("ScalarValues") {
+    fun findFromSpecialization() = testSession {
         loadKerML("""
-                type a :> Base::Anything { feature X: Base::Anything; } 
+                type a :> Base::Anything { namespace X; } 
                 type b :> a;
             """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
@@ -240,5 +240,69 @@ class NameResolutionTests {
         initialize()
         assertEquals("name2", name.resolve<Feature>("name2")!!.declaredName)
         assertEquals("name2", global.resolve<Feature>("name2")!!.declaredName)
+    }
+
+
+    @Test
+    fun createFindPackage() = testSession {
+        loadKerML("package x;")
+        assertNotNull(global.resolve<Package>("x"))
+    }
+
+    @Test
+    fun createFindElement() = testSession {
+        loadKerML(
+            """
+                    package x { package y; } 
+            """
+        )
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        val x1 = global.resolve<Package>("x")!!
+        assertNotNull(x1)
+        assertNotNull(x1.resolve<Package>("y"))
+    }
+
+    @Test
+    fun createFindHasAElement() = testSession {
+        loadKerML("""
+            namespace x {
+                doc y /* doc */ ; 
+                doc z /* doc */ ; 
+            } 
+        """)
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        val x = global.resolve<Namespace>("x")!!
+        assertNotNull(x)
+        val y = global.resolve<Element>("x::y")
+        val y2 = x.resolve<Element>("y")
+        assertNotNull(y)
+        assertNotNull(y2)
+        val z = global.resolve<Element>("x::z")
+        val z2 = x.resolve<Element>("z")
+        assertNotNull(z)
+        assertNotNull(z2)
+    }
+
+    /**
+     * Properties can be found.
+     */
+    @Test
+    fun createFindHasAProperty() = testSession {
+        loadKerML("""
+            package x {
+                package y { 
+                    type z :> Base::Anything;    // Shall be visible as x::y::z from root namespace. 
+                }
+                type z :> Base::Anything;     // Shall be visible in x via x::z
+            }
+        """)
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        val xyz = global.resolve<Type>("x::y::z")
+        assertNotNull(xyz)
+        val xz = global.resolve<Type>("x::z")
+        assertNotNull(xz)
+        val x = global.resolve<Package>("x")
+        assertNotNull(x)
+        assertNotNull(x.resolve<Package>("y"))
     }
 }

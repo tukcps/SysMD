@@ -16,7 +16,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
  * - also set the value standalone according to your setup
  */
 group   = "com.github.tukcps"
-version = "4.0.1"               // must be number.number.number
+version = "4.0.2"               // must be number.number.number
 val aaddVersion = "0.1.9"
 val sysmlapiVersion = "3.9.4"
 val useMavenAADD = true
@@ -37,7 +37,7 @@ plugins {
     id("idea")
     kotlin("jvm") version "2.1.20"
     kotlin("plugin.serialization") version "2.1.20"
-    id("org.springframework.boot") version "3.4.4"
+    id("org.springframework.boot") version "3.4.5"
     id("io.spring.dependency-management") version "1.1.7"
     alias(libs.plugins.jetbrainsCompose) apply true
     alias(libs.plugins.compose.compiler) apply true
@@ -167,8 +167,8 @@ tasks.withType<JavaCompile> {
 
 /**
  * Task that generates an installer package for SysMD Notebook.
- * For Windows, WiX-Tools 3.0 - 3.11.2 must be installed.
- * If it does not work, make bootJar explicitly first and ensure that the folder 'libraries' is empty before.
+ * For Windows, WiX-Tools 3.0 to 3.11.2 must be installed.
+ * If it does not work, make bootJar explicit first and ensure that the folder 'libraries' is empty before.
  */
 tasks.register<Exec>("sysMDPackage") {
     dependsOn("bootJar")
@@ -199,7 +199,7 @@ tasks.register<Exec>("sysMDPackage") {
         else -> throw GradleException("Unsupported OS: ${os.name}")
     }
 
-    // Combination of arguments in a list of parameters for command line
+    // Combination of arguments in a list of parameters for the command line
     val args = listOf(
         "jpackage",
         "--name", "SysMD Notebook",

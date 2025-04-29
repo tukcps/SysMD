@@ -237,7 +237,7 @@ fun checkSuggestionsInit(
     sg : MutableState<SuggestionsData>
 ) : Boolean{
 
-    val sc = Scanner().also { it.input = tfv.value.text } //Feed total textField text to Scanner
+    val sc = Scanner(keywords = Token.sysMLv2Keywords+Token.kerMLKeywords).also { it.input = tfv.value.text } //Feed total textField text to Scanner
 
     //Scan through the text until reaching a token whose last index is the current cursor position
     do{

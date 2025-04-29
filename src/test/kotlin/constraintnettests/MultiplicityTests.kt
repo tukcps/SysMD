@@ -18,13 +18,13 @@ class MultiplicityTests {
     @Test
     fun multiplicityCanBeRestrictedAsLeafTest() = testSession("ScalarValues") {
         loadKerML("""
-                feature  p [0 .. 2];
-                feature v: ScalarValues::Integer(1) = p::multiplicity;
-        """.trimIndent())
+            feature  p [0 .. 2];
+            feature v: ScalarValues::Integer(1) = p::cardinality;
+        """)
         propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p = global.resolve<Feature>("p")
-        val m = p?.resolve<Multiplicity>("multiplicity")
+        val m = p?.resolve<Multiplicity>("cardinality")
         val v = global.resolve<Feature>("v")!!.variable
         assertEquals(1L, v?.min())
         assertEquals(1L, m?.variable?.min())
@@ -38,12 +38,12 @@ class MultiplicityTests {
     fun multiplicityCanBeRestrictedAsNonRootTest() = testSession("ScalarValues") {
         loadKerML("""
            feature p [0 .. 2];
-           feature v: ScalarValues::Integer(2) = p::multiplicity*2;
-        """.trimIndent())
+           feature v: ScalarValues::Integer(2) = p::cardinality*2;
+        """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         propagate()
         val p = global.resolve<Feature>("p")
-        val m = p?.resolve<Multiplicity>("multiplicity")?.variable
+        val m = p?.resolve<Multiplicity>("cardinality")?.variable
         val v = global.resolve<Feature>("v")?.variable
         assertEquals(2L, v?.min())
         assertEquals(1L, m?.min())
@@ -54,43 +54,43 @@ class MultiplicityTests {
     @Test
     fun restrictMultiplicity() = testSession("ScalarValues") {
         loadKerML("""                
-                type b :> Base::Anything {
-                    feature partC: c [0..10]; 
-                    feature weight: ScalarValues::Real = sumOverParts(j); 
-                    inv r { weight <= 30.0 }
-                } 
-                type c :> Base::Anything {
-                    feature j: ScalarValues::Real = 5.0; 
-                }
-            """)
+            type b :> Base::Anything {
+                feature partC: c [0..10]; 
+                feature weight: ScalarValues::Real = sumOverParts(j); 
+                inv r { weight <= 30.0 }
+            } 
+            type c :> Base::Anything {
+                feature j: ScalarValues::Real = 5.0; 
+            }
+        """)
         propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         val weight = global.resolveVar("b::weight")
         assertNotNull(weight)
-        assertEquals(0L, global.resolve<Feature>("b::partC::multiplicity")!!.variable!!.vectorQuantity.value.asIdd().min)
-        assertEquals(7, global.resolve<Feature>("b::partC::multiplicity")!!.variable!!.vectorQuantity.value.asIdd().max)
+        assertEquals(0L, global.resolve<Feature>("b::partC::cardinality")!!.variable!!.vectorQuantity.value.asIdd().min)
+        assertEquals(7, global.resolve<Feature>("b::partC::cardinality")!!.variable!!.vectorQuantity.value.asIdd().max)
     }
 
     // The same as above with integers does not work
     @Test @Disabled
-    fun restrictMultiplicity2() = testSession {
+    fun restrictMultiplicity2() = testSession("ScalarValues") {
         loadKerML("""                
-                class b {
-                    feature partC: c[0..10]; 
-                    attribute weight: ScalarValues::Integer = sumOverParts(j);
-                    inv i { weight <= 30 } // Invariant is not propagated into constraint for weight 
-                    // Cause? For reals, the translation is done by the LP algorithm that is not part of integers
-                }
-                class c {
-                    attribute j: ScalarValues::Integer(5); 
-                }
-            """)
+            type b :> Base::Anything {
+                feature partC: c[0..10]; 
+                feature weight: ScalarValues::Integer = sumOverParts(j);
+                inv i { weight <= 30 } // Invariant is not propagated into constraint for weight 
+                // Cause? For reals, the translation is done by the LP algorithm that is not part of integers
+            }
+            type c :> Base::Anything {
+                feature j: ScalarValues::Integer(5); 
+            }
+        """)
         propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         val w = global.resolveVar("b::weight")
         assertNotNull(w)
-        assertEquals(0, global.resolveVar("b::partC::multiplicity")!!.vectorQuantity.value.asIdd().min)
+        assertEquals(0, global.resolveVar("b::partC::cardinality")!!.vectorQuantity.value.asIdd().min)
         // it is 7, why??
-        assertEquals(6, global.resolveVar("b::partC::multiplicity")!!.vectorQuantity.value.asIdd().max)
+        assertEquals(6, global.resolveVar("b::partC::cardinality")!!.vectorQuantity.value.asIdd().max)
     }
 }

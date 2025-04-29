@@ -16,8 +16,8 @@ class InterfaceTests {
     @Test
     fun testSimpleInterfaceDefinition() = testSession("Interfaces", "Ports", "Connections") {
         loadSysMLv2("""
-        interface def C1; 
-        """.trimIndent())
+            interface def C1; 
+        """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
@@ -31,13 +31,13 @@ class InterfaceTests {
     @Test
     fun testInterfaceDefinition() = testSession("Interfaces", "Ports") {
         loadSysMLv2("""
-        port def Port1;
-        port def Port2;
-        interface def InterfaceDef1 {
-            end port1 : Port1;
-            end port2 : Port2;
-        }
-        """.trimIndent())
+            port def Port1;
+            port def Port2;
+            interface def InterfaceDef1 {
+                end port1 : Port1;
+                end port2 : Port2;
+            }
+        """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 

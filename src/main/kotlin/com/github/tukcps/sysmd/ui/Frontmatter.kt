@@ -15,17 +15,18 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.tukcps.sysmd.compiler.getYaml
-import java.nio.file.Path
+import com.github.tukcps.sysmd.ui.viewmodel.TabsViewModel
 import kotlin.io.path.exists
+
 
 /**
  * Renders the title page of a project or file.
- * @param directory the path to the project folder.
+ * @param tabsViewModel the Tab's view model .
  * @param body the body of the notebook cell; it must be in Frontmatter YAML Markdown syntax.
  */
 @Composable
 fun Frontmatter(
-    directory: Path,
+    tabsViewModel: TabsViewModel,
     body: MutableState<TextFieldValue>
 ) {
 
@@ -67,9 +68,9 @@ fun Frontmatter(
 
         if (yaml?.get("title") != null) {
             Spacer(Modifier.height(20.dp))
-            if (directory.resolve("Files").resolve("icon.png").exists())
+            if (tabsViewModel.sessionState.value.project?.directory?.resolve("Files")?.resolve("icon.png")?.exists() == true)
                 Image(
-                    bitmap = loadFullImage(directory, "Files/icon.png").image, contentDescription = "icon",
+                    bitmap = loadFullImage(tabsViewModel = tabsViewModel, "Files/icon.png").image, contentDescription = "icon",
                     modifier = Modifier.align(Alignment.CenterHorizontally),
                     contentScale = ContentScale.Fit
                 )

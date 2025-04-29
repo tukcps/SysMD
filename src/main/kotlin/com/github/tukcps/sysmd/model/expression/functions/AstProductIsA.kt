@@ -71,7 +71,7 @@ internal class AstProductIsA(
         for (elem in ownedElements) {
             try {
                 elem.ast?.evalUp()
-            } catch (ignore: Exception) {
+            } catch (_: Exception) {
             }
         }
         evalUp()

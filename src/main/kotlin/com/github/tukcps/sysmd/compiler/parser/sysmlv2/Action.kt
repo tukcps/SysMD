@@ -84,10 +84,13 @@ fun SysMLv2.actionBodyItemStarts() =
             behaviorUsageElementStart.starts() or
             actionNodeStart.starts()
 
+/**
+ * ActionTargetSuccessionMember = MemberPrefix ActionTargetSuccession
+ */
 fun SysMLv2.ActionTargetSuccessionMember(){
-    THEN.consume()
-    QualifiedName()
+    ActionTargetSuccession()
 }
+
 /**
  *      NonBehaviorBodyItem =
  *          Import | AliasMember | DefinitionMember | VariantUsageMember

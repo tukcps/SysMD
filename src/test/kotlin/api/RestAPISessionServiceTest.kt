@@ -2,24 +2,34 @@ package api
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.github.tukcps.sysmd.SysMdRunner
+import com.github.tukcps.sysmd.model.kerml.Package
+import com.github.tukcps.sysmd.model.sysml.AttributeUsage
 import com.github.tukcps.sysmd.rest.Rest
+import com.github.tukcps.sysmd.rest.entities.requests.CodeRequest
 import com.github.tukcps.sysmd.rest.entities.requests.IndexEntry
 import com.github.tukcps.sysmd.rest.entities.requests.SessionIndexRequest
 import com.github.tukcps.sysmd.rest.entities.response.SessionResponse
+import com.github.tukcps.sysmd.rest.entities.response.SessionStatusResponse
+import com.github.tukcps.sysmd.rest.entities.response.VariablesResponse
+import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.repositories.local.ProjectData
+import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.session.SessionManager
 import com.github.tukcps.sysmd.services.session.SessionManager.projectService
 import com.github.tukcps.sysmd.settings
+import io.github.tukcps.sysmlv2.api.entities.responseModels.ElementResponse
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.HttpStatus
 import org.springframework.test.annotation.DirtiesContext
 import util.mockup.MockupSysMDProjectService
+import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Ignore
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 
 @SpringBootTest(
@@ -93,14 +103,60 @@ class RestAPISessionServiceTest {
     fun getElementsOfSessionTest() = testSession("Base") {
         val response = Rest.get("/session/elements", id.toString())
         assertEquals(HttpStatus.OK.value(), response.statusCode.value())
+        val elements = jsonMapper.readValue(response.body, Array<ElementResponse>::class.java)
+        assertTrue(elements.isNotEmpty())
     }
 
     @Test
     fun compileInSessionTest() {
         val project = projectService.createProject("compileInSessionTest") as ProjectData
+        val codeRequest = CodeRequest(
+            language = "SysML",
+            level = 1,
+            code = "package test;",
+        )
+        val codeRequestJson = jsonMapper.writeValueAsString(codeRequest)
         val session = SessionManager.startSession(project)
-        val response = Rest.put("/session/code", """{ "body": "package test;" }""", sessionId = session.id.toString())
+        val response = Rest.put("/session/code", codeRequestJson, sessionId = session.id.toString())
+        val test = session.global.resolve<Package>("test")
+        assertNotNull(test)
         assertEquals(HttpStatus.OK.value(), response.statusCode.value())
+    }
+
+
+    /**
+     * This test checks whether constraint propagation starts and the status reports computed values.
+     */
+    @Test
+    fun compileInSessionTest2() {
+        val project = projectService.createProject("compileInSessionTest") as ProjectData
+        val codeRequest = CodeRequest(
+            language = "SysML",
+            level = 7,
+            code = "attribute test: ScalarValues::Real = 2.0;",
+        )
+        val codeRequestJson = jsonMapper.writeValueAsString(codeRequest)
+        val session = SessionManager.startSession(project)
+        val response = Rest.put("/session/code", codeRequestJson, sessionId = session.id.toString())
+        val test = session.global.resolve<AttributeUsage>("test")
+        assertNotNull(test)
+        assertEquals(HttpStatus.OK.value(), response.statusCode.value())
+    }
+
+    @Test
+    fun compileInSessionTestWithIssue() {
+        val project = projectService.createProject("compileInSessionTest") as ProjectData
+        val codeRequest = CodeRequest(
+            language = "SysML",
+            level = 1,
+            code = "package test; +error+",
+        )
+        val codeRequestJson = jsonMapper.writeValueAsString(codeRequest)
+        val session = SessionManager.startSession(project)
+        val response = Rest.put("/session/code", codeRequestJson, sessionId = session.id.toString())
+        assertEquals(HttpStatus.OK.value(), response.statusCode.value())
+        val responseObject = jsonMapper.readValue(response.body, SessionStatusResponse::class.java)
+        assertTrue(responseObject.issues.isNotEmpty())
     }
 
     @Test @Ignore
@@ -110,5 +166,25 @@ class RestAPISessionServiceTest {
         val asJson = jsonMapper.writeValueAsString(request)
         val response = Rest.put("/session/index", asJson, sessionId = id.toString())
         assertEquals(HttpStatus.CREATED.value(), response.statusCode.value())
+    }
+
+    @Test
+    fun getVariablesTest() = testSession("ScalarValues") {
+        loadSysMLv2("""
+            attribute x: ScalarValues::Real = 2.0;
+        """)
+        initialize()
+        val response = Rest.get("/session/variables", id.toString())
+        assertEquals(HttpStatus.OK.value(), response.statusCode.value())
+        val variables = jsonMapper.readValue(response.body, VariablesResponse::class.java)
+        assertTrue(variables.variables.isNotEmpty())
+    }
+
+    @Test fun getSubtypesTest() = testSession("ScalarValues") {
+        initialize()
+        val response = Rest.get("/session/elements/${anything.elementId}/subtypes", id.toString())
+        assertEquals(HttpStatus.OK.value(), response.statusCode.value())
+        val subtypes = jsonMapper.readValue(response.body, Array<ElementResponse>::class.java)
+        assertTrue(subtypes.isNotEmpty())
     }
 }

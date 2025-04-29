@@ -130,9 +130,9 @@ class StateTests {
             		}
             	}
             	
-            	// interface PartA.outPortA to PartB.inPortB;
+            	interface PartA.outPortA to PartB.inPortB;
                 // "." not yet supported ... 
-                interface i connect PartA::outPortA to PartB::inPortB;
+                // interface i connect PartA::outPortA to PartB::inPortB;
             }
         """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())

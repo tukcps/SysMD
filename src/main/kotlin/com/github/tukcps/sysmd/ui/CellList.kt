@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -20,7 +21,7 @@ import androidx.compose.ui.unit.dp
 import com.github.tukcps.sysmd.ui.composables.TooltipInstant
 import com.github.tukcps.sysmd.ui.dialogs.DeleteCellDialog
 import com.github.tukcps.sysmd.ui.styles.VerticalScrollbar
-import com.github.tukcps.sysmd.ui.viewmodel.EditorTabModel
+import com.github.tukcps.sysmd.ui.viewmodel.TabViewModel
 
 enum class MoveRequest { Up, Down }
 
@@ -36,8 +37,13 @@ enum class MoveRequest { Up, Down }
  */
 @Composable
 fun CellList(
-    editorTabModel: EditorTabModel,
+    editorTabModel: TabViewModel,
 ) {
+
+    LaunchedEffect (scrollToItem.value) {
+        referenceModel.editorTabModel?.scrollState?.animateScrollToItem(scrollToItem.value, 0)
+    }
+
     // The Dialog to confirm deletion of an element;
     // this models the state (open/not open) of the dialog.
     val showConfirmDelete = remember { mutableStateOf(false) }

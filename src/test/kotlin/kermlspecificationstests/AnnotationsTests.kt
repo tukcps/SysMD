@@ -14,13 +14,13 @@ class AnnotationsTests {
      * Kernel Modeling Language: https://www.omg.org/spec/KerML/1.0/Beta2/PDF/changebar
      */
     @Test
-    fun testCommentDeclaration() = testSession("ScalarValues", "Base", "Objects", "Occurrences", "Links") {
+    fun testCommentDeclaration() = testSession("Occurrences") {
         loadKerML("""
             classifier A;
             classifier B;
             comment Comment1 about A, B
                 /* This is the comment body text. */
-        """.trimIndent())
+        """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
@@ -31,7 +31,7 @@ class AnnotationsTests {
      * Kernel Modeling Language: https://www.omg.org/spec/KerML/1.0/Beta2/PDF/changebar
      */
     @Test
-    fun testOwnedCommentDeclaration() = testSession("ScalarValues", "Base", "Objects", "Occurrences", "Links") {
+    fun testOwnedCommentDeclaration() = testSession {
         loadKerML("""
             namespace N {
                 comment C /* This is a comment about N. */

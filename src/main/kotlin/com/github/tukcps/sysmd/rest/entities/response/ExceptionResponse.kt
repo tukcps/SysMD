@@ -1,4 +1,4 @@
-package com.github.tukcps.sysmd.rest.controller
+package com.github.tukcps.sysmd.rest.entities.response
 
 import com.fasterxml.jackson.annotation.JsonFormat
 import java.util.Date

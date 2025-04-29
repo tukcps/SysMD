@@ -37,7 +37,7 @@ fun NavigationPanel(
             Tabs(listOf(mutableStateOf(" Projects "), mutableStateOf(" Has-A "), mutableStateOf(" Is-A ")), selected)
             Box(Modifier.fillMaxHeight().weight(1F)){
                 when (selected.value) {
-                    0 -> ProjectList(sysMDViewModel.sessionState, sysMDViewModel.editorTabsViewModel, sysMDViewModel::reset)
+                    0 -> ProjectList(sysMDViewModel.sessionState, sysMDViewModel.tabsViewModel, sysMDViewModel::reset)
                     1 -> DecompositionTree(sysMDViewModel.composition)
                     2 -> TreeViewPlus(sysMDViewModel.inheritance)
                 }

@@ -1,6 +1,6 @@
 ---
-title:        SysMD Example - Amplifier
-author:   TU Kaiserslautern, Lehrstuhl CPS
+subtitle: SysMD Example - Amplifier
+author:   University of Kaiserslautern-Landau, Chair of Cyber-Physical Systems
 ---
 
 # Requirements of Operational Amplifiers

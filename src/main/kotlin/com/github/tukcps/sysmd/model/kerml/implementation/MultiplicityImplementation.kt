@@ -1,15 +1,13 @@
 package com.github.tukcps.sysmd.model.kerml.implementation
 
 import com.github.tukcps.sysmd.model.kerml.*
-import java.util.*
 
 
 /**
  * The multiplicity is a Feature that is an integer range or set.
  */
 class MultiplicityImplementation(
-    elementId: UUID = UUID.randomUUID(),
-    name: String? = "multiplicity",
+    name: String? = "cardinality",
     shortName: String? = null,
     multiplicity: String = "1 .. 1",
     elementType: String = "Multiplicity"

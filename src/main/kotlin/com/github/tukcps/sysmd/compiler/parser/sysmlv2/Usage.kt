@@ -53,6 +53,7 @@ fun SysMLv2.BasicUsagePrefix() {
  *      UsageExtensionKeyword = PrefixMetadataMember
  */
 fun SysMLv2.UsageExtensionKeyword() {
+    HASHTAG.consume()
     TODO()
 }
 
@@ -61,7 +62,7 @@ fun SysMLv2.UsageExtensionKeyword() {
  */
 fun SysMLv2.UsagePrefix() {
     BasicUsagePrefix()
-    // optional { UsageExtensionKeyword() }
+    noOrMore(start = HASHTAG) { UsageExtensionKeyword() }
 }
 
 /**
@@ -82,7 +83,7 @@ internal fun SysMLv2.UsageDeclaration(feature: FeatureActions<Feature>) {
         FeatureSpecializationPart(feature)
     }
     // SysMD proprietary extension
-    TypeConstraint().also {   feature.addTypeConstraint(it) }
+    TypeConstraint().also { feature.addTypeConstraint(it) }
     UnitConstraint().also { feature.addUnitConstraint(it) }
 }
 

@@ -2,7 +2,7 @@ package com.github.tukcps.sysmd.services.session
 
 import com.fasterxml.uuid.Generators
 import com.github.tukcps.sysmd.cspsolver.DiscreteSolver
-import com.github.tukcps.sysmd.exceptions.Issue
+import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.exceptions.SysMDError
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.model.kerml.*
@@ -139,7 +139,7 @@ class SessionImplementation(
 
     /**
      * Loads all usages of a project.
-     * For this purpose, the method gets the usages, and call the method loadProject.
+     * For this purpose, the method gets the usages and calls the method loadProject.
      */
     override fun loadUsages() {
         project?.getUsages()?.forEach {
@@ -155,8 +155,8 @@ class SessionImplementation(
 
     /**
      * Adds new elements to the session. The elements are organized under the
-     * root given as second parameter. The existing root is maintained,
-     * the root passed as given parameter is just for easier analysis.
+     * root given as the second parameter. The existing root is maintained,
+     * the root passed as the given parameter is just for easier analysis.
      * @param newElements collection of elements that will be cloned and added.
      */
     override fun import(newElements: Collection<ElementDAO>) {
@@ -193,10 +193,10 @@ class SessionImplementation(
     private fun resolveIDs() {
         // resolve uid -> ref, superclass null -> any, add model ref,
         get().forEach { element ->
-            // set model to this
+            // set the model to this
             element.model = this
 
-            // resolve owner
+            // resolve the owner
             if (element != global) {
                 element.owner.ref = get(
                     element.owner.id ?: throw SysMDError("Missing id in owner of ${element.qualifiedName}")
@@ -254,7 +254,7 @@ class SessionImplementation(
                 exportCollection.add(it.toDAO())
         }
 
-        // remove transient elements, from both list of elements *and* list of owned elements.
+        // remove transient elements from both list of elements *and* list of owned elements.
         val transient = mutableSetOf<UUID>()
         // repo.elements.values.forEach { if (it.isTransient) { transient.add(it.elementId) } }
         exportCollection.removeIf { it.elementId in transient }
@@ -280,7 +280,7 @@ class SessionImplementation(
 
         element.model = this
 
-        // Must be done at time of creation of elements as UUID are used before
+        // Must be done at the time of creation of elements as UUID are used before
         // If Element is a library element, assign a UUID v5
         //  if (owner is Namespace && owner.isLibraryElement)
         //    element.elementId = Generators.nameBasedGenerator().generate(owner.qualifiedName+"::"+element.qualifiedName)
@@ -443,7 +443,7 @@ class SessionImplementation(
                 it.path = null
             }
 
-            // Replace it in the start of path ...
+            // Replace it at the start of the path ...
             if (it.startOfPath.elementId == unownedElement.elementId) {
                 it.startOfPath = existingElement
             }
@@ -511,80 +511,6 @@ class SessionImplementation(
 
 
     /**
-     * Creates a transient element that will NOT be persisted.
-     * It nevertheless must have an id.
-     * @param element A property with a user-defined and unique id that will be added to the session cache.
-     * @param owner The element to which the property belongs.
-     */
-    @Deprecated("Use transient and mark it manually as transient.")
-    override fun <T: Element> createTransient(element: T, owner: Namespace): T {
-        element.isTransient = true
-
-        // If identification by name exists, it must be unique in namespace
-        if (element.declaredName != null || element.declaredShortName != null) {
-            var found: Element? = null
-            if (element.declaredName != null)
-                found = owner.getOwnedElement(element.declaredName!!)
-            if (found == null && element.declaredShortName != null)
-                found = owner.getOwnedElement(element.declaredShortName!!)
-
-            if (found != null) {
-                // Quite annoying ... -- should be optional for debugging. Not by default.
-                // reportInfo(found, "Overwritten '${element.identification.toName()}' with new information.")
-                if (found.javaClass != element.javaClass) {
-                    status.warn(Issue.Kind.WARN,"'${element.qualifiedName}' cannot change the type of the element '${found.qualifiedName}'; suggestion: reset for complete update.", element = element)
-                }
-                found.updateFrom(element)
-                if (found.updated)
-                    status.updatedValues[found.elementId!!] = "updated: '${found.qualifiedName}'"
-                @Suppress("UNCHECKED_CAST")
-                return found as T
-            }
-        }
-
-        // Import must not be duplicate
-        if (element is Import) {
-            element.model = this
-            val imports = owner.getOwnedElementsOfType<Import>()
-            val duplicate = imports.find {
-                it.importedNamespace.str == element.importedNamespace.str // && it.importedMemberName == it.importedMemberName
-            }
-            @Suppress("UNCHECKED_CAST")
-            if (duplicate != null ) return duplicate as T
-        }
-
-        // Multiplicity must not be duplicate; update
-        if (element is Multiplicity) {
-            element.model = this
-            val found = owner.getOwnedElementOfType<Multiplicity>()
-            if (found != null) {
-                found.updateFrom(found)
-                @Suppress("UNCHECKED_CAST")
-                return found as T
-            }
-        }
-
-        if (element is Specialization) {
-            element.model = this
-            val found = owner.getOwnedElementsOfType<Specialization>().firstOrNull { it::class == element::class }
-            if (found != null) {
-                found.updateFrom(found)
-                @Suppress("UNCHECKED_CAST")
-                return found as T
-            }
-        }
-
-        element.model = this
-        repo.elements[element.elementId!!] = element
-        element.owner.ref = owner
-        element.owner.id = owner.elementId
-        owner.ownedElement.add(Resolved(element))
-        element.isTransient = true
-
-        return element
-    }
-
-    /**
      * Adds an element to the unowned elements, without checks.
      * @param element element for which the owner-relationship is only defined by a qualified name
      * @param path the qualified name of the owner, starting from startOfPath
@@ -607,6 +533,15 @@ class SessionImplementation(
 
     override fun toString(): String {
         return "Session { project=${project?.name}, $status }"
+    }
+
+    /**
+     * Returns a list of all variables of Type Feature that have a variable.
+     */
+    override fun getVariables(): List<Variable> {
+        val variables = mutableListOf<Variable>()
+        get().filterIsInstance<Feature>().forEach { if (it.variable != null) variables.add(it.variable!!) }
+        return variables
     }
 }
 

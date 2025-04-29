@@ -1,6 +1,7 @@
 package com.github.tukcps.sysmd.rest.controller
 
 import com.github.tukcps.sysmd.configuration.OpenAPIConfig
+import com.github.tukcps.sysmd.rest.entities.response.ExceptionResponse
 import com.github.tukcps.sysmd.services.session.SessionManager.projectService
 import io.github.tukcps.sysmlv2.api.entities.requestModels.ProjectRequest
 import io.github.tukcps.sysmlv2.api.entities.responseModels.ProjectResponse

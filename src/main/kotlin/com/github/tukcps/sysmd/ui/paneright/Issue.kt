@@ -19,9 +19,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.exceptions.explanation
+import com.github.tukcps.sysmd.logger
 import com.github.tukcps.sysmd.ui.composables.SysMDTooltipArea
-import com.github.tukcps.sysmd.ui.viewmodel.EditorTabModel
-import com.github.tukcps.sysmd.ui.viewmodel.EditorTabsViewModel
+import com.github.tukcps.sysmd.ui.viewmodel.TabViewModel
+import com.github.tukcps.sysmd.ui.viewmodel.TabsViewModel
 import kotlinx.coroutines.launch
 
 /**
@@ -30,7 +31,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun Issue(
     issueViewModel: IssueViewModel,
-    editorTabsModel: EditorTabsViewModel
+    editorTabsModel: TabsViewModel
 ) {
     val expanded: MutableState<Boolean> = remember { mutableStateOf(false) }
     if (!expanded.value) {
@@ -44,7 +45,7 @@ fun Issue(
 private fun ExpandedIssue(
     expanded: MutableState<Boolean>,
     issueViewModel: IssueViewModel,
-    editorTabsModel: EditorTabsViewModel
+    editorTabsModel: TabsViewModel
 ) {
     val editorTabModel = editorTabsModel.active
     Card(
@@ -73,7 +74,7 @@ private fun ExpandedIssue(
                         maxLines = 1
                     )
                 }
-                AgendaButtons(issueViewModel.wikiLink, editorTabModel = editorTabModel, issueViewModel)
+                AgendaButtons(issueViewModel.wikiLink(), editorTabModel = editorTabModel, issueViewModel)
             }
             Row(
                 modifier = Modifier
@@ -97,7 +98,7 @@ private fun ExpandedIssue(
 private fun FoldedIssue(
     expanded: MutableState<Boolean>,
     issueViewModel: IssueViewModel,
-    editorTabsModel: EditorTabsViewModel,
+    editorTabsModel: TabsViewModel,
 ) {
     val editorTabModel = editorTabsModel.active
     Card(
@@ -142,7 +143,7 @@ private fun LeadingIcon(kind: Issue.Kind, issueViewModel: IssueViewModel) {
 @Composable
 private fun AgendaButtons(
     link: String,
-    editorTabModel: EditorTabModel?,
+    editorTabModel: TabViewModel?,
     issueViewModel: IssueViewModel
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -167,7 +168,13 @@ private fun AgendaButtons(
         }
     }
     FilledIconButton(
-        onClick = { uriHandler.openUri(link) },
+        onClick = {
+            try {
+                uriHandler.openUri(link)
+            } catch (e: Exception) {
+                logger.error("Error opening link $link", e)
+            }
+                  },
         modifier = Modifier.size(24.dp)
     ) {
         SysMDTooltipArea("Open URL with explanation", Modifier) {

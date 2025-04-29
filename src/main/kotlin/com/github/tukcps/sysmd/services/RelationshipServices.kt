@@ -8,7 +8,7 @@ import com.github.tukcps.sysmd.services.session.Session
 
 /**
  * Gets all relationships from an element, filtered by name of relationship, and (for Associations) by class.
- * @param element The element that is source of a relationship
+ * @param element The element that is the source of a relationship
  * @param name The expected name; "*" for ignoring name.
  * @param ofClass The type of Association; null for ignoring it.
  * @return A set of all matching relationships.
@@ -30,7 +30,7 @@ fun Session.getRelationshipsFrom(element: Element, name: String, ofClass: Type? 
 
 /**
  * Gets all relationships to an element, filtered by name of relationship, and (for Associations) by class.
- * @param element The element that is target of a relationship
+ * @param element The element that is the target of a relationship
  * @param name The expected name; "*" for ignoring name.
  * @param ofClass The type of Association; null for ignoring it.
  * @return A set of all matching relationships.
@@ -53,7 +53,7 @@ fun Session.getRelationshipsTo(element: Element, name: SimpleName, ofClass: Type
 /**
  * Retrieves all relationships from an element, filtered by name of relationship, and (for Associations) by class.
  * Furthermore, it considers inheritance and adds all relationships of superclasses.
- * @param element The element that is source of a relationship
+ * @param element The element that is the source of a relationship
  * @param name The expected name; "*" for ignoring name.
  * @param ofClass The type of Association; null for ignoring it.
  * @return A set of all matching relationships.
@@ -71,7 +71,7 @@ fun Session.findRelationshipsFrom(element: Element, name: String, ofClass: Type?
 /**
  * Retrieves all relationships to an element, considering inheritance.
  * Furthermore, it considers inheritance and adds all relationships of superclasses.
- * @param element The element that is target of a relationship
+ * @param element The element that is the target of a relationship
  * @param name The expected name; "*" for ignoring name.
  * @param ofClass The type of Association; null for ignoring it.
  * @return A set of all matching relationships.

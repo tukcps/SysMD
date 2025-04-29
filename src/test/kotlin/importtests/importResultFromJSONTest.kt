@@ -41,17 +41,17 @@ class ImportTest {
                 private import ScalarValues::*; 
                 private import SI::*; 
                            
-                part def Amplifier isA Base::Anything;
+                part def Amplifier :> Base::Anything;
             
-                part def LNA isA Amplifier {    
+                part def LNA :> Amplifier {    
                     attribute gain: SI::Quantity = [5.0 .. 20.0] dB {:>> unit = "dB";}
                 }
             
-                part def Stage2 isA Amplifier { 
+                part def Stage2 :> Amplifier { 
                     attribute gain: SI::Quantity = [11.0 .. 20.0] dB {:>> unit = "dB";}
                 }
             
-                part def Driver isA Amplifier {
+                part def Driver :> Amplifier {
                     attribute gain: SI::Quantity = [10.0 .. 30.0] dB {:>> unit = "dB";}
                 }
                 
@@ -87,17 +87,17 @@ class ImportTest {
                 private import ScalarValues::*; 
                 private import SI::*; 
                            
-                part def Amplifier isA Base::Anything;
+                part def Amplifier :> Base::Anything;
             
-                part def LNA isA Amplifier {    
+                part def LNA :> Amplifier {    
                     attribute gain: Quantity = [5.0 .. 20.0] dB {:>> unit = "dB";}
                 }
             
-                part def Stage2 isA Amplifier { 
+                part def Stage2 :> Amplifier { 
                     attribute gain: Quantity = [11.0 .. 20.0] dB {:>> unit = "dB";}
                 }
             
-                part def Driver isA Amplifier {
+                part def Driver :> Amplifier {
                     attribute gain: Quantity = [10.0 .. 30.0] dB {:>> unit = "dB";} 
                 }
                 
@@ -181,11 +181,11 @@ class ImportTest {
                     attribute gain: Quantity = oneOf(5.0 .. 20.0 dB) {:>> unit = "dB";} 
                 }
             
-                part def Stage2 isA Amplifier { 
+                part def Stage2 :> Amplifier { 
                     attribute gain: Quantity = oneOf(11.0 .. 20.0 dB) {:>> unit = "dB";}
                 }
             
-                part def Driver isA Amplifier {
+                part def Driver :> Amplifier {
                     attribute gain: Quantity = oneOf(10.0 .. 30.0 dB) {:>> unit = "dB";}
                 }
                 
@@ -198,6 +198,7 @@ class ImportTest {
             }
         """)
         propagate()
+        //assertTrue(status.issues.isEmpty(), "${status.issues}")
         assertEquals(26.0, global.resolveVar("test::myAmplifier::gain")!!.aadd().min, 0.00001)
         assertEquals(35.0,global.resolveVar("test::myAmplifier::gain")!!.aadd().max, 0.00001)
         assertEquals(1, status.issues.filter { it.kind == Issue.Kind.ERROR }.size)
@@ -219,17 +220,17 @@ class ImportTest {
                 private import ScalarValues::*; 
                 private import SI::*; 
                            
-                part def Amplifier isA Base::Anything;
+                part def Amplifier :> Base::Anything;
             
-                part def LNA isA Amplifier {    
+                part def LNA :> Amplifier {    
                     attribute gain: Quantity = [5.0 .. 20.0] dB {:>> unit = "dB";} 
                 }
             
-                part def Stage2 isA Amplifier { 
+                part def Stage2 :> Amplifier { 
                     attribute gain: Quantity = [11.0 .. 20.0] dB {:>> unit = "dB";}
                 }
             
-                part def Driver isA Amplifier {
+                part def Driver :> Amplifier {
                     attribute gain: Quantity = [10.0 .. 30.0] dB {:>> unit = "dB";} 
                 }
                 
@@ -242,7 +243,7 @@ class ImportTest {
             }
         """)
         propagate()
-
+       // assertTrue(status.issues.isEmpty(), "${status.issues}")
         assertEquals(26.0, global.resolveVar("test::myAmplifier::gain")!!.rangeSpecs[0].min,0.00001)
         assertEquals(35.0,global.resolveVar("test::myAmplifier::gain")!!.rangeSpecs[0].max,0.00001)
         assertEquals(1, status.issues.size, "Error messages: ${status.issues}")

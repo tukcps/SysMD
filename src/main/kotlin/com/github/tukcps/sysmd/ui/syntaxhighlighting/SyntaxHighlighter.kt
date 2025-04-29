@@ -30,7 +30,9 @@ object SyntaxHighlighter {
      */
     private fun annotateSyntaxHighlighting(text: String, colorScheme: ColorScheme): AnnotatedString {
         val tokens = mutableListOf<AnnotatedString>()
-        val scanner = Scanner(skip = emptySet()).also { it.input = text }
+        val scanner = Scanner(
+            skip = emptySet(),
+            keywords = Token.kerMLKeywords+Token.sysMLv2Keywords).also { it.input = text }
 
         do {
             tokens.add(
@@ -43,7 +45,7 @@ object SyntaxHighlighter {
                         else -> scanner.token.string
                     },
                     when (scanner.token.kind) {
-                        in Token.keywords.values -> SpanStyle(colorScheme.primary)
+                        in scanner.keywords.values -> SpanStyle(colorScheme.primary)
                         Token.Kind.ERROR -> SpanStyle(colorScheme.error)
                         Token.Kind.COMMENT, Token.Kind.REGULAR_COMMENT, Token.Kind.NOTE -> SpanStyle(Color.Gray)
                         Token.Kind.STRING_LIT -> SpanStyle(color = colorScheme.secondary, fontStyle = FontStyle.Italic)
@@ -231,7 +233,8 @@ object SyntaxHighlighter {
      */
     fun checkForInconsistencies(tfv: MutableState<TextFieldValue>, sysMDColorScheme: ColorScheme) : MutableList<Inconsistency> {
 
-        val sc = Scanner().also { it.input = tfv.value.text }
+        val sc = Scanner(keywords = Token.kerMLKeywords + Token.sysMLv2Keywords)
+            .also { it.input = tfv.value.text }
 
         /**The Kind attribute of the previous Token (Whitespaces are excluded!)*/
         var prevTokenKind = Token.Kind.ERROR
