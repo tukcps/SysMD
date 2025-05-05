@@ -16,7 +16,7 @@ class FunctionTests {
     fun testSyntax() = testSession("ScalarValues") {
         loadKerML("""
             function f {
-                in feature a: ScalarValues::Real; 
+                in a: ScalarValues::Real; 
                 out feature x: ScalarValues::Real = a*a; 
             }
         """)

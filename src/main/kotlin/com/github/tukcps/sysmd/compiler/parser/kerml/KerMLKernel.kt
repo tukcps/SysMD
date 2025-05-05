@@ -453,11 +453,10 @@ internal fun KerML.FunctionBody(owner: Resolved<Element>) {
         LCURBRACE then {
             semantics.pushOwner(owner)
             noOrMore(typeBodyElementStarts+HASHTAG+RETURN) {
-                MemberPrefix()
                 noOrMore(HASHTAG) { PrefixMetadataMember() }
                 alternatives {
                     RETURN then  { semantics.prefixes.add(OUT); Feature() }
-                    typeBodyElementStarts then { TypeBodyElement() }
+                    typeBodyElementStarts starts { TypeBodyElement() }
                 }
             }
             if (token.kind != RCURBRACE) {
