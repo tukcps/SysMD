@@ -189,9 +189,10 @@ Specific kind of AnnotatingElement are
 
 In the example below, we add a Documentation and two comments to the package tutorial::kerml. 
 ```KerML::tutorial::kerml
+feature car; 
 doc /* The package tutorial::kerml is the top-level package that owns all artefacts of the tutorial. */ 
 comment /* The owning package is specified in the header of each SysMD cell. */ 
-comment ontheRest /* Comments and Documents can have names! */ 
+comment c1 about tutorial /* Comments and Documents can have names! */ 
 ```
 # Core Layer
 
@@ -225,6 +226,7 @@ The Kernel layer (see below) further refines the ontological semantics of classi
 
 - Class
 - DataType 
+
 ## Features
 
 A feature is a kind of type that allows us to model constraints 
@@ -350,6 +352,24 @@ Invariants are a specific kind of expression. An invariant
 - is typed by Boolean and always evaluates to `true`; 
 
 Below are some examples.
+
+**Example: Model-Level Evaluation 
+
+```KerML::tutorial::kerml 
+package expressionExamples {
+    package expressionEvaluation {
+        private import ScalarValues::*;
+        function Area {
+            in w: ScalarValues::Real;
+            in l: ScalarValues::Real;
+            return area: ScalarValues::Real = w*l;
+        }
+        feature w1: Real = 3.0;
+        feature l: Real = 2.0;
+        feature area: Real = Area(w1, l);
+    }
+}
+```
 
 **Example: Boolean expressions**
 

@@ -87,7 +87,7 @@ fun SysMLv2.DefinitionElement() {
         ATTRIBUTE then DEF  starts { AttributeDefinition() }
         ENUM starts { Unsupported("Enumerations are not yet supported") }
         OCCURRENCE then DEF starts { OccurrenceDefinition() }
-        INDIVIDUAL then DEF starts { Unsupported() }
+        INDIVIDUAL then DEF starts { Unsupported() } // Must be treated as kind of prefix of item, part, occurrence
         ITEM then DEF       starts { ItemDefinition() }
         PART then DEF       starts { PartDefinition() }
         CONNECTION then DEF starts { ConnectionDefinition() }

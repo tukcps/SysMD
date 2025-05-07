@@ -64,21 +64,15 @@ a specialization by a data type, and optionally a binding to an expression that 
 SysMD uses the expression to compute the value of the attribute. 
 ## Attribute Definition
 
-An attribute definition creates a kind of _Class_ (AttributeDefinition, defined by the SysML 
-library) that is type by a datatype. The type can be from the pre-defined datatypes Real, Integer, Boolean, 
-or as wwell a user-defined data type. 
+An attribute definition creates a kind of _Class_ (AttributeDefinition, defined by the SysML library) that is type by a datatype. 
+The type can be from the pre-defined datatypes Real, Integer, Boolean, or as well a user-defined data type. 
+Attributes may also consist of (own) other attributes. 
 
-An attribute definition has (simplified) the following syntax: 
+An attribute definition can be used in attribute usages where one can redefine it's values. 
+An example is given below: 
 
  ```attribute Identification ":>" Type ";" ```
-```SysML::tutorial::sysml
-package attributeDefExample {
-    attribute def TwoReals {
-        attribute firstVal: ScalarValues::Real; 
-        attribute secondVal: ScalarValues::Real;     
-    }
-}
-```
+
 ## Attribute Usage
 
 An attribute usage creates a kind of feature (AttributeUsage, defined by the SysML library) 
@@ -90,23 +84,48 @@ An attribute usage has (simplified) the following syntax:
 
  ```attribute Identification ":" Type [= Expression] ";" ``` 
 
-Below, we give some examples.
+Below, we give some examples on definition and usage of attributes. 
+
+```SysML::tutorial::sysml
+package attributeDefExample {
+
+    attribute def Position {
+        attribute x: SI::Length [m]; 
+        attribute y: SI::Length [m]; 
+        attribute z: SI::Length [m];     
+    }
+    
+    attribute p: Position { 
+      redefines x = 1.0 [m];
+      redefines y = 2.0 [m]; 
+      redefines z = 1.5 [m]; 
+    }
+}
+```
+Note that SysMD notebook supports modeling and calculation with ranges.
+An example is given below.
+We use assert to bind _c_ to the value 3.0. 
+
 ```SysML::tutorial::sysml
 private import ScalarValues::*; 
 package realAttributeExample {
-    attribute a: Real = 1.0 .. 2.0; 
+    attribute a: Real = oneOf(1.0 .. 2.0); 
     attribute b: Real; 
     attribute c: Real = a+b; 
-    assert d { c == 3.0 }
+    assert { c == 3.0 }
 }
 ```
+SysMD Notebook's solver also computes values that cannote be computed in a direct way.
+An example is given below. 
+We use assert to bind _d_ to the value true.
+
 ```SysML::tutorial::sysml
 private import ScalarValues::*; 
 package boolAttributeExample {
     attribute a: Boolean; 
     attribute b: Boolean; 
     attribute c: Boolean = a and b; 
-    assert d { c == true }
+    assert { c == true }
 }
 ```
 # Parts
@@ -115,65 +134,62 @@ Parts are in the SysML v2 library considered as something that is a
 mutable part or component of a system that exists in space and time. 
 Following the SysML v2 concept of definitions and usages, there is a
 part definition and part usage. 
+
 ## Part Definition 
 
 A part definition introduces a new subclass of ```Parts::Part```. 
 A part can own features, e.g., other parts or attributes. 
 
-As an _example_ shown below, we model different kinds of vehicles, 
-where each vehicle has a mass, maybe one or more engines and at least two wheels. 
+## Part Usage
 
-Furthermore, we define specializations: 
+Part usages are a kind of Feature.
+They are defined as Feature typed by the SysMLv2 library class ```Parts::Part```.   
+```Part``` is typed by the class KerML::Items::Item
+and a subset of the features KerML::Items::items.
+
+As an _example_, we model different kinds of vehicles, 
+where each vehicle has a mass, maybe one or more engines and at least two wheels.
+Furthermore, we define specific vehicles: 
 
 - A bicycle that is a vehicle that has exactly two wheels and no engine. 
 
 - A car that is a vehicle with body, four wheels and one or two engines 
   (e.g., electrical and combustion).  
 
-- A Volkswagen (short: VW) that is a specialization of a Car.
-
-- A BMW, that is short for "Bayerische Motorenwerke," and that is a specialization of a Car. 
-
 Navigate with the _hasA_ treeview left to the respective parts and check its 
-attributes!  
+attributes!
+
 ```SysML::tutorial::sysml
 package vehicles {
-    part def Vehicle {
-        attribute mass: SI::Mass(0 .. 100000) [kg] = sumOverParts(mass);
-        part wheels [1 .. *];                   // Vehicles have wheels 
-        part engine [0 .. 2];                   // Vehicles might have an engine   
-    }
-
-    part def Bicycle :> Vehicle {
-        part wheels [2]; 
-    }
-          
-    part def Car  :> Vehicle {
-        part body:   carParts::Body;            // in addition, a car has a body
-        part wheels: carParts::Wheel [4 .. 4];  // a car has 4 wheels. 
-        part engine: carParts::Engine [1 .. 2]; // and 1 or two engines 
-    }
-    
-
-    part def <VW> Volkswagen :> Car;
-    part def <BMW> 'Bayerische Motorenwerke' :> Car;
-    
     package carParts {
         part def Body   { attribute mass: SI::Mass = 100.0 [kg]; }
         part def Engine { attribute mass: SI::Mass = 200.0 [kg]; }
-        part def Wheel { attribute mass: SI::Mass  = 50.0  [kg]; }
+        part def Wheel  { attribute mass: SI::Mass  = oneOf(2.0 .. 50.0 [kg]); }
+    }
+    
+    part def Vehicle {
+        attribute mass: SI::Mass(0 .. 100000) [kg] = sumOverParts(mass);
+        part wheels [1 .. *]: carParts::Wheel;   
+        part engine [0 .. 2]: carParts::Engine; 
+    }
+
+    part def Bicycle :> Vehicle {
+        :>> wheels [2]; 
+        :>> engine [0]; 
+    }
+          
+    part def Car  :> Vehicle {
+        :>> wheels  [4 .. 4];  
+        :>> engine  [1 .. 2];  
+        part body:   carParts::Body; 
     }
 }
 ```
-## Part Usage 
 
-Part usages are a kind of Feature.
-They are defined as Feature typed by the SysMLv2 library class ```Parts::Part```.   
- ```Part``` is typed by the class KerML::Items::Item 
-and a subset of the features KerML::Items::items. 
 # Connections
 
 A connection is a kind of relationship between parts. 
+
 ## Connection Usage and Definition 
 
 By a connection definition, we can specify which classes and which number of parts can be connected.
@@ -189,6 +205,7 @@ package connection_example {
     connection c : C connect a to b;  
 }
 ```
+
 ## Port Usage and Definition
 
 Ports are a kind of part that is intended to connect parts. 

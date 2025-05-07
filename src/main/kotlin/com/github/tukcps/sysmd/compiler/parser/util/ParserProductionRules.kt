@@ -287,6 +287,7 @@ abstract class ParserProductionRules(
      */
     inline fun noOrMore(start: Token.Kind? = null, stop: Token.Kind? = null, consume: Boolean = false, production: () -> Unit ) {
         while (token.kind == start || (stop != null && token.kind != stop)) {
+            if (token.kind == Token.Kind.EOF) return;
             if (consume) consume()
             production()
         }

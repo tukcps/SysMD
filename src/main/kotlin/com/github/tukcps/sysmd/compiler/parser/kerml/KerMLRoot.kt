@@ -126,6 +126,7 @@ fun KerML.MemberPrefix() {
         others           {  }
     }
     ABSTRACT.optional    { semantics.prefixes.add(ABSTRACT) }
+    INDIVIDUAL.optional { semantics.prefixes.add(INDIVIDUAL) }
 }
 
 /**
