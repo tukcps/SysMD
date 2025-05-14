@@ -29,7 +29,7 @@ import com.github.tukcps.sysmd.exceptions.LexicalError
  *  - consumedToken, the previous token
  *  - nextToken, lookahead of one token
  *  - consume(), advances one token
- *  - consume(Kind 'or' Kind 'or' ... ), advances if token has one of the kind in parameters; else, throws error
+ *  - consume(Kind 'or' Kind 'or' ... ), advances if a token has one of the kind in parameters; else, throws error
  */
 @Suppress("ClassName")
 abstract class ParserProductionRules(
@@ -60,7 +60,7 @@ abstract class ParserProductionRules(
 
     /**
      * Checks if the current token in the token stream is equal to this, and if so,
-     * consumes the token, and then executes the lambda given as argument.
+     * consumes the token and then executes the lambda given as an argument.
      * @param ifAccepted lambda that is executed after consuming the current token
      */
     fun Token.Kind.optional(ifAccepted: () -> Unit) {
@@ -76,7 +76,7 @@ abstract class ParserProductionRules(
      * If the token is there, it is consumed and the next token is read.
      * If not, it is a syntax error.
      * @param accept expected tokens
-     * @return token, if current token is in expected tokens and was consumed
+     * @return token, if the current token is in expected tokens and was consumed
      */
     fun consume(accept: Token.Kind): Token.Kind {
         if (token.kind == accept) {
@@ -105,7 +105,7 @@ abstract class ParserProductionRules(
     /**
      * Checks if the current token is this; if so, returns true.
      * The function is for use in when statements in recursive descent parsing.
-     * e.g. in a when statement: IF.starts() -> { IF.consume() ... } would check if there is
+     * e.g., in a when statement: IF.starts() -> { IF.consume() ... } would check if there is
      * a token IF and then, when statement can execute the respective production.
      */
     fun Token.Kind.starts(): Boolean = token.kind == this
@@ -113,7 +113,7 @@ abstract class ParserProductionRules(
     /**
      * Checks if the current token is this; if so, returns true.
      * The function is for use in when statements in recursive descent parsing.
-     * e.g. in a when statement: IF.starts() -> { IF.consume() ... } would check if there is
+     * e.g., in a when statement: IF.starts() -> { IF.consume() ... } would check if there is
      * a token IF and then, when statement can execute the respective production.
      */
     fun Set<Token.Kind>.starts(): Boolean = token.kind in this
@@ -121,7 +121,7 @@ abstract class ParserProductionRules(
     /**
      * Checks if the current token is this; if so, returns true.
      * The function is for use in when statements in recursive descent parsing.
-     * e.g. in a when statement: IF.then() -> { ... } would check if there is
+     * e.g., in a when statement: IF.then() -> { ... } would check if there is
      * a token IF and then, consume it, then the 'when' statement can execute the respective production.
      */
     fun Token.Kind.then(): Boolean {
@@ -154,7 +154,7 @@ abstract class ParserProductionRules(
         init {
             cases()     // calls the lambda parameter which registers cases
             when {
-                match2 != null -> {     // if there is match also with lookahead terminals ...
+                match2 != null -> {     // if there is a match also with lookahead terminals ...
                     try {
                         if (consume2 == true) {
                             nextToken(); nextToken()
@@ -287,7 +287,7 @@ abstract class ParserProductionRules(
      */
     inline fun noOrMore(start: Token.Kind? = null, stop: Token.Kind? = null, consume: Boolean = false, production: () -> Unit ) {
         while (token.kind == start || (stop != null && token.kind != stop)) {
-            if (token.kind == Token.Kind.EOF) return;
+            if (token.kind == Token.Kind.EOF) return
             if (consume) consume()
             production()
         }
@@ -316,9 +316,10 @@ abstract class ParserProductionRules(
      *  Repeats the evaluation of the lambda expression while start evaluates to true and stop evaluates to false.
      *  The function also includes methods for error recovery that, if production throws an exception, consumes token until a recover token is found.
      *  where
-     *      @param start is a lambda that must hold before the production.
-     *      @param end is a lambda that must hold after the production before the next production.
-     *      @param production the production rule.
+     *
+     *  @param start is a lambda that must hold before the production.
+     *  @param end is a lambda that must hold after the production before the next production.
+     *  @param production the production rule.
      */
     inline fun noOrMore(
         noinline start: (() -> Boolean)? = null,
@@ -341,6 +342,20 @@ abstract class ParserProductionRules(
             if (end?.invoke() == true || token.kind == Token.Kind.EOF) break
         }
     }
+
+    /**
+     * Function that checks whether current and next tokes match a pattern.
+     * @param token current token
+     * @param nextToken next token; if not relevant, null (default)
+     * @param nextNextToken next token after next token, null is default for irrelevant
+     */
+    fun match(token: Token.Kind, nextToken: Token.Kind?=null, nextNextToken: Token.Kind?=null): Boolean =
+        when {
+            (token == this.token.kind && nextToken == null && nextNextToken == null) -> true
+            (token == this.token.kind && nextToken == this.nextToken.kind && nextNextToken == null) -> true
+            (token == this.token.kind && nextToken == this.nextToken.kind && nextNextToken == this.nextNextToken.kind) -> true
+            else -> false
+        }
 
 
     /**

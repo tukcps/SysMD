@@ -5,7 +5,6 @@ import com.github.tukcps.sysmd.compiler.SysMLv2
 import com.github.tukcps.sysmd.compiler.parser.kerml.Expression
 import com.github.tukcps.sysmd.compiler.parser.kerml.FeatureSpecializationPart
 import com.github.tukcps.sysmd.compiler.parser.util.Unsupported
-import com.github.tukcps.sysmd.compiler.scanner.Token
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.compiler.semantics.Identification
 import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
@@ -16,7 +15,6 @@ import com.github.tukcps.sysmd.model.expression.AstRoot
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Resolved
 import com.github.tukcps.sysmd.model.kerml.Type
-import com.github.tukcps.sysmd.model.sysml.CalculationDefinition
 import com.github.tukcps.sysmd.model.sysml.implementation.CalculationDefinitionImplementation
 
 /**
@@ -24,12 +22,11 @@ import com.github.tukcps.sysmd.model.sysml.implementation.CalculationDefinitionI
  *          DefinitionDeclaration CalculationBody
  */
 fun SysMLv2.ConstraintDefinition() {
-    val constraintDefinition = CalculationDefinitionActions<CalculationDefinition>(semantics,
+    val constraintDefinition = CalculationDefinitionActions(semantics,
         ::CalculationDefinitionImplementation, mutableListOf("Constraints::ConstraintDefinition"))
     OccurrenceDefinitionPrefix()
     CONSTRAINT.consume()
     DEF.consume()
-    @Suppress("UNCHECKED_CAST")
     DefinitionDeclaration(constraintDefinition as TypeActions<Type>)
     CalculationBody(Resolved(constraintDefinition.created!!))
     constraintDefinition.finish()
@@ -53,12 +50,10 @@ fun SysMLv2.OccurrenceDefinitionPrefix() {
  */
 fun SysMLv2.ConstraintUsageDeclaration(constraint: FeatureActions<Feature>) {
     UsageDeclaration(constraint)
-    optional(Token.Kind.EQ) {
+    optional(EQ) {
         Unsupported("Production rule for Value Part in ConstraintUsageDeclaration not yet implemented.")
     }
 }
-
-
 
 
 /**
@@ -73,16 +68,8 @@ fun SysMLv2.ConstraintUsage() {
     ConstraintUsageDeclaration(constraint)
 
     // Calculation Body
-    LCURBRACE.consume() // TODO: Body
-    val createdElement = constraint.created!!
-    val iBeforeExpression = token.indices.first
-    Expression().also {
-        createdElement.featureWithValue = AstRoot(model, createdElement, it)
-        createdElement.indices = iBeforeExpression .. consumedToken.indices.last
-        createdElement.expression = input.subSequence(createdElement.indices!!).toString().trim()
-    }
-    RCURBRACE.consume()
     constraint.finish()
+    CalculationBody(Resolved(constraint.created!!))
 }
 
 /**

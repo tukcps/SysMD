@@ -1,8 +1,15 @@
+@file:Suppress("FunctionName")
+
 package com.github.tukcps.sysmd.compiler.parser.sysmlv2
 
 import com.github.tukcps.sysmd.compiler.SysMLv2
+import com.github.tukcps.sysmd.compiler.parser.kerml.Expression
+import com.github.tukcps.sysmd.compiler.parser.kerml.FeatureChain
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
+import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
+import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Resolved
+import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 
 /**
  * 8.2.2.17.8 Action Successions
@@ -41,3 +48,25 @@ fun SysMLv2.TargetSuccession() {
  *          'then' ownedRelationship += TransitionSuccessionMember
  *          UsageBody
  */
+fun SysMLv2.GuardedSuccession() {
+    val guardedSuccession = FeatureActions<Feature>(this.semantics, ::FeatureImplementation, mutableListOf("Base::Anything"))
+    optional(SUCCESSION) {
+        SUCCESSION.consume()
+        UsageDeclaration(guardedSuccession)
+    }
+    guardedSuccession.finish()
+    FIRST.consume()
+    FeatureChain()
+    GuardExpressionMember()
+    THEN.consume()
+    FeatureChain()
+    UsageBody(Resolved(guardedSuccession.created!!))
+}
+fun SysMLv2.guardedSuccessionStarts(): Boolean =
+    token.kind == SUCCESSION || (token.kind == FIRST && nextToken.kind == IF)
+
+
+fun SysMLv2.GuardExpressionMember() {
+    IF.consume()
+    Expression()
+}

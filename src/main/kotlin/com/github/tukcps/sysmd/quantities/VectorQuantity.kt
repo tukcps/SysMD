@@ -716,7 +716,7 @@ override fun toString(): String {
     if (values.size == 1) return Quantity(values[0], unit, unitSpec).toString()
 
     val resultingString = StringBuilder("(")
-    when (val firstValue = values[0]) {
+    when (values[0]) {
         is IDD -> {
             values.joinTo(resultingString, ", ") {
                 val value = it.asIdd().getRange()
@@ -1316,6 +1316,24 @@ override fun toString(): String {
         throw SemanticError("Expect either Real or Integer")
     }
 
+    /**
+     * Checks if one of the values has been constrained from its base type's value.
+     * @return true if one of the values of the vector is not the base type's maximum range.
+     * Strings are considered generally as false.
+     */
+    fun isConstrained(): Boolean {
+        values.forEach {
+            if (it is AADD && (!it.minIsInf || !it.maxIsInf))
+                return true
+            if (it is IDD && (!it.minIsInf || !it.maxIsInf))
+                return true
+            if (it is BDD && it.value != XBool.X)
+                return true
+            if (it is StrDD)
+                return true
+        }
+        return false
+    }
 }
 
 /**

@@ -9,6 +9,7 @@ import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
 import com.github.tukcps.sysmd.compiler.semantics.kerml.TypeActions
 import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.CalculationDefinitionActions
+import com.github.tukcps.sysmd.model.expression.AstRoot
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Resolved
@@ -78,7 +79,7 @@ fun SysMLv2.CalculationBody(owner: Resolved<Element>) {
                 CalculationBodyItem()
             }
             optional ({token.kind != RCURBRACE}) {
-                ResultExpressionMember()
+                ResultExpressionMember(owner)
             }
             RCURBRACE.consume()
             semantics.popOwner()
@@ -109,6 +110,13 @@ fun SysMLv2.CalculationbodyItemStarts(): Boolean = usageElementStarts() or (toke
 /**
  *      ResultExpressionMember = MemberPrefix?  OwnedExpression
  */
-fun SysMLv2.ResultExpressionMember() {
-    Expression()
+fun SysMLv2.ResultExpressionMember(owner: Resolved<Element>) {
+    val iBeforeExpression = token.indices.first
+    Expression().also {
+        if (owner.ref is Feature) {
+            (owner.ref as Feature).featureWithValue = AstRoot(model, owner.ref as Feature, it)
+            (owner.ref as Feature).indices = iBeforeExpression..consumedToken.indices.last
+            (owner.ref as Feature).expression = input.subSequence(owner.ref?.indices!!).toString().trim()
+        }
+    }
 }

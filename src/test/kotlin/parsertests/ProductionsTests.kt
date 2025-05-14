@@ -308,11 +308,11 @@ class ProductionsTests {
                 subject vehicle: Vehicle; 
                 // feature mass: Mass :>>  vehicle::mass; 
                 attribute mass : Mass; 
-                require r mass > 100.0 [kg]; 
+                assume constraint { mass > 100.0 [kg] }
             }
-        """.trimIndent()
+        """
         RequirementUsage()
-        assertTrue(model.status.issues.isEmpty())
+        assertTrue(model.status.issues.isEmpty(), model.status.issues.toString())
     }
 
 
@@ -322,7 +322,7 @@ class ProductionsTests {
             requirement def <'req 1.1'> EnoughMassDef {
                  // feature mass: Mass :>>  vehicle::mass; 
                 attribute mass : Mass; 
-                require r mass > 100.0 [kg]; 
+                require constraint r { mass > 100.0 [kg] }
             }
         """.trimIndent()
         RequirementDefinition()

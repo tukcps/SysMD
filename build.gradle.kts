@@ -16,7 +16,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
  * - also set the value standalone according to your setup
  */
 group   = "com.github.tukcps"
-version = "4.0.3"               // must be number.number.number
+version = "4.0.4"               // must be number.number.number
 val aaddVersion = "0.1.9"
 val sysmlapiVersion = "3.9.4"
 val useMavenAADD = true
@@ -106,7 +106,6 @@ dependencies {
     // Some more icons ...
     implementation(compose.components.resources)
     implementation("org.jetbrains.compose.material:material-icons-extended:1.7.3")
-    implementation("br.com.devsrsouza.compose.icons.jetbrains:line-awesome:1.0.0")
 
     // Rendering of LaTeX in MD
     implementation("com.github.opencollab.jlatexmath:jlatexmath:1.0.7")
@@ -114,7 +113,7 @@ dependencies {
 
     // Needed for state diagrams (HOOD GmbH)
     implementation ("org.diagramsascode:diagramsascode-image:0.1.5")
-    implementation("org.apache.xmlgraphics:batik-transcoder:1.18")
+    implementation("org.apache.xmlgraphics:batik-transcoder:1.19")
     implementation("org.apache.xmlgraphics:batik-codec:1.18")
 
     // Use the Kotlin JUnit integration.

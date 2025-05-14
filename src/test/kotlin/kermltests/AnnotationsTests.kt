@@ -25,7 +25,7 @@ class AnnotationsTests {
     fun testCommentWidhId() = testSession {
         loadKerML("""
             comment test /* comment on something */ 
-        """.trimIndent())
+        """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         val comment = global.getOwnedElementOfType<AnnotatingElement>()
         assertTrue(comment is Comment)

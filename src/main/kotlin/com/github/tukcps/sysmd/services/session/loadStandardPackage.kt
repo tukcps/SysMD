@@ -70,7 +70,7 @@ val Arrangements = hashMapOf(
     "Links"         to listOf("Base", "ScalarValues", "Links"),
     "Occurrences"   to listOf("Base", "ScalarValues", "Links", "Occurrences"),
     "Ranges"        to listOf("Base", "ScalarValues", "Ranges"),
-    "SI"            to listOf("Base", "ScalarValues", "SI"),
+    "SI"            to listOf("Base", "ScalarValues", "SI", "Ranges"),
     "Ports"         to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Ports"),
     "Items"         to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Items"),
     "Parts"         to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Items", "Parts"),

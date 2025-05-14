@@ -15,7 +15,7 @@ import kotlin.test.assertTrue
 class RequirementTests {
 
     @Test
-    fun testRequirement() = testSession("Parts", "Requirements", "Constraints") {
+    fun testRequirement() = testSession("Parts", "Requirements") {
         loadSysMLv2("""
             part p {
                 attribute a: ScalarValues::Real = 1.0; 
@@ -23,9 +23,9 @@ class RequirementTests {
             
             requirement test {
                 subject f references p;
-                assume ass { f::a == 2.0 }
+                assume constraint ass { f::a == 2.0 }
             }
-        """.trimIndent())
+        """)
         propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         val ass = global.resolveVar("test::ass")
@@ -51,7 +51,7 @@ class RequirementTests {
     }
 
     @Test
-    fun testRequirement3() = testSession("Parts", "Requirements", "Constraints") {
+    fun testRequirement3() = testSession("Parts", "Requirements") {
         loadSysMLv2("""
             part p {
                 attribute a: ScalarValues::Real = 2.0; 
@@ -59,42 +59,40 @@ class RequirementTests {
             
             requirement test {
                 subject f references p;
-                require r f::a == 2.0;  
+                require constraint r { f::a == 2.0} 
             }
         """)
         propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         val r = global.resolve<Feature>("test::r")
         assertEquals(builder.True, r!!.variable!!.vectorQuantity.value)
-        val const = global.resolve<Type>("Requirements::RequirementUsage")
+        val const = global.resolve<Type>("ScalarValues::Boolean")
         assertTrue( r.specializes(const) )
         assertTrue( r.specializes(global.resolve<Type>("ScalarValues::Boolean")) )
     }
 
     @Test
     fun testRequirement4() = testSession("Parts", "Requirements") {
-        loadSysMLv2(
-            """
+        loadSysMLv2("""
             part p {
                 attribute a: ScalarValues::Real = 2.0; 
             }
             
             requirement test {
                 subject f references p;
-                require r { f::a == 2.0 }
+                require constraint r { f::a == 2.0 }
             }
-        """.trimIndent()
-        )
+        """)
         propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         val r = global.resolve<Feature>("test::r")
         assertEquals(builder.True, r!!.variable!!.vectorQuantity.value)
         assertTrue(r.specializes(global.resolve<Type>("ScalarValues::Boolean")) )
-        assertTrue(r.specializes(global.resolve<Type>("Requirements::RequirementUsage")) )
+        assertTrue(r.specializes(global.resolve<Type>("Constraints::ConstraintUsage")) )
     }
 
     @Test
-    fun testRequirement4Bool() = testSession("Parts", "Requirements", "Constraints") {
+    fun testRequirement4Bool() = testSession("Parts", "Requirements") {
         loadSysMLv2("""
             part p {
                 attribute a: ScalarValues::Boolean = false; 
@@ -102,7 +100,7 @@ class RequirementTests {
             
             requirement test {
                 subject f references p;
-                require r { f::a == false }
+                assume constraint r { f::a == false }
             }
         """)
         propagate()

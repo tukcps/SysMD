@@ -36,10 +36,10 @@ class RequirementTests {
         requirement def RequirementDef1 {
             attribute a : ScalarValues::Real;
             attribute b : ScalarValues::Real;
-            assume  {a > 0.0}
-            require {a > b}
+            assume constraint { a > 0.0 }
+            require constraint { a > b }
         }
-        """.trimIndent())
+        """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 

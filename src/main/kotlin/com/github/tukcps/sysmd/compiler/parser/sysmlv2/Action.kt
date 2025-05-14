@@ -67,12 +67,14 @@ fun SysMLv2.ActionBodyItem() {
     MemberPrefix()
     when {
         nonBehaviorBodyItemStart()          -> NonBehaviorBodyItem()
-        FIRST.starts()                      -> {
+        match(FIRST, NAME_LIT, DPDP) or match(FIRST, NAME_LIT, LCURBRACE) -> {
             InitialNodeMember()
             noOrMore(THEN) {
-                    ActionTargetSuccessionMember()
-                }
+                ActionTargetSuccessionMember()
+            }
         }
+        match(FIRST, NAME_LIT, DOT) or match(FIRST, NAME_LIT, IF) or match(SUCCESSION) ->
+            GuardedSuccession()
         behaviorUsageElementStart.starts()  -> BehaviorUsageElement()
         actionNodeStart.starts()            -> ActionNode()
         else -> throwSyntaxError("Unknown action body item ${token.kind}")

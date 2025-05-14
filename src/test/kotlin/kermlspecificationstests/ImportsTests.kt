@@ -96,7 +96,6 @@ class ImportsTests {
      * Ref: Section 7.2.5.4 - Imports
      * Kernel Modeling Language: https://www.omg.org/spec/KerML/1.0/Beta2/PDF/changebar
      */
-    @Disabled
     @Test
     fun testVisibilityOfImport() = testSession("ScalarValues", "Base", "Objects", "Occurrences", "Links") {
         loadKerML("""

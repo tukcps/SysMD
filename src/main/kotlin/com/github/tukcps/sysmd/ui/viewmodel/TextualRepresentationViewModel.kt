@@ -41,7 +41,7 @@ open class TextualRepresentationViewModel(
     var language: MutableState<Language> = mutableStateOf(Language.MARKDOWN),
     var namespace: MutableState<String> = mutableStateOf("Global"),
 
-    // The editable description as text field.
+    // The editable description as a text field.
     val bodyState: MutableState<TextFieldValue> = mutableStateOf(TextFieldValue()),
 
     // Per line, an annotation and corresponding line number as a hashmap.
@@ -94,7 +94,7 @@ open class TextualRepresentationViewModel(
 
                 if (propagate) {
                     session.propagate()
-                    display()
+                    collectVariablesToDisplay()
                     refreshTrees()
                 }
             } catch (error: Exception) {
@@ -110,7 +110,7 @@ open class TextualRepresentationViewModel(
     /**
      * Generates the model for displaying computed results.
      */
-    fun display() {
+    fun collectVariablesToDisplay() {
         // Update annotations (error messages in the shape of a bell near line no.).
         session.status.issues.forEach {
             if (it.input == body.text && it.token?.lineNo != null)
@@ -126,16 +126,17 @@ open class TextualRepresentationViewModel(
                     when (element) {
                     is Classifier -> {
                         if (element !is CalculationDefinitionImplementation){
-                            displayItems.add(TextFieldValue("Definition ${element.path()} created or updated "))
+                            displayItems.add(TextFieldValue("${element.elementType} ${element.path()} created or updated "))
                             session.getAllInheritedFeatures(element).forEach {
                                 when (it) {
-                                    is Classifier -> displayItems.add(TextFieldValue("   Type: ${it.escapedName()}"))
-                                    else    -> {
+                                    is Classifier -> displayItems.add(TextFieldValue("   Classifier: ${it.escapedName()}"))
+                                    else -> {
                                         if ( !(( it is Multiplicity) && it.variable!!.intSpecs.first() == IntegerRange(1,1))) {
                                             var string = "    Feature: ${it.escapedName()} "
-                                            if (it.variable != null)
+                                            if (it.variable != null && it.variable!!.vectorQuantity.isConstrained()) {
                                                 string += " = ${it.variable!!.vectorQuantity}"
-                                            displayItems.add(TextFieldValue(string))
+                                                displayItems.add(TextFieldValue(string))
+                                            }
                                         }
                                     }
                                 }
@@ -145,10 +146,10 @@ open class TextualRepresentationViewModel(
 
                     is Feature -> {
                         if ((element.variable != null) && !(element is Multiplicity && element.variable!!.vectorQuantity.idd().getRange() == IntegerRange(1, 1))) {
-                            if (element.variable!!.isVectorQuantityInitialized )
+                            if (element.variable!!.isVectorQuantityInitialized && element.variable!!.vectorQuantity.isConstrained())
                                 displayItems.add(TextFieldValue("    ${element.path()} = ${element.variable!!.vectorQuantity}"))
-                            else
-                                displayItems.add(TextFieldValue("    ${element.path()} = (not computed/reset?)"))
+                            // else
+                            //    displayItems.add(TextFieldValue("    ${element.path()} = (not computed/reset?)"))
                         }
                     }
                 }

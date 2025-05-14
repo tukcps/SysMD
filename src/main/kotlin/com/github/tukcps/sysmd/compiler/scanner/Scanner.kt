@@ -12,11 +12,11 @@ import kotlin.math.pow
  *  - token
  *  - previousToken
  *  - nextToken
- * contain the current token, the previous and the next token.
+ * contain the current token, the previous, and the next token.
  * The function
  * - nextToken(): advances one token forward.
  * - nextTokenIs(Set of TokenKind): checks if a token is present and
- *   advances if the token is in the set of token passed as parameter.
+ *   advances if the token is in the set of token passed as a parameter.
  *  @param indices Indices in the input string that shall be scanned.
  *  @param skip Tokens that shall be skipped
  *  @param keywords a map of keywords
@@ -41,6 +41,7 @@ open class Scanner(
             field = it
             nextToken() // char
             nextToken() // nextChar
+            nextToken()
         }
 
     /** The index of the character where the current token began. */
@@ -65,8 +66,12 @@ open class Scanner(
     /** the next token */
     var nextToken = Token(EOF, "", lineNo = 0, indices = 0..0)
 
+    /** the token after the next token */
+    var nextNextToken = Token(EOF, "", lineNo = 0, indices = 0..0)
+
     init {
         position = 0 // indices?.first?:0 // Only if we could also persist string
+        nextToken()
         nextToken()
         nextToken()
     }
@@ -101,19 +106,20 @@ open class Scanner(
     fun nextToken() {
         consumedToken = token
         token = nextToken
+        nextToken = nextNextToken
         do {
             nextTokenOrSkip()
             // Special case: tokens in SysML v2 that are a sequence of two "tokens", typed by = TYPED_BY = DP
-            if (token.kind == TYPED && nextToken.kind == BY) {
+            if (nextToken.kind == TYPED && nextNextToken.kind == BY) {
                 nextToken = buildToken(TYPED_BY)
-                nextToken()
+                nextTokenOrSkip()
             }
-        } while (nextToken.kind in skip) // Read over skip-tokens
+        } while (nextNextToken.kind in skip) // Read over skip-tokens
     }
 
     /**
-     * Gets next token including those to skip like comments or
-     * whitespace.
+     * Gets next token including those to skip like comments or whitespace.
+     * The token is saved in nextNextToken.
      */
     private fun nextTokenOrSkip() {
         var string = ""
@@ -127,23 +133,23 @@ open class Scanner(
                     string += curChar
                     nextChar()
                 }
-                nextToken = buildToken(NOTE, string = string)
+                nextNextToken = buildToken(NOTE, string = string)
                 return
             }
 
-            // Comment that is part of the model, starts with /* ... */
+            // Comment that is a part of the model starts with /* ... */
             curChar == '/' && nextChar == '*' -> {
                 do {
                     string += curChar
                     if (curChar == 0.toChar()) {
-                        nextToken = buildToken(ERROR, string = string)
+                        nextNextToken = buildToken(ERROR, string = string)
                         return
                     }
                     nextChar()
                 } while (!((curChar == '*') && (nextChar == '/')))
                 nextChar()
                 nextChar()
-                nextToken = buildToken(REGULAR_COMMENT, string = string.removePrefix("/*"))
+                nextNextToken = buildToken(REGULAR_COMMENT, string = string.removePrefix("/*"))
                 return
             }
         }
@@ -164,7 +170,7 @@ open class Scanner(
                     string += curChar; nextChar()
                 }
                 val kind = keywords[string] ?: NAME_LIT
-                nextToken = buildToken(kind, string = string)
+                nextNextToken = buildToken(kind, string = string)
             }
 
             in Token.WHITESPACE -> {
@@ -172,7 +178,7 @@ open class Scanner(
                     string += curChar
                     nextChar()
                 }
-                nextToken = buildToken(WHITESPACE, string = string)
+                nextNextToken = buildToken(WHITESPACE, string = string)
             }
 
             // Number, either INTEGER or REAL Literal
@@ -212,7 +218,7 @@ open class Scanner(
                         nextChar()
                     }
                 }
-                nextToken = buildToken(kind, number = (mantissa + fract) * 10.0.pow(exponent * expSign))
+                nextNextToken = buildToken(kind, number = (mantissa + fract) * 10.0.pow(exponent * expSign))
             }
 
 
@@ -228,7 +234,7 @@ open class Scanner(
                     nextChar()
                 }
                 nextChar()
-                nextToken = buildToken(NAME_LIT, string = string)
+                nextNextToken = buildToken(NAME_LIT, string = string)
             }
 
 
@@ -244,12 +250,12 @@ open class Scanner(
                     nextChar()
                 }
                 nextChar()
-                nextToken = buildToken(STRING_LIT, string = string)
+                nextNextToken = buildToken(STRING_LIT, string = string)
             }
 
             // ".", ".."
             '.' -> {
-                nextToken = if (nextChar() == '.') {
+                nextNextToken = if (nextChar() == '.') {
                     nextChar()
                     buildToken(DOTDOT)
                 } else
@@ -258,7 +264,7 @@ open class Scanner(
 
             // "<", "<="
             '<' -> {
-                nextToken = if (nextChar() == '=') {
+                nextNextToken = if (nextChar() == '=') {
                     nextChar()
                     buildToken(LE)
                 } else
@@ -267,7 +273,7 @@ open class Scanner(
 
             // >=
             '>' -> {
-                nextToken = if (nextChar() == '=') {
+                nextNextToken = if (nextChar() == '=') {
                     nextChar()
                     buildToken(GE)
                 } else
@@ -275,7 +281,7 @@ open class Scanner(
             }
 
             '-' -> {
-                nextToken = if (nextChar() == '>') {
+                nextNextToken = if (nextChar() == '>') {
                     nextChar()
                     buildToken(ARROW)
                 } else
@@ -283,7 +289,7 @@ open class Scanner(
             }
 
             '=' -> {
-                nextToken = if (nextChar() == '=') {
+                nextNextToken = if (nextChar() == '=') {
                     nextChar()
                     buildToken(EE)
                 } else
@@ -292,7 +298,7 @@ open class Scanner(
 
             // : or := or :> or :: or :>> or ::>
             ':' -> {
-                nextToken = when(nextChar()) {
+                nextNextToken = when(nextChar()) {
                     // :>> (Redefines) resp. :> (Specializes)
                     '>' -> if (nextChar() == '>') { nextChar(); buildToken(REDEFINES)} else buildToken(DPGT)
                     // :=
@@ -305,23 +311,23 @@ open class Scanner(
 
             // * or **
             '*' -> {
-                nextToken = if (nextChar() == '*') {
+                nextNextToken = if (nextChar() == '*') {
                     nextChar()
                     buildToken(STARSTAR)
                 } else
                     buildToken(TIMES)
             }
             '!' -> {
-                nextToken = if (nextChar() == '=') {
+                nextNextToken = if (nextChar() == '=') {
                     nextChar()
                     buildToken(NEQ)
                 } else
                     buildToken(NOT)
             }
-            0.toChar() -> nextToken = buildToken(EOF)
+            0.toChar() -> nextNextToken = buildToken(EOF)
 
             else -> {
-                nextToken = if (charTokens[curChar] == null) {
+                nextNextToken = if (charTokens[curChar] == null) {
                     nextChar()
                     buildToken(ERROR, string="$curChar")
                 } else {

@@ -13,8 +13,7 @@ class PackageTest {
     @Test
     fun testPackage() = testSession("States", "Requirements", "Interfaces", "Allocations", "Connections",
         "Attributes", "Ports", "Parts", "Items", "Occurrences") {
-        loadSysMLv2(
-            """
+        loadSysMLv2("""
                 package 'Package Example' {
                     public import ISQ::TorqueValue;
                     private import ScalarValues::*;

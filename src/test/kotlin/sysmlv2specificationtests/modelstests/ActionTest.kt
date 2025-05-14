@@ -11,10 +11,9 @@ class ActionTest {
 
     @Ignore
     @Test
-    fun testAction() = testSession("States", "Requirements", "Interfaces", "Allocations", "Connections",
-        "Attributes", "Ports", "Parts", "Items", "Occurrences") {
-        loadSysMLv2(
-            """
+    fun testAction() = testSession("States", "Interfaces", "Connections",
+        "Attributes", "Parts", "Items", "Occurrences") {
+        loadSysMLv2("""
                 package 'Action Decomposition' {
                 
                     part def Scene;

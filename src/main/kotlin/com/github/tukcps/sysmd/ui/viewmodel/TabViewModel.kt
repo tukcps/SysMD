@@ -39,7 +39,7 @@ import java.io.File
  *  - a list of elements that can be edited; an element is a Package or an Element.
  *  - the model (must be shared, if several tabs are active, not yet done)
  *  - the selected index of an element, and its section (description, code)
- * @param sessionState internal model that is the result of the compilation and analysis;
+ * @param sessionState the internal model that is the result of the compilation and analysis;
  *        does not trigger any updates of any views.
  * @param refreshTrees lambda that can be called when a refresh of the tree-views is needed
  */
@@ -245,7 +245,7 @@ class TabViewModel(
             sessionState.value.status.reset()
             cell.compile(propagate = false)
         }
-        cells.forEach { it.display() }
+        cells.forEach { it.collectVariablesToDisplay() }
     }
 
 
@@ -303,7 +303,7 @@ class TabViewModel(
             val extensions: List<Extension> = listOf(TablesExtension.create(), YamlFrontMatterExtension.create())
             val parser = Parser.builder().extensions(extensions).build()
             val string = it.body.text.ifEmpty { it.body.annotatedString.text }
-            val document = parser.parse(string.toString())
+            val document = parser.parse(string)
             references.generateRefReferenceOfElements(it, document)
         }
         references.generateHeadingNumbering()

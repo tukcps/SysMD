@@ -92,7 +92,7 @@ fun SysMLv2.DefinitionElement() {
         PART then DEF       starts { PartDefinition() }
         CONNECTION then DEF starts { ConnectionDefinition() }
         ALLOCATION then DEF starts { AllocationDefinition() }
-        FLOW starts { "Flows are not yet supported" }
+        FLOW starts                { Unsupported("Flows are not yet supported") }
         INTERFACE then DEF  starts { InterfaceDefinition() }
         PORT then DEF       starts { PortDefinition() }
         ACTION then DEF     starts { ActionDefinition() }

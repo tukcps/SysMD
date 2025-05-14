@@ -253,7 +253,7 @@ package requirementsExample {
   
     requirement volumeRequirementUsage : volumeRequirement  {
         subject box references p; 
-        require r { volume >= 100.0 [cm^3] }
+        require constraint r { volume >= 100.0 [cm^3] }
     }
 ```
 # Finite state machines

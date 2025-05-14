@@ -1,6 +1,6 @@
 
 standard library package SI {
-    datatype Quantity :> ScalarValues::Real { 
+    datatype Quantity :> ScalarValues::Real {
         feature unit: ScalarValues::String;
     }
     //Basic SI Domains

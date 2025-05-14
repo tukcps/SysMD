@@ -4,6 +4,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Functions
 import androidx.compose.material.icons.filled.TextFields
+import androidx.compose.material.icons.outlined.AddIcCall
+import androidx.compose.material.icons.outlined.Token
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -17,8 +19,7 @@ import com.github.tukcps.sysmd.model.sysml.AcceptActionUsage
 import com.github.tukcps.sysmd.model.sysml.SuccessionAsUsage
 import com.github.tukcps.sysmd.model.sysml.TransitionUsage
 import com.github.tukcps.sysmd.ui.composables.TreeViewNodeModel
-import compose.icons.LineAwesomeIcons
-import compose.icons.lineawesomeicons.MicrochipSolid
+
 
 
 /**
@@ -47,8 +48,7 @@ class IsATree(
         return result
     }
     override fun icon(): ImageVector {
-        // Icons from: https://icons8.com/line-awesome
-        return LineAwesomeIcons.MicrochipSolid
+        return Icons.Outlined.Token
     }
     fun getElem(): Element {return element}
 }
@@ -97,7 +97,7 @@ class HasATree(
             is Variable -> Icons.Default.Functions
             is PackageImplementation -> Icons.Default.Folder
             is TextualRepresentation -> Icons.Default.TextFields
-            else -> LineAwesomeIcons.MicrochipSolid
+            else -> Icons.Outlined.AddIcCall
         }
     }
 }

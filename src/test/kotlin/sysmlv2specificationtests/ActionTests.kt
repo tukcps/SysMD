@@ -92,7 +92,7 @@ class ActionTests {
      *     Refer to Section: 7.16 Actions
      *     Language Specification Document: https://www.omg.org/spec/SysML/2.0/Beta2/Language/PDF
      */
-    @Test @Ignore // if/then not yet implemented
+    @Test
     fun testActionWithConditionalSuccession() = testSession("Actions") {
         loadSysMLv2("""
             package actionExample {
@@ -109,16 +109,10 @@ class ActionTests {
         """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
 
-        //val actionDef1 = global.resolve<ActionDefinition>("Action1")
-        //assertNotNull(actionDef1)
-
-        //val actionDef2 = global.resolve<ActionDefinition>("Action2")
-        //assertNotNull(actionDef2)
-
-        val action1 = global.resolve<ActionUsage>("action1")
+        val action1 = global.resolve<ActionUsage>("actionExample::action3::action1")
         assertNotNull(action1)
 
-        val action2 = global.resolve<ActionUsage>("action2")
+        val action2 = global.resolve<ActionUsage>("actionExample::action3::action2")
         assertNotNull(action2)
     }
 

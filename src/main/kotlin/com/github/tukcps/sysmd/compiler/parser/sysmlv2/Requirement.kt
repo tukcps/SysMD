@@ -3,22 +3,22 @@
 package com.github.tukcps.sysmd.compiler.parser.sysmlv2
 
 import com.github.tukcps.sysmd.compiler.SysMLv2
-import com.github.tukcps.sysmd.compiler.parser.kerml.Expression
+import com.github.tukcps.sysmd.compiler.parser.kerml.FeatureSpecializationPart
 import com.github.tukcps.sysmd.compiler.parser.kerml.Identification
 import com.github.tukcps.sysmd.compiler.parser.util.Unsupported
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
 import com.github.tukcps.sysmd.compiler.semantics.kerml.TypeActions
-import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.RequirementAssumeUsageActions
+import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.RequirementConstraintMemberActions
 import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.RequirementConstraintUsageActions
 import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.RequirementDefinitionActions
 import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.RequirementUsageActions
-import com.github.tukcps.sysmd.model.expression.AstRoot
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Resolved
 import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
+import com.github.tukcps.sysmd.model.sysml.RequirementConstraintMember
 import com.github.tukcps.sysmd.model.sysml.RequirementUsage
 
 /**
@@ -99,66 +99,43 @@ fun SysMLv2.SubjectUsage() {
 }
 
 /**
- *      RequirementConstraintMember : RequirementConstraintMembership =
- *              MemberPrefix? RequirementKind
- *              ownedRelatedElement += RequirementConstraintUsage
- *
- *      RequirementKind : RequirementConstraintMembership =
+ *      RequirementKind =
  *              'assume' { kind = 'assumption' }
  *              | 'require' { kind = 'requirement' }
+ */
+fun SysMLv2.RequirementKind(require: RequirementConstraintMemberActions) {
+    when(token.kind) {
+        ASSUME  -> ASSUME.consume().also  { require.kind = RequirementConstraintMember.Kind.ASSUME }
+        REQUIRE -> REQUIRE.consume().also { require.kind = RequirementConstraintMember.Kind.REQUIRE }
+        else -> handleSyntaxError("Expecting 'assume' or 'require'")
+    }
+}
+
+/**
+ *      RequirementConstraintMember : RequirementConstraintMembership =
+ *              MemberPrefix? RequirementKind RequirementConstraintUsage
  *
  *      RequirementConstraintUsage =
  *              OwnedReferenceSubsetting FeatureSpecializationPart? RequirementBody
  *              | ( UsageExtensionKeyword* 'constraint' | UsageExtensionKeyword+ )
  *                ConstraintUsageDeclaration CalculationBody
  */
-fun SysMLv2.RequirementConstraintUsage() {
-    var require : FeatureActions<Feature> = RequirementConstraintUsageActions(semantics)
+fun SysMLv2.RequirementConstraintMember() {
+    val require = RequirementConstraintMemberActions(semantics)
+    RequirementKind(require)
     alternatives {
-        REQUIRE then {
-            require = RequirementConstraintUsageActions(semantics)
-            Identification().also { require.create(it) }
+        NAME_LIT starts {
+            OwnedReferenceSubsetting()
+            FeatureSpecializationPart(require as FeatureActions<Feature>)
+            require.finish()
+            RequirementBody(Resolved(require.created!!))
         }
-        ASSUME then  {
-            require = RequirementAssumeUsageActions(semantics)
-            Identification().also { require.create(it) }
-            require.addTypeConstraint(mutableListOf("true"))
-        }
-    }
-    alternatives {
-        // Calculation body
-        LCURBRACE starts  {
-            LCURBRACE.consume() // TODO: Body
-            val iBeforeExpression = token.indices.first
-            Expression().also {
-                require.created?.featureWithValue = AstRoot(model, require.created!!, it)
-                require.created?.indices = iBeforeExpression .. consumedToken.indices.last
-                require.created?.expression = input.subSequence(require.created!!.indices!!).toString().trim()
-            }
-            RCURBRACE.consume()
-        }
-        others {
-            val iBeforeExpression = token.indices.first
-            Expression().also {
-                require.created?.featureWithValue = AstRoot(model, require.created!!, it)
-                require.created?.indices = iBeforeExpression .. consumedToken.indices.last
-                require.created?.expression = input.subSequence(require.created?.indices!!).toString().trim()
-            }
-            SEMICOLON.consume()
+        CONSTRAINT then {
+            ConstraintUsageDeclaration(require as FeatureActions<Feature>)
+            require.finish()
+            CalculationBody(Resolved(require.created!!))
         }
     }
-    require.finish()
-}
-
-/**
- *      RequireBlock :- "{" ("Expression" ";")* "}"
- */
-fun SysMLv2.RequireBlock() {
-    LCURBRACE.consume()
-    noOrMore(stop = RCURBRACE) {
-        Expression()
-    }
-    RCURBRACE.consume()
 }
 
 
@@ -192,7 +169,7 @@ fun SysMLv2.RequirementBody(owner: Resolved<Element>) {
 fun SysMLv2.RequirementBodyItem() {
     alternatives {
         SUBJECT starts { SubjectUsage() }
-        REQUIRE or ASSUME starts { RequirementConstraintUsage() }
+        REQUIRE or ASSUME starts { RequirementConstraintMember() }
         FRAME starts { Unsupported() }
         ACTOR starts { Unsupported() }
         STAKEHOLDER starts { Unsupported() }

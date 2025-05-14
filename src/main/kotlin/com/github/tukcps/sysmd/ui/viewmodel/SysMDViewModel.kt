@@ -103,7 +103,7 @@ class SysMDViewModel(
         if (solve) session.propagate()
         tabsViewModel.editorTabs.forEach { tab ->
             tab.cells.forEach { cell ->
-                cell.display() }
+                cell.collectVariablesToDisplay() }
         }
         refreshTrees()  // refreshes tree-views and agenda
     }
