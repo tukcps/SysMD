@@ -16,8 +16,8 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
  * - also set the value standalone according to your setup
  */
 group   = "com.github.tukcps"
-version = "4.0.4"               // must be number.number.number
-val aaddVersion = "0.1.9"
+version = "4.0.6"               // must be number.number.number
+val aaddVersion = "0.1.11"
 val sysmlapiVersion = "3.9.4"
 val useMavenAADD = true
 val useMavenSysMLAPI = true
@@ -37,7 +37,7 @@ plugins {
     id("idea")
     kotlin("jvm") version "2.1.20"
     kotlin("plugin.serialization") version "2.1.20"
-    id("org.springframework.boot") version "3.4.5"
+    id("org.springframework.boot") version "3.5.0"
     id("io.spring.dependency-management") version "1.1.7"
     alias(libs.plugins.jetbrainsCompose) apply true
     alias(libs.plugins.compose.compiler) apply true
@@ -81,14 +81,14 @@ dependencies {
     // For UUID version 5 (name-based)
     implementation("com.fasterxml.uuid:java-uuid-generator:5.1.0")
 
-    implementation("org.jetbrains.compose.material3:material3-desktop:1.7.3")
+    implementation("org.jetbrains.compose.material3:material3-desktop:1.8.1")
 
     // These are necessary for the annotations in the models.
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.hibernate.validator:hibernate-validator:8.0.2.Final")
 
     // Open API / Swagger
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8")
 
     // Needed for annotations for Spring Boot in package rest
     implementation("com.fasterxml.jackson.core:jackson-databind")
@@ -109,10 +109,10 @@ dependencies {
 
     // Rendering of LaTeX in MD
     implementation("com.github.opencollab.jlatexmath:jlatexmath:1.0.7")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
+    // implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
 
     // Needed for state diagrams (HOOD GmbH)
-    implementation ("org.diagramsascode:diagramsascode-image:0.1.5")
+    implementation("org.diagramsascode:diagramsascode-image:0.1.5")
     implementation("org.apache.xmlgraphics:batik-transcoder:1.19")
     implementation("org.apache.xmlgraphics:batik-codec:1.18")
 
@@ -122,7 +122,7 @@ dependencies {
 
     // compose ui tests
     testImplementation(kotlin("test"))
-    testImplementation("org.springframework.boot:spring-boot-starter-test:3.4.4") {
+    testImplementation("org.springframework.boot:spring-boot-starter-test:3.5.0") {
         exclude(group = "org.mockito", module = "mockito-core")
     }
 

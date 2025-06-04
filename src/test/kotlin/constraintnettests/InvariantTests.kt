@@ -4,64 +4,199 @@ import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
+import org.junit.jupiter.api.Assertions
 import util.mockup.loadKerML
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import util.testSession
 import org.junit.jupiter.api.Assertions.assertTrue
+import util.mockup.loadSysMLv2
 
 class InvariantTests {
 
-    @Test @Disabled //ITE does not work for IDD in jAADD (See issue #34 in jAADD)
-    fun restrictInteger() = testSession {
-        loadKerML(
-            """                
-            package a {
-                class b {
-                    attribute weight: ScalarValues::Integer {:>> range = "0..50";}
-                    inv r { weight <= 30 } 
-                }
-            }
-        """)
-        assertTrue(status.issues.isEmpty())
-        propagate()
-        assertEquals(0, global.resolve<Feature>("a::b::weight")!!.variable!!.vectorQuantity.value.asIdd().min)
-        assertEquals(30, global.resolve<Feature>("a::b::weight")!!.variable!!.vectorQuantity.value.asIdd().max)
-    }
-
-    @Test @Disabled //ITE does not work for IDD in jAADD (See issue #34 in jAADD)
-    fun restrictInteger2() = testSession {
-        loadKerML(
-            """                
-            package a {
-                class b;
-            }
-          
-            a::b hasA
-                attribute weight: Integer {:>> range = "0..50";},
-                inv r { weight >= 30 }
+    @Test
+    fun restrictInteger1() = testSession("ScalarValues") {
+        loadSysMLv2(
+            """    
+                attribute weight: ScalarValues::Integer {:>> range = "0..50";}
+                assert r { weight >= 30 }
         """.trimIndent()
         )
         propagate()
-        assertEquals(30, global.resolveVar("a::b::weight")!!.vectorQuantity.value.asIdd().min)
-        assertEquals(50, global.resolveVar("a::b::weight")!!.vectorQuantity.value.asIdd().max)
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+        assertEquals(30, global.resolve<Feature>("weight")!!.variable!!.vectorQuantity.value.asIdd().min)
+        assertEquals(50, global.resolve<Feature>("weight")!!.variable!!.vectorQuantity.value.asIdd().max)
     }
-
-
-    @Test @Disabled //ITE does not work for IDD in jAADD (See issue #34 in jAADD)
-    fun restrictInteger4() = testSession {
-        loadKerML(
-            """  
-                feature weight: ScalarValues::Integer {:>> range = "0..50";}
-                feature r: ScalarValues::Requirement = weight < 30.0.
+    @Test
+    fun restrictInteger1b() = testSession("ScalarValues") {
+        loadSysMLv2(
+            """    
+                attribute weight: ScalarValues::Integer {:>> range = "0..50";}
+                assert r { 30 >= weight }
         """.trimIndent()
         )
         propagate()
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(0, global.resolve<Feature>("weight")!!.variable!!.vectorQuantity.value.asIdd().min)
         assertEquals(30, global.resolve<Feature>("weight")!!.variable!!.vectorQuantity.value.asIdd().max)
     }
 
+    @Test
+    fun restrictInteger2() = testSession("ScalarValues") {
+        loadSysMLv2(
+            """    
+                attribute weight: ScalarValues::Integer {:>> range = "0..50";}
+                assert r { weight > 30 }
+        """.trimIndent()
+        )
+        propagate()
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+        assertEquals(31, global.resolve<Feature>("weight")!!.variable!!.vectorQuantity.value.asIdd().min)
+        assertEquals(50, global.resolve<Feature>("weight")!!.variable!!.vectorQuantity.value.asIdd().max)
+    }
+
+    @Test
+    fun restrictInteger2b() = testSession("ScalarValues") {
+        loadSysMLv2(
+            """    
+                attribute weight: ScalarValues::Integer {:>> range = "0..50";}
+                assert r { 30 > weight }
+        """.trimIndent()
+        )
+        propagate()
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+        assertEquals(0, global.resolve<Feature>("weight")!!.variable!!.vectorQuantity.value.asIdd().min)
+        assertEquals(29, global.resolve<Feature>("weight")!!.variable!!.vectorQuantity.value.asIdd().max)
+    }
+
+    @Test
+    fun restrictInteger3() = testSession("ScalarValues") {
+        loadSysMLv2(
+            """    
+                attribute weight: ScalarValues::Integer {:>> range = "0..50";}
+                assert r { weight <= 30 }
+        """.trimIndent()
+        )
+        propagate()
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+        assertEquals(0, global.resolve<Feature>("weight")!!.variable!!.vectorQuantity.value.asIdd().min)
+        assertEquals(30, global.resolve<Feature>("weight")!!.variable!!.vectorQuantity.value.asIdd().max)
+    }
+
+    @Test
+    fun restrictInteger3a() = testSession("ScalarValues") {
+        loadSysMLv2(
+            """    
+                attribute weight: ScalarValues::Integer {:>> range = "0..50";}
+                assert r { 30 <= weight }
+        """.trimIndent()
+        )
+        propagate()
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+        assertEquals(30, global.resolve<Feature>("weight")!!.variable!!.vectorQuantity.value.asIdd().min)
+        assertEquals(50, global.resolve<Feature>("weight")!!.variable!!.vectorQuantity.value.asIdd().max)
+    }
+
+    @Test
+    fun restrictInteger4() = testSession("ScalarValues") {
+        loadSysMLv2(
+            """    
+                attribute weight: ScalarValues::Integer {:>> range = "0..50";}
+                assert r { weight < 30 }
+        """.trimIndent()
+        )
+        propagate()
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+        assertEquals(0, global.resolve<Feature>("weight")!!.variable!!.vectorQuantity.value.asIdd().min)
+        assertEquals(29, global.resolve<Feature>("weight")!!.variable!!.vectorQuantity.value.asIdd().max)
+    }
+
+    @Test
+    fun restrictInteger4a() = testSession("ScalarValues") {
+        loadSysMLv2(
+            """    
+                attribute weight: ScalarValues::Integer {:>> range = "0..50";}
+                assert r { 30 < weight }
+        """.trimIndent()
+        )
+        propagate()
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+        assertEquals(31, global.resolve<Feature>("weight")!!.variable!!.vectorQuantity.value.asIdd().min)
+        assertEquals(50, global.resolve<Feature>("weight")!!.variable!!.vectorQuantity.value.asIdd().max)
+    }
+
+    @Test
+    fun restrictIntegerEmpty() = testSession("ScalarValues") {
+        loadSysMLv2(
+            """    
+                attribute weight: ScalarValues::Integer {:>> range = "0..50";}
+                assert r { weight <= -10 }
+        """.trimIndent()
+        )
+        propagate()
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+        assert(global.resolve<Feature>("weight")!!.variable!!.vectorQuantity.value.asIdd().isEmpty())
+    }
+    @Test
+    fun restrictIntegerEmpty1() = testSession("ScalarValues") {
+        loadSysMLv2(
+            """    
+                attribute weight: ScalarValues::Integer {:>> range = "0..50";}
+                assert r { weight < -10 }
+        """.trimIndent()
+        )
+        propagate()
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+        assert(global.resolve<Feature>("weight")!!.variable!!.vectorQuantity.value.asIdd().isEmpty())
+    }
+    @Test
+    fun restrictIntegerEmpty2() = testSession("ScalarValues") {
+        loadSysMLv2(
+            """    
+                attribute weight: ScalarValues::Integer {:>> range = "0..50";}
+                assert r { weight >= 60 }
+        """.trimIndent()
+        )
+        propagate()
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+        assert(global.resolve<Feature>("weight")!!.variable!!.vectorQuantity.value.asIdd().isEmpty())
+    }
+    @Test
+    fun restrictIntegerEmpty3() = testSession("ScalarValues") {
+        loadSysMLv2(
+            """    
+                attribute weight: ScalarValues::Integer {:>> range = "0..50";}
+                assert r { weight > 60 }
+        """.trimIndent()
+        )
+        propagate()
+        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+        assert(global.resolve<Feature>("weight")!!.variable!!.vectorQuantity.value.asIdd().isEmpty())
+    }
+
+    @Test
+    fun assertTestIntDiv() = testSession("ScalarValues", "SI", "Ranges") {
+        loadSysMLv2("""
+            attribute f: ScalarValues::Integer = oneOf(1 .. 4); 
+            assert ass { 12 / f < 6 } 
+        """)
+        propagate()
+        kotlin.test.assertTrue(status.issues.isEmpty(), status.issues.toString())
+        Assertions.assertEquals(2, global.resolveVar("f")!!.idd().getRange().min)
+        Assertions.assertEquals(4, global.resolveVar("f")!!.idd().getRange().max)
+    }
+
+    @Test
+    fun assertTestIntMult() = testSession("ScalarValues", "SI", "Ranges") {
+        loadSysMLv2("""
+            attribute f: ScalarValues::Integer = oneOf(1 .. 4); 
+            assert ass { 12 * f > 24 } 
+        """)
+        propagate()
+        kotlin.test.assertTrue(status.issues.isEmpty(), status.issues.toString())
+        Assertions.assertEquals(2, global.resolveVar("f")!!.idd().getRange().min)
+        Assertions.assertEquals(4, global.resolveVar("f")!!.idd().getRange().max)
+    }
     @Test
     fun restrictReal1() = testSession("ScalarValues") {
         loadKerML("""   

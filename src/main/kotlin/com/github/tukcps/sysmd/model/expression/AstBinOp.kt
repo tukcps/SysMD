@@ -9,6 +9,8 @@ import com.github.tukcps.sysmd.compiler.scanner.Token
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.quantities.ite
+import kotlin.math.max
+import kotlin.math.min
 
 
 /**
@@ -170,8 +172,8 @@ class AstBinOp(
                     prevL.isReal && prevR.isReal -> {
                         val resultsR = mutableListOf<AADD>()
                         val resultsL = mutableListOf<AADD>()
-                        prevR.aadds.forEach { resultsR.add(downQuantity.value.asBdd().ite(it, it.builder.Reals)) }
-                        prevL.aadds.forEach { resultsL.add(downQuantity.value.asBdd().ite(it, it.builder.Reals)) }
+                        prevR.aadds.indices.forEach { resultsR.add(downQuantity.values[it].asBdd().ite(prevR.aadds[it], prevR.aadd.builder.Reals)) }
+                        prevL.aadds.indices.forEach { resultsL.add(downQuantity.values[it].asBdd().ite(prevL.aadds[it], prevL.aadd.builder.Reals)) }
                         l.downQuantity = VectorQuantity(resultsR, prevL.downQuantity.unit, prevL.downQuantity.unitSpec)
                         r.downQuantity = VectorQuantity(resultsL, prevR.downQuantity.unit, prevR.downQuantity.unitSpec)
                     }
@@ -228,16 +230,20 @@ class AstBinOp(
                     val downLs = mutableListOf<IDD>()
                     val downRs = mutableListOf<IDD>()
                     downQuantity.values.indices.forEach {
+                        val minL = l.idds[it].min
+                        val maxL = l.idds[it].max
+                        val minR = r.idds[it].min
+                        val maxR = r.idds[it].max
                         downLs.add(
                             downQuantity.values[it].asBdd().ite(
-                                (l.idds[it] greaterThan r.idds[it]).ite(l.idds[it], r.idds[it]),
-                                (l.idds[it] lessThanOrEquals r.idds[it]).ite(l.idds[it], r.idds[it])
+                                if (minR < maxL) l.idd.builder.integer(max(minL, minR+1) .. maxL) else l.idd.builder.EmptyIntegerRange,
+                                if (minL < maxR) l.idd.builder.integer( minL..min(maxL, maxR-1)) else l.idd.builder.EmptyIntegerRange
                             )
                         )
                         downRs.add(
                             downQuantity.values[it].asBdd().ite(
-                                (l.idds[it] lessThanOrEquals r.idds[it]).ite(l.idds[it], r.idds[it]),
-                                (l.idds[it] greaterThan r.idds[it]).ite(l.idds[it], r.idds[it])
+                                if (minR < maxL) l.idd.builder.integer(minR..min(maxL-1, maxR)) else l.idd.builder.EmptyIntegerRange,
+                                if (minL < maxR) l.idd.builder.integer(max(minL+1, minR) .. maxR)  else l.idd.builder.EmptyIntegerRange
                             )
                         )
                     }
@@ -270,16 +276,20 @@ class AstBinOp(
                     val downLs = mutableListOf<IDD>()
                     val downRs = mutableListOf<IDD>()
                     downQuantity.values.indices.forEach {
+                        val minL = l.idds[it].min
+                        val maxL = l.idds[it].max
+                        val minR = r.idds[it].min
+                        val maxR = r.idds[it].max
                         downLs.add(
                             downQuantity.values[it].asBdd().ite(
-                                (l.idds[it] greaterThanOrEquals r.idds[it]).ite(l.idds[it], r.idds[it]),
-                                (l.idds[it] lessThan r.idds[it]).ite(l.idds[it], r.idds[it])
+                                if (minR <= maxL) l.idd.builder.integer(max(minL, minR) .. maxL) else l.idd.builder.EmptyIntegerRange,
+                                if (minL <= maxR) l.idd.builder.integer( minL..min(maxL, maxR)) else l.idd.builder.EmptyIntegerRange
                             )
                         )
                         downRs.add(
                             downQuantity.values[it].asBdd().ite(
-                                (l.idds[it] lessThan  r.idds[it]).ite(l.idds[it], r.idds[it]),
-                                (l.idds[it] greaterThanOrEquals r.idds[it]).ite(l.idds[it], r.idds[it])
+                                if (minR <= maxL) l.idd.builder.integer(minR..min(maxL, maxR)) else l.idd.builder.EmptyIntegerRange,
+                                if (minL <= maxR) l.idd.builder.integer(max(minL, minR) .. maxR) else l.idd.builder.EmptyIntegerRange
                             )
                         )
                     }
@@ -290,45 +300,47 @@ class AstBinOp(
 
             LT -> {
                 if (l.isReal && r.isReal) {
-                    if (l.isReal && r.isReal) {
-                        val downLs = mutableListOf<AADD>()
-                        val downRs = mutableListOf<AADD>()
-                        downQuantity.values.indices.forEach {
-                            downLs.add(
-                                downQuantity.values[it].asBdd().ite(
-                                    (l.aadds[it] lessThan r.aadds[it]).ite(l.aadds[it], r.aadds[it]),
-                                    (l.aadds[it] greaterThanOrEquals r.aadds[it]).ite(l.aadds[it], r.aadds[it])
-                                )
+                    val downLs = mutableListOf<AADD>()
+                    val downRs = mutableListOf<AADD>()
+                    downQuantity.values.indices.forEach {
+                        downLs.add(
+                            downQuantity.values[it].asBdd().ite(
+                                (l.aadds[it] lessThan r.aadds[it]).ite(l.aadds[it], r.aadds[it]),
+                                (l.aadds[it] greaterThanOrEquals r.aadds[it]).ite(l.aadds[it], r.aadds[it])
                             )
-                            downRs.add(
-                                downQuantity.values[it].asBdd().ite(
-                                    (l.aadds[it] greaterThanOrEquals r.aadds[it]).ite(l.aadds[it], r.aadds[it]),
-                                    (l.aadds[it] lessThan r.aadds[it]).ite(l.aadds[it], r.aadds[it])
-                                )
+                        )
+                        downRs.add(
+                            downQuantity.values[it].asBdd().ite(
+                                (l.aadds[it] greaterThanOrEquals r.aadds[it]).ite(l.aadds[it], r.aadds[it]),
+                                (l.aadds[it] lessThan r.aadds[it]).ite(l.aadds[it], r.aadds[it])
                             )
-                        }
-                        l.downQuantity = VectorQuantity(downLs, prevL.upQuantity.unit,prevL.upQuantity.unitSpec)
-                        r.downQuantity = VectorQuantity(downRs, prevR.upQuantity.unit,prevR.upQuantity.unitSpec)
-                } else if (l.isInt && r.isInt) {
-                        val downLs = mutableListOf<IDD>()
-                        val downRs = mutableListOf<IDD>()
-                        downQuantity.values.indices.forEach {
-                            downLs.add(
-                                downQuantity.values[it].asBdd().ite(
-                                    (l.idds[it] lessThan r.idds[it]).ite(l.idds[it], r.idds[it]),
-                                    (l.idds[it] greaterThanOrEquals r.idds[it]).ite(l.idds[it], r.idds[it])
-                                )
-                            )
-                            downRs.add(
-                                downQuantity.values[it].asBdd().ite(
-                                    (l.idds[it] greaterThanOrEquals r.idds[it]).ite(l.idds[it], r.idds[it]),
-                                    (l.idds[it] lessThan r.idds[it]).ite(l.idds[it], r.idds[it])
-                                )
-                            )
-                        }
-                        l.downQuantity = VectorQuantity(downLs)
-                        r.downQuantity = VectorQuantity(downRs)
+                        )
                     }
+                    l.downQuantity = VectorQuantity(downLs, prevL.upQuantity.unit, prevL.upQuantity.unitSpec)
+                    r.downQuantity = VectorQuantity(downRs, prevR.upQuantity.unit, prevR.upQuantity.unitSpec)
+                } else if (l.isInt && r.isInt) {
+                    val downLs = mutableListOf<IDD>()
+                    val downRs = mutableListOf<IDD>()
+                    downQuantity.values.indices.forEach {
+                        val minL = l.idds[it].min
+                        val maxL = l.idds[it].max
+                        val minR = r.idds[it].min
+                        val maxR = r.idds[it].max
+                        downLs.add(
+                            downQuantity.values[it].asBdd().ite(
+                                if (minL < maxR) l.idd.builder.integer(minL..min(maxL, maxR-1)) else l.idd.builder.EmptyIntegerRange,
+                                if (minR < maxL) l.idd.builder.integer( max(minL, minR+1) .. maxL) else l.idd.builder.EmptyIntegerRange
+                            )
+                        )
+                        downRs.add(
+                            downQuantity.values[it].asBdd().ite(
+                                if (minL < maxR) l.idd.builder.integer( max(minL+1, minR) .. maxR) else l.idd.builder.EmptyIntegerRange,
+                                if (minR < maxL) l.idd.builder.integer(minR..min(maxL-1, maxR)) else l.idd.builder.EmptyIntegerRange
+                            )
+                        )
+                    }
+                    l.downQuantity = VectorQuantity(downLs)
+                    r.downQuantity = VectorQuantity(downRs)
                 }
             }
 
@@ -358,16 +370,20 @@ class AstBinOp(
                     val downLs = mutableListOf<IDD>()
                     val downRs = mutableListOf<IDD>()
                     downQuantity.values.indices.forEach {
+                        val minL = l.idds[it].min
+                        val maxL = l.idds[it].max
+                        val minR = r.idds[it].min
+                        val maxR = r.idds[it].max
                         downLs.add(
                             downQuantity.values[it].asBdd().ite(
-                                (l.idds[it] lessThanOrEquals r.idds[it]).ite(l.idds[it], r.idds[it]),
-                                (l.idds[it] greaterThan r.idds[it]).ite(l.idds[it], r.idds[it])
+                                if (minL <= maxR) l.idd.builder.integer(minL..min(maxL, maxR)) else l.idd.builder.EmptyIntegerRange,
+                                if (minR <= maxL) l.idd.builder.integer( max(minL, minR) .. maxL) else l.idd.builder.EmptyIntegerRange
                             )
                         )
                         downRs.add(
                             downQuantity.values[it].asBdd().ite(
-                                (l.idds[it] greaterThan  r.idds[it]).ite(l.idds[it], r.idds[it]),
-                                (l.idds[it] lessThanOrEquals r.idds[it]).ite(l.idds[it], r.idds[it])
+                                if (minL <= maxR) l.idd.builder.integer( max(minL, minR) .. maxR) else l.idd.builder.EmptyIntegerRange,
+                                if (minR <= maxL) l.idd.builder.integer(minR..min(maxL, maxR)) else l.idd.builder.EmptyIntegerRange
                             )
                         )
                     }

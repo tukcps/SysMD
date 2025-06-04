@@ -1,21 +1,23 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.IDD
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.TIMES
-import com.github.tukcps.sysmd.exceptions.SemanticError
+import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.model.expression.AstLeaf
 import com.github.tukcps.sysmd.model.expression.AstNode
-import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.model.kerml.Feature
+import com.github.tukcps.sysmd.model.kerml.Namespace
+import com.github.tukcps.sysmd.model.kerml.Type
+import com.github.tukcps.sysmd.model.kerml.getOwnedElementsOfType
 import com.github.tukcps.sysmd.quantities.Quantity
-import com.github.tukcps.sysmd.services.session.report
 import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.session.Session
+import io.github.tukcps.aadd.AADD
+import io.github.tukcps.aadd.IDD
 
 /**
  * The ProductIsA function with parameter propertyAST.
- * The function takes a single parameter that is either name of a property of components
+ * The function takes a single parameter that is either the name of a property of components
  * or a calculation with some properties. These properties must all be contained in the same subclasses;
  * otherwise it is not possible
  * The property is searched in each of its elements.
@@ -40,12 +42,12 @@ internal class AstProductIsA(
         upQuantity = Quantity(model.builder.Reals, "?")
         downQuantity = upQuantity
         if (propertyAst.size != 1)
-            throw SemanticError("function 'productOverSubclasses' expects one parameter")
+            model.status.error(message = "function 'productOverSubclasses' expects one parameter", kind = Issue.Kind.ERROR_SEMANTIC, element = namespace)
         if (namespace is Type)
             generatedAst = model.initProductSubclasses(namespace, propertyAst.first(), transitive)
         else {
             generatedAst = null
-            model.report(SemanticError("function 'productOverSubclasses' must be called from type", namespace))
+            model.status.error("function 'productOverSubclasses' must be called from type", kind = Issue.Kind.ERROR_SEMANTIC, element = namespace)
         }
         generatedAst?.evalUpRec()
         evalUpRec()
@@ -161,7 +163,7 @@ fun Session.initProductSubclasses(
 
 fun getPartDependencies(element: Type, propertyAST: AstNode): Set<String> {
     val result = mutableSetOf<String>()
-    for (subclass in element.subtypes) {
+    element.subtypes.forEach { subclass ->
         for (leaf in propertyAST.getLeaves().filter { it.qualifiedName != null }) {
             result.add(leaf.qualifiedName as String)
         }

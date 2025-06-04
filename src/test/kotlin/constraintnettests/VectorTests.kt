@@ -824,7 +824,8 @@ class VectorTests {
     }
 
     //Todo implement changing value at given vector position
-    @Disabled @Test fun vectorPositionAccessTest4() = testSession("ScalarValues") {
+    @Disabled @Test
+    fun vectorPositionAccessTest4() = testSession("ScalarValues") {
         loadKerML("""
                 feature a: ScalarValues::Real {:>> range = "1..1,5..5,10..10";}
                 feature a[1]: ScalarValues::Real = 2..2;

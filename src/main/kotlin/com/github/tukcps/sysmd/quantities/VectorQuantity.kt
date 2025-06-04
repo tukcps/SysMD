@@ -29,14 +29,14 @@ open class VectorQuantity : Cloneable {
         get() = values[0]
 
     fun type() = when(values.first()) {
-        is AADD -> Variable.BaseType.Real
-        is IDD  -> Variable.BaseType.Int
-        is BDD  -> Variable.BaseType.Bool
+        is Real -> Variable.BaseType.Real
+        is Integer  -> Variable.BaseType.Int
+        is Bool  -> Variable.BaseType.Bool
         is StrDD-> Variable.BaseType.String
         else    -> Variable.BaseType.Unknown
     }
 
-    constructor(value: BDD) {
+    constructor(value: Bool) {
         this.values = listOf<DD<*>>(value.clone())
         this.unit = Unit("")
     }
@@ -51,7 +51,7 @@ open class VectorQuantity : Cloneable {
         this.unit = Unit("")
     }
 
-    constructor(value: IDD) {
+    constructor(value: Integer) {
         this.values = listOf<DD<*>>(value.clone())
         this.unit = Unit("")
     }
@@ -62,18 +62,18 @@ open class VectorQuantity : Cloneable {
     }
 
     /**
-     * Constructor only for AADD
-     * @param value Value of the VectorQuantity represented as a AADD, so that possible errors are considered
+     * Constructor only for Real
+     * @param value Value of the VectorQuantity represented as a Real, so that possible errors are considered
      * @param unitString String representation of the Unit
      */
-    constructor(value: AADD, unitString: String) {
+    constructor(value: Real, unitString: String) {
         this.values = listOf<DD<*>>(value.clone())
         unitSpec = unitString // use unitStr as unitSpec
         this.unit = Unit(unitString)
         makeCanonical()
     }
 
-    constructor(values: List<AADD>, unitString: String, unitDimension: String = "") {
+    constructor(values: List<Real>, unitString: String, unitDimension: String = "") {
         if (values.isEmpty()) throw DDError(msg = "Empty value for VectorQuantity is not supported")
         this.values = values.toList()
         unitSpec = unitString // use unitStr as unitSpec
@@ -145,12 +145,12 @@ open class VectorQuantity : Cloneable {
     /**
      * Scalar multiplication of vector and scalar or scalar and scalar
      * @param quantity is multiplied to the current VectorQuantity
-     * @return VectorQuantity with resulting AADD/IDD value and Unit as a new VectorQuantity
+     * @return VectorQuantity with resulting Real/Integer value and Unit as a new VectorQuantity
      */
   operator fun times(quantity: VectorQuantity): VectorQuantity {
         val thisQuantity = clone()
         val otherQuantity = quantity.clone()
-        if (thisQuantity.values[0] is BDD) {
+        if (thisQuantity.values[0] is Bool) {
             throw BDDError("Multiplication not allowed for BDDs")
         }
         var resultUnit = Unit()
@@ -172,10 +172,10 @@ open class VectorQuantity : Cloneable {
     /**
      * Multiplies quantities with dot product
      * @param quantity is multiplied to the current VectorQuantity
-     * @return VectorQuantity with resulting AADD/IDD value and Unit as a new VectorQuantity
+     * @return VectorQuantity with resulting Real/Integer value and Unit as a new VectorQuantity
      */
     infix fun dot(quantity: VectorQuantity): Quantity {
-        if (values[0] is BDD) {
+        if (values[0] is Bool) {
             throw BDDError("Multiplication not allowed for BDDs")
         }
         val resultUnit = if (unit.toString() == "?" || quantity.unit.toString() == "?") Unit("?") else Unit("1")
@@ -183,8 +183,8 @@ open class VectorQuantity : Cloneable {
             throw VectorDimensionError("Dot product is not defined for vectors of size ${values.size} and ${quantity.values.size}")
         }
         val resultingValue: DD<*> = when (values[0]) {
-            is AADD -> values[0].builder.real(0.0)
-            is IDD -> values[0].builder.integer(0)
+            is Real -> values[0].builder.real(0.0)
+            is Integer -> values[0].builder.integer(0)
             else -> throw DDError("Wrong type for dot product")
         }
         val sum = values.indices.fold(resultingValue) { acc, i -> acc.plus(values[i] * quantity.values[i]) }
@@ -192,12 +192,12 @@ open class VectorQuantity : Cloneable {
     }
 
     /**
-     * Multiplies quantities with cross product (only possible for vectors with size 3)
+     * Multiplies quantities with cross-product (only possible for vectors with size 3)
      * @param quantity is multiplied to the current VectorQuantity
-     * @return VectorQuantity with resulting AADD/IDD value and Unit as a new VectorQuantity
+     * @return VectorQuantity with resulting Real/Integer value and Unit as a new VectorQuantity
      */
     infix fun cross(quantity: VectorQuantity): VectorQuantity {
-        if (values[0] is BDD) throw BDDError("Multiplication not allowed for BDDs")
+        if (values[0] is Bool) throw BDDError("Multiplication not allowed for BDDs")
         if (values.size != 3 || quantity.values.size != 3)
             throw VectorDimensionError("Cross product is only defined for vectors of size 3, not of size ${values.size} and ${quantity.values.size}.")
 
@@ -209,7 +209,7 @@ open class VectorQuantity : Cloneable {
                 quantity.unit.unitSet.forEach { addUnitOfMeasurement(it) }
             }
         }
-        //Cross product calculation
+        //Cross-product calculation
         val resultingValues = listOf(
             values[1] * quantity.values[2] - values[2] * quantity.values[1],
             values[2] * quantity.values[0] - values[0] * quantity.values[2],
@@ -221,12 +221,12 @@ open class VectorQuantity : Cloneable {
     /**
      * Divides quantities element wise
      * @param quantity is the divisor of the current VectorQuantity
-     * @return VectorQuantity with resulting AADD/IDD value and Unit as a new VectorQuantity
+     * @return VectorQuantity with resulting Real/Integer value and Unit as a new VectorQuantity
      */
     operator fun div(quantity: VectorQuantity): VectorQuantity {
         val thisQuantity = clone()
         val otherQuantity = quantity.clone()
-        if (thisQuantity.values[0] is BDD) throw BDDError("Division not allowed for BDDs")
+        if (thisQuantity.values[0] is Bool) throw BDDError("Division not allowed for BDDs")
         var resultUnit = Unit()
         if (thisQuantity.unit.toString() == "?" || otherQuantity.unit.toString() == "?")
             resultUnit = Unit("?")
@@ -244,12 +244,12 @@ open class VectorQuantity : Cloneable {
                 //collect all results of all divisions of the different rows
                 val results = thisQuantity.values.indices.map { values[it] / otherQuantity.values[it] }
                 when (value) { //return as the resulting scalar the value with the minimum and maximum result
-                    is AADD -> {
+                    is Real -> {
                         val min = results.minOf { it.asAadd().min }
                         val max = results.minOf { it.asAadd().max }
                         listOf(value.builder.real(min..max))
                     }
-                    is IDD -> {
+                    is Integer -> {
                         val min = results.minOf { it.asIdd().min }
                         val max = results.minOf { it.asIdd().max }
                         listOf(value.builder.integer(min..max))
@@ -266,10 +266,10 @@ open class VectorQuantity : Cloneable {
     /**
      * Adds quantities.
      * @param quantity is added to the current VectorQuantity
-     * @return VectorQuantity with resulting AADD/IDD value and Unit as a new VectorQuantity
+     * @return VectorQuantity with resulting Real/Integer value and Unit as a new VectorQuantity
      */
     operator fun plus(quantity: VectorQuantity): VectorQuantity {
-        if (values[0] is BDD) throw BDDError("Addition not allowed for BDDs")
+        if (values[0] is Bool) throw BDDError("Addition not allowed for BDDs")
         var resultingUnit = unit
         var resultingUnitSpec = unitSpec
         if (unit.toString() == "?") { //Choose if possible known unit
@@ -279,11 +279,11 @@ open class VectorQuantity : Cloneable {
         val resultingValues = mutableListOf<DD<*>>()
         //Special Case for Addition of 0
         when (values[0]) {
-            is AADD -> {
+            is Real -> {
                 if (values.size == 1 && Range(-1e-14, 1e-14).contains(values[0].asAadd().getRange())) return quantity.clone()
                 if (quantity.values.size == 1 && Range(-1e-14, 1e-14).contains(quantity.values[0].asAadd().getRange())) return this.clone()
             }
-            is IDD -> {
+            is Integer -> {
                 if (values.size == 1 && values[0].asIdd().min == 0L && values[0].asIdd().max == 0L) return quantity.clone()
                 if (quantity.values.size == 1 && quantity.values[0].asIdd().min == 0L && quantity.values[0].asIdd().max == 0L) return this.clone()
             }
@@ -304,10 +304,10 @@ open class VectorQuantity : Cloneable {
     /**
      * Subtracts quantities.
      * @param quantity is the subtrahend of the current VectorQuantity
-     * @return VectorQuantity with resulting AADD/IDD value and Unit as a new VectorQuantity.
+     * @return VectorQuantity with resulting Real/Integer value and Unit as a new VectorQuantity.
      */
     operator fun minus(quantity: VectorQuantity): VectorQuantity {
-        if (values[0] is BDD) throw SemanticError("Subtraction not allowed on BDDs")
+        if (values[0] is Bool) throw SemanticError("Subtraction not allowed on BDDs")
         val resultingUnit = if (unit.toString() == "?") quantity.unit else unit
         val resultingUnitSpec = if (unit.toString() == "?") quantity.unitSpec else unitSpec
         val resultingValues = mutableListOf<DD<*>>()
@@ -334,8 +334,8 @@ open class VectorQuantity : Cloneable {
     open fun negate(): VectorQuantity {
         val resultingValues = values.map {
             when (it) {
-                is AADD -> it.negate()
-                is IDD -> it.negate()
+                is Real -> it.negate()
+                is Integer -> it.negate()
                 else -> throw SemanticError("negate only applicable on values of type Real or Integer")
             }
         }
@@ -349,7 +349,7 @@ open class VectorQuantity : Cloneable {
      */
     open infix fun pow(quantity: VectorQuantity): VectorQuantity {
         if (quantity.values.size != 1) throw DDError("Power parameter only for Vectors of size one (values)")
-        if (values[0] is BDD) throw BDDError("Pow not allowed for BDDs")
+        if (values[0] is Bool) throw BDDError("Pow not allowed for BDDs")
         return pow(quantity.values[0])
     }
 
@@ -358,10 +358,10 @@ open class VectorQuantity : Cloneable {
     /**
      * Compares quantities with "greater than"
      * For vectors compare the abs values
-     * @return VectorQuantity with the result as BDD as a new VectorQuantity
+     * @return VectorQuantity with the result as Bool as a new VectorQuantity
      */
     infix fun gt(quantity: VectorQuantity): Quantity {
-        if (values[0] is BDD) throw BDDError("Greater than not allowed for BDDs")
+        if (values[0] is Bool) throw BDDError("Greater than not allowed for BDDs")
         if(values.size!=1 || quantity.values.size!=1)
             throw DDError("For > both values should be no Vectors")
         else
@@ -371,10 +371,10 @@ open class VectorQuantity : Cloneable {
     /**
      * Compares quantities with "less than"
      * For vectors compare the abs values
-     * @return VectorQuantity with the with result as BDD as a new VectorQuantity
+     * @return VectorQuantity with the result as Bool as a new VectorQuantity
      */
     infix fun lt(quantity: VectorQuantity): Quantity {
-        if (values[0] is BDD) throw BDDError("Less than not allowed for BDDs")
+        if (values[0] is Bool) throw BDDError("Less than not allowed for BDDs")
         if(values.size!=1 || quantity.values.size!=1)
             throw DDError("For < both values should be no Vectors")
         else
@@ -384,10 +384,10 @@ open class VectorQuantity : Cloneable {
     /**
      * Compares quantities with "greater equals"
      * For vectors compare the abs values
-     * @return VectorQuantity with the with result as BDD as a new VectorQuantity
+     * @return VectorQuantity with the result as Bool as a new VectorQuantity
      */
     infix fun ge(quantity: VectorQuantity): Quantity {
-        if (values[0] is BDD) throw BDDError("Greater equals not allowed for BDDs")
+        if (values[0] is Bool) throw BDDError("Greater equals not allowed for BDDs")
         if(values.size!=1 || quantity.values.size!=1)
             throw DDError("For >= both values should be no Vectors")
         else
@@ -397,10 +397,10 @@ open class VectorQuantity : Cloneable {
     /**
      * Compares quantities with "less equals"
      * For vectors compare the abs values
-     * @return VectorQuantity with the with result as BDD as a new VectorQuantity
+     * @return VectorQuantity with the result as Bool as a new VectorQuantity
      */
     infix fun le(quantity: VectorQuantity): Quantity {
-        if (values[0] is BDD) throw BDDError("Less equals not allowed for BDDs")
+        if (values[0] is Bool) throw BDDError("Less equals not allowed for BDDs")
         if(values.size!=1 || quantity.values.size!=1)
             throw DDError("For <= both values should be no Vectors")
         else
@@ -409,7 +409,7 @@ open class VectorQuantity : Cloneable {
 
     /**
      * Compares quantities with "equals"
-     * @return VectorQuantity with the with result as BDD as a new VectorQuantity
+     * @return VectorQuantity with the result as Bool as a new VectorQuantity
      */
     infix fun eq(quantity: VectorQuantity): Quantity {
         if(values.size!= quantity.values.size)
@@ -423,7 +423,7 @@ open class VectorQuantity : Cloneable {
             }
             return Quantity(equal)
         }
-        if (values.first() is BDD) { // and is the same as not xor
+        if (values.first() is Bool) { // and is the same as not xor
             var equal = value.asBdd().xor(quantity.value.asBdd()).not()
             for(i in 1 until values.size ){
                 if(values[i] != quantity.values[i]){
@@ -432,7 +432,7 @@ open class VectorQuantity : Cloneable {
             }
             return Quantity(equal)
         }
-        //start with first element followed by the rest in the loop
+        //start with the first element followed by the rest in the loop
         var equal = (value lessThanOrEquals quantity.value).and(value greaterThanOrEquals quantity.value)
         for(i in 1 until values.size ){
             if(values[i] != quantity.values[i]){
@@ -444,7 +444,7 @@ open class VectorQuantity : Cloneable {
 
     infix fun neq(quality: VectorQuantity): VectorQuantity {
         val equalsValues = (this eq quality).values
-        val resultingValues = mutableListOf<BDD>()
+        val resultingValues = mutableListOf<Bool>()
         //negate the result of the equals operation
         equalsValues.forEach {
             resultingValues.add(it.asBdd().not())
@@ -454,25 +454,26 @@ open class VectorQuantity : Cloneable {
 //--------------Miscellaneous operations--------------------------------
 
     /**
-     * The Ceil operation on AADD, rounds up to next integer value,
-     * @return VectorQuantity with Real (AADD) type as a new VectorQuantity
+     * The Ceil operation on Real, rounds up to next integer value
+     * @return VectorQuantity with Real (Real) type as a new VectorQuantity
      */
     open fun ceil(): VectorQuantity {
-        if (values[0] !is AADD) throw SemanticError("Ceil must have parameter of type Real")
+        if (values[0] !is Real) throw SemanticError("Ceil must have parameter of type Real")
         val resultingValues = values.toMutableList()
         for (i in resultingValues.indices)
-            resultingValues[i] = (resultingValues[i] as AADD).ceil()
+            resultingValues[i] = (resultingValues[i] as Real).ceil()
         return VectorQuantity(resultingValues, unit, unitSpec)
     }
 
-    /** Floor operation on AADD just rounds up to the next integer value,
-     * @return VectorQuantity with Real (AADD) type as a new VectorQuantity
+    /**
+     * Floor operation on Real just rounds up to the next integer value
+     * @return VectorQuantity with Real (Real) type as a new VectorQuantity
      */
     open fun floor(): VectorQuantity {
-        if (values.firstOrNull() !is AADD) throw SemanticError("Floor must have parameter of type Real")
+        if (values.firstOrNull() !is Real) throw SemanticError("Floor must have parameter of type Real")
         val resultingValues = values.toMutableList()
         for (i in resultingValues.indices)
-            resultingValues[i] = (resultingValues[i] as AADD).floor()
+            resultingValues[i] = (resultingValues[i] as Real).floor()
         return VectorQuantity(resultingValues, unit, unitSpec)
     }
 
@@ -485,9 +486,9 @@ open class VectorQuantity : Cloneable {
         //calculate final sqrt value
         val resultingValues = mutableListOf<DD<*>>()
         when (values[0]) {
-            is AADD ->  values.forEach { resultingValues.add(it.asAadd().sqrt())}
-            is IDD -> values.forEach {resultingValues.add(it.asIdd().sqrt())}
-            else -> throw SemanticError("Sqrt not allowed for any other type than AADD or IDD")
+            is Real ->  values.forEach { resultingValues.add(it.asAadd().sqrt())}
+            is Integer -> values.forEach {resultingValues.add(it.asIdd().sqrt())}
+            else -> throw SemanticError("Sqrt not allowed for any other type than Real or Integer")
         }
 
         //Calculating sqrt of unit exponents and adding to result unit
@@ -512,16 +513,16 @@ open class VectorQuantity : Cloneable {
      * @return VectorQuantity with the result as a new VectorQuantity
      */
     open fun sqr(): VectorQuantity {
-        if (value !is AADD && value !is IDD) {
-            throw BDDError("Sqr not allowed for any other type than AADD or IDD")
+        if (value !is Real && value !is Integer) {
+            throw BDDError("Sqr not allowed for any other type than Real or Integer")
         }
 
         val resultValues = mutableListOf<DD<*>>()
         //calculate final sqrt value
         when (value) {
-            is AADD -> values.forEach { resultValues.add(it.asAadd().pow(it.builder.real(2.0))) }
-            is IDD -> values.forEach { resultValues.add(it.asIdd().sqr()) }
-            else -> throw BDDError("Sqr not allowed for any other type than AADD or IDD")
+            is Real -> values.forEach { resultValues.add(it.asAadd().pow(it.builder.real(2.0))) }
+            is Integer -> values.forEach { resultValues.add(it.asIdd().sqr()) }
+            else -> throw BDDError("Sqr not allowed for any other type than Real or Integer")
         }
 
         var resUnit = Unit()
@@ -539,7 +540,7 @@ open class VectorQuantity : Cloneable {
 
     /**
      * calculates log base e (ln) of a VectorQuantity
-     * @return VectorQuantity with result as a new VectorQuantity
+     * @return VectorQuantity with the result as a new VectorQuantity
      */
     open fun ln(): VectorQuantity {
         //Test if unit is 1, otherwise it is not possible
@@ -548,9 +549,9 @@ open class VectorQuantity : Cloneable {
         }
         val finalValues = mutableListOf<DD<*>>()
         when (values[0]) {
-            is AADD -> values.forEach { finalValues.add((it as AADD).log()) }
-            is IDD -> values.forEach { finalValues.add((it as IDD).log()) }
-            else -> throw SemanticError("Log not allowed for any other type than AADD or IDD.")
+            is Real -> values.forEach { finalValues.add((it as Real).log()) }
+            is Integer -> values.forEach { finalValues.add((it as Integer).log()) }
+            else -> throw SemanticError("Log not allowed for any other type than Real or Integer.")
         }
         return VectorQuantity(finalValues, unit, unitSpec)
     }
@@ -558,16 +559,16 @@ open class VectorQuantity : Cloneable {
     /**
      * calculates log of a VectorQuantity with a given base
      * @param base base value for the logarithm
-     * @return VectorQuantity with result as a new VectorQuantity
+     * @return VectorQuantity with the result as a new VectorQuantity
      */
     open fun log(base: DD<*>): VectorQuantity {
         //Test if unit is 1, otherwise it is not possible
         if (unit.toString() != "1" && unit.toString() != "?") throw SemanticError("Log with units is not allowed")
         val finalValues = mutableListOf<DD<*>>()
         when (values[0]) {
-            is AADD -> values.forEach { finalValues.add((it as AADD).log() / (base as AADD).log()) }
-            is IDD -> values.forEach { finalValues.add((it as IDD).log(base as IDD)) }
-            else -> throw SemanticError("Log not allowed for any other type than AADD or IDD.")
+            is Real -> values.forEach { finalValues.add((it as Real).log() / (base as Real).log()) }
+            is Integer -> values.forEach { finalValues.add((it as Integer).log(base as Integer)) }
+            else -> throw SemanticError("Log not allowed for any other type than Real or Integer.")
         }
         return VectorQuantity(finalValues, unit, unitSpec)
     }
@@ -575,9 +576,9 @@ open class VectorQuantity : Cloneable {
     fun log(bases: VectorQuantity): VectorQuantity {
         val results = mutableListOf<DD<*>>()
         when (values[0]) {
-            is AADD -> values.indices.forEach { results.add(values[it].asAadd().log() / bases.values[it].asAadd().log())}
-            is IDD -> values.indices.forEach { results.add(values[it].asIdd().log() / bases.values[it].asIdd().log()) }
-            else -> throw DDError("Log only possible for IDD and AADD")
+            is Real -> values.indices.forEach { results.add(values[it].asAadd().log() / bases.values[it].asAadd().log())}
+            is Integer -> values.indices.forEach { results.add(values[it].asIdd().log() / bases.values[it].asIdd().log()) }
+            else -> throw DDError("Log only possible for Integer and Real")
         }
         return VectorQuantity(results, unit, unitSpec)
     }
@@ -585,16 +586,16 @@ open class VectorQuantity : Cloneable {
     /**
      * calculates exp of a VectorQuantity
      * It is used for the following function: f(x) = e^x
-     * @return VectorQuantity with result as a new VectorQuantity
+     * @return VectorQuantity with the result as a new VectorQuantity
      */
     open fun exp(): VectorQuantity {
         //Test if unit is 1, otherwise it is not possible
         if (unit.toString() != "1" && unit.toString() == "?") throw SemanticError("Exp with units is not allowed")
         val finalValues = mutableListOf<DD<*>>()
         when (values[0]) {
-            is AADD -> values.forEach { finalValues.add((it as AADD).exp()) }
-            is IDD -> values.forEach { finalValues.add((it as IDD).exp()) }
-            else -> throw SemanticError("Exp only possible with IDD and AADD")
+            is Real -> values.forEach { finalValues.add((it as Real).exp()) }
+            is Integer -> values.forEach { finalValues.add((it as Integer).exp()) }
+            else -> throw SemanticError("Exp only possible with Integer and Real")
         }
         return VectorQuantity(finalValues, unit, unitSpec)
     }
@@ -602,16 +603,16 @@ open class VectorQuantity : Cloneable {
     /**
      * Calculates Pow2 for Quantities
      * It is used for the following function: f(x) = 2^x
-     * @return VectorQuantity with result as a new VectorQuantity
+     * @return VectorQuantity with the result as a new VectorQuantity
      */
     open fun pow2(): VectorQuantity {
         //Test if unit is 1, otherwise it is not possible
         if (unit.toString() != "1" && unit.toString() != "?") throw SemanticError("Pow2 with units is not allowed")
         val finalValues = mutableListOf<DD<*>>()
         when (values[0]) {
-            is AADD -> values.forEach { finalValues.add((it as AADD).power2()) }
-            is IDD -> values.forEach { finalValues.add((it as IDD).power2()) }
-            else -> throw SemanticError("Pow2 only possible with IDD and AADD")
+            is Real -> values.forEach { finalValues.add((it as Real).power2()) }
+            is Integer -> values.forEach { finalValues.add((it as Integer).power2()) }
+            else -> throw SemanticError("Pow2 only possible with Integer and Real")
         }
         return VectorQuantity(finalValues, unit, unitSpec)
     }
@@ -619,7 +620,7 @@ open class VectorQuantity : Cloneable {
     /**
      * Calculates Pow for Quantities: f(x,y) = x^y
      * @param exponent Exponent for the Pow function
-     * @return VectorQuantity with result as a new VectorQuantity
+     * @return VectorQuantity with the result as a new VectorQuantity
      */
     open fun pow(exponent: DD<*>): VectorQuantity {
         //Test if unit is 1, otherwise it is not possible
@@ -627,9 +628,9 @@ open class VectorQuantity : Cloneable {
             throw SemanticError("Power with units is not allowed")
         val finalValues = mutableListOf<DD<*>>()
         when (values[0]) {
-            is AADD -> values.forEach { finalValues.add((it as AADD).pow(exponent.asAadd())) }
-            is IDD -> values.forEach { finalValues.add((it as IDD).pow(exponent.asIdd())) }
-            else -> throw SemanticError("Power only possible with IDD and AADD")
+            is Real -> values.forEach { finalValues.add((it as Real).pow(exponent.asAadd())) }
+            is Integer -> values.forEach { finalValues.add((it as Integer).pow(exponent.asIdd())) }
+            else -> throw SemanticError("Power only possible with Integer and Real")
         }
         return VectorQuantity(finalValues, unit, unitSpec)
     }
@@ -638,8 +639,8 @@ open class VectorQuantity : Cloneable {
         if (unit.toString() != "1" && unit.toString() != "?") throw SemanticError("Sin with units is not allowed")
         val finalValues = mutableListOf<DD<*>>()
         when (values[0]) {
-            is AADD ->  values.forEach { finalValues.add((it as AADD).sin()) }
-            else -> throw SemanticError("Sin only possible with AADD")
+            is Real ->  values.forEach { finalValues.add((it as Real).sin()) }
+            else -> throw SemanticError("Sin only possible with Real")
         }
         return VectorQuantity(finalValues, unit, unitSpec)
     }
@@ -648,8 +649,8 @@ open class VectorQuantity : Cloneable {
         if (unit.toString() != "1" && unit.toString() != "?") throw SemanticError("arcsin with units is not allowed")
         val finalValues = mutableListOf<DD<*>>()
         when (values[0]) {
-            is AADD ->  values.forEach { finalValues.add((it as AADD).arcsin()) }
-            else -> throw SemanticError("arcsin only possible with AADD")
+            is Real ->  values.forEach { finalValues.add((it as Real).arcsin()) }
+            else -> throw SemanticError("arcsin only possible with Real")
         }
         return VectorQuantity(finalValues, unit, unitSpec)
     }
@@ -658,8 +659,8 @@ open class VectorQuantity : Cloneable {
         if (unit.toString() != "1" && unit.toString() != "?") throw SemanticError("Cos with units is not allowed")
         val finalValues = mutableListOf<DD<*>>()
         when (values[0]) {
-            is AADD ->  values.forEach { finalValues.add((it as AADD).cos()) }
-            else -> throw SemanticError("Cos only possible with AADD")
+            is Real ->  values.forEach { finalValues.add((it as Real).cos()) }
+            else -> throw SemanticError("Cos only possible with Real")
         }
         return VectorQuantity(finalValues, unit, unitSpec)
     }
@@ -668,33 +669,33 @@ open class VectorQuantity : Cloneable {
         if (unit.toString() != "1" && unit.toString() != "?") throw SemanticError("arccos with units is not allowed")
         val finalValues = mutableListOf<DD<*>>()
         when (values[0]) {
-            is AADD ->  values.forEach { finalValues.add((it as AADD).arccos()) }
-            else -> throw SemanticError("arccos only possible with AADD")
+            is Real ->  values.forEach { finalValues.add((it as Real).arccos()) }
+            else -> throw SemanticError("arccos only possible with Real")
         }
         return VectorQuantity(finalValues, unit, unitSpec)
     }
 
     /**
-     * Calculates angle between two vectors of the same size.
+     * Calculates the angle between two vectors of the same size.
      * @param other vector for angle calculation
-     * @return Angle as a Quantity with AADD value in radiant representation
+     * @return Angle as a Quantity with Real value in radiant representation
      */
     open fun angle(other: VectorQuantity): Quantity {
         if (values.size != other.values.size)
             throw DDError("For the angle calculation vectors must have the same size, not ${values.size} and ${other.values.size}")
 
-        val quantity1 = if (value is IDD) intAsAADDQuantity() else this
-        val quantity2 = if (other.value is IDD) other.intAsAADDQuantity() else other
+        val quantity1 = if (value is Integer) intAsAADDQuantity() else this
+        val quantity2 = if (other.value is Integer) other.intAsAADDQuantity() else other
 
-        if (quantity1.value !is AADD || quantity2.value !is AADD)
-            throw DDError("Vector operations are only supported for IDD and AADD")
+        if (quantity1.value !is Real || quantity2.value !is Real)
+            throw DDError("Vector operations are only supported for Integer and Real")
 
         val division = quantity1.dot(quantity2) / (quantity1.abs() * quantity2.abs())
         return Quantity(division.aadd().arccos(), "rad")
     }
 
     private fun intAsAADDQuantity(): VectorQuantity {
-        if(values[0] !is IDD) throw DDError("Only possible for IDD")
+        if(values[0] !is Integer) throw DDError("Only possible for Integer")
         val resultingValues = mutableListOf<DD<*>>()
         for (i in values.indices)
             resultingValues.add(values[i].builder.real(values[i].asIdd().min.toDouble()..values[i].asIdd().max.toDouble()))
@@ -702,7 +703,7 @@ open class VectorQuantity : Cloneable {
     }
 
     open fun norm(): VectorQuantity {
-        if (values[0] is IDD)
+        if (values[0] is Integer)
             throw DDError("Normalizing vectors with Integers is not supported")
         return this.div(abs())
     }
@@ -717,7 +718,7 @@ override fun toString(): String {
 
     val resultingString = StringBuilder("(")
     when (values[0]) {
-        is IDD -> {
+        is Integer -> {
             values.joinTo(resultingString, ", ") {
                 val value = it.asIdd().getRange()
                 when {
@@ -732,7 +733,7 @@ override fun toString(): String {
             }
             resultingString.append(")")
         }
-        is BDD -> {
+        is Bool -> {
             values.joinTo(resultingString, ", ") { it.asBdd().toString() }
             resultingString.append(")")
         }
@@ -740,7 +741,7 @@ override fun toString(): String {
             values.joinTo(resultingString, ", ") { it.asStrDD().toString() }
             resultingString.append(")")
         }
-        is AADD -> {
+        is Real -> {
             var transformedUnitString = ""
             values.joinTo(resultingString, ", ") {
                 val transformedValue: DD<*>
@@ -836,21 +837,21 @@ override fun toString(): String {
     /**
      * return first value
      */
-    open fun bdd(): BDD = values[0] as BDD
-    open fun aadd(): AADD = values[0] as AADD
-    open fun idd(): IDD = values[0] as IDD
+    open fun bdd(): Bool = values[0] as Bool
+    open fun aadd(): Real = values[0] as Real
+    open fun idd(): Integer = values[0] as Integer
 
     /**
      * return all values
      */
-    open fun bdds(): MutableList<BDD> = values as MutableList<BDD>
-    open fun aadds(): MutableList<AADD> = values as MutableList<AADD>
-    open fun idds(): MutableList<IDD> = values as MutableList<IDD>
+    open fun bdds(): MutableList<Bool> = values as MutableList<Bool>
+    open fun aadds(): MutableList<Real> = values as MutableList<Real>
+    open fun idds(): MutableList<Integer> = values as MutableList<Integer>
 
     /**
      * Converts this unit to the expected unit representation and returns the value of the conversion
      * @param wantedRepresentation String of the wanted representation of the Unit
-     * @Return value in AADD/IDD of the result
+     * @Return value in Real/Integer of the result
      */
     open fun valuesIn(wantedRepresentation: String): List<DD<*>> {
         val expectedUnit = Unit(wantedRepresentation)
@@ -941,7 +942,8 @@ override fun toString(): String {
     }
 
     /**
-     * Intersects a VectorQuantity with another VectorQuantity of the same property (e.g. upVectorQuantity with downVectorQuantity)
+     * Intersects a VectorQuantity with another VectorQuantity of the same property
+     * (e.g., upVectorQuantity with downVectorQuantity)
      * @param q Intersect the current VectorQuantity with this VectorQuantity
      * @return Intersected VectorQuantity as a new VectorQuantity
      **/
@@ -954,10 +956,10 @@ override fun toString(): String {
         }
         for (i in values.indices) {
             when (values[i]) {
-                is AADD -> resultingValues.add(values[i].asAadd() intersect q.values[i].asAadd())
-                is IDD -> resultingValues.add(values[i].asIdd() intersect q.values[i].asIdd())
-                is BDD -> resultingValues.add(values[i].asBdd() intersect q.values[i].asBdd())
-                else -> throw DDError("Intersection only possible for IDD, BDD, and ADD")
+                is Real -> resultingValues.add(values[i].asAadd() intersect q.values[i].asAadd())
+                is Integer -> resultingValues.add(values[i].asIdd() intersect q.values[i].asIdd())
+                is Bool -> resultingValues.add(values[i].asBdd() intersect q.values[i].asBdd())
+                else -> throw DDError("Intersection only possible for Integer, Bool, and ADD")
             }
         }
         return VectorQuantity(resultingValues, unit, unitSpec)
@@ -1009,11 +1011,11 @@ override fun toString(): String {
 
     /**
      * Constrain a VectorQuantity with the interval of this property (intSpec)
-     * @param intSpecs the current VectorQuantity should be constrained to this intervals
+     * @param intSpecs the current VectorQuantity should be constrained to these intervals
      * @return Constrained VectorQuantity as a new VectorQuantity
      **/
     open fun constrain(intSpecs: MutableList<IntegerRange>): VectorQuantity {
-        val resultingValues = mutableListOf<IDD>()
+        val resultingValues = mutableListOf<Integer>()
         if (values.size == intSpecs.size)
             values.indices.forEach { resultingValues.add(values[it].asIdd() intersect values[it].builder.integer(intSpecs[it])) }
         else
@@ -1026,9 +1028,9 @@ override fun toString(): String {
     }
 
     /**
-     * Constrain a VectorQuantity with the interval of this valueFeature (only for AADD)
+     * Constrain a VectorQuantity with the interval of this valueFeature (only for Real)
      * TODO: define strategy that ensures that intersect in evalUp/Down does not introduce
-     *  arbitrary many comparisons and hence growing size of BDD/AADD
+     *  arbitrary many comparisons and hence growing size of Bool/Real
      *  TODO: Remove checks for NaN or Empty value if FIX for division by 0 during evalDown ready
      * @param q The VectorQuantity which should be constrained to
      * @param rangeSpecs the specified range
@@ -1055,34 +1057,33 @@ override fun toString(): String {
                 throw VectorDimensionError("Vector size of ${values.size} does not match Constraint size of ${rangeSpecs.size}")
 
         for (i in values.indices) {
-            if (q.values[i].toString() != "Real" && !(q.values[i] as AADD).isEmpty()) {
+            if (q.values[i].isFeasible && !(q.values[i] as Real).isEmpty()) {
                 resultingValues[i] = resultingValues[i].asAadd() constrainTo q.values[i].asAadd()
             }
         }
-
         return VectorQuantity(resultingValues, unit, unitSpec)
     }
 
     /**
-     * Constrain function for two Quantities with the same unit (normally SI), for IDD and AADD
+     * Constrain function for two Quantities with the same unit (normally SI), for Integer and Real
      */
     fun constrain(q: VectorQuantity): VectorQuantity {
         // only constrain to newQ if not infinite and not empty
         val resultingValues = values.toMutableList()
         when (q.values[0]) {
-            is AADD -> {
+            is Real -> {
                 for (i in values.indices) {
-                    resultingValues[i] = (values[i].asAadd() constrainTo (q.values[i] as AADD).getRange())
+                    resultingValues[i] = (values[i].asAadd() constrainTo (q.values[i] as Real).getRange())
                 }
             }
 
-            is IDD -> {
+            is Integer -> {
                 for (i in values.indices) {
-                    resultingValues[i] = (values[i].asIdd() constrainTo (q.values[i] as IDD).getRange())
+                    resultingValues[i] = (values[i].asIdd() constrainTo (q.values[i] as Integer).getRange())
                 }
             }
 
-            else -> throw SemanticError("Constrain only for IDD and AADD")
+            else -> throw SemanticError("Constrain only for Integer and Real")
         }
         if(unit.toString()=="?")
             unit = q.unit
@@ -1091,13 +1092,13 @@ override fun toString(): String {
     }
 
     /**
-     * Returns a new quantity that is constrained to spec.
+     * Returns a new quantity constrained to spec.
      * @param constraints: the constraints to be applied.
      * @param isBoolean Shows that the constraint function should work with boolean. Needed for compiler to separate it from Integer constrain
      * @return a new quantity that is q, constrained to constraint.
      */
     open fun constrain(constraints: MutableList<XBool>, isBoolean: Boolean): VectorQuantity {
-        val resultingValues = mutableListOf<BDD>()
+        val resultingValues = mutableListOf<Bool>()
         if (values.size == constraints.size)
             values.indices.forEach { resultingValues.add(values[it].asBdd() intersect values[it].builder.constant(constraints[it])) }
         else
@@ -1121,17 +1122,17 @@ override fun toString(): String {
         if (unit.toString() != other.unit.toString()) return false
         for (i in values.indices) { //iterate through all element pairs
             when (value) {
-                is AADD -> {
+                is Real -> {
                     val min1 = values[i].asAadd().getRange().min
                     val max1 = values[i].asAadd().getRange().max
                     val min2 = other.values[i].asAadd().getRange().min
                     val max2 = other.values[i].asAadd().getRange().max
-                    //if difference is too big, they are not the same
+                    //if the difference is too big, they are different
                     if (abs(min1 - min2) > abs(min1) * 0.0001) return false
                     if (abs(max1 - max2) > abs(max1) * 0.0001) return false
                 }
 
-                is IDD -> {
+                is Integer -> {
                     val min1 = values[i].asIdd().getRange().min
                     val max1 = values[i].asIdd().getRange().max
                     val min2 = other.values[i].asIdd().getRange().min
@@ -1139,12 +1140,12 @@ override fun toString(): String {
                     // For infinite values compare borders
                     if (min1 == values[i].builder.Integers.min || min1 == values[i].builder.Integers.max)
                         return min1 == min2 && max1 == max2
-                    //if difference is too big, they are not the same
+                    //if the difference is too big, they are different
                     if (abs(min1 - min2) > abs(min1) * 0.0001) return false
                     if (abs(max1 - max2) > abs(max1) * 0.0001) return false
                 }
                 // No units ...
-                is BDD,
+                is Bool,
                 is StrDD -> return values.toString() == other.values.toString()
 
                 else -> throw DDError("Unsupported value type for equals: $values")
@@ -1158,12 +1159,12 @@ override fun toString(): String {
             throw VectorDimensionError("Not possible to compare VectorQuantities of different size (${values.size} and ${other.values.size})")
         for (i in values.indices) {
             when (values[i]) {
-                is AADD ->
+                is Real ->
                     values[i].asAadd().contains(other.values[i].asAadd())
-                is IDD -> {
+                is Integer -> {
                     if (!values[i].asIdd().contains(other.values[i].asIdd())) return false
                 }
-                else -> throw DDError("Unsupported value type for contains, only AADD and IDD are supported")
+                else -> throw DDError("Unsupported value type for contains, only Real and Integer are supported")
             }
         }
         return true
@@ -1182,7 +1183,7 @@ override fun toString(): String {
      */
     open fun abs(): Quantity {
         return when (values[0]) {
-            is IDD -> {
+            is Integer -> {
                 var squareSum = values[0].builder.integer(0)
                 values.forEach {
                     val min = it.asIdd().min
@@ -1198,7 +1199,7 @@ override fun toString(): String {
                 Quantity(squareSum.sqrt())
             }
 
-            is AADD -> {
+            is Real -> {
                 var squareSum = values[0].builder.real(0.0)
                 values.forEach {
                     val min = it.asAadd().min
@@ -1211,7 +1212,9 @@ override fun toString(): String {
                         it.builder.real(min..max)
                     squareSum += absoluteValue.sqr()
                 }
-                if (squareSum.min in -0.000001..0.000001) { // if result is close to zero make it zero, because sqrt of negative values is not possible
+                if (squareSum.min in -0.000001..0.000001) {
+                    // if the result is close to zero and negative, make it zero,
+                    // because sqrt of negative values is not possible
                     squareSum = values[0].builder.real(0.0..squareSum.max)
                 }
                 Quantity(squareSum.sqrt(), unit)
@@ -1227,7 +1230,7 @@ override fun toString(): String {
      */
     open fun cityBlockDistance(param: VectorQuantity): Quantity {
         return when (values[0]) {
-            is IDD -> {
+            is Integer -> {
                 val connectingVector = this - param
                 var sum = values[0].builder.integer(0)
                 connectingVector.values.forEach {
@@ -1244,7 +1247,7 @@ override fun toString(): String {
                 Quantity(sum)
             }
 
-            is AADD -> {
+            is Real -> {
                 val connectingVector = this - param
                 var sum = values[0].builder.real(0.0)
                 connectingVector.values.forEach {
@@ -1270,11 +1273,11 @@ override fun toString(): String {
 
     /**
      * Applies boolean "and" operation
-     * @return VectorQuantity with the with result as BDD as a new VectorQuantity
+     * @return VectorQuantity with the with result as Bool as a new VectorQuantity
      */
     infix fun and(quantity: VectorQuantity): VectorQuantity {
-        if (values[0] !is BDD) throw BDDError("Boolean \"and\" can only be applied to BDDs")
-        val results = mutableListOf<BDD>()
+        if (values[0] !is Bool) throw BDDError("Boolean \"and\" can only be applied to BDDs")
+        val results = mutableListOf<Bool>()
         values.indices.forEach { results.add(values[it].asBdd() and quantity.values[it].asBdd()) }
         return VectorQuantity(results)
     }
@@ -1284,8 +1287,8 @@ override fun toString(): String {
      * @return VectorQuantity with the with result as a new VectorQuantity
      */
     infix fun or(quantity: VectorQuantity): VectorQuantity {
-        if (values[0] !is BDD) throw BDDError("Boolean \"or\" can only be applied to BDDs")
-        val results = mutableListOf<BDD>()
+        if (values[0] !is Bool) throw BDDError("Boolean \"or\" can only be applied to BDDs")
+        val results = mutableListOf<Bool>()
         values.indices.forEach { results.add(values[it].asBdd() or quantity.values[it].asBdd()) }
         return VectorQuantity(results)
     }
@@ -1300,9 +1303,9 @@ override fun toString(): String {
      * @return the min value of the Range as Double of the first value
      */
     open fun getMinAsDouble(): Double {
-        if (value is BDD) throw BDDError("No min value for BDDs")
-        if (value is AADD) return aadd().getRange().min
-        if (value is IDD) return idd().getRange().min.toDouble()
+        if (value is Bool) throw BDDError("No min value for BDDs")
+        if (value is Real) return aadd().getRange().min
+        if (value is Integer) return idd().getRange().min.toDouble()
         throw SemanticError("Expect either Real or Integer")
     }
 
@@ -1310,9 +1313,9 @@ override fun toString(): String {
      * @return the max value of the Range as Double of the first value
      */
     open fun getMaxAsDouble(): Double {
-        if (value is BDD) throw BDDError("No max value for BDDs")
-        if (value is AADD) return aadd().getRange().max
-        if (value is IDD) return idd().getRange().max.toDouble()
+        if (value is Bool) throw BDDError("No max value for BDDs")
+        if (value is Real) return aadd().getRange().max
+        if (value is Integer) return idd().getRange().max.toDouble()
         throw SemanticError("Expect either Real or Integer")
     }
 
@@ -1323,11 +1326,11 @@ override fun toString(): String {
      */
     fun isConstrained(): Boolean {
         values.forEach {
-            if (it is AADD && (!it.minIsInf || !it.maxIsInf))
+            if (it is Real && (!it.minIsInf || !it.maxIsInf))
                 return true
-            if (it is IDD && (!it.minIsInf || !it.maxIsInf))
+            if (it is Integer && (!it.minIsInf || !it.maxIsInf))
                 return true
-            if (it is BDD && it.value != XBool.X)
+            if (it is Bool && it.value != XBool.X)
                 return true
             if (it is StrDD)
                 return true
@@ -1346,8 +1349,8 @@ fun max(a: VectorQuantity, b: VectorQuantity): VectorQuantity{
     val max = max(a.getMaxAsDouble(), b.getMaxAsDouble())
     val min = max(a.getMinAsDouble(), b.getMinAsDouble())
     val result = when (af.value) {
-        is AADD -> Quantity(af.aadd().constrainTo(Range(min, max)), af.unit)
-        is IDD -> Quantity(af.idd().constrainTo(IntegerRange(min, max)))
+        is Real -> Quantity(af.aadd().constrainTo(Range(min, max)), af.unit)
+        is Integer -> Quantity(af.idd().constrainTo(IntegerRange(min, max)))
         else -> throw SemanticError("Expect parameters of max to be Real or Integer.")
     }
     return result
@@ -1362,14 +1365,14 @@ fun min(a: VectorQuantity, b: VectorQuantity): VectorQuantity {
     val af = a.ge(b).bdd().ite(b, a)
     val max = min(a.getMaxAsDouble(), b.getMaxAsDouble())
     val min = min(a.getMinAsDouble(), b.getMinAsDouble())
-    if (af.value is AADD)
+    if (af.value is Real)
         return Quantity(af.aadd().constrainTo(Range(min, max)), af.unit)
-    else if (af.value is IDD)
+    else if (af.value is Integer)
         return Quantity(af.idd().constrainTo(IntegerRange(min, max)))
     throw SemanticError("Expect parameters of min to be Real or Integer.")
 }
 
-fun BDD.ite(t: VectorQuantity, e: VectorQuantity): VectorQuantity {
+fun Bool.ite(t: VectorQuantity, e: VectorQuantity): VectorQuantity {
     val results = mutableListOf<DD<*>>()
     t.values.indices.forEach { results.add(this.ite(t.values[it], e.values[it])) }
     return VectorQuantity(results, t.unit, t.unitSpec)

@@ -7,7 +7,6 @@ import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import util.mockup.loadKerML
 import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import util.testSession
 
@@ -71,8 +70,7 @@ class MultiplicityTests {
         assertEquals(7, global.resolve<Feature>("b::partC::cardinality")!!.variable!!.vectorQuantity.value.asIdd().max)
     }
 
-    // The same as above with integers does not work
-    @Test @Disabled
+    @Test
     fun restrictMultiplicity2() = testSession("ScalarValues") {
         loadKerML("""                
             type b :> Base::Anything {

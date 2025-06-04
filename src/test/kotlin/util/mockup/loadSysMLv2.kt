@@ -1,10 +1,10 @@
 package util.mockup
 
 import com.github.tukcps.sysmd.compiler.SysMLv2
+import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.exceptions.SysMDError
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.session.Session
-import com.github.tukcps.sysmd.services.session.report
 
 /**
  * Loads a SysML v2 model from an input string into the session.
@@ -16,6 +16,6 @@ fun Session.loadSysMLv2(input: String){
     try {
         if (settings.initialize) initialize(5)
     }  catch (exception: SysMDError) {
-        report(exception)
+        status.error(message = "During initialization: ${exception.message}", kind = Issue.Kind.ERROR_SEMANTIC, cause = exception)
     }
 }
