@@ -20,8 +20,7 @@ class InvariantTests {
             """    
                 attribute weight: ScalarValues::Integer {:>> range = "0..50";}
                 assert r { weight >= 30 }
-        """.trimIndent()
-        )
+        """)
         propagate()
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(30, global.resolve<Feature>("weight")!!.variable!!.vectorQuantity.value.asIdd().min)
@@ -33,8 +32,7 @@ class InvariantTests {
             """    
                 attribute weight: ScalarValues::Integer {:>> range = "0..50";}
                 assert r { 30 >= weight }
-        """.trimIndent()
-        )
+        """)
         propagate()
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(0, global.resolve<Feature>("weight")!!.variable!!.vectorQuantity.value.asIdd().min)
@@ -99,12 +97,10 @@ class InvariantTests {
 
     @Test
     fun restrictInteger4() = testSession("ScalarValues") {
-        loadSysMLv2(
-            """    
+        loadSysMLv2("""    
                 attribute weight: ScalarValues::Integer {:>> range = "0..50";}
                 assert r { weight < 30 }
-        """.trimIndent()
-        )
+        """)
         propagate()
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(0, global.resolve<Feature>("weight")!!.variable!!.vectorQuantity.value.asIdd().min)
@@ -113,12 +109,10 @@ class InvariantTests {
 
     @Test
     fun restrictInteger4a() = testSession("ScalarValues") {
-        loadSysMLv2(
-            """    
+        loadSysMLv2("""    
                 attribute weight: ScalarValues::Integer {:>> range = "0..50";}
                 assert r { 30 < weight }
-        """.trimIndent()
-        )
+        """)
         propagate()
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(31, global.resolve<Feature>("weight")!!.variable!!.vectorQuantity.value.asIdd().min)
@@ -127,12 +121,10 @@ class InvariantTests {
 
     @Test
     fun restrictIntegerEmpty() = testSession("ScalarValues") {
-        loadSysMLv2(
-            """    
+        loadSysMLv2("""    
                 attribute weight: ScalarValues::Integer {:>> range = "0..50";}
                 assert r { weight <= -10 }
-        """.trimIndent()
-        )
+        """)
         propagate()
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assert(global.resolve<Feature>("weight")!!.variable!!.vectorQuantity.value.asIdd().isEmpty())

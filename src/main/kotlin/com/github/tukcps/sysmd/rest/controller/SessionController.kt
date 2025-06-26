@@ -285,13 +285,9 @@ class SessionController {
                 Files.createDirectories(filesDirectory!!)
             }
 
-            // Generate a safe filename or use original
-            val filename = file.originalFilename?.let {
-                FilenameUtils.getBaseName(it) + "_" + System.currentTimeMillis() + "." + FilenameUtils.getExtension(it)
-            } ?: ("file_" + System.currentTimeMillis() + ".png")
-
+            // Use original filename or fallback
+            val filename = file.originalFilename ?: "default_file.png"
             val targetPath = filesDirectory.resolve(filename)
-
             // Copy the file content
             Files.copy(file.inputStream, targetPath, StandardCopyOption.REPLACE_EXISTING)
 

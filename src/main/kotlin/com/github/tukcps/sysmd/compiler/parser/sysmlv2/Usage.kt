@@ -83,7 +83,7 @@ internal fun SysMLv2.UsageDeclaration(feature: FeatureActions<Feature>) {
         FeatureSpecializationPart(feature)
     }
     // SysMD proprietary extension
-    TypeConstraint().also { feature.addTypeConstraint(it) }
+    TypeConstraint().also { if ( it.isNotEmpty() ) feature.addTypeConstraint(it) }
     UnitConstraint().also { feature.addUnitConstraint(it) }
 }
 

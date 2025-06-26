@@ -11,6 +11,7 @@ import com.github.tukcps.sysmd.exceptions.SyntaxError
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.*
 import com.github.tukcps.sysmd.model.util.QualifiedName
+import com.github.tukcps.sysmd.settings
 import io.github.tukcps.aadd.values.IntegerRange
 
 /**
@@ -68,7 +69,7 @@ fun KerML.Type() {
 }
 
 /**
- *      TypeDeclaration = ( 'all' )? Identification ( OwnedMultiplicity )?
+ *      TypeDeclaration = ( 'all' )? Identification (OwnedMultiplicity)?
  *           ( SpecializationPart | ConjugationPart )+
  *          TypeRelationshipPart*
  */
@@ -392,6 +393,10 @@ fun KerML.FeatureSpecializationPart(feature: FeatureActions<Feature>) {
             optional( {token.kind == LCBRACE && nextToken.kind == INTEGER_LIT} ) { MultiplicityPart().also { feature.addMultiplicity(it) } }
             noOrMore(featureSpecializationStart) { FeatureSpecialization(feature) }
         }
+        LCBRACE then TIMES  starts {
+            MultiplicityPart().also { feature.addMultiplicity(it) }
+            noOrMore(featureSpecializationStart) { FeatureSpecialization(feature) }
+        }
         LCBRACE then INTEGER_LIT starts {
             MultiplicityPart().also { feature.addMultiplicity(it) }
             noOrMore(featureSpecializationStart) { FeatureSpecialization(feature) }
@@ -439,7 +444,13 @@ fun KerML.OwnedMultiplicity(): IntegerRange {
  */
 fun KerML.parseIntegerRange(): IntegerRange {
     val result = IntegerRange(IntegerRange.Integers)
-    ConstInt().also { result.min = it; result.max = it }
+    ConstInt().also {
+        if (consumedToken.kind == TIMES) {
+            result.min = -Long.MIN_VALUE; result.max = Long.MAX_VALUE
+        } else {
+            result.min = it; result.max = it
+        }
+    }
     optional(DOTDOT, consume = true) {
         ConstInt().also { result.max = it }
     }

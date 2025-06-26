@@ -10,12 +10,9 @@ import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.session.getAllOfClass
 import com.github.tukcps.sysmd.services.session.loadLibrary
-import io.github.tukcps.aadd.functions.numInternalNodes
 import io.github.tukcps.aadd.values.IntegerRange
 import io.github.tukcps.aadd.values.XBool
 import io.github.tukcps.aadd.values.XBool.Companion.True
-import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.Disabled
 import util.findDifferenceById
 import util.mockup.loadKerML
 import util.mockup.loadSysMD
@@ -25,7 +22,7 @@ import kotlin.test.*
 
 class IssuesAndRegressions {
     @Test
-    @Disabled // IDD do not use solver so far, and finding the solution requires the LP solver
+    @Ignore // IDD do not use solver so far, and finding the solution requires the LP solver
     fun minTestMultipleParams3Integer() = testSession("ScalarValues") {
         loadKerML("""
             feature a: ScalarValues::Integer(0..7);
@@ -35,20 +32,20 @@ class IssuesAndRegressions {
             feature e: ScalarValues::Integer(4..5) = min(a,b,c,d);
         """)
         propagate()
-        Assertions.assertEquals(0, status.issues.size, status.issues.toString())
+        assertEquals(0, status.issues.size, status.issues.toString())
         val result = global.resolveVar("a")
-        Assertions.assertEquals(4, result!!.vectorQuantity.value.asIdd().min)
-        Assertions.assertEquals(7, result.vectorQuantity.value.asIdd().max)
+        assertEquals(4, result!!.vectorQuantity.value.asIdd().min)
+        assertEquals(7, result.vectorQuantity.value.asIdd().max)
         val result1 = global.resolveVar("b")
-        Assertions.assertEquals(4, result1!!.vectorQuantity.value.asIdd().min)
-        Assertions.assertEquals(6, result1.vectorQuantity.value.asIdd().max)
+        assertEquals(4, result1!!.vectorQuantity.value.asIdd().min)
+        assertEquals(6, result1.vectorQuantity.value.asIdd().max)
         val result2 = global.resolveVar("c")
-        Assertions.assertEquals(4, result2!!.vectorQuantity.value.asIdd().min)
-        Assertions.assertEquals(5, result2.vectorQuantity.value.asIdd().max)
+        assertEquals(4, result2!!.vectorQuantity.value.asIdd().min)
+        assertEquals(5, result2.vectorQuantity.value.asIdd().max)
         val result3 = global.resolveVar("d")
-        Assertions.assertEquals(4, result3!!.vectorQuantity.value.asIdd().min)
-        Assertions.assertEquals(4, result3.vectorQuantity.value.asIdd().max)
-        Assertions.assertEquals(0, status.issues.size, status.issues.toString())
+        assertEquals(4, result3!!.vectorQuantity.value.asIdd().min)
+        assertEquals(4, result3.vectorQuantity.value.asIdd().max)
+        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     /** Issue #247 in Gitlab */
@@ -726,7 +723,7 @@ class IssuesAndRegressions {
         assertEquals(256.0, x!!.variable!!.min(), 0.0001)
     }
 
-    @Test @Disabled //TODO: Problem in Parser: After or only Product possible, but EE is not in Product
+    @Test @Ignore //TODO: Problem in Parser: After or only Product possible, but EE is not in Product
     fun booleanExpression() = testSession {
         loadSysMLv2(
             input = """
@@ -816,11 +813,11 @@ class IssuesAndRegressions {
         """)
         propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        Assertions.assertEquals(1.0, global.resolveVar("f")!!.aadd().getRange().min, 0.00001)
-        Assertions.assertEquals(2.0, global.resolveVar("f")!!.aadd().getRange().max, 0.00001)
+        assertEquals(1.0, global.resolveVar("f")!!.aadd().getRange().min, 0.00001)
+        assertEquals(2.0, global.resolveVar("f")!!.aadd().getRange().max, 0.00001)
     }
 
-    @Disabled
+    @Ignore
     @Test
     fun assertTestRealDiv() = testSession("ScalarValues", "SI", "Ranges") {
         loadSysMLv2("""
@@ -829,11 +826,11 @@ class IssuesAndRegressions {
         """)
         propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        Assertions.assertEquals(1.0, global.resolveVar("f")!!.aadd().getRange().min, 0.00001)
-        Assertions.assertEquals(2.0, global.resolveVar("f")!!.aadd().getRange().max, 0.00001)
+        assertEquals(1.0, global.resolveVar("f")!!.aadd().getRange().min, 0.00001)
+        assertEquals(2.0, global.resolveVar("f")!!.aadd().getRange().max, 0.00001)
     }
 
-    @Disabled
+    @Ignore
     @Test
     fun assertTestRealAdd() = testSession("ScalarValues", "SI", "Ranges") {
         loadSysMLv2("""
@@ -842,8 +839,8 @@ class IssuesAndRegressions {
         """)
         propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        //Assertions.assertEquals(-2.0, global.resolveVar("f")!!.aadd().getRange().min, 0.00001)
-        Assertions.assertEquals(-1.0, global.resolveVar("f")!!.aadd().getRange().max, 0.00001)
+        //assertEquals(-2.0, global.resolveVar("f")!!.aadd().getRange().min, 0.00001)
+        assertEquals(-1.0, global.resolveVar("f")!!.aadd().getRange().max, 0.00001)
     }
 
     @Test
@@ -854,11 +851,11 @@ class IssuesAndRegressions {
         """)
         propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        Assertions.assertEquals(2.0, global.resolveVar("f")!!.aadd().getRange().min, 0.00001)
-        Assertions.assertEquals(4.0, global.resolveVar("f")!!.aadd().getRange().max, 0.00001)
+        assertEquals(2.0, global.resolveVar("f")!!.aadd().getRange().min, 0.00001)
+        assertEquals(4.0, global.resolveVar("f")!!.aadd().getRange().max, 0.00001)
     }
 
-    @Disabled
+    @Ignore
     @Test
     fun assertTestRealDiv2() = testSession("ScalarValues", "SI", "Ranges") {
         loadSysMLv2("""
@@ -867,17 +864,30 @@ class IssuesAndRegressions {
         """)
         propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        Assertions.assertEquals(2.0, global.resolveVar("f")!!.aadd().getRange().min, 0.00001)
-        Assertions.assertEquals(4.0, global.resolveVar("f")!!.aadd().getRange().max, 0.00001)
+        assertEquals(2.0, global.resolveVar("f")!!.aadd().getRange().min, 0.00001)
+        assertEquals(4.0, global.resolveVar("f")!!.aadd().getRange().max, 0.00001)
     }
 
 
     @Test
-    @Disabled
-    fun IssueExpression() = testSession("ScalarValues", "SI", "Ranges") {
+    @Ignore
+    fun issueExpression() = testSession("ScalarValues", "SI", "Ranges") {
         loadSysMLv2("""
             private import ScalarValues::*;
             attribute FLOPS: Real = 5/5.0 ;
+        """)
+        propagate()
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
+    }
+
+
+
+    @Test
+    fun issueEmptyBody() = testSession("Constraints", "Requirements") {
+        loadSysMLv2("""
+            attribute a: ScalarValues::Real;
+            attribute b: ScalarValues::Real;
+            assert constraint {  a < b }
         """)
         propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())

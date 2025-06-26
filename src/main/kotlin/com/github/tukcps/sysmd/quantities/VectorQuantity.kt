@@ -44,9 +44,14 @@ open class VectorQuantity : Cloneable {
     constructor(values: List<DD<*>>) {
         if (values.isEmpty())
             throw DDError(msg = "Empty values for VectorQuantity is not supported")
-        val type = values[0]::class.qualifiedName
-        values.forEach { if (it::class.qualifiedName != type)
-            throw DDError("Different value types in vector are not supported") }
+        val type = values[0]::class
+        when(values[0]) {
+            is Integer -> values.forEach { if (it !is Integer) throw DDError("Different value types in vector are not supported") }
+            is Real    -> values.forEach { if (it !is Real)    throw DDError("Different value types in vector are not supported") }
+            is Bool    -> values.forEach { if (it !is Bool)    throw DDError("Different value types in vector are not supported") }
+            is StrDD   -> values.forEach { if (it !is StrDD)   throw DDError("Different value types in vector are not supported") }
+            else       -> {}
+        }
         this.values = values.toList()
         this.unit = Unit("")
     }
@@ -97,8 +102,13 @@ open class VectorQuantity : Cloneable {
 
     constructor(values: List<DD<*>>, unitObject: Unit, unitSpec: String = "", unitDimension: String = "") {
         if (values.isEmpty()) throw DDError(msg = "Empty value for VectorQuantity is not supported")
-        val type = values[0]::class.qualifiedName
-        values.forEach { if (it::class.qualifiedName != type) throw DDError("Different value types in vector are not supported") }
+        when(values[0]) {
+            is Integer -> values.forEach { if (it !is Integer) throw DDError("Different value types in vector are not supported") }
+            is Real    -> values.forEach { if (it !is Real)    throw DDError("Different value types in vector are not supported") }
+            is Bool    -> values.forEach { if (it !is Bool)    throw DDError("Different value types in vector are not supported") }
+            is StrDD   -> values.forEach { if (it !is StrDD)   throw DDError("Different value types in vector are not supported") }
+            else       -> {}
+        }
         this.values = values.toList()
         this.unit = unitObject.clone()
         if(unitDimension!="")

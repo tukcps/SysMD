@@ -207,6 +207,9 @@ open class FeatureActions<T: Feature>(
         created?.typeConstraint = typeConstraint
     }
 
+    /**
+     * Method that can be overwritten to do a post-processing in case it was not done yet.
+     */
     override fun finish() {
         if (created == null)
             create(Identification())

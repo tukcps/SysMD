@@ -16,7 +16,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
  * - also set the value standalone according to your setup
  */
 group   = "com.github.tukcps"
-version = "4.0.6"               // must be number.number.number
+version = "4.0.7"               // must be number.number.number
 val aaddVersion = "0.1.11"
 val sysmlapiVersion = "3.9.4"
 val useMavenAADD = true
@@ -32,12 +32,12 @@ if (JavaVersion.current() < JavaVersion.VERSION_21) {
 
 // Plugins needed: id and versions.
 plugins {
-    // Plugin that checks for updates:
+    // Plugin that checks for updates of dependencies
     id("com.github.ben-manes.versions") version "0.52.0"
     id("idea")
-    kotlin("jvm") version "2.1.20"
-    kotlin("plugin.serialization") version "2.1.20"
-    id("org.springframework.boot") version "3.5.0"
+    kotlin("jvm") version "2.2.0"
+    kotlin("plugin.serialization") version "2.2.0"
+    id("org.springframework.boot") version "3.5.3"
     id("io.spring.dependency-management") version "1.1.7"
     alias(libs.plugins.jetbrainsCompose) apply true
     alias(libs.plugins.compose.compiler) apply true
@@ -81,14 +81,14 @@ dependencies {
     // For UUID version 5 (name-based)
     implementation("com.fasterxml.uuid:java-uuid-generator:5.1.0")
 
-    implementation("org.jetbrains.compose.material3:material3-desktop:1.8.1")
+    implementation("org.jetbrains.compose.material3:material3-desktop:1.8.2")
 
     // These are necessary for the annotations in the models.
     implementation("org.springframework.boot:spring-boot-starter-web")
-    implementation("org.hibernate.validator:hibernate-validator:8.0.2.Final")
+    implementation("org.hibernate.validator:hibernate-validator:9.0.1.Final")
 
     // Open API / Swagger
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9")
 
     // Needed for annotations for Spring Boot in package rest
     implementation("com.fasterxml.jackson.core:jackson-databind")
@@ -96,12 +96,12 @@ dependencies {
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
 
     // Parsing markdown to AST
-    implementation("org.commonmark:commonmark:0.24.0")
-    implementation("org.commonmark:commonmark-ext-gfm-tables:0.24.0")
-    implementation("org.commonmark:commonmark-ext-image-attributes:0.24.0")
-    implementation("org.commonmark:commonmark-ext-yaml-front-matter:0.24.0")
-    implementation("org.commonmark:commonmark-ext-gfm-strikethrough:0.24.0")
-    implementation("org.commonmark:commonmark-ext-ins:0.24.0")
+    implementation("org.commonmark:commonmark:0.25.0")
+    implementation("org.commonmark:commonmark-ext-gfm-tables:0.25.0")
+    implementation("org.commonmark:commonmark-ext-image-attributes:0.25.0")
+    implementation("org.commonmark:commonmark-ext-yaml-front-matter:0.25.0")
+    implementation("org.commonmark:commonmark-ext-gfm-strikethrough:0.25.0")
+    implementation("org.commonmark:commonmark-ext-ins:0.25.0")
 
     // Some more icons ...
     implementation(compose.components.resources)
@@ -114,15 +114,14 @@ dependencies {
     // Needed for state diagrams (HOOD GmbH)
     implementation("org.diagramsascode:diagramsascode-image:0.1.5")
     implementation("org.apache.xmlgraphics:batik-transcoder:1.19")
-    implementation("org.apache.xmlgraphics:batik-codec:1.18")
+    implementation("org.apache.xmlgraphics:batik-codec:1.19")
 
     // Use the Kotlin JUnit integration.
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:2.1.10")
-    testImplementation(platform("org.junit:junit-bom:5.12.0"))
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:2.2.0")
 
     // compose ui tests
     testImplementation(kotlin("test"))
-    testImplementation("org.springframework.boot:spring-boot-starter-test:3.5.0") {
+    testImplementation("org.springframework.boot:spring-boot-starter-test:3.5.3") {
         exclude(group = "org.mockito", module = "mockito-core")
     }
 
@@ -156,12 +155,12 @@ tasks.test {
 // Generate Bytecode for v17
 kotlin {
     compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_17)
+        jvmTarget.set(JvmTarget.JVM_21)
     }
 }
 
 tasks.withType<JavaCompile> {
-    options.release.set(17)
+    options.release.set(21)
 }
 
 /**

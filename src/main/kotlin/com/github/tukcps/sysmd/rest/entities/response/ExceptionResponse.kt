@@ -10,7 +10,7 @@ import java.util.Date
  */
 class ExceptionResponse (
     /** exception response comes in this specific format:  */
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+    @setparam:JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     var timeStamp: Date? = Date(),
     var message: String? = null,
     var details: String? = null

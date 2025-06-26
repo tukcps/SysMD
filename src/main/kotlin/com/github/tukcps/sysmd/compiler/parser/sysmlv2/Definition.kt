@@ -17,6 +17,18 @@ import com.github.tukcps.sysmd.model.kerml.Resolved
 import com.github.tukcps.sysmd.model.kerml.Type
 
 /**
+ * 8.2.2.6 Definition and Usage Textual Notation
+ * 8.2.2.6.1 Definitions
+ *
+ * Definition = DefinitionDeclaration DefinitionBody
+ */
+internal fun SysMLv2.Definition(typeActions: TypeActions<Type>) {
+    DefinitionDeclaration(typeActions)
+    DefinitionBody(Resolved(typeActions.created!!))
+}
+
+
+/**
  *      DefinitionBody = ';' | '{' DefinitionBodyItem* '}'
  */
 internal fun SysMLv2.DefinitionBody(owner: Resolved<Element>) {

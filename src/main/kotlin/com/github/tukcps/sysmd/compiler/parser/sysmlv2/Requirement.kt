@@ -10,7 +10,6 @@ import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
 import com.github.tukcps.sysmd.compiler.semantics.kerml.TypeActions
 import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.RequirementConstraintMemberActions
-import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.RequirementConstraintUsageActions
 import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.RequirementDefinitionActions
 import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.RequirementUsageActions
 import com.github.tukcps.sysmd.model.kerml.Element

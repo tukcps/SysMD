@@ -8,6 +8,7 @@ import io.github.tukcps.sysmlv2.api.entities.Branch
 import io.github.tukcps.sysmlv2.api.entities.Project
 import io.github.tukcps.sysmlv2.api.services.ProjectService
 import io.github.tukcps.sysmlv2.interchange.InterchangeProject
+import kotlinx.coroutines.processNextEventInCurrentThread
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import java.time.LocalDateTime
@@ -129,6 +130,7 @@ open class SysMDProjectService: ProjectService {
         if (projectFound != null) {
             projectFound.name = name?:projectFound.name
             projectFound.description = description?:projectFound.description
+            projectFound.saveToInterchangeFiles()
         }
         return projectFound?: TODO()
     }

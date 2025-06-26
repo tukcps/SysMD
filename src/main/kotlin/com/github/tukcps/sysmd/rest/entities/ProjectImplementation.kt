@@ -10,7 +10,7 @@ import java.time.ZonedDateTime
 import java.util.*
 
 class ProjectImplementation(
-    @JsonSerialize(using = ZonedDateTimeSerializer::class)
+    @setparam:JsonSerialize(using = ZonedDateTimeSerializer::class)
     override var created: OffsetDateTime = OffsetDateTime.now(),
     override var alias: Collection<String> = mutableListOf(),
     override var description: String = "",

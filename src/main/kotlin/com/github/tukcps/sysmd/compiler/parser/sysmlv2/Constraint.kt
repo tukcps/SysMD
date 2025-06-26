@@ -2,7 +2,6 @@
 
 package com.github.tukcps.sysmd.compiler.parser.sysmlv2
 import com.github.tukcps.sysmd.compiler.SysMLv2
-import com.github.tukcps.sysmd.compiler.parser.kerml.Expression
 import com.github.tukcps.sysmd.compiler.parser.kerml.FeatureSpecializationPart
 import com.github.tukcps.sysmd.compiler.parser.util.Unsupported
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
@@ -11,7 +10,6 @@ import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
 import com.github.tukcps.sysmd.compiler.semantics.kerml.TypeActions
 import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.AssertActions
 import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.CalculationDefinitionActions
-import com.github.tukcps.sysmd.model.expression.AstRoot
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Resolved
 import com.github.tukcps.sysmd.model.kerml.Type
@@ -34,10 +32,10 @@ fun SysMLv2.ConstraintDefinition() {
 
 /**
  *      AssertConstraintUsage =
- *          OccurrenceUsagePrefix 'assert' ( isNegated ?= 'not' )?
- *          ( ownedRelationship += OwnedReferenceSubsetting
- *          FeatureSpecializationPart?
- *          | 'constraint' ConstraintUsageDeclaration ) CalculationBody
+ *          OccurrenceUsagePrefix 'assert' (isNegated ?= 'not')?
+ *          (OwnedReferenceSubsetting
+ *            FeatureSpecializationPart? | 'constraint' ConstraintUsageDeclaration)
+ *          CalculationBody
  */
 
 /** Just checks the prefixes already parsed for compliance */
@@ -74,9 +72,9 @@ fun SysMLv2.ConstraintUsage() {
 
 /**
  *      AssertConstraintUsage =
- *          OccurrenceUsagePrefix 'assert' ( isNegated ?= 'not' )?
- *          ( OwnedReferenceSubsetting FeatureSpecializationPart?
- *              | 'constraint' ConstraintUsageDeclaration )
+ *          OccurrenceUsagePrefix 'assert' (isNegated ?= 'not')?
+ *          (OwnedReferenceSubsetting FeatureSpecializationPart?
+ *              | 'constraint' ConstraintUsageDeclaration)
  *          CalculationBody
  */
 fun SysMLv2.AssertConstraintUsage() {
@@ -98,14 +96,5 @@ fun SysMLv2.AssertConstraintUsage() {
         others {  }
     }
     assert.finish() // Before the Calculation Body ...
-    // CalculationBody(Resolved(assert.created!!))
-    // TODO ... Calculation Body
-    LCURBRACE.consume() // TODO: Body
-    val iBeforeExpression = token.indices.first
-    Expression().also {
-        assert.created?.featureWithValue = AstRoot(model, assert.created!!, it)
-        assert.created?.indices = iBeforeExpression .. consumedToken.indices.last
-        assert.created?.expression = input.subSequence(assert.created!!.indices!!).toString().trim()
-    }
-    RCURBRACE.consume()
+    CalculationBody(Resolved(assert.created!!))
 }

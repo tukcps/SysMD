@@ -562,12 +562,11 @@ class QuantityTestDimensions {
 
     @Test
     fun inductanceTest() = testSession("SI") {
-        loadKerML(
-           """
+        loadKerML("""
             feature I: SI::ElectricCurrent = 1000.0 [mA];
             feature W: SI::MagneticFlux = 1.0 [Wb];
-            feature L: SI::Inductance = W/I;"""
-            )
+            feature L: SI::Inductance = W/I;
+        """)
         propagate()
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("L")!!.aadd().getRange().min, 0.0001)
@@ -582,7 +581,8 @@ class QuantityTestDimensions {
         loadKerML("""
                 feature A: SI::Area = 1.0 [m^2];
                 feature t: SI::Time = 1.0 [s];
-                feature v: SI::KinematicViscosity = A/t;""" )
+                feature v: SI::KinematicViscosity = A/t;
+        """ )
         propagate()
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("v")!!.aadd().getRange().min, 0.0001)
@@ -597,7 +597,8 @@ class QuantityTestDimensions {
         loadKerML("""
             feature I: SI::LuminousIntensity = 1.0 [cd];
             feature A: SI::Area = 1.0 [m^2];
-            feature v: SI::Luminance = I/A;""" )
+            feature v: SI::Luminance = I/A;
+        """)
         propagate()
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("I")!!.aadd().getRange().min, 0.0001)
@@ -609,12 +610,11 @@ class QuantityTestDimensions {
 
     @Test
     fun luminousEfficacyTest() = testSession("SI") {
-        loadKerML(
-            """
+        loadKerML("""
             feature P: SI::Power = 1.0 [W];
             feature A: SI::LuminousFlux  = 1.0 [lm];
-            feature K: SI::LuminousEfficacy = A/P;"""
-        )
+            feature K: SI::LuminousEfficacy = A/P;
+        """)
         propagate()
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("K")!!.aadd().getRange().min, 0.0001)
@@ -626,13 +626,11 @@ class QuantityTestDimensions {
 
     @Test
     fun luminousEnergyTest() = testSession("SI") {
-        loadKerML(
-            """
+        loadKerML("""
             feature t: SI::Time = 1.0 [s];
             feature A: SI::LuminousFlux = 1.0 [lm];
-            feature Q: SI::LuminousEnergy = t*A."""
-
-        )
+            feature Q: SI::LuminousEnergy = t*A; 
+        """)
         propagate()
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("Q")!!.aadd().getRange().min, 0.0001)
@@ -644,8 +642,7 @@ class QuantityTestDimensions {
 
     @Test  //Ambiguity with cd
     fun luminousFluxTest() = testSession("SI") {
-        loadKerML("""
-            feature t: SI::LuminousFlux = 1.0 [lm];""")
+        loadKerML("feature t: SI::LuminousFlux = 1.0 [lm];")
         propagate()
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("t")!!.aadd().getRange().min, 0.0001)
@@ -688,8 +685,8 @@ class QuantityTestDimensions {
         loadKerML("""
             feature m: SI::Mass = 1.0 [kg];
             feature t: SI::Time = 1.0 [s];
-            feature B: SI::MassFlow = m/t;"""
-        )
+            feature B: SI::MassFlow = m/t;
+        """)
         propagate()
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("B")!!.aadd().getRange().min, 0.0001)
@@ -705,8 +702,8 @@ class QuantityTestDimensions {
            """
             feature l: SI::Length  = 1.0 [m];
             feature F: SI::Force = 1.0 [N];
-            feature B: SI::MomentOfForce = l*F;"""
-        )
+            feature B: SI::MomentOfForce = l*F;
+        """)
         propagate()
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("B")!!.aadd().getRange().min, 0.0001)
