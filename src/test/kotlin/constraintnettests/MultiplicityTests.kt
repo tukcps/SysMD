@@ -8,6 +8,7 @@ import com.github.tukcps.sysmd.services.resolve.resolveVar
 import util.mockup.loadKerML
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
+import util.assertNoIssues
 import util.testSession
 
 class MultiplicityTests {
@@ -63,7 +64,7 @@ class MultiplicityTests {
             }
         """)
         propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val weight = global.resolveVar("b::weight")
         assertNotNull(weight)
         assertEquals(0L, global.resolve<Feature>("b::partC::cardinality")!!.variable!!.vectorQuantity.value.asIdd().min)

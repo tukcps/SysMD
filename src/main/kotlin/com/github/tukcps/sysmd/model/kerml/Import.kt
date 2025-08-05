@@ -28,12 +28,10 @@ interface Import: Relationship {
     var isRecursive: Boolean              // False by default in SysMLv2
     var isImportAll: Boolean
 
-    // The effectively imported Element for this Import. For a MembershipImport, this is the memberElement of the
-    // importedMembership. For a NamespaceImport, it is the importedNamespace.
-    var importedNamespace: Resolved<Namespace>
-
     val importOwningNamespace: Namespace?
         get() = owningNamespace
+
+    fun importedMemberships(excluded: Set<Namespace>): MutableSet<Membership>
 
     override fun clone(): Import
     override fun resolveNames(): Boolean

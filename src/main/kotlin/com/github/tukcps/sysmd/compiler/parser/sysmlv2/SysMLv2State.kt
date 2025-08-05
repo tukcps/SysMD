@@ -1,23 +1,19 @@
-@file:Suppress("FunctionName", "UNCHECKED_CAST")
+@file:Suppress("FunctionName", "UNCHECKED_CAST", "GrazieInspection")
 
 package com.github.tukcps.sysmd.compiler.parser.sysmlv2
 
 import com.github.tukcps.sysmd.compiler.SysMLv2
-import com.github.tukcps.sysmd.compiler.parser.kerml.Expression
 import com.github.tukcps.sysmd.compiler.parser.kerml.QualifiedName
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.compiler.semantics.Identification
-import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
 import com.github.tukcps.sysmd.compiler.semantics.kerml.TypeActions
-import com.github.tukcps.sysmd.model.expression.AstRoot
-import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.kerml.Resolved
+import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.*
 import com.github.tukcps.sysmd.model.kerml.Type
+import com.github.tukcps.sysmd.model.kerml.UnresolvedFeature
 import com.github.tukcps.sysmd.model.kerml.implementation.ClassImplementation
-import com.github.tukcps.sysmd.model.sysml.ReferenceUsage
-import com.github.tukcps.sysmd.model.sysml.implementation.TransitionUsageImplementation
-import java.util.UUID
-
+import com.github.tukcps.sysmd.model.sysml.SuccessionAsUsage
+import com.github.tukcps.sysmd.model.sysml.implementation.SuccessionAsUsageImplementation
+import java.util.*
 
 
 /**
@@ -35,27 +31,18 @@ import java.util.UUID
  *          | 'state' UsageDeclaration )
  *      ValuePart? StateUsageBody
  */
-fun SysMLv2.StateUsage() {
-    val stateUsage = sysMLSemantics.StateUsageSemantics()
+fun SysMLv2.StateUsage() = StateUsageActions(semantics).parse {
     STATE.consume()
-    UsageDeclaration(stateUsage as FeatureActions<Feature>)
-    StateUsageBody(Resolved(stateUsage.created!!))
-    stateUsage.finish()
+    UsageDeclaration()
+    StateUsageBody()
 }
 
-fun SysMLv2.StateDefinition() {
-    val stateDefinition = TypeActions<Type>(semantics, ::ClassImplementation)
+fun SysMLv2.StateDefinition() = TypeActions<Type>(semantics, ::ClassImplementation).parse {
     STATE.consume()
     DEF.consume()
-    DefinitionDeclaration(stateDefinition)
-    DefinitionBody(Resolved(stateDefinition.created!!))
-    stateDefinition.finish()
+    DefinitionDeclaration()
+    DefinitionBody()
 }
-
-/* Moved to Action.kt
-fun SysMLv2.Action() {
-}
-*/
 
 
 /**
@@ -68,70 +55,64 @@ fun SysMLv2.Action() {
  *          'then' TransitionSuccessionMember
  *          ActionBody
  */
-fun SysMLv2.TransitionUsage() {
-    val transitionUsage = sysMLSemantics.TransitionUsageSemantics()
+fun SysMLv2.TransitionUsage() = TransitionUsageActions(semantics).parse {
 
     TRANSITION.consume()
-    @Suppress("UNCHECKED_CAST")
-    UsageDeclaration(transitionUsage as FeatureActions<Feature>)
 
-    // We need to push the owner since we're creating owned features, but without the usual curly braces of the body
-    if (transitionUsage.created!!.declaredName == null && transitionUsage.created!!.declaredShortName == null)
-        transitionUsage.created!!.declaredName = "trans_" + UUID.randomUUID().toString()
-    transitionUsage.finish()
+    if(usageDeclarationStarts() || token.kind == FIRST) {
+        UsageDeclaration()
+        FIRST.consume()
+    } else semantics.create(Identification("trans_"+UUID.randomUUID().toString()))
 
-    semantics.pushOwner(Resolved(transitionUsage.created!!))
-
-    // Process the source of the connection
-    FIRST.consume()
-    val succession = sysMLSemantics.SuccessionAsUsageSemantics()
-    QualifiedName().also { succession.source += it }
-
-    optional(start=ACCEPT, consume = true) {
-        // We need to push the owner since we're creating owned features, but without the usual curly braces of the body
-        val acceptActionUsage = sysMLSemantics.AcceptActionUsageSemantics()
-        acceptActionUsage.create()
-        semantics.pushOwner(Resolved(ref=acceptActionUsage.created!!))
-
-        val triggerPayloadParameter =
-            sysMLSemantics.PayloadParameterSemantics() //typeName = QualifiedName())
-
-        triggerPayloadParameter.create(Identification(name="payload"))
-        QualifiedName().also { triggerPayloadParameter.addTyping(mutableListOf(it)) }
-
-        triggerPayloadParameter.created.also {
-            acceptActionUsage.payloadParameter = it as ReferenceUsage
-        }
-        acceptActionUsage.finish()
-
-        // We're done with creating owned features, so we need to pop the owner (i.e. the transition) again
-        semantics.popOwner()
+    // FeatureChainMember()
+    val succession = SuccessionAsUsageSemantics<SuccessionAsUsage>(semantics, ::SuccessionAsUsageImplementation)
+    succession.parse {
+        semantics.create(Identification("succ_" + UUID.randomUUID().toString()))
+        QualifiedName().also { semantics.setSourceEnd(UnresolvedFeature(it)) }
     }
 
-    val guardCondition = sysMLSemantics.GuardConditionSemantics()
-    optional(start=IF, consume = true) {
-        val iBeforeExpression = token.indices.first
-        Expression().also {
-            guardCondition.create(Identification("guard_" + UUID.randomUUID().toString()))
-            guardCondition.created?.featureWithValue = AstRoot(model, guardCondition.created!!, it)
-            guardCondition.created?.indices = iBeforeExpression..consumedToken.indices.last
-            guardCondition.created?.expression = input.subSequence(guardCondition.created?.indices!!).toString().trim()
-            // print("Set guard condition: " + guardCondition.created?.expression)
-        }
-    }
-
-    // Process the target of the connection & create the connection
+    // EmptyParameterMember()
+    optional(ACCEPT) { TriggerActionMember() }
+    optional(IF) { GuardExpressionMember()}
     THEN.consume()
-    QualifiedName().also { succession.target += it }
-    succession.create()
-
-    // We're done with creating owned features, so we need to pop the owner (i.e. the transition) again
-    SEMICOLON.consume()
-    semantics.popOwner()
-
-    // Finally, we can create the transition
-    if(guardCondition.created != null) {
-        (transitionUsage.created as TransitionUsageImplementation).guardCondition = Resolved(guardCondition.created!!)
+    succession.parse {
+        TransitionSuccessionMember()
     }
-    transitionUsage.finish()
+    ActionBody()
 }
+
+
+fun SysMLv2.TransitionSuccessionMember() { // = SuccessionAsUsageSemantics(semantics, ::SuccessionAsUsageImplementation).parse {
+    QualifiedName().also {
+        semantics.create(null)
+        semantics.setTargetEnd(UnresolvedFeature(it))
+    }
+}
+
+
+
+/**
+ *      PayloadParameterMember: ParameterMembership =
+ *              ownedRelatedElement += PayloadParameter
+ *      PayloadParameter: ReferenceUsage =
+ *              PayloadFeature
+ *              | Identification PayloadFeatureSpecializationPart? TriggerValuePart
+ */
+fun SysMLv2.PayloadParameter() = PayloadParameterActions(semantics).parse { //typeName = QualifiedName())
+    // PayloadFeature only
+    semantics.create(Identification(name = "payload"))
+    QualifiedName().also { semantics.addTyping(it) }
+    // other option not implemented ...
+}
+
+fun SysMLv2.TriggerValuePart() {
+
+}
+
+
+fun SysMLv2.TriggerActionMember() = AcceptActionUsageActions(semantics).parse {
+    semantics.create(null)
+    ACCEPT.consume()
+    AcceptParameterPart()
+}
+

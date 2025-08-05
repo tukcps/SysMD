@@ -12,18 +12,18 @@ import org.junit.jupiter.api.Assertions.assertTrue
 class DiscreteContinuousTests {
 
     @Test
-    fun discreteContinuousIssue1() = testSession("SI") {
+    fun discreteContinuousIssue1() = testSession("SI", "Ranges") {
         loadKerML(
             catchExceptions = false,
             input = """
-                feature x: ScalarValues::Boolean{:>> spec = "true";}
-                feature y: ScalarValues::Boolean{:>> spec = "false";}
-                feature z: ScalarValues::Boolean = x and y {:>> spec = "false";}
+                inv x;  
+                inv y false;  
+                inv z false { x and y }
                 package Dependencies { 
                     type component :> Base::Anything { 
-                        feature d: SI::Length {:>> unit = "mm"; :>> range = "10.0 .. 20.0";}
-                        feature c: SI::Length { :>> range = "2.0 .. 3.0";}
-                        feature b: SI::Length {:>> unit = "km"; :>> range = "1.0 .. 2.0";}
+                        feature d: SI::Length(10..20) [mm];
+                        feature c: SI::Length(2.0 .. 3.0) [m]; 
+                        feature b: SI::Length(1.0 .. 2.0) [km]
                         feature a: SI::Volume = b*c*d;
                     }
                 }

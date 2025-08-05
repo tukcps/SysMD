@@ -12,11 +12,9 @@ class RequirementDefinitionImplementation(
     declaredShortName = declaredShortName,
     elementType = "RequirementDefinition"
 ) {
-    override fun toString(): String = "RequirementDefinition '$declaredName'"
     override fun clone(): RequirementDefinition  = RequirementDefinitionImplementation(
         declaredName = declaredName,
         declaredShortName = declaredShortName).also {
-        it.model = model
-    }
-
+            it.updateFrom(this)
+        }
 }

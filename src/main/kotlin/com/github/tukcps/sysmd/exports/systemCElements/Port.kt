@@ -17,7 +17,7 @@ class Port(val portName : String, val fullQualifiedName : String, val portType :
 
     val associatedChannels : MutableList<Channel> = mutableListOf() //The channels this port is bound to
 
-    /**Tells if this port was originally defined as an Attribute(Expression) in the SysMD/SysMLv2 model*/
+    /**Tells if this port was originally defined as an Attribute (Expression) in the SysMD/SysMLv2 model*/
     var createdFromExpression = false
 
     private var isTLMInitiator : Boolean? = null                  //Tells if this is a TLM Initiator

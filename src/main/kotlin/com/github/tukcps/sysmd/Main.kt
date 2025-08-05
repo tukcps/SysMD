@@ -18,13 +18,12 @@ val logger: Logger = LoggerFactory.getLogger("SysMD Notebook")
 
 fun main(args: Array<String>) {
 
-    SplashScreen.show()
+    SplashScreen.show("headless" in args)
 
     SpringApplicationBuilder(
         SysMdRunner::class.java,
-    )   .headless(false)
+    )   .headless("headless" in args)
         .run(*args)
-
 }
 
 /**
@@ -35,20 +34,10 @@ fun main(args: Array<String>) {
  */
 object SplashScreen {
 
-    // Prevent splash screen during unit tests or for server mode ...
-    private fun isRunningTest(): Boolean {
-        try {
-            Class.forName("org.junit.Test")
-        } catch (e: ClassNotFoundException) {
-            return false
-        }
-        return true
-    }
-
     private var splashScreen: JFrame? = null
 
-    fun show() {
-        if (!isRunningTest()) {
+    fun show(headless: Boolean) {
+        if (!headless) {
             splashScreen = JFrame("SysMD Notebook Splash Screen")
             splashScreen?.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE)
             splashScreen?.setSize(1000, 800)

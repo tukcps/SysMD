@@ -35,8 +35,7 @@ class SubsettingTest {
                 
                     part def Cylinder;
                 }
-    """.trimIndent()
-        )
+        """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
 
     }

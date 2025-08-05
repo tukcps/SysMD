@@ -12,6 +12,7 @@ import com.github.tukcps.sysmd.model.sysml.PartUsage
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
+import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Ignore
@@ -25,14 +26,16 @@ class ConnectionTests {
      * Simple undirected connection of three elements a, b, c
      */
     @Test
-    fun testSyntax1() = testSession("Parts", "Connections") {
+    fun connectionTestMultipleTargets() = testSession("Parts", "Connections") {
         loadSysMLv2("""
             part a; 
             part b; 
             part c;
             connect(a, b, c); 
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        """)
+        val con = global.getOwnedElementOfType<ConnectionUsage>()
+        assertNotNull(con)
+        assertNoIssues()
     }
 
     /**
@@ -44,7 +47,7 @@ class ConnectionTests {
             part a; 
             part b;
             connect a to b; 
-        """.trimIndent())
+        """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         val c = global.getOwnedElementOfType<ConnectionUsage>()
         assertTrue(c != null)
@@ -77,7 +80,7 @@ class ConnectionTests {
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         val d = global.resolve<ConnectionUsage> ("d")
         assertTrue(d != null)
-        assertEquals(3, d.from.size)
+        assertEquals(3, d.to.size)
     }
 
     @Test
@@ -112,17 +115,17 @@ class ConnectionTests {
     }
 
     @Test
-    fun testInterfaceUsage() = testSession("Parts", "Connections", "Interfaces") {
+    fun testInterfaceUsage() = testSession("Parts", "Interfaces") {
         loadSysMLv2("""
             part a;
             part b;
             part c;
             interface d connect (a, b, c); 
-        """.trimIndent())
+        """)
         val c = global.resolve<ConnectionUsage> ("d")
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         assertTrue(c != null)
-        assertEquals(3, c.from.size)
+        assertEquals(3, c.to.size)
     }
 
     @Test
@@ -133,7 +136,7 @@ class ConnectionTests {
             interface def C1; 
             interface def C :> C1; 
             interface c : C connect a to b;  
-        """.trimIndent())
+        """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         val c = global.resolve<ConnectionDefinition> ("C")
         assertNotNull(c)
@@ -174,9 +177,8 @@ class ConnectionTests {
                 connection def C :> C1; 
                 connection c : C connect a to b;  
             }
-        """.trimIndent())
-
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        """)
+        assertNoIssues()
     }
 
 
@@ -193,13 +195,13 @@ class ConnectionTests {
     }
 
     @Test @Ignore
-    fun testConnectEffectChainPropagation() = testSession("Signals", "Parts", "Ports") {
+    fun testConnectEffectChainPropagation() = testSession("Signals", "Parts", "Ports", "Ranges") {
         loadSysMLv2("""       
             part def A {
-                attribute x: ScalarValues::Real(3 .. 3); 
+                attribute x: Ranges::RealInRange {:>> range = "3 .. 3";}
             }
             part def B { 
-                attribute y: ScalarValues::Real(2 .. 4); 
+                attribute y: Ranges::RealInRange {:>> range = "2 .. 4";}
             }
             part a: A; 
             part b: B; 
@@ -222,28 +224,5 @@ class ConnectionTests {
         assertEquals(3.0, global.resolve<Feature>("a::x")!!.variable!!.min(),0.00001)
         assertEquals(3.0, global.resolve<Feature>("b::y")!!.variable!!.min(),0.00001)
         assertEquals(3.0, global.resolve<Feature>("b::y")!!.variable!!.max(),0.00001)
-    }
-
-
-    @Test
-    fun testConnection() = testSession(  "Parts", "Connections") {
-        loadSysMLv2("""
-            package connection_example {
-                part def A; 
-                part def B; 
-                part a: A; 
-                part b: B; 
-                connection c : C connect a to b;  
-                connection def C :> C1; 
-                connection def C1; // from A to B; 
-                connection def C :> C1; 
-                connection c : C connect a to b;  
-            } 
-        """)
-        val c = global.resolve<ConnectionUsage>("connection_example::c")
-        assertNotNull(c)
-        assertEquals(3, c.ownedElement.size)
-        assertTrue(c.specializes(repo.links))
-        assertTrue(status.issues.isEmpty(), "Errors: ${status.issues}")
     }
 }

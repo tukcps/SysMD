@@ -1,10 +1,11 @@
+@file:Suppress("UNCHECKED_CAST")
+
 package com.github.tukcps.sysmd.compiler.semantics.kerml
 
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.LIBRARY
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.STANDARD
 import com.github.tukcps.sysmd.compiler.semantics.ActionsContext
 import com.github.tukcps.sysmd.compiler.semantics.Identification
-import com.github.tukcps.sysmd.compiler.semantics.SemanticActions
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.*
 import com.github.tukcps.sysmd.model.util.QualifiedName
@@ -18,7 +19,7 @@ import com.github.tukcps.sysmd.model.util.SimpleName
  * @param context holds the core data needed by all semantic actions
  */
 open class CommentActions<T: Comment>(
-    context: SemanticActions,
+    context: ActionsContext,
     creator: (SimpleName?, SimpleName?) -> T
 ): AnnotatingElementActions<T>(context, creator) {
     /**
@@ -28,10 +29,11 @@ open class CommentActions<T: Comment>(
     fun addAbout(about: List<QualifiedName>) {
         about.forEach {
             val annotation = AnnotationImplementation(
-                annotatingElement = Resolved(ref = created!!),
-                annotatedElement = Resolved(str = it)
+                owningRelatedElement = created,
+                annotatingElement = created,
+                annotatedElement = UnresolvedElement( it)
             )
-            context.model.addUnownedElement(annotation, startOfOwnerPath =  created!!)
+            context.model.addOwnedRelationship(annotation,  created)
         }
     }
 }
@@ -44,15 +46,15 @@ open class CommentActions<T: Comment>(
  * @param context holds the core data needed by all semantic actions
  */
 class DocumentationActions(
-    context: SemanticActions,
+    context: ActionsContext,
     var body: String = "",
 ): CommentActions<Documentation>(
     context = context,
     creator = ::DocumentationImplementation,
 ) {
-    override fun create(identification: Identification) {
+    override fun create(identification: Identification?) {
         super.create(identification)
-        created?.body = body.trim()
+        created.body = body.trim()
     }
 }
 
@@ -75,40 +77,36 @@ open class AnnotatingElementActions<T: AnnotatingElement>(
 open class NamespaceActions<T: Namespace>(
     context: ActionsContext,
     creator: (SimpleName?, SimpleName?) -> T,
-) : SemanticAction<Namespace>(context, creator) {
-    override fun create(identification: Identification) {
+    val defaultType: String = "Base::Anything",
+) : SemanticAction<T>(context, creator) {
+
+    override fun init() {
+        context.pushOwningNamespace(this as NamespaceActions<Namespace>)
+        super.init()
+    }
+
+    override fun finish() {
+        super.finish()
+        context.popOwningNamespace()
+    }
+
+    override fun create(identification: Identification?) {
         super.create(identification)
-        created!!.isStandard = STANDARD in context.prefixes
-        created!!.isLibraryElement = LIBRARY in context.prefixes
+        created.isStandard = STANDARD in context.prefixes
+        created.isLibraryElement = LIBRARY in context.prefixes
     }
 }
 
 interface RelationshipActions<T: Relationship> {
-    var created: T?
+    var created: T
     val context: ActionsContext
-
-    fun addSource(source: List<QualifiedName>) {
-        created?.source = source.toIdentityList()
-    }
-
-    fun addTarget(target: List<QualifiedName>) {
-        created?.target = target.toIdentityList()
-    }
-
-    fun setSource(source: List<QualifiedName>) {
-        created?.source = source.toIdentityList()
-    }
-
-    fun setTarget(target: List<QualifiedName>) {
-        created?.target = target.toIdentityList()
-    }
 }
 
 /**
  * Actions for Membership
  */
 open class MembershipActions<T: Membership>(
-    context: SemanticActions,
+    context: ActionsContext,
     creator: (SimpleName?, SimpleName?) -> T
 ): RelationshipActions<T>, SemanticAction<T>(context, creator)
 
@@ -121,28 +119,32 @@ open class MembershipActions<T: Membership>(
  * @param context holds the core data needed by all semantic actions
  */
 class ImportActions(
-    context: SemanticActions,
+    context: ActionsContext,
     var all: Boolean? = null,
     var isRecursive: Boolean = false,
+    // production: ImportActions.() -> Unit
 ): SemanticAction<Import>(context, ::NamespaceImportImplementation), RelationshipActions<Import> {
 
-    override fun create(identification: Identification) {
+    override fun create(identification: Identification?) {
         super.create(identification)
         if (context.visibilityKind == null) {
-            context.model.status.info("import must be either explicit public or private", context.compiler)
+            context.model.status.info("import must be explicit public or private", context.compiler)
         }
         setImportingNamespace(context.ownerName())
+        context.model.addOwnedRelationship(created, context.element())
     }
+
+    override fun finish() {}
 
     fun setImportingNamespace(namespace: String) {
         if (namespace.isEmpty())
-            setSource(mutableListOf("Global"))
+            created.source = mutableListOf(context.model.global)
         else
-            setSource(mutableListOf(namespace))
+            created.source = mutableListOf(UnresolvedNamespace(namespace))
     }
 
     fun setImportedNamespace(namespace: String) {
-        setTarget(mutableListOf(namespace))
+        created.target = mutableListOf(UnresolvedNamespace(namespace))
     }
 }
 
@@ -150,7 +152,7 @@ class ImportActions(
  * Action that creates a Specialization or kind thereof
  */
 class RelationshipActionsImpl<T: Relationship>(
-    context: SemanticActions,
+    context: ActionsContext,
     creator: (SimpleName?, SimpleName?) -> T
 ): SemanticAction<T>(context, creator), RelationshipActions<T>
 
@@ -159,6 +161,6 @@ class RelationshipActionsImpl<T: Relationship>(
  * Adds a dependency to the model
  */
 class DependencyActions<T: Dependency>(
-    context: SemanticActions,
+    context: ActionsContext,
     creator: (SimpleName?, SimpleName?) -> T
 ): SemanticAction<Dependency>(context, creator), RelationshipActions<Dependency>

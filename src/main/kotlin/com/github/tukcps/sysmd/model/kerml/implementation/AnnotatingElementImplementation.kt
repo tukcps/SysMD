@@ -23,22 +23,24 @@ open class AnnotatingElementImplementation(
 ) {
     override fun resolveNames() = false
 
-    override fun clone(): AnnotatingElement {
-        return AnnotatingElementImplementation(
-            declaredName = declaredName,
-            declaredShortName = declaredShortName,
-            body = body,
-            elementType = elementType)
+    override fun clone(): AnnotatingElement =  AnnotatingElementImplementation()
+        .also { klon -> klon.updateFrom(this) }
+
+    override fun updateFrom(template: Element) {
+        super.updateFrom(template)
+        if (template is AnnotatingElement) {
+            body = template.body
+        }
     }
-    override fun toString(): String =
-        "AnnotatingElement { declaredName='$declaredName', declaredShortName='${declaredShortName}', body=$body, id='${elementId}'}"
+
+    override fun toString(): String = super.toString() + " = '$body'"
 
     /**
      * The annotated element is defined by an annotation (relationship) or, if no annotation
      * is available, is the owning element.
      */
     override fun annotatedElement(): List<Element> {
-        val ownedAnnotations = annotation().map { it.annotatedElement.ref!! }
-        return if (ownedAnnotations.isEmpty()) ownedAnnotations else listOf(owner.ref!!)
+        val ownedAnnotations = annotation().map { it.annotatedElement }
+        return if (ownedAnnotations.isEmpty()) ownedAnnotations else listOf(owner!!)
     }
 }

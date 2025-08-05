@@ -5,17 +5,20 @@ import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
 import com.github.tukcps.sysmd.model.sysml.RequirementConstraintMember
 import com.github.tukcps.sysmd.model.sysml.implementation.RequirementConstraintMemberImplementation
 
-class RequirementConstraintMemberActions(context: ActionsContext)
-    : FeatureActions<RequirementConstraintMemberImplementation> (
+class RequirementConstraintMemberActions(
+    context: ActionsContext,
+) : FeatureActions<RequirementConstraintMemberImplementation> (
     context = context,
     creator = ::RequirementConstraintMemberImplementation,
-    defaultType = mutableListOf("Constraints::ConstraintUsage")
+    defaultType = "Constraints::ConstraintUsage",
 ){
-    var kind: RequirementConstraintMember.Kind = RequirementConstraintMember.Kind.REQUIRE
-
     override fun finish() {
+        if (created.type.isEmpty()) {
+            context.addTyping("ScalarValues::Boolean")
+            context.addTyping(defaultType)
+        }
+        if (created.kind == RequirementConstraintMember.Kind.ASSUME)
+            context.addTypeConstraint(mutableListOf("true"))
         super.finish()
-        if (kind == RequirementConstraintMember.Kind.ASSUME)
-            addTypeConstraint(mutableListOf("true"))
     }
 }

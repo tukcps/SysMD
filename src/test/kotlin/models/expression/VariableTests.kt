@@ -13,15 +13,15 @@ import kotlin.test.assertTrue
 class VariableTests {
 
     @Test
-    fun testSerialization1() = testSession("ScalarValues") {
+    fun testSerialization1() = testSession("ScalarValues", "Ranges") {
         loadKerML("""
-            feature f: ScalarValues::Real(2..3) [m] = 2.0 m; 
+            feature f: Ranges::RealInRange [m] = 2.0 m {:>> range= "2..3" ;}
             // serialized in body-field: 
             // 2..3 $$ m $$ 1.0 m;
         """)
         val f = global.resolve<Feature>("f")
         val fdao = f!!.toDAO()
-        assertEquals("2 .. 3 ## m ## 2.0 m", fdao.body?.trim() )
+        assertEquals("2..3 ## m ## 2.0 m", fdao.body?.trim() )
         val f2 = fdao.toElement().also { it.model = this  }
         assertTrue(f2 is Feature)
         assertEquals("2.0 m", f2.expression?.trim())
@@ -32,15 +32,15 @@ class VariableTests {
 
 
     @Test
-    fun testSerialization2() = testSession("ScalarValues") {
+    fun testSerialization2() = testSession("ScalarValues", "Ranges") {
         loadKerML("""
-                feature f: ScalarValues::Real(2..3) = 2.0; 
+                feature f: Ranges::RealInRange = 2.0 {:>> range= "2..3";}
                 // serialized in body-field: 
                 // 2..3 $$ $$ 1.0 m;
             """)
         val f = global.resolve<Feature>("f")
         val fdao = f!!.toDAO()
-        assertEquals("2 .. 3 ##  ## 2.0", fdao.body?.trim() )
+        assertEquals("2..3 ##  ## 2.0", fdao.body?.trim() )
         val f2 = fdao.toElement().also { it.model = this  }
         assertTrue(f2 is Feature)
         assertEquals("2.0", f2.expression?.trim())

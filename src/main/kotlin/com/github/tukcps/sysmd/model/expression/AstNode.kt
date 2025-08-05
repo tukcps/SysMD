@@ -25,9 +25,6 @@ abstract class AstNode(val model: Session, val uuid : UUID = UUID.randomUUID()!!
     lateinit var upQuantity: VectorQuantity
     lateinit var downQuantity: VectorQuantity
 
-    fun upQuantityInitialized() = this::upQuantity.isInitialized
-    fun downQuantityInitialized() = this::downQuantity.isInitialized
-
     /** Fields in all Ast subclasses */
     internal open var root: AstNode? = null // Reference to next-higher level of AST
     internal var parent: AstNode? = null    // Reference to the parent node or null, if root.
@@ -47,8 +44,6 @@ abstract class AstNode(val model: Session, val uuid : UUID = UUID.randomUUID()!!
         get() = upQuantity.values as List<BDD>
     val idds: List<IDD>
         get() = upQuantity.values as List<IDD>
-    val dds: List<DD<*>>
-        get() = upQuantity.values
 
     val isBool: Boolean
         get() = upQuantity.values[0] is BDD
@@ -79,16 +74,6 @@ abstract class AstNode(val model: Session, val uuid : UUID = UUID.randomUUID()!!
     abstract fun <R> runDepthFirst(block: AstNode.() -> R): R
     abstract fun <R> withDepthFirst(receiver: AstNode, block: AstNode.() -> R): R
 
-    /** casts this to AADD */
-    fun asAADD(aadd: DD<*>?): AADD =
-        if (aadd == null) model.builder.Reals
-        else aadd as AADD
-
-    /** casts this to IDD */
-    fun asIDD(idd: DD<*>?): IDD =
-        if (idd == null) model.builder.Integers
-        else idd as IDD
-
     /** get a collection of all leaf nodes */
     fun getLeaves(): Collection<AstLeaf> =
         this.runDepthFirst {
@@ -106,7 +91,10 @@ abstract class AstNode(val model: Session, val uuid : UUID = UUID.randomUUID()!!
             }
         }
 
-    /** Recursive collection of all dependencies */
+    /**
+     * Recursive collection of all variables from which a variable depends.
+     * @return the set of all referenced feature's variables from which this expression depends.
+     */
     fun getDependencies(): Set<Variable> =
         this.runDepthFirst {
             when (this) {
@@ -125,13 +113,16 @@ abstract class AstNode(val model: Session, val uuid : UUID = UUID.randomUUID()!!
             }
         }
 
+    /**
+     * @return the qualified names of all referenced features
+     */
     fun getDependencyStrings(): Set<String> =
         this.runDepthFirst {
             when (this) {
                 is AstLeaf -> {
                     if (qualifiedName != null) {
                         if (this.parent is AstUserDefinedFunction)
-                            setOf("${namespace!!.owner.ref!!.qualifiedName}::${qualifiedName}")
+                            setOf("${namespace!!.owner!!.qualifiedName}::${qualifiedName}")
                         else
                             setOf(qualifiedName as String)
 

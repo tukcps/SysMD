@@ -73,7 +73,7 @@ class ImportTest {
 
     @Test
     //In this test, the range of the imported Result is larger than the range of the upQuantity of the ASTFunction
-    fun baseTestResultNotInBounds() = testSession("Parts", "SI") {
+    fun baseTestResultNotInBounds() = testSession("SI", "Parts") {
 
         Files.createDirectories(Paths.get("src/test/resources/importResultsTestDir"))
 
@@ -90,15 +90,15 @@ class ImportTest {
                 part def Amplifier :> Base::Anything;
             
                 part def LNA :> Amplifier {    
-                    attribute gain: Quantity = [5.0 .. 20.0] dB {:>> unit = "dB";}
+                    attribute gain: Quantity(5..20) [dB];
                 }
             
                 part def Stage2 :> Amplifier { 
-                    attribute gain: Quantity = [11.0 .. 20.0] dB {:>> unit = "dB";}
+                    attribute gain: Quantity(11..20)[dB];
                 }
             
                 part def Driver :> Amplifier {
-                    attribute gain: Quantity = [10.0 .. 30.0] dB {:>> unit = "dB";} 
+                    attribute gain: Quantity(20..30)[dB]; 
                 }
                 
                 part myAmplifier {
@@ -108,10 +108,9 @@ class ImportTest {
                     attribute gain: Quantity(26.0 .. 35.0) [dB] = characterizedResult(productOverParts(gain),"${Paths.get("").toAbsolutePath()}/src/test/resources/importResultsTestDir/testFile.json"); 
                 }
             }
-            """.trimIndent()
-        )
+        """)
+        assertTrue(status.issues.isEmpty(), "${status.issues}")
         propagate()
-
         assertTrue(global.resolveVar("test::myAmplifier::gain")!!.aadd().isEmpty())
         assertEquals(1, status.issues.size, "Error messages: ${status.issues}")
     }
@@ -135,15 +134,15 @@ class ImportTest {
                 part def Amplifier :> Base::Anything;
             
                 part def LNA :> Amplifier {    
-                    attribute gain: Quantity = [5.0 .. 20.0] dB {:>> unit = "dB";}
+                    attribute gain: Quantity(5.0 .. 20.0) [dB];
                 }
             
                 part def Stage2 :> Amplifier { 
-                    attribute gain: Quantity = [11.0 .. 20.0] dB {:>> unit = "dB";}
+                    attribute gain: Quantity(11.0 .. 20.0) [dB];
                 }
             
                 part def Driver :> Amplifier {
-                    attribute gain: Quantity = [10.0 .. 30.0] dB {:>> unit = "dB";}
+                    attribute gain: Quantity(10.0 .. 30.0) [dB];
                 }
                 
                 part myAmplifier {
@@ -155,7 +154,7 @@ class ImportTest {
             }
         """)
         propagate()
-        assertEquals(1, status.issues.size, "Error messages: ${status.issues}")
+        assertEquals(1, status.issues.size, "Expected an error message that reports missing file with JSON")
         assertEquals(26.0, global.resolveVar("test::myAmplifier::gain")!!.aadd().min,0.00001)
         assertEquals(35.0,global.resolveVar("test::myAmplifier::gain")!!.aadd().max,0.00001)
     }
@@ -163,7 +162,7 @@ class ImportTest {
     @Test
     //This test deliberately declares a wrong unit in the JSON file which causes the function to use a [-Inf,+Inf] range as intersection partner
     //The result should therefore be the actual result of the ASTFunction
-    fun wrongUnitTest() = testSession("Parts", "SI") {
+    fun wrongUnitTest() = testSession("Parts", "SI", "Ranges") {
         Files.createDirectories(Paths.get("src/test/resources/importResultsTestDir"))
         writeJson(
             resultValue = 28.5,
@@ -178,15 +177,15 @@ class ImportTest {
                 part def Amplifier;
             
                 part def LNA :> Amplifier {    
-                    attribute gain: Quantity = oneOf(5.0 .. 20.0 dB) {:>> unit = "dB";} 
+                    attribute gain: Quantity(5.0 .. 20.0) [dB]; 
                 }
             
                 part def Stage2 :> Amplifier { 
-                    attribute gain: Quantity = oneOf(11.0 .. 20.0 dB) {:>> unit = "dB";}
+                    attribute gain: Quantity(11.0 .. 20.0) [dB];
                 }
             
                 part def Driver :> Amplifier {
-                    attribute gain: Quantity = oneOf(10.0 .. 30.0 dB) {:>> unit = "dB";}
+                    attribute gain: Quantity(10.0 .. 30.0) [dB];
                 }
                 
                 part myAmplifier {
@@ -206,7 +205,7 @@ class ImportTest {
 
     @Test
     //This test checks the behavior if an illegal argument is passed as second parameter
-    fun wrongSecondArgumentTest() = testSession("Parts", "SI") {
+    fun wrongSecondArgumentTest() = testSession("Parts", "SI", "Ranges") {
 
         Files.createDirectories(Paths.get("src/test/resources/importResultsTestDir"))
 
@@ -220,25 +219,25 @@ class ImportTest {
                 private import ScalarValues::*; 
                 private import SI::*; 
                            
-                part def Amplifier :> Base::Anything;
+                part def Amplifier;
             
                 part def LNA :> Amplifier {    
-                    attribute gain: Quantity = [5.0 .. 20.0] dB {:>> unit = "dB";} 
+                    attribute gain: SI::Quantity(5.0 .. 20.0) [dB]; 
                 }
             
                 part def Stage2 :> Amplifier { 
-                    attribute gain: Quantity = [11.0 .. 20.0] dB {:>> unit = "dB";}
+                    attribute gain: SI::Quantity(11.0 .. 20.0) [dB];
                 }
             
                 part def Driver :> Amplifier {
-                    attribute gain: Quantity = [10.0 .. 30.0] dB {:>> unit = "dB";} 
+                    attribute gain: SI::Quantity(10.0 .. 30.0) [dB]; 
                 }
                 
                 part myAmplifier {
                     part lna:    LNA;  
                     part stage2: Stage2;  
                     part driver: Driver;  
-                    attribute gain: Quantity(26.0 .. 35.0) [dB] = characterizedResult(productOverParts(gain),productOverParts(gain)); 
+                    attribute gain: SI::Quantity(26.0 .. 35.0) [dB] = characterizedResult(productOverParts(gain), productOverParts(gain)); 
                 }
             }
         """)

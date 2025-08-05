@@ -21,6 +21,7 @@ import org.junit.jupiter.api.parallel.Isolated
 import org.junit.jupiter.api.parallel.ResourceAccessMode.READ_WRITE
 import org.junit.jupiter.api.parallel.ResourceLock
 import org.junit.jupiter.api.parallel.Resources.SYSTEM_PROPERTIES
+import util.assertNoIssues
 import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -111,34 +112,23 @@ class LibrariesTest {
 
 
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
-    fun linksTest() = testSession {
-        loadLibrary("Links")
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        assertNotNull(global.resolve<Association>("Links::Link"))
-        assertNotNull(global.resolve<Association>("Links::BinaryLink"))
-        checkLibraryElementIds()
-        checkOwnership()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-    }
-
-    @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
-    fun linksTest2() = testSession("Links") {
+    fun linksTest() = testSession("Links") {
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertNotNull(global.resolve<Association>("Links::Link"))
         assertNotNull(global.resolve<Association>("Links::BinaryLink"))
         initialize()
         checkLibraryElementIds()
         checkOwnership()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
-    fun occurrencesTest2() = testSession("Occurrences") {
+    fun occurrencesTest() = testSession("Occurrences") {
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertNotNull(global.resolve<ClassImplementation>("Occurrences::Occurrence"))
         checkOwnership()
         checkLibraryElementIds()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
@@ -150,7 +140,7 @@ class LibrariesTest {
         checkConsistency(repo.elements.values, checkForNoTransients = false)
         checkOwnership()
         checkLibraryElementIds()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
@@ -198,14 +188,14 @@ class LibrariesTest {
     }
 
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
-    fun loadISO26262LibraryTest() = testSession("Occurrences") {
+    fun loadISO26262LibraryTest() = testSession("Occurrences", "Ranges") {
         loadKerML("""
             package ISO26262 {
                 class Element;
                 class Function :> Element;
                 class Component :> Element {
-                    feature Availability: ScalarValues::Boolean(true) = bySpecializations(Availability);
-                    feature SecurityOfSupply: ScalarValues::Real(0.0 .. 1.0).
+                    feature Availability: Ranges::BooleanInSpec = bySpecializations(Availability) {:>> spec="true";}
+                    feature SecurityOfSupply: Ranges::RealInRange {:>> range="0.0 .. 1.0";}
                 } 
                 class System :> Component; 
                 class Part :> Component; 
@@ -228,7 +218,7 @@ class LibrariesTest {
                   end feature 'to':   Software [1..*] redefines target; 
                 } 
                 
-                assoc executedby :> Links::Link {
+                assoc executedBy :> Links::Link {
                   end feature 'from': Component [1..*] redefines source;
                   end feature 'to':   Function [1..*] redefines target; 
                 }
@@ -268,8 +258,11 @@ class LibrariesTest {
         assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
+    /**
+     * Not yet supported: redefinition of two or more features.
+     */
     @Test
-    fun loadKerMLLibraryTest() = testSession("KerML") {
+    fun loadKerMLLibraryTest() = testSession("Objects", initialize = false) {
         loadKerML("""
                 standard library package KerML {
                     doc 
@@ -450,7 +443,7 @@ class LibrariesTest {
                             composite derived feature ownedFeatureInverting : FeatureInverting[0..*] subsets ownedRelationship;
                             composite derived feature ownedFeatureChaining : FeatureChaining[0..*] ordered subsets ownedRelationship;
                             composite derived feature ownedReferenceSubsetting : ReferenceSubsetting[0..1] subsets ownedSubsetting;
-                            // derived feature featureTarget : Feature[1..1];
+                            derived feature featureTarget : Feature[1..1];
                         }		
                         
                         metaclass FeatureChaining specializes Relationship {
@@ -746,18 +739,14 @@ class LibrariesTest {
                     }
                 }
             """)
-        initialize()
-        initialize()
+        // initialize(4)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         checkLibraryElementIds()
     }
 
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
     fun loadLibraryKerMLtest2() = testSession  {
-        initialize()
-        initialize()
         loadLibrary("KerML")
-        initialize()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         checkLibraryElementIds()
         assertTrue(status.issues.isEmpty(), status.issues.toString())

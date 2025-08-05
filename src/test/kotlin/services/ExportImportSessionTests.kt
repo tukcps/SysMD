@@ -3,6 +3,7 @@ package services
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.services.check.checkConsistency
 import com.github.tukcps.sysmd.services.resolve.resolve
+import io.github.tukcps.sysmlv2.api.entities.ElementDAO
 import io.github.tukcps.sysmlv2.api.entities.getElements
 import util.mockup.loadKerML
 import util.testSession
@@ -38,11 +39,11 @@ class ExportImportSessionTests {
         testSession {
             import(export)
             val import = global.getOwnedElementOfType<Import>() !!
-            assertTrue(import.source.size == 1 && import.source.first().id != null)
+            assertTrue(import.source.size == 1 && import.source.first().elementId != null)
             assertTrue(import.target.size == 1 &&
-                        import.target.first().id != null)
-            }
+                        import.target.first().elementId != null)
         }
+    }
 
 
     /**
@@ -53,7 +54,7 @@ class ExportImportSessionTests {
      */
     @Test
     fun exportImportRelationships() {
-        var export: List<io.github.tukcps.sysmlv2.api.entities.ElementDAO> = mutableListOf()
+        var export: List<ElementDAO> = mutableListOf()
 
         testSession {
             loadKerML("""
@@ -66,16 +67,16 @@ class ExportImportSessionTests {
             val b = global.resolve<Type>("B")!!
 
             val imp = a.getOwnedElementsOfType<Import>().first()
-            assertEquals(a, imp.source.first().ref)
-            assertEquals(a.elementId, imp.source.first().id)
-            assertEquals(b, imp.target.first().ref)
-            assertEquals(b.elementId, imp.target.first().id)
+            assertEquals(a, imp.source.first())
+            assertEquals(a.elementId, imp.source.first().elementId)
+            assertEquals(b, imp.target.first())
+            assertEquals(b.elementId, imp.target.first().elementId)
 
             val spec = a.getOwnedElementsOfType<Specialization>().first()
-            assertEquals(a, spec.source.first().ref)
-            assertEquals(a.elementId, spec.source.first().id)
-            assertEquals(anything, spec.target.first().ref)
-            assertEquals(anything.elementId, spec.target.first().id)
+            assertEquals(a, spec.source.first())
+            assertEquals(a.elementId, spec.source.first().elementId)
+            assertEquals(anything, spec.target.first())
+            assertEquals(anything.elementId, spec.target.first().elementId)
 
             // Save it in DB and see if
             export = export().filter { it.payloadElementSnapshot != null }.mapNotNull { it.payloadElementSnapshot }
@@ -90,12 +91,12 @@ class ExportImportSessionTests {
             val a = global.resolve<Type>("A")!!
             val b = global.resolve<Type>("B")!!
             val imp = a.getOwnedElementsOfType<Import>().first()
-            assertEquals(a.elementId, imp.source.first().id)
-            assertEquals(b.elementId, imp.target.first().id)
+            assertEquals(a.elementId, imp.source.first().elementId)
+            assertEquals(b.elementId, imp.target.first().elementId)
 
             val spec = a.getOwnedElementsOfType<Specialization>().first()
-            assertEquals(a.elementId, spec.source.first().id)
-            assertEquals(anything.elementId, spec.target.first().id)
+            assertEquals(a.elementId, spec.source.first().elementId)
+            assertEquals(anything.elementId, spec.target.first().elementId)
         }
     }
 }

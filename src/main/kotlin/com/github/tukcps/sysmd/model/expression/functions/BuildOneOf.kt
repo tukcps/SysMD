@@ -1,6 +1,7 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import com.github.tukcps.sysmd.compiler.semantics.SemanticActions
+import com.github.tukcps.sysmd.compiler.semantics.ActionsContext
+import com.github.tukcps.sysmd.compiler.semantics.kerml.ConditionalExpressionActions
 import com.github.tukcps.sysmd.model.expression.AstLeaf
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.model.kerml.Feature
@@ -14,7 +15,7 @@ fun buildOneOfAst(
     model: Session,
     expression: Feature,
     args: ArrayList<AstNode>,
-    semantics: SemanticActions
+    semantics: ActionsContext
 ): AstNode  {
     var s1 = args.first()
     var decVarCounter = 1
@@ -31,7 +32,7 @@ fun buildOneOfAst(
                 )
             )
             decVarCounter++
-            s1 = semantics.conditionalExpressionActions(cond, s1, s2)!!.run()
+            s1 = ConditionalExpressionActions(semantics, cond, s1, s2).run()
         }
     }
     return s1

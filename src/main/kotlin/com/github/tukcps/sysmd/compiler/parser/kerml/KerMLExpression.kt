@@ -2,20 +2,20 @@
 
 package com.github.tukcps.sysmd.compiler.parser.kerml
 
-import io.github.tukcps.aadd.*
+import com.github.tukcps.sysmd.compiler.KerML
+import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
+import com.github.tukcps.sysmd.compiler.semantics.kerml.ConditionalExpressionActions
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.exceptions.SyntaxError
 import com.github.tukcps.sysmd.model.expression.AstBinOp
 import com.github.tukcps.sysmd.model.expression.AstLeaf
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.model.expression.AstUnaryOp
-import com.github.tukcps.sysmd.model.expression.functions.AstHasA
 import com.github.tukcps.sysmd.model.expression.functions.AstHasType
 import com.github.tukcps.sysmd.model.expression.functions.AstNot
-import com.github.tukcps.sysmd.compiler.KerML
-import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.quantities.VectorQuantity
+import io.github.tukcps.aadd.*
 
 
 /**
@@ -40,7 +40,7 @@ fun KerML.BooleanExpression(): AstNode {
  * conditionalExpression :- IF expression ? expression ELSE expression
  */
 fun KerML.ConditionalExpression(): AstNode? {
-    val action = semantics.conditionalExpressionActions()
+    val action = ConditionalExpressionActions(semantics)
     IF.consume()
     Expression().also { action.condExpr = it }
     QUESTION.consume()

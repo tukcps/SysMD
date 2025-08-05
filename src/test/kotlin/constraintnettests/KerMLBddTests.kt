@@ -122,24 +122,4 @@ class KerMLBddTests {
         assertSame(builder.conds.getCondition(2), builder.Bool)
         assertSame(builder.conds.getCondition(3), builder.True)
     }
-
-    @Test
-    fun solveAstBDDMultipleSolutions()  = testSession("ScalarValues") {
-        loadKerML(
-            """
-            feature a: ScalarValues::Boolean;
-            feature b: ScalarValues::Boolean(false);
-            feature c: ScalarValues::Boolean;
-            feature d: ScalarValues::Boolean;
-            feature bdd: ScalarValues::Boolean(true) = (a and (b or c)) or d;"""
-        )
-        propagate()
-        val hrm = global.resolveVar("bdd")!!.bdd().evaluate()
-        val test = global.resolveVar("bdd")!!.ast!!.findAllPaths(
-            global.resolveVar("bdd")!!.bdd().evaluate(),
-            global.resolveVar("bdd")!!.boolSpecs[0]
-        )
-        val result = global.resolveVar("bdd")!!.ast!!.solveAstWithAlternatives()
-        val breakpoint = 1
-    }
 }

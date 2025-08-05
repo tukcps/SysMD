@@ -16,7 +16,7 @@ class NamespaceImportTests {
         assertNotNull(import)
         assertEquals(1, import.source.size)
         assertEquals(1, import.target.size)
-        assertNotNull(import.source.first().id)
-        assertNotNull(import.target.first().id)
+        assertNotNull(import.source.first().elementId)
+        assertNotNull(import.target.first().elementId)
     }
 }

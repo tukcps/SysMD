@@ -35,8 +35,7 @@ class TreeViewModel(
     var root: TreeViewNodeModel,
     val onOpen: ((TreeViewNodeModel) -> Unit)? = null,
     val onCreate: ((TreeViewNodeModel) -> Unit)? = null,
-    val onDelete: ((TreeViewNodeModel, String) -> Unit)? = null,
-    val onUpload: ((TreeViewNodeModel, String) -> Unit)? = null,
+    val onDisplay: ((TreeViewNodeModel) -> Unit)? = null,
     val sort: Boolean = true,
     val filter: (Item) -> Boolean = { true }
 ) {
@@ -71,6 +70,10 @@ class TreeViewModel(
             }
         }
         fun select(index: Int){
+            selectedItem.value = index
+        }
+        fun display(index: Int){
+            onDisplay?.let { it(item.node) }
             selectedItem.value = index
         }
     }

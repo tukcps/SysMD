@@ -1,17 +1,14 @@
-@file:Suppress("UNCHECKED_CAST")
+@file:Suppress("UNCHECKED_CAST", "FunctionName")
 
 package com.github.tukcps.sysmd.compiler.parser.sysmlv2
 
 import com.github.tukcps.sysmd.compiler.SysMLv2
+import com.github.tukcps.sysmd.compiler.parser.kerml.ConnectorEndMember
 import com.github.tukcps.sysmd.compiler.parser.kerml.ValuePart
 import com.github.tukcps.sysmd.compiler.parser.kerml.valuePartStart
 import com.github.tukcps.sysmd.compiler.parser.util.Unsupported
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
-import com.github.tukcps.sysmd.compiler.semantics.Identification
-import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
 import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.ConnectionUsageActions
-import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.kerml.Resolved
 import com.github.tukcps.sysmd.model.sysml.ConnectionUsage
 import com.github.tukcps.sysmd.model.sysml.implementation.ConnectionUsageImplementation
 
@@ -29,26 +26,25 @@ fun SysMLv2.FlowConnectionDefinition() {
 /**
  *      Message : FlowConnectionUsage = OccurrenceUsagePrefix 'message' MessageDeclaration DefinitionBody { isAbstract = true }
  */
-fun SysMLv2.Message() {
-    val message = ConnectionUsageActions<ConnectionUsage>(semantics, ::ConnectionUsageImplementation, mutableListOf("Connections::Connection"))
+fun SysMLv2.Message() = ConnectionUsageActions<ConnectionUsage>(semantics, ::ConnectionUsageImplementation, "Connections::Connection").parse {
     MESSAGE.consume()
-    MessageDeclaration(message as FeatureActions<Feature>)
-    DefinitionBody(Resolved(message.created!!))
+    MessageDeclaration()
+    DefinitionBody()
 }
 
 /**
- *      MessageDeclaration : FlowConnectionUsage = UsageDeclaration ValuePart?
- *          ( 'of' ownedRelationship += FlowPayloadFeatureMember )?
- *          ( 'from' ownedRelationship += MessageEventMember
+ *      MessageDeclaration: FlowConnectionUsage = UsageDeclaration ValuePart?
+ *          ('of' ownedRelationship += FlowPayloadFeatureMember)?
+ *          ('from' ownedRelationship += MessageEventMember
  *              'to' ownedRelationship += MessageEventMember
  *          )?
  *          | ownedRelationship += MessageEventMember 'to'
  *          ownedRelationship += MessageEventMember
  */
-fun SysMLv2.MessageDeclaration(message: FeatureActions<Feature>) {
-    UsageDeclaration(message)
+fun SysMLv2.MessageDeclaration() {
+    UsageDeclaration()
     valuePartStart.optional {
-        ValuePart(message)
+        ValuePart()
     }
     OF.optional {
 
@@ -68,12 +64,10 @@ fun SysMLv2.MessageDeclaration(message: FeatureActions<Feature>) {
  *
  *      FlowConnectionUsage = OccurrenceUsagePrefix 'flow' FlowConnectionDeclaration DefinitionBody
  */
-fun SysMLv2.FlowConnectionUsage() {
-    val flowConnectionUsage = ConnectionUsageActions<ConnectionUsage>(semantics, ::ConnectionUsageImplementation, mutableListOf("Connections::Connection"))
+fun SysMLv2.FlowConnectionUsage() = ConnectionUsageActions<ConnectionUsage>(semantics, ::ConnectionUsageImplementation, "Connections::Connection").parse {
     FLOW.consume()
-    FlowConnectionDeclaration(flowConnectionUsage as FeatureActions<Feature>)
-    DefinitionBody(Resolved(flowConnectionUsage.created!!))
-    flowConnectionUsage.finish()
+    FlowConnectionDeclaration()
+    DefinitionBody()
 }
 
 /**
@@ -83,13 +77,13 @@ fun SysMLv2.FlowConnectionUsage() {
  *          ( 'from' ownedRelationship += FlowEndMember 'to' ownedRelationship += FlowEndMember )?
  *          | ownedRelationship += FlowEndMember 'to' ownedRelationship += FlowEndMember
  */
-fun SysMLv2.FlowConnectionDeclaration(flowConnectionUsage: FeatureActions<Feature>) {
+fun SysMLv2.FlowConnectionDeclaration() {
 
     when {
         token.kind in setOf(NAME_LIT, LCBRACE) && nextToken.kind !in setOf(DPDP, DOT) -> {
-            UsageDeclaration(flowConnectionUsage)
+            UsageDeclaration()
             valuePartStart.optional {
-                ValuePart(flowConnectionUsage)
+                ValuePart()
             }
             OF.optional {
                 Unsupported()
@@ -101,7 +95,7 @@ fun SysMLv2.FlowConnectionDeclaration(flowConnectionUsage: FeatureActions<Featur
             }
         }
         else -> {
-            flowConnectionUsage.create(identification = Identification(null, null))
+            semantics.create(null)
             FlowEndMember()
             TO.consume()
             FlowEndMember()
@@ -110,18 +104,18 @@ fun SysMLv2.FlowConnectionDeclaration(flowConnectionUsage: FeatureActions<Featur
 }
 
 /**
- * FlowPayloadFeatureMember : FeatureMembership =
+ * FlowPayloadFeatureMember: FeatureMembership =
  * ownedRelatedElement += FlowPayloadFeature
- * FlowPayloadFeature : ItemFeature =
+ * FlowPayloadFeature: ItemFeature =
  * PayloadFeature
- * PayloadFeature : Feature =
+ * PayloadFeature: Feature =
  * Identification? PayloadFeatureSpecializationPart
  * ValuePart?
  * | ownedRelationship += OwnedFeatureTyping
  * ( ownedRelationship += OwnedMultiplicity )?
  * | ownedRelationship += OwnedMultiplicity
  * ownedRelationship += OwnedFeatureTyping
- * PayloadFeatureSpecializationPart : Feature =
+ * PayloadFeatureSpecializationPart: Feature =
  * ( -> FeatureSpecialization )+ MultiplicityPart?
  * FeatureSpecialization*
  * | MultiplicityPart FeatureSpecialization+

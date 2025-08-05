@@ -6,17 +6,14 @@ import com.github.tukcps.sysmd.compiler.SysMLv2
 import com.github.tukcps.sysmd.compiler.parser.kerml.*
 import com.github.tukcps.sysmd.compiler.parser.util.Unsupported
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
-import com.github.tukcps.sysmd.compiler.semantics.Identification
 import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
-import com.github.tukcps.sysmd.compiler.semantics.kerml.TypeActions
 import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.ActionDefinitionActions
+import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.ActionUsageActions
 import com.github.tukcps.sysmd.exceptions.throwSyntaxError
 import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.kerml.Resolved
-import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
-import com.github.tukcps.sysmd.model.sysml.ActionDefinition
 import com.github.tukcps.sysmd.model.sysml.implementation.ActionDefinitionImplementation
+import com.github.tukcps.sysmd.model.sysml.implementation.ActionUsageImplementation
 
 
 /**
@@ -25,30 +22,25 @@ import com.github.tukcps.sysmd.model.sysml.implementation.ActionDefinitionImplem
  *      ActionDefinition = OccurrenceDefinitionPrefix 'action' 'def'
  *          DefinitionDeclaration ActionBody
  */
-fun SysMLv2.ActionDefinition() {
-    val actionDefinition = ActionDefinitionActions<ActionDefinition>(semantics, ::ActionDefinitionImplementation, mutableListOf("Actions::Action" ))
+fun SysMLv2.ActionDefinition() = ActionDefinitionActions(semantics, ::ActionDefinitionImplementation, "Actions::Action" ).parse {
     ACTION.consume()
     DEF.consume()
-    DefinitionDeclaration(actionDefinition as TypeActions<Type>)
-    ActionBody(Resolved(ref=actionDefinition.created!!))
-    actionDefinition.finish()
+    DefinitionDeclaration()
+    ActionBody()
 }
 
 
 /**
  *      ActionBody = ';' | '{' ActionBodyItem* '}'
-
  */
-fun SysMLv2.ActionBody(owner: Resolved<Type>) {
+fun SysMLv2.ActionBody() {
     alternatives {
         SEMICOLON then {}
         LCURBRACE starts {
             LCURBRACE.consume()
-            semantics.pushOwner(owner)
             noOrMore(end = {token.kind == RCURBRACE}) {
                 ActionBodyItem()
             }
-            semantics.popOwner()
             RCURBRACE.consume()
         }
     }
@@ -57,8 +49,8 @@ fun SysMLv2.ActionBody(owner: Resolved<Type>) {
 /**
  *      ActionBodyItem =
  *          NonBehaviorBodyItem
- *          | InitialNodeMember ( ActionTargetSuccessionMember )*
- *          | SourceSuccessionMember? ActionBehaviorMember ( ActionTargetSuccessionMember )*
+ *          | InitialNodeMember (ActionTargetSuccessionMember)*
+ *          | SourceSuccessionMember? ActionBehaviorMember (ActionTargetSuccessionMember)*
  *          | GuardedSuccessionMember
  *
  *      ActionBehaviorMember = BehaviorUsageMember | ActionNodeMember
@@ -66,17 +58,19 @@ fun SysMLv2.ActionBody(owner: Resolved<Type>) {
 fun SysMLv2.ActionBodyItem() {
     MemberPrefix()
     when {
-        nonBehaviorBodyItemStart()          -> NonBehaviorBodyItem()
+        nonBehaviorBodyItemStart() -> NonBehaviorBodyItem()
         match(FIRST, NAME_LIT, DPDP) or match(FIRST, NAME_LIT, LCURBRACE) -> {
             InitialNodeMember()
             noOrMore(THEN) {
                 ActionTargetSuccessionMember()
             }
         }
+
         match(FIRST, NAME_LIT, DOT) or match(FIRST, NAME_LIT, IF) or match(SUCCESSION) ->
             GuardedSuccession()
-        behaviorUsageElementStart.starts()  -> BehaviorUsageElement()
-        actionNodeStart.starts()            -> ActionNode()
+
+        behaviorUsageElementStart.starts() -> BehaviorUsageElement()
+        actionNodeStart.starts() -> ActionNode()
         else -> throwSyntaxError("Unknown action body item ${token.kind}")
     }
 }
@@ -126,7 +120,7 @@ fun SysMLv2.InitialNodeMember() {
     optional(NAME_LIT) {
         QualifiedName()
     }
-    RelationshipBody(Resolved(null, null, null))
+    RelationshipBody()
 }
 
 
@@ -135,55 +129,51 @@ fun SysMLv2.InitialNodeMember() {
  *
  *      ActionUsage = OccurrenceUsagePrefix 'action' ActionUsageDeclaration ActionBody
  */
-fun SysMLv2.ActionUsage() {
-    val actionUsage = sysMLSemantics.ActionUsageSemantics()
+fun SysMLv2.ActionUsage() = ActionUsageActions(semantics, ::ActionUsageImplementation).parse {
     ACTION.consume()
-    ActionUsageDeclaration(actionUsage as FeatureActions<Feature>)
-    ActionBody(Resolved(actionUsage.created!!))
-    actionUsage.finish()
+    ActionUsageDeclaration()
+    ActionBody()
 }
 
 /**
  *      ActionUsageDeclaration = UsageDeclaration ValuePart?
  */
-fun SysMLv2.ActionUsageDeclaration(featureActions: FeatureActions<Feature>) {
-    UsageDeclaration(featureActions)
+fun SysMLv2.ActionUsageDeclaration() {
+    UsageDeclaration()
     optional(valuePartStart) {
-        ValuePart(featureActions)
+        ValuePart()
     }
 }
 
 /**
  *      PerformActionUsage = OccurrenceUsagePrefix 'perform' PerformActionUsageDeclaration ActionBody
  */
-fun SysMLv2.PerformActionUsage() {
-    val performUsage = FeatureActions<Feature>(semantics, ::FeatureImplementation, mutableListOf("Actions::Action" ))
+fun SysMLv2.PerformActionUsage() = FeatureActions<Feature>(semantics, ::FeatureImplementation, "Actions::Action").parse {
     PERFORM.consume()
-    PerformActionUsageDeclaration(performUsage)
-    ActionBody(Resolved(performUsage.created!!) )
-    performUsage.finish()
+    PerformActionUsageDeclaration()
+    ActionBody()
 }
 
 /**
  *      PerformActionUsageDeclaration =
- *      ( OwnedReferenceSubsetting FeatureSpecializationPart? | 'action' UsageDeclaration ) ValuePart?
+ *      (OwnedReferenceSubsetting FeatureSpecializationPart? | 'action' UsageDeclaration) ValuePart?
  *
  *  Note: OwnedReferenceSubsetting is a qualified name or feature chain
  */
-fun SysMLv2.PerformActionUsageDeclaration(performUsage: FeatureActions<Feature>) {
+fun SysMLv2.PerformActionUsageDeclaration() {
     alternatives {
         NAME_LIT starts {
-            OwnedReferenceSubsetting().also { performUsage.create(Identification(it)); performUsage.addReferences(it) }
-            featureSpecializationPartStart.optional { FeatureSpecializationPart(performUsage) }
+            OwnedReferenceSubsetting()
+            featureSpecializationPartStart.optional { FeatureSpecializationPart() }
+            semantics.create(null)
         }
         ACTION starts {
             ACTION.consume()
-            UsageDeclaration(performUsage)
+            UsageDeclaration()
         }
-
     }
     optional(valuePartStart) {
-        ValuePart(performUsage)
+        ValuePart()
     }
 }
 val performActionUsageDeclarationStart = setOf(NAME_LIT, ACTION)
@@ -210,7 +200,7 @@ val actionNodeStart get() = controlNodeStart
 /**
  *      IfNode = ActionNodePrefix
  *          'if' ExpressionParameterMember ActionBodyParameterMember
- *          ( 'else' ( ActionBodyParameterMember | IfNodeParameterMember ) )?
+ *          ('else' ( ActionBodyParameterMember | IfNodeParameterMember) )?
  */
 fun SysMLv2.IfNode() {
     IF.consume()
@@ -225,17 +215,15 @@ fun SysMLv2.IfNode() {
  *      ActionBodyParameter = ( 'action' UsageDeclaration? )?
  *          '{' ActionBodyItem* '}'
  */
-fun SysMLv2.ActionBodyParameter() {
-    val actionBodyParameter = FeatureActions<Feature>(semantics, ::FeatureImplementation, mutableListOf("Actions::Action" ))
+fun SysMLv2.ActionBodyParameter() = FeatureActions<Feature>(semantics, ::FeatureImplementation, "Actions::Action" ).parse {
     ACTION.optional {
-        UsageDeclaration(actionBodyParameter)
+        UsageDeclaration()
     }
     LCURBRACE.consume()
     noOrMore({token.kind != RCURBRACE}) {
         ActionBodyItem()
     }
     RCURBRACE.consume()
-    actionBodyParameter.finish()
 }
 
 /**
@@ -270,7 +258,7 @@ fun SysMLv2.ControlNodePrefix() {
 }
 
 /**
- *      ActionNodeBody = ';' | '{' ( AnnotatingMember )* '}'
+ *      ActionNodeBody = ';' | '{' (AnnotatingMember)* '}'
  *  AnnotatingMember is an owned AnnotatingElement
  */
 fun SysMLv2.ActionNodeBody() {
@@ -281,5 +269,19 @@ fun SysMLv2.ActionNodeBody() {
             AnnotatingElement()
             RCURBRACE.consume()
         }
+    }
+}
+
+
+/**
+ *      AcceptParameterPart: AcceptActionUsage =
+ *          ownedRelationship += PayloadParameterMember
+ *          ('via' ownedRelationship += NodeParameterMember)?
+ */
+fun SysMLv2.AcceptParameterPart() {
+    PayloadParameter()
+    optional(VIA) {
+        VIA.consume()
+        Unsupported("via not yet supported")
     }
 }

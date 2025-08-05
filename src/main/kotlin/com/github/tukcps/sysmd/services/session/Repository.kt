@@ -40,15 +40,11 @@ class Repository {
     var links: Type? = null
 
 
-    /** Map for elements with the not-yet identified owner */
-    var unownedElements: MutableList<Session.UnresolvedElement> = mutableListOf()
-
     /** Projects that have been loaded into the session; as of now identified by name, not ID (!!!) */
     val loadedProjects: MutableSet<String> = mutableSetOf()
 
     fun reset() {
         elements.clear()
-        unownedElements.clear()
         targetOfRelationship.clear()
         sourceOfRelationship.clear()
         schedule.clear()

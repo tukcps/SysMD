@@ -4,6 +4,7 @@ import com.github.tukcps.sysmd.model.sysml.ActionDefinition
 import com.github.tukcps.sysmd.model.sysml.ActionUsage
 import com.github.tukcps.sysmd.model.sysml.ItemDefinition
 import com.github.tukcps.sysmd.services.resolve.resolve
+import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Ignore
@@ -100,20 +101,23 @@ class ActionTests {
                 action def Action1;
                 action def Action2;
                 action def Action3;
-                action action3 : Action3{
+                action action3 : Action3 {
                     action action1 : Action1;  
                     first action1 if x>0 then action2;             
                     action action2 : Action2;
                 }
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
 
         val action1 = global.resolve<ActionUsage>("actionExample::action3::action1")
         assertNotNull(action1)
 
         val action2 = global.resolve<ActionUsage>("actionExample::action3::action2")
         assertNotNull(action2)
+
+        val action3 = global.resolve<ActionUsage>("actionExample::action3")
+        assertNotNull(action3)
     }
 
 

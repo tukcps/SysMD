@@ -1,6 +1,7 @@
 package sysmdtests
 
 import com.github.tukcps.sysmd.cspsolver.propagate
+import com.github.tukcps.sysmd.model.kerml.Association
 import com.github.tukcps.sysmd.model.kerml.Connector
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolve
@@ -90,10 +91,10 @@ class PredefinedFunctionsTests {
     }
 
     @Test
-    fun linearFunctionTest_Reverse() = testSession("ScalarValues") {
+    fun linearFunctionTest_Reverse() = testSession("ScalarValues", "Ranges") {
         loadKerML("""
                 feature T: ScalarValues::Real;
-                feature p: ScalarValues::Real(15.0..15.0) = linear(T, 2000.0, 10.0, 2010.0, 20.0);
+                feature p: Ranges::RealInRange = linear(T, 2000.0, 10.0, 2010.0, 20.0) {:>> range = "15.0..15.0";}
                 """)
         propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
@@ -214,10 +215,10 @@ class PredefinedFunctionsTests {
     }
 
     @Test
-    fun linearFunctionTest7_8_reverse() = testSession("ScalarValues") {
+    fun linearFunctionTest7_8_reverse() = testSession("ScalarValues", "Ranges") {
         loadKerML(catchExceptions = false, input = """
                 feature T: ScalarValues::Real;
-                feature p: ScalarValues::Real(10.0) = linear(T, 2000.0, 0.0, 2010.0, 20.0, 2020.0, 10.0);
+                feature p: Ranges::RealInRange = linear(T, 2000.0, 0.0, 2010.0, 20.0, 2020.0, 10.0) {:>> range = "10.0";}
                 """)
         propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
@@ -227,10 +228,10 @@ class PredefinedFunctionsTests {
     }
 
     @Test
-    fun linearFunctionTest7_9_reverse() = testSession("ScalarValues") {
+    fun linearFunctionTest7_9_reverse() = testSession("ScalarValues", "Ranges") {
         loadKerML("""
                 feature T: ScalarValues::Real;
-                feature p: ScalarValues::Real(10.0) = linear(T, 2000.0, 0.0, 2010.0, 20.0, 2020.0, 0.0);
+                feature p: Ranges::RealInRange = linear(T, 2000.0, 0.0, 2010.0, 20.0, 2020.0, 0.0) {:>> range = "10.0";}
                 """)
         propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
@@ -245,9 +246,9 @@ class PredefinedFunctionsTests {
      */
     @Test
     fun testFloorFxnA() {
-        testSession("ScalarValues") {
-            loadKerML("feature p: ScalarValues::Real(1.0 .. 1.0);") // padding, 0 = NOT enabled, 1 = enabled
-            loadKerML("feature C_wb_s_floor_arg: ScalarValues::Real(2.75 .. 2.75);")
+        testSession("ScalarValues", "Ranges") {
+            loadKerML("feature p: Ranges::RealInRange {:>> range = \"1.0 .. 1.0\";}") // padding, 0 = NOT enabled, 1 = enabled
+            loadKerML("feature C_wb_s_floor_arg: Ranges::RealInRange {:>> range = \"2.75 .. 2.75\";}")
             loadKerML("feature a_pb: ScalarValues::Real = p * floor(C_wb_s_floor_arg);")
             assertEquals(2.0, global.resolveVar( "a_pb")!!.vectorQuantity.value.asAadd().getRange().min, tol)
             assertEquals(2.0, global.resolveVar("a_pb")!!.vectorQuantity.value.asAadd().getRange().max, tol)
@@ -258,8 +259,8 @@ class PredefinedFunctionsTests {
      * Test of Floor.
      */
     @Test
-    fun testFloorFxnB() = testSession("ScalarValues") {
-            loadKerML("feature C_wb_s_floor_arg: ScalarValues::Real(2.75 .. 2.75);")
+    fun testFloorFxnB() = testSession("ScalarValues", "Ranges") {
+            loadKerML("feature C_wb_s_floor_arg: Ranges::RealInRange {:>> range = \"2.75 .. 2.75\";}")
             loadKerML("feature a_pb: ScalarValues::Real = floor(C_wb_s_floor_arg);")
             assertEquals(2.0, global.resolveVar("a_pb")!!.vectorQuantity.value.asAadd().getRange().min, tol)
             assertEquals(2.0, global.resolveVar("a_pb")!!.vectorQuantity.value.asAadd().getRange().max, tol)
@@ -269,8 +270,8 @@ class PredefinedFunctionsTests {
      * Test of Floor.
      */
     @Test
-    fun testFloorFxnC() = testSession("ScalarValues") {
-        loadKerML("feature C_wb_s_floor_arg: ScalarValues::Real(2.75 .. 2.75); feature a_pb: ScalarValues::Real = floor(C_wb_s_floor_arg) - 1.0.")
+    fun testFloorFxnC() = testSession("ScalarValues", "Ranges") {
+        loadKerML("feature C_wb_s_floor_arg: Ranges::RealInRange {:>> range = \"2.75 .. 2.75\";} feature a_pb: ScalarValues::Real = floor(C_wb_s_floor_arg) - 1.0.")
         assertEquals(1.0, global.resolveVar("a_pb")!!.vectorQuantity.value.asAadd().getRange().min, 0.001)
         assertEquals(1.0, global.resolveVar("a_pb")!!.vectorQuantity.value.asAadd().getRange().max, 0.001)
     }
@@ -281,8 +282,8 @@ class PredefinedFunctionsTests {
      */
     @Test
     fun testFloorFxnD() {
-        testSession("ScalarValues") {
-            loadKerML("feature C_wb_s_floor_arg: ScalarValues::Real(2.75 .. 2.75);")
+        testSession("ScalarValues", "Ranges") {
+            loadKerML("feature C_wb_s_floor_arg: Ranges::RealInRange {:>> range = \"2.75 .. 2.75\";}")
             loadKerML("feature a_pb: ScalarValues::Real = 3.0 - floor(C_wb_s_floor_arg);")
             assertEquals(1.0, global.resolveVar("a_pb")!!.vectorQuantity.value.asAadd().getRange().min, tol)
             assertEquals(1.0, global.resolveVar("a_pb")!!.vectorQuantity.value.asAadd().getRange().max, tol)
@@ -295,10 +296,10 @@ class PredefinedFunctionsTests {
      * 9x^4 - y^4 + 2 y^2 = 1
      */
     @Test
-    fun testAgainstRumpEquation7() = testSession("ScalarValues") {
+    fun testAgainstRumpEquation7() = testSession("ScalarValues", "Ranges") {
         loadKerML("""
-            feature x: ScalarValues::Real(2910.99 .. 2911.001);
-            feature y: ScalarValues::Real(5041.999 .. 5042.001);
+            feature x: Ranges::RealInRange {:>> range = "2910.99 .. 2911.001";}
+            feature y: Ranges::RealInRange {:>> range = "5041.999 .. 5042.001";}
             feature z: ScalarValues::Real = 9.0 * x^4.0 - y^4.0 + 2.0 * y^2.0
             """)
         val z = global.resolveVar("z")!!.vectorQuantity.value.asAadd()
@@ -504,8 +505,8 @@ class PredefinedFunctionsTests {
         loadKerML("""
             package ISO26262 {
                 assoc implements {
-                   end feature 'from': Base::Anything;
-                   end feature 'to':  Base::Anything;  
+                   end feature 'from': Base::Anything redefines source;
+                   end feature 'to':  Base::Anything redefines target;  
                 }
             }
             feature c {
@@ -514,11 +515,10 @@ class PredefinedFunctionsTests {
             feature f {
                 feature x: ScalarValues::Real = byImplements(x). 
             }
-            //connector r = c ISO26262::implements f; 
             connector r : ISO26262::implements from c to f; 
-
         """)
         propagate()
+        val impl = global.resolve<Association>("ISO26262::implements")
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         val r = global.resolve<Connector>("r")
         assertNotNull(r)

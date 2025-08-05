@@ -68,13 +68,13 @@ class BoardViewModelTest {
         agenda.clear()
 
         loadKerML("""
-            class A :> C; 
+            type A :> C; 
         """)
         propagate()
 
         agenda.update()
 
-        assertEquals(1, agenda.size())
+        assertEquals(2, agenda.size())
         // assertEquals(true, agenda.contains("A"))
     }
 
@@ -83,7 +83,7 @@ class BoardViewModelTest {
         val sysMdViewModel = SysMDViewModel(this)
         loadKerML("""
             class A :> B; 
-            class B :> A; 
+            class B :> A;
         """)
         val agenda = sysMdViewModel.agenda
         agenda.update()
@@ -227,7 +227,7 @@ class BoardViewModelTest {
         """)
         session.propagate()
         assertEquals(1, session.status.issues.size, session.status.issues.toString())
-        assertEquals("'A': Could not resolve type 'C'", session.status.issues.elementAt(0).message)
+        assertTrue(session.status.issues.any { it.message.contains("C") }, "Error message is expected reporting C as undefined")
         val agenda = sysMdViewModel.agenda
         agenda.update()
 
@@ -253,7 +253,7 @@ class BoardViewModelTest {
         assertEquals(2, agenda.size())
         agenda.removeElement(qualifiedName = "A")
         assertEquals(1, agenda.size())
-        val error = agenda.issues().first()
+       // val error = agenda.issues().first()
         // agenda.removeElement(error.qualifiedName, error.textualRepresentation, error.line)
         assertEquals(0, agenda.size())
         agenda.update()

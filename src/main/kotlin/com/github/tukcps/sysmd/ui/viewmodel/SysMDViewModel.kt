@@ -13,6 +13,18 @@ import com.github.tukcps.sysmd.services.session.SessionManager.projectService
 import com.github.tukcps.sysmd.services.session.loadSysMDFromFile
 import com.github.tukcps.sysmd.ui.paneright.BoardViewModel
 import com.github.tukcps.sysmd.ui.composables.TreeViewModel
+import com.github.tukcps.sysmd.ui.composables.TreeViewNodeModel
+
+
+/**
+ * For debug, can be selected with SHIFT + Primary Pointer / Left Mouse Click
+ */
+fun display(node: TreeViewNodeModel) {
+    val element = (node as HasATree).element
+    println(element.toString())
+    println(" - indices = ${element.indices}")
+    println(" - token   = ${element.input?.substring(element.indices!!)}")
+}
 
 
 /**
@@ -30,8 +42,8 @@ class SysMDViewModel(
     var agendaIsEmpty = mutableStateOf(agenda.isEmpty())
 
     // The selectable tree views
-    val composition = mutableStateOf(TreeViewModel(HasATree(mutableStateOf(session.global)), null, null, null, null, false))
-    val inheritance = mutableStateOf(TreeViewModel(IsATree(mutableStateOf(session.anything)), null, null, null, null, false))
+    val composition = mutableStateOf(TreeViewModel(HasATree(mutableStateOf(session.global)), null, null, ::display, false))
+    val inheritance = mutableStateOf(TreeViewModel(IsATree(mutableStateOf(session.anything)), null, null, ::display, false))
 
     val showSettingsDialog: MutableState<Boolean> = mutableStateOf(false)
     val reconnectionRequired:MutableState<Boolean> = mutableStateOf(false)
@@ -73,7 +85,7 @@ class SysMDViewModel(
      * This function should be called after each change in the KerML model of a session.
      */
     fun refreshTrees() {
-        composition.value = TreeViewModel(HasATree(mutableStateOf(session.global)), sort = false)
+        composition.value = TreeViewModel(HasATree(mutableStateOf(session.global)), null, null, ::display, false)
         inheritance.value = TreeViewModel(IsATree(mutableStateOf(session.anything)), sort = false)
         agenda.clear()
         agenda.update()

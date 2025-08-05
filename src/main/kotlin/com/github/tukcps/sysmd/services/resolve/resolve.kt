@@ -19,12 +19,17 @@ inline fun <reified T: Element> Namespace.resolve(
     qualifiedName: QualifiedName,
     searchInSuperClass: Boolean = true,
     resolveReferences: Boolean = true
-): T?  {
+): T? {
+
+    // For redefinitions, we
+    // if (this is Feature && this.redefining != null)
+    //     return redefining!!.findRecursive(qualifiedName, emptySet(), emptySet(), true, searchInSuperClass, resolveReferences ) as T?
+
     var found = findRecursive(qualifiedName, emptySet(), emptySet(),true, searchInSuperClass, resolveReferences)
 
     // If the element found is a referenced feature, follow the reference and use it
-    if (found is Feature && found.referencedFeature?.ref != null && resolveReferences) {
-        found = found.referencedFeature?.ref
+    if (found is Feature && found.referencedFeature != null && resolveReferences) {
+        found = found.referencedFeature
     }
 
     if (found is T?)
@@ -43,10 +48,10 @@ inline fun <reified T: Element> Namespace.resolve(
  * @param name A SimpleName that is searched for
  */
 fun Namespace.resolveLocal(name: SimpleName): Element? {
-
+    if (this == model?.global && name == "Global") return model?.global
     visibleMemberships().forEach {
-        if (it.ref?.name == name || it.ref?.shortName == name)
-            return it.ref
+        if (it.memberElement.name == name || it.memberElement.shortName == name)
+            return it.memberElement
     }
     return null
 }
@@ -58,7 +63,7 @@ fun Namespace.resolveLocal(name: SimpleName): Element? {
  * @param searchedSuperClasses optionally, the set of searched superclasses; needed to detect cyclic definitions
  * @param searchInOwner optionally, whether the given qualified name is initially given as a simple name, or just
  * became a simple name via recursion that cuts qualified name down.
- * @param searchInSuperClass optionally, whether to recurse into superclasses.
+ * @param searchInSuperClass optionally, wether to recurse into superclasses.
  * Since 3.1 default off! This has an impact on the redefinitions that might not be handled properly (?), but 20% speedup.
  * @return An element of or null, if the name cannot be resolved.
  */
@@ -71,12 +76,8 @@ fun Namespace.findRecursive(
     resolveReferences: Boolean = true,
 ): Element? {
 
-    if (qualifiedName == "self")
-        return this
-
-    if (qualifiedName == "that") {
-        return owner.ref
-    }
+    if (qualifiedName == "self") return this
+    if (qualifiedName == "that") return owner
 
     // Stop search if we search in Any, or if the name has been shortened to an empty string.
     if (this is Anything)
@@ -86,27 +87,24 @@ fun Namespace.findRecursive(
 
     // If we have a simple name, we can search in owned elements that are identified by simple names.
     if (qualifiedName.isSimpleName()) {
-        if (this == model?.global && qualifiedName == "Global") return model?.global
         var found = resolveLocal(qualifiedName)
-        if (found is Feature && found.referencedFeature?.ref != null && resolveReferences) {
-            found = found.referencedFeature?.ref
+        if (found is Feature && found.referencedFeature != null && resolveReferences) {
+            found = found.referencedFeature
         }
         if (found != null) return found
     } else {
         // Check for Self and Global name that are just pre-defined alias names.
-        val newName: QualifiedName = qualifiedName.dropFirstName()
 
         // Search downwards in matching owned namespaces, shortening the qualified name by 1st name.
         // SysMD: We allow "Global" as explicit entry to start of global search.
-        var matchingNamespace =
-            if (qualifiedName.firstName() == "Global") model?.global
-            else {
-                resolveLocal(qualifiedName.firstName())
-            }
-        if (matchingNamespace is Feature && matchingNamespace.referencedFeature?.ref != null && resolveReferences) {
-            matchingNamespace = matchingNamespace.referencedFeature!!.ref
+        var matchingNamespace = resolveLocal(qualifiedName.firstName())
+        if (matchingNamespace is Feature && matchingNamespace.referencedFeature != null && resolveReferences) {
+            matchingNamespace = matchingNamespace.referencedFeature
+        } else if (matchingNamespace is Feature && matchingNamespace.isEnd) {
+            // We could resolve end features as references.
         }
         if (matchingNamespace != null && matchingNamespace is Namespace) {
+            val newName: QualifiedName = qualifiedName.dropFirstName()
             val found = matchingNamespace.findRecursive(newName, emptySet(), emptySet(),false, searchInSuperClass)
             if (found != null) return found
         }
@@ -115,10 +113,8 @@ fun Namespace.findRecursive(
     // Search in imports, and track searched paths to avoid cyclic search.
     imports.forEach {
         if (this !in searchedImports) {
-            if (it.ref != null && it.ref is Namespace) {
-                val found = it.ref!!.findRecursive(qualifiedName, searchedImports+this, searchedSuperClasses, searchInOwner, searchInSuperClass)
-                if (found != null) return found
-            }
+            val found = it.findRecursive(qualifiedName, searchedImports+this, searchedSuperClasses, searchInOwner, searchInSuperClass)
+            if (found != null) return found
         }
     }
 
@@ -137,6 +133,19 @@ fun Namespace.findRecursive(
         null
 }
 
+fun Namespace.resolveFeatureChain(relativeName: String): Feature? {
+    var segments = relativeName.split(".")
+    val start = segments.first()
+    val startNamespace = resolve<Element>(start)
+    segments = segments.drop(1)
+    var feature = startNamespace
+    for (segment in segments) {
+        feature = feature?.getOwnedElementsOfType<Feature>()?.firstOrNull {
+            it.escapedName() == segment
+        }
+    }
+    return feature as Feature?
+}
 
 
 /**
@@ -146,7 +155,7 @@ fun Namespace.findRecursive(
  */
 fun Namespace.findAllOwnedElements(z: Int=0): Collection<Element> {
     val owned = mutableListOf<Element>()
-    ownedElement.forEach { owned.add(model?.get(it.id!!)?:throw SysMDError("Unresolvable Id: $it.id")) }
+    ownedElement.forEach { owned.add(it) }
     if (this is Type) {
         allSupertypes().forEach { superclass ->
             if (this == superclass)

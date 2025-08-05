@@ -77,9 +77,7 @@ object Indexer {
         }
 
         //Recursively call this function on element children
-        ele.ownedElement.forEach { child ->
-            indexElements(child.ref!!, tempPackages, tempComponents)
-        }
+        ele.ownedElement.forEach { child -> indexElements(child, tempPackages, tempComponents) }
     }
 
 

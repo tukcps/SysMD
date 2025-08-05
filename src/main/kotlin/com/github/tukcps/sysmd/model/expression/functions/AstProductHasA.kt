@@ -7,7 +7,6 @@ import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.model.expression.AstLeaf
 import com.github.tukcps.sysmd.model.expression.AstNode
-import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.getOwnedElementsOfType
@@ -149,7 +148,7 @@ fun Session.initProductParts(
                 leaf.feature = ownedProperty
                 if (leaf.upQuantity.values[0] is IDD) isRealProduct = false
             } else if (transitive && elementIterator !is Variable) { // Transitive: search property in parts ...
-                val elementRef = elementIterator.type.firstOrNull()?.ref
+                val elementRef = elementIterator.type.firstOrNull()
                 newAstNode = initProductParts(elementRef as Namespace, propertyAST, true, isRealProduct)
                 break
             } else {

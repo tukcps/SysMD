@@ -9,11 +9,10 @@ import com.github.tukcps.sysmd.compiler.parser.kerml.QualifiedName
 import com.github.tukcps.sysmd.compiler.parser.util.ParserProductionRules
 import com.github.tukcps.sysmd.compiler.scanner.Token
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
-import com.github.tukcps.sysmd.compiler.semantics.SemanticActions
+import com.github.tukcps.sysmd.compiler.semantics.ActionsContext
 import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.exceptions.SyntaxError
 import com.github.tukcps.sysmd.exceptions.SysMDException
-import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
 import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.services.session.Session
@@ -46,36 +45,30 @@ open class KerML(
     keywords: Map<String, Token.Kind> = Token.kerMLKeywords,
 ) : ParserProductionRules(keywords = keywords) {
 
-    var semantics: SemanticActions = SemanticActions(model, compiler = this)
+    var semantics = ActionsContext(model, compiler = this)
 
     /**
-     * Parses the body of the textual representation while considering the owner prefix.
-     */
-    @Deprecated("Use parse with string input instead")
-    fun parse(textualRepresentation: TextualRepresentation) {
-        this.input = textualRepresentation.body
-        semantics.initOwners(textualRepresentation.getOwnerPrefix())
-        parse()
-    }
-
-    /**
-     * Parses an input directly.
-     * No TextualRepresentation is needed, and no annotations, etc.
+     * Parses an input directly given as a CharSequence.
      * @param input the char sequence that is parsed
      * @param ownerQualifiedName the qualified name of the package that gives the scope.
      */
     fun parse(
         input: CharSequence,
-        ownerQualifiedName: QualifiedName = "Global",
+        ownerQualifiedName: QualifiedName = "",
     ){
         this.input = input
-        semantics.initOwners(ownerQualifiedName)
+        semantics.initOwningNamespaces(ownerQualifiedName)
         parse()
     }
 
 
-    // Re-definition of the Parser template's error message function
-    override var error = fun(message: String) { model.status.error(message = message, this) }
+    /**
+     * Re-definition of the Parser template's error message function.
+     * error is a lambda that is used for error reporting.
+     */
+    override var error = fun(message: String) {
+        model.status.error(message = message, this, element = semantics.element())
+    }
 
     /**
      *    RootNamespace :- ( NamespaceBodyElement )* EOF
@@ -86,20 +79,20 @@ open class KerML(
                 NamespaceBodyElement()   // KerML textual
             } catch (exception: Exception) {
                 handleError(exception)
-                semantics.initOwners("Global")
+                semantics.initOwningNamespaces("Global")
             }
         }
         try {
             EOF.consume()
         } catch (exception: Exception) {
             handleError(exception)
-            semantics.initOwners("Global")
+            semantics.initOwningNamespaces("Global")
         }
     }
 
 
     /**
-     *      QualifiedNameList :- QualifiedName ("," QualifiedName )*
+     *          QualifiedNameList :- QualifiedName ("," QualifiedName )*
      * Semantics: returns a list of identifications that have been parsed.
      */
     fun QualifiedNameList(): MutableList<QualifiedName> {
@@ -170,13 +163,13 @@ open class KerML(
         } else
             model.status.fatal(exception.message?: "Unknown error",  this, cause = exception)
         // Skip input until we get the next DOT (=end of triple) or RCURBRACE or EOF.
-        var nested = 0;
+        var nested = 0
         while (
             (token.kind != SEMICOLON || nested > 0)
             && token.kind != EOF
             && (token.kind != RCURBRACE || nested <= 0))  {
-            if (token.kind == LCURBRACE) nested = nested+1;
-            if (token.kind == RCURBRACE) nested = nested-1;
+            if (token.kind == LCURBRACE) nested = nested+1
+            if (token.kind == RCURBRACE) nested = nested-1
             consume()
         }
         // If parser skips right curly brace, we need to also pop one from the owner stack.
@@ -190,14 +183,14 @@ open class KerML(
     internal fun handleSyntaxError(message: String) {
         model.status.error(message, this, semantics.namespace, Issue.Kind.ERROR_SYNTACTICAL)
         // Skip input until we get the next DOT (=end of triple) or RCURBRACE or EOF.
-        var nested = 0;
+        var nested = 0
         while (
             (token.kind != SEMICOLON || nested > 0)
             && token.kind != EOF
             && (token.kind != RCURBRACE || nested <= 0)
         )  {
-            if (token.kind == LCURBRACE) nested = nested+1;
-            if (token.kind == RCURBRACE) nested = nested-1;
+            if (token.kind == LCURBRACE) nested = nested+1
+            if (token.kind == RCURBRACE) nested = nested-1
             consume()
         }
         // If parser skips right curly brace, we need to also pop one from the owner stack.

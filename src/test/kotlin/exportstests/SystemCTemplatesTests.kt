@@ -5,6 +5,7 @@ import com.github.tukcps.sysmd.exports.Exporter
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolve
+import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
 import java.io.File
@@ -40,13 +41,13 @@ class SystemCTemplatesTests {
             }
             
             connection def Signal;
-            interface interface_wire : Signal connect test::wirelessDevice::transmitter::ausgang1 to test::wirelessDevice::receiver::eingang1;
-            connection connector_wire : Signal connect  test::wirelessDevice::transmitter::ausgang2 to test::wirelessDevice::receiver::eingang2;
-            connection connection_wire : Signal connect test::wirelessDevice::transmitter::ausgang3_Attribute to test::wirelessDevice::receiver::eingang3_Attribute; 
+            interface interface_wire : Signal connect wirelessDevice.transmitter.ausgang1 to wirelessDevice.receiver.eingang1;
+            connection connector_wire : Signal connect  wirelessDevice.transmitter.ausgang2 to wirelessDevice.receiver.eingang2;
+            connection connection_wire : Signal connect wirelessDevice.transmitter.ausgang3_Attribute to wirelessDevice.receiver.eingang3_Attribute; 
             
         }
         """)
-        initialize()
+        assertNoIssues()
 
         val testDirectory = File("src/test/resources/toSystemC")
         val exporter = Exporter()
@@ -58,7 +59,6 @@ class SystemCTemplatesTests {
         //Now compare all generated SystemC Files to the "ground-truth" files
         compareToFiles(Thread.currentThread().stackTrace[1].methodName, pkg.name.toString())
 
-        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
     }
 
     @Test @Ignore //Does not accept changes of ScalarValues
@@ -205,7 +205,7 @@ class SystemCTemplatesTests {
     }
 
     @Test
-    fun connectionsInMainAndModules() = testSession("Parts", "Ports", "Connections") {
+    fun connectionsInMainAndModules() = testSession("SI", "Signals", "Parts", "Ports", "Connections") {
         settings.catchExceptions = true
         loadSysMLv2("""
             package test {
@@ -230,18 +230,15 @@ class SystemCTemplatesTests {
                     in port y_in;
                 }
                 
-                connection def Signal;
-                connection wire_b_c : Signal connect test::a::b::b_out to test::a::c::c_in;
-                connection wire_x_y : Signal connect test::x::x_out to test::y::y_in; 
+                connection wire_b_c : Signals::Signal connect a.b.b_out to a.c.c_in;
+                connection wire_x_y : Signals::Signal connect x.x_out to y.y_in; 
             }
         """)
-        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
-
+        assertTrue(status.issues.isEmpty(), "${status.issues}")
 
         val testDirectory = File("src/test/resources/toSystemC")
         val exporter = Exporter()
 
-        
         val pkg = global.resolve<Element>("test") as Element
         exporter.analyzeSysMD(pkg)
         exporter.toSystemC(pathIn = testDirectory.path, tbLibFolder = "")
@@ -479,40 +476,40 @@ class SystemCTemplatesTests {
         assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
     }
 
-    /**Checks that ports are only connected only once and to one Channel only.
-     * Also ensures that a Channel has only one driving port (output port) but allows multiple listening ports (input ports)**/
+    /**
+     * Checks that ports are only connected once and to one Channel only.
+     * Also ensures that a Channel has only one driving port (output port) but allows multiple listening ports (input ports)
+     **/
     @Test
-    fun restrictMultipleBindingTest() = testSession("Parts", "Ports", "Requirements", "Connections") {
+    fun restrictMultipleBindingTest() = testSession("SI", "Parts", "Ports", "Connections", "Signals") {
         loadSysMLv2("""
         package test {
             private import ScalarValues::*; 
             private import SI::*; 
-            
-            connection def Signal;    
-            
-            part A{
+                        
+            part A {
                 out port outp;
             }
             
-            part B{
+            part B {
                 in port inp; 
             }
                                  
             //Ports of A and B get bound twice, the second time it should be commented out to avoid over-connecting the ports
-            interface if1 : Signal connect test::A::outp to test::B::inp;
-            interface if2 : Signal connect test::A::outp to test::B::inp;                              
+            interface if1 : Signals::Signal connect A.outp to B.inp;
+            interface if2 : Signals::Signal connect A.outp to B.inp;                              
                                                
-            part C{
+            part C {
                 out port output; 
             }
                         
-            part D :  Base::Anything [1 .. 4] {
+            part D [1 .. 4] {
                 in port input;
             }
             
             //We define that C should be wired to D
             //NOTE: As D exists four times, all four instances should be wired to the Signal
-            interface if3 : Signal connect test::C::output to test::D::input;
+            interface if3 : Signals::Signal connect C.output to D.input;
             
             part X : Base::Anything [1 .. 4] {
                 out port output; 
@@ -524,11 +521,13 @@ class SystemCTemplatesTests {
             
             //Here we try to wire multiple inputs to a Signal which is illegal in SystemC
             //Therefore only one input can be connected and the remaining should be commented out
-            interface if4 : Signal connect test::X::output to test::Y::input;
+            interface if4 : Signals::Signal connect test::X::output to test::Y::input;
         }
         """)
         propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        val if1 = global.resolve<Element>("test::if1")
+        val d = global.resolve<Element>("test::D")
+        assertNoIssues()
         val testDirectory = File("src/test/resources/toSystemC")
         val exporter = Exporter()
 

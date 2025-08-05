@@ -17,7 +17,7 @@ package com.github.tukcps.sysmd.model.kerml
  * Constraints: None.
  */
 interface FeatureTyping: Specialization {
-    val owningFeature: Resolved<Feature>
-    val type: Resolved<Type>
-    val typedFeature: Resolved<Feature>
+    val owningFeature: Feature?
+    val type: Type
+    val typedFeature: Feature
 }

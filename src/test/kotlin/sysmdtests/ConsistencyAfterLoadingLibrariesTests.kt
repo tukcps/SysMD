@@ -28,7 +28,7 @@ class ConsistencyAfterLoadingLibrariesTests {
             val allElements = get()
             var globals = 0
             allElements.forEach {
-                if (it.owner.ref == null) {
+                if (it.owner == null) {
                     globals++
                     assertEquals(global.elementId, it.elementId)
                 }
@@ -41,16 +41,21 @@ class ConsistencyAfterLoadingLibrariesTests {
     /**
      * Check that all children point to its correct parents that also own them.
      */
-    private fun checkForParent( session: Session) {
+    private fun checkForParent( session: Session) : Boolean {
         with(session) {
             val allElements = get()
             allElements.forEach {  element ->
-                if (element.owner.ref != null) {
-                    val ownedByOwner = element.owner.ref?.ownedElement?.associateBy { it.id }?.keys
-                    assertTrue(ownedByOwner?.contains(element.elementId) != false)
+                if (element is Relationship && element !is Association && element !is Connector && element !is Dependency) {
+                    if ( ! element.owningRelatedElement.ownedRelationship.map { it.elementId }.contains(element.elementId) )
+                        return false
+                } else {
+                    if (element != global && element.owningRelationship?.ownedElement?.map { it.elementId }
+                            ?.contains(element.elementId) != true)
+                        return false
                 }
             }
         }
+        return true
     }
 
     /**
@@ -105,7 +110,7 @@ class ConsistencyAfterLoadingLibrariesTests {
     @Test
     fun readLinksFromResources() = testSession {
         settings.catchExceptions=false
-        // loadLibrary("Base")
+        loadLibrary("Base")
         loadLibrary("Links")
         // There are 5 Elements:
         // - Any, Package, the loaded package + 2 Imports iff pre-defined after initialize
@@ -143,7 +148,7 @@ class ConsistencyAfterLoadingLibrariesTests {
 
     /** Load and re-load Base and ScalarValues */
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
-    fun readUseAssociation() {
+    fun readUseLibrary() {
         val session = SessionImplementation(libraries = mutableListOf())
         session.loadLibrary("Base")
         session.loadLibrary("ScalarValues")

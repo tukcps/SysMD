@@ -82,7 +82,7 @@ constraint-propagation semantics are built-in and considered from ground up.
 
 ```
    attribute x: Real = 0.0 .. 0.1; // or: ... = oneOf(0.0 .. 0.1); with oneOf: Range -> Real
-   attribute y: Real(0.0 .. 0.1);  // or: y { inv bounds { y >= 0.0 and y <= 0.1} }       
+   attribute y: RealInRange {:>> range = "0.0 .. 0.1";}  // or: y { inv bounds { y >= 0.0 and y <= 0.1} }       
 ```
 
 _Note, that for the sake of interoperability, we in the next releases we will focus on the standard-compliant version and deprecate non-compliant 

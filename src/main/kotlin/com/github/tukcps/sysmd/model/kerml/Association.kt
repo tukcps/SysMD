@@ -23,7 +23,9 @@ interface Association: Relationship, Classifier {
     override fun resolveNames(): Boolean
     override fun updateFrom(template: Element)
     override fun toString(): String
-    override fun visibleMemberships(): List<Resolved<Element>> = ownedElement + source + target
+    override fun visibleMemberships(): List<Membership> = ( ownedRelationship + source + target ).filterIsInstance<Membership>()
 
-    // TODO: Add associationEnd, sourceType, targetType.
+    var sourceType: Type?
+    var targetType: MutableList<Type>
+    val associationEnd: List<Type>
 }

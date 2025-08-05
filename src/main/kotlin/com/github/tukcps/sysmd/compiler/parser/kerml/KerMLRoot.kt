@@ -8,15 +8,13 @@ import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.compiler.semantics.Identification
 import com.github.tukcps.sysmd.compiler.semantics.kerml.*
 import com.github.tukcps.sysmd.model.kerml.Dependency
-import com.github.tukcps.sysmd.model.kerml.Element
-import com.github.tukcps.sysmd.model.kerml.Relationship
-import com.github.tukcps.sysmd.model.kerml.Resolved
+import com.github.tukcps.sysmd.model.kerml.UnresolvedElement
 import com.github.tukcps.sysmd.model.kerml.implementation.*
 
 /**
  * An identification, following the conventions of SysML v2 textual:
  *
- *      Identification :- ( '<' NAME_LIT '>' )?  (NAME_LIT)?
+ *      Identification :- ('<' NAME_LIT '>')?  (NAME_LIT)?
  */
 fun KerML.Identification(): Identification {
     val identification = Identification(null, null)
@@ -36,19 +34,17 @@ fun KerML.Identification(): Identification {
  *
  *      RelationshipBody = ';' | '{' RelationshipOwnedElement* '}'
  */
-fun KerML.RelationshipBody(owner: Resolved<Relationship>) {
+fun KerML.RelationshipBody() {
     alternatives {
         SEMICOLON starts { SEMICOLON.consume() }
         LCURBRACE starts {
-            semantics.owners.push(owner)
             LCURBRACE.consume()
             noOrMore(end = { token.kind == RCURBRACE }) {
                 RelationshipOwnedElement()
             }
             RCURBRACE.consume()
-            semantics.owners.pop()
         }
-        DOT then { /* only for SysMD to end Triple */}
+        DOT then { /* only for SysMD to end Triple */ }
     }
 }
 
@@ -68,22 +64,22 @@ fun KerML.RelationshipOwnedElement() {
 /**
  *      Dependency = ( PrefixMetadataAnnotation )*
  *          'dependency' ( Identification?
- *          'from' )? [QualifiedName] ( ',' [QualifiedName] )*
- *          'to' [QualifiedName] ( ',' [QualifiedName] )*
+ *          'from' )? [QualifiedName] (',' [QualifiedName] )*
+ *          'to' [QualifiedName] (',' [QualifiedName] )*
  *          RelationshipBody
  */
 fun KerML.Dependency() {
     val dependency = DependencyActions<Dependency>(semantics, ::DependencyImplementation)
     DEPENDENCY.consume()
-    optional({ token.kind == NAME_LIT && nextToken.kind in setOf(FROM, LCBRACE) }) {
+    if (token.kind == NAME_LIT && nextToken.kind in setOf(FROM, LCBRACE)) {
         Identification().also { dependency.create(it) }
         FROM.consume()
-    }
-    if (dependency.created == null) dependency.create(Identification(null, null))
-    QualifiedNameList().also { dependency.addSource(it) }
+    } else
+        dependency.create(Identification(null, null))
+    QualifiedNameList().forEach { dependency.created.source.add(UnresolvedElement(it)) }
     TO.consume()
-    QualifiedNameList().also { dependency.addTarget(it) }
-    RelationshipBody(Resolved(dependency.created!!))
+    QualifiedNameList().forEach { dependency.created.target.add(UnresolvedElement(it)) }
+    RelationshipBody()
 }
 
 
@@ -126,7 +122,7 @@ fun KerML.MemberPrefix() {
         others           {  }
     }
     ABSTRACT.optional    { semantics.prefixes.add(ABSTRACT) }
-    INDIVIDUAL.optional { semantics.prefixes.add(INDIVIDUAL) }
+    INDIVIDUAL.optional  { semantics.prefixes.add(INDIVIDUAL) }
 }
 
 /**
@@ -170,7 +166,7 @@ fun KerML.NamespaceBodyElement() {
  */
 internal fun KerML.Comment() {
     val comment = CommentActions(semantics, ::CommentImplementation)
-    comment.create(Identification(null, null))
+    comment.create()
     COMMENT.optional {
         optional(NAME_LIT) {
             Identification().also { comment.setIdentification(it) }
@@ -179,7 +175,7 @@ internal fun KerML.Comment() {
             QualifiedNameList().also { comment.addAbout(it) }
         }
     }
-    REGULAR_COMMENT.consume().also { comment.created!!.body = consumedToken.string.trimIndent().trim() }
+    REGULAR_COMMENT.consume().also { comment.created.body = consumedToken.string.trimIndent().trim() }
 }
 
 /**
@@ -192,7 +188,7 @@ internal fun KerML.Documentation() {
     val doc = DocumentationActions(semantics)
     DOC.consume()
     Identification().also { doc.create(it) }
-    REGULAR_COMMENT.consume().also { doc.created?.body = consumedToken.string.trim() }
+    REGULAR_COMMENT.consume().also { doc.created.body = consumedToken.string.trim() }
 }
 
 /**
@@ -203,14 +199,14 @@ internal fun KerML.Documentation() {
  */
 internal fun KerML.TextualRepresentation() {
     val rep = AnnotatingElementActions(semantics, ::TextualRepresentationImplementation)
-    rep.create(Identification(null, null))
+    rep.create()
     optional(REP) {
         REP.consume()
         Identification().also { rep.setIdentification(it) }
     }
     LANGUAGE.consume()
-    NAME_LIT.consume().also { rep.created!!.language = consumedToken.string }
-    REGULAR_COMMENT.consume().also { rep.created!!.body = consumedToken.string.trim(' ') }
+    NAME_LIT.consume().also { rep.created.language = consumedToken.string }
+    REGULAR_COMMENT.consume().also { rep.created.body = consumedToken.string.trim(' ') }
 }
 
 /**
@@ -220,11 +216,10 @@ internal fun KerML.TextualRepresentation() {
  *
  *      NamespaceDeclaration : Namespace = 'namespace' Identification
  */
-internal fun KerML.Namespace() {
-    val namespace = NamespaceActions(semantics, ::NamespaceImplementation)
+internal fun KerML.Namespace() = NamespaceActions(semantics, ::NamespaceImplementation).parse {
     NAMESPACE.consume()
-    Identification().also { namespace.create(it) }
-    NamespaceBody(Resolved(null, namespace.created, null))
+    Identification().also { semantics.create(it) }
+    NamespaceBody()
 }
 
 
@@ -232,17 +227,15 @@ internal fun KerML.Namespace() {
  *
  * NamespaceBody : Namespace = ';' | '{' NamespaceBodyElement* '}'
  */
-internal fun KerML.NamespaceBody(owner: Resolved<Element>) {
+internal fun KerML.NamespaceBody() {
     alternatives {
         SEMICOLON starts { SEMICOLON.consume() }
         LCURBRACE starts {
-            semantics.pushOwner(owner)
             LCURBRACE.consume()
             noOrMore(end = { token.kind == RCURBRACE }) {
                 NamespaceBodyElement()
             }
             RCURBRACE.consume()
-            semantics.popOwner()
         }
     }
 }
@@ -266,17 +259,18 @@ internal fun KerML.NamespaceBody(owner: Resolved<Element>) {
  */
 internal fun KerML.Import() {
     val import = ImportActions(semantics)
-    IMPORT.consume().also   { import.create(Identification(null, null)) }
+    IMPORT.consume().also   { import.create() }
     ALL.optional            { import.all = true }
 
     QualifiedName().also    { import.setImportedNamespace(it) }
     optional(DPDP, consume = true) {
         alternatives {
             STARSTAR starts { import.isRecursive = true; STARSTAR.consume() }
-            TIMES starts { TIMES.consume() }
+            TIMES    starts { TIMES.consume() }
         }
     }
-    RelationshipBody(Resolved(import.created!!))
+    RelationshipBody()
+    import.finish()
 }
 
 /**
@@ -289,12 +283,13 @@ internal fun KerML.Import() {
 internal fun KerML.AliasMember() {
     val aliasMember = MembershipActions(semantics, ::MembershipImplementation)
     ALIAS.consume()
-    Identification().also { aliasMember.create(it) }
-    FOR.consume()
-    optional(NAME_LIT) {
-        QualifiedName().also { aliasMember.addTarget(listOf(it)) }
+    Identification().also {
+        aliasMember.create(it)
+        aliasMember.created.membershipOwningNamespace = semantics.element()
     }
-    RelationshipBody(Resolved(aliasMember.created!!))
+    FOR.consume()
+    QualifiedName().also { aliasMember.created.target = mutableListOf(UnresolvedElement(it)) }
+    RelationshipBody()
 }
 
 /**
@@ -328,7 +323,7 @@ fun KerML.FeatureElement() {
         REDEFINES starts { Feature() }
         FEATURE starts { Feature() }
         STEP    starts { Step() }
-        EXPR    starts { Feature() } // Dirty, needs work!
+        EXPR    starts { ExpressionFeature() }
         // Boolean expression is handled as an Expression
         INV     starts { Invariant() }
         CONNECTOR starts { Connector() }

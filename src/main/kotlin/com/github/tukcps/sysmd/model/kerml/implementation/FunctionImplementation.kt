@@ -6,28 +6,14 @@ open class FunctionImplementation(
     declaredName: String? = null,
     declaredShortName: String? = null,
     elementType: String = "Function"
-): Function, AssociationImplementation(
+): Function, BehaviorImplementation(
     declaredName=declaredName,
     declaredShortName=declaredShortName,
     elementType=elementType
 ) {
-    override fun toString(): String {
-        return "$elementType {" +
-                (if (declaredName != null) "name='$declaredName', " else "") +
-                (if (declaredShortName != null) "shortName='$declaredShortName', " else "") +
-                "supertype='$generalization', " +
-                "imports='$imports', " +
-                "id='${elementId}...'}"
-    }
-
-    override fun clone(): FunctionImplementation {
-        return FunctionImplementation(
+    override fun clone(): FunctionImplementation =
+        FunctionImplementation(
             declaredName = declaredName,
             declaredShortName = declaredShortName,
-            elementType = elementType
-        ).also {
-            it.model = model
-            it.updated = updated
-        }
-    }
+        ).also { klon -> updateFrom(this) }
 }

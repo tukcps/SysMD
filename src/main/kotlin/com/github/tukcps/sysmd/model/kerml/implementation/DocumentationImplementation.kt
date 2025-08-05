@@ -30,4 +30,6 @@ class DocumentationImplementation(
                 model=it.model
         }
     }
+
+    override fun toString(): String = "[Documentation] $body"
 }

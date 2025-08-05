@@ -12,14 +12,6 @@ class PartDefinitionImplementation(
     declaredShortName = declaredShortName,
     elementType = elementType) {
 
-    override fun clone(): PartDefinitionImplementation {
-        val klon = PartDefinitionImplementation(
-            declaredName = declaredName,
-            declaredShortName = declaredShortName,
-        ).also { klon ->
-            klon.model = model
-            klon.updated = updated
-        }
-        return klon
-    }
+    override fun clone(): PartDefinitionImplementation = PartDefinitionImplementation()
+        .also { klon -> klon.updateFrom(this) }
 }

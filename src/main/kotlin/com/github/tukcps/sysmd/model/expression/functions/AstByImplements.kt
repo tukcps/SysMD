@@ -40,14 +40,14 @@ class AstByImplements(model: Session, namespace: Namespace, args: ArrayList<AstN
 
         implementsAssociation = model.global.resolve<Association>("ISO26262::implements")
         if (implementsAssociation == null)
-            model.status.error("Could not find Association 'implements' in model.", element = feature)
+            model.status.error("Could not find Association 'ISO26262::implements'", element = feature)
 
-        implements = model.getRelationshipsTo(feature?.owner?.ref!!, "*", implementsAssociation).firstOrNull() as Connector?
+        implements = model.getRelationshipsTo(feature?.owner!!, "*", implementsAssociation).firstOrNull() as Connector?
         if (implements == null)
             model.status.error("could not find suitable connector typed by 'implements'", element = feature)
 
-        component = implements!!.source.firstOrNull()?.ref as Namespace
-        function = implements!!.target.firstOrNull()?.ref as Namespace
+        component = implements!!.source.firstOrNull() as Namespace
+        function = implements!!.target.firstOrNull() as Namespace
 
         upQuantity = when (super.getParam(0).upQuantity.values[0]) {
             is BDD -> Quantity(model.builder.Bool)

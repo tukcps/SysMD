@@ -10,7 +10,6 @@ import com.github.tukcps.sysmd.compiler.semantics.kerml.TypeActions
 import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.PortDefinitionActions
 import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.PortUsageActions
 import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.kerml.Resolved
 import com.github.tukcps.sysmd.model.kerml.Type
 
 
@@ -24,22 +23,18 @@ import com.github.tukcps.sysmd.model.kerml.Type
  *
  *      ConjugatedPortTyping = '~' originalPortDefinition = ~[QualifiedName]
  */
-fun SysMLv2.PortDefinition() {
-    val portDefinition = PortDefinitionActions(semantics)
+fun SysMLv2.PortDefinition() = PortDefinitionActions(semantics).parse {
     PORT.consume()
     DEF.consume()
-    DefinitionDeclaration(portDefinition as TypeActions<Type>)
-    DefinitionBody(Resolved(portDefinition.created!!))
-    portDefinition.finish()
+    DefinitionDeclaration()
+    DefinitionBody()
 }
 
 /**
  *      PortUsage = OccurrenceUsagePrefix 'port' Usage
  */
-fun SysMLv2.PortUsage() {
-    val portUsage = PortUsageActions(semantics)
+fun SysMLv2.PortUsage() = PortUsageActions(semantics).parse {
     PORT.consume()
-    Usage(portUsage as FeatureActions<Feature>)
-    portUsage.finish()
+    Usage()
 }
 

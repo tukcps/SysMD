@@ -7,13 +7,10 @@ import com.github.tukcps.sysmd.compiler.parser.kerml.Expression
 import com.github.tukcps.sysmd.compiler.parser.kerml.MemberPrefix
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
-import com.github.tukcps.sysmd.compiler.semantics.kerml.TypeActions
 import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.CalculationDefinitionActions
 import com.github.tukcps.sysmd.model.expression.AstRoot
-import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.kerml.Resolved
-import com.github.tukcps.sysmd.model.kerml.Type
+import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.sysml.implementation.CalculationDefinitionImplementation
 
@@ -45,44 +42,38 @@ import com.github.tukcps.sysmd.model.sysml.implementation.CalculationDefinitionI
  *      CalculationDefinition = OccurrenceDefinitionPrefix 'calc' 'def'
  *          DefinitionDeclaration CalculationBody
  */
-fun SysMLv2.CalculationDefinition() {
-    val calculation = CalculationDefinitionActions(semantics,
-        ::CalculationDefinitionImplementation, mutableListOf("Calculations::Calculation"))
+fun SysMLv2.CalculationDefinition() = CalculationDefinitionActions(semantics, ::CalculationDefinitionImplementation).parse {
     CALC.consume()
     DEF.consume()
-    DefinitionDeclaration(calculation as TypeActions<Type>)
-    CalculationBody(Resolved(calculation.created!!))
-    calculation.finish()
+    DefinitionDeclaration()
+    CalculationBody()
 }
 
 /**
  *      CalculationUsage = OccurrenceUsagePrefix 'calc'
  *          ActionUsageDeclaration CalculationBody
  */
-fun SysMLv2.CalculationUsage() {
-    val calculationUsage = FeatureActions<Feature>(semantics, ::FeatureImplementation, mutableListOf())
+fun SysMLv2.CalculationUsage() = FeatureActions<Feature>(semantics, ::FeatureImplementation).parse {
     CALC.consume()
-    ActionUsageDeclaration(calculationUsage)
-    CalculationBody(Resolved(calculationUsage.created!!))
+    ActionUsageDeclaration()
+    CalculationBody()
 }
 
 /**
  *      CalculationBody = ';' | '{' CalculationBodyPart '}'
- *      CalculationBodyPart = CalculationBodyItem* ( ResultExpressionMember )?
+ *      CalculationBodyPart = CalculationBodyItem* (ResultExpressionMember)?
  */
-fun SysMLv2.CalculationBody(owner: Resolved<Element>) {
+fun SysMLv2.CalculationBody() {
     alternatives {
         SEMICOLON then { }
         LCURBRACE then {
-            semantics.pushOwner(owner)
             noOrMore(end = { !CalculationbodyItemStarts() } ) {
                 CalculationBodyItem()
             }
             optional ({token.kind != RCURBRACE}) {
-                ResultExpressionMember(owner)
+                ResultExpressionMember()
             }
             RCURBRACE.consume()
-            semantics.popOwner()
         }
     }
 }
@@ -110,13 +101,14 @@ fun SysMLv2.CalculationbodyItemStarts(): Boolean = usageElementStarts() or (toke
 /**
  *      ResultExpressionMember = MemberPrefix?  OwnedExpression
  */
-fun SysMLv2.ResultExpressionMember(owner: Resolved<Element>) {
+fun SysMLv2.ResultExpressionMember() {
+    val owner = semantics.element<Namespace>()
     val iBeforeExpression = token.indices.first
     Expression().also {
-        if (owner.ref is Feature) {
-            (owner.ref as Feature).featureWithValue = AstRoot(model, owner.ref as Feature, it)
-            (owner.ref as Feature).indices = iBeforeExpression..consumedToken.indices.last
-            (owner.ref as Feature).expression = input.subSequence(owner.ref?.indices!!).toString().trim()
+        if (owner is Feature) {
+            owner.featureWithValue = AstRoot(model, owner, it)
+            owner.indices = iBeforeExpression..consumedToken.indices.last
+            owner.expression = input.subSequence(owner.indices!!).toString().trim()
         }
     }
 }

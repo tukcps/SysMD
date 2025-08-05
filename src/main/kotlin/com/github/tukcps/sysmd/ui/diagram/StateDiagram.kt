@@ -1,5 +1,6 @@
 package com.github.tukcps.sysmd.ui.diagram
 
+import com.github.tukcps.sysmd.model.expression.Expression
 import com.github.tukcps.sysmd.model.kerml.getOwnedElementsOfType
 import com.github.tukcps.sysmd.model.sysml.ActionUsage
 import com.github.tukcps.sysmd.model.sysml.StateUsage
@@ -48,11 +49,11 @@ class StateDiagram(statemachine: StateUsage) {
     }
 
     private fun createTransition(transition: TransitionUsage): org.diagramsascode.state.edge.Transition {
-        val fromNode = diagramNodeFor(transition.source.ref!!)
-        val toNode = diagramNodeFor(transition.target.ref!!)
+        val fromNode = diagramNodeFor(transition.source as ActionUsage)
+        val toNode = diagramNodeFor(transition.target as ActionUsage)
 
         val trigger = transition.triggerPayloadParameterType?.name ?: ""
-        val guardCondition = transition.guardCondition?.ref?.expression?.let { "[$it]" } ?: ""
+        val guardCondition = (transition.guardCondition as Expression?)?.expression?.let { "[$it]" } ?: ""
         val transitionText = trigger + guardCondition
 
         return org.diagramsascode.state.edge.Transition(fromNode, toNode, transitionText)

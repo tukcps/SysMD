@@ -3,6 +3,7 @@ package models.kerml
 import io.github.tukcps.aadd.AADD
 import io.github.tukcps.aadd.BDD
 import com.github.tukcps.sysmd.model.kerml.Type
+import com.github.tukcps.sysmd.model.kerml.UnresolvedType
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.SpecializationImplementation
 import com.github.tukcps.sysmd.services.initialize
@@ -29,26 +30,26 @@ class VariableTests {
 
         // allowed identifier declaration
         var p = FeatureImplementation(declaredName="Property12_2test")
-        create(p, global)
-        create(SpecializationImplementation(p, global.resolve<Type>("ScalarValues::Real")!!), p)
+        addOwnedMember(p, global)
+        addOwnedRelationship(SpecializationImplementation(p, global.resolve<Type>("ScalarValues::Real")!!), p)
         initialize()
         assertTrue(p.variable!!.vectorQuantity.value is AADD)
 
         p = FeatureImplementation(declaredName="Property12_2test2")
-        create(p, global)
-        create(SpecializationImplementation(p, repo.booleanType!!), p)
+        addOwnedMember(p, global)
+        addOwnedRelationship(SpecializationImplementation(p, repo.booleanType!!), p)
         initialize()
         assertTrue(p.variable!!.vectorQuantity.value is BDD)
 
         p = FeatureImplementation(declaredName="Property12_2test3")
-        create(p, global)
-        create(SpecializationImplementation(p, "ScalarValues::Real"), p)
+        addOwnedMember(p, global)
+        addOwnedRelationship(SpecializationImplementation(p, UnresolvedType("ScalarValues::Real")), p)
         initialize()
         assertTrue(p.variable!!.vectorQuantity.value is AADD)
 
         p = FeatureImplementation(declaredName="Property12_2test4", typeConstraint = mutableListOf( "true" ))
-        create(p, global)
-        create(SpecializationImplementation(p, "ScalarValues::Boolean"), p)
+        addOwnedMember(p, global)
+        addOwnedRelationship(SpecializationImplementation(p, UnresolvedType("ScalarValues::Boolean")), p)
         initialize()
         initialize()
         assertTrue(p.variable!!.vectorQuantity.value is BDD)

@@ -8,17 +8,8 @@ import com.github.tukcps.sysmd.compiler.parser.kerml.Association
 import com.github.tukcps.sysmd.compiler.parser.kerml.Class
 import com.github.tukcps.sysmd.compiler.parser.kerml.NamespaceBodyElement
 import com.github.tukcps.sysmd.compiler.parser.kerml.QualifiedName
-import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.ASSOC
-import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.CLASS
-import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.DATATYPE
-import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.DEF
-import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.DEFINES
-import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.DOT
-import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.EOF
-import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.HAS_A
-import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.RCURBRACE
+import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.exceptions.SyntaxError
-import com.github.tukcps.sysmd.model.kerml.Resolved
 
 
 /**
@@ -33,27 +24,29 @@ import com.github.tukcps.sysmd.model.kerml.Resolved
  * For implementation, we consider the special relations IS_A, HAS_A, IMPORTS, DEFINES separately.
  */
 fun SysMD.Triple() {
+    val owners = semantics.ownerName()
 
     QualifiedName().also {
-        semantics.pushOwner(Resolved(it))
+        semantics.addOwningNamespaces(it.removePrefix("Global"))
     }
 
     alternatives {
         HAS_A then { ElementList() }
         DEFINES then { DefinitionList() }
         others {
-            semantics.initOwners("Global")
+            semantics.initOwningNamespaces("Global")
             throw SyntaxError(this@Triple,
-                "Expecting a SysMD triple (isA, hasA, uses, imports, defines, user-defined, but read $consumedToken"
+                "Expecting a SysMD triple with isA, hasA - but read $consumedToken"
             )
         }
     }
-    semantics.popOwner()
+
+    semantics.initOwningNamespaces(owners)
 }
 
 
 /**
- *      ElementList :- Element+
+ *      ElementList: Element+
  *       Deprecated (SysMD legacy): Also, an Element ending with a dot shall stop the list
  */
 fun KerML.ElementList() {
@@ -64,8 +57,8 @@ fun KerML.ElementList() {
 
 
 /**
- *      DefinitionList :- (Definition)*
- *      Definition :- Class | Association
+ *      DefinitionList: Definition*
+ *      Definition: Class | Association
  */
 private fun SysMD.DefinitionList() {
     noOrMore(end = { consumedToken.kind == DOT }) {

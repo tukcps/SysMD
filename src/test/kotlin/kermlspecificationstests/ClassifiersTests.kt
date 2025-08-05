@@ -1,5 +1,6 @@
 package kermlspecificationstests
 
+import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Ignore
@@ -21,8 +22,8 @@ class ClassifiersTests {
                     feature age : ScalarValues::Integer;
                 }
                 classifier Child specializes Person;
-            """.trimIndent())
-            assertTrue(status.issues.isEmpty(), status.issues.toString())
+            """)
+            assertNoIssues()
         }
 
     /**

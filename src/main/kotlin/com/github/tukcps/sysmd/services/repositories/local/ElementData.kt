@@ -57,6 +57,7 @@ data class ElementData(
 
     override var textualRepresentation: MutableList<Identified>? = mutableListOf(),
     override var documentation: Identified? = null,
+    override var ownedRelationship: MutableList<Identified> = mutableListOf(),
 
     // For Relationship and subtypes thereof:
     override var source: MutableList<Identified>? = mutableListOf(),     // list of id or null (i.e., global, anything)
@@ -89,28 +90,29 @@ fun ElementDAO.toElement(): Element {
         "Dependency"        -> DependencyImplementation()
         "Documentation"     -> DocumentationImplementation(body = body!!)
         "Element"           -> ElementImplementation()
-        "FeatureTyping"     -> FeatureTypingImplementation(typedFeature= Resolved(id=source?.firstOrNull()?.id), type=Resolved(id = target?.firstOrNull()?.id))
+        "Feature"           -> FeatureImplementation(direction = enumValueOf<Feature.FeatureDirectionKind>(direction?:"IN"))
+        "FeatureChaining"   -> FeatureChainingImplementation()
+        "FeatureTyping"     -> FeatureTypingImplementation()
         "Function"          -> FunctionImplementation()
         "InterfaceDefinition" -> InterfaceDefinitionImplementation()
         "InterfaceUsage"    -> InterfaceUsageImplementation()
-        "NamespaceImport"   -> NamespaceImportImplementation(importedNamespace = Resolved(id=target?.firstOrNull()?.id, str=importedNamespace, ref=null))
-        "MembershipImport"  -> MembershipImportImplementation(importedNamespace = Resolved(id= target?.firstOrNull()?.id, str=importedNamespace, ref=null), importedMemberName = Resolved(id=null, ref=null, str=importedMemberName))
+        "NamespaceImport"   -> NamespaceImportImplementation()
+        "MembershipImport"  -> MembershipImportImplementation(importedMemberName = importedMemberName)
         "Metaclass"         -> MetaclassImplementation()
         "MetadataFeature"   -> MetadataFeatureImplementation()
         "Multiplicity"      -> MultiplicityImplementation()
         "Namespace"         -> NamespaceImplementation()
-        "Specialization"    -> SpecializationImplementation(specific= Resolved(id = source?.firstOrNull()?.id), general= Resolved(id = target?.firstOrNull()?.id))
-        "Subsetting"        -> SubsettingImplementation(subsettingFeature= Resolved(id= source?.firstOrNull()?.id), subsettedFeature= Resolved(id= target?.firstOrNull()?.id))
+        "OwningMembership"  -> OwningMembershipImplementation()
+        "Specialization"    -> SpecializationImplementation()
+        "Subsetting"        -> SubsettingImplementation()
         "Type"              -> TypeImplementation()
-        "Feature"           -> FeatureImplementation(direction = enumValueOf<Feature.FeatureDirectionKind>(direction?:"IN"))
         "Invariant"         -> InvariantImplementation()
-        "Package"           -> PackageImplementation(declaredName=declaredName, declaredShortName = declaredShortName, isLibraryElement = isLibraryElement == true, isStandard = isStandard == true)
+        "Package"           -> PackageImplementation()
         "PartUsage"         -> PartUsageImplementation()
         "PartDefinition"    -> PartDefinitionImplementation()
         "PortUsage"         -> PortUsageImplementation()
         "PortDefinition"    -> PortDefinitionImplementation()
         "Redefinition"      -> RedefinitionImplementation()
-        "Relationship"      -> RelationshipImplementation()
         "ReferenceSubsetting" -> ReferenceSubsettingImplementation()
         "RequirementUsage"   -> RequirementUsageImplementation()
         "RequirementDefinition" -> RequirementDefinitionImplementation()
@@ -123,21 +125,14 @@ fun ElementDAO.toElement(): Element {
     element.declaredShortName = declaredShortName
     element.isLibraryElement = isLibraryElement == true
     element.isStandard = isStandard == true
-    element.owner = Resolved(str=null, id=owner?.id, ref=null)
-    ownedElement.forEach {
-        element.ownedElement.add(Resolved(str=null, id= it.id, ref=null))
+
+    if (element is Relationship) {
+        element.source = mutableListOf()
+        element.target = mutableListOf()
+        source?.forEach { element.source.add(UnresolvedElement(id=it.id)) }
+        target?.forEach { element.target.add(UnresolvedElement(id=it.id)) }
     }
-    if (element is Relationship && element !is Import) {
-        source?.forEach { element.source.add(Resolved(it.id)) }
-        target?.forEach { element.target.add(Resolved(it.id)) }
-    }
-    if (element is NamespaceImportImplementation) {
-        element.importedNamespace.str = importedNamespace
-        element.target.first().str = importedNamespace
-        element.target.first().id = target?.firstOrNull()?.id
-        element.source.first().id = source?.firstOrNull()?.id
-        // element.importedMemberName = if (importedMemberName==null) null else Identity (str=importedMemberName!!)
-    }
+
     if (element is Feature) {
         if (body != null) {
             val bodydata = body?.split("##")
@@ -170,20 +165,31 @@ fun Element.toDAO(): ElementData {
         declaredShortName = declaredShortName,
         name = name,
         shortName = shortName,
-        owner = Identified(if (owner.id != model?.global?.elementId) owner.id else null ),
         isLibraryElement = isLibraryElement,
-        isStandard = isStandard
+        isStandard = isStandard,
+        owner = Identified(owner?.elementId),
     )
     dao.isLibraryElement = isLibraryElement
     dao.isStandard = isStandard
 
     ownedElement.forEach {
-        dao.ownedElement.add(Identified(it.id))
+        dao.ownedElement.add(Identified(it.elementId))
     }
 
     if (this is Relationship) {
-        source.forEach { if (it.id != null) dao.source?.add(Identified(it.id)) }
-        target.forEach { if (it.id != null) dao.target?.add(Identified(it.id)) }
+        dao.owningNamespace = Identified(owningRelatedElement.elementId)
+        source.forEach { if (it.elementId != null) dao.source?.add(Identified(if (it.elementId == model?.global) null else it.elementId)) }
+        target.forEach { if (it.elementId != null) dao.target?.add(Identified(if (it.elementId == model?.global) null else it.elementId)) }
+    } else {
+        dao.owningRelationship = Identified(owningRelationship?.elementId)
+    }
+
+    if (this is Namespace || this is AnnotatingElement || this !is Relationship) {
+        dao.owningRelationship = Identified(owningRelationship?.elementId)
+        ownedRelationship.forEach {  dao.ownedRelationship.add(Identified(it.elementId)) }
+    } else {
+        dao.owningNamespace = Identified(owningRelatedElement.elementId)
+        ownedElement.forEach { dao.owningNamespace = Identified(it.elementId) }
     }
 
     when(this) {
@@ -198,13 +204,7 @@ fun Element.toDAO(): ElementData {
             dao.isDerived = isDerived
         }
         is TextualRepresentation -> { dao.body = body; dao.language = language }
-        is Comment -> { dao.body = body }
         is AnnotatingElement -> { dao.body = body }
-        is NamespaceImport -> { dao.importedNamespace = importedNamespace.str }
-        is MembershipImport -> {
-            dao.importedNamespace = importedNamespace.str
-            dao.importedMemberName = importedMemberName.str
-        }
     }
     return dao
 }

@@ -9,7 +9,6 @@ import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.model.expression.AstBinOp
 import com.github.tukcps.sysmd.model.expression.AstLeaf
 import com.github.tukcps.sysmd.model.expression.AstNode
-import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.getOwnedElementsOfType
@@ -143,8 +142,8 @@ fun Session.initSumOverComposition(element: Namespace, propertyAST: AstNode, tra
                 if (leaf.upQuantity.values[0] is IDD) isRealSum = false
                 astNodeUsed = true
             } else if (transitive && !elementIterator.isFeatureWithValue()) { // Transitive: search property in parts (not for ValueFeatures)
-                val elementRef = elementIterator.type.first().ref!!
-                newAstNode = initSumOverComposition(elementRef, propertyAST, true, isRealSum)
+                val elementRef = elementIterator.type.first()
+                newAstNode = initSumOverComposition(elementRef as Namespace, propertyAST, true, isRealSum)
                 astNodeUsed = true
                 break   // if one property of a leaf is not included in the current Element, there is no need to search
                 // for the properties of the other leafs, because all properties of one propertyAST must contain to the same element

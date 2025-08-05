@@ -1,57 +1,63 @@
+@file:Suppress("UNCHECKED_CAST")
+
 package com.github.tukcps.sysmd.model.kerml.implementation
 
 import com.github.tukcps.sysmd.model.kerml.Association
 import com.github.tukcps.sysmd.model.kerml.Element
-import com.github.tukcps.sysmd.model.kerml.Resolved
 import com.github.tukcps.sysmd.model.kerml.Type
+import com.github.tukcps.sysmd.model.kerml.UnresolvedFeature
 
 
 /**
- * Association inherits from Relationship and Classifier (Classifiable)
+ * Association inherits from Relationship and Classifier (Classifiable).
+ * It owns two End Features that are the Association Ends.
  */
 open class AssociationImplementation(
     declaredName: String? = null,
     declaredShortName: String? = null,
-    sources: MutableList<Resolved<Element>> = mutableListOf(),
-    targets: MutableList<Resolved<Element>> = mutableListOf(),
-    override var isAbstract: Boolean = false,
+    sourceType: MutableList<Element> = mutableListOf(),
+    targetType: MutableList<Element> = mutableListOf(),
     elementType: String = "Association"
 ): Association, RelationshipImplementation(
     declaredName = declaredName,
     declaredShortName = declaredShortName,
-    source = sources,
-    target = targets,
+    owningRelatedElement = UnresolvedFeature(elementType),
+    source = sourceType,
+    target = targetType,
     elementType = elementType
 ) {
-
+    override var isAbstract: Boolean = false
     override var isSufficient: Boolean = false
     override var isConjugated: Boolean = false
 
-    override fun resolveNames(): Boolean {
-        updated = super<RelationshipImplementation>.resolveNames() or updated
-        generalization.forEach {
-            if (it.resolveIdentity( this, Resolved.RefType.TYPE) )
-                updated = true
-        }
-        return updated
-    }
+    override val owner: Element?
+        get() = owningRelationship?.owningRelatedElement
 
-    override fun toString(): String {
-        return "Association { " +
-                (if (declaredName != null) "name='$declaredName', " else "") +
-                (if (declaredShortName != null) "shortName='$declaredShortName', " else "") +
-                "#sources=${source.size}, " +
-                "#targets=${target.size}, " +
-                "id='${elementId}' }"
-    }
+    override fun resolveNames(): Boolean { return false }
+
+    override fun toString(): String = super.toString() +
+            if (isAbstract) ", abstract " else "" +
+            if (isSufficient) ", sufficient " else "" +
+            if (isConjugated) ", conjugated" else ""
+
+    override var sourceType: Type?
+        get() = source.firstOrNull() as Type
+        set(value) { source = if (value != null) mutableListOf(value) else mutableListOf() }
+
+    override var targetType: MutableList<Type>
+        get() = target as MutableList<Type>
+        set(value) { target = value as MutableList<Element> }
+
+    override val associationEnd: List<Type>
+        get() = (source + target) as MutableList<Type>
 
     override fun clone(): Association {
         return AssociationImplementation(
             declaredName = declaredName,
             declaredShortName = declaredShortName,
-            sources = Resolved.copyOfIdentityList(source),
-            targets = Resolved.copyOfIdentityList(target)
-        )
+            sourceType = source.toMutableList(),
+            targetType = target.toMutableList()
+        ).also { klon -> klon.updateFrom(this) }
     }
 
     override val subtypes: MutableSet<Type> = mutableSetOf()

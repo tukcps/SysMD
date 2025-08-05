@@ -39,10 +39,8 @@ standard library package Ranges {
     */
 
     // Abstract Range from which a Real is chosen
-     datatype InRange {
-        feature min: ScalarValues::Real; // May be redefined
-        feature max: ScalarValues::Real; // May be redefined
-        feature range: ScalarValues::String; // Not final, should be really a range.
+    datatype InRange :> Base::Anything {
+        feature range: ScalarValues::String;
         // inv thatIsInRange { (min <= that) and (that <= max) }
         // Automatically added by SysMD's compiler
     }
@@ -55,8 +53,10 @@ standard library package Ranges {
     datatype RealInRange :> ScalarValues::Real, InRange; 
     datatype AllIntegerInRange :> ScalarValues::Integer, AllInRange; 
     datatype AllRealInRange :> ScalarValues::Real, AllInRange; 
-    
-    datatype QuantityInRange :> InRange {
+    datatype BooleanInSpec :> ScalarValues::Boolean {
+        feature spec: ScalarValues::String; // Not final, should be in another file
+    }
+    datatype QuantityInRange :> RealInRange {
         feature unit: ScalarValues::String;
     }    
     datatype AllQuantityOf :> QuantityInRange; 

@@ -1,6 +1,5 @@
 package com.github.tukcps.sysmd.model.sysml.implementation
 
-import com.github.tukcps.sysmd.model.kerml.Resolved
 import com.github.tukcps.sysmd.model.sysml.AllocationUsage
 
 open class AllocationUsageImplementation(
@@ -12,14 +11,9 @@ open class AllocationUsageImplementation(
     declaredName = declaredName,
     declaredShortName = declaredShortName,
 ) {
-    override fun clone(): AllocationUsageImplementation {
-        return AllocationUsageImplementation(
+    override fun clone(): AllocationUsageImplementation =
+        AllocationUsageImplementation(
             declaredName = this.declaredName,
             declaredShortName = this.declaredShortName,
-        ).also {
-            it.model = model
-            source = Resolved.copyOfIdentityList(source)
-            target = Resolved.copyOfIdentityList(target)
-        }
-    }
+        ).also { it.updateFrom(this) }
 }

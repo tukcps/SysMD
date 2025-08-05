@@ -2,8 +2,6 @@ package com.github.tukcps.sysmd.model.kerml.implementation
 
 import com.github.tukcps.sysmd.model.kerml.Comment
 import com.github.tukcps.sysmd.model.util.SimpleName
-import java.util.*
-
 
 open class CommentImplementation(
     declaredName: SimpleName? = null,
@@ -17,16 +15,10 @@ open class CommentImplementation(
     body = body,
     elementType = elementType
 ) {
-    override fun clone(): Comment {
-        return CommentImplementation(
+    override fun clone(): Comment = CommentImplementation(
             declaredName = declaredName,
             declaredShortName = declaredShortName,
             body = body,
             locale = locale
-        ).also {
-            it.model = model
-        }
-    }
-    override fun toString(): String =
-        "Comment { name='$declaredName', body=$body}"
+        ).also { klon -> klon.updateFrom(this) }
 }

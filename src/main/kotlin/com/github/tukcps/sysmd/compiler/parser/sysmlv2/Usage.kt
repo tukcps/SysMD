@@ -8,7 +8,7 @@ import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.kerml.Resolved
+import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 
 
@@ -68,41 +68,41 @@ fun SysMLv2.UsagePrefix() {
 /**
  *      Usage = UsageDeclaration UsageCompletion
  */
-internal fun SysMLv2.Usage(feature: FeatureActions<Feature>) {
-    UsageDeclaration(feature)
-    UsageCompletion(feature)
+internal fun SysMLv2.Usage() {
+    UsageDeclaration()
+    UsageCompletion()
 }
 fun SysMLv2.usageStarts() = usageDeclarationStarts()
 
 /**
  *      UsageDeclaration = Identification FeatureSpecializationPart?
  */
-internal fun SysMLv2.UsageDeclaration(feature: FeatureActions<Feature>) {
-    Identification().also { feature.create(it) }
+internal fun SysMLv2.UsageDeclaration() {
+    Identification().also { semantics.create(it) }
     optional(start = featureSpecializationPartStart) {
-        FeatureSpecializationPart(feature)
+        FeatureSpecializationPart()
     }
     // SysMD proprietary extension
-    TypeConstraint().also { if ( it.isNotEmpty() ) feature.addTypeConstraint(it) }
-    UnitConstraint().also { feature.addUnitConstraint(it) }
+    TypeConstraint().also { if ( it.isNotEmpty() ) semantics.addTypeConstraint(it) }
+    UnitConstraint().also { semantics.addUnitConstraint(it) }
 }
 
 
 /**
  *      UsageCompletion = ValuePart? UsageBody
  */
-internal fun SysMLv2.UsageCompletion(feature: FeatureActions<Feature>) {
+internal fun SysMLv2.UsageCompletion() {
     optional(valuePartStart) {
-        ValuePart(feature)
+        ValuePart()
     }
-    UsageBody(Resolved(feature.created!!))
+    UsageBody()
 }
 
 /**
  *      UsageBody = DefinitionBody
  */
-fun SysMLv2.UsageBody(owner: Resolved<Element>) {
-    DefinitionBody(owner)
+fun SysMLv2.UsageBody() {
+    DefinitionBody()
 }
 
 /**
@@ -113,12 +113,10 @@ fun SysMLv2.UsageBody(owner: Resolved<Element>) {
  *
  * Note: Both productions are implemented as one by making ref optional.
  */
-fun SysMLv2.ReferenceUsage() {
-    val referenceUsage = FeatureActions<Feature>(semantics, ::FeatureImplementation, mutableListOf("Base::Anything"))
+fun SysMLv2.ReferenceUsage() = FeatureActions<Feature>(semantics, ::FeatureImplementation).parse {
     // RefPrefix()      Prefixed are done in calling production
     // REF.optional()
-    Usage(referenceUsage)
-    referenceUsage.finish()
+    Usage()
 }
 
 /**

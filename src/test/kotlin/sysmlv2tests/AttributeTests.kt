@@ -34,7 +34,7 @@ class AttributeTests {
         assertNotNull(a)
         assertEquals("a", a.declaredName)
         assertEquals("aa", a.declaredShortName)
-        assertEquals(repo.realType, a.type.first().ref)
+        assertEquals(repo.realType, a.type.first())
         assertEquals(IntegerRange(1, 1) , a.multiplicity)
     }
 
@@ -48,7 +48,7 @@ class AttributeTests {
         assertNotNull(a)
         assertEquals("a", a.declaredName)
         assertEquals("aa", a.declaredShortName)
-        assertEquals(repo.realType, a.type.first().ref)
+        assertEquals(repo.realType, a.type.first())
         assertEquals(IntegerRange(1, 3) , a.multiplicity)
     }
 

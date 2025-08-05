@@ -16,22 +16,14 @@ class Anything(
     declaredShortName = "Any",
 ) {
     init {
-        elementId = Generators.nameBasedGenerator().generate("Anything")
+        elementId = Generators.nameBasedGenerator().generate("Base::Anything")
         this.model = model
         isLibraryElement = true
         isStandard = true
     }
 
-    override val ownedSpecialization: List<Specialization> = listOf()
-
-    @Deprecated(
-        "Use allSupertypes",
-        replaceWith = ReplaceWith("generalization.firstOrNull()"),
-        level = DeprecationLevel.WARNING
-    )
-
-    override var generalization: List<Resolved<Type>> = mutableListOf()
-
+    override val ownedSpecialization: MutableList<Specialization> = mutableListOf()
+    override var generalization: MutableList<Type> = mutableListOf()
     override fun resolveNames() = false
     override fun clone(): Anything = this
     override fun toString(): String = "Anything"

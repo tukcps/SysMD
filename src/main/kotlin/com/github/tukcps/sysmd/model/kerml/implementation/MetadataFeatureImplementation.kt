@@ -15,18 +15,24 @@ class MetadataFeatureImplementation(
     elementType = elementType
 ) {
     override var body: String = ""
-    override fun clone(): MetadataFeature {
-        return MetadataFeatureImplementation(this.declaredName, this.declaredShortName).also {
+    override fun clone(): MetadataFeature =
+        MetadataFeatureImplementation(this.declaredName, this.declaredShortName).also {
             it.body = body
         }
+
+    override fun updateFrom(template: Element) {
+        super.updateFrom(template)
+        if (template is MetadataFeature)
+            body = template.body
     }
+
 
     /**
      * The annotated element is defined by an annotation (relationship) or, if no annotation
      * is available, is the owning element.
      */
     override fun annotatedElement(): List<Element> {
-        val ownedAnnotations = annotation().map { it.annotatedElement.ref!! }
-        return if (ownedAnnotations.isEmpty()) ownedAnnotations else listOf(owner.ref!!)
+        val ownedAnnotations = annotation().map { it.annotatedElement }
+        return if (ownedAnnotations.isEmpty()) ownedAnnotations else listOf(owner!!)
     }
 }

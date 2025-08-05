@@ -15,6 +15,11 @@ class DependencyTest {
     @Test
     fun testDependencyDeclaration() = testSession {
         loadKerML("""
+            type 'Application Layer' :> Base::Anything;        // Added to allow resolving dependency 
+            type 'External Interface Layer' :> Base::Anything;
+            type 'Service Layer' :> Base::Anything;
+            type 'Data Layer' :> Base::Anything;
+            
             dependency Use
                 from 'Application Layer' to 'Service Layer';
             
@@ -33,6 +38,10 @@ class DependencyTest {
     @Test
     fun testDependencyDeclarationWithRelationshipBody() = testSession {
         loadKerML("""
+            type 'Data Layer' :> Base::Anything;        // Added to allow resolving dependency 
+            type 'External Interface Layer' :> Base::Anything;
+            type 'Service Layer' :> Base::Anything;
+            
             dependency 'Service Layer'
             to 'Data Layer', 'External Interface Layer' {
                 /* 'Service Layer' is the client of this dependency,

@@ -7,7 +7,7 @@ import com.github.tukcps.sysmd.model.expression.implementation.InvariantImplemen
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Multiplicity
-import com.github.tukcps.sysmd.model.kerml.Resolved
+import com.github.tukcps.sysmd.model.kerml.Package
 import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.kerml.implementation.ClassImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.ConnectorImplementation
@@ -16,6 +16,7 @@ import com.github.tukcps.sysmd.model.kerml.implementation.PackageImplementation
 import com.github.tukcps.sysmd.model.sysml.implementation.PartUsageImplementation
 import com.github.tukcps.sysmd.model.sysml.implementation.PortUsageImplementation
 import com.github.tukcps.sysmd.model.sysml.implementation.RequirementUsageImplementation
+import com.github.tukcps.sysmd.services.resolve.resolve
 import java.io.File
 import java.io.IOException
 import java.nio.file.FileSystems
@@ -48,14 +49,13 @@ class Exporter {
     private val modulesFolder = "modules/"
     private val testbenchesFolder = "testbenches/"
 
-
     /**
      * Takes a Package element as starting point and gathers information from the SysMD tree
      */
     fun analyzeSysMD(startingElement: Element?){
 
-        if(startingElement?.javaClass!!.simpleName.equals("PackageImplementation")){
-            packageName = startingElement.declaredName.toString()
+        if (startingElement is Package){
+            packageName = startingElement.escapedName()?:"UnnamedPackage"
 
             setUpModules(startingElement)
             allModules.completeSuperclasses()
@@ -90,12 +90,9 @@ class Exporter {
                 mainInputPorts,
                 mainBidirectionalPorts
             )
-
-
-        }else{
-            throw Exception("The starting element used to generate SystemC templates is NOT a Package! Instead it is a\"${startingElement.javaClass.simpleName}\"")
+        } else {
+            throw Exception("The starting element used to generate SystemC templates is NOT a Package! Instead it is a\"${startingElement?.qualifiedName}\"")
         }
-
     }
 
 
@@ -145,7 +142,7 @@ class Exporter {
             }
         }
 
-        //Iterates over all ports. When a TLM port is found the function to create the files is called
+        //Iterates over all ports. When a TLM port is found, the function to create the files is called
         allPorts.forEach { (_, pt) ->
             if ((pt.isInitiator() == true) or (pt.isTarget() == true)) {
                 pt.createTLMPort(modulePath)
@@ -176,9 +173,9 @@ class Exporter {
                         File(tbOrigin + "/" + requirement.requirementName + "_TB.cpp").copyTo(
                             File(tbDestination + "/" + requirement.requirementName + "_TB.cpp"), overwrite = true
                         )
-                    }catch (e : NoSuchFileException){
+                    } catch (e : NoSuchFileException){
                         println(e.message)
-                    }catch (e : IOException){
+                    } catch (e : IOException){
                         println(e.message)
                     }
                 }else{
@@ -188,7 +185,6 @@ class Exporter {
 
             }
         }
-
         writeResultWriterCPP(tbDestination)
     }
 
@@ -314,11 +310,10 @@ class Exporter {
                 allRequirements[element.path()] =
                     Requirement(element.declaredName!!.substringAfterLast("::"),
                         findDutName(element),
-                        (getElementOfType(element, "FeatureImplementation") as FeatureImplementation).referencedFeature!!.ref!!.path()
+                        (getElementOfType(element, "FeatureImplementation") as FeatureImplementation).referencedFeature!!.path()
                     )
             }
         }
-
         callOnChildren(element, ::setUpRequirements)
     }
 
@@ -327,10 +322,10 @@ class Exporter {
      */
     private fun findDutName(element: RequirementUsageImplementation) : String{
         element.ownedElement.forEach {
-            if(it.ref!!.javaClass.simpleName == "FeatureImplementation") {
-                return (allModules[(it.ref!! as Feature).referencedFeature!!.ref!!.qualifiedName]?.moduleName ?:
-                    allModules[(it.ref!! as Feature).referencedFeature!!.ref!!.qualifiedName + "_CLASS"]?.moduleName ?:
-                        throw Exception("Problem with Requirement: ${element.declaredName} - No matching Module found for subject ${it.ref!!.declaredName} ")
+            if(it.javaClass.simpleName == "FeatureImplementation") {
+                return (allModules[(it as Feature).referencedFeature!!.qualifiedName]?.moduleName ?:
+                    allModules[it.referencedFeature!!.qualifiedName + "_CLASS"]?.moduleName ?:
+                        throw Exception("Problem with Requirement: ${element.declaredName} - No matching Module found for subject ${it.declaredName} ")
                         )
             }
         }
@@ -352,34 +347,33 @@ class Exporter {
             is ClassImplementation -> {
                 module = Module(
                     moduleName = element.declaredName.toString(),
-                    fullQualifiedName = element.path(),
-                    superClassFullQualifiedName = when (element.generalization.firstOrNull()!!.ref!!.declaredName){
+                    fullQualifiedName = element.qualifiedName!!,
+                    superClassFullQualifiedName = when (element.generalization.firstOrNull()?.declaredName){
                         "Part" -> null
                         "Anything" -> null
-                        else -> element.generalization.firstOrNull()!!.ref!!.qualifiedName
+                        else -> element.generalization.firstOrNull()?.qualifiedName
                     }
                 )
             }
 
             is PartUsageImplementation -> {
-                when(element.type.first().ref!!.declaredName){
+                when(element.type.first().declaredName){
                     "Part" -> { //Is a Part that does not instance a Class (e.g.: part Car{ .. } )
                         module = Module(
-                            moduleName = element.declaredName.toString() + "_CLASS",
+                            moduleName = element.escapedName() + "_CLASS",
                             fullQualifiedName = element.qualifiedName + "_CLASS",
                             superClassFullQualifiedName = null
                         )
                     }
                     else -> { //Is a Part instances a Class (e.g.: part Car : Vehicle{ .. } )
                         module = Module(
-                            moduleName = element.declaredName.toString() + "_CLASS",
+                            moduleName = element.escapedName() + "_CLASS",
                             fullQualifiedName = element.qualifiedName + "_CLASS",
-                            superClassFullQualifiedName = element.generalization.firstOrNull()!!.ref!!.qualifiedName
+                            superClassFullQualifiedName = element.generalization.firstOrNull()?.qualifiedName
                         )
                     }
                 }
             }
-
         }
 
         if (module != null) {
@@ -508,29 +502,33 @@ class Exporter {
      * @param element The starting element from which the traversal should begin.
      */
     private fun setUpChannels(element: Element) {
-
-        run{
+        run {
+            val signal = element.model?.global?.resolve<Element>("Signals::Signal")
+            val complexSignal = element.model?.global?.resolve<Element>("Signals::ComplexSignal")
+            val bus = element.model?.global?.resolve<Element>("Signals::Bus")
             when(element){
                 is ConnectorImplementation -> {
                     //Create a Channel and add it to allChannels list
                     allChannels.add(
                         Channel(
-                            channelName = element.declaredName.toString(),
+                            channelName = element.escapedName().toString(),
                             channelType = when  {
-                                "Signal" in element.type.map { it.str }       -> ChannelType.PRIMITIVE
-                                "ComplexSignal" in element.type.map { it.str } -> ChannelType.HIERARCHICAL
-                                "Bus" in element.type.map { it.str }-> ChannelType.TLM
+                                signal in element.type.map { it }       -> ChannelType.PRIMITIVE
+                                complexSignal in element.type.map { it } -> ChannelType.HIERARCHICAL
+                                bus in element.type.map { it }-> ChannelType.TLM
                                 else -> throw SysMDFatalInternalError("No matching channel type found for: ${element.declaredName}")
                             }
                         ).apply {
                             //Add the Ports to the Channel
                             element.from.forEach { outputPort ->
-                                if(allModules.contains(outputPort.ref!!.path().substringBeforeLast("::"))) return@run
-                                addPortToChannel(outputPort, this.outputPorts, this, PortType.SOURCE)
+                                val unref = (outputPort as Feature).referencedFeature?:outputPort
+                                if (allModules.contains(unref.owner?.qualifiedName)) return@run
+                                addPortToChannel(unref, this.outputPorts, this, PortType.SOURCE)
                             }
                             element.to.forEach { inputPort ->
-                                if(allModules.contains(inputPort.ref!!.path().substringBeforeLast("::"))) return@run
-                                addPortToChannel(inputPort, this.inputPorts, this, PortType.TARGET)
+                                val unref = (inputPort as Feature).referencedFeature?:inputPort
+                                if (allModules.contains(unref.owner?.qualifiedName)) return@run
+                                addPortToChannel(unref, this.inputPorts, this, PortType.TARGET)
                             }
 
                             //Now all Ports are in Channel - Determine the Channel DataType
@@ -559,7 +557,6 @@ class Exporter {
                         }
                     )
                 }
-
                 else -> {}
             }
         }
@@ -576,7 +573,7 @@ class Exporter {
         if(element is Feature
             && element.isFeatureWithValue()
             && element !is Multiplicity
-            && element.referencedFeature?.ref == null
+            && element.referencedFeature == null
             && element.variable != null
             )  {
 
@@ -584,7 +581,7 @@ class Exporter {
 
             allModules[element.path().substringBeforeLast("::")].let { mod1 ->
                 mod1?.expressions?.add(element)
-                    ?: allModules[element.path().substringBeforeLast("::") + "_CLASS"].let { mod2 ->
+                    ?: allModules[element.owner?.qualifiedName + "_CLASS"].let { mod2 ->
                         mod2?.expressions?.add(element) ?: allRequirements[element.path().substringBeforeLast("::")].let { requirement ->
                             requirement?.constraints?.add(
                                     Constraint(
@@ -603,7 +600,7 @@ class Exporter {
         }
 
         //Go down hierarchy (but not if we are at a Port)
-        if(element !is PortUsageImplementation) callOnChildren(element,::assignExpressions)
+        if(element !is PortUsageImplementation && element is Feature) callOnChildren(element,::assignExpressions)
     }
 
     private fun assignInvariants(element: Element) {
@@ -615,15 +612,14 @@ class Exporter {
             allRequirements[element.path().substringBeforeLast("::")].let { requirement ->
                 requirement?.invariants?.add(
                     Invariant(
-                        invariantName = element.declaredName.toString(),
+                        invariantName = element.escapedName().toString(),
                         invariantString = element.expression?:""
                     )
-                ) ?: throw SysMDFatalInternalError("No Requirement found to add Invariant ${element.declaredName.toString()} to.")
+                ) ?: throw SysMDFatalInternalError("No Requirement found to add Invariant ${element.escapedName()} to.")
             }
         }
 
         callOnChildren(element, ::assignInvariants)
-
     }
 
     /**
@@ -636,32 +632,33 @@ class Exporter {
             element as PortUsageImplementation
 
             //Create Port Object
-           Port(
+            Port(
                 portName = element.declaredName.toString(),
                 fullQualifiedName = element.path(),
                 portType = translateToPortType(element.direction),
-               dataType = DataType.REAL,
-               isInherited = element.isTransient,
-               module = allModules[element.path().substringBeforeLast("::")].let { it1 ->
+                dataType = DataType.REAL,
+                isInherited = element.isTransient,
+                module = allModules[element.path().substringBeforeLast("::")].let { it1 ->
                    it1 ?: allModules[element.path().substringBeforeLast("::") + "_CLASS"].let { it2 ->
                        it2 ?: throw SysMDFatalInternalError("No Module found for Port: ${element.declaredName}")
                    }
-               }
-           ).let {
-               //Add the port to the corresponding port list of the module the Port belongs to
-               when (it.portType){
-                   PortType.SOURCE -> it.module!!.outputPorts.add(it)
-                   PortType.TARGET -> it.module!!.inputPorts.add(it)
-                   PortType.BIDIRECTIONAL -> it.module!!.bidirectionalPorts.add(it)
-               }
+                }
+            ).let {
+                //Add the port to the corresponding port list of the module the Port belongs to
+                when (it.portType){
+                    PortType.SOURCE -> it.module!!.outputPorts.add(it)
+                    PortType.TARGET -> it.module!!.inputPorts.add(it)
+                    PortType.BIDIRECTIONAL -> it.module!!.bidirectionalPorts.add(it)
+                }
 
-               //Add Port to allPorts Map
-               allPorts[it.fullQualifiedName] = it
+                //Add Port to allPorts Map
+                allPorts[it.fullQualifiedName] = it
            }
         }
 
         //Go down hierarchy (but not if we are at a Port)
-        if(element !is PortUsageImplementation) callOnChildren(element,::assignPorts)
+        if (element !is PortUsageImplementation)
+            callOnChildren(element,::assignPorts)
     }
 
     /**
@@ -675,15 +672,15 @@ class Exporter {
 
             val usage : Usage
 
-            if ("Part" !in element.type.map {  it.ref!!.name }) {
+            if ("Parts::Part" !in element.type.map {  it.qualifiedName }) {
                 //Create Usage for Parts that instantiate a proper Class
                 usage = Usage(
-                    instanceName = element.declaredName.toString(),
+                    instanceName = element.escapedName().toString(),
                     className = "", //The class name is set down in the apply{} scope
-                    amount = (element.multiplicityProperty?.variable?.intSpecs?.firstOrNull()?.max?.toInt())?:1,
+                    amount = (element.multiplicity.max.toInt()),
                     module = allModules[element.qualifiedName + "_CLASS"].let { mod1 ->
-                        (if(mod1?.useSuperClass == true) mod1.superClassModule else mod1) ?:allModules[element.type.first().ref!!.qualifiedName].let { mod2 ->
-                            mod2 ?: allModules[element.type.first().ref!!.qualifiedName + "_CLASS"].let { mod3 ->
+                        (if(mod1?.useSuperClass == true) mod1.superClassModule else mod1) ?:allModules[element.type.first().qualifiedName].let { mod2 ->
+                            mod2 ?: allModules[element.type.first().qualifiedName + "_CLASS"].let { mod3 ->
                                 mod3 ?: throw SysMDFatalInternalError("No Module found for Usage: ${element.declaredName}")
                             }
                         }
@@ -694,19 +691,19 @@ class Exporter {
                 }
             }else{
                 //Create Usage for Parts that have no Class defined in the SysMD model
-               usage = Usage(
-                    instanceName = element.declaredName.toString(),
+                usage = Usage(
+                    instanceName = element.escapedName().toString(),
                     className = element.name.toString() + "_CLASS",
-                    amount = 1,
+                    amount = (element.multiplicity.max.toInt()),
                     module = allModules[element.qualifiedName + "_CLASS"].let { mod1 ->
                             mod1 ?: throw SysMDFatalInternalError("No Module found for Usage: ${element.declaredName}")
                         }
                ).apply { this.module.moduleUsages.add(this) } //Add this Usage to the module
             }
 
-            if( element.owner.ref is PackageImplementation ){
+            if ( element.owner is PackageImplementation ) {
                 mainUsages.add(usage.apply { instanceLocation = "MAIN" })
-            }else{
+            } else {
                 allModules[element.path().substringBeforeLast("::")].let { mod1 ->
                     mod1?.subModules?.add(usage.apply { instanceLocation = mod1.fullQualifiedName })
                         ?: allModules[element.path().substringBeforeLast("::") + "_CLASS"].let { mod2 ->
@@ -719,7 +716,8 @@ class Exporter {
         }
 
         //Go down hierarchy (but not if we are at a Port)
-        if(element !is PortUsageImplementation) callOnChildren(element,::assignUsages)
+        if(element !is PortUsageImplementation)
+            callOnChildren(element,::assignUsages)
     }
 
     /**
@@ -730,7 +728,7 @@ class Exporter {
     private fun callOnChildren(element: Element, function: KFunction1<Element, Unit>){
         if(element.ownedElement.isNotEmpty()){
             element.ownedElement.forEach {
-                function(it.ref!!)
+                function(it)
             }
         }
     }
@@ -746,41 +744,48 @@ class Exporter {
      * @param channel The Channel object - needed to tell the Port it connects to this Channel.
      */
     private fun addPortToChannel (
-        port: Resolved<Element>,
+        port: Element,
         portList: MutableList<Port>,
         channel: Channel,
         portType: PortType
     ){
-        if(port.ref!! is PortUsageImplementation){
-            //There already exists a Port Object - Retrieve it from the allPorts Map and add it to the portList
-            portList.add(
-                allPorts[port.ref!!.qualifiedName]?.apply{
-                    associatedChannels.add(channel) //Inform this port about the Channel it connects to
-                } ?:
-                throw SysMDFatalInternalError("There was no Port Object found for: ${port.ref!!.declaredName}")
-            )
-        } else if (port.ref!! is Feature){
-            //There exists no Port object yet - Create one and add it to the portList
-            portList.add(
-                Port(
-                    portName = port.ref!!.declaredName.toString(),
-                    fullQualifiedName = port.ref!!.path(),
-                    portType = portType,
-                    dataType = getFeatureTyping(port.ref!!).toDataType(),
-                    isInherited = port.ref!!.isTransient,
-                    module = allModules[port.ref!!.path().substringBeforeLast("::")].let { module1 ->
-                        module1 ?: allModules[port.ref!!.path().substringBeforeLast("::") + "_CLASS"].let { module2 ->
-                            module2 ?: throw SysMDFatalInternalError("No Module found with Full Qualified Name \"${port.ref!!.qualifiedName}\" " +
-                                    "was found for Port \"${port.ref!!.declaredName.toString()}\"")
+        when (port) {
+            is PortUsageImplementation -> {
+                //There already exists a Port Object - Retrieve it from the allPorts Map and add it to the portList
+                portList.add(
+                    allPorts[port.qualifiedName]?.apply{
+                        associatedChannels.add(channel) //Inform this port about the Channel it connects to
+                    } ?:
+                    throw SysMDFatalInternalError("There was no Port Object found for: ${port.declaredName}")
+                )
+            }
+
+            is Feature -> {
+                //There exists no Port object yet - Create one and add it to the portList
+                portList.add(
+                    Port(
+                        portName = port.escapedName().toString(),
+                        fullQualifiedName = port.qualifiedName!!,
+                        portType = portType,
+                        dataType = port.ownedSpecialization.firstOrNull()!!.toDataType(),
+                        isInherited = port.isImpliedIncluded,
+                        module = allModules[port.owner?.qualifiedName].let { module1 ->
+                            module1 ?: allModules[port.owner?.qualifiedName + "_CLASS"].let { module2 ->
+                                module2
+                                    ?: throw SysMDFatalInternalError("No Module found with Full Qualified Name \"${port.owner?.qualifiedName}\" " +
+                                        "was found for Port \"${port.escapedName().toString()}\"")
+                            }
                         }
+                    ).apply {
+                        this.associatedChannels.add(channel) //Inform the Port about the Channel it connects to
+                        allPorts[this.fullQualifiedName] = this //Add this newly created Port to the allPorts Map
                     }
-                ).apply {
-                    this.associatedChannels.add(channel) //Inform the Port about the Channel it connects to
-                    allPorts[this.fullQualifiedName] = this //Add this newly created Port to the allPorts Map
-                }
-            )
-        }else throw SysMDFatalInternalError("The Element ${port.ref!!.declaredName} was neither a PortUsage nor an ExpressionImplementation" +
-                "and therefor could not be added to Channel ${channel.channelName}.")
+                )
+            }
+
+            else -> throw SysMDFatalInternalError("The Element ${port.escapedName()} was neither a PortUsage nor an ExpressionImplementation" +
+                    "and therefor could not be added to Channel ${channel.channelName}.")
+        }
     }
 
 
@@ -850,7 +855,7 @@ class Exporter {
 
 
             //##### INSTANTIATION OF MODULES ########################################################
-            if(mainUsages.isNotEmpty()) out.println("\n\n\t//\t### Modules ###")
+            if (mainUsages.isNotEmpty()) out.println("\n\n\t//\t### Modules ###")
             mainUsages.forEach { usage ->
 
                 //If the module has usages, instantiate it accordingly to them
@@ -937,9 +942,9 @@ class Exporter {
 
             //Print the variables for the Include and Lib directory
             out.print(
-                "INCDIR = -I. -I\$(SYSTEMC)/include -I\$(SYSTEMCAMS)/include\n" +
-                        "LIBDIR = -L\$(SYSTEMC)/lib-\$(TARGET_ARCH) -L\$(SYSTEMCAMS)/lib-\$(TARGET_ARCH)\n" +
-                        "LIBS   =   \$(EXTRA_LIBS) -lsystemc-ams -lsystemc -lm\n\n"
+                "INCDIR = -I. -I$(SYSTEMC)/include -I$(SYSTEMCAMS)/include\n" +
+                        "LIBDIR = -L$(SYSTEMC)/lib-$(TARGET_ARCH) -L$(SYSTEMCAMS)/lib-$(TARGET_ARCH)\n" +
+                        "LIBS   =   $(EXTRA_LIBS) -lsystemc-ams -lsystemc -lm\n\n"
             )
 
             //Print the final Output file creation
@@ -950,13 +955,13 @@ class Exporter {
             out.print("main.o ")
             out.print(
                 "\n" +
-                        "\t\t\$(CC) \$(INCDIR) \$(LIBDIR) "
+                        "\t\t$(CC) $(INCDIR) $(LIBDIR) "
             )
             allModules.forEach { (_,module) ->
                 out.print("$modulesFolder${module.moduleName}.o ")
             }
             out.print("main.o ")
-            out.print("-o final.exe \$(LIBS) 2>&1 | c++filt\n")
+            out.print("-o final.exe $(LIBS) 2>&1 | c++filt\n")
 
             //Print Build line for every Requirement
             allRequirements.values.forEach { requirement ->
@@ -967,20 +972,20 @@ class Exporter {
                 out.print("$testbenchesFolder${requirement.requirementName}_TB.o ")
                 out.print(
                     "\n" +
-                            "\t\t\$(CC) \$(INCDIR) \$(LIBDIR) "
+                            "\t\t$(CC) $(INCDIR) $(LIBDIR) "
                 )
                 allModules.forEach { (_,module) ->
                     out.print("$modulesFolder${module.moduleName}.o ")
                 }
                 out.print("$testbenchesFolder${requirement.requirementName}_TB.o ")
-                out.print("-o $testbenchesFolder${requirement.requirementName}_TB.exe \$(LIBS) 2>&1 | c++filt\n")
+                out.print("-o $testbenchesFolder${requirement.requirementName}_TB.exe $(LIBS) 2>&1 | c++filt\n")
             }
 
             //Print for the main.cpp
             out.print(
                 "\n" +
                         "main.o: main.cpp\n" +
-                        "\t\t \$(CC) \$(INCDIR) -c main.cpp -o main.o\n"
+                        "\t\t $(CC) $(INCDIR) -c main.cpp -o main.o\n"
             )
 
 
@@ -989,7 +994,7 @@ class Exporter {
                 out.print(
                     "\n" +
                             "$modulesFolder${module.moduleName}.o: $modulesFolder${module.moduleName}.cpp\n" +
-                            "\t\t \$(CC) \$(INCDIR) -c $modulesFolder${module.moduleName}.cpp -o $modulesFolder${module.moduleName}.o\n"
+                            "\t\t $(CC) $(INCDIR) -c $modulesFolder${module.moduleName}.cpp -o $modulesFolder${module.moduleName}.o\n"
                 )
             }
 
@@ -997,7 +1002,7 @@ class Exporter {
                 out.print(
                     "\n" +
                             "$testbenchesFolder${requirement.requirementName}_TB.o: $testbenchesFolder${requirement.requirementName}_TB.cpp\n" +
-                            "\t\t \$(CC) \$(INCDIR) -c $testbenchesFolder${requirement.requirementName}_TB.cpp -o $testbenchesFolder${requirement.requirementName}_TB.o\n"
+                            "\t\t $(CC) $(INCDIR) -c $testbenchesFolder${requirement.requirementName}_TB.cpp -o $testbenchesFolder${requirement.requirementName}_TB.o\n"
                 )
             }
 
@@ -1026,7 +1031,7 @@ class Exporter {
             out.print(
                 "cmake_minimum_required(VERSION 3.0)\n" +
                         "project($projectName)\n" +
-                        "set (CMAKE_CXX_STANDARD \${SystemC_CXX_STANDARD})\n\n" +
+                        $$"set (CMAKE_CXX_STANDARD ${SystemC_CXX_STANDARD})\n\n" +
                         "set (SystemC_include_path \"/usr/local/systemc-2.3.3/include/\")\n" +
                         "set (SystemC_AMS_include_path \"/usr/local/systemc-ams-2.3/include\")\n" +
                         "set (SystemC_lib_path \"/usr/local/systemc-2.3.3/lib-linux64/libsystemc.a\")\n" +
@@ -1036,9 +1041,9 @@ class Exporter {
             allModules.forEach { (_,module) -> out.print("modules/${module.moduleName}.cpp ") }
             out.println(")")
             out.print(
-                "target_include_directories($packageName PRIVATE \${SystemC_include_path})\n" +
-                        "target_include_directories($packageName PRIVATE \${SystemC_AMS_include_path})\n" +
-                        "target_link_libraries($packageName \${SystemC_lib_path} \${SystemC_AMS_lib_path})"
+                $$"target_include_directories($$packageName PRIVATE ${SystemC_include_path})\n" +
+                        $$"target_include_directories($$packageName PRIVATE ${SystemC_AMS_include_path})\n" +
+                        $$"target_link_libraries($$packageName ${SystemC_lib_path} ${SystemC_AMS_lib_path})"
             )
         }
     }

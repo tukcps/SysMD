@@ -18,9 +18,9 @@ class MultiplePropertiesPropagation {
      * - stable is set to false if in the last computation of it there was no change in its value.
      */
     @Test
-    fun updateTest()  = testSession("ScalarValues") {
+    fun updateTest()  = testSession("ScalarValues", "Ranges") {
         loadKerML("""
-            feature a: ScalarValues::Real(1.3);
+            feature a: Ranges::RealInRange {:>> range = "1.3 .. 1.3";}
             feature b: ScalarValues::Real = a;
         """)
         global.resolveVar("b")!!.updated = false
@@ -35,14 +35,15 @@ class MultiplePropertiesPropagation {
      * Dependencies across properties: direct dependency, forward.
      */
     @Test
-    fun upTest1() = testSession("ScalarValues") {
+    fun upTest1() = testSession("ScalarValues", "Ranges") {
         loadKerML("""
-            feature x: ScalarValues::Real {:>> range = "1 .. 10";}
-            feature y: ScalarValues::Real = x {:>> range = "1 .. 100";}
-            feature z: ScalarValues::Real = y;""")
+            feature x: Ranges::RealInRange {:>> range = "1 .. 10";}
+            feature y: Ranges::RealInRange = x {:>> range = "1 .. 100";}
+            feature z: Ranges::RealInRange = y;""")
         // y should be 1 .. 10 via y = x.
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
         propagate()
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        val y = global.resolveVar("y")
         assertEquals(10.0, global.resolveVar("y")!!.max(), 0.000001)
     }
 
@@ -57,7 +58,7 @@ class MultiplePropertiesPropagation {
             feature x: ScalarValues::Real = c {:>> range = "1 .. 10";}
             feature c: ScalarValues::Real = 2.0 {:>> range = "1 .. 10";}
             // y should be 1 .. 10 via y = x.
-            """)
+        """)
         propagate()
         assertEquals(Range(2.0..2.0), global.resolveVar("y")!!.vectorQuantity.aadd().getRange())
     }
@@ -67,10 +68,10 @@ class MultiplePropertiesPropagation {
      * reversed dependency
      */
     @Test
-    fun downTest1() = testSession("ScalarValues") {
+    fun downTest1() = testSession("Ranges") {
         loadKerML("""
-            feature x: ScalarValues::Real {:>> range = "1 .. 100";}
-            feature y: ScalarValues::Real = x {:>> range = "1 .. 10";}
+            feature x: Ranges::RealInRange {:>> range = "1 .. 100";}
+            feature y: Ranges::RealInRange = x {:>> range = "1 .. 10";}
             """)
         // y should be 1 .. 10 via y = x
         propagate()

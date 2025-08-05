@@ -2,24 +2,28 @@ package com.github.tukcps.sysmd.model.kerml.implementation
 
 import com.github.tukcps.sysmd.model.kerml.Dependency
 import com.github.tukcps.sysmd.model.kerml.Element
-import com.github.tukcps.sysmd.model.kerml.Resolved
+import com.github.tukcps.sysmd.model.kerml.UnresolvedElement
 
 class DependencyImplementation(
     declaredName: String? = null,
     declaredShortName: String? = null,
-    client: MutableList<Resolved<Element>> = mutableListOf(),
-    supplier: MutableList<Resolved<Element>> = mutableListOf(),
+    owningRelatedElement: Element = UnresolvedElement(),
+    client: MutableList<Element> = mutableListOf(),
+    supplier: MutableList<Element> = mutableListOf(),
     elementType: String = "Dependency"
 ): Dependency, RelationshipImplementation(
     declaredName=declaredName,
     declaredShortName=declaredShortName,
+    owningRelatedElement = owningRelatedElement,
+    source = client,
+    target = supplier,
     elementType = elementType
 ) {
-    override var client: MutableList<Resolved<Element>>
+    override var client: MutableList<Element>
         get() = source
         set(value) { source = value }
 
-    override var supplier: MutableList<Resolved<Element>>
+    override var supplier: MutableList<Element>
         get() = target
         set(value) { target = value }
 
@@ -32,15 +36,13 @@ class DependencyImplementation(
 
     override fun clone(): Dependency{
         return DependencyImplementation(
-            declaredName=declaredName,
-            declaredShortName=declaredShortName,
-            client = client,
-            supplier = supplier,
+            declaredName =declaredName,
+            declaredShortName =declaredShortName,
+            owningRelatedElement = owningRelatedElement,
+            client = client.toMutableList(),
+            supplier = supplier.toMutableList(),
         ).also{
             it.model = model
         }
     }
-
-    override fun toString(): String =
-        "Dependency { name='$declaredName', shortName = '$declaredShortName', clients: ${client.size}, suppliers: ${supplier.size}}"
 }

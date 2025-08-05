@@ -44,10 +44,9 @@ class AttributeTests {
     @Test
     fun testAttributeUsage() = testSession("Attributes") {
         loadSysMLv2("""
-        attribute def AttributeDef1;
-        attribute attribute1 : AttributeDef1;
-
-        """.trimIndent())
+            attribute def AttributeDef1;
+            attribute attribute1 : AttributeDef1;
+        """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
 
         val attributeDef1 = global.resolve<AttributeDefinition>("AttributeDef1")

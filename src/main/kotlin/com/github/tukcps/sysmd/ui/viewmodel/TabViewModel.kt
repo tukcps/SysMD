@@ -5,11 +5,11 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.text.input.TextFieldValue
 import com.github.tukcps.sysmd.logger
-import com.github.tukcps.sysmd.model.kerml.AnnotatingElement
 import com.github.tukcps.sysmd.model.kerml.Element
+import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
-import com.github.tukcps.sysmd.model.kerml.getOwned
-import com.github.tukcps.sysmd.model.kerml.implementation.AnnotatingElementImplementation
+import com.github.tukcps.sysmd.model.kerml.implementation.MetadataFeatureImplementation
+import com.github.tukcps.sysmd.model.kerml.implementation.getOwned
 import com.github.tukcps.sysmd.model.util.dropFirstName
 import com.github.tukcps.sysmd.rest.RESTRepository.getCellsForUi
 import com.github.tukcps.sysmd.rest.RESTRepository.getCommit
@@ -61,14 +61,13 @@ class TabViewModel(
     val hiddenElementIds: SnapshotStateMap<Int, Boolean> = mutableStateMapOf()
 
     // Reference into the SysMD model.
-    var fileAnnotation: AnnotatingElement? = null
+    var fileAnnotation: Namespace? = null
 
     /** The states of the view model. */
     val cells = mutableStateListOf<TextualRepresentationViewModel>()
 
     var scrollState = LazyListState()
     val editState =  mutableStateOf(false)
-    val showInfo = cells.indices.associateWith {  mutableStateOf(true) }
 
     private var commitList = mutableListOf<Commit>()
     private var oldCommitElementsDAOList = mutableListOf<ElementDAO>()
@@ -112,8 +111,7 @@ class TabViewModel(
          * Adds a TextualRepresentation view model to the model elements.
          */
         fun buildViewModelFromModel(element: Element) {
-            element.ownedElement.forEach {
-                val e = it.ref!!
+            element.ownedElement.forEach { e ->
                 if (e is TextualRepresentation) {
                     val elementModel = TextualRepresentationViewModel(
                         tabViewModel = this,
@@ -135,7 +133,7 @@ class TabViewModel(
             try {
                 this.tabTitle.value = " " + file.name.dropLast(3) + " "
                 this.file = file
-                fileAnnotation = session.global.getOwned<AnnotatingElement>(name = file.name)
+                fileAnnotation = session.global.getOwned<Namespace>(name = file.name)
                 buildViewModelFromModel(fileAnnotation!!)
                 refreshTrees()
             } catch (error: Exception) {
@@ -192,8 +190,8 @@ class TabViewModel(
      * @param kerMlModel the Session Model that is required
      */
     fun openSingleCommit(commit: Commit, project: Project, kerMlModel: Session) {
-        fileAnnotation = AnnotatingElementImplementation(declaredName = commit.description, body = "")
-        fileAnnotation = kerMlModel.create(fileAnnotation!!, kerMlModel.global)
+        fileAnnotation = MetadataFeatureImplementation()
+        fileAnnotation = kerMlModel.addOwnedMember(fileAnnotation!!, kerMlModel.global)
         // fileName.value = commitTree.commit.name.toString()
 
         /**

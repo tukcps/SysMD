@@ -1,8 +1,6 @@
 
 standard library package SI {
-    datatype Quantity :> ScalarValues::Real {
-        feature unit: ScalarValues::String;
-    }
+    datatype Quantity :> Ranges::QuantityInRange;
     //Basic SI Domains
     datatype AmountOfMoney :> Quantity;
     datatype AmountOfSubstance :> Quantity;
@@ -23,7 +21,7 @@ standard library package SI {
     datatype Capacitance :> Quantity; 
     datatype CatalyticActivity :> Quantity;
     datatype Density :> Quantity;
-    datatype DoseEquivelant :> Quantity;
+    datatype DoseEquivalent :> Quantity;
     datatype ElectricalConductance :> Quantity;
     datatype ElectricalResistance :> Quantity;
     datatype ElectricCharge :> Quantity;

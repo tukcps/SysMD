@@ -16,8 +16,9 @@ class DependencyTests {
     @Test
     fun testNormalDependency() = testSession  {
         loadSysMLv2("""
-        dependency Package2 to Package1;
-        """.trimIndent())
+            package Package2; package Package1; 
+            dependency Package2 to Package1;
+        """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
@@ -30,8 +31,12 @@ class DependencyTests {
     @Test
     fun testCrossedDependencies() = testSession {
         loadSysMLv2("""
-        dependency Package1, Package2 to Package3, Package4;
-        """.trimIndent())
+            package Package1; 
+            package Package2; 
+            package Package3; 
+            package Package4; 
+            dependency Package1, Package2 to Package3, Package4;
+        """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
@@ -42,13 +47,17 @@ class DependencyTests {
      * Language Specification Document: https://www.omg.org/spec/SysML/2.0/Beta2/Language/PDF
      */
     @Test
-    fun testDependencyExample() = testSession  {
+    fun testDependencyExample() = testSession("Parts") {
         loadSysMLv2("""
-        dependency 'Service Layer' to 'Data Layer', 'External Interface Layer' {
-            /* 'Service Layer' is the client of this dependency,
-            * not its name. */
-        }
-        """.trimIndent())
+            part 'Service Layer'; 
+            part 'Data Layer'; 
+            part 'External Interface Layer'; 
+            
+            dependency 'Service Layer' to 'Data Layer', 'External Interface Layer' {
+                /* 'Service Layer' is the client of this dependency,
+                * not its name. */
+            }
+        """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 }

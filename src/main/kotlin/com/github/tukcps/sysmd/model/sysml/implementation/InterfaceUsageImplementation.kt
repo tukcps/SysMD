@@ -12,11 +12,8 @@ class InterfaceUsageImplementation(
     elementType = elementType,
 ){
     override fun clone(): InterfaceUsage {
-        return InterfaceUsageImplementation(
-            declaredName = this.declaredName,
-            declaredShortName = this.declaredShortName,
-        ).also {
-            it.model = model
+        return InterfaceUsageImplementation().also {
+            it.updateFrom(this)
         }
     }
 }

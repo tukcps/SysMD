@@ -11,7 +11,7 @@ import com.github.tukcps.sysmd.services.session.Session
  * NOTE: Rather useful for test purposes and only used there.
  * @param input A SysMD language sting; pure SysMD without interwoven MD.
  */
-fun Session.loadSysMD(input: String){
+fun Session.loadSysMD(input: String) {
     SysMD(this).parse(input)
     try {
         if (settings.initialize) initialize()

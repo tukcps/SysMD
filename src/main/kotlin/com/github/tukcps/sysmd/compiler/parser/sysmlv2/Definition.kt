@@ -4,17 +4,9 @@ package com.github.tukcps.sysmd.compiler.parser.sysmlv2
 
 import com.github.tukcps.sysmd.compiler.KerML
 import com.github.tukcps.sysmd.compiler.SysMLv2
-import com.github.tukcps.sysmd.compiler.parser.kerml.AliasMember
-import com.github.tukcps.sysmd.compiler.parser.kerml.FeaturePrefix
-import com.github.tukcps.sysmd.compiler.parser.kerml.Identification
-import com.github.tukcps.sysmd.compiler.parser.kerml.Import
-import com.github.tukcps.sysmd.compiler.parser.kerml.SPECIALIZES
+import com.github.tukcps.sysmd.compiler.parser.kerml.*
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
-import com.github.tukcps.sysmd.compiler.semantics.kerml.TypeActions
 import com.github.tukcps.sysmd.exceptions.throwSyntaxError
-import com.github.tukcps.sysmd.model.kerml.Element
-import com.github.tukcps.sysmd.model.kerml.Resolved
-import com.github.tukcps.sysmd.model.kerml.Type
 
 /**
  * 8.2.2.6 Definition and Usage Textual Notation
@@ -22,23 +14,21 @@ import com.github.tukcps.sysmd.model.kerml.Type
  *
  * Definition = DefinitionDeclaration DefinitionBody
  */
-internal fun SysMLv2.Definition(typeActions: TypeActions<Type>) {
-    DefinitionDeclaration(typeActions)
-    DefinitionBody(Resolved(typeActions.created!!))
+internal fun SysMLv2.Definition() {
+    DefinitionDeclaration()
+    DefinitionBody()
 }
 
 
 /**
  *      DefinitionBody = ';' | '{' DefinitionBodyItem* '}'
  */
-internal fun SysMLv2.DefinitionBody(owner: Resolved<Element>) {
+internal fun SysMLv2.DefinitionBody() {
     alternatives {
         LCURBRACE then {
-            semantics.pushOwner(owner)
             noOrMore(end = { token.kind == RCURBRACE }) {
                 DefinitionBodyItem()
             }
-            semantics.popOwner()
             RCURBRACE.consume()
         }
         SEMICOLON then { }
@@ -71,10 +61,10 @@ internal fun SysMLv2.DefinitionBodyItem() {
     semantics.prefixes.clear()
 }
 
-fun SysMLv2.DefinitionDeclaration(klass: TypeActions<Type>) {
-    Identification().also { klass.create(it) }
+fun SysMLv2.DefinitionDeclaration() {
+    Identification().also { semantics.create(it) }
     optional(start = SPECIALIZES or DPGT) {
-        SubclassificationPart(klass)
+        SubclassificationPart()
     }
 }
 
@@ -83,7 +73,11 @@ fun SysMLv2.DefinitionDeclaration(klass: TypeActions<Type>) {
  *          (',' OwnedSubclassification)*
  *      OwnedSubclassification = QualifiedName
  */
-fun KerML.SubclassificationPart(klass: TypeActions<Type>) {
+fun KerML.SubclassificationPart() {
     SPECIALIZES()
-    QualifiedNameList().also { klass.addSpecialization(it)}
+    QualifiedName().also { semantics.addSubclassification(it) }
+    noOrMore(COMMA) {
+        COMMA.consume()
+        QualifiedName() .also { semantics.addSubclassification(it) }
+    }
 }

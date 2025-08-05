@@ -93,11 +93,21 @@ package com.github.tukcps.sysmd.model.kerml
  */
 interface Connector: Relationship, Feature {
     val association: Association
-    var from: MutableList<Resolved<Feature>>
-    var to: MutableList<Resolved<Feature>>
+    var from: MutableList<Element>
+    var to: MutableList<Element>
     var isDirected: Boolean
     override fun clone(): Connector
     override fun updateFrom(template: Element)
     override fun resolveNames(): Boolean
-    override fun visibleMemberships(): List<Resolved<Element>> = ownedElement + from + to
+    override fun visibleMemberships(): List<Membership> = (ownedRelationship + from + to).filterIsInstance<Membership>()
+
+    var sourceFeature: Feature?
+        get() = source.firstOrNull() as Feature?
+        set(value) { source = if(value == null) mutableListOf() else mutableListOf(value) }
+
+
+    @Suppress("UNCHECKED_CAST")
+    var targetFeature: MutableList<Feature>
+        get() = target as MutableList<Feature>
+        set(value) { target = value as MutableList<Element> }
 }

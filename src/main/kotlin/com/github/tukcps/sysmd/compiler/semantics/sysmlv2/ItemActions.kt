@@ -1,3 +1,5 @@
+@file:Suppress("UNCHECKED_CAST")
+
 package com.github.tukcps.sysmd.compiler.semantics.sysmlv2
 
 import com.github.tukcps.sysmd.compiler.semantics.ActionsContext
@@ -8,18 +10,18 @@ import com.github.tukcps.sysmd.model.sysml.implementation.ItemUsageImplementatio
 
 
 class ItemDefinitionActions(
-    context: ActionsContext
+    context: ActionsContext,
 ): TypeActions<ItemDefinitionImplementation>(
     context,
     creator = ::ItemDefinitionImplementation,
-    specializes = mutableListOf("Items::Item"),
+    defaultType = "Items::Item",
 )
 
 
 class ItemUsageActions(
-    context: ActionsContext
+    context: ActionsContext,
 ): FeatureActions<ItemUsageImplementation>(
     context,
     creator = ::ItemUsageImplementation,
-    defaultType = mutableListOf("Items::Item")
+    defaultType = "Items::Item",
 )

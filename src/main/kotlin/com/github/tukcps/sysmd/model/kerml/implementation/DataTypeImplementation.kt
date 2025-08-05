@@ -1,7 +1,6 @@
 package com.github.tukcps.sysmd.model.kerml.implementation
 
 import com.github.tukcps.sysmd.model.kerml.DataType
-import java.util.*
 
 open class DataTypeImplementation(
     declaredName: String? = null,
@@ -12,22 +11,8 @@ open class DataTypeImplementation(
     declaredShortName=declaredShortName,
     elementType=elementType
 ) {
-    override fun toString(): String {
-        return "$elementType {" +
-                (if (declaredName != null) "name='$declaredName', " else "") +
-                (if (declaredShortName != null) "name='$declaredShortName', " else "") +
-                ("supertypes='${allSupertypes().map { type -> type.escapedName() }}', ") +
-                ("imports='$imports', ") +
-                ("id='${elementId}...'}")
-    }
-
-    override fun clone(): DataType {
-        return DataTypeImplementation(
+    override fun clone(): DataType = DataTypeImplementation(
             declaredName=declaredName,
             declaredShortName=declaredShortName,
-        ).also {
-            it.model = model
-            it.updated = updated
-        }
-    }
+        ).also { it.updateFrom(this) }
 }

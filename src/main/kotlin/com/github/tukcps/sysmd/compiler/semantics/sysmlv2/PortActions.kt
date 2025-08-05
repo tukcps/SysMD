@@ -1,3 +1,5 @@
+@file:Suppress("UNCHECKED_CAST")
+
 package com.github.tukcps.sysmd.compiler.semantics.sysmlv2
 
 import com.github.tukcps.sysmd.compiler.semantics.ActionsContext
@@ -8,19 +10,19 @@ import com.github.tukcps.sysmd.model.sysml.implementation.PortUsageImplementatio
 
 
 class PortDefinitionActions(
-    context: ActionsContext
+    context: ActionsContext,
 ): TypeActions<PortDefinitionImplementation>(
     context,
-    specializes = mutableListOf("Ports::Port"),
-    creator = ::PortDefinitionImplementation
+    defaultType = "Ports::Port",
+    creator = ::PortDefinitionImplementation,
 )
 
 
 
 class PortUsageActions(
-    context: ActionsContext
+    context: ActionsContext,
 ): FeatureActions<PortUsageImplementation>(
     context,
     creator = ::PortUsageImplementation,
-    defaultType = mutableListOf("Ports::Port")
+    defaultType = "Ports::Port",
 )

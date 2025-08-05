@@ -1,3 +1,5 @@
+@file:Suppress("UNCHECKED_CAST")
+
 package com.github.tukcps.sysmd.compiler.semantics.kerml
 
 import com.github.tukcps.sysmd.compiler.semantics.ActionsContext
@@ -18,8 +20,10 @@ import com.github.tukcps.sysmd.model.util.SimpleName
 open class AssociationActions<T: Association>(
     context: ActionsContext,
     creator: (SimpleName?, SimpleName?) -> T,
-    specializes: MutableList<QualifiedName> = mutableListOf("Links::BinaryLink"),
-): ClassifierActions<T>(context, creator, specializes), RelationshipActionsAssoc<T>
+    specializes: QualifiedName = "Links::BinaryLink",
+): ClassifierActions<T>(context, creator, specializes),
+    RelationshipActionsAssoc<T>
+
 
 
 /**
@@ -27,58 +31,12 @@ open class AssociationActions<T: Association>(
  * - addSource adds references to sources
  * - addTarget adds references to targets
  */
-interface RelationshipActionsAssoc<T: Association>: RelationshipActions<T> {
-
-    override fun addSource(source: List<QualifiedName>) {
-        super.addSource(source)
-        if (source.isNotEmpty()) {
-            context.addReferenceSubsetting(
-                owner = created!!,
-                pathFromOwnerToReferencingFeature = "source",
-                referencedFeature = source.first()
-            )
-        }
-    }
-
-    override fun addTarget(target: List<QualifiedName>) {
-        super.addTarget(target)
-        if (target.isNotEmpty()) {
-            context.addReferenceSubsetting(
-                owner = created!!,
-                pathFromOwnerToReferencingFeature = "target",
-                referencedFeature = target.first())
-        }
-    }
-}
+interface RelationshipActionsAssoc<T: Association>: RelationshipActions<T>
 
 /**
  * Additional functions for connectors
  */
-interface ConnectorRelationshipActions<T: Connector>: RelationshipActions<T> {
-    override var created: T?
-    override val context: ActionsContext
-
-    override fun addSource(source: List<QualifiedName>) {
-        created?.source = source.toIdentityList()
-        if (source.isNotEmpty()) {
-            context.addReferenceSubsetting(
-                owner = created!!,
-                pathFromOwnerToReferencingFeature = "source",
-                referencedFeature = source.first())
-        }
-    }
-
-    override fun addTarget(target: List<QualifiedName>) {
-        created?.target = target.toIdentityList()
-
-        if (target.isNotEmpty()) {
-            context.addReferenceSubsetting(
-                owner = created!!,
-                pathFromOwnerToReferencingFeature = "target",
-                referencedFeature = target.first())
-        }
-    }
-}
+interface ConnectorRelationshipActions<T: Connector>: RelationshipActions<T>
 
 /**
  * Adds a connector to the model.
@@ -88,9 +46,8 @@ interface ConnectorRelationshipActions<T: Connector>: RelationshipActions<T> {
 open class ConnectorActions<T: Connector>(
     context: ActionsContext,
     creator: (SimpleName?, SimpleName?) -> T,
-    defaultType: MutableList<String> = mutableListOf("Links::Link")
-): FeatureActions<T>(context, creator, defaultType),
-    ConnectorRelationshipActions<T>
+    defaultType: String = "Links::Link",
+): FeatureActions<T>(context, creator, defaultType), ConnectorRelationshipActions<T>
 
 
 /**
@@ -102,33 +59,33 @@ open class ConnectorActions<T: Connector>(
 open class FunctionActions<T: Function>(
     context: ActionsContext,
     creator: (SimpleName?, SimpleName?) -> T,
-    specializes: MutableList<QualifiedName> = mutableListOf("Base::Anything")
+    specializes: QualifiedName = "Base::Anything",
 ): ClassifierActions<T>(context, creator, specializes)
 
 
 class MetaclassActions<T: Metaclass> (
     context: ActionsContext,
     creator: (SimpleName?, SimpleName?) -> T,
-    defaultType: MutableList<String> = mutableListOf("Base::Anything")
+    defaultType: String = "Base::Anything",
 ): ClassActions<T>(context, creator, defaultType)
 
 /**
  * Semantic actions for the definition of a Metadata feature.
  */
-class MetadataFeatureActions<T: Feature>(
+class MetadataFeatureActions<T: MetadataFeature>(
     context: ActionsContext,
     creator: (SimpleName?, SimpleName?) -> T,
-    defaultType: MutableList<QualifiedName> = mutableListOf("Base::Anything")
+    defaultType: QualifiedName = "Base::Anything",
 ): FeatureActions<T>(context, creator, defaultType) {
     var identificationOrType: Identification? = null
     var typeIfPresent: QualifiedName? = null
-    fun create() {
+    override fun create(identification: Identification?) {
         if (typeIfPresent == null) {
-            super.create(identification = Identification())
-            addTyping(type = mutableListOf(identificationOrType!!.name!!))
+            super.create(null)
+            context.addTyping(type = identificationOrType!!.name!!)
         } else {
             super.create(identification = identificationOrType!!)
-            addTyping(type = mutableListOf(typeIfPresent!!))
+            context.addTyping(type = typeIfPresent!!)
         }
     }
 }

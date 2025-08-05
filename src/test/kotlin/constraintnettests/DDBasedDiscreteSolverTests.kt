@@ -54,15 +54,15 @@ class DDBasedDiscreteSolverTests {
         loadKerML(input = """
            package Reason {
                type General  :> Base::Anything {
-                   feature p: ScalarValues::Boolean = bySpecializations(p) {:>> spec = "true";}
+                   inv p { bySpecializations(p) }
                    feature q: ScalarValues::Boolean = bySpecializations(q);
                }
                type Variant1 :> General {
-                   feature p: ScalarValues::Boolean= true {:>> spec = "true";}
+                   inv p { true }
                    feature q: ScalarValues::Boolean = true;
                }
                type Variant2 :> General {
-                   feature p: ScalarValues::Boolean = true {:>> spec = "true";}
+                   inv p { true }
                    feature q: ScalarValues::Boolean = false;
                }
            }
@@ -94,10 +94,9 @@ class DDBasedDiscreteSolverTests {
     @Test
     fun isATest2() = testSession("ScalarValues") {
         loadKerML("""
-            class c2;
+            type c2 :> Base::Anything;
             feature c2 : ScalarValues::Boolean;
-            """.trimIndent()
-        )
+        """)
         assertEquals(1, status.issues.size, status.issues.toString())
     }
 
@@ -168,10 +167,10 @@ class DDBasedDiscreteSolverTests {
     }
 
     @Test
-    fun contradictionTest() = testSession("ScalarValues") {
+    fun contradictionTest() = testSession("Ranges") {
         loadKerML(
             input = """
-            feature x: ScalarValues::Real {:>> range = "1.0..3.0";}
+            feature x: Ranges::RealInRange {:>> range = "1.0..3.0";}
             feature y: ScalarValues::Real = x+0.1;
             inv r { x == y}
         """.trimIndent()
@@ -188,9 +187,9 @@ class DDBasedDiscreteSolverTests {
     }
 
     @Test
-    fun contradictionTest2() = testSession("ScalarValues") {
+    fun contradictionTest2() = testSession("Ranges") {
         loadKerML(input = """
-            feature x: ScalarValues::Real {:>> range = "1.0..3.0";}
+            feature x: Ranges::RealInRange {:>> range = "1.0..3.0";}
             feature y: ScalarValues::Real = x+0.1;
             inv r { x >= y }
             """)
@@ -210,10 +209,10 @@ class DDBasedDiscreteSolverTests {
     fun basicPropagation() = testSession("ScalarValues") {
         loadKerML(input = """
             feature a: ScalarValues::Boolean;
-            feature b: ScalarValues::Boolean {:>> spec = "false";}
-            feature c: ScalarValues::Boolean {:>> spec = "true";}
+            inv b false; 
+            inv c;
             feature y: ScalarValues::Boolean = (a and c) or (not(b) and not(a));
-            feature z: ScalarValues::Boolean {:>> spec = "true";}
+            inv z; 
         """
         )
         propagate()
@@ -225,10 +224,10 @@ class DDBasedDiscreteSolverTests {
         loadKerML(
             """
             feature a: ScalarValues::Boolean;
-            feature b: ScalarValues::Boolean {:>> spec = "false";}
-            feature c: ScalarValues::Boolean {:>> spec = "true";}
-            feature d: ScalarValues::Boolean = (a and c) or (not(b) and not(a)) {:>> spec = "true";}"""
-        )
+            inv b false; 
+            inv c;
+            inv d { (a and c) or (not(b) and not(a)) }
+        """)
 
         // Error is here -----^ would never have seen that typo. thanks.
         // ... an in initialize that fails to recognize this as error and runs in infinite loop ...
@@ -539,7 +538,7 @@ class DDBasedDiscreteSolverTests {
             package Example3 {
                 feature a: ScalarValues::Boolean = true;
                 feature b: ScalarValues::Boolean;
-                feature c: ScalarValues::Boolean = a and b {:>> spec = "true";}
+                inv c { a and b }
                 type d :> Base::Anything;
                 type e :> Base::Anything;
                 feature test: Base::Anything[0..2];
@@ -561,8 +560,8 @@ class DDBasedDiscreteSolverTests {
             inv b; 
             inv c false; 
             feature d: ScalarValues::Boolean = true or false;
-            feature e: ScalarValues::Boolean = true or false {:>> spec = "true";}
-            feature f: ScalarValues::Boolean = true or false {:>> spec = "false";}
+            inv e { true or false }
+            inv f false { true or false }
             feature g: ScalarValues::Boolean = true or false;
             """)
         // There is no exor function ... yet. Either we add one ...

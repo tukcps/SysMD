@@ -1,7 +1,6 @@
 package models.kerml
 
 import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.kerml.Resolved
 import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureTypingImplementation
@@ -20,16 +19,17 @@ class FeatureTests {
      */
     @Test
     fun testFeature() = testSession("SI") {
-        val feature = FeatureImplementation()
-        feature.declaredName = "f"
+        val feature = FeatureImplementation(declaredName = "f")
+        addOwnedMember(feature, global)
         feature.unitConstraint = "m"
-        feature.addOwnedElement(FeatureTypingImplementation(typedFeature = Resolved(feature), type = Resolved(global.resolve<Type>("SI::Length")!!)))
+        val type = FeatureTypingImplementation(typedFeature = feature, type = global.resolve<Type>("SI::Length")!!)
+        addOwnedRelationship(type, feature)
         val kerml = feature.toTextualRepresentation()
         loadKerML(kerml!!)
         val f = global.resolve<Feature>("f")
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals("Declared name saved incorrectly", "f", f?.declaredName)
         assertTrue(f?.isFeatureWithValue() == true )
-        assertEquals("Unit saved incorrectly", "m", f?.unitConstraint)
+        assertEquals("Unit saved incorrectly", "m", f.unitConstraint)
     }
 }

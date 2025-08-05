@@ -4,7 +4,6 @@ import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.sysml.AttributeUsage
-import java.util.UUID
 
 class AttributeUsageImplementation(
     declaredName: String? = null,
@@ -16,7 +15,6 @@ class AttributeUsageImplementation(
     isSufficient: Boolean = false,
     isUnique: Boolean = false,
     isOrdered: Boolean = false,
-    isRedefined: Boolean = false,
     isDerived: Boolean = false,
     isReadOnly: Boolean = false,
     textualRepresentation: MutableList<TextualRepresentation> = mutableListOf(),
@@ -31,14 +29,12 @@ class AttributeUsageImplementation(
     isSufficient = isSufficient,
     isUnique = isUnique,
     isOrdered = isOrdered,
-    isRedefined = isRedefined,
     isDerived = isDerived,
     isReadOnly = isReadOnly,
     textualRepresentation = textualRepresentation,
     elementType = elementType
 ) {
-    override fun clone(): AttributeUsage {
-        return AttributeUsageImplementation(
+    override fun clone(): AttributeUsage = AttributeUsageImplementation(
             declaredName = this.declaredName,
             declaredShortName = this.declaredShortName,
             direction = direction,
@@ -48,7 +44,6 @@ class AttributeUsageImplementation(
             isSufficient = isSufficient,
             isUnique = isUnique,
             isOrdered = isOrdered,
-            isRedefined = isRedefined,
             isDerived = isDerived,
             isReadOnly = isReadOnly,
             textualRepresentation = textualRepresentation,
@@ -58,5 +53,4 @@ class AttributeUsageImplementation(
             it.typeConstraint = typeConstraint
             it.expression = expression
         }
-    }
 }

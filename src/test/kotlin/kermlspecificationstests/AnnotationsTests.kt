@@ -14,10 +14,10 @@ class AnnotationsTests {
      * Kernel Modeling Language: https://www.omg.org/spec/KerML/1.0/Beta2/PDF/changebar
      */
     @Test
-    fun testCommentDeclaration() = testSession("Occurrences") {
+    fun testCommentDeclaration() = testSession {
         loadKerML("""
-            classifier A;
-            classifier B;
+            namespace A;
+            namespace B;
             comment Comment1 about A, B
                 /* This is the comment body text. */
         """)

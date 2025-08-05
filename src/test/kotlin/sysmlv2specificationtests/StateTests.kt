@@ -17,8 +17,8 @@ class StateTests {
     @Test
     fun testSimpleStateDefinition() = testSession("States") {
         loadSysMLv2("""
-        state def StateDef1;
-        """.trimIndent())
+            state def StateDef1;
+        """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
@@ -61,7 +61,7 @@ class StateTests {
         state state1 : StateDef1 {
             /* members */
         }
-        """.trimIndent())
+        """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 

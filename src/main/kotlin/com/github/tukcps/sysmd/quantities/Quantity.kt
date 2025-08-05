@@ -635,7 +635,7 @@ class Quantity : VectorQuantity {
 
     /**
      * Converts this unit to the expected unit representation and returns the value of the conversion
-     * @param wantedRepresentation String of the wanted representation of the Unit
+     * @param wantedRepresentation String of Unit's wanted representation
      * @Return value in Real/Integer of the result
      */
     fun valueIn(wantedRepresentation: String): DD<*> {

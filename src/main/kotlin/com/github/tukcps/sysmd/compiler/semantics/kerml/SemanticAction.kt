@@ -1,10 +1,16 @@
+@file:Suppress("UNCHECKED_CAST")
+
 package com.github.tukcps.sysmd.compiler.semantics.kerml
 
-import com.fasterxml.uuid.Generators
-import com.github.tukcps.sysmd.compiler.scanner.Token
+import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.LIBRARY
+import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.STANDARD
 import com.github.tukcps.sysmd.compiler.semantics.ActionsContext
 import com.github.tukcps.sysmd.compiler.semantics.Identification
+import com.github.tukcps.sysmd.model.kerml.Annotation
+import com.github.tukcps.sysmd.model.kerml.Dependency
 import com.github.tukcps.sysmd.model.kerml.Element
+import com.github.tukcps.sysmd.model.kerml.Namespace
+import com.github.tukcps.sysmd.model.kerml.Relationship
 import com.github.tukcps.sysmd.model.util.SimpleName
 
 
@@ -20,24 +26,60 @@ open class SemanticAction<T: Element>(
     val context: ActionsContext,
     var creator: (SimpleName?, SimpleName?) -> T,
 ) {
-    var created: T? = null
+    var created: T
 
     /**
-     * Creates a KerML element and prepares it for integration into the model.
-     * Depending on the context, a UUID 4 or 5 is assigned.
-     * @param identification name and short name
+     * A semantic action creates always an element of type T.
+     * This element can be added to the model by the method create.
      */
-    open fun create(identification: Identification) {
-        created = creator(identification.name, identification.shortName)
-        created?.input = context.compiler.input
-        if (context.owners.peek().ref != null)
-            context.model.addUnownedElement(created!!, startOfOwnerPath = context.owners.peek().ref!!)
-        else
-            context.model.addUnownedElement(created!!, context.ownerName())
+    init {
+        created = creator(null, null)
+    }
+
+    /**
+     * Actions that are done before parsing.
+     */
+    open fun init() {}
+
+    fun parse( production: () -> Unit ): T {
+        init()
+        production()
+        finish()
+        return created
+    }
+
+     /**
+     * Adds the element to the model.
+     * @param identification name and short name.
+     */
+    open fun create(identification: Identification?=null) {
+        created.declaredName = identification?.name
+        created.declaredShortName = identification?.shortName
+        created.input = context.compiler.input
+        created.indices = context.compiler.consumedToken.indices
+        if ( (STANDARD in context.prefixes) or (LIBRARY in context.prefixes) )
+            created.isLibraryElement = true
+        @Suppress("UNCHECKED_CAST")
+
+        // determine the owner
+        val whereToAdd = if (created == context.element())  context.owner() else  context.element()
+
+        created =
+            if (created !is Namespace && created !is Annotation && created !is Dependency && created is Relationship)
+                context.model.addOwnedRelationship(created as Relationship, whereToAdd) as T
+            else
+                context.model.addOwnedMember(created, whereToAdd)
 
         context.model.status.createdElements.add(
-            context.qualifiedName(identification.name?:identification.shortName)
+            context.ownerName() + "::${created.escapedName()}"
         )
+    }
+
+    /**
+     * Method that is called after executing the lambda 'production'.
+     */
+    open fun finish() {
+        context.prefixes.clear()
     }
 
     /**
@@ -46,10 +88,9 @@ open class SemanticAction<T: Element>(
      * @param identification, Identification data structure that includes short name and name
      */
     open fun setIdentification(identification: Identification) {
-        if ((context.owners.peek().ref?.isLibraryElement == true || Token.Kind.LIBRARY in context.prefixes || Token.Kind.STANDARD in context.prefixes)
-                && (identification.name != null || identification.shortName != null))
-            created!!.elementId =  Generators.nameBasedGenerator().generate(context.qualifiedName(identification.name?:identification.shortName))
-        created!!.declaredShortName = identification.shortName
-        created!!.declaredName = identification.name
+        created.declaredShortName = identification.shortName
+        created.declaredName = identification.name
     }
+
+    override fun toString(): String = "[${created.escapedName()?:created.elementType}]"
 }

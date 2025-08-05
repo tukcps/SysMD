@@ -8,7 +8,7 @@ import kotlin.test.assertTrue
 
 class PartsTest {
     @Test
-    fun testParts() = testSession("Parts") {
+    fun testParts() = testSession("Parts", initialize = false) {
         loadSysMLv2("""
                 package 'Parts Example-2' {
                     
@@ -38,6 +38,5 @@ class PartsTest {
                 }
         """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-
     }
 }

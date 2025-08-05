@@ -30,12 +30,15 @@ class AnnotationTests {
     }
 
     @Test
-    fun testCommentAbout() = testSession {
+    fun testCommentAbout() = testSession("Parts") {
         loadSysMLv2("""
-        comment about part1::attribute1
-        /* The annotated element
-        * is attribute1. */
-        """.trimIndent())
+            part part1 {
+                part attribute1; 
+            }
+            comment about part1::attribute1
+            /* The annotated element
+             * is attribute1. */
+        """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
@@ -49,11 +52,14 @@ class AnnotationTests {
     }
 
     @Test
-    fun testCommentAnnotation() = testSession {
+    fun testCommentAnnotation() = testSession("Parts") {
         loadSysMLv2("""
-        comment about part1::attribute1
-        /* The annotated element * is attribute1. */
-        """.trimIndent())
+            part part1 {
+                part attribute1; 
+            }
+            comment about part1::attribute1
+            /* The annotated element * is attribute1. */
+        """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 

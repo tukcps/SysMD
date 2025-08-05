@@ -12,48 +12,24 @@ open class TypeImplementation(
     override var isAbstract: Boolean = false,
     override var isSufficient: Boolean = false,
     override var isConjugated: Boolean = false,
-    isLibraryElement: Boolean = false,
-    isStandard: Boolean = false,
     textualRepresentation: MutableList<TextualRepresentation> = mutableListOf(),
     elementType: String = "Type",
 ): Type, NamespaceImplementation(
     declaredName=declaredName,
     declaredShortName=declaredShortName,
-    isLibraryElement = isLibraryElement,
-    isStandard = isStandard,
     textualRepresentation=textualRepresentation,
     elementType = elementType
 ) {
     override fun clone(): Type {
-        return TypeImplementation(
-            declaredName = declaredName,
-            declaredShortName = declaredShortName,
-        ).also { klon ->
-            klon.model = model
-            klon.updated = updated
-        }
-    }
-
-    override fun toString(): String {
-        return "Type (" +
-                "declaredName='$declaredName', " +
-                (if (declaredShortName != null) "declaredShortName=$declaredShortName" else "") +
-                "supertype='${getOwnedElementOfType<Specialization>()?.general}', " +
-                "imports='$imports')"
-    }
-
-    /**
-     * Does name resolution and, if successful, sets updated=true
-     */
-    override fun resolveNames(): Boolean {
-        updated = super<Type>.resolveNames() or updated
-        updated = super<NamespaceImplementation>.resolveNames() or updated
-        return updated
+        return TypeImplementation().also { klon -> klon.updateFrom(this) }
     }
 
     override fun updateFrom(template: Element) {
+        super.updateFrom(template)
         if (template is TypeImplementation) {
-            super.updateFrom(template)
+            isConjugated = template.isConjugated
+            isSufficient = template.isSufficient
+            isAbstract = template.isAbstract
         }
     }
 
@@ -62,5 +38,4 @@ open class TypeImplementation(
      * but before inheritance
      */
     override val subtypes: MutableSet<Type> = mutableSetOf()
-
 }

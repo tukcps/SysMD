@@ -60,7 +60,7 @@ class  AstByParts(model: Session, namespace: Namespace, args: ArrayList<AstNode>
         //TODO Add Vectors to byParts
         if (getParam(0).upQuantity.values.size != 1)
             throw VectorDimensionError("BySubclasses is not possible with Vectors")
-        val type = inNameSpace.resolve<Feature>(propertyName)?.type?.firstOrNull()?.ref
+        val type = inNameSpace.resolve<Feature>(propertyName)?.type?.firstOrNull()
 
         if (type != null && type.model?.builder != model.builder)
             throw Exception("Internal error -- Mix of two models?")

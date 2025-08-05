@@ -1,3 +1,5 @@
+@file:Suppress("UNCHECKED_CAST")
+
 package com.github.tukcps.sysmd.compiler.semantics.sysmlv2
 
 import com.github.tukcps.sysmd.model.util.QualifiedName
@@ -9,7 +11,7 @@ import com.github.tukcps.sysmd.model.util.SimpleName
 
 class AllocationDefinitionActions(
     context: ActionsContext,
-    specializes: MutableList<QualifiedName> = mutableListOf("Allocations::Allocation"),
+    specializes: QualifiedName = "Allocations::Allocation",
 ): AssociationActions<AllocationDefinitionImplementation>(
     context = context,
     creator = ::AllocationDefinitionImplementation,
@@ -20,7 +22,7 @@ class AllocationDefinitionActions(
 class AllocationUsageActions<T: AllocationUsage>(
     context: ActionsContext,
     creator: (SimpleName?, SimpleName?) -> T,
-    defaultType: MutableList<QualifiedName> = mutableListOf("Connections::Connection"),
+    defaultType: QualifiedName = "Connections::Connection",
 ): ConnectionUsageActions<AllocationUsage>(
     context = context,
     creator = creator,

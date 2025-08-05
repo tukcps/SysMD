@@ -7,6 +7,7 @@ import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.exceptions.SysMDError
 import com.github.tukcps.sysmd.model.kerml.Feature
+import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.quantities.VectorDimensionError
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
@@ -124,8 +125,8 @@ class AstRoot(
         dependency.evalUpRec()
         //add predefined dimension to the unit
         if(feature.specializes(feature.model!!.repo.realType)&& feature.type.size==1) {
-            val type =  feature.type[0].ref?.declaredName.toString()
-            if(feature.type[0].ref?.generalization?.firstOrNull()?.ref?.declaredName=="Quantity")
+            val type =  feature.type[0].declaredName.toString()
+            if((feature.type[0] as Type?)?.generalization?.firstOrNull()?.declaredName=="Quantity")
                 dependency.upQuantity.unit.unitDimension = type
         }
         evalUp()
@@ -192,46 +193,6 @@ class AstRoot(
         return if (this.isBool) this.bdd.evaluate() else this.aadd.evaluate()
     }
 
-    @Deprecated("Will be phased out") //TODO not for Vectors implemented
-    fun solveAstWithAlternatives(): DD<*> {
-        val conditions = if (this.isBool) this.bdd.evaluate() else if (this.isReal) this.aadd.evaluate() else this.idd.evaluate()
-
-        if (conditions is DD.Leaf) return conditions
-        if (conditions.isInfeasible) return model.builder.Infeasible //TODO: InfeasibleB?
-
-        val paths = findAllPaths(conditions, variable.boolSpecs[0])
-        var trialState = model.builder.conds.x.toMutableMap()
-        var boolSpecOk = true //break condition
-
-
-        paths@ for (path in paths) {
-            indexes@ for (index in path) {
-
-                if (model.builder.conds.getCondition(index.key) is AADD) continue
-
-                val cond = if (index.value) model.builder.True else model.builder.False
-
-                //Check against boolSpec!
-                val spec = getConditionBoolSpec(index.key)
-                if (!checkAgainstBoolSpec(index.value, spec[0])) {
-                    //BREAK CASE!
-                    trialState = model.builder.conds.x.toMutableMap() //reset to start point
-                    paths.removeFirst()
-                    boolSpecOk = false
-                    break@indexes
-                } else {
-                    trialState[index.key] = cond
-                }
-            }
-            if (boolSpecOk) {
-                break@paths
-            } else
-                boolSpecOk = true
-        }
-        model.builder.conds.x = trialState as HashMap<Int, DD<*>>
-
-        return if (isBool) bdd.evaluate() else aadd.evaluate()
-    }
 
     private fun findShortestPath(dd: DD<*>, target: XBool = XBool.True, path: MutableMap<Int, Boolean> = mutableMapOf()): MutableMap<Int, Boolean> {
         val targetLeaf = when (target) {

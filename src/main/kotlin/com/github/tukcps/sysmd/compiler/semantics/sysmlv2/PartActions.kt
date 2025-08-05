@@ -1,3 +1,5 @@
+@file:Suppress("UNCHECKED_CAST")
+
 package com.github.tukcps.sysmd.compiler.semantics.sysmlv2
 
 import com.github.tukcps.sysmd.compiler.semantics.ActionsContext
@@ -7,21 +9,32 @@ import com.github.tukcps.sysmd.model.sysml.implementation.PartDefinitionImplemen
 import com.github.tukcps.sysmd.model.sysml.implementation.PartUsageImplementation
 
 
-
 class PartDefinitionActions(
     context: ActionsContext,
 ): TypeActions<PartDefinitionImplementation>(
     context,
     creator = ::PartDefinitionImplementation,
-    specializes = mutableListOf("Parts::Part")
-)
+) {
+    override fun finish() {
+        if (created.specialization.isEmpty()) {
+            context.addSubclassification("Parts::Part")
+        }
+        super.finish()
+    }
+}
 
 
 
 class PartUsageActions(
-    context: ActionsContext
+    context: ActionsContext,
 ): FeatureActions<PartUsageImplementation>(
     context,
     creator = ::PartUsageImplementation,
-    defaultType = mutableListOf("Parts::Part")
-)
+) {
+    override fun finish() {
+        if (created.specialization.isEmpty()) {
+            context.addTyping("Parts::Part")
+        }
+        super.finish()
+    }
+}

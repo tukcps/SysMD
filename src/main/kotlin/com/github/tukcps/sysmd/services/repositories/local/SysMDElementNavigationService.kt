@@ -72,6 +72,8 @@ object SysMDElementNavigationService: ElementNavigationService {
      * @return A collection of the  root namespace's members
      */
     override fun getRootElements(project: Project, commit: Commit): Collection<ElementDAO> =
-        elementNavigationService.getElements(project, commit).filter { it.owner?.id == null }
+        elementNavigationService.getElements(project, commit).filter {
+            it.owner?.id == null
+        }
 
 }

@@ -8,6 +8,7 @@ import com.github.tukcps.sysmd.services.resolve.resolveVar
 import util.mockup.loadKerML
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import util.assertNoIssues
 import util.testSession
 
 class PropagatorTests {
@@ -16,13 +17,12 @@ class PropagatorTests {
     @Test
     fun propagationByPropagatorsTest() = testSession("ScalarValues") {
         loadKerML(input = """
-                    feature a: ScalarValues::Boolean;
-                    feature b: ScalarValues::Boolean;
-                    feature c: ScalarValues::Boolean;
-                    feature y: ScalarValues::Boolean = (a and c) or (not(b) and not(a));
-                    feature z: ScalarValues::Boolean {:>> spec = "true";}
-                """
-        )
+            feature a: ScalarValues::Boolean;
+            feature b: ScalarValues::Boolean;
+            feature c: ScalarValues::Boolean;
+            feature y: ScalarValues::Boolean = (a and c) or (not(b) and not(a));
+            feature z: ScalarValues::Boolean(true) ;
+        """)
         propagate()
         assertEquals(0, status.issues.size, status.issues.toString())
     }
@@ -32,12 +32,12 @@ class PropagatorTests {
     fun propagationByPropagatorsDontCareTest()  = testSession("ScalarValues") {
         loadKerML("""
             feature a: ScalarValues::Boolean;
-            inv b false; 
+            inv b false;
             inv c; 
-            feature y: ScalarValues::Boolean  = (a and c) or (not(b) and not(a)) {:>> spec = "true";}
+            feature y: ScalarValues::Boolean(true)  = (a and c) or (not(b) and not(a)); 
             inv z; 
         """)
-        assertEquals(0, status.issues.size, status.issues.toString())
+        assertNoIssues()
         initialize()
         propagate()
         assertEquals(0, status.issues.size, status.issues.toString())
@@ -52,7 +52,7 @@ class PropagatorTests {
                     feature c: ScalarValues::Boolean;
                     feature d: ScalarValues::Boolean;
                     feature f: ScalarValues::Boolean;
-                    feature g: ScalarValues::Boolean = (a or b or c or d) and f {:>> spec = "true";}
+                    feature g: ScalarValues::Boolean(true) = (a or b or c or d) and f; 
                 """
         ).run {
             propagate()

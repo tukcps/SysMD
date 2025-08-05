@@ -239,7 +239,7 @@ class AstLeaf private constructor (
                 if (qualifiedName == null) "AstLeaf($upQuantity)"
                 else "AstLeaf($qualifiedName = $upQuantity)"
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             if (literalVal != null)
                 "AstLeaf($literalVal)"
             else

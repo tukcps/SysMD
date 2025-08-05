@@ -5,6 +5,7 @@ import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.sysml.AttributeUsage
 import com.github.tukcps.sysmd.model.sysml.CalculationDefinition
+import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import util.mockup.loadSysMLv2
@@ -18,7 +19,7 @@ class CalculationDefinitionTests {
         loadSysMLv2("""
             calc def f {
                 in x: ScalarValues::Real; 
-                return result: ScalarValues::Real = x; 
+                return result: ScalarValues::Real = x*2.0; 
             }
             attribute a: ScalarValues::Real = f(2.0); 
         """)
@@ -27,23 +28,12 @@ class CalculationDefinitionTests {
         val a = global.resolve<AttributeUsage>("a")
         assertNotNull(f)
         assertNotNull(a)
+        initialize()
+        assertTrue(a.variable!!.vectorQuantity.aadd().getRange().contains(4.0))
     }
 
     @Test
     fun userDefFunctionSimple() = testSession("Calculations", "SI") {
-        loadSysMLv2("""
-            calc def Velocity {
-                in v1 : SI::Speed;
-                in v2 : SI::Speed;
-                attribute a: SI::Speed = v1+v2;
-                return result: SI::Speed = a {:>> unit = "km/h";} 
-            }
-            attribute a: SI::Speed = 10.0 [km/h];
-            attribute b: SI::Speed = 26.0 [km/h];
-            attribute c: SI::Speed = Velocity(a,b);
-            attribute c2: SI::Speed = Velocity(10.0 [m/s],b);
-        """)
-        propagate()
         loadSysMLv2("""
             calc def Velocity {
                 in v1 : SI::Speed {:>> unit = "km/h";} 
@@ -56,6 +46,7 @@ class CalculationDefinitionTests {
             attribute c: SI::Speed = Velocity(a,b);
             attribute c2: SI::Speed = Velocity(10.0 [m/s],b);
         """)
+        initialize()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         assert(global.resolveVar("Velocity::v1")!!.feature.direction == Feature.FeatureDirectionKind.IN)
         assert(global.resolveVar("Velocity::v2")!!.feature.direction == Feature.FeatureDirectionKind.IN)
@@ -132,7 +123,7 @@ class CalculationDefinitionTests {
     }
 
     @Test
-    fun userDefFunctionTestIntegerEvalDown() = testSession("Calculations") {
+    fun userDefFunctionTestIntegerEvalDown() = testSession("Calculations", "Ranges") {
         loadSysMLv2("""
             calc def SumOfFourValues {
                 in a : ScalarValues::Integer;
@@ -148,8 +139,8 @@ class CalculationDefinitionTests {
             attribute c1: ScalarValues::Integer = 8;
             attribute d1: ScalarValues::Integer;
             attribute d2: ScalarValues::Integer;
-            attribute e1: ScalarValues::Integer = SumOfFourValues(a1,b1,c1,d1) {:>> range = "35..35";}
-            attribute e2: ScalarValues::Integer = SumOfFourValues(8,7,6,d2) {:>> range = "40..40";}
+            attribute e1: Ranges::IntegerInRange = SumOfFourValues(a1,b1,c1,d1) {:>> range = "35..35";}
+            attribute e2: Ranges::IntegerInRange = SumOfFourValues(8,7,6,d2) {:>> range = "40..40";}
         """)
         propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
@@ -162,7 +153,7 @@ class CalculationDefinitionTests {
     }
 
     @Test
-    fun userDefFunctionTestIntegerEvalDown2() = testSession("Calculations") {
+    fun userDefFunctionTestIntegerEvalDown2() = testSession("Calculations","Ranges") {
         loadSysMLv2("""
              package Test {   
                  calc def SumOfFourValues {
@@ -171,12 +162,12 @@ class CalculationDefinitionTests {
                  }
                  package TestModule {
                     attribute d1: ScalarValues::Integer; 
-                    attribute e1: ScalarValues::Integer = SumOfFourValues(d1) {:>> range = "13..13";}
+                    attribute e1: Ranges::IntegerInRange  = SumOfFourValues(d1) {:>> range = "13..13";}
                     attribute d2: ScalarValues::Integer;
-                    attribute e2: ScalarValues::Integer = SumOfFourValues(d2) {:>> range = "17..17";}
+                    attribute e2: Ranges::IntegerInRange = SumOfFourValues(d2) {:>> range = "17..17";}
                  }
              }    
-             """)
+        """)
         propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals(13, global.resolveVar("Test::TestModule::d1")!!.vectorQuantity.idd().getRange().min)
@@ -197,9 +188,9 @@ class CalculationDefinitionTests {
                  }
                  package TestModule {
                     attribute d1: ScalarValues::Real; 
-                    attribute e1: ScalarValues::Real, Ranges::InRange = SumOfFourValues(d1) {:>> range = "28.0..28.0";} 
+                    attribute e1: Ranges::RealInRange = SumOfFourValues(d1) {:>> range = "28.0..28.0";} 
                     attribute d2: ScalarValues::Real; 
-                    attribute e2: ScalarValues::Real, Ranges::InRange = SumOfFourValues(d2) {:>> range = "36.0..36.0";}
+                    attribute e2: Ranges::RealInRange = SumOfFourValues(d2) {:>> range = "36.0..36.0";}
                  }
              }    
         """)
@@ -214,7 +205,7 @@ class CalculationDefinitionTests {
     }
 
     @Test
-    fun userDefFunctionTestIntegerEvalDownMultipleLevel() = testSession("Parts", "Calculations", "Ranges") {
+    fun userDefFunctionTestIntegerEvalDownMultipleLevel() = testSession("Parts", "Calculations") {
         loadSysMLv2("""
             package Test {
                  calc def SumOfFourValues {
@@ -263,8 +254,8 @@ class CalculationDefinitionTests {
                 attribute c2: ScalarValues::Real = 10.0; 
                 attribute d1: ScalarValues::Real; 
                 attribute d2: ScalarValues::Real; 
-                attribute e1: ScalarValues::Real, Ranges::InRange = SumOfFourValues(a,b,c1,d1) {:>> range = "35.0..35.0";} 
-                attribute e2: ScalarValues::Real, Ranges::InRange = SumOfFourValues(a,b,c2,d2) {:>> range = "35.0..35.0";} 
+                attribute e1: Ranges::RealInRange = SumOfFourValues(a,b,c1,d1) {:>> range = "35.0..35.0";} 
+                attribute e2: Ranges::RealInRange = SumOfFourValues(a,b,c2,d2) {:>> range = "35.0..35.0";} 
              } 
              """)
         propagate()
@@ -278,7 +269,7 @@ class CalculationDefinitionTests {
     }
 
     @Test
-    fun userDefFunctionTestRealEvalDownMultipleLevel() = testSession("Parts", "Calculations") {
+    fun userDefFunctionTestRealEvalDownMultipleLevel() = testSession("Parts", "Calculations", "Ranges") {
         loadSysMLv2("""
                  calc def SumOfFourValues {
                     in a : ScalarValues::Real;
@@ -291,10 +282,10 @@ class CalculationDefinitionTests {
                  part TestModule {
                     attribute a: ScalarValues::Real = 6.0;
                     attribute b: ScalarValues::Real;
-                    attribute e: ScalarValues::Real = SumOfFourValues(a,b) {:>> range = "13.0..13.0";}
+                    attribute e: Ranges::RealInRange = SumOfFourValues(a,b) {:>> range = "13.0..13.0";}
                     attribute h: ScalarValues::Real = 6.0;
                     attribute i: ScalarValues::Real;
-                    attribute j: ScalarValues::Real = SumOfFourValues(h,i) {:>> range = "14.0..14.0";}
+                    attribute j: Ranges::RealInRange = SumOfFourValues(h,i) {:>> range = "14.0..14.0";}
                  } 
              """)
         propagate()
@@ -309,7 +300,7 @@ class CalculationDefinitionTests {
 
 
     @Test
-    fun userDefFunctionTestEvalDown() = testSession("Calculations","SI") {
+    fun userDefFunctionTestEvalDown() = testSession("Calculations","SI", "Ranges") {
         loadSysMLv2("""
             package Test {   
                 calc def Energy {
@@ -320,15 +311,17 @@ class CalculationDefinitionTests {
                 package TestModule {
                     attribute a: SI::Speed;
                     attribute b: SI::Mass = 200.0 [kg];
-                    attribute c: SI::Energy = Energy(a,b) {:>> range = "10000..10000";}
+                    attribute c: SI::Energy, Ranges::InRange = Energy(a,b) {:>> range = "10000..10000";}
                     attribute e: SI::Speed;
                     attribute f: SI::Mass = 800.0 [kg];
-                    attribute g: SI::Energy = Energy(e,f) {:>> range = "10000..10000";}
+                    attribute g: SI::Energy, Ranges::InRange = Energy(e,f) {:>> range = "10000..10000";}
                 }
             } 
         """)
         val a = global.resolve<AttributeUsage>("Test::TestModule::a")
+        assertNotNull(a)
         val b = global.resolve<AttributeUsage>("Test::TestModule::b")
+        assertNotNull(b)
         propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         assert(10000.0 in global.resolveVar("Test::TestModule::c")!!.vectorQuantity.aadd().getRange())
@@ -348,8 +341,7 @@ class CalculationDefinitionTests {
              calc def ConvertASILtoInt{
                 in i: ScalarValues::String;            
                 return result: ScalarValues::Integer = if i=="QM" ? 1 else 0;           
-            }  
-            
+            }              
             attribute a: ScalarValues::Integer = ConvertASILtoInt("QM"); 
         """)
         propagate()

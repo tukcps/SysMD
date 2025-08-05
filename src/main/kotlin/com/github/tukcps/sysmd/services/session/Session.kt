@@ -6,7 +6,7 @@ import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.model.kerml.Anything
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Namespace
-import com.github.tukcps.sysmd.model.kerml.Type
+import com.github.tukcps.sysmd.model.kerml.Relationship
 import com.github.tukcps.sysmd.services.repositories.local.ProjectData
 import io.github.tukcps.aadd.DDBuilder
 import io.github.tukcps.sysmlv2.api.entities.CommitDataObject
@@ -83,27 +83,22 @@ interface Session {
     operator fun get(elementId: UUID): Element?
 
     /**
-     * Creates a new element in a namespace that becomes owner of the element.
-     * The new element can be of arbitrary subtype of ElementBase; i.e., ValueFeature, Namespace, Feature, etc.
+     * Creates a new element in the model.
      * If an element with the same id or name in namespace exists, its fields will be updated.
-     * @param element The property to be created.
-     * @param owner The element in which the property will be created.
-     * @return the created element with the id field set. Note that it is not necessarily the same as the
-     * element passed as argument.
+     * @param element The element to be added.
+     * @param namespace The namespace to which the element will be added.
+     * @return the created element with the id field set.
+     * Note that it is not necessarily the same as the element passed as argument.
      */
-    fun <T: Element> create(element: T, owner: Element): T
+    fun <T: Element> addOwnedMember(element: T, namespace: Namespace, index: Int = -1): T
+    fun <T: Relationship> addOwnedRelationship(relationship: T, owningElement: Element?=null): T
 
     /**
-     * Creates a new element in a namespace that becomes owner of the element.
-     * The new element can be of arbitrary subtype of ElementBase; i.e., Expression, Namespace, Feature, etc.
-     * If an element with the same id or name in namespace exists, the existing one will
-     * be deleted, including all its owned elements, and be replaced with the element given as an argument.
-     * @param element The property to be created.
-     * @param owner The element in which the property will be created.
-     * @return the created element with the id field set. Note that it is not necessarily the same as the
-     * element passed as argument.
+     * Deletes all owned relationships that satisfy a condition
+     * @param owner the element that owns the relationships to be deleted.
+     * @param condition a lambda expression; if it is satisfied, an owned relationship will be deleted
      */
-    fun <T: Element> createOrReplace(element: T, owner: Element): T
+    fun deleteOwnedRelationship(owner: Element, condition: (relationship: Relationship) -> Boolean)
 
     /**
      * Loads the usages into the model
@@ -118,12 +113,6 @@ interface Session {
     fun delete(element: Element): Element?
 
     /**
-     * Gets the subtypes of an element. If the element is an instance, it will also consider
-     * subclasses of the instance's class.
-     */
-    fun getSubtypes(element: Type): Collection<Type>
-
-    /**
      * Ends a session without saving it.
      */
     fun endSession()
@@ -133,34 +122,5 @@ interface Session {
      */
     fun reset()
 
-    /**
-     * Used to model the path to a not-yet-included or not yet existing owner of an Element.
-     * The reference consists of two parts: first, a namespace, and
-     * second, relative to the namespace, a path in line with QualifiedName
-     * conventions.
-     * @param startOfPath the reference to a namespace where a path starts.
-     * @param path the path, relative to the namespace to the element.
-     */
-    data class UnresolvedElement(
-        var element:     Element,
-        var path:        String? = null,
-        var startOfPath: Element,
-    )
-
-
-    /**
-     * Adds an element where the ownership is not yet identified by an ID.
-     * It is identified by a qualified name and/or feature chain or a reverence or mix thereof.
-     * These can in some cases only be identified correctly after all features and
-     * inheritance information are initialized.
-     * @param element the element to be added to an owner
-     * @param startOfOwnerPath an element
-     * @param path a qualified name relative to startOfPath
-     */
-    fun addUnownedElement(element: Element, path: String? = null, startOfOwnerPath: Element=global)
-    fun getNumberOfOwnedElements(path: String): Int
-    fun getUnownedElements(): List< UnresolvedElement >
-    fun dropUnownedElement(element: Element)
-    fun updateUnownedElements(unownedElement: Element, existingElement: Element)
     fun getVariables(): List<Variable>
 }

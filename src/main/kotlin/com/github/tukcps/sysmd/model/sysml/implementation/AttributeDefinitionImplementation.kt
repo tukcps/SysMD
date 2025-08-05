@@ -2,7 +2,6 @@ package com.github.tukcps.sysmd.model.sysml.implementation
 
 import com.github.tukcps.sysmd.model.kerml.implementation.DataTypeImplementation
 import com.github.tukcps.sysmd.model.sysml.AttributeDefinition
-import java.util.*
 
 class AttributeDefinitionImplementation(
     declaredName: String? = null,
@@ -13,13 +12,9 @@ class AttributeDefinitionImplementation(
     declaredShortName=declaredShortName,
     elementType=elementType
 ) {
-    override fun clone(): AttributeDefinition {
-        return AttributeDefinitionImplementation(
+    override fun clone(): AttributeDefinition =
+        AttributeDefinitionImplementation(
             declaredName=declaredName,
             declaredShortName=declaredShortName,
-        ).also {
-            it.model = model
-            it.updated = updated
-        }
-    }
+        ).also { it.updateFrom(this) }
 }

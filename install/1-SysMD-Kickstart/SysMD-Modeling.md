@@ -20,6 +20,7 @@ Initially, there are only the KerML standard libraries.
 ### Import of namespaces
 Other namespaces can be imported to simplify the notations.
 For example, the standard package ```ScalarValues``` introduces standard data types like:
+
 - Real
 - Boolean
 - Integer
@@ -30,7 +31,8 @@ By importing the namespace of the package ```ScalarValues``` we can access it
 by its simple name as follows:
 ```SysML::kickstart
   private import ScalarValues::*;            // Allows us shortcuts to Real, Integer, etc. 
-  private import SI::*;                      // Allows us shortcuts to Domains 
+  private import SI::*;                      // Allows us shortcuts to Domains
+  private import Ranges::*;                  // Allows us to specify constraints & co/contravariance 
   attribute r: Real = oneOf(2.0 .. 3.0);     // assigns r a value, constraine to the range 2 to 3.
   attribute i: Integer = 2;                  // assigns i the value 2.  
 ```
@@ -53,18 +55,18 @@ It provides additional means to add constraints to numbers; the constraints can 
 ```Markdown
 library package Ranges {
     // Abstract concept of a Range from which a Real is chosen
-    datatype InRange {
-      feature min: ScalarValues::Real;
-      feature max: ScalarValues::Real;
-      inv { (min <= self) and (self <= max) }
+    abstract datatype InRange {
+      feature range: Ranges::Range; // Models a range 
+      inv { (that.min <= self) and (that <= range.max) }
     }
-      datatype AllInRange :> InRange;
+    abstract datatype AllInRange :> InRange; // ... 
+    abstract datatype QuantityInRange :> InRange; // ... 
 }
 ```
   These constraints are used to represent and propagate constraints, where
 
-- _min_ is a known lower bound,
-- _max_ is a known upper bound,
+- _range_ bounds the range of a Number (e.g. Integer, Real) to the given range. 
+
 - _AllInRange_ specifies that the constraint system shall be satisfied for all values in the range _min .. max_.
 
 Below, we give some simple examples.
@@ -84,7 +86,7 @@ part rangeExample {
     attribute height:  Length = oneOf(10.0 .. 100.0 [cm]);
     attribute width:   Length = oneOf(1.0 .. 1.1 [m]);
     attribute length:  Length = oneOf(1.0 .. 1.1 [m]);
-    attribute volume:  Volume  = height * width * length {
+    attribute volume:  Volume, Ranges::QuantityInRange  = height * width * length {
         :>> range = "1000.0 .. 2000.0";
         :>> unit =  "l";  
     }
@@ -141,10 +143,10 @@ Units are converted automatically before computations are done, and the consiste
 the unit left of a dependency, and the unit right of it must be convertible into each other.
 ```SysML::kickstart
     package unitsExample {
-        attribute t: Time [s]              = 1.0 [s];
-        attribute v: Speed [m/s]           = 3.0 [m/s];
-        attribute g: Acceleration [m/s^2] = 4.0 [m/s^2];
-        attribute s: Speed [m/s]           = sqrt(sqr(v)+sqr(g)*sqr(t)); 
+        attribute t: Time             = 1.0 [s];
+        attribute v: Speed            = 3.0 [m/s];
+        attribute g: Acceleration     = 4.0 [m/s^2];
+        attribute s: Speed            = sqrt(sqr(v)+sqr(g)*sqr(t)); 
     }
 ```
 Play with the units, e.g., by changing the unit after the type declaration or try ms instead of s.
@@ -153,7 +155,7 @@ For date and time, the ISO format is supported.
 We can add and subtract times in this format.
 ```SysML::kickstart::unitsExample
     attribute date: Time [DateTime] = DateTime("2021-10-10T03:00:00");
-    attribute time: Time [a] = 1.0 a;
+    attribute time: Time = 1.0 a {:>> unit="a";}
     attribute dateResult: Time [DateTime] = date + time;
 ```
 ### Vectors
@@ -163,17 +165,17 @@ operations like the angle or cross-product.
 Here is an example for defining vectors:
 ```SysML::kickstart
 package vectors {
-    attribute a: Mass(0.0..1.0,1.0..2.0) [kg] = (0.5,1.5) kg; 
+    attribute a: Mass = (0.5,1.5) kg {:>> range="0.0..1.0,1.0..2.0";}
     attribute b: Mass = (0.5,1.5) kg; 
-    attribute c: Mass(-5.0..-1.0,-1.0..2.0, 2.0..4.0) [kg] = (-5.0, -1.0, 3.0) kg; 
+    attribute c: Mass = (-5.0, -1.0, 3.0) kg {:>> range="-5.0..-1.0,-1.0..2.0, 2.0..4.0";}
 }
 ```
 In the next example, there is a calculation with Vectors with the cross-product and angle.
 ```SysML::kickstart::vectors
-    attribute a2: Real(1..1,5..5,10..10);
-    attribute b2: Real(5..5,1..1,10..10);
+    attribute a2: Real, InRange {:>> range="1..1,5..5,10..10";}
+    attribute b2: Real, InRange {:>> range="5..5,1..1,10..10";}
     attribute c2: Real  = a2 cross b2;
-    attribute d2: Quantity [°] = angle(a2,b2); 
+    attribute d2: Quantity = angle(a2,b2) {:>>unit="°";} 
 ```
 ## Types and Functions in Expressions
 SysMD supports the following types:
@@ -249,13 +251,13 @@ vehicles via its path as shown in the example below.
 ```SysML::kickstart
     package carParts {
         part def Body {
-            attribute mass: Mass(300.0) [kg];
+            attribute mass: Mass {:>> range="300.0";}
         }
         part def Engine {
-            attribute mass: Mass(300.0) [kg];
+            attribute mass: Mass {:>> range="300.0";}
         }
         part def Wheel {
-            attribute mass: Mass(50.0) [kg];
+            attribute mass: Mass {:>> range="50.0";}
         }
     }
 ```
@@ -291,14 +293,14 @@ Specializations inherit features.
         // We consider a vehicle to be anything that has at least one wheel. 
         // The bySubclasses determines a consistent value for mass with min diameter. 
         part def Vehicle {
-          attribute mass: Mass(0..1000) [kg] = bySpecializations(mass);
+          attribute mass: Mass = bySpecializations(mass) {:>> range ="0..1000";}
           part wheels: carParts::Wheel[1 .. *];        
         }
         
         // A car is a vehicle with Body and Engine. 
         // the sumOverParts determines a consistent minimal range consistent with parts.
         part def Car  :> Vehicle {
-           attribute redefines mass: Mass(0 .. 1000)[kg] = sumOverParts(mass); 
+           attribute redefines mass: Mass = sumOverParts(mass) {:>> range ="0 .. 1000";}
            part wheels: carParts::Wheel[4 .. 10]; 
            part body:   carParts::Body;
            part engine: carParts::Engine;
@@ -321,7 +323,7 @@ Boolean properties. They may also have a physical unit. Then, we specify:
 
 There is also a possibility to define user defined functions with any number of input variables .
 These functions can be defined once and used multiple times.
-```SysML::Global::kickstart
+```SysML::kickstart
      package CalculationExample {
         // Definition of a Calculation
         calc def calcEnergy {

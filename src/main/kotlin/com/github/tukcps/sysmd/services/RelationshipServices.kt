@@ -14,9 +14,12 @@ import com.github.tukcps.sysmd.services.session.Session
  * @return A set of all matching relationships.
  */
 fun Session.getRelationshipsFrom(element: Element, name: String, ofClass: Type? = null): Set<Relationship> {
-    val sourceOfRelationship = repo.sourceOfRelationship[element]
+    val sourceOfRelationship = mutableSetOf<Relationship>()
+    repo.elements.values.filterIsInstance<Relationship>().forEach {
+        if (element in it.source.map { if (it is Feature) it.referencedFeature?:it else it}) sourceOfRelationship.add(it)
+    }
     val result: MutableSet<Relationship> = mutableSetOf()
-    sourceOfRelationship?.forEach {
+    sourceOfRelationship.forEach {
         if ((it.declaredName == name)  || (it.declaredShortName == name) || (name == "*")) {
             if (ofClass == null)
                 result.add(it)
@@ -24,7 +27,7 @@ fun Session.getRelationshipsFrom(element: Element, name: String, ofClass: Type? 
                 result.add(it)
         }
     }
-    return  result
+    return result
 }
 
 
@@ -36,13 +39,17 @@ fun Session.getRelationshipsFrom(element: Element, name: String, ofClass: Type? 
  * @return A set of all matching relationships.
  */
 fun Session.getRelationshipsTo(element: Element, name: SimpleName, ofClass: Type? = null): Set<Relationship> {
-    val targetOfRelationship = repo.targetOfRelationship[element]
+    val targetOfRelationship = mutableSetOf<Relationship>()
+    repo.elements.values.filterIsInstance<Relationship>().forEach {
+        if (element in it.target.map { if (it is Feature) it.referencedFeature?:it else it }) targetOfRelationship.add(it)
+    }
     val results: MutableSet<Relationship> = mutableSetOf()
-    targetOfRelationship?.forEach {
-        if ((it.declaredName == name) || (it.declaredShortName == name) || (name == "*")) {
+    targetOfRelationship.forEach {
+        val rel: Element = if (it is ReferenceSubsetting) it.referencedFeature else it
+        if ((rel.declaredName == name) || (rel.declaredShortName == name) || (name == "*")) {
             if (ofClass == null)
                 results.add(it)
-            else if (it is Type && ofClass in it.allSupertypes())
+            else if (it is Type && ofClass in it.allSupertypes()+it)
                 results.add(it)
         }
     }
@@ -62,7 +69,7 @@ fun Session.findRelationshipsFrom(element: Element, name: String, ofClass: Type?
     val result = getRelationshipsFrom(element, name, ofClass)
     return when (element) {
         is Anything -> emptySet()
-        is Type -> result + findRelationshipsFrom(element.generalization.firstOrNull()?.ref as Namespace, name)
+        is Type -> result + findRelationshipsFrom(element.generalization.firstOrNull() as Namespace, name)
         else -> result
     }
 }
@@ -80,7 +87,7 @@ fun Session.findRelationshipsTo(element: Element, name: String, ofClass: Type? =
     val result = getRelationshipsTo(element, name, ofClass)
     return when (element) {
         is Anything -> emptySet()
-        is TypeImplementation -> result + findRelationshipsTo(element.generalization.firstOrNull()?.ref as Namespace, name)
+        is TypeImplementation -> result + findRelationshipsTo(element.generalization.firstOrNull() as Namespace, name)
         else -> result
     }
 }

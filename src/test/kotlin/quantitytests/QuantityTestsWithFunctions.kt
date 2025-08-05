@@ -12,9 +12,9 @@ class QuantityTestsWithFunctions {
 
     /** Quantity with sqrt */
     @Test
-    fun sqrt_unit1() = testSession("SI")  {
+    fun sqrt_unit1() = testSession("SI", "Ranges")  {
         loadKerML("""
-           feature a: SI::Area {:>> range = "4.0..9.0";}
+           feature a: SI::Area, Ranges::InRange {:>> range = "4.0..9.0";}
            feature b: SI::Length  = sqrt(a); 
         """)
         propagate()
@@ -26,7 +26,7 @@ class QuantityTestsWithFunctions {
 
     /** Quantity with sqrt */
     @Test
-    fun sqrt_unit2() = testSession("SI")  {
+    fun sqrt_unit2() = testSession("SI", "Ranges")  {
         loadKerML(
             """
             feature a: SI::Quantity {:>> unit = "Ohm^2"; :>> range = "4.0 .. 9.0";}
@@ -39,10 +39,10 @@ class QuantityTestsWithFunctions {
 
     /** Quantity with sqrt */
     @Test
-    fun sqrt_unit3() = testSession("SI")  {
+    fun sqrt_unit3() = testSession("SI", "Ranges")  {
         loadKerML(
             """
-            feature a: SI::Quantity{:>> unit = "Ohm^2 m^2"; :>> range = "2.0 .. 9.0";}
+            feature a: SI::Quantity {:>> unit = "Ohm^2 m^2"; :>> range = "2.0 .. 9.0";}
             feature b: SI::Quantity =sqrt(a){:>> unit = "Ohm m"; :>> range = "2.0 .. 9.0";}"""
         )
         propagate()
@@ -52,7 +52,7 @@ class QuantityTestsWithFunctions {
 
     /** Quantity with sqrt */
     @Test
-    fun sqrt_unit4() = testSession("SI")  {
+    fun sqrt_unit4() = testSession("SI", "Ranges")  {
         loadKerML(
             """
             feature a: SI::Quantity {:>> unit = "Pa^4 J^2 V^8 / A^6 N^2"; :>> range = "2.0 .. 9.0";}
@@ -65,13 +65,12 @@ class QuantityTestsWithFunctions {
 
     /** Quantity with no unit */
     @Test
-    fun sqr_unit() = testSession("ScalarValues")  {
+    fun sqr_unit() = testSession("Ranges")  {
         loadKerML(
             """
-            feature a: ScalarValues::Real { :>> range = "2.0E16 .. 9.0E16";}
+            feature a: Ranges::RealInRange { :>> range = "2.0E16 .. 9.0E16";}
             feature b: ScalarValues::Real = sqr(a);"""
         )
-
         propagate()
         assertEquals("400e30..8.1e33", global.resolveVar("b")!!.vectorQuantity.toString())
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
@@ -79,10 +78,10 @@ class QuantityTestsWithFunctions {
 
     /** Quantity with sqr */
     @Test
-    fun sqr_unit1() = testSession("SI")  {
+    fun sqr_unit1() = testSession("SI", "Ranges")  {
         loadKerML(
             """
-            feature a: SI::Length {:>> range = "2.0 .. 9.0";}
+            feature a: SI::Length{:>> range = "2.0 .. 9.0";}
             feature b: SI::Area = sqr(a);"""
         )
 
@@ -94,11 +93,10 @@ class QuantityTestsWithFunctions {
     /** Quantity with sqr */
     @Test
     fun sqr_unit2() = testSession("SI")  {
-        loadKerML(
-            """
-            feature a: SI::ElectricalResistance{:>> range = "2.0 .. 9.0";}
-            feature b: SI::Quantity = sqr(a){:>> unit = "Ohm^2";}"""
-        )
+        loadKerML("""
+            feature a: SI::ElectricalResistance, Ranges::InRange { :>> range = "2.0 .. 9.0";}
+            feature b: SI::Quantity = sqr(a){:>> unit = "Ohm^2";}
+        """)
         propagate()
         assertEquals("kg^2 m^4 / A^4 s^6", global.resolveVar("b")!!.vectorQuantity.unit.toString())
         assertEquals("ElectricalResistance", global.resolveVar("a")!!.vectorQuantity.getDimension())
@@ -107,10 +105,10 @@ class QuantityTestsWithFunctions {
 
     /** Quantity with sqr */
     @Test
-    fun sqr_unit3() = testSession("SI")  {
+    fun sqr_unit3() = testSession("SI", "Ranges")  {
         loadKerML(
             """
-            feature a: SI::Quantity{:>> unit = "Ohm m"; :>> range = "2.0 .. 9.0";}
+            feature a: SI::Quantity {:>> unit = "Ohm m"; :>> range = "2.0 .. 9.0";}
             feature b: SI::Quantity =sqr(a){:>> unit = "Ohm^2 m^2"; :>> range = "2.0 .. 9.0";}""")
         propagate()
         assertEquals("kg^2 m^6 / A^4 s^6", global.resolveVar("b")!!.vectorQuantity.unit.toString())
@@ -124,20 +122,21 @@ class QuantityTestsWithFunctions {
     fun sqr_unit4() = testSession("SI")  {
         loadKerML(
             """
-            feature a: SI::Quantity{:>> unit = "Pa^2 J V^4 / A^3 N"; :>> range = "2.0 .. 9.0";}
-            feature b: SI::Quantity =sqr(a){:>> unit = "Pa^4 J^2 V^8 / A^6 N^2"; :>> range = "4.0 .. 81.0";} """
-        )
+            feature a: SI::Quantity, Ranges::QuantityInRange { :>> unit = "Pa^2 J V^4 / A^3 N"; :>> range = "2.0 .. 9.0";}
+            feature b: SI::Quantity, Ranges::QuantityInRange = sqr(a) { :>> unit = "Pa^4 J^2 V^8 / A^6 N^2"; :>> range = "4.0 .. 81.0";} 
+        """)
         propagate()
         assertEquals("kg^12 m^14 / A^14 s^32", global.resolveVar("b")!!.vectorQuantity.unit.toString())
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     @Test
-    fun sinCosTest() = testSession("ScalarValues")  {
+    fun sinCosTest() = testSession("Ranges")  {
         loadKerML("""
-            feature a: ScalarValues::Real{ :>> range = "0.5 .. 0.5";}
+            feature a: Ranges::RealInRange { :>> range = "0.5 .. 0.5";}
             feature b: ScalarValues::Real=sin(a);
-            feature c: ScalarValues::Real=cos(a);""")
+            feature c: ScalarValues::Real=cos(a);
+        """)
         propagate()
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(0.479425538604203,global.resolveVar("b")!!.vectorQuantity.value.asAadd().min, 0.0001)
@@ -145,9 +144,9 @@ class QuantityTestsWithFunctions {
     }
 
     @Test
-    fun sinCosTest2() = testSession("ScalarValues")  {
+    fun sinCosTest2() = testSession("Ranges")  {
             loadKerML("""
-            feature a: ScalarValues::Real{ :>> range = "1.0 .. 1.0";}
+            feature a: Ranges::RealInRange {:>> range = "1.0 .. 1.0";}
             feature b: ScalarValues::Real=sin(a);
             feature c: ScalarValues::Real=cos(a);""")
             propagate()
@@ -157,9 +156,9 @@ class QuantityTestsWithFunctions {
         }
 
     @Test
-    fun sinCosTest3() = testSession("ScalarValues")  {
+    fun sinCosTest3() = testSession("Ranges")  {
         loadKerML("""
-            feature a: ScalarValues::Real{ :>> range = "0.5 .. 1.0";}
+            feature a: Ranges::RealInRange { :>> range = "0.5 .. 1.0";}
             feature b: ScalarValues::Real=sin(a);
             feature c: ScalarValues::Real=cos(a); """
         )
@@ -177,10 +176,9 @@ class QuantityTestsWithFunctions {
     @Test
     fun ceil_quantity() = testSession("SI")  {
         loadKerML("""
-            feature a: SI::Length = 1.5 m;
+            feature a: SI::Length = 1.5 [m];
             feature b: SI::Length = ceil(a); 
-            """
-        )
+        """)
         propagate()
         assertEquals("m", global.resolveVar("b")!!.vectorQuantity.unit.toString())
         assertEquals(2.0, global.resolveVar("b")!!.vectorQuantity.getMinAsDouble(), 0.0001)
@@ -194,8 +192,7 @@ class QuantityTestsWithFunctions {
             """
             feature a: ScalarValues::Integer = [1..3]; 
             feature b: ScalarValues::Integer = ceil(a); 
-            """
-        )
+        """)
         propagate()
         assertEquals(2, global.resolveVar("b")!!.vectorQuantity.value.asIdd().min)
         assertEquals(3, global.resolveVar("b")!!.vectorQuantity.value.asIdd().max)
@@ -206,12 +203,11 @@ class QuantityTestsWithFunctions {
      * Quantity with ceil
      */
     @Test
-    fun floor_quantity() = testSession("SI")  {
+    fun floor_quantity() = testSession("SI", "Ranges")  {
         loadKerML("""
-            feature a: SI::Length { :>> range = "1.5..4.5";} 
+            feature a: SI::Length(1.5..4.5);  
             feature b: SI::Length = floor(a);
-        """
-        )
+        """)
         propagate()
         assertEquals("m", global.resolveVar("b")!!.vectorQuantity.unit.toString())
         assertEquals(1.0, global.resolveVar("b")!!.vectorQuantity.getMinAsDouble(), 0.0001)
@@ -221,12 +217,10 @@ class QuantityTestsWithFunctions {
 
     @Test
     fun floor_quantity_int() = testSession("ScalarValues")  {
-        loadKerML(
-            """
+        loadKerML("""
             feature a: ScalarValues::Integer = oneOf(1..3);
             feature b: ScalarValues::Integer = floor(a); 
-        """
-        )
+        """)
         propagate()
         assertEquals(1, global.resolveVar("b")!!.vectorQuantity.value.asIdd().min)
         assertEquals(2, global.resolveVar("b")!!.vectorQuantity.value.asIdd().max)
@@ -234,9 +228,9 @@ class QuantityTestsWithFunctions {
     }
 
     @Test
-    fun floor_quantity_int1() = testSession("ScalarValues")  {
+    fun floor_quantity_int1() = testSession("Ranges")  {
         loadKerML("""
-          feature a: ScalarValues::Integer{ :>> range = "-3..0";}
+          feature a: Ranges::IntegerInRange {:>> range = "-3..0";}
           feature b: ScalarValues::Integer = floor(a);
         """)
         propagate()
@@ -346,11 +340,11 @@ class QuantityTestsWithFunctions {
      * Testcase for operation a^b evalDown
      */
     @Test
-    fun testHATbEVALDown() = testSession("ScalarValues")  {
+    fun testHATbEVALDown() = testSession("Ranges")  {
         loadKerML("""
                 feature a: ScalarValues::Real;
                 feature b: ScalarValues::Real = 3.0;
-                feature y: ScalarValues::Real = a ^ b{ :>> range = "125..125";}
+                feature y: Ranges::RealInRange = a ^ b{ :>> range = "125..125";}
         """)
         propagate()
         assertEquals(5.0, global.resolveVar("a")!!.vectorQuantity.getMinAsDouble(), 0.0001)
@@ -362,11 +356,11 @@ class QuantityTestsWithFunctions {
      * Testcase for operation a^b evalDown
      */
     @Test @Ignore
-    fun testHATbEVALINTDown() = testSession("ScalarValues")  {
+    fun testHATbEVALINTDown() = testSession("Ranges")  {
         loadKerML("""
                 feature a: ScalarValues::Integer;
                 feature b: ScalarValues::Integer = 3;
-                feature y: ScalarValues::Integer = a ^ b{ :>> range = "125..125";}
+                feature y: Ranges::IntegerInRange = a ^ b{ :>> range = "125..125";}
             """)
         propagate()
         assertEquals(5, global.resolveVar("a")!!.vectorQuantity.idd().getRange().min)
@@ -379,7 +373,7 @@ class QuantityTestsWithFunctions {
         loadKerML(
             """
              feature t1: SI::Quantity = 1.0 [h^2]{:>> unit = "h^2";}
-            feature t2: SI::Quantity = t1{:>> unit = "min^2";}"""
+            feature t2: SI::Quantity = t1 {:>> unit = "min^2";}"""
         )
         propagate()
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
@@ -400,8 +394,8 @@ class QuantityTestsWithFunctions {
     @Test
     fun conversionTest3() = testSession("SI") {
         loadKerML("""
-                feature t1: SI::Quantity  = 1.0 [N/m^2]{:>> unit = "N/m^2";}
-                feature t2: SI::Quantity = t1 {:>> unit = "mN/dm^2";}
+                feature t1: SI::Quantity  = 1.0 [N/m^2] { :>> unit = "N/m^2";}
+                feature t2: SI::Quantity = t1 { :>> unit = "mN/dm^2";}
             """)
         propagate()
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
@@ -419,12 +413,12 @@ class QuantityTestsWithFunctions {
     }
 
     @Test
-    fun unitConversationTest() = testSession("SI") {
+    fun unitConversationTest() = testSession("SI", "Ranges") {
         loadKerML("""
-            feature t: SI::Acceleration( - 9.81);
+            feature t: SI::Acceleration{ :>> range = "-9.81";}
             feature s: SI::Acceleration = t;
         """
-         /*feature t: SI::Acceleration( - 9.81) [m/s^2];*/)
+        )
         propagate()
         assertEquals("-9.81 m/s^2", global.resolveVar("s")!!.vectorQuantity.toString())
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")

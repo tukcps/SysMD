@@ -5,12 +5,9 @@ package com.github.tukcps.sysmd.compiler.parser.sysmlv2
 import com.github.tukcps.sysmd.compiler.SysMLv2
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
-import com.github.tukcps.sysmd.compiler.semantics.kerml.TypeActions
 import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.OccurrenceDefinitionActions
 import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.OccurrenceUsageActions
 import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.kerml.Resolved
-import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 
 /**
@@ -26,13 +23,11 @@ import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
  *
  *      IndividualDefinition = BasicDefinitionPrefix? 'individual' DefinitionExtensionKeyword* 'def' Definition
  */
-fun SysMLv2.OccurrenceDefinition() {
-    val occurrenceDefinition = OccurrenceDefinitionActions(semantics)
+fun SysMLv2.OccurrenceDefinition() = OccurrenceDefinitionActions(semantics).parse {
     OCCURRENCE.consume()
     DEF.consume()
-    DefinitionDeclaration(occurrenceDefinition as TypeActions<Type>)
-    DefinitionBody(Resolved(occurrenceDefinition.created!!))
-    occurrenceDefinition.finish()
+    DefinitionDeclaration()
+    DefinitionBody()
 }
 
 
@@ -57,11 +52,9 @@ fun SysMLv2.OccurrenceUsagePrefix() {
 /**
  *      OccurrenceUsage = OccurrenceUsagePrefix 'occurrence' Usage
  */
-fun SysMLv2.OccurrenceUsage() {
-    val occurenceUsage = OccurrenceUsageActions(semantics)
+fun SysMLv2.OccurrenceUsage() = OccurrenceUsageActions(semantics).parse {
     OCCURRENCE.consume()
-    Usage(occurenceUsage as FeatureActions<Feature>)
-    occurenceUsage.finish()
+    Usage()
 }
 
 /**
@@ -69,15 +62,14 @@ fun SysMLv2.OccurrenceUsage() {
  *          BasicUsagePrefix ('individual')? PortionKind
  *          UsageExtensionKeyword* Usage
  */
-fun SysMLv2.PortionUsage() {
-    val portionUsage = FeatureActions<Feature>(semantics, defaultType = mutableListOf("Occurrences::Occurrence"), creator = ::FeatureImplementation)
+fun SysMLv2.PortionUsage() = FeatureActions<Feature>(semantics, defaultType = "Occurrences::Occurrence", creator = ::FeatureImplementation).parse {
     INDIVIDUAL.optional()
     alternatives { // PortionKind
         SNAPSHOT  starts { consume(); }
         TIMESLICE starts { consume(); }
     }
     UsageExtensionKeyword()
-    Usage(portionUsage)
+    Usage()
 }
 
 /**
@@ -87,17 +79,15 @@ fun SysMLv2.PortionUsage() {
  *            | 'occurrence' UsageDeclaration? )
  *          UsageCompletion
  */
-fun SysMLv2.EventOccurrenceUsage() {
-    val eventOccurrenceUsage = FeatureActions<Feature>(semantics, defaultType = mutableListOf("Occurrences::Occurrence"), creator = ::FeatureImplementation)
+fun SysMLv2.EventOccurrenceUsage() = FeatureActions<Feature>(semantics, ::FeatureImplementation, "Occurrences::Occurrence").parse {
     EVENT.consume()
     alternatives {
         OCCURRENCE starts {
             OCCURRENCE.consume().also { semantics.prefixes.add(OUT) }
-            UsageDeclaration(eventOccurrenceUsage)
+            UsageDeclaration()
         }
         // OwnedReferenceSubsetting()
         // FeatureSpecializationPart(eventOccurrenceUsage)
     }
-    eventOccurrenceUsage.finish()
-    UsageCompletion(eventOccurrenceUsage)
+    UsageCompletion()
 }

@@ -9,16 +9,16 @@ package com.github.tukcps.sysmd.model.kerml
  */
 interface Namespace: Element {
 
-    val imports: List<Resolved<Namespace>>
+    val imports: List<Namespace>
         get() {
-            val result: MutableList<Resolved<Namespace>> = mutableListOf()
+            val result: MutableList<Namespace> = mutableListOf()
             ownedElement.forEach {
-                if (it.ref is Import) {
-                    result.add( (it.ref as Import).importedNamespace )
+                if (it is NamespaceImport) {
+                    result.add( it.importedNamespace)
                 }
             }
             return result
         }
 
-    fun visibleMemberships(): List<Resolved<Element>> = ownedElement
+    fun visibleMemberships(): List<Membership> = ownedRelationship.filterIsInstance<Membership>()
 }

@@ -2,6 +2,7 @@ package sysmdtests
 
 import io.github.tukcps.aadd.values.IntegerRange
 import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.model.kerml.implementation.getOwned
 import com.github.tukcps.sysmd.services.resolve.resolve
 import util.mockup.loadKerML
 import util.mockup.loadSysMD
@@ -60,8 +61,8 @@ class HasATests {
                 feature x: ScalarValues::Real = Motor::power.
             """)
         assertEquals(4, global.resolve<Element>("hasARange::Auto")?.getOwnedElementsOfType<Feature>()?.size)
-        assertEquals(1, global.resolve<Element>("hasARange::Auto")?.getOwned<Feature>("motoren")?.multiplicity?.min )
-        assertEquals(2, global.resolve<Element>("hasARange::Auto")?.getOwned<Feature>("motoren")?.multiplicity?.max )
+        assertEquals(1, global.resolve<Namespace>("hasARange::Auto")?.getOwned<Feature>("motoren")?.multiplicity?.min )
+        assertEquals(2, global.resolve<Namespace>("hasARange::Auto")?.getOwned<Feature>("motoren")?.multiplicity?.max )
         assertEquals(1, (global.resolve<Feature>("hasARange::Auto::motoren::cardinality"))!!.variable!!.intSpecs[0].min )
         assertEquals(2, (global.resolve<Feature>("hasARange::Auto::motoren::cardinality"))!!.variable!!.intSpecs[0].max )
         assertEquals(1.0,
@@ -72,7 +73,7 @@ class HasATests {
 
 
     /**
-     * there exist no two elements with the same name in a namespace.
+     * There exist no two elements with the same name in a namespace.
      * SysMD shall update an existing feature accordingly.
      */
     @Test fun hasATest1()  = testSession("ScalarValues") {
@@ -118,28 +119,9 @@ class HasATests {
         assertTrue(pi is Feature)
     }
 
-    @Test
-    fun relationTest() = testSession("ISO26262") {
-        loadKerML("""
-            feature f: ISO26262::Function; 
-            feature c: ISO26262::Component { 
-                connector conn: ISO26262::implements from c to f; 
-            }
-        """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val c = global.resolve<Feature>("c")
-        assertNotNull(c)
-        val f = global.resolve<Feature>("f")
-        assertNotNull(f)
-        val conn = global.resolve<Connector>("c::conn")
-        assertEquals(1, conn!!.target.size)
-        assertEquals(1, conn.source.size)
-        assertEquals(f, conn.target[0].ref)
-        assertEquals(c, conn.source[0].ref)
-    }
 
     @Test
-    fun relation2Test() = testSession("ISO26262") {
+    fun iso26262Test() = testSession("ISO26262") {
         loadKerML("""
             feature funktion: ISO26262::Function; 
             feature x: ISO26262::Component {
@@ -147,37 +129,16 @@ class HasATests {
             } // = it implements funktion.
         """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val x = global.getOwned<Element>("x")
+        val x = global.getOwned<Feature>("x")
         assertNotNull(x)
         val f = x.getOwned<Connector>("f")
         val func = global.resolve<Feature>("funktion")
         assertNotNull(func)
         assertNotNull(f)
-        assertTrue(x is Feature)
         assertEquals(1, f.target.size)
         assertEquals(1, f.source.size)
-        assertEquals(global.resolve("funktion"), f.target[0].ref)
-        assertEquals(x, f.source[0].ref)
-    }
-
-
-    @Test
-    fun relation3Test() = testSession("Links") {
-        loadKerML("""
-            assoc Signal {
-                end feature x: ScalarValues::Real;
-                end feature y: ScalarValues::Real; 
-            }
-            feature a: ScalarValues::Real;
-            feature b: ScalarValues::Real;  
-            connector c: Signal from a to b; 
-        """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val c = global.getOwned<Connector>("c")
-        assertNotNull(c)
-        assertEquals(1, c.target.size)
-        assertEquals(1, c.source.size)
-        assertEquals(global.resolve("a"), c.source[0].ref)
-        assertEquals(global.resolve("b"), c.target[0].ref)
+        val to = global.resolve<Feature>("x::f::to")
+        assertEquals(global.resolve("funktion"), to)
+        assertEquals(x, global.resolve("x::f::from"))
     }
 }

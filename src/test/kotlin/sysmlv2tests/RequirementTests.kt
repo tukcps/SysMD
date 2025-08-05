@@ -5,6 +5,7 @@ import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
+import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Test
@@ -41,7 +42,7 @@ class RequirementTests {
             
             requirement test {
                 subject f references p;
-                assert ass { f::a == 2.0 }
+                assert constraint ass { f::a == 2.0 }
             }
         """)
         propagate()
@@ -84,7 +85,7 @@ class RequirementTests {
             }
         """)
         propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val r = global.resolve<Feature>("test::r")
         assertEquals(builder.True, r!!.variable!!.vectorQuantity.value)
         assertTrue(r.specializes(global.resolve<Type>("ScalarValues::Boolean")) )
@@ -104,7 +105,7 @@ class RequirementTests {
             }
         """)
         propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val test = global.resolve<Feature>("test")
         assertNotNull(test)
         val testR = global.resolve<Feature>("test::r")
@@ -114,7 +115,7 @@ class RequirementTests {
     }
 
     @Test
-    fun testRequirementDefinition() = testSession("Parts", "Requirements", "Constraints") {
+    fun testRequirementDefinition() = testSession("Parts", "Requirements") {
         loadSysMLv2("""
             requirement def rDef {
                 attribute a: ScalarValues::Real; 

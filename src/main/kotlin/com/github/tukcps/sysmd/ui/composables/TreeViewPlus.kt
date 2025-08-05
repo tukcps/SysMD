@@ -22,6 +22,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerButton
 import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.isShiftPressed
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
@@ -58,7 +59,6 @@ val menuState = MenuState(
 )
 
 
-lateinit var modelToUpdate:MutableState<TreeViewModel>
 var elementToSystemC: MutableState<Element>? = null
 var selectedElement: MutableState<Element>? = null
 
@@ -104,7 +104,6 @@ private fun TreeItemView(
     model: TreeViewModel,
     index: Int,
 ) {
-    modelToUpdate= mutableStateOf(model)
     Modifier.wrapContentHeight()
     Row(
         modifier = Modifier
@@ -114,6 +113,11 @@ private fun TreeItemView(
             .onClick(matcher = PointerMatcher.mouse(PointerButton.Secondary)) {
                 menuState.menuClicked.value = true
                 model.items[index].select(index)
+            }
+            .onClick(
+                matcher = { it.button == PointerButton.Primary && it.keyboardModifiers.isShiftPressed }
+            ) {
+                model.items[index].display(index)
             }
             .height(height)
             .fillMaxWidth()

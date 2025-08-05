@@ -4,7 +4,7 @@ import com.github.tukcps.sysmd.model.kerml.Behavior
 import com.github.tukcps.sysmd.model.util.SimpleName
 import java.util.UUID
 
-class BehaviorImplementation(
+open class BehaviorImplementation(
     declaredName: SimpleName? = null,
     declaredShortName: SimpleName? = null,
     elementType: String = "Behavior",

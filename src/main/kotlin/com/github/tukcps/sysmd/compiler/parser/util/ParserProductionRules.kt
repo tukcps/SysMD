@@ -14,9 +14,9 @@ import com.github.tukcps.sysmd.exceptions.LexicalError
  *
  *     [ production ] --> optional (start=TOKs) { production }
  *
- *     ( production )* --> noOrMore (start=TOKs) { production }
+ *     (production)* --> noOrMore (start=TOKs) { production }
  *
- *     ( production )+ --> oneOrMore (end=TOKs) { production }
+ *     (production)+ --> oneOrMore (end=TOKs) { production }
  *
  *        production1 --> alternatives {
  *      | production2          start(TOK)       { production1 }
@@ -263,7 +263,7 @@ abstract class ParserProductionRules(
 
 
     /**
-     * ( production )+
+     * (production)+
      * Guided by tokens that are required at start resp. at the end (a lambda with boolean results).
      * @param start tokens that are required at start, or null; use e.g., Token.Kind or Token.Kind infix function.
      * @param production a production implementation as lambda
@@ -276,7 +276,7 @@ abstract class ParserProductionRules(
 
 
     /**
-     *  ( production )*
+     *  (production)*
      *
      *  Guided by a token after which the production follows, or/or a token after which it does not follow.
      *  where
@@ -295,7 +295,7 @@ abstract class ParserProductionRules(
 
 
     /**
-     *  ( production )*
+     *  (production)*
      *  where
      *  Guided by a token after which the production follows, or/or a token after which it does not follow.
      *             Note that this set can be built by the overloaded or infix function.
@@ -312,8 +312,8 @@ abstract class ParserProductionRules(
 
 
     /**
-     *  ( production )*
-     *  Repeats the evaluation of the lambda expression while start evaluates to true and stop evaluates to false.
+     *  (production)*
+     *  Repeats the evaluation of the lambda expression while start evaluates to true and stop evaluation to false.
      *  The function also includes methods for error recovery that, if production throws an exception, consumes token until a recover token is found.
      *  where
      *
@@ -379,16 +379,16 @@ abstract class ParserProductionRules(
      * otherwise it returns the default result of type T.
      */
     inline fun <T> KerML.optional(
-        start: Set<Token.Kind>,
+        startToken: Set<Token.Kind>,
         consume: Boolean = false,
-        noMatch: T?,
-        rule: KerML.() -> T? = { null }
-    ): T? =
-        if (token.kind in start) {
+        noMatch: () -> Unit = {},
+        production: KerML.() -> T? = { null }
+    ) =
+        if (token.kind in startToken) {
             if (consume) consume()
-            rule()
+            production()
         } else
-            noMatch
+            noMatch()
 
     /**
      * Helper function that checks if the token is start, and if so executes production rule

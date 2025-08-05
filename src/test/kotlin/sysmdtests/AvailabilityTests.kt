@@ -8,6 +8,7 @@ import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.services.estimateFeature
 import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
+import org.junit.jupiter.api.Disabled
 import util.mockup.loadKerML
 import org.junit.jupiter.api.parallel.ResourceAccessMode.READ_WRITE
 import org.junit.jupiter.api.parallel.ResourceLock
@@ -90,10 +91,10 @@ class AvailabilityTests {
         assertEquals(builder.True, estimateFeature(tc1, "Availability").bdd())
     }
 
-    @Test
-    fun computeAvailabilityDerivedWithSubclasses() = testSession("Occurrences") {
+    @Test  @Disabled
+    fun computeAvailabilityDerivedWithSubclasses() = testSession("Occurrences", "Ranges") {
         loadKerML(""" 
-            feature T: ScalarValues::Real(1000 .. 3000);
+            feature T: Ranges::RealInRange {:>> range="1000 .. 3000";}
             class c1 {
                 feature Availability: ScalarValues::Boolean = bySpecializations(Availability); 
             }

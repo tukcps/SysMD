@@ -12,14 +12,6 @@ open class ClassifierImplementation(
     declaredShortName = declaredShortName,
     elementType = elementType
 ) {
-    override fun toString(): String {
-        return "$elementType {" +
-                (if (declaredName != null) "declaredName='$declaredName', " else "") +
-                (if (declaredShortName != null) "declaredShortName='$declaredShortName', " else "") +
-                "general='$generalization', " +
-                "imports='$imports', " +
-                "id='${elementId}...'}"
-    }
 
     override fun clone(): Classifier {
         return ClassifierImplementation(

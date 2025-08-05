@@ -1,6 +1,5 @@
 package com.github.tukcps.sysmd.model.kerml.implementation
 
-import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.util.SimpleName
 
@@ -20,8 +19,8 @@ import com.github.tukcps.sysmd.model.util.SimpleName
 class NamespaceImportImplementation(
     declaredName: SimpleName? = null,
     declaredShortName: SimpleName? = null,
-    importingNamespace: Resolved<Element> = Resolved(),
-    importedNamespace: Resolved<Namespace> = Resolved(),
+    importingNamespace: Namespace = UnresolvedNamespace(),
+    importedNamespace: Namespace = UnresolvedNamespace(),
     override var visibility: Import.VisibilityKind = Import.VisibilityKind.Private,
     override var isRecursive: Boolean = true,              // False by default in SysMLv2
     override var isImportAll: Boolean = false,
@@ -29,56 +28,46 @@ class NamespaceImportImplementation(
 ): NamespaceImport, RelationshipImplementation(
     declaredName=declaredName,
     declaredShortName = declaredShortName,
+    owningRelatedElement = importingNamespace,
     source = mutableListOf(importingNamespace),
     target = mutableListOf(importedNamespace),
     elementType = elementType
 ) {
+
     override val importOwningNamespace: Namespace?
         get() = owningNamespace
 
-    @Suppress("UNCHECKED_CAST")
-    override var importedNamespace: Resolved<Namespace>
-        get() = try { target[0] as Resolved<Namespace>
-        } catch (e: Exception) { model?.status?.fatal("Problem with import", cause = e)
-            Resolved(model!!.global) }
-        set(value) { target[0].ref = value.ref; target[0].str = value.str; target[0].id = value.id }
+    override fun importedMemberships(excluded: Set<Namespace>): MutableSet<Membership> {
+        TODO("Not yet implemented")
+    }
 
-    override fun toString(): String = "Import { importedNamespace = $importedNamespace }"
+    @Suppress("UNCHECKED_CAST")
+    override var importedNamespace: Namespace
+        get() = target.first() as Namespace
+        set(value) { target = mutableListOf(value) }
+
+    override fun toString(): String = super<RelationshipImplementation>.toString() +
+            if (visibility != Import.VisibilityKind.Public) ", " + visibility.toString() else "" +
+            if (isRecursive) ", recursive" else "" +
+            if (isImportAll) ", importAll" else ""
 
     override fun clone() : NamespaceImport {
         return NamespaceImportImplementation(
+            declaredName = declaredName,
+            declaredShortName = declaredShortName,
+            importedNamespace = importedNamespace,
             visibility = visibility,
             isRecursive = isRecursive,
             isImportAll = isImportAll
         ).also {
-            it.importedNamespace = Resolved(importedNamespace)
+            it.importedNamespace = importedNamespace
             it.model = model
         }
     }
 
-    override fun resolveNames(): Boolean {
-        updated = super.resolveNames() or updated
-        if (source.size > 1)
-            model?.status?.error("imports can have only a single source", kind = Issue.Kind.ERROR_SEMANTIC)
-        if (importOwningNamespace !is Namespace)
-            model?.status?.error("only Packages and Namespaces can import", kind = Issue.Kind.ERROR_SEMANTIC)
-        if (target.size < 1)
-            model?.status?.error("import: nothing imported", kind = Issue.Kind.ERROR_SEMANTIC)
-        target.forEach {
-            if(it.ref !is Namespace?)
-                model?.status?.error("only Packages and Namespaces can be imported", kind = Issue.Kind.ERROR_SEMANTIC)
-        }
-
-        updated = importedNamespace.resolveIdentity(owningNamespace!!)
-        if (importedNamespace.ref != null) {
-            target[0] = importedNamespace
-        }
-        return updated
-    }
-
     override fun updateFrom(template: Element) {
         super.updateFrom(template)
-        if (template is Import) {
+        if (template is NamespaceImport) {
             importedNamespace = template.importedNamespace
             visibility = template.visibility
             isImportAll = template.isImportAll

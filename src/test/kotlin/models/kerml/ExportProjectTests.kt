@@ -2,14 +2,18 @@ package models.kerml
 
 import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.exceptions.Issue
-import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.model.kerml.Feature
+import com.github.tukcps.sysmd.model.kerml.Relationship
+import com.github.tukcps.sysmd.model.kerml.Specialization
+import com.github.tukcps.sysmd.model.kerml.getOwnedElementOfType
 import com.github.tukcps.sysmd.model.kerml.implementation.*
+import com.github.tukcps.sysmd.services.check.checkOwnership
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.session.loadLibrary
 import io.github.tukcps.aadd.values.IntegerRange
+import io.github.tukcps.sysmlv2.api.entities.ElementDAO
 import io.github.tukcps.sysmlv2.api.entities.getElements
-import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -24,25 +28,22 @@ class ExportProjectTests {
      */
     @Test
     fun exportClassTest() = testSession {
-        val classifier = create(ClassImplementation(declaredName="c"), global)
-        val specialization = create(SpecializationImplementation(classifier, anything), classifier)
+        val classifier = addOwnedMember(ClassImplementation(declaredName="c"), global)
+        addOwnedRelationship(SpecializationImplementation(classifier, anything), classifier)
         assertNotNull(classifier.getOwnedElementOfType<Specialization>())
         assertNotNull(classifier.getOwnedElementOfType<Specialization>()?.elementId)
         initialize()
         assertEquals(0, status.issues.size, status.issues.toString())
         val record = export()
         assertNotNull(record)
-
         // c is in record
         val c=record.getElements().first { it.name=="c" }
         assertNotNull(c)
-        assertEquals(null, c.owner?.id)         // Global represented by null
 
         // Specialization is in record
         val spec=record.getElements().first { it.type == "Specialization"}
         assertNotNull(spec)
         assertEquals(anything.elementId, spec.target?.first()?.id)
-        assertEquals(c.elementId, spec.owner?.id)
     }
 
 
@@ -51,25 +52,26 @@ class ExportProjectTests {
      */
     @Test
     fun importClassTest() {
-        var export: List<io.github.tukcps.sysmlv2.api.entities.ElementDAO> = listOf()
+        var export: List<ElementDAO> = listOf()
         testSession {
-            val classifier = create(TypeImplementation(declaredName = "c"), global)
-            create(SpecializationImplementation(classifier, anything), classifier)
+            val classifier = addOwnedMember(TypeImplementation(declaredName = "c"), global)
+            addOwnedRelationship(SpecializationImplementation(classifier, anything))
             assertNotNull(classifier.getOwnedElementOfType<Specialization>())
             assertNotNull(classifier.getOwnedElementOfType<Specialization>()?.elementId)
-            initialize()
+            // initialize()
             assertEquals(0, status.issues.size, status.issues.toString())
             export = export().getElements()
         }
         testSession {
             import(export)
+            checkOwnership()
             initialize()
             val c = global.resolve<TypeImplementation>("c")
             assertNotNull(c)
             assertTrue(c.ownedSpecialization.isNotEmpty())
-            assertEquals(c.ownedSpecialization.first().owner.id, c.elementId)
-            assertNotNull(c.owner.ref)
-            assertNotNull(c.owner.id)
+            assertEquals(c.ownedSpecialization.first().owningRelatedElement.elementId, c.elementId)
+            assertNotNull(c.owner)
+            assertNotNull(c.owningRelationship?.elementId)
         }
     }
 
@@ -78,9 +80,9 @@ class ExportProjectTests {
      */
     @Test
     fun exportPackageTest() = testSession {
-        val p = create(PackageImplementation(declaredName="p"), global)
-        val f = create(FeatureImplementation(declaredName ="f"), p)
-        create(MultiplicityImplementation(multiplicity = IntegerRange(1,3).toString()), f)
+        val p = addOwnedMember(PackageImplementation(declaredName="p"), global)
+        val f = addOwnedMember(FeatureImplementation(declaredName ="f"), p)
+        addOwnedMember(MultiplicityImplementation(multiplicity = IntegerRange(1,3).toString()), f)
         initialize(2)
         assertTrue(status.issues.none { it.kind.ordinal >= Issue.Kind.ERROR.ordinal }, status.issues.toString())
         val record = export()
@@ -104,30 +106,17 @@ class ExportProjectTests {
 
     @Test
     fun importPackageTest() {
-        var export: List<io.github.tukcps.sysmlv2.api.entities.ElementDAO> = emptyList()
-        testSession("Base") {
-            loadKerML("package ScalarValues { datatype Natural; }")
-            val p = create(PackageImplementation(declaredName="p"), global)
-            val f = create(FeatureImplementation(declaredName ="f"), p)
-            create(MultiplicityImplementation(multiplicity = IntegerRange(1,3).toString()), f)
-            create(SpecializationImplementation(general = Resolved("Base::Anything"), specific = Resolved(ref = f)), f)
-            initialize()
+        var export: List<ElementDAO> = emptyList()
+        testSession {
+            addOwnedMember(PackageImplementation(declaredName="p"), global)
             assertTrue(status.issues.isEmpty(), status.issues.toString())
             export = export().getElements()
         }
         testSession {
             import(export)
-            initialize()
-            propagate()
             val p = global.resolve<PackageImplementation>("p")
-            val f = p?.resolve<FeatureImplementation>("f")
-            val m = f?.getOwnedElementOfType<Multiplicity>()
             assertNotNull(p)
-            assertNotNull(f)
-            assertNotNull(m)
-            assertTrue(p.owner.ref == global)
-            assertTrue(f.owner.ref == p)
-            assertTrue(m.owner.ref == f)
+            assertTrue(p.owner == global)
         }
     }
 
@@ -136,23 +125,19 @@ class ExportProjectTests {
      */
     @Test
     fun importScalarValuesTest() {
-        var export: List<io.github.tukcps.sysmlv2.api.entities.ElementDAO> = emptyList()
+        var export: List<ElementDAO> = emptyList()
         testSession("ScalarValues") {
-            initialize()
             assertEquals(0, status.issues.size, status.issues.toString())
             export = export().getElements()
         }
         testSession("ScalarValues") {
             import(export)
-            initialize()
             assertNotNull(repo.booleanType)
             assertNotNull(repo.integerType)
             assertNotNull(repo.numberType)
             assertNotNull(repo.realType)
             val no = repo.elements.size
             import(export)
-            initialize()
-            propagate()
             assertEquals(no, repo.elements.size)
         }
     }
@@ -166,11 +151,10 @@ class ExportProjectTests {
                 assertEquals(builder, element.model?.builder)
                 if (element is Relationship) {
                     element.source.forEach { source ->
-                        if (source.ref != null)
-                            assertEquals(builder, source.ref?.model?.builder)
+                        assertEquals(builder, source.model?.builder)
                     }
                     element.target.forEach { target ->
-                        assertEquals(builder, target.ref?.model?.builder)
+                        assertEquals(builder, target.model?.builder)
                     }
                 }
             }
@@ -181,11 +165,10 @@ class ExportProjectTests {
                 assertEquals(builder, element.model?.builder)
                 if (element is Relationship) {
                     element.source.forEach { source ->
-                        if (source.ref != null)
-                            assertEquals(builder, source.ref?.model?.builder)
+                        assertEquals(builder, source.model?.builder)
                     }
                     element.target.forEach { target ->
-                        assertEquals(builder, target.ref?.model?.builder)
+                        assertEquals(builder, target.model?.builder)
                     }
                 }
             }

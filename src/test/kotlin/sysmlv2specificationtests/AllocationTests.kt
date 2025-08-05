@@ -1,8 +1,10 @@
 package sysmlv2specificationtests
 
+import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.sysml.AllocationDefinition
 import com.github.tukcps.sysmd.model.sysml.AllocationUsage
 import com.github.tukcps.sysmd.services.resolve.resolve
+import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Test
@@ -20,7 +22,7 @@ class AllocationTests {
     fun testAllocationDefinition() = testSession("Connections", "Allocations") {
         loadSysMLv2("""
         allocation def AllocationDef1;
-        """.trimIndent())
+        """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
 
         val allocationDef1 = global.resolve<AllocationDefinition>("AllocationDef1")
@@ -34,20 +36,20 @@ class AllocationTests {
      * Language Specification Document: https://www.omg.org/spec/SysML/2.0/Beta2/Language/PDF
      */
     @Test
-    fun testAllocationUsage() = testSession("Connections", "Parts", "Allocations") {
+    fun testAllocationUsage() = testSession("Parts", "Allocations") {
         loadSysMLv2("""
-        allocation def AllocationDef1;
-        
-        part def Part1;
-        part def Part2;
-        part part1 : Part1;
-        part part2 : Part2;
-        
-        allocation allocation1 : AllocationDef1 allocate part1 to part2 {
-            part def Part3;
-            part part3 :Part3;
-        }
-        """.trimIndent())
+            allocation def AllocationDef1;
+            
+            part def Part1;
+            part def Part2;
+            part part1 : Part1;
+            part part2 : Part2;
+            
+            allocation allocation1 : AllocationDef1 allocate part1 to part2 {
+                part def Part3;
+                part part3 :Part3;
+            }
+        """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
 
         val allocationDef1 = global.resolve<AllocationDefinition>("AllocationDef1")
@@ -98,13 +100,13 @@ class AllocationTests {
     }
 
     /**
-     * This test checks nested allocations (sub-allocations).
+     * This test checks nested allocations (suballocations).
      * It verifies that specific actions of parts can be allocated to each other.
      * Refer to Section: 7.15 - Allocations
      * Language Specification Document: https://www.omg.org/spec/SysML/2.0/Beta2/Language/PDF
      */
     @Test
-    fun testAllocationWithSubAllocation() = testSession("Allocations", "Parts", "Actions") {
+    fun testAllocationWithSubAllocation() = testSession( "Allocations", "Parts", "Actions") {
         loadSysMLv2("""
             part def Part1;
             part def Part2;
@@ -116,7 +118,7 @@ class AllocationTests {
             action action2 : Action2;
             
             part part1 : Part1 {
-                perform action1;        // TODO: We have a cyclic recursion here in resolving action1. 
+                perform action1;  // references action1, unnamed performance. 
             }
             part part2 : Part2 {
                 perform action2;
@@ -125,6 +127,8 @@ class AllocationTests {
                 allocate part1.action1 to part2.action2;
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+
+        val action1 = global.resolve<Element>("part1")
+        assertNoIssues()
     }
 }

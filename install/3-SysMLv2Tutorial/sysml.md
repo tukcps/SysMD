@@ -287,7 +287,8 @@ package stateMachineExample {
 }
 ```
 While no calculations are yet done by SysMD for state machines, one can render it.
-Navigate in the hasA tree to the state status and right-click on it. 
+Navigate in the hasA tree to the state ```tutorial::sysml::stateMachineExample::part1::status```.
+Right-click on it. 
 Select render graph, and the following automata graph will be shown: 
 
 ![Graph](Files/statemachine.png){width=400 height=220}

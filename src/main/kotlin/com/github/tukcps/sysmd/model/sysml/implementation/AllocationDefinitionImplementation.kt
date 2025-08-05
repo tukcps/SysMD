@@ -1,8 +1,6 @@
 package com.github.tukcps.sysmd.model.sysml.implementation
 
-import com.github.tukcps.sysmd.model.kerml.Resolved
 import com.github.tukcps.sysmd.model.sysml.AllocationDefinition
-import java.util.UUID
 
 open class AllocationDefinitionImplementation(
     declaredName: String? = null,
@@ -17,9 +15,5 @@ open class AllocationDefinitionImplementation(
         AllocationDefinitionImplementation(
             declaredName = this.declaredName,
             declaredShortName = this.declaredShortName,
-        ).also {
-            it.model = model
-            source = Resolved.copyOfIdentityList(source)
-            target = Resolved.copyOfIdentityList(target)
-        }
+        ).also { it.updateFrom(this) }
 }

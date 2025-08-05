@@ -8,18 +8,18 @@ import com.github.tukcps.sysmd.model.sysml.implementation.OccurrenceUsageImpleme
 
 
 class OccurrenceDefinitionActions(
-    context: ActionsContext
+    context: ActionsContext,
 ): TypeActions<OccurrenceDefinitionImplementation>(
     context,
     creator = ::OccurrenceDefinitionImplementation,
-    specializes = mutableListOf("Occurrences::Occurrence"),
+    defaultType = "Occurrences::Occurrence",
 )
 
 
 class OccurrenceUsageActions(
-    context: ActionsContext
+    context: ActionsContext,
 ) : FeatureActions<OccurrenceUsageImplementation>(
     context,
     creator = ::OccurrenceUsageImplementation,
-    defaultType = mutableListOf("Occurrences::Occurrence")
+    defaultType = "Occurrences::Occurrence",
 )

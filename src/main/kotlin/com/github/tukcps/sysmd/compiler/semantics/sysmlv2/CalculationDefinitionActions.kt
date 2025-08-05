@@ -1,9 +1,9 @@
 package com.github.tukcps.sysmd.compiler.semantics.sysmlv2
 
-import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.compiler.semantics.ActionsContext
 import com.github.tukcps.sysmd.compiler.semantics.kerml.FunctionActions
 import com.github.tukcps.sysmd.model.sysml.CalculationDefinition
+import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.model.util.SimpleName
 
 
@@ -16,5 +16,5 @@ import com.github.tukcps.sysmd.model.util.SimpleName
 class CalculationDefinitionActions <T: CalculationDefinition> (
     context: ActionsContext,
     creator: (SimpleName?, SimpleName?) -> T,
-    specializes: MutableList<QualifiedName> = mutableListOf("Base::Anything")
+    specializes: QualifiedName = "Calculations::Calculation",
 ): FunctionActions<T>(context, creator, specializes)

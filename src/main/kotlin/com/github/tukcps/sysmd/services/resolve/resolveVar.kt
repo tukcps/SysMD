@@ -16,8 +16,8 @@ fun Namespace.resolveVar(qualifiedName: QualifiedName, searchInSuperClass: Boole
 
 fun Namespace.resolveVars(qualifiedName: QualifiedName, searchInSuperClass: Boolean = true): List<Variable?> {
     var found = findRecursive(qualifiedName, emptySet(), emptySet(),true, searchInSuperClass)
-    if (found is Feature && found.referencedFeature?.ref != null) {
-        found = found.referencedFeature?.ref
+    if (found is Feature && found.referencedFeature != null) {
+        found = found.referencedFeature
     }
     if (found is Variable?)
         return mutableListOf(found)

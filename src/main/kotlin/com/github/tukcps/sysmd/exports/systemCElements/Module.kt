@@ -302,7 +302,6 @@ class Module(
 
             var colonIsSet = false //Necessary to know if a colon has already been set by module instantiations or has to be set by instantiation of TLM Ports or Hierarchical channels
 
-
             //Constructor Implementation
             out.println("\n//\t### Constructor Implementation ###")
             out.print("${this.moduleName}::${this.moduleName}(sc_core::sc_module_name nm")
@@ -311,7 +310,6 @@ class Module(
             }
 
             out.print(")")
-
 
             val colon = {
                 if(colonIsSet) "," else {colonIsSet = true; ":"}

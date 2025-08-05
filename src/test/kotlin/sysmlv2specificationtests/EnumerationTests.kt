@@ -20,7 +20,7 @@ class EnumerationTests {
         loadSysMLv2("""
         enum def EnumerationDef1;
 
-        """.trimIndent())
+        """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 

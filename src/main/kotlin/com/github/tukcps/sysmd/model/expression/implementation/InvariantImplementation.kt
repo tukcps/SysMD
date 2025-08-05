@@ -3,7 +3,6 @@ package com.github.tukcps.sysmd.model.expression.implementation
 import com.github.tukcps.sysmd.model.expression.Invariant
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
-import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.util.SimpleName
 
 class InvariantImplementation(
@@ -14,7 +13,7 @@ class InvariantImplementation(
     expression: String? = null,
     textualRepresentation:  MutableList<TextualRepresentation> = mutableListOf(),
     elementType: String = "Invariant",
-): Invariant, FeatureImplementation(
+): Invariant, ExpressionImplementation(
     declaredName = declaredName,
     declaredShortName = declaredShortName,
     direction = direction,

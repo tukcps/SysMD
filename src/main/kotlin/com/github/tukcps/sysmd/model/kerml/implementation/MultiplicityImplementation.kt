@@ -22,14 +22,14 @@ class MultiplicityImplementation(
         return updated
     }
 
-    override val generalization: List<Resolved<Type>>
-        get() = listOf(Resolved(str="ScalarValues::Natural", ref = model!!.repo.naturalType, id=model?.repo?.naturalType?.elementId))
+    override val generalization: List<Type>
+        get() = listOf(model?.repo?.naturalType?:UnresolvedType("ScalarValues::Natural"))
 
     override val ownedSpecialization: List<Specialization>
         get() = mutableListOf()
 
     override fun toString(): String {
-        return "Multiplicity { constraint=$typeConstraint, value=${variable?.valueStr} }"
+        return "[$elementType] = " + try {variable?.vectorQuantity.toString()} catch (_: Exception) { ""}
     }
 
     override fun updateFrom(template: Element) {

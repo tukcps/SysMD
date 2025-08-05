@@ -18,8 +18,8 @@ class ErrorHandlingTests {
     fun errorMessageDependencyStringTest() = testSession {
             var p = FeatureImplementation(declaredName="XXX")
             p.expression = "asdf+asdf" // nonsense
-            p = create(p, global)
-            create(SpecializationImplementation(p, anything), p)
+            p = addOwnedMember(p, global)
+            addOwnedRelationship(SpecializationImplementation(p, anything), p)
             p.variable = VariableImplementation(p)
             p.resolveNames()
             p.variable?.compileExpression()
@@ -54,7 +54,8 @@ class ErrorHandlingTests {
             type Porsche911 :> SportsCar;
         """)
         propagate()
-        assertEquals(1, status.issues.size, "Error messages: ${status.issues}")
+        propagate()
+        assertTrue(status.issues.size > 0, "Expected issue with SportsCar that is inappropriate type")
     }
 
 

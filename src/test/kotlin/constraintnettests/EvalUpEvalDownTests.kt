@@ -20,10 +20,10 @@ class EvalUpEvalDownTests {
      *  - y becomes 1..2, x becomes 1..2 if solved.
      */
     @Test
-    fun considerSubtypeConstraintTest() = testSession("ScalarValues") {
+    fun considerSubtypeConstraintTest() = testSession("Ranges") {
         loadKerML("""
             feature x: ScalarValues::Real; 
-            feature y: ScalarValues::Real = x { :>> range = "1.0 .. 2.0";}"""
+            feature y: Ranges::RealInRange = x { :>> range = "1.0 .. 2.0";}"""
         )
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         propagate()
@@ -40,10 +40,10 @@ class EvalUpEvalDownTests {
      * is the intersection of 1.00 .. 2.0 and 1.5 .. 2.5
      */
     @Test
-    fun considerSubtypeConstraintTestIntersection()  = testSession("ScalarValues") {
+    fun considerSubtypeConstraintTestIntersection()  = testSession("Ranges") {
         loadKerML("""
-            feature x: ScalarValues::Real { :>> range = "1.5 .. 2.5";}
-            feature y: ScalarValues::Real = x { :>> range = "1.0 .. 2.0";}"""
+            feature x: Ranges::RealInRange { :>> range = "1.5 .. 2.5";}
+            feature y: Ranges::RealInRange = x { :>> range = "1.0 .. 2.0";}"""
         )
         assertEquals(0, status.issues.size, status.issues.toString())
         propagate()
@@ -57,10 +57,10 @@ class EvalUpEvalDownTests {
      * The subtype constraint is considered when computing the resulting interval also for integers.
      */
     @Test
-    fun considerSubtypeConstraintTestIntersectionInt()  = testSession("ScalarValues") {
+    fun considerSubtypeConstraintTestIntersectionInt()  = testSession("Ranges") {
         loadKerML("""
-            feature x: ScalarValues::Integer { :>> range = "1 .. 3";}
-            feature y: ScalarValues::Integer = x { :>> range = "2 .. 4";}"""
+            feature x: Ranges::IntegerInRange { :>> range = "1 .. 3";}
+            feature y: Ranges::IntegerInRange = x { :>> range = "2 .. 4";}"""
         )
         propagate()
         assertEquals(2, global.resolve<Feature>("y")!!.variable!!.idd().getRange().min)

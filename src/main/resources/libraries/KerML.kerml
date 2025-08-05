@@ -267,7 +267,7 @@
             			derived feature ownedEndFeature : Feature[0..*] ordered subsets endFeature, ownedFeature;
             			composite derived feature ownedConjugator : Conjugation[0..1] subsets ownedRelationship;
             			derived feature inheritedFeature : Feature[0..*] ordered subsets 'feature';
-            			derived feature 'multiplicity' : Multiplicity[0..1] subsets ownedMember;
+            			derived feature 'multiplicity1' : Multiplicity[0..1] subsets ownedMember;
             			derived feature unioningType : Type[0..*] ordered;
             			composite derived feature ownedIntersecting : Intersecting[0..*] ordered subsets ownedRelationship;
             			derived feature intersectingType : Type[0..*] ordered;
@@ -297,16 +297,18 @@
             		
             		metaclass Association specializes Classifier, Relationship {
             			derived feature relatedType : Type[0..*] ordered nonunique redefines relatedElement;
-            			derived feature sourceType : Type[0..1] subsets relatedType redefines source;
-            			derived feature targetType : Type[0..*] subsets relatedType redefines target;
-            			derived feature associationEnd : Feature[0..*] redefines endFeature;
+            			// Causes Exception
+            			// derived feature sourceType : Type[0..1] subsets relatedType redefines source;
+            			// derived feature targetType : Type[0..*] subsets relatedType redefines target;
+            			// derived feature associationEnd : Feature[0..*] redefines endFeature;
             		}		
-            		
+
             		metaclass AssociationStructure specializes Structure, Association;		
             		
             		metaclass Behavior specializes Class {
             			derived feature 'step' : Step[0..*] subsets 'feature';
-            			derived feature parameter : Feature[0..*] ordered redefines directedFeature;
+            			// Error
+            			// derived feature parameter : Feature[0..*] ordered redefines directedFeature;
             		}		
             		
             		metaclass BindingConnector specializes Connector;		
@@ -325,8 +327,9 @@
             			derived feature relatedFeature : Feature[0..*] ordered nonunique redefines relatedElement;
             			derived feature association : Association[0..*] ordered redefines 'type';
             			derived feature connectorEnd : Feature[0..*] ordered redefines endFeature;
-            			derived feature sourceFeature : Feature[0..1] ordered subsets relatedFeature redefines source;
-            			derived feature targetFeature : Feature[0..*] ordered subsets relatedFeature redefines target;
+            			// Class cast error at re-definition -->
+            			// derived feature sourceFeature : Feature[0..1] ordered subsets relatedFeature redefines source;
+            			// derived feature targetFeature : Feature[0..*] ordered subsets relatedFeature redefines target;
             		}		
             		
             		metaclass DataType specializes Classifier;		

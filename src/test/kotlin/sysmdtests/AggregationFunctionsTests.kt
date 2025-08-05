@@ -15,10 +15,10 @@ class AggregationFunctionsTests {
      * decomposition relation hasElements.
      */
     @Test
-    fun sumAggregationTest1() = testSession("Occurrences") {
+    fun sumAggregationTest1() = testSession("Occurrences", "Ranges") {
         loadKerML(""" 
-            class c1 { feature p: ScalarValues::Real(1..1); }
-            class c2 { feature p: ScalarValues::Real(2..2); }
+            class c1 { feature p: Ranges::RealInRange {:>> range = "1..1";} }
+            class c2 { feature p: Ranges::RealInRange {:>> range = "2..2";} }
             class c3 {
                 feature a: c1[1..1]; 
                 feature b: c2[2..2]; 
@@ -35,10 +35,10 @@ class AggregationFunctionsTests {
      * decomposition relation hasElements.
      */
     @Test
-    fun sumAggregationTest2()   = testSession("Occurrences") {
+    fun sumAggregationTest2()   = testSession("Occurrences", "Ranges") {
         loadKerML("""
-            class c1 { feature p: ScalarValues::Real(1..1); }
-            class c2 { feature p: ScalarValues::Real(2..3); }
+            class c1 { feature p: Ranges::RealInRange {:>> range = "1..1";}}
+            class c2 { feature p: Ranges::RealInRange {:>> range = "2..3";}}
             class c3 {
                 feature a:  c1[1..1];
                 feature b:  c2[2..3];
@@ -57,11 +57,11 @@ class AggregationFunctionsTests {
      * property is assumed to be 0.
      */
     @Test
-    fun sumAggregationTest3() = testSession("Occurrences") {
+    fun sumAggregationTest3() = testSession("Occurrences", "Ranges") {
         loadKerML(input = """
             package l { 
                 class c1 {
-                    feature p: ScalarValues::Real(1..2).
+                    feature p: Ranges::RealInRange {:>> range = "1..2";}
                 }  
                 class c2; 
                 class c3 {
@@ -83,11 +83,11 @@ class AggregationFunctionsTests {
      * property in its parts shall be used.
      */
     @Test
-    fun sumAggregationTest4() = testSession("Occurrences") {
+    fun sumAggregationTest4() = testSession("Occurrences", "Ranges") {
         loadKerML(input = """
             package l {
                 class c1 {
-                    feature p: ScalarValues::Real(1..2); 
+                    feature p: Ranges::RealInRange {:>> range = "1..2";} 
                 }
                 class c2 {
                     feature c: c1[5 .. 6];

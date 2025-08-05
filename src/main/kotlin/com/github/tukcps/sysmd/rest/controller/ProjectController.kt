@@ -38,7 +38,12 @@ class ProjectController {
      * @return Project with id set.
      */
 
-    @CrossOrigin(origins = ["http://localhost:3000", "http://localhost:4200"])
+    @CrossOrigin(origins = [
+        "http://localhost:3000",
+        "http://localhost:4200",
+        "http://cps-testing.cs.rptu.de",
+        "https://cps-testing.cs.rptu.de"
+    ])
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(
         summary = "Creates a new project and returns its id.",
@@ -61,7 +66,12 @@ class ProjectController {
      * GET /projects
      * Gets a list of all projects
      */
-    @CrossOrigin
+    @CrossOrigin(origins = [
+        "http://localhost:3000",
+        "http://localhost:4200",
+        "http://cps-testing.cs.rptu.de",
+        "https://cps-testing.cs.rptu.de"
+    ])
     @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "Gets all projects.")
     @GetMapping(path = ["/projects"], produces = [MediaType.APPLICATION_JSON_VALUE])
@@ -79,7 +89,12 @@ class ProjectController {
      * GET /projects/ID
      * Gets a project by id.
      */
-    @CrossOrigin
+    @CrossOrigin(origins = [
+        "http://localhost:3000",
+        "http://localhost:4200",
+        "http://cps-testing.cs.rptu.de",
+        "https://cps-testing.cs.rptu.de"
+    ])
     @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "Gets a project by its id.")
     @GetMapping(path = ["/projects/{projectId}"], produces = [MediaType.APPLICATION_JSON_VALUE])
@@ -97,7 +112,12 @@ class ProjectController {
      * Deletes a project by id
      */
     @ResponseStatus(HttpStatus.OK)
-    @CrossOrigin(origins = ["http://localhost:3000", "http://localhost:4200"])
+    @CrossOrigin(origins = [
+        "http://localhost:3000",
+        "http://localhost:4200",
+        "http://cps-testing.cs.rptu.de",
+        "https://cps-testing.cs.rptu.de"
+    ])
     @Operation(summary = "Deletes a project by its id.")
     @DeleteMapping(path = ["/projects/{projectId}"], produces = [MediaType.APPLICATION_JSON_VALUE])
     fun deleteProjectById(
@@ -118,7 +138,12 @@ class ProjectController {
      * Updates a project by id
      */
     @ResponseStatus(HttpStatus.OK)
-    @CrossOrigin(origins = ["http://localhost:3000", "http://localhost:4200"])
+    @CrossOrigin(origins = [
+        "http://localhost:3000",
+        "http://localhost:4200",
+        "http://cps-testing.cs.rptu.de",
+        "https://cps-testing.cs.rptu.de"
+    ])
     @Operation(summary = "Updates a project by its id.")
     @PutMapping(path = ["/projects/{projectId}"], produces = [MediaType.APPLICATION_JSON_VALUE])
     fun updateProjectById(

@@ -7,11 +7,7 @@ import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.kerml.implementation.TextualRepresentationImplementation
 import com.github.tukcps.sysmd.rest.entities.requests.CodeRequest
 import com.github.tukcps.sysmd.rest.entities.requests.SessionIndexRequest
-import com.github.tukcps.sysmd.rest.entities.response.IndexEntry
-import com.github.tukcps.sysmd.rest.entities.response.SessionIndexResponse
-import com.github.tukcps.sysmd.rest.entities.response.SessionResponse
-import com.github.tukcps.sysmd.rest.entities.response.SessionStatusResponse
-import com.github.tukcps.sysmd.rest.entities.response.VariablesResponse
+import com.github.tukcps.sysmd.rest.entities.response.*
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.repositories.local.ProjectData
 import com.github.tukcps.sysmd.services.repositories.local.toDAO
@@ -32,13 +28,12 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
-import java.net.MalformedURLException
-import java.util.*
-import kotlin.io.path.writeText
 import org.springframework.web.multipart.MultipartFile
+import java.net.MalformedURLException
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
-import org.apache.commons.io.FilenameUtils // You may need to add this dependency
+import java.util.*
+import kotlin.io.path.writeText
 
 
 /**
@@ -111,7 +106,12 @@ class SessionController {
      * - `GET /session/index`
      * - Gets a list of all files in a session's project
      */
-    @CrossOrigin
+    @CrossOrigin(origins = [
+        "http://localhost:3000",
+        "http://localhost:4200",
+        "http://cps-testing.cs.rptu.de",
+        "https://cps-testing.cs.rptu.de"
+    ])
     @ResponseStatus(HttpStatus.OK)
     @Operation(
         summary = "Gets all model files in the index of a project.",
@@ -140,7 +140,12 @@ class SessionController {
      * @param request A CodeRequest entity that consists of the code and the level
      * to which the compiler will analyze, from 0 (nothing) to 7 (constraint propagation).
      */
-    @CrossOrigin
+    @CrossOrigin(origins = [
+        "http://localhost:3000",
+        "http://localhost:4200",
+        "http://cps-testing.cs.rptu.de",
+        "https://cps-testing.cs.rptu.de"
+    ])
     @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "Compiles the code and adds generated elements to the model in the session.")
     @PutMapping(path = ["/session/code"], produces = [MediaType.APPLICATION_JSON_VALUE])
@@ -165,7 +170,12 @@ class SessionController {
      * - `PUT /session/index`
      * - Puts all model files into the project-directory of the session and updates the index of a project.
      */
-    @CrossOrigin
+    @CrossOrigin(origins = [
+        "http://localhost:3000",
+        "http://localhost:4200",
+        "http://cps-testing.cs.rptu.de",
+        "https://cps-testing.cs.rptu.de"
+    ])
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Puts all model files into a project. Old index and files are overwritten.")
     @PutMapping(path = ["/session/index"], produces = [MediaType.APPLICATION_JSON_VALUE])
@@ -193,7 +203,12 @@ class SessionController {
      *
      * `GET /session/files`
      */
-    @CrossOrigin
+    @CrossOrigin(origins = [
+        "http://localhost:3000",
+        "http://localhost:4200",
+        "http://cps-testing.cs.rptu.de",
+        "https://cps-testing.cs.rptu.de"
+    ])
     @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "Gets all document file names.")
     @GetMapping(path = ["/session/files"], produces = [MediaType.APPLICATION_JSON_VALUE])
@@ -213,7 +228,12 @@ class SessionController {
      *
      * `GET /session/files`
      */
-    @CrossOrigin
+    @CrossOrigin(origins = [
+        "http://localhost:3000",
+        "http://localhost:4200",
+        "http://cps-testing.cs.rptu.de",
+        "https://cps-testing.cs.rptu.de"
+    ])
     @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "Gets all document file names.")
     @GetMapping(path = ["/session/cells"], produces = [MediaType.APPLICATION_JSON_VALUE])
@@ -239,7 +259,12 @@ class SessionController {
      * **Get a file by name**
      * - `GET /session/files/NAME`
      */
-    @CrossOrigin
+    @CrossOrigin(origins = [
+        "http://localhost:3000",
+        "http://localhost:4200",
+        "http://cps-testing.cs.rptu.de",
+        "https://cps-testing.cs.rptu.de"
+    ])
     @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "Gets a document file, typically a picture in .png format, by its name.")
     @GetMapping(path = ["/session/files/{name}"], produces = [MediaType.APPLICATION_JSON_VALUE])
@@ -268,7 +293,12 @@ class SessionController {
      * Post a file
      * `POST /session/files`
      */
-    @CrossOrigin
+    @CrossOrigin(origins = [
+        "http://localhost:3000",
+        "http://localhost:4200",
+        "http://cps-testing.cs.rptu.de",
+        "https://cps-testing.cs.rptu.de"
+    ])
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Uploads a document file, typically a picture in .png format, to the project.")
     @PostMapping(path = ["/session/files"], consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
@@ -304,7 +334,12 @@ class SessionController {
      * **Get all elements in the session**
      * - `GET /session/elements`
      */
-    @CrossOrigin
+    @CrossOrigin(origins = [
+        "http://localhost:3000",
+        "http://localhost:4200",
+        "http://cps-testing.cs.rptu.de",
+        "https://cps-testing.cs.rptu.de"
+    ])
     @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "Gets all elements of a session.")
     @GetMapping(path = ["/session/elements"], produces = [MediaType.APPLICATION_JSON_VALUE])
@@ -329,23 +364,28 @@ class SessionController {
      * **Get all elements in the session**
      * - `GET /session/elements`
      */
-    @CrossOrigin
+    @CrossOrigin(origins = [
+        "http://localhost:3000",
+        "http://localhost:4200",
+        "http://cps-testing.cs.rptu.de",
+        "https://cps-testing.cs.rptu.de"
+    ])
     @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "Gets all variables of a solver run.")
     @GetMapping(path = ["/session/variables"], produces = [MediaType.APPLICATION_JSON_VALUE])
     fun getAllVariables(
         @RequestHeader(value = "SessionId", required = true) sessionId: UUID,
     ): ResponseEntity<VariablesResponse>  {
-        try {
+        return try {
             val session = SessionManager.getSession(sessionId)
 
             if (session != null) {
-                return ResponseEntity.ok().body(VariablesResponse(session.getVariables()))
+                ResponseEntity.ok().body(VariablesResponse(session.getVariables()))
             } else {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(VariablesResponse(emptyList<Variable>()))
+                ResponseEntity.status(HttpStatus.NOT_FOUND).body(VariablesResponse(emptyList<Variable>()))
             }
         } catch (_: MalformedURLException) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
         }
     }
 
@@ -354,7 +394,12 @@ class SessionController {
      * **Get all elements in the session**
      * - `GET /session/elements/$id/subtypes`
      */
-    @CrossOrigin
+    @CrossOrigin(origins = [
+        "http://localhost:3000",
+        "http://localhost:4200",
+        "http://cps-testing.cs.rptu.de",
+        "https://cps-testing.cs.rptu.de"
+    ])
     @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "Gets all variables of a solver run.")
     @GetMapping(path = ["/session/elements/{elementId}/subtypes"], produces = [MediaType.APPLICATION_JSON_VALUE])
@@ -365,9 +410,9 @@ class SessionController {
         try {
             val session = SessionManager.getSession(sessionId)
             if (session != null) {
-                val type = session.get(elementId)
+                val type = session[elementId]
                 if (type is Type)
-                return ResponseEntity.ok().body(session.getSubtypes(type).map { ElementResponse(it.toDAO()) }.toCollection(ArrayList()))
+                return ResponseEntity.ok().body(type.subtypes.map { ElementResponse(it.toDAO()) }.toCollection(ArrayList()))
             }
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(arrayListOf())
         } catch (_: MalformedURLException) {

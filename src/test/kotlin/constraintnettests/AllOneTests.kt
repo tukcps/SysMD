@@ -15,8 +15,8 @@ class AllOnePropagationTests {
     @Test fun allOnePropagationTestReal() = testSession("Ranges") {
         loadKerML("""
                 // a is a Real from 1..2, and is assigned a value from 1.2 to 2.5
-                feature all a: ScalarValues::Real, Ranges::InRange = oneOf(1.5 .. 2.5) {:>> range = "1 .. 2";}
-                feature b: ScalarValues::Real, Ranges::InRange = oneOf(1.5 .. 2.5) {:>> range = "1 .. 2";}
+                feature all a: Ranges::RealInRange = oneOf(1.5 .. 2.5) {:>> range = "1 .. 2";}
+                feature b: Ranges::RealInRange = oneOf(1.5 .. 2.5) {:>> range = "1 .. 2";}
             """)
         propagate()
         assertTrue(status.issues.isNotEmpty(), "an error shall be reported as the constraints cannot be satisfied all")
@@ -32,8 +32,8 @@ class AllOnePropagationTests {
     @Test fun allOnePropagationTestInt() = testSession("Ranges") {
         loadKerML("""
             // Contradiction ...         
-            feature all a: ScalarValues::Integer, Ranges::InRange = oneOf(5 .. 15) {:>> range = "1 .. 10";}
-            feature b: ScalarValues::Integer, Ranges::InRange = oneOf(5 .. 15) {:>> range = "1 .. 10";}
+            feature all a: Ranges::IntegerInRange = oneOf(5 .. 15) {:>> range = "1 .. 10";}
+            feature b: Ranges::IntegerInRange = oneOf(5 .. 15) {:>> range = "1 .. 10";}
         """)
         propagate()
         assertTrue(status.issues.isNotEmpty(), status.issues.toString())
@@ -60,8 +60,8 @@ class AllOnePropagationTests {
 
     @Test fun allOnePropagationTestIntNew() = testSession("Ranges") {
         loadKerML("""
-                feature all a: ScalarValues::Integer, Ranges::InRange = oneOf(5 .. 15) { :>> range = "1 .. 10";  }
-                feature b: ScalarValues::Integer, Ranges::InRange = oneOf(5 .. 15) {:>> range = "1 .. 10"; }
+                feature all a: Ranges::IntegerInRange = oneOf(5 .. 15) { :>> range = "1 .. 10";  }
+                feature b: Ranges::IntegerInRange = oneOf(5 .. 15) {:>> range = "1 .. 10"; }
         """)
         propagate()
         assertEquals(Issue.Kind.WARN_INCONSISTENCY, status.issues.firstOrNull()?.kind, "Not satisfiability for all shall be reported")

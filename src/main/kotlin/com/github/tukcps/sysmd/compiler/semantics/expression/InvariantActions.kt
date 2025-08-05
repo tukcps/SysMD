@@ -1,3 +1,5 @@
+@file:Suppress("UNCHECKED_CAST")
+
 package com.github.tukcps.sysmd.compiler.semantics.expression
 
 import com.github.tukcps.sysmd.compiler.semantics.ActionsContext
@@ -9,7 +11,6 @@ import com.github.tukcps.sysmd.model.util.SimpleName
 class InvariantActions<T: Invariant>(
     context: ActionsContext,
     creator: (SimpleName?, SimpleName?) -> T,
-    defaultType: MutableList<String> = mutableListOf("ScalarValues::Boolean")
-): FeatureActions<Invariant>(context, creator, defaultType) {
-    var isNegated = false
-}
+): FeatureActions<Invariant>(
+    context, creator, defaultType = "ScalarValues::Boolean"
+)

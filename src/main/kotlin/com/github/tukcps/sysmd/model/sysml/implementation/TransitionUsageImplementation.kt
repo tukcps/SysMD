@@ -1,5 +1,6 @@
 package com.github.tukcps.sysmd.model.sysml.implementation
 
+import com.github.tukcps.sysmd.model.expression.Expression
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.sysml.*
 import com.github.tukcps.sysmd.model.util.SimpleName
@@ -8,19 +9,18 @@ class TransitionUsageImplementation(
     declaredName: SimpleName? = null,
     declaredShortName: SimpleName? = null,
     elementType: String = "TransitionUsage"
-    ): TransitionUsage, OccurrenceUsageImplementation(
+): TransitionUsage, OccurrenceUsageImplementation(
     declaredName=declaredName,
     declaredShortName=declaredShortName,
-    elementType=elementType) {
+    elementType=elementType
+) {
+    override val source : Element
+        get() = getOwnedElementOfType<SuccessionAsUsage>()!!.source[0]
+    override val target : Element
+        get() = getOwnedElementOfType<SuccessionAsUsage>()!!.target[0]
 
-    @Suppress("UNCHECKED_CAST")
-    override val source : Resolved<ActionUsage>
-        get() = getOwnedElementOfType<SuccessionAsUsage>()?.source?.get(0) as Resolved<ActionUsage>
-    @Suppress("UNCHECKED_CAST")
-    override val target : Resolved<StateUsage>
-        get() = getOwnedElementOfType<SuccessionAsUsage>()?.target?.get(0) as Resolved<StateUsage>
-
-    override var guardCondition : Resolved<Feature>? = null
+    override val guardCondition : Expression?
+        get() = getOwnedElementOfType<Expression>()
 
     override val triggerPayloadParameter: ReferenceUsage?
         get() {

@@ -43,8 +43,8 @@ fun DecompositionTree(
 
         if (!collapsed) {
             Column(modifier = Modifier.padding(start=10.dp)) {
-                ButtonSelection(standards, "Libraries")
-                ButtonSelection(annotations, "Annotations")
+                ButtonSelection(standards, "Standard libraries")
+                ButtonSelection(annotations, "Metadata")
             }
         }
 
@@ -54,8 +54,8 @@ fun DecompositionTree(
 
         TreeViewPlus(composition) {
             !   (
-                    ((!standards.value) && it.name.endsWith("(library)"))  ||
-                    ((!annotations.value) && it.name.startsWith("AnnotatingElement"))
+                    ((!standards.value) && it.name.endsWith("(standard library)"))  ||
+                    ((!annotations.value) && it.name.startsWith("[MetadataFeature]"))
                 )
         }
     }

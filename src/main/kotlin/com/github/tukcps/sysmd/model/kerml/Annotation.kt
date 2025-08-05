@@ -12,7 +12,7 @@ package com.github.tukcps.sysmd.model.kerml
  */
 interface Annotation: Relationship {
     // Owner of relationship shall be set during creation
-    val annotatingElement: Resolved<AnnotatingElement>
-    val annotatedElement: Resolved<Element>
+    val annotatingElement: Element
+    val annotatedElement: Element
     override fun clone(): Annotation
 }

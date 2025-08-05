@@ -3,10 +3,12 @@ package kermltests
 import io.github.tukcps.aadd.values.IntegerRange
 import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.model.kerml.implementation.getOwned
 import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import util.mockup.loadKerML
 import org.junit.jupiter.api.Assertions
+import util.assertNoIssues
 import util.testSession
 import kotlin.test.*
 import kotlin.test.DefaultAsserter.assertEquals
@@ -14,11 +16,13 @@ import kotlin.test.DefaultAsserter.assertEquals
 class FeatureTests {
 
     @Test
-    fun basicTest() = testSession("ScalarValues") {
+    fun basicTest() = testSession {
         loadKerML("""
-                feature f;   
-            """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+            feature f;   
+        """)
+        assertNoIssues()
+        val f = global.resolve<Feature>("f")!!
+        assertNotNull(f)
     }
 
     /**
@@ -200,33 +204,33 @@ class FeatureTests {
     @Test
     fun testRedefine() = testSession("ScalarValues") {
         loadKerML("""
-                type c :> Base::Anything {
-                    feature f [1 ..*]; 
-                }
-                type c2 :> c {
-                    feature f2 redefines c::f [1];
-                }
-            """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+            type c :> Base::Anything {
+                feature f [1 ..*]; 
+            }
+            type c2 :> c {
+                feature f2 redefines c::f [1];
+            }
+        """)
+        assertNoIssues()
         val c = global.resolve<Type>("c")
         val c2 = global.resolve<Type>("c2")
         val c2f = global.resolve<Feature>("c2::f2")
         val cf = global.resolve<Feature>("c::f")
         val redefinition = c2f?.getOwnedElementsOfType<Redefinition>()?.firstOrNull()
         assertNotNull(redefinition, "There must be a redefinition element")
-        assertEquals(cf, redefinition.redefinedFeature.ref)
-        assertEquals(c2f, redefinition.redefiningFeature.ref)
+        assertEquals(cf, redefinition.redefinedFeature)
+        assertEquals(c2f, redefinition.redefiningFeature)
         assertNotSame(c2f, cf, "The redefinition shall be independent KerML Element")
-        assertEquals(cf?.owner?.ref, c )
-        assertEquals(c2f.owner.ref, c2 )
+        assertEquals(cf?.owner, c )
+        assertEquals(c2f.owner, c2 )
     }
 
 
     @Test
-    fun redefinesTest()  = testSession("ScalarValues") {
+    fun redefinesTest()  = testSession("ScalarValues", "Ranges") {
         loadKerML("""
                 type f1 :> Base::Anything {
-                    feature a: ScalarValues::Real(0..20); 
+                    feature a: Ranges::RealInRange {:>> range="0..20";}
                 }
                 type f2 :> f1 {
                     // feature a: ScalarValues::Real(3.0); 
@@ -265,8 +269,8 @@ class FeatureTests {
         // assertEquals(cf, redefinition.redefinedFeature.ref)
         // assertEquals(c2f, redefinition.redefiningFeature.ref)
         assertNotSame(c2f, cf, "The redefinition shall be independent KerML Element")
-        assertEquals(cf?.owner?.ref, c )
-        assertEquals(c2f.owner.ref, c2 )
+        assertEquals(cf?.owner, c )
+        assertEquals(c2f.owner, c2 )
     }
 
     @Test
@@ -298,7 +302,18 @@ class FeatureTests {
         val integerRange = global.resolve<Feature>("ScalarValues::Integer::range")
         assertNotNull(integerRange)
         assertEquals("String",global.resolveVar("ScalarValues::Real::range")!!.baseType.name)
-        assertEquals("String",global.resolve<Feature>("ScalarValues::Integer::range")!!.type[0].ref!!.name)
+        assertEquals("String",global.resolve<Feature>("ScalarValues::Integer::range")!!.type[0].name)
         assertEquals(1, global.resolve<Feature>("ScalarValues::Integer::range")!!.type.size)
+    }
+
+    /**
+     * Was issue: parser stuck; might become preferred syntax?
+     */
+    @Test
+    fun typeWithConstraintTest() = testSession("Base", initialize = false) {
+        loadKerML("""
+            feature f : ScalarValues::Real(1.0 .. 2.0 [km]);
+        """)
+        assertTrue(status.issues.isNotEmpty(), "Syntax error, but parser must not hang")
     }
 }

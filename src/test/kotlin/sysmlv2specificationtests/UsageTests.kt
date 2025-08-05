@@ -37,9 +37,9 @@ class UsageTests {
     @Test
     fun testNameCompartmentWithShortName() = testSession("Parts") {
         loadSysMLv2("""
-        part def <PD2> PartDef2;
-        part <'p#2'> part2 : PartDef2;
-        """.trimIndent())
+            part def <PD2> PartDef2;
+            part <'p#2'> part2 : PartDef2;
+        """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
 
         val partDef2 = global.resolve<PartDefinition>("PartDef2")
@@ -78,15 +78,15 @@ class UsageTests {
     @Test
     fun testAbstractNameCompartmentWithAlias() = testSession("Parts") {
         loadSysMLv2("""
-        part def PartDef1;
-        abstract part part1 : PartDef1; 
-        package P {
-            alias partAlias1 for part1;
-        }
-        package Q {
-            alias partAlias2 for part1;
-        }
-        """.trimIndent())
+            part def PartDef1;
+            abstract part part1 : PartDef1; 
+            package P {
+                alias partAlias1 for part1;
+            }
+            package Q {
+                alias partAlias2 for part1;
+            }
+        """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
 
         val partDef1 = global.resolve<PartDefinition>("PartDef1")

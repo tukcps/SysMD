@@ -9,10 +9,9 @@ import kotlin.test.assertTrue
 
 class PackageTest {
 
-    @Ignore
     @Test
     fun testPackage() = testSession("States", "Requirements", "Interfaces", "Allocations", "Connections",
-        "Attributes", "Ports", "Parts", "Items", "Occurrences") {
+        "Attributes", "Ports", "Parts", "Items", "Occurrences", initialize = false) {
         loadSysMLv2("""
                 package 'Package Example' {
                     public import ISQ::TorqueValue;

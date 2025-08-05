@@ -2,8 +2,9 @@ package com.github.tukcps.sysmd.services.session
 
 import com.github.tukcps.sysmd.compiler.KerML
 import com.github.tukcps.sysmd.logger
+import com.github.tukcps.sysmd.services.check.checkLibraryElementIds
+import com.github.tukcps.sysmd.services.check.checkOwnership
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.repositories.local.toDAO
 import com.github.tukcps.sysmd.services.session.LibraryRepository.loadLibraryFromResources
 import io.github.tukcps.sysmlv2.api.entities.ElementDAO
 import java.util.concurrent.ConcurrentHashMap
@@ -39,21 +40,27 @@ object LibraryRepository {
 
             packageNames.forEach {
                 val inputStream = javaClass.getResourceAsStream("/libraries/$it.kerml")
-                val inputString = inputStream?.bufferedReader().use { it?.readText() }
-                if (inputStream == null)
+                val inputString = inputStream?.bufferedReader().use { input -> input?.readText() }
+                if (inputStream == null) {
                     logger.error("Could not load library '/libraries/$it.kerml' from resources")
+                    return emptyList()
+                }
                 else
                     KerML(session).parse(inputString!!)
-                if (session.status.issues.isNotEmpty())
+                if (session.status.issues.isNotEmpty()) {
                     logger.error("Issue while compiling library '$it': ${session.status.issues.joinToString(", ")}")
+                }
             }
-            session.initialize(1) // resolve and inherit, but no setup of constraint system
+            session.initialize(4) // resolve and inherit, but no setup of constraint system
 
-            val elementDAO = mutableListOf<ElementDAO>()
-            session.repo.elements.values.forEach {
-                if (it != session.global && it != session.anything)
-                    elementDAO.add(it.toDAO())
+            session.checkOwnership()
+            session.checkLibraryElementIds()
+
+            if (session.status.issues.isNotEmpty()) {
+                logger.error("Issue while compiling arrangement '$packageNames': ${session.status.issues.joinToString(", ")}")
             }
+
+            val elementDAO = session.export().map { it -> it.payloadElementSnapshot!! }
             libraries.put(key, elementDAO)
             return elementDAO
         } catch (e: Exception) {
@@ -69,23 +76,26 @@ val Arrangements = hashMapOf(
     "Objects"       to listOf("Base", "ScalarValues", "Objects"),
     "Links"         to listOf("Base", "ScalarValues", "Links"),
     "Occurrences"   to listOf("Base", "ScalarValues", "Links", "Occurrences"),
-    "Ranges"        to listOf("Base", "ScalarValues", "Ranges"),
+    "Objects"       to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects"),
+    "Ranges"        to listOf("Base", "ScalarValues", "SI", "Ranges"),
     "SI"            to listOf("Base", "ScalarValues", "SI", "Ranges"),
     "Ports"         to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Ports"),
     "Items"         to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Items"),
     "Parts"         to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Items", "Parts"),
     "Calculations"  to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Items", "Calculations"),
     "Connections"   to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Connections"),
-    "Attributes"    to listOf("Base", "ScalarValues", "Attributes"),
-    "Math"          to listOf("Base", "ScalarValues", "Math"),
+    "Attributes"    to listOf("Base", "ScalarValues", "Links", "Occurrences", "Attributes"),
+    "Allocations"   to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Connections", "Allocations"),
+    "Math"          to listOf("Base", "ScalarValues", "SI", "Ranges", "Math"),
+    "Constraints"   to listOf("Base", "ScalarValues", "SI", "Ranges", "Constraints"),
     "Requirements"  to listOf("Base", "ScalarValues", "Constraints", "Requirements"),
     "Actions"       to listOf("Base", "ScalarValues", "Links", "Occurrences", "Actions"),
     "Context"       to listOf("Base", "ScalarValues", "Context"),
     "KerML"         to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Ranges", "KerML"),
-    "KerMLLibraries" to listOf("Base", "ScalarValues", "Ranges", "Objects", "Links", "Occurrences", "Context", "Items", "SI", "Ranges"),
-    "SysMLLibraries" to listOf("Base", "ScalarValues", "Ranges", "Objects", "Links", "Occurrences", "Context", "Items", "SI", "Ranges",
+    "KerMLLibraries" to listOf("Base", "ScalarValues", "Ranges", "Objects", "Links", "Occurrences", "Items", "SI", "Ranges"),
+    "SysMLLibraries" to listOf("Base", "ScalarValues", "Ranges", "Objects", "Links", "Occurrences", "Items", "SI", "Ranges",
         "Ports", "Parts", "Calculations", "Constraints", "Requirements", "Interfaces", "Actions", "States", "Connections", "Signals"),
-    "ISO26262"      to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "ISO26262"),
+    "ISO26262"      to listOf("Base", "ScalarValues", "Ranges", "Objects", "Links", "Occurrences", "ISO26262"),
     "Signals"       to listOf("Base", "ScalarValues", "Links", "Occurrences", "Signals"),
     "SysMD"         to listOf("Base", "ScalarValues", "SysMD")
 )

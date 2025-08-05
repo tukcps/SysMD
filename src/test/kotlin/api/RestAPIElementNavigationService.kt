@@ -53,7 +53,7 @@ class RestAPIElementNavigationService {
         // Response: OK and ID.
         assertEquals(HttpStatus.OK.value(), response.statusCode.value())
         val elements = jsonMapper.readValue(response.body, arrayListOf<ElementData>()::class.java)
-        assertEquals(8, elements.size)
+        assertEquals(14, elements.size)
     }
 
 

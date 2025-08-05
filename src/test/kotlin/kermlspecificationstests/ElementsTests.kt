@@ -1,5 +1,6 @@
 package kermlspecificationstests
 
+import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
@@ -18,7 +19,7 @@ class ElementsTests {
             classifier <c123> AClassifier;
             feature aFeature;
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -38,6 +39,6 @@ class ElementsTests {
                 }
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 }

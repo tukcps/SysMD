@@ -2,8 +2,9 @@ package com.github.tukcps.sysmd.services.inheritance
 
 import com.github.tukcps.sysmd.compiler.semantics.Identification
 import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureTypingImplementation
+import com.github.tukcps.sysmd.model.kerml.implementation.MultiplicityImplementation
+import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.session.Session
 
 /**
@@ -12,7 +13,7 @@ import com.github.tukcps.sysmd.services.session.Session
  * @param calls used to recognize loops
  */
 fun Type.addInheritedToSubtypes(calls: Int = 0) {
-    addInheritedFeatures()
+    addInheritedFeaturesFromGeneral()
     subtypes.forEach { subtype ->
         subtype.addInheritedToSubtypes(calls + 1)
     }
@@ -20,79 +21,110 @@ fun Type.addInheritedToSubtypes(calls: Int = 0) {
 
 /**
  * For inherited properties that are computed, computation can -- depending on the scope --
- * lead to different results. Hence, we create a volatile, inherited property that is
- * a clone of the superclass' property.
+ * lead to different results. Hence, we create an inherited feature that is a clone of
+ * the superclass' property.
  */
-fun Type.addInheritedFeatures() {
+private fun Type.addInheritedFeaturesFromGeneral() {
     // "Clone" features of superclass iff not there!
     // Type element must be part of the model
     require(model != null)
+
+    // Nothing to do for anything
+    if (this is Anything) return
+
+    // Nothing to do for references
     if (this is Feature && (referencedFeature != null || isDerived)) return
 
-    // get all features of general type if that is already resolved
-    val typeFeatures: MutableList<Feature> = mutableListOf()
-    generalization.forEach { general ->
-        typeFeatures += model!!.getAllInheritedFeatures(general.ref?: model!!.anything)
+    val redefinitions = getOwnedElementsOfType<Feature>().filter { it.redefining != null }
+    val redefined = getOwnedElementsOfType<Feature>().filter { it.redefining != null }.map { it.redefining!! }
+    val redefinedNames = redefined.map { it.escapedName() }
+    val toBeCloned    = mutableListOf<Feature>()
+
+    // For each supertype, determine the features that are not re-defined; they are cloned.
+    generalization.forEach { supertype ->
+        val features = supertype.ownedElement.filterIsInstance<Feature>()
+        features.forEach { feature ->
+            if (feature.escapedName() !in redefinedNames)
+                toBeCloned.add(feature)
+        }
     }
 
-    val localFeatures = getOwnedElementsOfType<Feature>().associateBy { Identification(it) }
+    // For redefinitions, add new type, multiplicity, constraints
+    redefinitions.forEach { feature ->
+        if(feature.redefining != null && feature.redefining is Unresolved) {
+            var found: Feature? = null
+            generalization.forEach { supertype ->
+                found = supertype.resolve<Feature>((feature.redefining as Unresolved).relativeName!!)
+            }
+            if (found != null) {
+                feature.ownedRelationship.filterIsInstance<Redefinition>().firstOrNull()?.redefinedFeature = found
+            }
+        }
 
-    // For each inherited property, we create a clone; needed as changes in the owning class
-    // to the property shall not change the original property of the superclass.
-    typeFeatures.forEach { feature ->
+        // get Type from redefining feature
+        feature.redefining?.type?.forEach { type ->
+            // Add all types of refined property
+            val typing = FeatureTypingImplementation(
+                typedFeature = feature,
+                type = type
+            ).also {
+                it.isImplied
+            }
+            model!!.addOwnedRelationship(typing, feature)
+        }
+
+        // get Multiplicity from redefining feature iff not defined
+        if (feature.redefining?.multiplicityProperty != null && feature.multiplicityProperty == null) {
+            model?.addOwnedMember(feature.redefining!!.multiplicityProperty!!.clone(), feature)
+        }
+
+
+        // add prefixes, constraints
+        feature.isEnd = feature.redefining!!.isEnd
+        feature.isComposite = feature.redefining!!.isComposite
+        feature.isPortion = feature.redefining!!.isPortion
+        feature.isDerived = feature.redefining!!.isDerived
+        feature.isOrdered = feature.redefining!!.isOrdered
+        feature.typeConstraint = feature.redefining!!.typeConstraint
+        feature.unitConstraint = feature.redefining!!.unitConstraint
+        feature.isSufficient = feature.redefining!!.isSufficient
+        if (feature.name == "range" || feature.name == "spec") { //range for Integer, Real, spec for Boolean
+            if (feature.owner is Feature) {
+                // remove """ and " " from the string
+                val specString = feature.expression!!.replace("\"", "").replace(" ", "")
+                // set the type constraint to the list of specs split by "," (vectors)
+                (feature.owner as Feature).typeConstraint.clear()
+                (feature.owner as Feature).typeConstraint.addAll(specString.split(","))
+            }
+        } else if (feature.name == "unit") {
+            if (feature.owner is Feature)
+                (feature.owner as Feature).unitConstraint = feature.expression!!.replace("\"", "")
+        } else this.features().forEach { feature ->
+            feature.deepCloneWithInheritedFeature(this)
+        }
+    }
+
+    // get all features of general type if that is already resolved
+    val supertypeFeatures: MutableList<Feature> = mutableListOf()
+    generalization.forEach { general ->
+        supertypeFeatures += general.getOwnedElementsOfType<Feature>()
+    }
+    val existingFeatures = getOwnedElementsOfType<Feature>().associateBy { Identification(it) }
+
+    // For Supertype-Features that are not re-defined, create a clone
+    toBeCloned.forEach { superTypeFeature ->
 
         // Cyclic dependencies are ok, but we must not clone them recursively ...
-        if (this.owner.ref in feature.allSupertypes(true))
+        if (this.owner in superTypeFeature.allSupertypes(true))
             return
 
         // If feature with same identification does not exist, add a clone from general
-        val local = localFeatures[Identification(feature)]
-        if (local == null) {
-            val klon = feature.deepCloneWithInheritedFeature(this)
-            model!!.create(klon, this)
-        } else if (local.isRedefined){
-            //If the property is redefined, we need to update the type and constraints.
-            // if(local.type.elementAt(0).ref!!.qualifiedName == "Base::Anything") {
-                //Go over all Types of the superclass property and add them
-                feature.type.forEach { type ->
-                    //Remove old type (Base::Anything)
-                    local.ownedElement.removeIf {
-                        it.ref is FeatureTypingImplementation &&
-                                (it.ref as FeatureTypingImplementation).target
-                                    .firstOrNull()?.ref?.qualifiedName in listOf("Base::DataValue", "Base::Anything")
-                    }
-                    if (type.ref == null) {
-                        type.ref = model!![type.id!!] as Type?
-                    }
-                    //Add all types of refined property
-                    val typing = FeatureTypingImplementation(
-                        typedFeature = Resolved(ref = local),
-                        type = Resolved(ref = type.ref!!)
-                    ).also {
-                        it.isTransient
-                        it.isImplied
-                    }
-                    model!!.create(typing, local)
-                }
-            //}
-            //add constraints
-            local.typeConstraint = feature.typeConstraint
-            local.unitConstraint = feature.unitConstraint
-            local.isSufficient = feature.isSufficient
-            if(local.name=="range"){ //range for Integer, Real, spec for Boolean
-                if(local.owner.ref is Feature) {
-                    // remove """ and " " from the string
-                    val specString = local.expression!!.replace("\"", "").replace(" ", "")
-                    // set the type constraint to the list of specs split by "," (vectors)
-                    (local.owner.ref as FeatureImplementation).typeConstraint.clear()
-                    (local.owner.ref as FeatureImplementation).typeConstraint.addAll(specString.split(","))
-                }
-            }
-            if(local.name=="unit"){
-                if(local.owner.ref is Feature)
-                    (local.owner.ref as FeatureImplementation).unitConstraint = local.expression!!.replace("\"","")
-            }
-        }
+        val existingWithSameName = existingFeatures[Identification(superTypeFeature)]
+        if(existingWithSameName == null) {
+            // Simple inheritance  -- we just clone it
+            superTypeFeature.deepCloneWithInheritedFeature(this)
+        }  // else -- needs to differentiate between features that were cloned by previous run (e.g. by reading library) and that were specified by compiler ...
+           // model?.status?.error("Attempt to overload feature ${existingWithSameName.escapedName()} of supertype '${superTypeFeature.qualifiedName}'; use redefinition.")
     }
 }
 
@@ -138,26 +170,14 @@ private fun Session.mergeFeatures(own: Collection<Feature>, inherited: Collectio
             if ((o.declaredName == i.declaredName && i.declaredName != null) || (o.declaredShortName == i.declaredShortName) && i.declaredShortName != null) {
                 // Basic requirement for inheritance, must hold in all cases otherwise something went wrong before ...
                 // TODO: Limit this to subclass which is sufficient.
-                // if (o.ofClass.str != i.ofClass.str)
                 if ( o.generalization.isEmpty() ) return merged
-                //    reportError(o, "INTERNAL ERROR: ${o.ofClass.str} was not resolved property.")
 
                 if ( i in o.allSupertypes(true) )
                     status.inconsistency("subclass type  of '${o.qualifiedName}' must be subclass of '${i.qualifiedName}'", element = o)
 
-                //if(o::class != i::class )
-                //    reportInconsistency(i,"Value Feature may not override Part")
-
                 if (o.multiplicity !in i.multiplicity)
                     status.inconsistency("multiplicity of subclass '${i.qualifiedName}' must be subset of superclass '${o.qualifiedName}'", element = o)
 
-                /*
-                when (o.quantity.value) {
-                    is AADD -> o.quantity = o.quantity.intersect(i.quantity)
-                    is IDD  -> o.quantity = o.quantity.intersect(i.quantity)
-                    is BDD  -> o.quantity = o.quantity.intersect(i.quantity)
-                    is StrDD -> { } // TODO()
-                } */
                 overridden = true
             }
         }

@@ -14,6 +14,7 @@ import com.github.tukcps.sysmd.exports.Exporter
 import com.github.tukcps.sysmd.exports.UcbDataPack
 import com.github.tukcps.sysmd.generated.resources.Res
 import com.github.tukcps.sysmd.generated.resources.SysMD_Icon
+import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.sysml.StateUsage
 import com.github.tukcps.sysmd.rest.RESTRepository
 import com.github.tukcps.sysmd.services.session.SessionManager
@@ -104,7 +105,7 @@ open class SysMdRunner: CommandLineRunner {
         if ("headless" !in args)
             try {
                 init()
-                logger.info("Starting SysMD ${AppTheme.version} with options '$args'")
+                logger.info("Starting SysMD ${AppTheme.version} with options ${args.toList()}")
                 val sysMdViewModel = SysMDViewModel(session)
                 application {
                     val showDialog = remember { mutableStateOf(false) }
@@ -173,7 +174,7 @@ open class SysMdRunner: CommandLineRunner {
                                 var ucbData: UcbDataPack? = null
                                 val systemcExporter = Exporter()
                                 try {
-                                    systemcExporter.analyzeSysMD(elementToSystemC?.value!!)
+                                    systemcExporter.analyzeSysMD(elementToSystemC?.value!! as Feature)
                                     ucbData = systemcExporter.getUCBData()
                                     openUCB.value = true
                                 } catch (e: Exception) {

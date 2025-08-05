@@ -6,9 +6,7 @@ import com.github.tukcps.sysmd.compiler.SysMLv2
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
 import com.github.tukcps.sysmd.exceptions.throwSyntaxError
-import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.kerml.Resolved
-import com.github.tukcps.sysmd.model.kerml.Type
+import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.sysml.StateUsage
 import com.github.tukcps.sysmd.model.sysml.implementation.StateUsageImplementation
 
@@ -41,14 +39,12 @@ fun SysMLv2.StateActionUsage() {
 /**
  *      StatePerformActionUsage = PerformActionUsageDeclaration ActionBody
  *      PerformActionUsageDeclaration =
- *          ( OwnedReferenceSubsetting FeatureSpecializationPart? | 'action' UsageDeclaration )
+ *          (OwnedReferenceSubsetting FeatureSpecializationPart? | 'action' UsageDeclaration)
  *          ValuePart?
  */
-fun SysMLv2.StatePerformActionUsage() {
-    val statePerformActionUsage = FeatureActions<StateUsage>(semantics, ::StateUsageImplementation, mutableListOf("States::StateAction"))
-    PerformActionUsageDeclaration(statePerformActionUsage as FeatureActions<Feature>)
-    ActionBody(Resolved(statePerformActionUsage.created!!))
-    statePerformActionUsage.finish()
+fun SysMLv2.StatePerformActionUsage() = FeatureActions<StateUsage>(semantics, ::StateUsageImplementation, "States::StateAction").parse {
+    PerformActionUsageDeclaration()
+    ActionBody()
 }
 val statePerformActionUsageStart = performActionUsageDeclarationStart
 
@@ -108,17 +104,15 @@ fun SysMLv2.ExitActionMember() {
  *          ';'
  *          | ('parallel')? '{' StateBodyItem* '}'
  */
-fun SysMLv2.StateDefBody(owner: Resolved<Type>){
+fun SysMLv2.StateDefBody(owner: Namespace){
     when {
         SEMICOLON.then() -> {}
         // PARALLEL.then() -> {}
         LCURBRACE.starts() -> {
             LCURBRACE.consume()
-            semantics.pushOwner(owner)
             noOrMore(end = {token.kind == RCURBRACE}) {
                 StateBodyItem()
             }
-            semantics.popOwner()
             RCURBRACE.consume()
         }
     }
@@ -137,7 +131,7 @@ fun SysMLv2.StateDefBody(owner: Resolved<Type>){
 fun SysMLv2.StateBodyItem() {
     when {
         nonBehaviorBodyItemStart() -> NonBehaviorBodyItem()
-        behaviorUsageElementStart.starts()  -> BehaviorUsageElement()
+        behaviorUsageElementStart.starts() -> BehaviorUsageElement()
         TRANSITION.starts()        -> TransitionUsage()
         ENTRY.starts()             -> EntryActionMember()
         DO.starts()                -> DoActionMember()
@@ -150,20 +144,18 @@ fun SysMLv2.StateBodyItem() {
 /**
  *      StateUsageBody =
  *            ';'
- *          | ( 'parallel' )? '{' StateBodyItem* '}'
+ *          | ('parallel')? '{' StateBodyItem* '}'
  *
  */
-fun SysMLv2.StateUsageBody(owner: Resolved<Type>) {
+fun SysMLv2.StateUsageBody() {
     when {
         SEMICOLON.then() -> {}
-        // Parallel ...
         LCURBRACE.starts() -> {
+            PARALLEL.optional()
             LCURBRACE.consume()
-            semantics.pushOwner(owner)
             noOrMore(end = {token.kind == RCURBRACE}) {
                 StateBodyItem()
             }
-            semantics.popOwner()
             RCURBRACE.consume()
         }
     }

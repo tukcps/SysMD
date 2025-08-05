@@ -1,9 +1,9 @@
 package com.github.tukcps.sysmd.model.kerml
 
 interface Redefinition: Subsetting {
-    var redefiningFeature: Resolved<Feature>
-    var redefinedFeature: Resolved<Feature>
+    var redefiningFeature: Feature
+    var redefinedFeature: Feature
 
-    override fun clone(): Subsetting
+    override fun clone(): Redefinition
     override fun updateFrom(template: Element)
 }

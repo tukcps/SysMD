@@ -40,8 +40,9 @@ class Unit : Cloneable {
     }
 
     /**
-     * Parses sting to unit Sting must contain defined units with spaces between them. A "/" symbol separates nominator and denominator
-     * The units can have a prefix and an exponent (Example: dm^3)
+     * Parses string to unit Sting must contain defined units with spaces between them.
+     * A "/" symbol separates nominator and denominator.
+     * The units can have a prefix and an exponent (Example: dm^3).
      */
     private fun parse(str: String) {
         val r: Reader = StringReader(str)
@@ -203,7 +204,7 @@ class Unit : Cloneable {
      */
     private fun testGivenUnitDimension() {
 
-        if(unitSet.isEmpty()&& unitDimension!="") { //unit is not defined
+        if (unitSet.isEmpty() && unitDimension!="") { //unit is not defined
             // unit is not given -> use Unit of given dimension (remove whitespaces and ignore case)
             val possibleDimensions = ConversionTables.unitsMap.values.filter { it.dimension.equals(unitDimension,ignoreCase = true) }
             if(possibleDimensions.isNotEmpty()) {
@@ -217,8 +218,8 @@ class Unit : Cloneable {
             val possibleUnits = ConversionTables.unitsMap.values.filter { it.getBaseUnits() == clone().toSI().unitSet }
             //test, if the given unit domain is possible (remove whitespaces and ignore case)
             if (possibleUnits.none { it.dimension.replace(" ", "").equals(unitDimension, ignoreCase = true) })
-                if(unitDimension!="Quantity") { //if dimension is empty, throw no error (no error in this case)
-                    if(unitDimension == "ScalarValues::Real" || unitDimension == "Real")
+                if (unitDimension!="Quantity") { //if dimension is empty, throw no error (no error in this case)
+                    if (unitDimension == "ScalarValues::Real" || unitDimension == "Real")
                         throw UnitDimensionError("Units with type ScalarValues::Real are not allowed. Use Type from SI Package instead with units (e.g. SI::Time, SI::Length, SI::Quantity ...)")
                     else
                         throw UnitDimensionError("Domain $unitDimension not possible for unit $this")

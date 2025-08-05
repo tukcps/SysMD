@@ -13,9 +13,9 @@ class SessionMgrTests {
     }
 
     @Test
-    fun exportTestWithInitializePropagateDigital() = testSession("ScalarValues") {
+    fun exportTestWithInitializePropagateDigital() = testSession("ScalarValues", "Ranges") {
         loadKerML(input = """
-            feature x: Real(1.0..3.0);
+            feature x: RealInRange {:>> range = "1.0..3.0";}
             feature y: Real = x+0.1; 
             feature r: Requirement = x >= y; 
             """.trimIndent())

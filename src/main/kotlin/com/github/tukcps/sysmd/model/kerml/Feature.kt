@@ -15,7 +15,7 @@ import com.github.tukcps.sysmd.model.expression.AstNode
  */
 interface Feature: Type {
 
-    val type: List<Resolved<Type>>
+    val type: List<Type>
     val typing: List<FeatureTyping>
     val ownedTypeFeaturing: List<FeatureTyping>
 
@@ -37,9 +37,15 @@ interface Feature: Type {
     var isPortion: Boolean
     var isUnique: Boolean
     var isOrdered: Boolean
-    var isRedefined: Boolean
     var isDerived: Boolean
     var isReadOnly: Boolean
+
+    /**
+     * Gets the redefining
+     */
+    val redefining: Feature?
+        get() = ownedRelationship.filterIsInstance<Redefinition>().firstOrNull()?.redefinedFeature
+
 
     /**
      * Initialize searches for (qualified) names in the element and
@@ -66,7 +72,7 @@ interface Feature: Type {
      * Features can be references that are represented by an implied owned
      * ReferenceSubsetting.
      */
-    val referencedFeature: Resolved<Feature>?
+    val referencedFeature: Feature?
 
     /**
      * @return true if there are parts that are relevant for solver

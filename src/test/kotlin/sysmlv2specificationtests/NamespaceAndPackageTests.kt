@@ -3,6 +3,7 @@ package sysmlv2specificationtests
 import com.github.tukcps.sysmd.model.sysml.PartDefinition
 import com.github.tukcps.sysmd.model.sysml.PartUsage
 import com.github.tukcps.sysmd.services.resolve.resolve
+import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Test
@@ -79,7 +80,7 @@ class NamespaceAndPackageTests {
             alias Package2Alias for Package2;
         }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -91,11 +92,13 @@ class NamespaceAndPackageTests {
     @Test
     fun testPackagesWithImportedPackages() = testSession {
         loadSysMLv2("""
-        package Package1 {
-            public import Package2::*;
-            private import Package3::*;
-        }
-        """.trimIndent())
+            package Package2; 
+            package Package3; 
+            package Package1 {
+                public import Package2::*;
+                private import Package3::*;
+            }
+        """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
@@ -108,10 +111,11 @@ class NamespaceAndPackageTests {
     @Test
     fun testImportedPackages() = testSession {
         loadSysMLv2("""
-        package Package2 {
-            private import Package0::Package1::**;
-        }
-        """.trimIndent())
+            package Package0 { package Package1; }
+            package Package2 {
+                private import Package0::Package1::**;
+            }
+        """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 

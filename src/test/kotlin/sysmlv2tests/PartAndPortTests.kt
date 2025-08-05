@@ -6,6 +6,7 @@ import com.github.tukcps.sysmd.model.sysml.PartUsage
 import com.github.tukcps.sysmd.model.sysml.PortDefinition
 import com.github.tukcps.sysmd.model.sysml.PortUsage
 import com.github.tukcps.sysmd.services.resolve.resolve
+import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Test
@@ -83,8 +84,8 @@ class PartAndPortTests {
     fun partTest1() = testSession("Parts") {
         loadSysMLv2("""
             part p; 
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        """)
+        assertNoIssues()
         val p = global.resolve<PartUsage>("p")
         assertNotNull(p)
         assertTrue(p.allSupertypes().first().qualifiedName == "Parts::Part")
@@ -98,7 +99,7 @@ class PartAndPortTests {
         loadSysMLv2("""
             part def p1; 
             part def p2 :> p1; 
-        """.trimIndent())
+        """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p2 = global.resolve<PartDefinition>("p2")
         assertNotNull(p2)

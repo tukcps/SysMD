@@ -4,6 +4,7 @@ import io.github.tukcps.aadd.values.XBool
 import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolveVar
+import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.*
@@ -15,7 +16,7 @@ class AssertAndConstraintsTests {
         loadSysMLv2("""
             assert { true or false } 
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     @Test
@@ -23,7 +24,7 @@ class AssertAndConstraintsTests {
         loadSysMLv2("""
             assert constraint { true or false } 
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     @Test
@@ -39,7 +40,7 @@ class AssertAndConstraintsTests {
         loadSysMLv2("""
             attribute v1: ScalarValues::Real = 1.0; 
             attribute v2: ScalarValues::Real = 3.0; 
-            assert c { v1 < v2 }
+            assert constraint c { v1 < v2 }
         """)
         initialize()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
@@ -50,8 +51,8 @@ class AssertAndConstraintsTests {
     @Test
     fun assertTest2() = testSession("ScalarValues") {
         loadSysMLv2("""
-            assert test { (3 >= 3) and (3 <= 3) }
-            assert test2 { (3 == 3) }
+            assert constraint test { (3 >= 3) and (3 <= 3) }
+            assert constraint test2 { (3 == 3) }
         """)
         initialize()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
@@ -64,10 +65,10 @@ class AssertAndConstraintsTests {
     @Test
     fun assertTestEQWithVariable() = testSession("Calculations", "SI") {
         loadSysMLv2("""
-            attribute a: ScalarValues::Integer {:>> range = "0..4";}
-            attribute ASIlFromReliability: ScalarValues::Integer = a {:>> range = "0..4";}
+            attribute a: ScalarValues::Integer(0..4); 
+            attribute ASIlFromReliability: ScalarValues::Integer(0..4); 
             attribute ASILCalculated: ScalarValues::Integer = 1;
-            assert ASIL { ASIlFromReliability == ASILCalculated }
+            assert constraint ASIL { ASIlFromReliability == ASILCalculated }
         """)
         propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
@@ -97,9 +98,9 @@ class AssertAndConstraintsTests {
     fun assertTestEQ() = testSession("Calculations", "SI") {
         loadSysMLv2(
             """
-            attribute ASIlFromReliability: ScalarValues::Integer  { :>> range = "0..4"; }
+            attribute ASIlFromReliability: ScalarValues::Integer(0..4); 
             attribute ASILCalculated: ScalarValues::Integer = 1;
-            assert ASIL {ASIlFromReliability == ASILCalculated}
+            assert constraint ASIL { ASIlFromReliability == ASILCalculated }
         """)
         propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())

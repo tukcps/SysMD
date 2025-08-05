@@ -12,14 +12,6 @@ open class ClassImplementation(
     declaredShortName=declaredShortName,
     elementType=elementType
 ) {
-    override fun toString(): String {
-        return "$elementType {" +
-                (if (declaredName != null) "name='$declaredName', " else "") +
-                (if (declaredShortName != null) "shortName='$declaredShortName', " else "") +
-                "supertype='$generalization', " +
-                "imports='$imports', " +
-                "id='${elementId}...'}"
-    }
 
     override fun clone(): Class {
         return ClassImplementation(

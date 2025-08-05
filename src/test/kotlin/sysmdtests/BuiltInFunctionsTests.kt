@@ -108,8 +108,8 @@ class BuiltInFunctionsTests {
 
 
     @Test
-    fun oneOfOperationTest() = testSession("ScalarValues") {
-        loadKerML("feature r: ScalarValues::Real(1.0) = oneOf(1.0 .. 2.0);")
+    fun oneOfOperationTest() = testSession("ScalarValues", "Ranges") {
+        loadKerML("feature r: Ranges::RealInRange = oneOf(1.0 .. 2.0) {:>> range = \"1.0\";}")
         propagate()
         assertEquals(0, status.issues.size, status.issues.toString())
         val r = global.resolve<Feature>("r") !!

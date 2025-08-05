@@ -1,5 +1,6 @@
 package com.github.tukcps.sysmd.model.kerml
 
+import com.fasterxml.uuid.Generators
 import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.model.util.SimpleName
 import com.github.tukcps.sysmd.services.ModelServices
@@ -53,23 +54,31 @@ interface Element: ModelServices {
     fun positionOf(element: Element): Int?
 
 
-        /**
+    /**
      * Reified Relationships from which owner, owningNamespace, etc. are derived.
      * Contains reified relationships that relate the element with its owned elements.
      */
-    val ownedRelationship: List<Relationship>
-        get() = getOwnedElementsOfType<Relationship>()
-
-    /** The ownership is modeled by a set of owned elements.*/
-    var ownedElement: MutableList<Resolved<Element>>
+    var ownedRelationship: MutableList<Relationship>
 
     /** Reified Relationship from which owner and the below properties are derived. */
-    var owningRelationship: Resolved<Relationship>
+    var owningRelationship: Relationship?
 
-    /** The owning element; can be an Identity with "null" entries in case of the root element.*/
-    var owner: Resolved<Element>                      // --> to be replaced by derived property
-    val owningNamespace: Namespace?                   // finds the owning namespace
-    val standardNamespace: Namespace?                 // null, if not standard
+    /** The ownership is modeled by a set of owned elements.*/
+    val ownedElement: List<Element>
+        get() = ownedRelationship.map {
+            if (it is OwningMembership)
+                it.memberElement
+            else
+                it
+        }
+
+
+    /** The owning element, skipping relationships unless they are in the element hierarchy */
+    val owner: Element?
+        get() = owningRelationship?.owner
+
+    val owningNamespace: Namespace?
+    val standardNamespace: Namespace?
 
     /** Whether the element is from SysML or KerML libraries, these have UUID type 5, not 4 */
     var isLibraryElement: Boolean
@@ -94,11 +103,15 @@ interface Element: ModelServices {
      */
     var documentation: MutableList<Documentation>
 
-    fun addOwnedElement(element: Element)
-    fun setOwner(owningElement: Element)
-    fun getOwner(): Element? = owner.ref
-
     fun updateFrom(template: Element)
+
+    fun generateUUID() {
+        elementId = if (!isLibraryElement && !isStandard)
+            Generators.randomBasedGenerator().generate()
+        else {
+            Generators.nameBasedGenerator().generate(path())
+        }
+    }
 }
 
 
@@ -107,8 +120,8 @@ interface Element: ModelServices {
  * @param T The subclass of Element for which we search.
  */
 inline fun <reified T: Element> Element.getOwnedElementOfType(): T? {
-    val found = ownedElement.find { (it.ref != null) && it.ref is T }
-    return found?.ref as T?
+    val found = ownedElement.find { it is T }
+    return found as T?
 }
 
 
@@ -116,12 +129,8 @@ inline fun <reified T: Element> Element.getOwnedElementOfType(): T? {
  * Returns a mutable list of all owned elements of type T.
  * @param T The subclass of Element for which we search.
  */
-inline fun <reified T: Element> Element.getOwnedElementsOfType(): MutableList<T>  {
-    val result = mutableListOf<T>()
-    ownedElement.forEach { if (it.ref is T) result.add(it.ref as T) }
-    return result
-}
-
+inline fun <reified T: Element> Element.getOwnedElementsOfType(): List<T> =
+    ownedElement.filterIsInstance<T>()
 
 /**
  * Returns the owned element with a given name.
@@ -129,34 +138,10 @@ inline fun <reified T: Element> Element.getOwnedElementsOfType(): MutableList<T>
  */
 fun Element.getOwnedElement(name: SimpleName?, shortName: SimpleName? = null): Element? {
     ownedElement.forEach {
-        if (name != null && it.ref?.name == name
-            || (shortName == null) && it.ref?.declaredShortName == name
-            || (shortName!= null) && it.ref?.declaredShortName == shortName)
-            return it.ref
+        if (name != null && it.name == name
+            || (shortName == null) && it.declaredShortName == name
+            || (shortName!= null) && it.declaredShortName == shortName)
+            return it
     }
     return null
-}
-
-/**
- * Returns the owned element with a given name.
- * @param name A SimpleName that is searched for
- */
-inline fun <reified T> Element.getOwned(name: SimpleName): T? {
-    ownedElement.forEach {
-        if (it.ref?.declaredName == name)
-            return if (it.ref is T) it.ref as T else null
-        if (it.ref?.declaredShortName == name)
-            return if (it.ref is T) it.ref as T else null
-    }
-    return null
-}
-
-/**
- * Returns the owned element with an index.
- * If the type is not the template parameter type T, null is returned.
- * @param i index of the element list
- */
-inline fun <reified T> Element.getOwnedByIndex(i: Int): T? {
-    val element = ownedElement.getOrNull(i)?.ref
-    return element as? T
 }

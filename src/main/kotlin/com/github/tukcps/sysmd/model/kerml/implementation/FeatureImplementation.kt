@@ -19,7 +19,6 @@ open class FeatureImplementation(
     final override var isSufficient: Boolean = false,
     final override var isUnique: Boolean = false,
     final override var isOrdered: Boolean = false,
-    final override var isRedefined: Boolean = false,
     final override var isDerived: Boolean = false,
     override var isReadOnly: Boolean = false,
     textualRepresentation: MutableList<TextualRepresentation> = mutableListOf(),
@@ -33,7 +32,7 @@ open class FeatureImplementation(
     textualRepresentation = textualRepresentation,
     elementType = elementType
 ){
-    override val type: List<Resolved<Type>>
+    override val type: List<Type>
         get() = generalization
 
     override val typing: List<FeatureTyping>
@@ -51,24 +50,8 @@ open class FeatureImplementation(
         get() = IntegerRange(multiplicityProperty?.typeConstraint?.firstOrNull()?:"1..1")
         set(value) { multiplicityProperty?.variable?.valueSpecs = mutableListOf(value)}
 
-    /**
-     * Initialize searches for (qualified) names in the element and
-     * adds UId where the search was successful or reports an error where not.
-     */
-    override fun resolveNames(): Boolean {
-        //
-        // We also need to add multiplicity as property.
-        // Add multiplicity as owned property is done in create-function of Session!
-        //
-        updated = super.resolveNames() or updated
-        return updated
-    }
-
-    /**
-     * Just string representation for debugging.
-     */
-    override fun toString() =
-        "$elementType { name=${escapedName()}, type=${type}, multiplicity=${multiplicity} }"
+    override val name: String?
+        get() = declaredName?: referencedFeature?.name
 
     override fun clone(): Feature {
         val klon = FeatureImplementation(
@@ -85,31 +68,41 @@ open class FeatureImplementation(
         ).also { klon ->
             klon.model = model
             klon.updated = updated
-            klon.typeConstraint = typeConstraint
+            klon.typeConstraint = typeConstraint.toMutableList()
             klon.unitConstraint = unitConstraint
             klon.expression = expression
             klon.isAbstract = isAbstract
+            klon.isSufficient = isSufficient
+            // klon.updateFrom(this)
+            // super.updateFrom causes failing tests with Connections for unclear reason.
+            // reason lies in isLibraryElement or isStandard?
         }
         return klon
     }
 
     override var featureWithValue: AstNode? = null
 
-    final override val referencedFeature: Resolved<Feature>?
+    final override val referencedFeature: Feature?
         get() = getOwnedElementOfType<ReferenceSubsetting>()?.referencedFeature
 
     override fun updateFrom(template: Element) {
         if (template is Feature) {
-            direction = template.direction
-            isSufficient = template.isSufficient
-            isComposite = template.isComposite
-            isPortion = template.isPortion
+            model = template.model
+            updated = template.updated
+            expression = template.expression
             typeConstraint = template.typeConstraint
             unitConstraint = template.unitConstraint
             expression = template.expression
+            isAbstract = template.isAbstract
+            direction = template.direction
             isEnd = template.isEnd
-            if (template.getOwnedElementOfType<Multiplicity>() != null)
-                multiplicity = template.multiplicity
+            isComposite = template.isComposite
+            isPortion = template.isPortion
+            isSufficient = template.isSufficient
+            isUnique = template.isUnique
+            isOrdered = template.isOrdered
+            isDerived = template.isDerived
+            isReadOnly = template.isReadOnly
             super.updateFrom(template)
         }
     }
@@ -119,6 +112,11 @@ open class FeatureImplementation(
         set(value) { variables = mutableListOf(value) }
     // For nested attributes, multiple variables are needed
     override var variables: MutableList<Variable?> = mutableListOf()
+
+    override fun toString(): String = super.toString() +
+            if (variable != null) " = " +
+                    try { variable?.vectorQuantity.toString() }
+                    catch (_: Exception) {"(?)"} else ""
 }
 
 /**
@@ -137,7 +135,7 @@ fun Feature.toTextualRepresentation(): String? {
     if (declaredName != null)
         sysml += " $declaredName"
     type.forEach {
-        sysml += ": ${it.ref!!.qualifiedName}"
+        sysml += ": ${it.qualifiedName}"
     }
     if (typeConstraint.isNotEmpty()) {
         sysml += "($typeConstraint)"

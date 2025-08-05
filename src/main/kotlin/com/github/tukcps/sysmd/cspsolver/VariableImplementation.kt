@@ -11,6 +11,7 @@ import com.github.tukcps.sysmd.model.expression.AstRoot
 import com.github.tukcps.sysmd.model.expression.Invariant
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Type
+import com.github.tukcps.sysmd.model.kerml.UnresolvedFeature
 import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import io.github.tukcps.aadd.AADD
@@ -30,12 +31,6 @@ open class VariableImplementation (
     override var updated: Boolean = true,
     override var hasBeenChanged: Boolean = true
 ): Variable {
-
-    override var name: String? = null
-        get() = if (field == null) feature.qualifiedName else field
-
-    val qualifiedName
-        get() = feature.qualifiedName
 
     override val elementId: UUID?
         get() = feature.elementId
@@ -101,8 +96,8 @@ open class VariableImplementation (
         else
             when  {
                 // must go to feature, classifier
-                feature.type.firstOrNull()?.ref !is Type -> {
-                    feature.model?.status?.fatal("expected specialization of ScalarValue, but got: '${feature.type.firstOrNull()?.str}'", element=feature)
+                feature.type.firstOrNull() !is Type -> {
+                    feature.model?.status?.fatal("expected specialization of ScalarValue, but got: '${feature.type.firstOrNull()}'", element=feature)
                     valueSpecs = mutableListOf(Range.Reals)
                     val values = mutableListOf<AADD>()
                     rangeSpecs.forEach{values.add(feature.model!!.builder.real(it, elementId.toString()))}
@@ -127,8 +122,10 @@ open class VariableImplementation (
                     val values = mutableListOf<AADD>()
                     rangeSpecs.forEach{values.add(feature.model!!.builder.real(it,elementId.toString()))}
                     //Test, if there is a dimension (in namespace SI) defined in the definition of the attribute
-                    if(feature.type[0].str!=null){
-                        val unitDimension = feature.type[0].str!!.replace("SI::","")
+                    if(feature.type.firstOrNull()!=null){
+                        val unitDimension = feature.type.firstOrNull { it.qualifiedName?.startsWith("SI::") == true }
+                            ?.qualifiedName?.replace("SI::","")
+                            ?: feature.type.first().qualifiedName!!
                         vectorQuantity = VectorQuantity(values, unitSpec,unitDimension)
                     }else
                         vectorQuantity = VectorQuantity(values, unitSpec)
@@ -197,7 +194,7 @@ open class VariableImplementation (
                 }
 
                 else -> {
-                    feature.model!!.status.warn( Issue.Kind.WARN_UNRESOLVED_TYPE, "no type found for $qualifiedName; assuming Real", element = feature)
+                    feature.model!!.status.warn( Issue.Kind.WARN_UNRESOLVED_TYPE, "no type found for $name; assuming Real", element = feature)
                     vectorQuantity = Quantity(feature.model!!.builder.Reals, unitSpec)
                 }
             }
@@ -330,16 +327,15 @@ open class VariableImplementation (
                 // The parsing itself, can throw exceptions that are caught optionally below.
                 if (feature.model?.repo?.scalarType == null)
                     feature.model?.status?.error("Could not resolve ScalarValues::ScalarValue -- add usage of ScalarValues", element = feature, kind = Issue.Kind.ERROR_UNRESOLVED_NAME)
-                feature.type.forEach {
-                    if (it.ref == null)
-                        feature.model?.status?.error("Could not resolve Type '${feature.generalization.firstOrNull()?.str}' of feature ${feature.qualifiedName}", element = feature, kind = Issue.Kind.ERROR_UNRESOLVED_NAME)
+                feature.type.filterIsInstance<UnresolvedFeature>().forEach {
+                    feature.model?.status?.error("Could not resolve Type '${it.relativeName}' of feature ${feature.qualifiedName}", element = feature, kind = Issue.Kind.ERROR_UNRESOLVED_NAME)
                 }
                 if (!feature.specializes(feature.model?.repo?.scalarType))
                     feature.model?.status?.error("Expected subtype of ScalarValues::ScalarValue", element = feature)
 
                 if (dependency.isNotBlank()) {
                     // set the scope to the element to which the property belongs.
-                    feature.owner.ref
+                    feature.owner
                         ?: throw SemanticError("No owner of ${feature.qualifiedName}; initialize identifications before using services.")
                     parserSysMD.semantics.namespace = feature.owningNamespace!!
                     parserSysMD.semantics.expression = feature
@@ -368,7 +364,9 @@ open class VariableImplementation (
         } catch (exception: Exception) {
             ast = null
             feature.model?.status?.error(
-                 "Issue in expression '$dependency' of ${feature.qualifiedName}", element = feature, cause = exception)
+                 "In expression '$dependency' of ${feature.qualifiedName}: ${exception.message}",
+                element = feature,
+                cause = exception)
         }
     }
 }

@@ -12,14 +12,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.github.tukcps.sysmd.cspsolver.Variable
-import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.model.kerml.Annotation
+import com.github.tukcps.sysmd.model.kerml.Element
+import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
+import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.kerml.implementation.PackageImplementation
-import com.github.tukcps.sysmd.model.sysml.AcceptActionUsage
-import com.github.tukcps.sysmd.model.sysml.SuccessionAsUsage
-import com.github.tukcps.sysmd.model.sysml.TransitionUsage
 import com.github.tukcps.sysmd.ui.composables.TreeViewNodeModel
-
 
 
 /**
@@ -50,7 +47,6 @@ class IsATree(
     override fun icon(): ImageVector {
         return Icons.Outlined.Token
     }
-    fun getElem(): Element {return element}
 }
 
 /**
@@ -77,17 +73,10 @@ class HasATree(
         val result = mutableListOf<TreeViewNodeModel>()
         element.ownedElement.forEach {
             try {
-                val elem = it.ref
-                if (elem != null)
-                    result.add(HasATree(mutableStateOf(elem)))
+                result.add(HasATree(mutableStateOf(it)))
             }
             catch (_: Exception) { }
         }
-        /*
-        if (elem is Relationship) {
-            (elem as Relationship).source.forEach { if (it.ref != null) result.add(AgilaCompositionTree(it.ref!!, true)) }
-            (elem as Relationship).target.forEach { if (it.ref != null) result.add(AgilaCompositionTree(it.ref!!, true)) }
-        } */
         return result
     }
 
@@ -105,28 +94,5 @@ class HasATree(
 /**
  * Function that generates the name for display in a UI.
  */
-fun Element.generateName(): String {
-    val nameStr = (if (declaredShortName!=null) "<$declaredShortName>" else "") +
-                  (if (declaredName!=null) declaredName else "")
-    try {
-        return when(this) {
-            is Anything        -> "Base::Anything"
-            is Import          -> "Import '$target'"
-            is Multiplicity    -> "$elementType ${variable?.vectorQuantity}"
-            is Association     -> "$elementType $nameStr :> ${allSupertypes().first().qualifiedName} $source -> $target"
-            is Annotation      -> "$elementType $nameStr: $target"
-            is Specialization  -> "$elementType $target"
-            is AcceptActionUsage -> "$elementType '${payloadParameter?.type?.get(0)?.ref?.escapedName()}'"
-            is TransitionUsage   -> "$elementType '${source.ref?.escapedName()}' -> '${target.ref?.escapedName()}'"
-            is SuccessionAsUsage -> "$elementType '${source[0].ref?.escapedName()}' -> '${target.firstOrNull()?.ref?.escapedName()}'"
-            is Relationship    -> "$elementType $nameStr $source -> $target"
-            is TextualRepresentation -> "TextualRepresentation $language"
-            is Feature         -> { "$elementType $nameStr ${if (this.isEnd) "(end)" else ""}" +
-                if (variable != null) " = ${variable!!.vectorQuantity}" else ""
-            }
-            else -> if (owningNamespace == null) "Root" else "$elementType $nameStr ${if (this.isLibraryElement) "(library)" else ""}"
-        }
-    } catch (issue: Exception) {
-        return "( problem with '${escapedName()}': $issue)"
-    }
-}
+fun Element.generateName(): String = try {
+    toString() } catch (_: Exception) { "(?)"}

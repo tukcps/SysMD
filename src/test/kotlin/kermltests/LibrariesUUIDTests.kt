@@ -2,15 +2,13 @@ package kermltests
 
 import com.fasterxml.uuid.Generators
 import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.model.kerml.implementation.ElementImplementation
 import com.github.tukcps.sysmd.services.check.checkLibraryElementIds
 import com.github.tukcps.sysmd.services.check.checkOwnership
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolve
-import com.github.tukcps.sysmd.services.session.LibraryRepository
-import com.github.tukcps.sysmd.services.session.SessionImplementation
-import util.mockup.loadKerML
 import com.github.tukcps.sysmd.services.session.loadLibrary
+import util.assertNoIssues
+import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -20,42 +18,17 @@ import kotlin.test.assertTrue
 
 class LibrariesUUIDTests {
 
-    @Test
-    fun countOwnedTest1() {
-        val session = SessionImplementation(libraries = mutableListOf())
-        val e1 = ElementImplementation(declaredName = "e1")
-        val e2 = ElementImplementation(declaredName = "e2")
-        session.addUnownedElement(e1, path="e2")
-        session.addUnownedElement(e2, startOfOwnerPath = session.global)
-        val nr = session.getNumberOfOwnedElements("e2")
-        assertEquals(1, nr)
-    }
-
-    @Test
-    fun countOwnedTest2() {
-        val session = SessionImplementation(libraries = mutableListOf())
-        val e = ElementImplementation(declaredName = "e")
-        val e1 = ElementImplementation(declaredName = "e1")
-        val e2 = ElementImplementation(declaredName = "e2")
-        session.addUnownedElement(e1, startOfOwnerPath = session.global)
-        session.addUnownedElement(e1, startOfOwnerPath = e)
-        session.addUnownedElement(e2, startOfOwnerPath = e)
-        val nr = session.getNumberOfOwnedElements("e")
-        assertEquals(2, nr)
-    }
-
-
     /** Check that UUID5 are generated for the fully qualified names in standard library packages */
     @Test
     fun uuid5isGeneratedTest1() = testSession {
         loadKerML("""
-                standard library package x {
-                    class c; 
-                    datatype d; 
-                    package p { class e; }
-                    feature f [2 .. 3]; 
-                }
-            """)
+            standard library package x {
+                class c; 
+                datatype d; 
+                package p { class e; }
+                feature f [2 .. 3]; 
+            }
+        """)
 
         // assertTrue(status.reports.isEmpty(), status.reports.toString())
         val x = global.resolve<Package>("x::p")
@@ -67,10 +40,12 @@ class LibrariesUUIDTests {
 
         // Specialization of class is generates as UUID v5
         val cSpecialization = global.resolve<Class>("x::c")!!.getOwnedElementOfType<Specialization>()
+        val cSpecializationPath = cSpecialization?.path()
+        assertEquals(cSpecializationPath, "x::c/0", "Path should use index if no name is available")
         assertTrue(cSpecialization != null)
         assertTrue(cSpecialization.isLibraryElement)
         assertEquals(5, cSpecialization.elementId!!.version())
-        uuid5 = Generators.nameBasedGenerator().generate("x::c::0")
+        uuid5 = Generators.nameBasedGenerator().generate(cSpecialization.path())
         assertEquals(uuid5, cSpecialization.elementId)
 
         // Datatype's id
@@ -80,7 +55,7 @@ class LibrariesUUIDTests {
         assertTrue(dSpecialization != null)
         assertTrue(dSpecialization.isLibraryElement)
         assertEquals(5, dSpecialization.elementId!!.version())
-        uuid5 = Generators.nameBasedGenerator().generate("x::d::0")
+        uuid5 = Generators.nameBasedGenerator().generate(dSpecialization.path())
         assertEquals(uuid5, dSpecialization.elementId)
 
         // Feature's id
@@ -90,7 +65,7 @@ class LibrariesUUIDTests {
         assertTrue(fSpecialization != null)
         assertTrue(fSpecialization.isLibraryElement)
         assertEquals(5, fSpecialization.elementId!!.version())
-        uuid5 = Generators.nameBasedGenerator().generate("x::f::1")
+        uuid5 = Generators.nameBasedGenerator().generate(fSpecialization.path())
         assertEquals(uuid5, fSpecialization.elementId)
         val fMultiplicity = global.resolve<Feature>("x::f")!!.getOwnedElementOfType<Multiplicity>()
         assertTrue(fMultiplicity != null)
@@ -116,7 +91,7 @@ class LibrariesUUIDTests {
                 standard library package ScalarValues { datatype Natural; } // For multiplicity
                 standard library package x {
                     feature f1;
-                    feature f2 redefines f1;
+                    feature f2 subsets f1;
                 }; 
             """)
         initialize()
@@ -137,34 +112,57 @@ class LibrariesUUIDTests {
     }
 
     @Test
-    fun loadScalarValuesTest2() = testSession {
-        LibraryRepository.loadLibraryFromResources("ScalarValues", listOf("Base", "ScalarValues"))
+    fun loadScalarValuesTest2() = testSession("ScalarValues") {
+        checkOwnership()
+        checkLibraryElementIds()
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
+    }
+
+
+    @Test
+    fun loadLinksTest2() = testSession("Links") {
+        val links = global.resolve<Element>("Links::Link")
+        assertNotNull(links)
+        checkOwnership()
+        checkLibraryElementIds()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     @Test
-    fun loadLinksTest() = testSession {
-        LibraryRepository.get("Links")
-        initialize()
+    fun loadOccurrencesTest() = testSession("Occurrences") {
+        val occurrence = global.resolve<Element>("Occurrences::Occurrence")
+        assertNotNull(occurrence)
+        checkOwnership()
+        checkLibraryElementIds()
+        assertNoIssues()
+    }
+
+    @Test
+    fun loadOccurrencesTest2() = testSession("Occurrences", "SI") {
+        val occurrence = global.resolve<Element>("Occurrences::Occurrence")
+        assertNotNull(occurrence)
+        assertNotNull(global.resolve<Element>("SI"))
         assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
     @Test
-    fun loadOccurrencesTest() = testSession {
-        LibraryRepository.get("Occurrences")
-        initialize()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-    }
-
-    @Test
-    fun debug() = testSession("Base") {
+    fun loadLinksTest3() = testSession("ScalarValues") {
         loadKerML("""
-            package ScalarValues { datatype Natural; } // For multiplicity
-            feature x { feature xx; }
-            feature y: Base::Anything [1] redefines xx;  
-        """.trimIndent())
+         package Links {
+            assoc BinaryLink :> Base::Anything {
+                end feature source: Base::Anything [1];
+                end feature target: Base::Anything [1];
+            }
+            connector binaryLinks : BinaryLink from Base::things to Base::things;
+        }   
+        """)
+        checkOwnership()
+        checkLibraryElementIds()
+        val bl = global.resolve<Association>("Links::BinaryLink")
+        assertNotNull(bl)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
+
 
     /**
      * Loading from a repository via cloning all elements from a repository; eventually,

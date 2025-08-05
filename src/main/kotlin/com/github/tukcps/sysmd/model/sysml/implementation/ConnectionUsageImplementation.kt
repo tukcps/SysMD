@@ -1,9 +1,7 @@
 package com.github.tukcps.sysmd.model.sysml.implementation
 
-import com.github.tukcps.sysmd.model.kerml.Resolved
 import com.github.tukcps.sysmd.model.kerml.implementation.ConnectorImplementation
 import com.github.tukcps.sysmd.model.sysml.ConnectionUsage
-import java.util.UUID
 
 open class ConnectionUsageImplementation(
     declaredName: String? = null,
@@ -14,13 +12,9 @@ open class ConnectionUsageImplementation(
     declaredShortName = declaredShortName,
     elementType = elementType
 ) {
-    override fun clone(): ConnectionUsage {
-        return ConnectionUsageImplementation(
+    override fun clone(): ConnectionUsage = ConnectionUsageImplementation(
             declaredName = declaredName,
-            declaredShortName = declaredShortName,
-        ).also {
-            source = Resolved.copyOfIdentityList(source)
-            target = Resolved.copyOfIdentityList(target)
-        }
-    }
+            declaredShortName = declaredShortName)
+        .also { it.updateFrom(this) }
+
 }

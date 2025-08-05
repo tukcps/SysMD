@@ -137,9 +137,9 @@ class FailedTests {
      *  **   True, False and drop Infeasible paths in toString method.
      */
     @Test
-    fun fail4() = testSession("ScalarValues") {
+    fun fail4() = testSession("ScalarValues", "Ranges") {
         loadKerML("""
-            feature p:  ScalarValues::Real(2 .. 4);
+            feature p:  Ranges::RealInRange {:>> range = "2 .. 4";}
             feature p2: ScalarValues::Real = p + 1.0;
             feature p3: ScalarValues::Boolean = ( p > p2 ).
         """)
@@ -161,10 +161,10 @@ class FailedTests {
      * Feature of V from up-propagation seems to get overwritten by down-propagated value.
      */
     @Test
-    fun simplePhysicsExample() = testSession("ScalarValues") {
+    fun simplePhysicsExample() = testSession("ScalarValues", "Ranges") {
         loadKerML(""" 
-            feature I: ScalarValues::Real(9.9 .. 10.1); 
-            feature R: ScalarValues::Real(1.9 .. 2.1); 
+            feature I: Ranges::RealInRange {:>> range = "9.9 .. 10.1";}
+            feature R: Ranges::RealInRange {:>> range = "1.9 .. 2.1";} 
             feature V: ScalarValues::Real = I * R; 
             feature P: ScalarValues::Real = I * V; 
         """)
@@ -179,11 +179,11 @@ class FailedTests {
     }
 
 
-    @Test fun evalDownReal() = testSession("ScalarValues") {
+    @Test fun evalDownReal() = testSession("ScalarValues", "Ranges") {
         loadKerML("""
             feature a: ScalarValues::Real; 
-            feature b: ScalarValues::Real(3..5); 
-            feature sum: ScalarValues::Real(9..10) = a+b;""")
+            feature b: Ranges::RealInRange {:>> range = "3..5";}
+            feature sum: Ranges::RealInRange = a+b {:>> range = "9..10";}""")
         propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals(9.0, global.resolveVar("sum")!!.aadd().min, 0.00001)
@@ -198,11 +198,11 @@ class FailedTests {
      * Integers do not well deal with overflows.
      * One overflow breaks the whole computation chain ...
      */
-    @Test fun evalDownInt() = testSession("ScalarValues") {
+    @Test fun evalDownInt() = testSession("ScalarValues", "Ranges") {
         loadKerML(""" 
            feature a: ScalarValues::Integer;
-           feature b: ScalarValues::Integer(3..5);
-           feature sum: ScalarValues::Integer(9..10) = a+b.
+           feature b: Ranges::IntegerInRange {:>> range = "3..5";}
+           feature sum: Ranges::IntegerInRange = a+b {:>> range = "9..10";}
            """)
         propagate()
         // println(status.errors)

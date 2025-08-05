@@ -1,6 +1,6 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import com.github.tukcps.sysmd.compiler.semantics.SemanticActions
+import com.github.tukcps.sysmd.compiler.semantics.ActionsContext
 import com.github.tukcps.sysmd.model.expression.AstLeaf
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.model.kerml.Element
@@ -12,7 +12,7 @@ import com.github.tukcps.sysmd.services.session.Session
 class AstHasA(
     model: Session,
     param: ArrayList<AstNode>,
-    semantics: SemanticActions,
+    semantics: ActionsContext,
 ) : AstFunction("owns", model, 0) {
     val nameSpace = semantics.namespace
     val ownerName = (param[0] as AstLeaf).qualifiedName!!

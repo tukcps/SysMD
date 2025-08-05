@@ -2,6 +2,7 @@ package com.github.tukcps.sysmd.model.kerml.implementation
 
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
+import com.github.tukcps.sysmd.model.util.SimpleName
 
 
 /**
@@ -13,8 +14,6 @@ import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
 open class NamespaceImplementation(
     declaredName: String? = null,
     declaredShortName: String? = null,
-    isLibraryElement: Boolean = false,
-    isStandard: Boolean = false,
     textualRepresentation: MutableList<TextualRepresentation> = mutableListOf(),
     elementType: String = "Namespace"
 ): Namespace, ElementImplementation(
@@ -23,34 +22,28 @@ open class NamespaceImplementation(
     textualRepresentation = textualRepresentation,
     elementType = elementType
 ){
-    init {
-        this.isStandard = isStandard || (owner.ref?.isStandard == true)
-        this.isLibraryElement = isLibraryElement || (owner.ref?.isStandard == true)
-    }
-    override fun toString(): String {
-        return "$elementType {" +
-                (if(declaredName != null) "name='$declaredName', " else "") +
-                (if(declaredShortName != null) "shortName='$declaredShortName', " else "") +
-                "owner='${owner.ref?.qualifiedName}', " +
-                "#owned=${ownedElement.size}, " +
-                "#imports=${imports.size}, +" +
-                "id='${elementId}')"
-    }
-
-    override fun resolveNames(): Boolean {
-        updated = super.resolveNames()
-        return updated
-    }
 
     override fun clone(): Namespace {
         return NamespaceImplementation(
             declaredName=declaredName,
             declaredShortName = declaredShortName,
-            isLibraryElement = isLibraryElement,
-            isStandard = isStandard
-        ).also { klon ->
-            klon.model = model
-            klon.isTransient = isTransient
+        ).also {
+            it.updateFrom(this)
         }
     }
 }
+
+/**
+ * Returns the owned element with a given name.
+ * @param name A SimpleName that is searched for
+ */
+inline fun <reified T> Namespace.getOwned(name: SimpleName): T? {
+    ownedElement.forEach {
+        if (it.declaredName == name)
+            return if (it is T) it as T else null
+        if (it.declaredShortName == name)
+            return if (it is T) it as T else null
+    }
+    return null
+}
+

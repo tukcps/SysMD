@@ -16,7 +16,7 @@ class SyntaxError(
     kind = kind,
     input = parser.input,
     token = parser.token,
-    element = parser.semantics.owners.peek()?.ref,
+    element = parser.semantics.element(),
 )
 
 

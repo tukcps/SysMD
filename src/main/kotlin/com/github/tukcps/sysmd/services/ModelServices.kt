@@ -11,16 +11,16 @@ import com.github.tukcps.sysmd.services.session.Session
  * - Methods needed by constraint propagation
  */
 interface ModelServices:
-    Cloneable,
-    ConstraintPropagation,
-    CheckSemanticConstraints {
-    /**
-     * The session and model to which the element belongs.
-     */
+    Cloneable, ConstraintPropagation, CheckSemanticConstraints
+{
+   /**
+    * The session and model to which the element belongs.
+    */
     var model: Session?
 
     /**
      * The indices in the input string during a parse run.
+     * Start is the first token of the production, last one the start of a body.
      */
     var indices: IntRange?
 

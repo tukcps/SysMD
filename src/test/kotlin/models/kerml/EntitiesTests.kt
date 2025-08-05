@@ -3,6 +3,7 @@ package models.kerml
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.SpecializationImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.TypeImplementation
+import com.github.tukcps.sysmd.model.kerml.implementation.getOwned
 import com.github.tukcps.sysmd.services.initialize
 import util.testSession
 import kotlin.test.*
@@ -13,7 +14,7 @@ class EntitiesTests {
     fun anythingTest() = testSession {
         val base = global.getOwned<Package>("Base")!!
         val anything = base.getOwned<Anything>("Anything")!!
-        assertSame(anything.owner.ref, base)
+        assertSame(anything.owner, base)
         assertTrue(anything.ownedElement.isEmpty())
         assertTrue(anything.specialization.isEmpty())
     }
@@ -22,8 +23,8 @@ class EntitiesTests {
     fun globalTest() = testSession {
         assertNotNull(global)
         assertNotNull(global.elementId)
-        assertNull(global.owner.ref)
-        assertEquals("Global", global.qualifiedName)
+        assertNull(global.owner)
+        assertEquals(null, global.qualifiedName)
     }
 
     /**
@@ -33,14 +34,14 @@ class EntitiesTests {
     @Test
     fun classificationSpecializationTest() = testSession {
         val cla = TypeImplementation(declaredName = "x")
-        val claCreated = create(cla, global)
-        create(SpecializationImplementation(claCreated, anything), claCreated)
+        val claCreated = addOwnedMember(cla, global)
+        addOwnedRelationship(SpecializationImplementation(claCreated, anything))
         val specialization = claCreated.getOwnedElementOfType<Specialization>() !!
         initialize()
-        assertEquals(claCreated.allSupertypes().first(), specialization.general.ref)
-        assertEquals(specialization.specific.ref, claCreated)
-        assertEquals(specialization.specific.id, claCreated.elementId)
-        assertEquals(specialization.general.ref, anything)
-        assertEquals(specialization.general.id, anything.elementId)
+        assertEquals(claCreated.allSupertypes().first(), specialization.general)
+        assertEquals(specialization.specific, claCreated)
+        assertEquals(specialization.specific.elementId, claCreated.elementId)
+        assertEquals(specialization.general, anything)
+        assertEquals(specialization.general.elementId, anything.elementId)
     }
 }

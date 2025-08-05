@@ -1,6 +1,26 @@
-Getan:
-* Guard Conditions im Diagramm sichtbar
+Fragen:
+--------
+* In der startSessionTest-Funktion in der RestAPISessionServiceTest-Klasse fehlen asserts.
+Diese würden auch fehlschlagen, weil die entsprechende Session-Controller Methode text/plain zurückgibt,
+die Rest-Klasse aber JSON in den ACCEPT-Header schreibt. Das führt zu HTTP 406.
 
-Todo:
-* Was bedeutet "Type"-Kommentar im Guard-Condition-Test? Im Standard nachschlagen!
-* Ggf. state Diagrams direkt einfügen, wenn man "Render Diagram" klickt
+* Vorschlag: Rest-API für /session überarbeiten:
+a) Es sollte nicht per Plain-Text der Projektname übergeben werden.
+Das ist Inkonsistent zum Rest, wo JSON verwendet wird.
+b) Als Ergebnis sollte auch nicht Plain-Text zurückgegeben werden, sondern JSON
+c) Hinweis: Um Konsistent zu /projects zu sein, wäre es schön, wenn der Endpunkt /sessions hieße (Plural)
+
+* Wie werden die API-Response-Klassen erzeugt, z.B. ProjectResponse?
+Sie scheinen teilweise nur als Class-Files vorzuliegen, es scheint aber auch
+Ausnahmen zu geben.
+
+HOOD-Strategie:
+---------------
+* ChatBot erzeugt MD file
+* Lädt es über PUT /session/index hoch
+* Manuell wird in der GUI compile and solve gemacht
+
+--> Über API kann alles gemacht werden, auch compile und solve (!!!)
+---> Endpoint /session
+
+

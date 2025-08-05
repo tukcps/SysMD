@@ -7,10 +7,11 @@ import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import util.mockup.loadKerML
 import util.mockup.loadSysMLv2
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Test
 import util.testSession
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+
 
 class TutorialExamples {
     @Test
@@ -18,13 +19,13 @@ class TutorialExamples {
         loadKerML(catchExceptions = false, input = """
             package p {
                 class c1 {
-                   feature p: ScalarValues::Real {:>> range = "1 .. 2";}
+                   feature p: ScalarValues::Real(1 .. 2);
                 }
                 class c2 :> c1 {
-                   feature p: ScalarValues::Real {:>> range = "1.5 .. 1.8";}
+                   :>> p: ScalarValues::Real(1.5 .. 1.8); 
                 }
             }
-        """.trimIndent())
+        """)
         val pc2p = global.resolve<Feature>("p::c2::p")
         val p = pc2p?.resolve<Feature>("p")    // Was an issue: p search inside p does not resolve to p.
         assertEquals(p, pc2p)
@@ -40,11 +41,11 @@ class TutorialExamples {
                    feature p: ScalarValues::Real = bySpecializations(p);
                }
                class Variant1 :> General {
-                   feature p: ScalarValues::Real = 2.0;
+                   :>> p: ScalarValues::Real = 2.0;
                }
 
                class Variant2 :> General {
-                   feature p: ScalarValues::Real = 3.0; 
+                   :>> p: ScalarValues::Real = 3.0; 
                }
            }
         """)
@@ -57,15 +58,15 @@ class TutorialExamples {
 
 
     @Test
-    fun deCompositionExample() = testSession("Occurrences", "SI") {
+    fun deCompositionExample() = testSession("Occurrences", "SI", "Ranges") {
         loadKerML(catchExceptions = false, input = """
             package Example {
                 class Engine { 
-                    feature mass: SI::Mass {:>> range = "10..500";} 
+                    feature mass: SI::Mass(10..500);  
                 }
 
                 class Wheel {
-                    feature mass: SI::Mass {:>> range = "20..50";} 
+                    feature mass: SI::Mass(20..50);  
                 }
 
                 class Car { 
@@ -97,11 +98,11 @@ class TutorialExamples {
     /**
      * First Example from the SysMD Kickstart.
      */
-    @Test fun volumeExample() = testSession("SI")  {
+    @Test fun volumeExample() = testSession("SI", "Ranges")  {
         loadKerML(""" 
             feature partWithVolume {
                 feature height:  SI::Length {:>> unit = "cm"; :>> range = "10 .. 100";}
-                feature width:   SI::Length {:>> range = "1 .. 1.1";}
+                feature width:   SI::Length{:>> range = "1 .. 1.1";}
                 feature length:  SI::Length {:>> range = "1 .. 1.1";}
                 feature volume:  SI::Volume = height * width * length {:>> unit = "l"; :>> range = "1000 .. 2000";}
             }
@@ -117,7 +118,7 @@ class TutorialExamples {
     }
 
     @Test
-    fun issueExample() = testSession("SI", "Occurrences") {
+    fun issueExample() = testSession("SI", "Occurrences", "Ranges") {
         loadKerML("""
             // A general class 
             class Wheel {
@@ -127,19 +128,19 @@ class TutorialExamples {
             }
             
             class Rim {
-                feature mass: SI::Mass {:>> range = "20 .. 30";}
+                feature mass: SI::Mass, Ranges::QuantityInRange {:>> range = "20 .. 30";}
             }
             
             class Tire {
-                feature mass: SI::Mass {:>> range = "10 .. 20";}
+                feature mass: SI::Mass, Ranges::QuantityInRange {:>> range = "10 .. 20";}
             }
             
             class SummerTire {
-                feature mass: SI::Mass {:>> range = "10 .. 10";}
+                feature mass: SI::Mass, Ranges::QuantityInRange {:>> range = "10 .. 10";}
             }
             
             class WinterTire { 
-                feature mass: SI::Mass {:>> range = "20 .. 20";}
+                feature mass: SI::Mass, Ranges::QuantityInRange {:>> range = "20 .. 20";}
             }
 
             // We calculate the sum inside the specific elements

@@ -67,6 +67,6 @@ fun Session.defScalarVar(name: String, value: String, unitStr: String = "", type
         unitConstraint = unitStr,
         typeConstraint = mutableListOf(value)
     )
-    create(feature, namespace)
-    create(SpecializationImplementation(feature, global.resolve<Classifier>(type)!!), feature)
+    addOwnedMember(feature, namespace)
+    addOwnedRelationship(SpecializationImplementation(feature, global.resolve<Classifier>(type)!!), feature)
 }

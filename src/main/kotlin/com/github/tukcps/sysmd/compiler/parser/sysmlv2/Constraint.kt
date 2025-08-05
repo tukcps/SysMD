@@ -3,40 +3,29 @@
 package com.github.tukcps.sysmd.compiler.parser.sysmlv2
 import com.github.tukcps.sysmd.compiler.SysMLv2
 import com.github.tukcps.sysmd.compiler.parser.kerml.FeatureSpecializationPart
+import com.github.tukcps.sysmd.compiler.parser.kerml.OwnedReferenceSubsetting
 import com.github.tukcps.sysmd.compiler.parser.util.Unsupported
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
-import com.github.tukcps.sysmd.compiler.semantics.Identification
 import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
-import com.github.tukcps.sysmd.compiler.semantics.kerml.TypeActions
 import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.AssertActions
 import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.CalculationDefinitionActions
+import com.github.tukcps.sysmd.model.expression.Invariant
 import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.kerml.Resolved
-import com.github.tukcps.sysmd.model.kerml.Type
+import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.sysml.implementation.CalculationDefinitionImplementation
 
 /**
  *      ConstraintDefinition = OccurrenceDefinitionPrefix 'constraint' 'def'
  *          DefinitionDeclaration CalculationBody
  */
-fun SysMLv2.ConstraintDefinition() {
-    val constraintDefinition = CalculationDefinitionActions(semantics,
-        ::CalculationDefinitionImplementation, mutableListOf("Constraints::ConstraintDefinition"))
+fun SysMLv2.ConstraintDefinition() = CalculationDefinitionActions(semantics,
+        ::CalculationDefinitionImplementation, "Constraints::ConstraintDefinition").parse {
     OccurrenceDefinitionPrefix()
     CONSTRAINT.consume()
     DEF.consume()
-    DefinitionDeclaration(constraintDefinition as TypeActions<Type>)
-    CalculationBody(Resolved(constraintDefinition.created!!))
-    constraintDefinition.finish()
+    DefinitionDeclaration()
+    CalculationBody()
 }
-
-/**
- *      AssertConstraintUsage =
- *          OccurrenceUsagePrefix 'assert' (isNegated ?= 'not')?
- *          (OwnedReferenceSubsetting
- *            FeatureSpecializationPart? | 'constraint' ConstraintUsageDeclaration)
- *          CalculationBody
- */
 
 /** Just checks the prefixes already parsed for compliance */
 fun SysMLv2.OccurrenceDefinitionPrefix() {
@@ -46,8 +35,8 @@ fun SysMLv2.OccurrenceDefinitionPrefix() {
 /**
  * ConstraintUsageDeclaration = UsageDeclaration ValuePart?
  */
-fun SysMLv2.ConstraintUsageDeclaration(constraint: FeatureActions<Feature>) {
-    UsageDeclaration(constraint)
+fun SysMLv2.ConstraintUsageDeclaration() {
+    UsageDeclaration()
     optional(EQ) {
         Unsupported("Production rule for Value Part in ConstraintUsageDeclaration not yet implemented.")
     }
@@ -59,15 +48,11 @@ fun SysMLv2.ConstraintUsageDeclaration(constraint: FeatureActions<Feature>) {
  *          OccurrenceUsagePrefix 'constraint' ConstraintUsageDeclaration CalculationBody
  *
  */
-fun SysMLv2.ConstraintUsage() {
-    val constraint = semantics.constraintActions()
+fun SysMLv2.ConstraintUsage() = FeatureActions<Feature>(semantics, creator = ::FeatureImplementation, "ScalarValues::Boolean").parse {
     OccurrenceDefinitionPrefix()
     CONSTRAINT.consume()
-    ConstraintUsageDeclaration(constraint)
-
-    // Calculation Body
-    constraint.finish()
-    CalculationBody(Resolved(constraint.created!!))
+    ConstraintUsageDeclaration()
+    CalculationBody()
 }
 
 /**
@@ -77,24 +62,24 @@ fun SysMLv2.ConstraintUsage() {
  *              | 'constraint' ConstraintUsageDeclaration)
  *          CalculationBody
  */
-fun SysMLv2.AssertConstraintUsage() {
-    val assert = AssertActions(semantics)
+fun SysMLv2.AssertConstraintUsage() = AssertActions(semantics).parse {
     OccurrenceUsagePrefix()
     ASSERT.consume()
-    NOT.optional { assert.isNegated = true  }
+    NOT.optional { semantics.element<Invariant>().isNegated = true  }
 
     alternatives {
         NAME_LIT starts  {
-            OwnedReferenceSubsetting() .also { assert.create(Identification(it)) }
+            OwnedReferenceSubsetting() .also {
+                model.status.info(message = "Unimplemented: Assertion with feature chain", element = semantics.element())
+            }
             optional({ tokenIsNot(LCURBRACE)} ){
-                FeatureSpecializationPart(assert as FeatureActions<Feature>)
+                FeatureSpecializationPart()
             }
         }
         CONSTRAINT then {
-            ConstraintUsageDeclaration(assert as FeatureActions<Feature>)
+            ConstraintUsageDeclaration()
         }
-        others {  }
+        others {  semantics.create(null) }
     }
-    assert.finish() // Before the Calculation Body ...
-    CalculationBody(Resolved(assert.created!!))
+    CalculationBody()
 }

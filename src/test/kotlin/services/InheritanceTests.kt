@@ -2,10 +2,9 @@ package services
 
 import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.exceptions.Issue
-import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.kerml.Type
-import com.github.tukcps.sysmd.model.kerml.getOwnedElement
-import com.github.tukcps.sysmd.model.kerml.getOwnedElementsOfType
+import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.services.check.checkOwnership
+import com.github.tukcps.sysmd.services.checkConsistencyOfInheritance
 import com.github.tukcps.sysmd.services.inheritance.getAllInheritedFeatures
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.findAllOwnedElements
@@ -14,26 +13,61 @@ import com.github.tukcps.sysmd.services.resolve.resolveVar
 import io.github.tukcps.aadd.values.IntegerRange
 import io.github.tukcps.aadd.values.Range
 import util.mockup.loadKerML
-import util.mockup.loadSysMD
 import util.testSession
 import kotlin.test.*
 
 
 class InheritanceTests {
+
+    /**
+     * Inheritance creates a copy of a feature, and as well of its information:
+     * - Multiplicity
+     * - Specialization
+     * There also shall be no duplicates, and the inherited features shall be marked as transient.
+     */
+    @Test fun cloneInheritedFeature() = testSession("ScalarValues") {
+        settings.catchExceptions = false
+        loadKerML("""
+            type a :> Base::Anything { feature x [1..2]; }
+            type b :> a; 
+        """)
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        val ax = global.resolve<Feature>("a::x")!!
+        val bx = global.resolve<Feature>("b::x")!!
+        assertEquals(1, ax.ownedElement.filter { it is Specialization }.size)
+        assertEquals(2, ax.ownedElement.size)
+        assertEquals(1, ax.ownedElement.filter { it is Multiplicity }.size)
+        assertEquals(IntegerRange(1,2), ax.multiplicity)
+
+        assertEquals(1, bx.ownedElement.filter { it is Multiplicity }.size)
+        assertEquals(IntegerRange(1,2), bx.multiplicity)
+        assertEquals(1, bx.ownedElement.filter { it is Specialization }.size)
+        assertEquals(2, bx.ownedElement.size)
+        // assertTrue(bx.getOwnedElementOfType<Multiplicity>()!!.isImpliedIncluded)
+        // assertTrue(bx.getOwnedElementOfType<Specialization>()!!.isImpliedIncluded)
+        assertNotNull(get(bx.getOwnedElementOfType<Multiplicity>()!!.elementId!!))
+        assertNotNull(get(bx.getOwnedElementOfType<Specialization>()!!.elementId!!))
+        assertNotEquals(ax, bx)
+        assertNotEquals(ax.elementId, bx.elementId)
+        checkOwnership()
+        export()
+    }
+
     /**
      * Elements inherit features with type and multiplicity from its general type,
      * and become visible by the same name in the respective element.
      */
     @Test
-    fun inheritFeatureTest() = testSession("ScalarValues") {
+    fun inheritFeatureTest() = testSession {
         loadKerML(""" 
+            package ScalarValues { datatype Natural :> Base::Anything; }
             type t1 :> Base::Anything {
-                feature f [2]: ScalarValues::Integer; 
+                feature f [2]: ScalarValues::Natural; 
             }
             type t2 :> t1; 
         """)
         // element 2 has a property inherited
-        // it has the name p and is actually the one from element
+        // it has the name p and is actually the one from the element
         assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
         val t2 = global.resolve<Type>("t2")
         assertNotNull(t2)
@@ -42,7 +76,7 @@ class InheritanceTests {
         val t2f = global.resolve<Feature>("t2::f")
         assertNotNull(t2f)
         assertEquals(IntegerRange(2,2), t2f.multiplicity)
-        assertEquals("ScalarValues::Integer", t2f.type.firstOrNull()?.ref?.qualifiedName)
+        assertEquals("ScalarValues::Natural", t2f.type.firstOrNull()?.qualifiedName)
     }
 
 
@@ -66,7 +100,7 @@ class InheritanceTests {
         val t2f = global.resolve<Feature>("t2::f")
         assertNotNull(t2f)
         assertEquals(IntegerRange(2,2), t2f.multiplicity)
-        assertEquals("ScalarValues::Integer", t2f.type.firstOrNull()?.ref?.qualifiedName)
+        assertEquals("ScalarValues::Integer", t2f.type.firstOrNull()?.qualifiedName)
 
         val t3 = global.resolve<Type>("t3")
         assertNotNull(t3)
@@ -76,7 +110,7 @@ class InheritanceTests {
         assertNotNull(t3f)
         assertNotEquals(t2f, t3f) // they shall have at least different id
         assertEquals(IntegerRange(2,2), t3f.multiplicity)
-        assertEquals("ScalarValues::Integer", t3f.type.firstOrNull()?.ref?.qualifiedName)
+        assertEquals("ScalarValues::Integer", t3f.type.firstOrNull()?.qualifiedName)
     }
 
     @Test
@@ -99,13 +133,13 @@ class InheritanceTests {
      * - When a specification is refined, a new property is created.
      */
     @Test
-    fun getPropertiesTest2() = testSession("ScalarValues") {
+    fun getPropertiesTest2() = testSession("ScalarValues", "Ranges") {
         loadKerML(input = """
             type t1 :> Base::Anything { 
-                feature f: ScalarValues::Real(1 .. 2); 
+                feature f: Ranges::RealInRange {:>> range = "1 .. 2";}
             }
             type t2 :> t1 { 
-                feature f: ScalarValues::Real(1 .. 1.5); 
+                feature f: Ranges::RealInRange {:>> range = "1 .. 1.5";}
             }
         """)
         propagate()
@@ -126,16 +160,16 @@ class InheritanceTests {
      * Otherwise, an error is written into the status.
      */
     @Test
-    fun getPropertiesTest3() = testSession("ScalarValues") {
+    fun getPropertiesTest3() = testSession("ScalarValues", "Ranges") {
         loadKerML("""
                 type elem :> Base::Anything { 
-                    feature p: ScalarValues::Real(1 .. 2); 
+                    feature p: Ranges::RealInRange {:>> range = "1 .. 2";}
                 }
                 class elem2 :> elem {
-                    feature p: ScalarValues::Real(1.5 .. 2.5); 
+                    feature p: Ranges::RealInRange {:>> range = "1.5 .. 2.5";} 
                 } """)
         propagate()
-        // TODO: Propagate must also consider restrictions of superclasses even iff no dependency is computed.
+        // TODO: Propagate must also consider constraints of superclasses even iff no dependency is computed.
         assertTrue(status.issues.any { it.kind  == Issue.Kind.WARN_INCONSISTENCY })
         assertEquals(1, status.issues.size)
     }
@@ -148,16 +182,16 @@ class InheritanceTests {
      *  - the name of the superclass.name
      */
     @Test
-    fun findInheritedPropertiesTest4() = testSession("ScalarValues") {
+    fun findInheritedPropertiesTest4() = testSession("ScalarValues", "Ranges") {
         loadKerML("""
             package lib {
                 type elem :> Base::Anything {
-                    feature p: ScalarValues::Real(1 .. 2); 
+                    feature p: Ranges::RealInRange {:>> range = "1 .. 2";}
                 }
                 type elem2 :> elem {
                     feature e: lib::elem; 
-                    feature p2: ScalarValues::Real(1.5 .. 2.5) = elem::p;  
-                    feature p3: ScalarValues::Real(1 .. 4) = p;
+                    feature p2: Ranges::RealInRange = elem::p {:>> range = "1.5 .. 2.5";}  
+                    feature p3: Ranges::RealInRange = p {:>> range = "1 .. 4";}
                 }
             }""")
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
@@ -170,10 +204,10 @@ class InheritanceTests {
      * Then, no error is thrown, and the range from the superclass' property is used.
      */
     @Test
-    fun agilaGetPropertiesTest5() = testSession("ScalarValues") {
+    fun agilaGetPropertiesTest5() = testSession("ScalarValues", "Ranges") {
         loadKerML (""" 
             type e1 :> Base::Anything {
-                feature p: ScalarValues::Real(1 .. 2); 
+                feature p: Ranges::RealInRange {:>> range = "1 .. 2";} 
             }
             class e2 :> e1; 
         """)
@@ -223,15 +257,15 @@ class InheritanceTests {
      * Shall also deliver inherited properties, not just the own.
      */
     @Test
-    fun findFeaturesTest2() = testSession("ScalarValues") {
+    fun findFeaturesTest2() = testSession("ScalarValues", "Ranges") {
         settings.catchExceptions = false
         loadKerML("""
                 package find {
                     type e :> Base::Anything { 
-                        feature p1: ScalarValues::Real(0..3); 
+                        feature p1: Ranges::RealInRange {:>> range = "0..3";}
                     }
                     type e2 :> e { 
-                        feature p2: ScalarValues::Real(1); 
+                        feature p2: Ranges::RealInRange {:>> range = "1";}
                     }
                 }
             """.trimIndent())
@@ -286,7 +320,7 @@ class InheritanceTests {
         val c = global.resolve<Type>("c")!!
         assertTrue(b in a.allSupertypes())
         assertTrue(c in b.allSupertypes())
-        assertTrue(a.ownedElement.find { it.ref!! is Feature }!!.ref!!.declaredName == "f" )
+        assertTrue(a.ownedElement.find { it is Feature }!!.declaredName == "f" )
     }
 
 
@@ -308,7 +342,7 @@ class InheritanceTests {
         val c = global.resolve<Type>("c")!!
         assertTrue(b in a.allSupertypes())
         assertTrue(c in b.allSupertypes())
-        assertTrue(a.ownedElement.find { it.ref!! is Feature }!!.ref!!.declaredName == "f" )
+        assertTrue(a.ownedElement.find { it is Feature }!!.declaredName == "f" )
     }
 
 
@@ -327,7 +361,7 @@ class InheritanceTests {
         assertTrue(zy.multiplicityProperty !== xy?.multiplicityProperty)
         assertTrue(zy.multiplicity !== xy?.multiplicity)
         assertTrue(zy.ownedSpecialization !== xy?.ownedSpecialization)
-        assertTrue(zy.isTransient)
+        assertTrue(zy.isImpliedIncluded)
     }
 
 
@@ -339,7 +373,7 @@ class InheritanceTests {
     fun cloneInheritedValue() = testSession {
         loadKerML("""
             package ScalarValues { datatype ScalarValue; datatype Real :> ScalarValue; datatype Integer :> ScalarValue; }
-            type x :> Base::Anything { feature y: ScalarValues::Real(2.0); }
+            type x :> Base::Anything { feature y: ScalarValues::Real, Ranges::InRange {:>> range="2.0";} }
             type z specializes x; 
             """)
         val zy = global.resolve<Feature>("z::y")
@@ -350,33 +384,7 @@ class InheritanceTests {
         // assertTrue(zy!!.multiplicity !== xy!!.multiplicity)
         // assertTrue(zy!!.expression !== xy!!.expression)
         assertTrue(zy.ownedSpecialization !== xy.ownedSpecialization)
-        assertTrue(zy.isTransient, "Implicit elements shall be marked transient.")
-    }
-
-
-    @Test
-    fun inheritedFeatures() = testSession("ScalarValues") {
-        loadSysMD("""
-            Global hasA type A :> Base::Anything.
-            A hasA feature a.
-            A::a hasA feature x [1..10]. 
-            
-            Global hasA type B :> A.
-            B::a hasA feature x [2..8]. 
-            
-            Global hasA type C :> A.
-            C::a hasA feature x [3..4].
-        """)
-        initialize()
-        assertEquals(0, status.issues.size, status.issues.toString())
-        val aax = global.resolve<Feature>("A::a::x")
-        val bax = global.resolve<Feature>("B::a::x")
-        val cax = global.resolve<Feature>("C::a::x")
-        assertNotEquals(aax, bax)
-        assertNotEquals(aax, cax)
-        assertNotEquals(bax, cax)
-        assertEquals(IntegerRange(2,8), bax?.multiplicity)
-        assertEquals(IntegerRange(3,4), cax?.multiplicity)
+        assertTrue(zy.isImpliedIncluded, "Implicit elements shall be marked transient.")
     }
 
     @Test
@@ -406,15 +414,15 @@ class InheritanceTests {
     }
 
     // Fixed with 2.0.30.
-    @Test fun overrideDerivedPropertyTest() = testSession("SI") {
+    @Test fun overrideDerivedPropertyTest() = testSession("SI", "Ranges") {
         loadKerML("""           
             type Coin :> Base::Anything {
-                feature diameter: SI::Length(5..200) [mm];
-                feature circumference: SI::Length [mm] = diameter*3.141; // 15.7 .. 628.2 mm 
+                feature diameter: SI::Length {:>> range = "5..200"; :>> unit = "mm";}
+                feature circumference: SI::Length = diameter*3.141 {:>> unit = "mm";} // 15.7 .. 628.2 mm 
             }
 
             feature oneEuroCoin : Coin { 
-                feature diameter: SI::Length[mm] = 23.25 mm; 
+                feature diameter: SI::Length = 23.25 mm {:>> unit = "mm";} 
                 // circumference is inherited. Must be re-evaluated with correct diameter.
                 // Expected behavior:  re-evaluate dependency in new scope, but without changing diameter of Coin. 
             }
@@ -436,15 +444,15 @@ class InheritanceTests {
      * Each overridden value and expression has independent variables;
      * subclass inherits expression, but does not overwrite the value of superclass.
      */
-    @Test fun overrideDerivedPropertyTest2() = testSession("ScalarValues") {
+    @Test fun overrideDerivedPropertyTest2() = testSession("ScalarValues", "Ranges") {
         loadKerML("""
             type Coin :> Base::Anything {
-                feature diameter: ScalarValues::Real(2..100);
+                feature diameter: Ranges::RealInRange {:>> range = "2..100";}
                 feature circumference: ScalarValues::Real = diameter;
             }
 
             type OneEuroCoin :> Coin {
-                feature diameter: ScalarValues::Real(23..23);
+                feature diameter: Ranges::RealInRange  {:>> range = "23..23";}
                 feature circumference: ScalarValues::Real = diameter * 2.0.
                 // circumference is inherited. Must be re-evaluated with correct diameter.
                 // Expected:  re-evaluate dependency in new scope, but without changing diameter of Coin. 
@@ -465,13 +473,13 @@ class InheritanceTests {
     /**
      * Subclasses can have constrained variables that do not affect the superclass.
      */
-    @Test fun inheritanceConstraintTestFromSubclasses() = testSession("ScalarValues"){
+    @Test fun inheritanceConstraintTestFromSubclasses() = testSession("ScalarValues", "Ranges"){
         loadKerML("""
                 type a specializes Base::Anything {
                     feature p: ScalarValues::Real; 
                 }
                 type b specializes a { 
-                    feature p: ScalarValues::Real(2); 
+                    feature p: Ranges::RealInRange  {:>> range = "2..2";}
                 }
             """.trimIndent()
         )
@@ -484,9 +492,9 @@ class InheritanceTests {
     /**
      * Subclasses can have constrained variables that do not affect the superclass.
      */
-    @Test fun inheritanceConstraintTestFromSuperclass() = testSession("ScalarValues") {
+    @Test fun inheritanceConstraintTestFromSuperclass() = testSession("ScalarValues", "Ranges") {
         loadKerML("""
-            type a :> Base::Anything { feature p: ScalarValues::Real(2); }
+            type a :> Base::Anything { feature p: Ranges::RealInRange  {:>> range = "2..2";}}
             type b :> a { feature p: ScalarValues::Real; }
         """)
         // b shall be constrained to 2, a remains 2.
@@ -497,13 +505,13 @@ class InheritanceTests {
     /**
      * Subclasses must have subset of superclass-values.
      */
-    @Test fun inheritanceConstraintTestContradiction() = testSession("ScalarValues") {
+    @Test fun inheritanceConstraintTestContradiction() = testSession("ScalarValues", "Ranges") {
         loadKerML("""
             type a specializes Base::Anything {
-                feature p: ScalarValues::Real(1); 
+                feature p: Ranges::RealInRange  {:>> range = "1..1";} 
             }
             type b specializes a {
-                feature p: ScalarValues::Real(2);
+                feature p: Ranges::RealInRange {:>> range = "2..2";}
             }
         """)
         propagate()
@@ -518,11 +526,11 @@ class InheritanceTests {
      * Indirect constraints must be considered as 'writing' the addressed object directly
      * in an inheritance tree, not the superclass definitions.
      */
-    @Test fun inheritanceConstraintTestIndirect() = testSession("ScalarValues"){
+    @Test fun inheritanceConstraintTestIndirect() = testSession("ScalarValues", "Ranges"){
         loadKerML("""
             type a :> Base::Anything { feature p: ScalarValues::Real; }
             type b :> a; 
-            type x :> Base::Anything { feature a: ScalarValues::Real(2) = b::p; }
+            type x :> Base::Anything { feature a: Ranges::RealInRange = b::p {:>> range = "2..2";}}
         """)
         assertEquals(0, status.issues.size, status.issues.toString())
         propagate()
@@ -540,22 +548,22 @@ class InheritanceTests {
     }
 
 
-    @Test fun realConstraintTest() = testSession("Occurrences") {
+    @Test fun realConstraintTest() = testSession("Occurrences", "Ranges") {
         loadKerML("""
             package Test { 
-                class m { feature v: ScalarValues::Real(1..5); }
-                class n :> m {feature v: ScalarValues::Real(6..6); }
+                class m { feature v: Ranges::RealInRange {:>> range = "1..5";} }
+                class n :> m {feature v: Ranges::RealInRange {:>> range = "6..6";}}
             }
         """)
         // The inconsistency / violation of Liskov Principle must be reported.
         assertEquals(Issue.Kind.WARN_INCONSISTENCY, status.issues.firstOrNull()?.kind)
     }
 
-    @Test fun realConstraintTest2() = testSession("ScalarValues") {
+    @Test fun realConstraintTest2() = testSession("ScalarValues", "Ranges") {
         loadKerML("""
             package Test { 
-                type m :> Base::Anything { feature v: ScalarValues::Real(1..5); }
-                type n :> m {feature v: ScalarValues::Real(1..5); }
+                type m :> Base::Anything { feature v: Ranges::RealInRange {:>> range = "1..5";} }
+                type n :> m {feature v: Ranges::RealInRange {:>> range = "1..5";} }
             }
         """)
         // The inconsistency / violation of Liskov Principle must be reported.
@@ -564,11 +572,11 @@ class InheritanceTests {
     }
 
 
-    @Test fun realConstraintTest3() = testSession("ScalarValues") {
+    @Test fun realConstraintTest3() = testSession("ScalarValues", "Ranges") {
         loadKerML("""
             package Test {
-                type super :> Base::Anything { feature v: ScalarValues::Real(1..2); }
-                type sub specializes super { feature v: ScalarValues::Real(1.5) = 1.5; }
+                type super :> Base::Anything { feature v: Ranges::RealInRange {:>> range = "1..2";} }
+                type sub specializes super { feature v: Ranges::RealInRange = 1.5 {:>> range = "1.5..1.5";} }
             }
         """)
         // The inconsistency / violation of Liskov Principle must be reported.
@@ -578,11 +586,11 @@ class InheritanceTests {
     }
 
 
-    @Test fun integerConstraintTest() = testSession("ScalarValues") {
+    @Test fun integerConstraintTest() = testSession("ScalarValues", "Ranges") {
         loadKerML(("""
             package Test { 
-                type m :> Base::Anything {feature v: ScalarValues::Integer (1..5); }
-                type n :> m {feature v: ScalarValues::Integer(6..6); }; 
+                type m :> Base::Anything {feature v: Ranges::IntegerInRange {:>> range = "1..5";} }
+                type n :> m {feature v: Ranges::IntegerInRange {:>> range = "6..6";} }; 
             }
         """.trimIndent()))
         // The inconsistency / violation of Liskov Principle must be reported.
@@ -592,13 +600,13 @@ class InheritanceTests {
         assertEquals(IntegerRange(6, 6), v?.value?.asIdd()?.getRange())
     }
 
-    @Test fun integerConstraintTest2() = testSession("ScalarValues") {
+    @Test fun integerConstraintTest2() = testSession("ScalarValues", "Ranges") {
         loadKerML(("""
             type m :> Base::Anything {
-                feature v: ScalarValues::Integer (1..5); 
+                feature v: Ranges::IntegerInRange {:>> range = "1..5";}
             }
             type n :> m {
-                feature v: ScalarValues::Integer(2..2); 
+                feature v: Ranges::IntegerInRange {:>> range = "2..2";}
             }
         """.trimIndent()))
         assertTrue(status.issues.isEmpty(), status.issues.toString())
@@ -682,10 +690,10 @@ class InheritanceTests {
     }
 
     @Test
-    fun subclassWithoutConstraintsInheritsConstraints() = testSession("ScalarValues") {
+    fun subclassWithoutConstraintsInheritsConstraints() = testSession("ScalarValues", "Ranges") {
         loadKerML("""
             type general :> Base::Anything {
-                feature x: ScalarValues::Real(1 .. 2) = 1.5; 
+                feature x: Ranges::RealInRange = 1.5 {:>> range = "1 .. 2";} 
             }
             type special :> general {
                 feature x: ScalarValues::Real; 
@@ -696,11 +704,11 @@ class InheritanceTests {
 
 
     @Test
-    fun subclassWithoutConstraintsInheritsConstraints2() = testSession("SI") {
+    fun subclassWithoutConstraintsInheritsConstraints2() = testSession("SI", "Ranges") {
         loadKerML("""
             type general :> Base::Anything {
                 feature y: ScalarValues::Real; 
-                feature x:  SI::Time(0 .. *) [ms] = 1.0 [ms]; 
+                feature x:  SI::Time = 1.0 [ms] {:>> range = "0 .. *"; :>> unit = "ms";} 
             }
             class special :> general; 
         """.trimIndent())

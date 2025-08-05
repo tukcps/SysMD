@@ -2,7 +2,8 @@ package com.github.tukcps.sysmd.services.session
 
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
-import com.github.tukcps.sysmd.model.kerml.implementation.AnnotatingElementImplementation
+import com.github.tukcps.sysmd.model.kerml.implementation.MetadataFeatureImplementation
+import com.github.tukcps.sysmd.model.kerml.implementation.NamespaceImplementation
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.repositories.local.getCells
 import com.github.tukcps.sysmd.services.repositories.local.toElement
@@ -23,8 +24,7 @@ fun Session.loadSysMDFromFile(file: File, compile: Boolean, initialize: Int = 1)
      * Compile them, while considering usage of other libraries/projects, load them, etc.
      */
     fun compileCell(element: Element) {
-        element.ownedElement.forEach {
-            val ownedElement = get(it.id!!) as Element
+        element.ownedElement.forEach { ownedElement ->
             if (ownedElement is TextualRepresentation
                 && (ownedElement.language.startsWith("SysMD")
                         ||ownedElement.language.startsWith("SysML")
@@ -41,9 +41,9 @@ fun Session.loadSysMDFromFile(file: File, compile: Boolean, initialize: Int = 1)
 
 
     // first read the MD into the memory; creates only annotations with textual models and description annotations
-    val fileAnnotation = createOrReplace(AnnotatingElementImplementation(declaredName = file.name), global)
+    val fileAnnotation = addOwnedMember(MetadataFeatureImplementation(declaredName = file.name), global)
     val cells = file.getCells()
-    cells.forEach { cell -> create(cell.toElement(), fileAnnotation) }
+    cells.forEach { cell -> addOwnedMember(cell.toElement(), fileAnnotation) }
     loadUsages()
     if (compile) compileCell(fileAnnotation)
     initialize(initialize)

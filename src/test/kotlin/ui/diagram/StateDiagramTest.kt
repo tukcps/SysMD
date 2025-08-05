@@ -34,7 +34,7 @@ class StateDiagramTest {
                     }                                                
                 }                                                    
             }                                                        
-        """.trimIndent()
+        """
 
         val model = HoodSysmlParser().parseString(sysml)
         val statemachine = model.global.resolve<StateUsage>("testPackage::Part1::Statemachine1")

@@ -87,7 +87,7 @@ fun CellList(
                                 horizontalArrangement = Arrangement.Start
                             ) {
                                 Icon(
-                                    modifier = Modifier.absoluteOffset(x = 10.dp),
+                                    modifier = Modifier.absoluteOffset(x = 15.dp),
                                     imageVector = Icons.Default.AddCircle,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.outlineVariant
@@ -99,7 +99,6 @@ fun CellList(
                             index = index,
                             selectedIndex = editorTabModel.selectedIndex,
                             selectedItem = editorTabModel.editState,
-                            showInfo = editorTabModel.showInfo[index] ?: mutableStateOf(true),
                             collapsedElementIds = editorTabModel.collapsedCellIndices,
                             hiddenElementIds = editorTabModel.hiddenElementIds,
                             onDeleteRequest = ::onDeleteRequest,

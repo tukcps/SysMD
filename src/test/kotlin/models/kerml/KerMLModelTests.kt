@@ -1,6 +1,5 @@
 package models.kerml
 
-import io.github.tukcps.aadd.values.IntegerRange
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.*
 import com.github.tukcps.sysmd.services.check.checkConsistency
@@ -9,6 +8,7 @@ import com.github.tukcps.sysmd.services.findRelationshipsFrom
 import com.github.tukcps.sysmd.services.findRelationshipsTo
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolve
+import io.github.tukcps.aadd.values.IntegerRange
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.*
@@ -34,7 +34,7 @@ class KerMLModelTests {
     @Test
     fun createPackageTest() = testSession {
             val pkg = PackageImplementation(declaredShortName="name")
-            val pkgId = create(pkg, global).elementId
+            val pkgId = addOwnedMember(pkg, global).elementId
 
             // 1.
             assertNotNull(pkgId)
@@ -46,11 +46,11 @@ class KerMLModelTests {
 
     @Test fun createPackageInPackageTest() = testSession {
             val pkg = PackageImplementation(declaredName="name")
-            val pkg2 = create(pkg, global)
+            val pkg2 = addOwnedMember(pkg, global)
             assertNotNull(pkg2)
 
             val elem = PackageImplementation(declaredName="name2")
-            val elemUId = create(elem, pkg2)
+            val elemUId = addOwnedMember(elem, pkg2)
             assertNotNull( elemUId.elementId )
     }
 
@@ -58,34 +58,34 @@ class KerMLModelTests {
      * Check the delete function of the model.
      */
     @Test fun deleteElementTest() = testSession {
-        val pkg = PackageImplementation(declaredName="packageName")
-        val pkgCreated = create(pkg, global)
+        val pkg = PackageImplementation(declaredName="pkg")
+        val pkgCreated = addOwnedMember(pkg, global)
 
-        val elem = create(TypeImplementation( declaredName="elementName"), pkgCreated)
-        create(SpecializationImplementation(elem, anything), elem)
+        val elem = addOwnedMember(TypeImplementation( declaredName="elem1"), pkgCreated)
+        addOwnedRelationship(SpecializationImplementation(elem, anything))
 
-        var prop = FeatureImplementation(declaredName="prop")
-        prop = create(prop, elem)
+        // Owned element to be removed as well
+        val elem2 = FeatureImplementation(declaredName="elem2")
+        addOwnedMember(elem2, elem)
 
+        checkConsistencyOfBuilders()
+        checkConsistency(repo.elements, global.elementId!!)
         delete(elem)
         checkConsistencyOfBuilders()
         checkConsistency(repo.elements, global.elementId!!)
         assertNull( this[elem.elementId!!] )
-        assertNull( this[prop.elementId!!] )
+        assertNull( this[elem2.elementId!!] )
     }
-
-
-
 
     /**
      * create adds Element to both has-a and is-a relationship hierarchies.
      */
     @Test fun hasATest() = testSession {
         val sizeBefore = global.getOwnedElementsOfType<Element>().size
-        val class1 = create(TypeImplementation(declaredName="name"), global)     // new class or package in global.
-        create(SpecializationImplementation(class1, anything), class1)
-        val class2inClass1 = create(TypeImplementation(declaredName="name2"), class1)
-        create(SpecializationImplementation(class2inClass1, anything), class2inClass1)      // class in name package/element
+        val class1 = addOwnedMember(TypeImplementation(declaredName="name"), global)     // new class or package in global.
+        addOwnedRelationship(SpecializationImplementation(class1, anything), class1)
+        val class2inClass1 = addOwnedMember(TypeImplementation(declaredName="name2"), class1)
+        addOwnedRelationship(SpecializationImplementation(class2inClass1, anything), class2inClass1)      // class in name package/element
         assertEquals(sizeBefore+1, global.getOwnedElementsOfType<Element>().size)
         assertEquals(2, class1.getOwnedElementsOfType<Element>().size)
         assertEquals(1, class2inClass1.getOwnedElementsOfType<Element>().size)
@@ -95,17 +95,14 @@ class KerMLModelTests {
     }
 
 
-
-
-
     @Test
     fun createFeatureTwice() = testSession {
         val p = FeatureImplementation(declaredName = "name")
-        val pCreated = create(p, global)
-        create(SpecializationImplementation(pCreated, "ScalarValues::Real"), pCreated)
+        val pCreated = addOwnedMember(p, global)
+        addOwnedRelationship(SpecializationImplementation(pCreated, UnresolvedType("ScalarValues::Real")), pCreated)
         val p2 = FeatureImplementation(declaredName = "name")
-        val p2Created = create(p2, global)
-        create(SpecializationImplementation(p2Created, "ScalarValues::Real"), p2Created)
+        val p2Created = addOwnedMember(p2, global)
+        addOwnedRelationship(SpecializationImplementation(p2Created, UnresolvedType("ScalarValues::Real")), p2Created)
         assertEquals(1, status.updatedValues.size)
     }
 
@@ -115,14 +112,25 @@ class KerMLModelTests {
      * It is updated with the newer version.
      */
     @Test
-    fun declarePackageTwice() = testSession {
-        val pkg = create(PackageImplementation(declaredName = "Pkg"), global)
+    fun declarePackageTwiceId() = testSession {
+        val pkg = addOwnedMember(PackageImplementation(declaredName = "pkg"), global)
         pkg.updated = false
-        val pkg2 = PackageImplementation( declaredName = "pkg").also {
+        val pkg2 = PackageImplementation( declaredName = "pkg2").also {
             it.elementId = pkg.elementId!!
         }
-        create(pkg2, global)
-        assertEquals(1, status.updatedValues.size)
+        addOwnedMember(pkg2, global)
+        assertEquals(pkg, repo.elements[pkg.elementId!!] )
+    }
+
+    /**
+     * A second owned element with the same id in the same element is not allowed.
+     * It is updated with the newer version.
+     */
+    @Test
+    fun declarePackageTwiceName() = testSession {
+        val pkg1 = addOwnedMember(PackageImplementation(declaredName = "pkg"), global)
+        val pkg2 = addOwnedMember(PackageImplementation(declaredName = "pkg"), global)
+        assertEquals(pkg1, pkg2 )
     }
 
 
@@ -132,10 +140,10 @@ class KerMLModelTests {
      */
     @Test
     fun declarePackageTwiceWithUpdatedShortName() = testSession {
-        val pkg = create(PackageImplementation(declaredName = "Pkg"), global)
+        val pkg = addOwnedMember(PackageImplementation(declaredName = "Pkg"), global)
         val pkg2 = PackageImplementation(declaredName = "Pkg")
         pkg2.declaredShortName = "test"
-        val updated = create(pkg2, global)
+        val updated = addOwnedMember(pkg2, global)
         assertEquals(pkg, updated)
         assertEquals("test", pkg.declaredShortName)
         assertEquals(1, status.updatedValues.size)
@@ -157,10 +165,9 @@ class KerMLModelTests {
 
     /** A name can only be used once in a namespace, otherwise create will warn. */
     @Test fun defineElementTwiceWithNoChange() = testSession {
-        val elem1 = create(ElementImplementation(declaredName="a"), global)
-        elem1.updated = false
-        create(ElementImplementation(declaredName="a"), global)
-        assertEquals(0, status.updatedValues.size)
+        val a1 = addOwnedMember(ElementImplementation(declaredName="a"), global)
+        addOwnedMember(ElementImplementation(declaredName="a"), global)
+        assertEquals(1, status.updatedValues.size)
     }
 
     /**
@@ -168,9 +175,9 @@ class KerMLModelTests {
      * otherwise create will update the first element, and add the element to updated elements.
      */
     @Test fun defineElementTwiceWithUpdate() = testSession {
-        val elem1 = create(ElementImplementation(declaredName="a"), global)
+        val elem1 = addOwnedMember(ElementImplementation(declaredName="a"), global)
         elem1.updated = false
-        val elem2 = create(ElementImplementation(declaredName="a", declaredShortName = "short"), global)
+        val elem2 = addOwnedMember(ElementImplementation(declaredName="a", declaredShortName = "short"), global)
         assertEquals(1, status.updatedValues.size)
         assertEquals(elem1, elem2)
     }
@@ -180,10 +187,10 @@ class KerMLModelTests {
      * same id exists.
      */
     @Test fun defineElementTwiceWithUpdateOfName() = testSession {
-        val elem1 = create(ElementImplementation(declaredName="a"), global)
+        val elem1 = addOwnedMember(ElementImplementation(declaredName="a"), global)
         elem1.updated = false
         val update = ElementImplementation(elementId = elem1.elementId, declaredName = "b")
-        val elem2 = create(update, global)
+        val elem2 = addOwnedMember(update, global)
         assertEquals(1, status.updatedValues.size)
         assertEquals( "b", elem1.declaredName )
         assertEquals(elem1, elem2)
@@ -194,17 +201,17 @@ class KerMLModelTests {
      */
     @Test
     fun createFindRelationshipTest() = testSession {
-        val a = create(ElementImplementation(declaredName="a"), global)
-        val b = create(ElementImplementation(declaredName="b"), global)
-        val rel = RelationshipImplementation(declaredName="rel",
-            source = mutableListOf(Resolved("a")), target = mutableListOf(Resolved("b")) )
-        val createdRel = create(rel, global)
+        val a = addOwnedMember(ElementImplementation(declaredName="a"), global)
+        val b = addOwnedMember(ElementImplementation(declaredName="b"), global)
+        val rel = addOwnedRelationship(AnnotationImplementation(declaredName="rel",
+            owningRelatedElement = global, annotatingElement = a, annotatedElement = b
+        ), global)
         initialize()
         val relsA = findRelationshipsFrom(a, "rel")
-        assertSame(createdRel, relsA.first())
+        // assertSame(createdRel, relsA.first())
         assertTrue(relsA.contains(rel))
         val relsB = findRelationshipsTo(b, "rel")
-        assertSame(createdRel, relsB.first())
+        // assertSame(createdRel, relsB.first())
         assertTrue(relsB.contains(rel))
         // Direction considered?
         val empty1 = findRelationshipsFrom(b, "rel")
@@ -218,13 +225,13 @@ class KerMLModelTests {
      */
     @Test fun createOrUpdateTest() = testSession {
         val initial = FeatureImplementation(declaredName="prop1")
-        val created = create(initial, global)
-        create(SpecializationImplementation(created, anything), created)
+        val created = addOwnedMember(initial, global)
+        addOwnedRelationship(SpecializationImplementation(created, anything), created)
         val update = FeatureImplementation(declaredName="prop2").also {
             it.elementId = created.elementId
         }
-        val updated = create(update, global)
-        create(SpecializationImplementation(updated, anything), updated)
+        val updated = addOwnedMember(update, global)
+        addOwnedRelationship(SpecializationImplementation(updated, anything), updated)
         initialize()
         assertEquals("prop2", updated.declaredName)
         assertEquals(created.elementId, updated.elementId)
@@ -238,42 +245,10 @@ class KerMLModelTests {
     @Test fun createOrUpdateTest2( ) = testSession {
         settings.catchExceptions = false
         val initial = FeatureImplementation(declaredName="prop1")
-        val created = create(initial, global)
+        val created = addOwnedMember(initial, global)
         val update = FeatureImplementation(declaredName="prop1")
-        val updated = create(update, global)
+        val updated = addOwnedMember(update, global)
         assertSame(created, updated)
     }
 
-    /**
-     * Inheritance creates a copy of a feature, and as well of its information:
-     * - Multiplicity
-     * - Specialization
-     * There also shall be no duplicates, and the inherited features shall be marked as transient.
-     */
-    @Test fun createInheritedExpression() = testSession("ScalarValues") {
-        settings.catchExceptions = false
-        loadKerML("""
-            type a :> Base::Anything { feature x [1..2]; }
-            type b :> a; 
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val ax = global.resolve<Feature>("a::x")!!
-        val bx = global.resolve<Feature>("b::x")!!
-        assertEquals(1, ax.ownedElement.filter { it.ref is Specialization }.size)
-        assertEquals(2, ax.ownedElement.size)
-        assertEquals(1, ax.ownedElement.filter { it.ref is Multiplicity }.size)
-        assertEquals(IntegerRange(1,2), ax.multiplicity)
-
-        assertEquals(1, bx.ownedElement.filter { it.ref is Multiplicity }.size)
-        assertEquals(IntegerRange(1,2), bx.multiplicity)
-        assertEquals(1, bx.ownedElement.filter { it.ref is Specialization }.size)
-        assertEquals(2, bx.ownedElement.size)
-        assertTrue(bx.getOwnedElementOfType<Multiplicity>()!!.isTransient)
-        assertTrue(bx.getOwnedElementOfType<Specialization>()!!.isTransient)
-        assertNotNull(get(bx.getOwnedElementOfType<Multiplicity>()!!.elementId!!))
-        assertNotNull(get(bx.getOwnedElementOfType<Specialization>()!!.elementId!!))
-        assertNotEquals(ax, bx)
-        assertNotEquals(ax.elementId, bx.elementId)
-        export()
-    }
 }

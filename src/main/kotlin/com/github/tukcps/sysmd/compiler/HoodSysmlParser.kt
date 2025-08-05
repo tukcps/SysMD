@@ -28,5 +28,5 @@ class HoodSysmlParser {
     fun getActionUsages(owner: Element): List<ActionUsage> =
         owner.getOwnedElementsOfType<ActionUsage>()
 
-    fun getOwner(it: Element) = it.owner.ref
+    fun getOwner(it: Element) = it.owner
 }

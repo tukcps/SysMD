@@ -14,23 +14,15 @@ interface Type: Namespace {
     val isConjugated: Boolean
         get() = getOwnedElementsOfType<Conjugation>().isNotEmpty()
 
-    val generalization: List<Resolved<Type>>
+    val generalization: List<Type>
         get() = ownedSpecialization.map { it.general }
 
     /** Specialization object; nonsense? */
-    val specialization: List<Resolved<Type>>
+    val specialization: List<Type>
         get() = ownedSpecialization.filter { it !is Redefinition }.map { it.specific }
 
     val ownedSpecialization: List<Specialization>
-        get() = getOwnedElementsOfType<Specialization>().filter { it !is Redefinition }
-
-    override fun resolveNames(): Boolean {
-        generalization.forEach {
-            if ( it.resolveIdentity(owningNamespace!!) )
-                updated = true
-        }
-        return updated
-    }
+        get() = ownedRelationship.filterIsInstance<Specialization>().filter { it !is Redefinition }
 
 
     /**
@@ -46,17 +38,8 @@ interface Type: Namespace {
             if (depth > 200) {
                 model?.status?.error("Cyclic dependency in inheritance of $supertype ", kind=Kind.ERROR_CYCLIC_DEPENDENCY, element = this)
             } else {
-
-                if (it.ref == null) {
-                    if (it.id != null)
-                        it.ref = model?.get(it.id!!) as Type?
-                    if (it.ref == null)
-                        model?.status?.error("Error trying to find generalization of ${this.qualifiedName}", kind = Kind.ERROR_UNRESOLVED_NAME, element = this)
-                    else
-                        return (it.ref!!.specializes(supertype, depth+1))
-                } else
-                    if (it.ref!!.specializes(supertype, depth+1))
-                        return true
+                if (it.specializes(supertype, depth+1))
+                    return true
             }
         }
         return false
@@ -70,18 +53,15 @@ interface Type: Namespace {
      * @return A list of all its supertypes
      */
     fun allSupertypes(transitive: Boolean = false, visited: MutableSet<Type> = mutableSetOf()): List<Type> {
-        val supertypes = generalization.mapNotNull { it.ref }.toMutableList()
+        val supertypes = generalization.toMutableList()
 
         if (this in supertypes || this in visited) {
-            model?.status?.error(
-                "Cyclic dependency in definition of type ${this.qualifiedName}", kind = Kind.ERROR_CYCLIC_DEPENDENCY, element = this)
+            model?.status?.error("Cyclic dependency in definition of type ${this.qualifiedName}", kind = Kind.ERROR_CYCLIC_DEPENDENCY, element = this)
             return listOf()
         }
         if (transitive) {
             generalization.forEach { general ->
-                if (general.ref != null) {
-                    supertypes += general.ref!!.allSupertypes(true, (visited + this).toMutableSet())
-                }
+                supertypes += general.allSupertypes(true, (visited + this) as MutableSet<Type>)
             }
         }
         return supertypes
@@ -89,20 +69,19 @@ interface Type: Namespace {
 
     val subtypes: MutableSet<Type>
 
-    fun features(): List<Feature> =
-        ownedElement.filter { it.ref is Feature }.map { it.ref as Feature }
+    fun features(): List<Feature> = ownedElement.filterIsInstance<Feature>()
 
     /**
      * @return owned end-features of direction in
      */
     fun input(): List<Feature> =
-        ownedElement.filter { it.ref is Feature && (it.ref as Feature).direction==Feature.FeatureDirectionKind.IN && (it.ref as Feature).isEnd}.map { it.ref as Feature }
+        ownedElement.filterIsInstance<Feature>().filter { it.direction==Feature.FeatureDirectionKind.IN && it.isEnd}
 
     /**
      * @return owned end-features of direction out
      */
     fun output(): List<Feature> =
-        ownedElement.filter { it.ref is Feature && (it.ref as Feature).direction==Feature.FeatureDirectionKind.OUT && (it.ref as Feature).isEnd}.map { it.ref as Feature }
+        ownedElement.filterIsInstance<Feature>().filter { it.direction==Feature.FeatureDirectionKind.OUT && it.isEnd}
 
     /**
      * Checks if the supertype has a cycle.
@@ -111,11 +90,10 @@ interface Type: Namespace {
     fun isCyclic(visited: MutableSet<Element> = mutableSetOf()) : Boolean {
         visited += this
         generalization.forEach {
-            return when {
-                it.ref == null -> false
-                it.ref is Anything -> false
-                it.ref!! in visited -> true
-                else -> it.ref!!.isCyclic(visited)
+            return when (it) {
+                is Anything -> false
+                in visited  -> true
+                else -> it.isCyclic(visited)
             }
         }
         return false

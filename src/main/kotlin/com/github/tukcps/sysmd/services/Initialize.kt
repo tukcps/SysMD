@@ -12,15 +12,60 @@ import com.github.tukcps.sysmd.model.expression.functions.AstByImplements
 import com.github.tukcps.sysmd.model.expression.functions.AstByParts
 import com.github.tukcps.sysmd.model.expression.functions.AstBySpecializations
 import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.model.kerml.implementation.ReferenceSubsettingImplementation
 import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.services.check.checkNameResolutionSuccessful
 import com.github.tukcps.sysmd.services.inheritance.*
 import com.github.tukcps.sysmd.services.resolve.resolve
+import com.github.tukcps.sysmd.services.resolve.resolveFeatureChain
 import com.github.tukcps.sysmd.services.session.Session
 import com.github.tukcps.sysmd.services.session.getAllOfClass
 import java.util.LinkedList
 import kotlin.math.abs
 
+private fun Session.fillCache() {
+    // Cache frequently used types for use in semantic checks
+    repo.numberType = global.resolve<DataType>("ScalarValues::Number")
+    repo.scalarType = global.resolve<DataType>("ScalarValues::ScalarValue")
+    repo.realType = global.resolve<DataType>("ScalarValues::Real")
+    repo.integerType = global.resolve<DataType>("ScalarValues::Integer")
+    repo.naturalType = global.resolve<DataType>("ScalarValues::Natural")
+    repo.booleanType = global.resolve<DataType>("ScalarValues::Boolean")
+    repo.stringType = global.resolve<DataType>("ScalarValues::String")
+    repo.inRangeType = global.resolve<DataType>("Ranges::InRange")
+    repo.occurrence = global.resolve<Type>("Occurrences::Occurrence")
+    repo.links = global.resolve<Association>("Links::Link")
+}
+
+private fun Session.giveUUID5(){
+    get().filter { it.isLibraryElement || it.isStandard }. forEach {
+        val old = it.elementId
+        it.generateUUID()
+        if (old != it.elementId) {
+            repo.elements.remove(old)
+            repo.elements[it.elementId!!] = it
+        }
+    }
+}
+
+
+/**
+ * For Connectors, the end features are references to the source and target.
+ * This method gets all Connectors and adds to each end feature a reference to source resp. targets.
+ */
+private fun Session.addEndFeatureReferences() {
+    get().filterIsInstance<Connector>().forEach { connector ->
+        val ends = connector.ownedElement.filter { it is Feature && it.isEnd  }
+        if (connector.source.isNotEmpty() && connector.target.isNotEmpty() && ends.size >= 2) {
+            val sourceEnd = ends[0] as Feature
+            val targetEnd = ends[1] as Feature
+            val ref = ReferenceSubsettingImplementation(sourceEnd, connector.source.first() as Feature)
+            addOwnedRelationship(ref, sourceEnd)
+            val refT = ReferenceSubsettingImplementation(targetEnd, connector.target.first() as Feature)
+            addOwnedRelationship(refT, targetEnd)
+        }
+    }
+}
 
 /**
  * Schedules and initialize the properties and the elements.
@@ -29,34 +74,30 @@ import kotlin.math.abs
 fun Session.initialize(level: Int = 100) {
     if (settings.initialize) {
         try {
-            if (level > 0) {
-                resolveAllNames() // Calls 'initialize' of each element --> at least ownership should be resolved.
-                resolveNamesInRelationships()
+            if (level > 0) { // Ownership and Type definitions
+                resolveAllNames()
+                fillCache()
+                get().asSequence().filterIsInstance<Type>().forEach { type -> type.checkForCycles() }
+                get().asSequence().filterIsInstance<Specialization>().forEach {
+                    if (it !is Redefinition)
+                        it.general.subtypes.add(it.specific)
+                }
+            }
+            if (level > 1)   // Inheritance and redefinition
+                anything.addInheritedToSubtypes() // Calls 'initialize' of types that will add inherited properties.
 
-                // Cache frequently used types for use in semantic checks
-                repo.numberType = global.resolve<DataType>("ScalarValues::Number")
-                repo.scalarType = global.resolve<DataType>("ScalarValues::ScalarValue")
-                repo.realType = global.resolve<DataType>("ScalarValues::Real")
-                repo.integerType = global.resolve<DataType>("ScalarValues::Integer")
-                repo.naturalType = global.resolve<DataType>("ScalarValues::Natural")
-                repo.booleanType = global.resolve<DataType>("ScalarValues::Boolean")
-                repo.stringType = global.resolve<DataType>("ScalarValues::String")
-                repo.inRangeType = global.resolve<DataType>("Ranges::InRange")
-                repo.occurrence = global.resolve<Type>("Occurrences::Occurrence")
-                repo.links = global.resolve<Association>("Links::Link")
+            if (level > 2) { // Feature chains considering inherited features
+                addEndFeatureReferences()
+                resolveAllNames()
+                resolveAllFeatureChains()
+                giveUUID5()
             }
-            get().filterIsInstance<Specialization>().forEach {
-                if (it !is Redefinition)
-                    it.general.ref?.subtypes?.add(it.specific.ref!!)
-            }
-            if (level > 1) anything.addInheritedToSubtypes() // Calls 'initialize' of types that will add inherited properties.
-            if (level > 2) resolveAllNames()                 // Again, update name resolution considering types and inheritance
-            if (level > 3) resolveNamesInRelationships()
-            if (level > 4) anything.addInheritedToSubtypes() // Call add inherited again to add inherited relationships of resolved names
+            if (level > 3)
+                checkNameResolutionSuccessful()
+
             if (level > 4) {
                 // We do static semantic checks ...
                 getAllOfClass<Type>().forEach { type ->
-                    type.checkSupertypesAreResolved()
                     type.checkForCycles()
                 }
 
@@ -65,8 +106,9 @@ fun Session.initialize(level: Int = 100) {
             if (level > 5) initVariables()
 
             // Now, we only do checking and reporting of issues to the Agenda.
-            if (level > 6) checkNameResolutionSuccessful()
-            if (level > 7) get().filterIsInstance<Type>().forEach { checkConsistencyOfInheritance(it) }
+            if (level > 7) get().filterIsInstance<Type>().forEach {
+                checkConsistencyOfInheritance(it)
+            }
         } catch (error: Exception) {
             if (error is SysMDException)
                 status.error(message = error.message, cause = error)
@@ -76,14 +118,82 @@ fun Session.initialize(level: Int = 100) {
     }
 }
 
+
 /**
- * Resolves names in Relationships
+ * No guarantee that name references can be resolved.
+ * Ensures that at least an initial number of elements is initialized.
+ * No tests are made; they can only be done later.
  */
-private fun Session.resolveNamesInRelationships() {
-    get().filterIsInstance<Relationship>().forEach {
-        it.resolveNames()
+internal fun Session.resolveAllNames() {
+
+    fun relationsWithUnresolvedReferences() = get()
+        .asSequence()
+        .filterIsInstance<Relationship>()
+        .filter { rel -> rel !is Redefinition && (rel.source.any { it is Unresolved } || rel.target.any { it is Unresolved }) }
+        .toSet()
+
+    var relationshipsWithUnresolvedReferences = relationsWithUnresolvedReferences()
+    var progress = true
+
+    while (progress) {
+        relationshipsWithUnresolvedReferences.forEach {
+            for (index in it.source.indices) {
+                if (it.source[index] is Unresolved) {
+                    if ((it.source[index] as Unresolved).relativeName == null)
+                        status.warn(Issue.Kind.ERROR_UNRESOLVED_NAME, "Unresolved element with no name", element = it)
+                    else {
+                        val unresolved = it.source[index] as Unresolved
+                        // Try resolving all unresolved names except redefinitions that are done later
+                        val resolved =
+                            if (it is Redefinition) null else it.owningNamespace?.resolve<Element>(unresolved.relativeName!!)
+                        if (resolved != null)
+                            when (unresolved) {
+                                is Feature if (resolved !is Feature)
+                                    -> status.error("Expecting a kind of feature", kind = Issue.Kind.ERROR_TYPE_WRONG, element = it)
+
+                                is Type if (resolved !is Type)
+                                    -> status.error("Expecting a kind of type", kind = Issue.Kind.ERROR_TYPE_WRONG, element = it)
+
+                                is Namespace if (resolved !is Namespace)
+                                    -> status.error("Expecting a kind of namespace", kind = Issue.Kind.ERROR_TYPE_WRONG, element = it)
+
+                                else -> it.source[index] = resolved
+                            }
+                    }
+                }
+            }
+
+            for (index in it.target.indices) {
+                if (it.target[index] is Unresolved) {
+                    if ((it.target[index] as Unresolved).relativeName == null)
+                        status.warn(Issue.Kind.ERROR_UNRESOLVED_NAME, "Unresolved element with no name", element = it)
+                    else {
+                        val unresolved = it.target[index] as Unresolved
+                        val resolved =
+                            if (it is Redefinition) null else it.owningNamespace?.resolve<Element>(unresolved.relativeName!!)
+                        if (resolved != null)
+                            when (unresolved) {
+                                is Feature if (resolved !is Feature)
+                                    -> status.error("Expecting a kind of feature", kind = Issue.Kind.ERROR_TYPE_WRONG, element = it)
+
+                                is Type if (resolved !is Type)
+                                    -> status.error("Expecting a kind of type", kind = Issue.Kind.ERROR_TYPE_WRONG, element = it)
+
+                                is Namespace if (resolved !is Namespace)
+                                    -> status.error("Expecting a kind of namespace", kind = Issue.Kind.ERROR_TYPE_WRONG, element = it)
+
+                                else -> it.target[index] = resolved
+                            }
+                    }
+                }
+            }
+        }
+        val new = relationsWithUnresolvedReferences()
+        progress = (relationshipsWithUnresolvedReferences.size - new.size) > 0
+        relationshipsWithUnresolvedReferences = new
     }
 }
+
 
 
 /**
@@ -92,73 +202,63 @@ private fun Session.resolveNamesInRelationships() {
  * Ensures that at least an initial number of elements is initialized.
  * No tests are made; they can only be done later.
  */
-internal fun Session.resolveAllNames() {
-    var stable: Boolean
-    var iterations = 1000
+internal fun Session.resolveAllFeatureChains() {
 
-    // First create ownership hierarchy
-    do {
-        stable = true
-        iterations--
+    initializeAllAssociations()
 
-        // Check whether the owner of each element can be identified and
-        // create them in the model.
-        val elementsIdentified = mutableListOf<Element>()
-        getUnownedElements().forEach {
-            if (it.startOfPath is Namespace && it.path != null) {
-                val resolvedOwner = (it.startOfPath as Namespace).resolve<Element>(it.path!!, searchInSuperClass = false, resolveReferences = false)
-                if (resolvedOwner != null) {
-                    val added = create(it.element, resolvedOwner)
-                    elementsIdentified.add(it.element)
-                    if (added != it.element)
-                        updateUnownedElements(it.element, added)
-                    stable = false
-                }
-            } else {
-                if (it.startOfPath.model == this && it.path == null) {
-                    val added = create(it.element, it.startOfPath)
-                    elementsIdentified.add(it.element)
-                    stable = false
-                    if (added !== it.element)
-                        updateUnownedElements(it.element, added)
+    get().asSequence().filterIsInstance<Relationship>().forEach {
+        for (index in it.source.indices) {
+            if (it.source[index] is UnresolvedFeatureChain) {
+                if ( (it.source[index] as Unresolved).relativeName == null)
+                    status.warn(Issue.Kind.ERROR_UNRESOLVED_NAME, "Unresolved feature chain with no name", element = it)
+                else {
+                    val unresolvedFeature = it.source[index] as Unresolved
+                    val resolvedFeature = it.owningNamespace?.resolveFeatureChain(unresolvedFeature.relativeName!!)
+                    if (resolvedFeature != null)
+                        it.source[index] = resolvedFeature
                 }
             }
         }
-        elementsIdentified.forEach { dropUnownedElement(it) }
-    } while (!stable && iterations > 0)
-    if (!stable)
-        status.info("Not enough iterations in initialization; increase no. of iterations", element = global)
-
-    get().forEach {
-        if (it != global && it.owningNamespace == null) {
-            status.error("Element for which an owner could not be resolved: $it", element =  it)
+        for (index in it.target.indices) {
+            if (it.target[index] is UnresolvedFeatureChain) {
+                if ((it.target[index] as Unresolved).relativeName == null)
+                    status.warn(Issue.Kind.ERROR_UNRESOLVED_NAME, "Unresolved element with no name", element = it)
+                else {
+                    val unresolvedFeature = it.target[index] as UnresolvedFeatureChain
+                    val resolvedFeature = it.owningNamespace?.resolveFeatureChain(unresolvedFeature.relativeName!!)
+                    if (resolvedFeature != null)
+                        it.target[index] = resolvedFeature
+                }
+            }
         }
     }
+}
 
-    // identify all names, but not yet Types w/ inheritance
-    val elements = get().filter { it !is Type }
-    for (element in elements) {
-        element.resolveNames()
-        if (element.updated)
-            stable = false
-        element.updated = false
-    }
+/**
+ * Sets the Association source and target types to the respecitive end features.
+ */
+internal fun Session.initializeAllAssociations() {
+    get().asSequence().filterIsInstance<Association>().forEach { association ->
+        // --> to initialize after inheritance!
+        val endFeature = association.ownedElement
+            .asSequence().filterIsInstance<Feature>().filter { feature -> feature.isEnd }.toList()
 
-    // finally, inherited elements as well.
-    val elements2 = get().filter { it !is Multiplicity && it is Type }
-    for (element in elements2) {
-        element.resolveNames()
-        if (element.updated)
-            stable = false
-        element.updated = false
+        if (endFeature.size >= 2) {
+            association.sourceType = endFeature[0]
+            association.targetType = mutableListOf(endFeature[1])
+            for(i in 2 .. endFeature.size - 1) {
+                association.targetType = mutableListOf(endFeature[i])
+            }
+        }
     }
 }
+
 
 
 /**
  * Initializes the properties:
  * - Schedules the properties such that they are ordered following their data dependencies,
- * i.e., a property that depends on the computation of another property is schedule behind it.
+ * i.e., a property that depends on the computation of another property is scheduled behind it.
  * - Does a single evaluation upwards to propagate types and units; this ensures that the quantity property of each
  * Property is set correctly.
  */
@@ -174,14 +274,12 @@ private fun Session.initVariables() {
     val features = get().filterIsInstance<Feature>()
     features.forEach { feature ->
         when {
-            feature.owner.ref is Type && (feature.owner.ref as Type).specializes(repo.inRangeType) -> {
+            feature.owner is Type && (feature.owner as Type).specializes(repo.inRangeType) -> {
                 /* no Variable, handled by constraints of variables */
             }
 
             feature.specializes(repo.integerType) -> {
                 feature.variable = VariableImplementation(feature, BaseType.Int)
-//                if (feature.specializes(repo.inRangeType))
-//                    feature.variable?.intSpec(IntegerRange(feature.getOwned<Feature>("min")?.expression+".."+feature.getOwned<Feature>("max")?.expression))
                 variables.add(feature.variable!!)
             }
 
@@ -192,8 +290,6 @@ private fun Session.initVariables() {
 
             feature.specializes(repo.realType) -> {
                 feature.variable = VariableImplementation(feature, BaseType.Real)
-//                if (feature.specializes(repo.inRangeType))
-//                    feature.variable?.rangeSpec(Range(feature.getOwned<Feature>("min")?.expression+".."+feature.getOwned<Feature>("max")?.expression))
                 variables.add(feature.variable!!)
             }
 
@@ -256,7 +352,7 @@ private fun Session.initVariables() {
                 repo.schedule += it
             }
         } catch (exception: Exception) {
-            status.error(message = exception.message?:"Error during scheduling of constraints", cause = exception)
+            status.error(message = exception.message ?: "Error during scheduling of constraints", cause = exception)
             computed += it
             notComputed -= it
             // schedule+=it --- we do not schedule an erroneous dependency.
@@ -282,25 +378,25 @@ private fun Session.initVariables() {
         try {
             it.ast?.evalUpRec()
         } catch (exception: Exception) {
-            status.error(exception.message?:"Problem during initialization", cause = exception)
+            status.error(exception.message ?: "Problem during initialization", cause = exception)
         }
     }
 
     get().filterIsInstance<Feature>().forEach { feature ->
         //if(feature.type[0].ref is AttributeDefinitionImplementation)
-        if (feature.expression != null && feature.expression != "") { //for nested attributes, there can be a feature of another type with an expression, which needs to be calculated
-            var namespace = feature.owningNamespace
-            while (namespace is Feature)
-                namespace = namespace.owningNamespace
+        if (feature.expression != null && feature.expression!!.isNotEmpty()) { //for nested attributes, there can be a feature of another type with an expression, which needs to be calculated
+            val namespace = feature.owningNamespace
+
             val referencingVars = getVariables(feature.expression!!, namespace!!)
             referencingVars.forEach { referencingVar ->
                 if (referencingVar != null) {
-                    feature.owner.ref!!.ownedElement.find { it.ref == feature }
-                    feature.ownedElement.filter { it.ref is Feature }.map { it.ref }.forEach { ownedFeature ->
-                        referencingVar.ownedElement.filter { it.ref is Feature }.map { it.ref }
+                    feature.owner!!.ownedElement.find { it == feature }
+                    feature.ownedElement.filter { it is Feature }.forEach { ownedFeature ->
+                        referencingVar.ownedElement.filter { it is Feature }
                             .forEach { referencingFeature ->
-                                if (ownedFeature!!.declaredName == referencingFeature!!.declaredName && ownedFeature.declaredName != "multiplicity") {
-                                    if (feature.path() in (ownedFeature as Feature).variable!!.feature.path()) { //test if the previous feature is already replaced
+                                if (ownedFeature.declaredName == referencingFeature.declaredName) {
+                                    if ((ownedFeature as Feature).variable != null)
+                                    if (feature.path() in ownedFeature.variable!!.feature.path()) { //test if the previous feature is already replaced
                                         ownedFeature.variable = (referencingFeature as Feature).variable
                                     } else {
                                         ownedFeature.variables.add((referencingFeature as Feature).variable)
@@ -311,10 +407,10 @@ private fun Session.initVariables() {
                 }
             }
         }
+        if (!dSolver.isInitialized())
+            dSolver.initialize(this)
+        dSolver.update(repo.schedule)
     }
-    if (!dSolver.isInitialized())
-        dSolver.initialize(this)
-    dSolver.update(repo.schedule)
 }
 
 fun getVariables(expression: String, namespace: Namespace): List<Feature?> {
@@ -334,6 +430,7 @@ fun getVariables(expression: String, namespace: Namespace): List<Feature?> {
 }
 
 
+
 /**
  * We look at an element and its superclass(es).
  * - The subclass properties must be a subset of the superclass properties with the same name.
@@ -342,7 +439,7 @@ fun getVariables(expression: String, namespace: Namespace): List<Feature?> {
 fun Session.checkConsistencyOfInheritance(element: Type) {
     element.allSupertypes().forEach { supertype ->
         element.ownedElement.forEach { ownedElement ->
-            val owned = ownedElement.ref!!
+            val owned = ownedElement
             if (owned is Feature) {
                 val superclassFeature = supertype.getOwnedElement(owned.declaredName, owned.declaredShortName)
                 if (owned.isFeatureWithValue() && owned !is Multiplicity && superclassFeature is Feature) {
@@ -356,7 +453,7 @@ fun Session.checkConsistencyOfInheritance(element: Type) {
                             owned.typeConstraint.indices.forEach {
                                 var ownedRangeSpec = owned.typeConstraint.getOrNull(it) ?: "*..*" // Default: all Reals
                                 if (ownedRangeSpec.isBlank()) ownedRangeSpec = "*..*"
-                                if (owned.type.first().ref!!.specializes(repo.realType)) {
+                                if ( (owned.type.first()).specializes(repo.realType)) {
                                     val ownedRange = Quantity(builder.real(Range(ownedRangeSpec)), owned.unitConstraint ?: "").getRange()
 
                                     val superClassRangeSpec = if (superclassFeature.typeConstraint.getOrNull(it).isNullOrBlank())
@@ -373,7 +470,7 @@ fun Session.checkConsistencyOfInheritance(element: Type) {
                                             "value ${owned.typeConstraint} of specialization must be refinement of general ${superclassFeature.escapedName()} with value ${superclassFeature.typeConstraint}",
                                             element = owned
                                         )
-                                    if ((owned.type[0].ref != null && !owned.type[0].ref!!.specializes(superclassFeature.type[0].ref) && owned.type[0].ref != superclassFeature.type[0].ref))
+                                    if ((!(owned.type[0]).specializes(superclassFeature.type[0]) && owned.type[0] != superclassFeature.type[0]))
                                         status.inconsistency(
                                             "Type of specialization ${owned.type} of '${superclassFeature.escapedName()}' must be the same as '${superclassFeature.type}'",
                                             element = owned

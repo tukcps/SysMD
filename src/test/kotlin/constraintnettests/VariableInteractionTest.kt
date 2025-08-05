@@ -29,12 +29,12 @@ class VariableInteractionTest {
     @Test
     fun expressionParseTest() = testSession("ScalarValues") {
         initialize(1)
-        val a = create(FeatureImplementation(declaredName ="a", typeConstraint = mutableListOf("2.0 .. 3.0")), global)
-        create(SpecializationImplementation(a, repo.realType!!), a)
-        val b = create(FeatureImplementation(declaredName ="b", typeConstraint = mutableListOf("3.0 .. 4.0")), global)
-        create(SpecializationImplementation(b, repo.realType!!), b)
-        val c =create(FeatureImplementation(declaredName="c", typeConstraint = mutableListOf("1.0..8.0"), expression = "a+b+2.0"), global)
-        create(SpecializationImplementation(c, repo.realType!!), c)
+        val a = addOwnedMember(FeatureImplementation(declaredName ="a", typeConstraint = mutableListOf("2.0 .. 3.0")), global)
+        addOwnedRelationship(SpecializationImplementation(a, repo.realType!!), a)
+        val b = addOwnedMember(FeatureImplementation(declaredName ="b", typeConstraint = mutableListOf("3.0 .. 4.0")), global)
+        addOwnedRelationship(SpecializationImplementation(b, repo.realType!!), b)
+        val c =addOwnedMember(FeatureImplementation(declaredName="c", typeConstraint = mutableListOf("1.0..8.0"), expression = "a+b+2.0"), global)
+        addOwnedRelationship(SpecializationImplementation(c, repo.realType!!), c)
         initialize()
         propagate()
         assertEquals(0, status.issues.size, status.issues.toString())
@@ -44,8 +44,8 @@ class VariableInteractionTest {
 
     /** A property value can become constrained from a dependency value (here: scalar) */
     @Test
-    fun evalUpPropertyDirectTest() = testSession("ScalarValues") {
-        loadKerML("feature speed: ScalarValues::Real = 5.0+6.0 {:>> range = \"2.0 .. 22.0\";}")
+    fun evalUpPropertyDirectTest() = testSession("ScalarValues", "Ranges") {
+        loadKerML("feature speed: Ranges::RealInRange = 5.0+6.0 {:>> range = \"2.0 .. 22.0\";}")
         val speed = global.resolve<Feature>("speed")!!.variable
         assertEquals(11.0, speed!!.min(), 0.000001)
         assertEquals(11.0, speed.max(), 0.000001)
@@ -54,10 +54,10 @@ class VariableInteractionTest {
 
     /** A property can constrain a dependency such that its own constraints can be fulfilled */
     @Test
-    fun evalDownPropertyTest() = testSession("ScalarValues") {
+    fun evalDownPropertyTest() = testSession("ScalarValues", "Ranges") {
          loadKerML("""
-             feature speed2: ScalarValues::Real {:>> range = "10.0 .. 10000.0";}
-             feature speed:  ScalarValues::Real = speed2 {:>> range = "-100.0 ..200.0";}""")
+             feature speed2: Ranges::RealInRange {:>> range = "10.0 .. 10000.0";}
+             feature speed:  Ranges::RealInRange = speed2 {:>> range = "-100.0 ..200.0";}""")
         propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         val speed = global.resolve<Feature>("speed")!!.variable!!.aadd().getRange()

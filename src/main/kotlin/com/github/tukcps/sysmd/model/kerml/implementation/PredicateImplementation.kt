@@ -11,4 +11,8 @@ class PredicateImplementation(
     declaredName = declaredName,
     declaredShortName = declaredShortName,
     elementType = elementType
-)
+) {
+    override fun clone(): PredicateImplementation =
+        PredicateImplementation(declaredName, declaredShortName).also { klon-> updateFrom(this) }
+
+}

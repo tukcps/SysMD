@@ -3,13 +3,18 @@
 package com.github.tukcps.sysmd.compiler.parser.sysmlv2
 
 import com.github.tukcps.sysmd.compiler.SysMLv2
-import com.github.tukcps.sysmd.compiler.parser.kerml.*
+import com.github.tukcps.sysmd.compiler.parser.kerml.AliasMember
+import com.github.tukcps.sysmd.compiler.parser.kerml.AnnotatingElement
+import com.github.tukcps.sysmd.compiler.parser.kerml.Dependency
+import com.github.tukcps.sysmd.compiler.parser.kerml.FeaturePrefix
+import com.github.tukcps.sysmd.compiler.parser.kerml.Identification
+import com.github.tukcps.sysmd.compiler.parser.kerml.Import
+import com.github.tukcps.sysmd.compiler.parser.kerml.MemberPrefix
+import com.github.tukcps.sysmd.compiler.parser.kerml.annotatingElementStart
 import com.github.tukcps.sysmd.compiler.parser.util.Unsupported
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.compiler.semantics.kerml.NamespaceActions
 import com.github.tukcps.sysmd.exceptions.throwSyntaxError
-import com.github.tukcps.sysmd.model.kerml.Namespace
-import com.github.tukcps.sysmd.model.kerml.Resolved
 import com.github.tukcps.sysmd.model.kerml.implementation.PackageImplementation
 
 /**
@@ -17,28 +22,25 @@ import com.github.tukcps.sysmd.model.kerml.implementation.PackageImplementation
  *      LibraryPackage = ('standard'?) 'library' PrefixMetadataMember* PackageDeclaration PackageBody
  *      PackageDeclaration = 'package' Identification
  */
-fun SysMLv2.Package() {
-    val pkg = NamespaceActions(semantics, ::PackageImplementation)
+fun SysMLv2.Package() = NamespaceActions(semantics, ::PackageImplementation).parse {
     STANDARD.optional { semantics.prefixes.add(STANDARD) }
     LIBRARY.optional  { semantics.prefixes.add(LIBRARY) }
     PACKAGE.consume()
-    Identification().also { pkg.create(it) }
-    PackageBody(Resolved(pkg.created!!))
+    Identification().also { semantics.create(it) }
+    PackageBody()
 }
 
 /**
  *      PackageBody = ';' | '{' PackageBodyElement* '}'
  */
-fun SysMLv2.PackageBody(owner: Resolved<Namespace>) {
+fun SysMLv2.PackageBody() {
     alternatives {
         SEMICOLON then { }
         LCURBRACE then {
-            semantics.pushOwner(owner)
             noOrMore(stop = RCURBRACE) {
                 PackageBodyElement()
             }
             RCURBRACE.consume()
-            semantics.popOwner()
         }
     }
 }
@@ -47,7 +49,7 @@ fun SysMLv2.PackageBody(owner: Resolved<Namespace>) {
  *      PackageBodyElement = PackageMember | ElementFilterMember | AliasMember | Import
  *      PackageMember = MemberPrefix (DefinitionElement | UsageElement)
  */
-fun SysMLv2.PackageBodyElement( ) {
+fun SysMLv2.PackageBodyElement() {
     MemberPrefix()
     when {
         definitionElementStarts() -> DefinitionElement()

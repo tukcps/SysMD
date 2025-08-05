@@ -5,20 +5,20 @@ import com.github.tukcps.sysmd.model.kerml.implementation.SpecializationImplemen
 import com.github.tukcps.sysmd.services.initialize
 import util.testSession
 import kotlin.test.Test
-import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class ClassTests {
 
     @Test
     fun getSubclassesTest() = testSession {
-        val a = create(ClassImplementation(declaredName = "a"), global)
-        create(SpecializationImplementation(a, "Any"), a)
-        val b = create(ClassImplementation(declaredName = "b"), global)
-        create(SpecializationImplementation(b, "a"), b)
-        val c = create(ClassImplementation(declaredName = "c"), global)
-        create(SpecializationImplementation(c, "b"), c)
+        val a = addOwnedMember(ClassImplementation(declaredName = "a"), global)
+        addOwnedRelationship(SpecializationImplementation(a, anything))
+        val b = addOwnedMember(ClassImplementation(declaredName = "b"), global)
+        addOwnedRelationship(SpecializationImplementation(b, a))
+        val c = addOwnedMember(ClassImplementation(declaredName = "c"), global)
+        addOwnedRelationship(SpecializationImplementation(c, b))
         initialize()
-        val asub = a.subtypes
-        assertEquals("b", asub.first().escapedName())
+        val aSubtypes = a.subtypes
+        assertTrue(b in aSubtypes)
     }
 }

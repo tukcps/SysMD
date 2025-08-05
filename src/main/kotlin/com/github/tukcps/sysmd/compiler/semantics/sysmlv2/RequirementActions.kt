@@ -1,3 +1,5 @@
+@file:Suppress("UNCHECKED_CAST")
+
 package com.github.tukcps.sysmd.compiler.semantics.sysmlv2
 
 import com.github.tukcps.sysmd.compiler.semantics.ActionsContext
@@ -10,33 +12,43 @@ import com.github.tukcps.sysmd.model.sysml.implementation.RequirementUsageImplem
 
 
 class RequirementUsageActions(
-    context: ActionsContext,
+    context: ActionsContext
 ): FeatureActions<RequirementUsageImplementation>(
     context,
     creator = ::RequirementUsageImplementation,
-    defaultType = mutableListOf("Requirements::RequirementUsage"),
+    defaultType = "Requirements::RequirementUsage",
 )
 
 class RequirementDefinitionActions(
-    context: ActionsContext
-    ): TypeActions<RequirementDefinitionImplementation>(
+    context: ActionsContext,
+): TypeActions<RequirementDefinitionImplementation>(
     context,
     creator = ::RequirementDefinitionImplementation,
-    specializes = mutableListOf("Requirements::RequirementDefinition"),
+    defaultType = "Requirements::RequirementDefinition",
 )
 
 class RequirementConstraintUsageActions(
-    context: ActionsContext
+    context: ActionsContext,
 ): FeatureActions<Feature>(
     context,
     creator = ::FeatureImplementation,
-    defaultType = mutableListOf("Requirements::RequirementUsage", "ScalarValues::Boolean"),
-)
+    defaultType = "Requirements::RequirementUsage",
+) {
+    override fun finish() {
+        context.addTyping("ScalarValues::Boolean")
+        super.finish()
+    }
+}
 
 class RequirementAssumeUsageActions(
-    context: ActionsContext
+    context: ActionsContext,
 ): FeatureActions<Feature>(
     context,
     creator = ::FeatureImplementation,
-    defaultType =  mutableListOf("Requirements::SatisfyRequirementUsage", "ScalarValues::Boolean"),
-)
+    defaultType =  "Requirements::SatisfyRequirementUsage",
+) {
+    override fun finish() {
+        context.addTyping("ScalarValues::Boolean")
+        super.finish()
+    }
+}

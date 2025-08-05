@@ -31,7 +31,7 @@ internal class AstCharacterizedResult (
 
         // Set standard file path for result.json for the case user does not specify own one
          filePath = (
-                this.namespace.owner.ref?.declaredName ?: if(parameters.size == 1) {
+                this.namespace.owner?.declaredName ?: if(parameters.size == 1) {
                     throw SysMDFatalInternalError("Could not find a package name for the result folder. Please pass the Path to the result.json directly as a second Argument or put the Attribute into a proper Package.")
                 } else "COULD_NOT_DERIVE_PATH"
          ) + "/testbenches/results.json"

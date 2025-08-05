@@ -59,7 +59,7 @@ class PimApiServicesTests {
     }
 
     @Test
-    fun getRootElements() = testSession("Base") {
+    fun getRootElements() = testSession {
         val project = projectService.getProjects().first { it.name == "testSession" }
         assertNotNull(project)
         val elements = elementNavigationService.getRootElements(project, CommitImplementation(id=UUID.randomUUID()))

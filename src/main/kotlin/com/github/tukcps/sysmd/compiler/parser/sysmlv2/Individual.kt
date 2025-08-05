@@ -13,13 +13,8 @@ import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
  *      IndividualUsage = BasicUsagePrefix 'individual'?
  *          UsageExtensionKeyword* Usage
  */
-fun SysMLv2.IndividualUsage() {
-    val individual = FeatureActions<Feature>(
-        semantics,
-        defaultType = mutableListOf("Occurrences::Occurrence"),
-        creator = ::FeatureImplementation
-    )
+fun SysMLv2.IndividualUsage() = FeatureActions<Feature>(semantics, ::FeatureImplementation, "Occurrences::Occurrence").parse {
     INDIVIDUAL.consume()
     UsageExtensionKeyword()
-    Usage(individual)
+    Usage()
 }

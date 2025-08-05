@@ -1,15 +1,26 @@
 package com.github.tukcps.sysmd.model.kerml
 
-import java.util.*
-
 interface Membership: Relationship {
-    val memberId: UUID?
-        get() = memberElement.elementId
+    // val memberElementId: UUID?
+    /**
+     * The name of the memberElement, relative to the membershipOwningNamespace
+     */
     val memberName: String?
+
+    /**
+     * The short name of the memberElement, relative to the membershipOwningNamespace
+     */
     val memberShortName: String?
 
-    val memberElement: Element
-        get() = target.firstOrNull()!!.ref!!
+    /** The owning namespace */
+    var membershipOwningNamespace: Namespace
+        get() = source.first() as Namespace
+        set(value) { source = mutableListOf(value) }
+
+    /** The member element */
+    var memberElement: Element
+        get() = target.first()
+        set(value) { target = mutableListOf(value) }
 
     val visibility: Import.VisibilityKind
 }

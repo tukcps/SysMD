@@ -1,6 +1,5 @@
 package com.github.tukcps.sysmd.model.sysml.implementation
 
-import com.github.tukcps.sysmd.model.kerml.Resolved
 import com.github.tukcps.sysmd.model.sysml.InterfaceDefinition
 
 class InterfaceDefinitionImplementation(
@@ -18,8 +17,8 @@ class InterfaceDefinitionImplementation(
             declaredShortName = this.declaredShortName,
         ).also {
             it.model = model
-            source = Resolved.copyOfIdentityList(source)
-            target = Resolved.copyOfIdentityList(target)
+            source = source.toMutableList()
+            target = target.toMutableList()
         }
     }
 }

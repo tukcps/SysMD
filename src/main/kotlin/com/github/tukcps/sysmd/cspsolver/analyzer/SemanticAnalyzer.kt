@@ -13,7 +13,7 @@ class SemanticAnalyzer(override val model: Session): SemanticAnalyzerIF {
 
     override fun getClassifier(property: Variable): Type? {
         //TODO
-        return property.feature.generalization.firstOrNull()?.ref
+        return property.feature.generalization.firstOrNull() as Type?
     }
 
     override fun getAnnotations(property: Variable): List<Annotation> {

@@ -28,7 +28,8 @@ interface Variable: ConstraintPropagation {
 
     var feature: Feature
     val elementId: UUID?
-    var name: String?
+    val name
+        get() = feature.qualifiedName
     val baseType: BaseType
 
     /** Holds either an IntegerRange, a Range, or an XBool, depending on the type. */

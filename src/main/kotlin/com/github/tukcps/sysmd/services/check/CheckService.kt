@@ -7,6 +7,19 @@ import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.services.session.Session
 import java.util.*
 
+fun Session.getUnresolvedElements(): List<Unresolved> {
+    val elements = repo.elements.values.filterIsInstance<Unresolved>()
+    val links: MutableList<Unresolved> = mutableListOf()
+
+    repo.elements.values.filterIsInstance<Relationship>().forEach { relationship ->
+        relationship.source.forEach { if (it is Unresolved) links.add(it) }
+        relationship.target.forEach { if (it is Unresolved) links.add(it) }
+    }
+
+    return links + elements
+}
+
+
 
 /**
  * Checks invariants for debugging and robustness.
@@ -32,17 +45,17 @@ fun checkConsistency(
             throw Exception("($info) Attempt to persist element that is transient: $it.id")
 
         // Every element with an id is in the map.
-        if ( it.owner.id != null && (it.owner.id !in map.keys) && it.declaredName != "Global") {
-            println("  ---> Owner name: ${it.owner.ref?.qualifiedName}")
-            println("  ---> Owner UUID5 by name: ${Generators.nameBasedGenerator().generate(it.owner.ref?.qualifiedName)}")
-            println("  ---> Owner id owner.ref:  ${it.owner.ref?.elementId} (ID in model: ${it.owner.ref?.elementId in map.keys})")
-            println("  ---> Owner id owner.id:   ${it.owner.id} (ID in model: ${it.owner.id in map.keys})")
-            throw Exception("($info) Inconsistency in model: element '${it.qualifiedName}' has unknown owner id ${it.owner.id}.")
+        if ( it.elementId != null && (it.elementId !in map.keys) && it != it.model?.global) {
+            println("  ---> Owner name: ${it.owner?.qualifiedName}")
+            println("  ---> Owner UUID5 by name: ${Generators.nameBasedGenerator().generate(it.owner?.qualifiedName)}")
+            println("  ---> Owner id owner.ref:  ${it.owner?.elementId} (ID in model: ${it.owner?.elementId in map.keys})")
+            println("  ---> Owner id owner.id:   ${it.owningRelationship?.elementId} (ID in model: ${it.owningRelationship?.elementId in map.keys})")
+            throw Exception("($info) Inconsistency in model: element '${it.qualifiedName}' has unknown owner id ${it.owningRelationship?.elementId}.")
         }
         if ( it is Specialization && !it.isLibraryElement ) {
-            if (it.general.id != null && map[it.general.id] == null)
+            if (it.general.elementId != null && map[it.general.elementId] == null)
                 throw  SysMDException("($info) Type '${it.qualifiedName}' has unknown superclass id.")
-            if (it.specific.id != null && map[it.specific.id] == null)
+            if (it.specific.elementId != null && map[it.specific.elementId] == null)
                 throw  SysMDException("($info) Type '${it.qualifiedName}' has unknown subclass id.")
         }
     }
@@ -57,7 +70,7 @@ fun checkConsistency(elements: HashMap<UUID, Element>, global: UUID, info: Strin
     if (elements[global] == null)
         throw SysMDException("($info) Inconsistent elements: no Global.")
     elements.forEach {
-        if (it.value.elementId != global && it.value.owner.ref?.elementId !in elements.keys)
+        if (it.value.elementId !in elements.keys)
             throw SysMDException("($info) Inconsistent element detected (owner not in elements): $it")
     }
 }
@@ -72,22 +85,25 @@ fun Session.checkNameResolutionSuccessful() {
     // Checks whether superclass was resolved (e.g., x isA y, with unknown y).
     // Also checks Feature types.
     val elements = get()
-    elements.forEach {
-        if (it is Type) {
-            if (! it.isLibraryElement && !( it is Feature && it.referencedFeature != null))
-                it.generalization.forEach { supertype ->
-                    if (supertype.ref == null)
-                        status.warn(kind=Issue.Kind.WARN_UNRESOLVED_TYPE, message = "The type '${supertype.str}' is not defined -- give a definition!", element = it)
-                }
+    elements.filterIsInstance<Relationship>().forEach { relationship ->
+        relationship.source.filter { it is Unresolved }.forEach {
+            status.warn(kind = Issue.Kind.ERROR_UNRESOLVED_NAME, message = "The name '${(it as Unresolved).relativeName}' could not be resolved", element = relationship)
+        }
+        relationship.target.filter { it is Unresolved }.forEach {
+            status.warn(
+                kind = Issue.Kind.ERROR_UNRESOLVED_NAME,
+                message = "The name '${(it as Unresolved).relativeName}' could not be resolved",
+                element = relationship as? Connector ?: relationship.owningNamespace
+            )
         }
     }
 
     // Checks whether all elements without owner could be merged
-    getUnownedElements().forEach {
+    get().filter { it.owningRelationship is Unresolved }.forEach {
         status.warn(
             kind = Issue.Kind.WARN_UNRESOLVED_OWNER,
-            message = "Could not resolve owning package '${it.startOfPath.qualifiedName}::${it.path}' for adding ${it.element.escapedName()?:it.element.elementType} ",
-            element = it.element,
+            message = "Could not resolve owner '${(it as Unresolved).relativeName}}' for adding ${it.escapedName()?:it.elementType} ",
+            element = it,
             cause = SysMDException("Could not resolve owning package or element"),
         )
     }
@@ -102,17 +118,14 @@ fun Session.checkConsistencyOfBuilders() {
             throw Exception("Inconsistent model: reference to other builder.")
         if (element is Relationship) {
             element.target.forEach {
-                if(it.ref != null && it.ref?.model != this)
+                if(it.model != this)
                     throw Exception("Inconsistent model: reference in targets of ${it}.")
             }
             element.source.forEach {
-                if (it.ref != null && it.ref?.model != this)
+                if (it.model != this)
                     throw Exception("Inconsistent model: reference in sources of ${it}.")
             }
         }
-        if (element is Specialization)
-            if (element.general.ref != null && element.general.ref?.model?.builder != builder)
-                status.fatal("Inconsistent builder: in Specialization $element", element = element)
     }
 }
 
@@ -123,13 +136,13 @@ fun Session.checkConsistencyOfBuilders() {
  */
 fun Session.checkOwnership() {
     get().forEach {  element ->
-        if (element.owner.ref != null) {
-            val ownedByOwner = element.owner.ref?.ownedElement?.associateBy { it.id }?.keys
-            if (element.owner.ref != null && element.owner.id != null && element.owner.ref != get(element.owner.id!!)) {
-                status.fatal("owner id and ref not consistent", element = element)
-            }
-            if (ownedByOwner != null && element.elementId !in ownedByOwner)
-                status.fatal("owner '${element.owner.ref?.escapedName()?:element.owner.ref?.elementType}' does not refer correctly to owned element '${element.escapedName()?:element.elementType}'", element = element)
+        if (element == global) return@forEach
+        if (element is Relationship && element !is Namespace && element !is Dependency) {
+            if (element !in element.owningRelatedElement.ownedRelationship)
+                status.fatal("Inconsistent ownership: ${element.path()} owns ${element.owningRelatedElement.path()}" , element = element)
+        } else {
+            if (element !in element.owningNamespace?.ownedElement!!)
+                status.fatal("Inconsistent ownership detected", element = element)
         }
     }
 }
@@ -141,13 +154,12 @@ fun Session.checkOwnership() {
 internal fun Session.checkLibraryElementIds() {
     get().forEach { element ->
         if ( (element.isLibraryElement || element.isStandard )
-            && !element.isTransient
-            && (element.declaredName != null || element.declaredShortName != null)
-            && element !is Multiplicity)
+            && !element.isTransient)
         {
-            val uuid5 = Generators.nameBasedGenerator().generate(element.qualifiedName)
+            val path = element.path()
+            val uuid5 = Generators.nameBasedGenerator().generate(path)
             if (element.elementId != uuid5)
-                status.warn(Issue.Kind.WARN,"Library element ${element.qualifiedName} does not have correct UUID5", element = element)
+                status.warn(Issue.Kind.WARN,"Library element with path $path for ${element.elementType} ${element.escapedName()} does not have correct UUID5", element = element)
         }
     }
 }
