@@ -51,7 +51,8 @@ The SysML v2 standard includes
 - KerML, a new metamodel that is, unlike in earlier versions, not based on UML. 
 - SysML v2 diagrams, 
 - SysML v2 textual modeling language, 
-- SysML v2 API, in particular a REST API. 
+- SysML v2 API, in particular a REST API.
+
 # SysMLv2 in Systems Engineering and Development Process  
 
 As mentioned above, SysML v2 is not a domain-specific tool development or for modeling/simulation.

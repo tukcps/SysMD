@@ -1,6 +1,7 @@
 package com.github.tukcps.sysmd.model.kerml.implementation
 
 import com.github.tukcps.sysmd.model.kerml.Documentation
+import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.util.SimpleName
 
 
@@ -31,5 +32,4 @@ class DocumentationImplementation(
         }
     }
 
-    override fun toString(): String = "[Documentation] $body"
 }

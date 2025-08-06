@@ -72,21 +72,22 @@ The tutorial consists of 4 parts that stepwise introduce you to SysMLv2:
 The tutorial includes code cells in which examples are shown.
 The examples of the respective sections are added as packages to the package "tutorial."
 You can 
-- execute all models by pressing the "Analyze" button in the main menu
-- execute the single models, step by step by pressing the calculator icon left of a code cell
+- execute all models by pressing the "Analyze" button in the main menu, or
+- execute the single models, step by step by pressing the calculator icon left of a code cell. 
 
-The figure below shows the "calculator icon."
+The figure below shows the menu that is left of each cell. 
+It opens after clicking on the dots. 
 
-![Analyze Cell](Files/analyze-button.png){width=400 height=120}
+![Analyze Cell](Files/analyze-button.png){width=600 height=300}
 
-Try it with the following code cell: 
+Try selecting the dots and then "Compile and solve" with the following code cell: 
 ```SysML
     package tutorial {
       package kerml; 
       package sysml; 
     }
 ```
-By pressing the "calculator icon" you have translated the textual model into an abstract representation. 
+By this action, you translate the textual model into an abstract representation. 
 The abstract representation consists of all elements that are part of the model.
 They are shown in the "hasA" tree view left. 
 Open the "hasA" tree view left by opening it and clicking on "tutorial." 

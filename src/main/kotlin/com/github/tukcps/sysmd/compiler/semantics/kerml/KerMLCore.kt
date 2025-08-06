@@ -45,7 +45,14 @@ open class ClassActions<T: Class>(
     context: ActionsContext,
     creator: (SimpleName?, SimpleName?) -> T,
     specializes: String = "Occurrences::Occurrence",
-): ClassifierActions<Class>(context, creator, specializes)
+): ClassifierActions<Class>(context, creator, specializes) {
+    override fun finish() {
+        if (created.specialization.isEmpty()) {
+            context.addSubclassification(defaultType)
+        }
+        super.finish()
+    }
+}
 
 
 /**

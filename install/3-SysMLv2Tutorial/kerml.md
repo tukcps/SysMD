@@ -57,6 +57,14 @@ Note that SysML v2 can be seen as a domain-specific library based on KerML.
 | KerML Kernel | Semantic library                       | Class, Datatype, Expression, Package, Association, Connector, Behavior, ...          |
 | SysML v2     | Domain-specific library based on KerML | Definition & Usage of Attribute, Part, Port, Connection, Interface, Requirement, ... |
 
+KerML (and SysML) both distinguish two different representations: 
+The _textual representation_ is written text, like a programming language.
+It is translated by a compiler into an _abstract representation_ that consists of elements that are part of the Metamodel description.
+These elements can be serialized, analyzed, etc. 
+In SysMD, one edits the textual representation in a notebook cell (see figure below, left). 
+After compilation, the abstract representation is shown in the "has-a" tree view (see figure below, right).
+
+![img.png](Files/textual-versus-abstract-representation.png){width=1000 height=250}
 
 The figure below gives an overview of the KerML classes (without the relationships).
 In the tutorial, we focus on the classes highlighted in blue.
@@ -81,19 +89,18 @@ In the following, we introduce three main artifacts of the Root Layer
 
 ## Elements
 
-All artifacts in KerML and SysML are "Elements" and have the features described in this section. 
-More theoretically, `Element` is the base class for all kinds of Elements in KerML, and all other classes 
-inherit its features. 
+All artifacts in KerML and SysML are different kind of "Elements". 
+`Element` is the base class for all kinds of Elements in KerML, and all other classes inherit its features. 
 It provides the means for  
 - the identification and 
-- the hierarchical composition of models.
+- the hierarchical composition of models. 
 
 For **identification**, each element has the properties 
-- `elementId`, a UUID v4 (=random number) or for standard libraries, a UUID v5 (=hashcode of qualified name)
-- `name`, a String usually given by the user (declared name; optional)
-- `shortName`, a String usually given by the user (declared short name; optional)
+- `elementId`, a UUID v4 (=random number) or for standard libraries or, a UUID v5 (=hashcode of qualified name), 
+- `name`, a String usually given by the user (declared name; optional), 
+- `shortName`, a String usually given by the user (declared short name; optional). 
 
-In SysML v2 textual, names can lexically be written as a basic name, or an unrestricted name. 
+In the textual representation, names can lexically be written as a basic name, or an unrestricted name. 
 - A **basic name** starts with a letter or an underscore (_), followed by letters or numbers. 
 - An **unrestricted name** is a sequence of characters enclosed in single quotes.
 it can consist of arbitrary symbols except backslash or single quotes.
@@ -106,20 +113,39 @@ Examples for unrestricted names are:
 - `'This is a valid unrestricted name'`
 - `'1.2'`
 
-The representing **hierarchy** in models, each element can own other elements respectively, be owned by an owner.
+Each element can own other elements respectively, be owned by an owner.
 This is internally represented by an Element of kind `OwningMembership`, which is a kind of Relationship.
-The figure below gives an example:
-- Elements without an owner are in the "root namespace"
-  In the concrete example, these are an element "Namespace a" and a "Documentation d"
-- "Namespace a" owns a "Feature b" and a "Class c"
+A fundamental principle of KerML and SysML is that all relationships, including ownership are represented 
+by reified kind of Relationship.
 
-![ownership.png](Files/ownership.png){width=550 height=220}
-## Namespaces, Import
+## Annotating Elements
 
-A namespace provides the means to retrieve elements by its name or short name. 
+The most basic and simple elements are annotating elements.
+Don't confuse them with annotations that are relationships as shown later. 
+An annotating element adds complementary information to a model.
+For this purpose, it has, in addition to the properties of an element, a body. 
+Specific kind of AnnotatingElement are
+- `Comment` and
+- `Documentation` (starting keyword: `doc`) with a property `body` that holds the comment resp. documenting text.
+- `TextualRepresentation` (starting keyword: `rep`) with a property `body` that holds source code,  
+  and a property `language` that holds a string that gives the language of the model, e.g., SysML, or
+- `Metadata`
 
-A **qualified name** describes a path from an element to another element in a 
+**Example**
+
+In the example below, we add a Documentation and two comments to the package tutorial::kerml.
+```KerML::tutorial::kerml
+doc kermel /* The package tutorial::kerml is the top-level package that owns all artefacts of the tutorial. */ 
+comment /* The owning package is specified in the header of each SysMD cell. */ 
+comment c1 about tutorial /* Comments and Documents can have names! */ 
+```
+
+## Namespace
+
+A namespace provides the means to retrieve elements by its name or short name.
+In this context, a **qualified name** describes a path from an element to another element in a 
 hierarchy of elements.
+In a qualified name, different names are called segments, and they are separated by "::". 
 
 Namespaces can **import** single or all elements of other namespaces via "imports."
 In KerML, an import is a relationship between an importing namespace and 
@@ -140,60 +166,48 @@ Note that the syntax schema throughout KerML and SysML is to start all elements 
 In the example, the qualified name `namespaceExample::Bike` refers to the Bike of the 
 namespace owning the namespaceExample. 
 ```KerML::tutorial::kerml
-namespace namespaceExample {
-    namespace nestedNamespace {
-        class <Bike> Bicycle; 
-        class <Car> '2 - A vehicle with engine' {
-            feature engine; 
-        } 
-    }
-    private import nestedNamespace::*; 
-    // Bike, Bicycle, Car, .. are now known here. 
+namespace NamespaceExample {  
+  namespace Car {
+    doc /* Engine text … */
+    doc /* Wheels text … */ 
+  }
 }
 ```
-- Execute the example by pressing the calculator left of the cell.
+- Execute the example by pressing the "compile and solve" left of the cell.
 - Check what happens in the "hasA" tree view left inside "tutorial", "kerml"!
 
-**Note**
+The figure below shows the abstract representation generated by the example:
+- Elements without an owner are in the "root namespace"; in SysMD, the cell is attached to 'tutorial::kerml'.  
+- In the concrete example, these are an element Namespace 'NamespaceExample'.
+  This Namespace owns two elements of type "Documentation" that have no names. 
 
-- SysMD permits execute code in cells in a given namespace. 
-The whole tutorial is part of the namespace `tutorial`. 
-The concrete example in `tutorial::kerml`.
-- E.g., from the namespace `tutorial::kerml`, the qualified name `namespaceExample::Bike` resolves to the class of the same name.
-- E.g., from the root namespace, the qualified name `tutorial::kerml::namespaceExample::Car` resolves to the class of the same name.
+![ownership.png](Files/ownership.png){width=550 height=330}
+
+
+>**Warning**: 
+> SysMD permits executing code in cells in a given namespace (selected in the line above the cell). 
+> The whole tutorial is part of the namespace `tutorial`. 
+> The concrete example is executed in an isolated namespace `tutorial::kerml`, where `NamespaceExample' is added.
+> This is not (yet?) part of the standard, where every cell would have to be in the root namespace.
+
 ## Relationship
 
 A relationship is a kind of KerML element that models a relationship between elements. 
 In addition to an element, a relationship has the properties
 - `source`, and
-- `target`
+- `target`. 
 
-Source and target are (ordered) collections of references to elements; they are used as reified objects
-to model all kinds of relationships, in particular also the ownership between elements and its owning element. 
+Source and target are (ordered) collections of _references_ to elements.
+Relationships are used as reified objects to model all kinds of relationships,
+in particular also the ownership between elements and its owning element. 
 
 From the user's perspective, `Annotation` is an important kind of elements in the Root layer of KerML.
 An Annotation is a relationship between Annotating Element and an annotated element. 
 
-> We come back to relationships later in the Kernel Layer. 
+> We come back to relationships later in the Kernel Layer.
+
 ## Annotating Elements 
 
-An `AnnotatingElement` adds complementary information to a model. 
-Specific kind of AnnotatingElement are
-- `Comment` and
-- `Documentation` (starting keyword: `doc`) with a property `body` that holds the comment resp. documenting text.
-- `TextualRepresentation` (starting keyword: `rep`) with a property `body` that holds source code,  
-  and a property `language` that holds a string that gives the language of the model, e.g., SysML, or 
-- `Metadata`
-
-**Example** 
-
-In the example below, we add a Documentation and two comments to the package tutorial::kerml. 
-```KerML::tutorial::kerml
-feature car; 
-doc /* The package tutorial::kerml is the top-level package that owns all artefacts of the tutorial. */ 
-comment /* The owning package is specified in the header of each SysMD cell. */ 
-comment c1 about tutorial /* Comments and Documents can have names! */ 
-```
 # Core Layer
 
 The core layer introduces _types_ to describe and classify things that exist 
