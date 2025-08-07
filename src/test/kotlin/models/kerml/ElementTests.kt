@@ -34,7 +34,7 @@ class ElementTests {
         assertEquals(null, f1p)
         assertEquals("a", aName)
 
-        // Check that for f1 with no name a UUID5 is generate
+        // Check that for f1 with no name a UUID5 is generated
         assertEquals(5, f1.elementId?.version())
     }
 
@@ -73,7 +73,7 @@ class ElementTests {
         assertEquals("e1/1/0", f1p)
         assertEquals("e1/2", f2p)
 
-        // Check that for f1 with no name a UUID5 is generate
+        // Check that for f1 with no name a UUID5 is generated
         assertEquals(5, f1.elementId?.version())
         assertEquals(Generators.nameBasedGenerator().generate(f1.path()), f1.elementId)
     }

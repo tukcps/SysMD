@@ -9,8 +9,14 @@ import com.github.tukcps.sysmd.quantities.ite
 import com.github.tukcps.sysmd.services.session.Session
 
 /**
- * Predefined functions: exp
- * Computes exponential function e to the power of parameter
+ * Predefined functions: linear
+ * This function implements a linear interpolation between two points or more points
+ * It takes an x-value and pairs of x0, y0 and x1, y1 as parameters.
+ * The first parameter is the x-value for which the y-value is calculated.
+ * The second and third parameters are the first point (x0, y0).
+ * The fourth and fifth parameters are the second point (x1, y1).
+ * If more points are given, the function will interpolate between them.
+ * The function will return a Quantity with the y-value for the given x-value.
  */
 internal class AstLinear(model: Session, args: ArrayList<AstNode>) :
     AstFunction("linear", model, 5, args) {

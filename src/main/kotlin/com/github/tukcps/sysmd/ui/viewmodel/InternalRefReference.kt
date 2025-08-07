@@ -52,8 +52,8 @@ class InternalRefReference (
     }
 
     private fun getStringOfHeading(heading:Heading): Pair<Int, String> {
-        val text = heading.firstChild as Text
-        return Pair(heading.level,text.literal)
+        val text = heading.firstChild as Text?
+        return Pair(heading.level,text?.literal?:"")
     }
 
     fun reset() {
@@ -73,7 +73,7 @@ class InternalRefReference (
                     if (viewModel != null)
                         addIfNotAlreadyThere(
                             viewModel,
-                            generateInternalLinkForHeading((element.firstChild as Text).literal)
+                            generateInternalLinkForHeading((element.firstChild as Text?)?.literal?:"")
                         )
                 }
 

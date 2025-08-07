@@ -62,7 +62,7 @@ open class SemanticAction<T: Element>(
         @Suppress("UNCHECKED_CAST")
 
         // determine the owner
-        val whereToAdd = if (created == context.element())  context.owner() else  context.element()
+        val whereToAdd = if (created == context.element()) context.owner() else context.element()
 
         created =
             if (created !is Namespace && created !is Annotation && created !is Dependency && created is Relationship)

@@ -1,14 +1,12 @@
 package com.github.tukcps.sysmd.model.kerml.implementation
 
 import com.github.tukcps.sysmd.model.kerml.Documentation
-import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.util.SimpleName
 
 
 /**
  * Documentation is an Annotation whose annotatingElement is a Comment that provides
- * documentation of the annotatedElement. Documentation is always an ownedRelationship
- * of its annotatedElement.
+ * documentation of the annotatedElement. 
  * @param body the documentation as a string
  */
 class DocumentationImplementation(
@@ -31,5 +29,4 @@ class DocumentationImplementation(
                 model=it.model
         }
     }
-
 }

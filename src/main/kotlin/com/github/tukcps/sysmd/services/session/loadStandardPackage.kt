@@ -70,6 +70,11 @@ object LibraryRepository {
     }
 }
 
+/**
+ * Some arrangements of libraries to be loaded for testing.
+ * Choosing a suitable arrangements with less loaded libraries allows us to debug in a more effective way.
+ * For the tool and releases, use SysMLLibraries or KermLLibraries that load all needed libraries.
+ */
 val Arrangements = hashMapOf(
     "Base"          to listOf("Base"),
     "ScalarValues"  to listOf("Base", "ScalarValues"),
@@ -92,8 +97,8 @@ val Arrangements = hashMapOf(
     "Actions"       to listOf("Base", "ScalarValues", "Links", "Occurrences", "Actions"),
     "Context"       to listOf("Base", "ScalarValues", "Context"),
     "KerML"         to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Ranges", "KerML"),
-    "KerMLLibraries" to listOf("Base", "ScalarValues", "Ranges", "Objects", "Links", "Occurrences", "Items", "SI", "Ranges"),
-    "SysMLLibraries" to listOf("Base", "ScalarValues", "Ranges", "Objects", "Links", "Occurrences", "Items", "SI", "Ranges",
+    "KerMLLibraries" to listOf("Base", "ScalarValues", "Ranges", "Objects", "Links", "Occurrences", "Performances", "SI", "Ranges"),
+    "SysMLLibraries" to listOf("Base", "ScalarValues", "Ranges", "Objects", "Links", "Occurrences", "Performances", "Items", "SI", "Ranges",
         "Ports", "Parts", "Calculations", "Constraints", "Requirements", "Interfaces", "Actions", "States", "Connections", "Signals"),
     "ISO26262"      to listOf("Base", "ScalarValues", "Ranges", "Objects", "Links", "Occurrences", "ISO26262"),
     "Signals"       to listOf("Base", "ScalarValues", "Links", "Occurrences", "Signals"),
@@ -102,6 +107,7 @@ val Arrangements = hashMapOf(
 
 /**
  * Loads a standard library into the session.
+ * This is done directly from the resources, or from the repository, if available.
  * @param library the name of the standard package.
  */
 fun Session.loadLibrary(library: String) {

@@ -4,6 +4,7 @@
 package com.github.tukcps.sysmd.compiler.parser.kerml
 
 import com.github.tukcps.sysmd.compiler.KerML
+import com.github.tukcps.sysmd.compiler.parser.util.Unsupported
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.compiler.semantics.kerml.*
 import com.github.tukcps.sysmd.exceptions.SyntaxError
@@ -98,22 +99,19 @@ fun KerML.TypeDeclaration() {
  *      TypeRelationshipPart =
  *          DisjoiningPart | UnioningPart | IntersectingPart | DifferencingPart
  */
-fun KerML.TypeRelationshipPart(): List<QualifiedName> {
-    val typeRelationships = mutableListOf<QualifiedName>()
+fun KerML.TypeRelationshipPart() {
     alternatives {
         DISJOINT starts     { DisjoiningPart() }
         UNIONS starts       { UnioningPart() }
         INTERSECTS starts   { IntersectingPart() }
         DIFFERENCES starts  { DifferencingPart() }
     }
-    return typeRelationships
 }
 
 /**
  *      DisjoiningPart = 'disjoint' 'from' OwnedDisjoining ( ',' OwnedDisjoining )*
  */
-fun KerML.DisjoiningPart(): List<QualifiedName> {
-    val disjoining = mutableListOf<QualifiedName>()
+fun KerML.DisjoiningPart() {
     DISJOINT.consume()
     FROM.consume()
     QualifiedName().also { semantics.addDisjoining(it) }
@@ -121,35 +119,30 @@ fun KerML.DisjoiningPart(): List<QualifiedName> {
         COMMA.consume()
         QualifiedName().also { semantics.addDisjoining(it) }
     }
-    return disjoining
 }
 
 /**
  *      UnioningPart = 'unions' Unioning ( ',' Unioning )*
  */
-fun KerML.UnioningPart(): List<QualifiedName> {
-    val unions = mutableListOf<QualifiedName>()
+fun KerML.UnioningPart() {
     UNIONS.consume()
     QualifiedName().also     { semantics.addUnioning(it) }
     noOrMore(start = COMMA) {
         COMMA.consume()
         QualifiedName().also { semantics.addUnioning(it) }
     }
-    return unions
 }
 
 /**
  *      IntersectingPart = 'intersects' Intersecting( ',' ownedRelationship += Intersecting )*
  */
-fun KerML.IntersectingPart(): List<QualifiedName> {
-    val intersecting = mutableListOf<QualifiedName>()
+fun KerML.IntersectingPart() {
     INTERSECTS.consume()
-    QualifiedName().also     { intersecting.add(it) }
+    QualifiedName().also     { Unsupported("Intersection not yet implemented") }
     noOrMore(start = COMMA) {
         COMMA.consume()
-        QualifiedName().also { intersecting.add(it) }
+        QualifiedName().also { Unsupported("Interaection not yet implemented") }
     }
-    return intersecting
 }
 
 /**
@@ -195,6 +188,9 @@ fun KerML.ClassifierDeclaration() {
         CONJUGATES starts           { ConjugationPart() }
         others                      {  }
     }
+    noOrMore(DISJOINT or UNIONS or INTERSECTS or DIFFERENCES) {
+        TypeRelationshipPart()
+    }
 }
 
 
@@ -214,6 +210,7 @@ fun KerML.Datatype() = DataTypeActions<DataType>(semantics, ::DataTypeImplementa
  *          Note: Calling production handles prefixes before.
  */
 fun KerML.Class() = ClassActions(semantics, ::ClassImplementation).parse {
+    TypePrefix()
     CLASS.consume()
     ClassifierDeclaration()
     TypeBody()

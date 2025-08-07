@@ -1,4 +1,4 @@
-package sysmlv2tests
+package compiler.sysml
 
 import com.github.tukcps.sysmd.model.kerml.Package
 import com.github.tukcps.sysmd.services.resolve.resolve

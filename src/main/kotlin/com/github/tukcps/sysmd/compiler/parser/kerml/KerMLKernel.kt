@@ -375,7 +375,7 @@ fun KerML.Function() = FunctionActions(semantics, ::FunctionImplementation).pars
  *
  *      Succession = FeaturePrefix 'succession' SuccessionDeclaration TypeBody
  */
-fun KerML.Succession() = FeatureActions<Feature>(semantics, ::SuccessionImplementation, "Occurrences::happensBeforeLinks").parse {
+fun KerML.Succession() = ConnectorActions<Succession>(semantics, ::SuccessionImplementation, "Occurrences::Occurrence").parse {
     SUCCESSION.consume()
     SuccessionDeclaration()
     TypeBody()
@@ -387,10 +387,27 @@ fun KerML.Succession() = FeatureActions<Feature>(semantics, ::SuccessionImplemen
  *      | ( 'all' )? ( 'first'? ConnectorEndMember 'then' ConnectorEndMember )?
  */
 fun KerML.SuccessionDeclaration() {
-    FeatureDeclaration()
+    if (nextToken.kind !in setOf(DOT, ALL, THEN))
+        FeatureDeclaration()
+    else
+        semantics.create(null)
     alternatives {
-        FIRST then {  }
-        ALL then { FIRST.optional() }
+        FIRST then {
+            ConnectorEndMember()
+            THEN.consume()
+            ConnectorEndMember()
+        }
+        ALL then { FIRST.optional()
+            ConnectorEndMember()
+            THEN.consume()
+            ConnectorEndMember()
+        }
+        NAME_LIT starts {   // All is optional, First as well ...
+            ConnectorEndMember()
+            THEN.consume()
+            ConnectorEndMember()
+        }
+        others { }          // All productions are optional ...
     }
 }
 
@@ -420,7 +437,7 @@ fun KerML.Behavior() = ClassifierActions<Classifier>(this.semantics, ::BehaviorI
  *
  *      Step = FeaturePrefix 'step' FeatureDeclaration ValuePart? TypeBody
  */
-fun KerML.Step() = FeatureActions<Feature>(semantics, ::StepImplementation, "Performances::performances").parse {
+fun KerML.Step() = FeatureActions<Feature>(semantics, ::StepImplementation, "Performances::Performance").parse {
     STEP.consume()
     FeatureDeclaration()
     optional(valuePartStart) {

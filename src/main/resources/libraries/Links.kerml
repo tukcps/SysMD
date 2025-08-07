@@ -5,11 +5,17 @@ standard library package Links {
         end feature target: Base::Anything;
     }
 
-    abstract feature link : Link subsets Base::things;
+    abstract feature links : Link subsets Base::things;
 
     assoc all BinaryLink specializes Link {
         :>> source: Base::Anything [1];
         :>> target: Base::Anything [1];
     }
-    abstract feature binaryLinks : BinaryLink;
+
+    abstract feature binaryLinks: BinaryLink[0..*] nonunique subsets links {
+            doc
+            /*
+             * binaryLinks is a specialization of links restricted to type BinaryLink.
+             */
+        }
 }

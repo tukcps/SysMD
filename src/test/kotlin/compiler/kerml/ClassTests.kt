@@ -1,7 +1,6 @@
 package compiler.kerml
 
 import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.model.kerml.implementation.SubclassifierImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.TypeImplementation
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolve
@@ -33,9 +32,9 @@ class ClassTests {
         val occ = global.resolve<Type>("Occurrences::Occurrence")
         assertNotNull(a)
         assertNotNull(occ)
-        val subclassification = a.getOwnedElementOfType<SubclassifierImplementation>()
-        assertNotNull(subclassification)
-        assertEquals(occ, subclassification.general)
+        val subclassifier = a.getOwnedElementOfType<Subclassifier>()
+        assertNotNull(subclassifier)
+        assertEquals(occ, subclassifier.general)
         assertEquals(global.resolve<Type>("Occurrences::Occurrence"), a.allSupertypes().first())
     }
 
@@ -47,9 +46,9 @@ class ClassTests {
         loadKerML("""
             namespace Occurrences { type Occurrence :> Base::Anything; }
             class a; 
-            class b :> a; 
+            class b :> a.
         """)
-        assertNoIssues()
+        assertTrue(status.issues.isEmpty(), status.issues.toString())
         val b = global.resolve<Class>("b")
         assertEquals("a", b?.allSupertypes()?.first()?.declaredName)
     }

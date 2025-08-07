@@ -1,5 +1,6 @@
 package compiler.kerml
 
+import com.github.tukcps.sysmd.model.kerml.Class
 import com.github.tukcps.sysmd.model.kerml.Structure
 import com.github.tukcps.sysmd.services.resolve.resolve
 import util.assertNoIssues
@@ -11,13 +12,19 @@ import kotlin.test.assertNotNull
 
 class StructTests {
     @Test
-    fun testStruct() = testSession("Occurrences", "Links") {
+    fun testStruct() = testSession("Occurrences") {
         loadKerML("""
-            struct s; 
+            struct s {
+                in feature f1; 
+                in feature f2;
+                out feature f3;
+                out feature f4;
+            } 
         """)
         assertNoIssues()
         val s = global.resolve<Structure>("s")
         assertNotNull(s)
-        assertEquals("Occurrence", s.ownedSpecialization.firstOrNull()?.target?.firstOrNull()?.declaredName)
+        val occurrence = global.resolve<Class>("Occurrences::Occurrence")
+        assertEquals(occurrence, s.allSupertypes().firstOrNull())
     }
 }

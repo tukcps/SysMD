@@ -4,11 +4,12 @@ import com.github.tukcps.sysmd.model.kerml.Disjoining
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.kerml.UnresolvedNamespace
+import com.github.tukcps.sysmd.model.kerml.UnresolvedType
 
 class DisjoiningImplementation(
     owningRelatedElement: Element = UnresolvedNamespace(),
-    typeDisjoined: Type,
-    disjoiningType: Type,
+    typeDisjoined: Type = UnresolvedType("that"),
+    disjoiningType: Type = UnresolvedType(),
     elementType: String = "Disjoining"
 
 ) : Disjoining, RelationshipImplementation(

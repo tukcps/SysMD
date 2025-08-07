@@ -54,7 +54,6 @@ open class ClassActions<T: Class>(
     }
 }
 
-
 /**
  * Semantic action for the declaration of a DataType.
  * @param context object with the semantic actions of the parser
