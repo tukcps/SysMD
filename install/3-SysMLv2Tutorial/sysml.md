@@ -22,38 +22,39 @@ After working through it, the reader
 --- 
 # Background 
 
-The SysMLv2 language has two variants: 
+The SysMLv2 language has two representations 
 - a _graphical notation_, known as "diagrams"
 - a _textual representation_
 
-In this tutorial, we deal only with the textual representation. 
+In this tutorial, we focus on the textual representation.
+
 ## Relation to KerML 
 
-SysMLv2 as a modeling language builds on top of KerML. 
-From KerML, it uses in particular its semantic library that defines different kinds  
-of Classifiers (Classes, Datatypes) and Features. 
+SysMLv2 is a language for modeling systems that builds on top of KerML. 
+From KerML, it uses 
+- elements from the abstract representation,
+- classes from the KerML libraries, 
+- language constructs in particular for defining classes and features. 
 
-All SysMLv2 artifacts are, in the end, specialization of these Classifiers and Features. 
+## SysML v2 Language Design: Definitions, Usages
 
- 
-## Language design
+In KerML, there are two main kind of elements: Classifiers and Features. 
+Most elements of KerML inherit from one of these main classes.
+Typically, these elements have separate names (e.g. association versus connector) 
+that are well-known and established in the systems modeling community.
+
+However, SysML v2 targets users that are often domain experts, and not from the systems model community.
+Hence, SysML v2 introduces definitions and usages.  
+Formally, definitions are kinds of Classification, and usages are kinds of features.
+
+In the textual representation, a _definition_ uses the keyword `def` after a keyword for the kind element.
+A _usage_  uses the keyword for the kind of element as in the definition, without `def`.
+
+![Files/usage-definition.png](Files/usage-definition.png)
 
 
-In SysMLv2 the difference between a _definition_ and a _usage_ is a concept that is found in each
-construct: 
 
-- A _definition_ uses the keyword **def** after a keyword that specifies the kind of artifact that is defined
-  and introduces a kind of Class. 
-- A _usage_ just uses the keyword that specifies the kind of artifact without _def_. 
-
-Example: 
-- ```part def P``` introduces a kind of Class of parts named ```P```. 
-- ```part p``` creates a part named ```p``` that is a kind of Feature. 
-## Inheritance
-
-A definition can have features.
-Features are inherited to usages.  
-# Attributes
+# Data and Calculation 
 
 In SysMLv2, attributes model data. 
 Attributes must be typed by a data type, e.g., ScalarValues::Real. 
@@ -62,7 +63,7 @@ a specialization by a data type, and optionally a binding to an expression that 
 (e.g. ```= 1.0 + 3.0```)
 
 SysMD uses the expression to compute the value of the attribute. 
-## Attribute Definition
+## Attribute
 
 An attribute definition creates a kind of _Class_ (AttributeDefinition, defined by the SysML library) that is type by a datatype. 
 The type can be from the pre-defined datatypes Real, Integer, Boolean, or as well a user-defined data type. 
@@ -72,8 +73,6 @@ An attribute definition can be used in attribute usages where one can redefine i
 An example is given below: 
 
  ```attribute Identification ":>" Type ";" ```
-
-## Attribute Usage
 
 An attribute usage creates a kind of feature (AttributeUsage, defined by the SysML library) 
 that is typed by a datatype.
@@ -86,40 +85,37 @@ An attribute usage has (simplified) the following syntax:
 
 Below, we give some examples on definition and usage of attributes. 
 
-```SysML::tutorial::sysml
-package attributeDefExample {
+```SysML::tutorial::sysml::attributes
 
-    attribute def Position {
-        attribute x: SI::Length [m]; 
-        attribute y: SI::Length [m]; 
-        attribute z: SI::Length [m];     
-    }
-    
-    attribute p: Position { 
-      redefines x = 1.0 [m];
-      redefines y = 2.0 [m]; 
-      redefines z = 1.5 [m]; 
-    }
+attribute def Position {
+    attribute x: SI::Length [m]; 
+    attribute y: SI::Length [m]; 
+    attribute z: SI::Length [m];     
+}
+
+attribute p: Position { 
+  redefines x = 1.0 [m];
+  redefines y = 2.0 [m]; 
+  redefines z = 1.5 [m]; 
 }
 ```
+
 Note that SysMD notebook supports modeling and calculation with ranges.
 An example is given below.
 We use assert to bind _c_ to the value 3.0. 
 
-```SysML::tutorial::sysml
+```SysML::tutorial::sysml::attributes::real
 private import ScalarValues::*; 
-package realAttributeExample {
-    attribute a: Real = oneOf(1.0 .. 2.0); 
-    attribute b: Real; 
-    attribute c: Real = a+b; 
-    assert { c == 3.0 }
-}
+attribute a: Real = oneOf(1.0 .. 2.0); 
+attribute b: Real; 
+attribute c: Real = a+b; 
+assert { c == 3.0 }
 ```
 SysMD Notebook's solver also computes values that cannote be computed in a direct way.
 An example is given below. 
 We use assert to bind _d_ to the value true.
 
-```SysML::tutorial::sysml
+```SysML::tutorial::sysml::attributes::boolean
 private import ScalarValues::*; 
 package boolAttributeExample {
     attribute a: Boolean; 
@@ -128,19 +124,54 @@ package boolAttributeExample {
     assert { c == true }
 }
 ```
-# Parts
+
+## Calculations 
+
+In engineering, one has often re-occurring calculations.
+In SysML v2, one can define calculations by the keyword `calc` `def`.
+Calculations can be used in expressions as function calls. 
+
+```SysML::tutorial::sysml::calculations
+private import SI::*; 
+
+// Definition of a Calculation
+calc def calcEnergy {
+  in v : Speed; 
+  in m : Mass; 
+  return result : Energy = 0.5 * m * sqr(v); 
+}
+
+// Usage of the defined calculation Energy
+attribute a: Speed = 36.0 [km/h]; 
+attribute b: Mass = 200.0 [kg]; 
+attribute energy1: Energy = calcEnergy(a, b); 
+attribute e: Speed = 72.0 [km/h]; 
+attribute f: Mass = 800.0 [kg]; 
+attribute energy2: Energy = calcEnergy(e,f); 
+```
+
+# Modeling things 
+
+SysML v2 classifies things, refining the KerML library classes into
+
+- Occurrence – something with a lifetime in space/time; most general thing in SysML v2.
+  “Snapshot” means a single point in time.
+- Item – occurrence that is in- or output, that can be acted on, e.g., fuel.
+- Part – item that is a modular structure of a system, e.g., engine of a vehicle.
 
 Parts are in the SysML v2 library considered as something that is a 
 mutable part or component of a system that exists in space and time. 
 Following the SysML v2 concept of definitions and usages, there is a
 part definition and part usage. 
 
-## Part Definition 
+## Items
+
+t.b.d.
+
+## Parts 
 
 A part definition introduces a new subclass of ```Parts::Part```. 
 A part can own features, e.g., other parts or attributes. 
-
-## Part Usage
 
 Part usages are a kind of Feature.
 They are defined as Feature typed by the SysMLv2 library class ```Parts::Part```.   
@@ -159,7 +190,7 @@ Furthermore, we define specific vehicles:
 Navigate with the _hasA_ treeview left to the respective parts and check its 
 attributes!
 
-```SysML::tutorial::sysml
+```SysML::tutorial::sysml::parts
 package vehicles {
     package carParts {
         part def Body   { attribute mass: SI::Mass = 100.0 [kg]; }
@@ -186,37 +217,65 @@ package vehicles {
 }
 ```
 
-# Connections
+# Connecting things  
 
 A connection is a kind of relationship between parts. 
 
-## Connection Usage and Definition 
+## Connections
 
 By a connection definition, we can specify which classes and which number of parts can be connected.
 By a connection uses, we can create concrete connections; they must satisfy the constraints of its definition. 
 ```SysML::tutorial::sysml
-package connection_example {
-    part def A; 
-    part def B; 
-    part a: A; 
-    part b: B; 
-    connection def C1; // from A to B; 
-    connection def C :> C1; 
-    connection c : C connect a to b;  
+part def Pad; 
+part def Pin; 
+
+// Pure mechanical connection of a Pad to a Pin
+connection def ThroughHoleSoldering {
+  end part pad: Pad;
+  end part pin: Pin;
 }
+
+part board {
+	part pad241: Pad; // (…) 
+}
+
+part microcontroller {
+	part pin1: Pin; // (…)
+}
+
+connection c241: ThroughHoleSoldering
+	connect board.pad241 to microcontroller.pin1;
 ```
 
-## Port Usage and Definition
+## Ports, Interfaces 
 
-Ports are a kind of part that is intended to connect parts. 
-## Interface Usage and Definition 
-# Requirements 
+Ports are a kind of part that is intended to connect parts.
+
+```SysML::tutorial::sysml::ports_interfaces
+item def BoolSignal {
+	attribute value: ScalarValues::Boolean; 
+	attribute time: ScalarValues::Real = 0.0;  
+}
+port def BoolPort {
+	in item BoolSignal; 
+}
+part cpu {
+  port clk: BoolPort; 
+}
+part clock {
+  port clk: ~BoolPort; // conjugation by ~ inverses direction
+}
+interface clockSignal connect cpu.clk to clock.clk;   
+```
+
+# Constraints and Requirements 
 
 A requirement begins with the keyword ```requirement```.
 In the body of the statement, there are
 - a subject with a name that references an element 
 - predicates that shall hold for the subject. 
-## Requirement Definition 
+
+## Requirements 
 
 A requirement definition allows users to create a class of requirement 
 with a specific infrastructure that is inherited to each usage of 
@@ -234,8 +293,7 @@ The body specifies the subject by:
 Also, attributes and calculations can be defined and used. 
 
 An example is given below. 
-```SysML::tutorial::sysml
-package requirementsExample {
+```SysML::tutorial::sysml::requirementsExample
     part Box {
         attribute w: SI::Length; 
         attribute h: SI::Length; 
@@ -245,10 +303,7 @@ package requirementsExample {
         subject box references Box; 
         attribute volume: SI::Volume = box::w*box::h*box::l; 
     }    
-}
-```
-## Requirement Usage 
-```SysML::tutorial::sysml::requirementsExample
+
     part p: Box; 
   
     requirement volumeRequirementUsage : volumeRequirement  {
@@ -256,7 +311,8 @@ package requirementsExample {
         require constraint r { volume >= 100.0 [cm^3] }
     }
 ```
-# Finite state machines
+
+# States and Transitions
 
 Finite state machines are modeled by 
 - states
@@ -266,26 +322,26 @@ Finite state machines are modeled by
     - then go to another state.   
 
 Finite state machines can have a hierarchy. 
-```SysML::tutorial::sysml
-package stateMachineExample {
-    attribute e1: Boolean;
-    attribute e2: Boolean;  
-    part part1 {
-        state status{
-            state state1;
-            state state2;
-            transition 
-                first state1 
-                accept e1
-                then state2;
-            transition 
-                first state2 
-                accept e2 
-                then state1;
-        }
+
+```SysML::tutorial::sysml::stateMachineExample
+attribute e1: ScalarValues::Boolean;
+attribute e2: ScalarValues::Boolean;  
+part part1 {
+    state status{
+        state state1;
+        state state2;
+        transition 
+            first state1 
+            accept e1
+            then state2;
+        transition 
+            first state2 
+            accept e2 
+            then state1;
     }
 }
 ```
+
 While no calculations are yet done by SysMD for state machines, one can render it.
 Navigate in the hasA tree to the state ```tutorial::sysml::stateMachineExample::part1::status```.
 Right-click on it. 

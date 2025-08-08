@@ -17,9 +17,10 @@ import com.github.tukcps.sysmd.model.kerml.Type
  * 8.2.2.12 Ports Textual Notation
  *
  *      PortDefinition = DefinitionPrefix 'port' 'def' Definition ConjugatedPortDefinitionMember
+ *
  *      ConjugatedPortDefinitionMember = ConjugatedPortDefinition
  *      ConjugatedPortDefinition = PortConjugation
- *      PortConjugation = {} // ??? Missing in standard ???
+ *      PortConjugation = {}
  *
  *      ConjugatedPortTyping = '~' originalPortDefinition = ~[QualifiedName]
  */

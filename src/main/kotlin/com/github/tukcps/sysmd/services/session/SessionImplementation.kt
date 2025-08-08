@@ -6,6 +6,7 @@ import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.logger
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.model.kerml.implementation.FeatureMembershipImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.NamespaceImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.OwningMembershipImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.PackageImplementation
@@ -185,7 +186,10 @@ class SessionImplementation(
                 }
             }
         }
-        val owningMembership = OwningMembershipImplementation(membershipOwningNamespace = namespace, memberElement = element)
+        val owningMembership =  if (element is Feature && namespace is Type)
+                FeatureMembershipImplementation(ownedMemberFeature = element, owningType = namespace as Type)
+            else
+                OwningMembershipImplementation(membershipOwningNamespace = namespace, memberElement = element)
         element.owningRelationship = owningMembership
         addOwnedRelationship(owningMembership, namespace)
         if (element.elementId == null) {

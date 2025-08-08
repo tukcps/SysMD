@@ -126,9 +126,9 @@ open class Scanner(
         // remember where the token starts.
         startPosition = position
 
-        when {
+        when (curChar) {
             // note; will be dropped, starts with //
-            curChar == '/' && nextChar == '/' -> {
+            '/' if nextChar == '/' -> {
                 while (curChar != '\n' && curChar != 0.toChar()) {
                     string += curChar
                     nextChar()
@@ -138,7 +138,7 @@ open class Scanner(
             }
 
             // Comment that is a part of the model starts with /* ... */
-            curChar == '/' && nextChar == '*' -> {
+            '/' if nextChar == '*' -> {
                 do {
                     string += curChar
                     if (curChar == 0.toChar()) {
@@ -302,7 +302,7 @@ open class Scanner(
                     // :>> (Redefines) resp. :> (Specializes)
                     '>' -> if (nextChar() == '>') { nextChar(); buildToken(REDEFINES)} else buildToken(DPGT)
                     // :=
-                    '=' -> { nextToken(); buildToken(DPEQ)}
+                    '=' -> { nextChar(); buildToken(DPEQ)}
                     // ::> (references) resp. :: (DPDP)
                     ':' -> if (nextChar() == '>') { nextChar(); buildToken(REFERENCES)} else buildToken(DPDP)
                     else -> buildToken(TYPED_BY)

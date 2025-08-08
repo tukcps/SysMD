@@ -4,6 +4,7 @@
 package com.github.tukcps.sysmd.compiler.parser.kerml
 
 import com.github.tukcps.sysmd.compiler.KerML
+import com.github.tukcps.sysmd.compiler.SysMLv2
 import com.github.tukcps.sysmd.compiler.parser.util.Unsupported
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.compiler.semantics.kerml.*
@@ -471,12 +472,19 @@ fun KerML.parseIntegerRange(): IntegerRange {
 }
 
 /**
- *      FeatureSpecialization = Typings | Subsettings | References | Redefinitions
+ *      FeatureSpecialization = Typings | Subsettings | References | Redefinitions | Crosses
  */
 fun KerML.FeatureSpecialization() {
     alternatives {
         TYPED_BY then {
+
+            // In SysML v2, there is additionally port conjugation!
+            if (semantics.compiler is SysMLv2 && token.kind == NOT) { // must be tilde; dirty.
+                NOT.consume()
+            }
+
             QualifiedName().also { semantics.addTyping(it) }
+
             noOrMore(COMMA) {
                 COMMA.consume()
                 QualifiedName().also { semantics.addTyping(it) }
@@ -489,7 +497,7 @@ fun KerML.FeatureSpecialization() {
                 QualifiedName().also { semantics.addSubsetting(it) }
             }
         }
-
+        CROSSES then { Unsupported("Crossing not supported yet") }
         REFERENCES then { QualifiedName().also { semantics.addReferences(it) } }
         REDEFINES then { QualifiedNameList().also { semantics.addRedefinitions(it) } }
     }

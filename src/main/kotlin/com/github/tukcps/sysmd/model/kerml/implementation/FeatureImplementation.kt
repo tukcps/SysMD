@@ -90,7 +90,7 @@ open class FeatureImplementation(
             model = template.model
             updated = template.updated
             expression = template.expression
-            typeConstraint = template.typeConstraint
+            typeConstraint = template.typeConstraint.toMutableList()
             unitConstraint = template.unitConstraint
             expression = template.expression
             isAbstract = template.isAbstract
@@ -114,9 +114,14 @@ open class FeatureImplementation(
     override var variables: MutableList<Variable?> = mutableListOf()
 
     override fun toString(): String = super.toString() +
-            if (variable != null) " = " +
+            (if (variable != null) " = " +
                     try { variable?.vectorQuantity.toString() }
-                    catch (_: Exception) {"(?)"} else ""
+                    catch (_: Exception) {"(?)"} else "") +
+            (if (isEnd) " end" else "") +
+            (if (isComposite) " composite" else "") +
+            (if (isPortion) " portion" else "") +
+            (if (isAbstract) " abstract" else "") +
+            (if (isOrdered) "ordered" else "")
 }
 
 /**

@@ -64,7 +64,8 @@ In the tutorial, we focus on the classes highlighted in blue.
 
 ![kerml-classes.png](Files/kerml-classes.png)
 
-In the following, we explain the main classes of the KerML layers. 
+In the following, we explain the main classes of the KerML layers.
+
 # Root Layer
 The _Root_ Layer of KerML deals with 
 1) the hierarchical (de-)composition of a model, and how to find an element in a model by its name,
@@ -158,7 +159,7 @@ rep code language C /* println("Hello"); */
 ```
 
 Note that the comment about the tutorial includes an annotation that refers from the comment (source) to the package `tutorial` (target).
-Also note that the syntax is "about" instead of "from .. to". 
+Also note that the syntax is "about" instead of "from ... to". 
 
 ## Namespace, Import 
 
@@ -174,7 +175,7 @@ Name resolution searches locally, in supertypes, and in imported members.
 Below, an example with two nested namespaces is given.
 Note that the syntax schema throughout KerML and SysML is to start all elements by
 - A keyword that gives its kind, that is the respective KerML, SysML class by convention in small letters.
-- Optionally, a name and short name  (in < .. >) and/or name 
+- Optionally, a name and short name  (in < ... >) and/or name 
 - Optionally, a body in curly braces where owned elements are modeled
 
 ```KerML::tutorial::kerml::NamespaceExample
@@ -209,12 +210,12 @@ An import makes imported elements available as member in the importing namespace
 >**Warning**: 
 > SysMD permits executing code in cells in a given namespace (selected in the line above the cell). 
 > The whole tutorial is part of the namespace `tutorial`. 
-> The concrete example is executed in an isolated namespace `tutorial::kerml`, where `NamespaceExample' is added.
+> The concrete example is executed in an isolated namespace `tutorial::kerml`, where `NamespaceExample` is added.
 > This is not (yet?) part of the standard, where every cell would have to be in the root namespace.
 
 
 **Example: Import**
-The name resoluti
+
 ```KerML::tutorial::kerml::ImportExample
 namespace CarLibrary {
   classifier Engine; // ... 
@@ -272,7 +273,7 @@ classifier WinterOnly differences WinterTire, AllSeasonTire;
 
 A feature is a kind of type that allows us to model constraints 
 that specify how things relate to each other. 
-For example, we can we can _feature_ a type ```Vehicle``` by saying that
+For example, we can _feature_ a type ```Vehicle``` by saying that
 it has (in the sense of owns, as parts) the features ```engine``` and ```wheels```, 
 and that it relates to a ```driver```.
 Specifying features of a type is called **type featuring**. 
@@ -323,7 +324,7 @@ The Kernel layer introduces additional elements that have its foundation in (sem
 | Structure           | Structure              | Occurrences                             | 
 | Behavior            | Behavior               | Performances                            |   
 | Compute expressions | Function, Expression   | Kernel Function Library                 |
-| Introspection       | (model of KermL)       | KerML.kerml                             |
+| Introspection       | (model of KerML)       | KerML.kerml                             |
 
 This tutorial explains some of the key elements below. 
 
@@ -334,8 +335,10 @@ The Kernel layer differentiates Classifiers into
 - data types (keyword `datatype`, KerML class DataType), where occurrences are non-distinguishable individuals.
   For example, two occurrences or a Real number _pi_ mean the same number, and not two different ones.
   Hence, Real numbers are a data type.
-- classes (keyword `class`, KerML class Class), where occurrences are distinguishable individuals. For example, two instances of the Class
-  Cars might have the same features, but are nevertheless two different instances.
+- classes (keyword `class`, KerML element Class), where occurrences are distinguishable individuals. 
+- For example, two instances of the Class `Cars` might have the same features, 
+  but are nevertheless two different instances.
+
 
 The standard library `ScalarValues` introduces some basic data types, including
 - Boolean; it can be referred by its qualified name: `ScalarValues::Boolean`.
@@ -362,7 +365,7 @@ Associations and Connectors bring the concept of classifiers and features to rel
 An Association combines a Classifier with a Relationship, and a Connection combines a Features with a Relationship.
 In consequence, like with Classifiers/Features, we can use
 
-- Associations to classify connectors by the _types_ that the its sources and targets connect.
+- Associations to classify connectors by the _types_ that its sources and targets connect.
 - Connectors that are typed by an Association, to connect features of the types (and number) given in the respective Association.
 
 ```KerML::tutorial::kerml::AssociationConnectorExample
@@ -460,7 +463,8 @@ Expressions have
 Semantics is given in a denotational way. 
 This means that the result of an execution shall ensure that the values are the same resp. that there is only one value.
 
-Invariants are a specific kind of expression. An invariant
+Invariants are a specific kind of expression. 
+An invariant
 - starts with the keyword `inv`, eventually followed by an identification; 
 - is typed by Boolean and always evaluates to `true`; 
 
@@ -468,38 +472,31 @@ Below are some examples.
 
 **Example: Model-Level Evaluation 
 
-```KerML::tutorial::kerml 
-package expressionExamples {
-    package expressionEvaluation {
-        private import ScalarValues::*;
-        function Area {
-            in w: ScalarValues::Real;
-            in l: ScalarValues::Real;
-            return area: ScalarValues::Real = w*l;
-        }
-        feature w1: Real = 3.0;
-        feature l: Real = 2.0;
-        feature area: Real = Area(w1, l);
-    }
+```KerML::tutorial::kerml::functionExample
+private import ScalarValues::*;
+function Area {
+    in w: ScalarValues::Real;
+    in l: ScalarValues::Real;
+    return area: ScalarValues::Real = w*l;
 }
+feature w1: Real = 3.0;
+feature l: Real = 2.0;
+feature area: Real = Area(w1, l); // Calls function Area
 ```
 
 **Example: Boolean expressions**
 
 It has two Boolean variables, a and b that are free variables of type `Boolean`. 
 An assertion `c` is bound to the value `true` and to the expression `a and b`. 
-```KerML::tutorial::kerml
-package expressionExamples { 
-    package booleanExample {
-        feature a: ScalarValues::Boolean;
-        feature b: ScalarValues::Boolean;
-        inv c { a and b }
-    }
-}
+```KerML::tutorial::kerml::invariantExample
+feature a: ScalarValues::Boolean;
+feature b: ScalarValues::Boolean;
+inv c { a and b }
 ```
 **Example: Mixed Boolean/arithmetic expressions**
 
 One can also add predicates as shown in the example below.
+Note that constraining types to subtypes as below is not standard, it is added by SysMD. 
 ```KerML::tutorial::kerml::expressionExamples
     package hybridExample {
         feature a: ScalarValues::Real(1.0 .. 2.0);
@@ -507,10 +504,10 @@ One can also add predicates as shown in the example below.
         inv c { a < b }
     }
 ```
+
 **Example: Arithmetic expressions**
 
-In the same way, you can model arithmetic expressions and dependencies between their values.
-
+In the same way, one can model arithmetic expressions and dependencies between their values.
 For the execution, one has to give constraints. 
 To make the specification of constraints for execution more easy, SysMD introduces some shortcuts: 
 
@@ -594,26 +591,24 @@ A simple example is the mass.
 In the example, we use the function ```sumOverParts(mass)``` for this purpose;
 it models that
 _the mass of a Vehicle is the mass of all its parts._
-```KerML::tutorial::kerml
-    package carMassSumup {
-        class Body {
-            feature mass: SI::Mass = oneOf(100.0 .. 200.0 [kg]);
-        }
-        class Engine {
-            feature mass: SI::Mass = oneOf(100.0 .. 300.0 [kg]);
-        }
-        class Wheel {
-            feature mass: SI::Mass = 50.0 [kg];
-        }
-        
-        class Car {
-            feature body:   Body;
-            feature wheels: Wheel[4];
-            feature engine: Engine[1 .. 2]; 
-            feature mass: SI::Mass [kg] = sumOverParts(mass); 
-            inv m { mass < 500.0 [kg] }
-        }
-    }
+```KerML::tutorial::kerml::carMassSumup
+class Body {
+    feature mass: SI::Mass = oneOf(100.0 .. 200.0 [kg]);
+}
+class Engine {
+    feature mass: SI::Mass = oneOf(100.0 .. 300.0 [kg]);
+}
+class Wheel {
+    feature mass: SI::Mass = 50.0 [kg];
+}
+
+class Car {
+    feature body:   Body;
+    feature wheels: Wheel[4];
+    feature engine: Engine[1 .. 2]; 
+    feature mass: SI::Mass [kg] = sumOverParts(mass); 
+    inv m { mass < 500.0 [kg] }
+}
 ```
 Note that the assertion _m_ (_mass < 500.0 kg_) has also impact on the 
 number of engines that can be configured. 

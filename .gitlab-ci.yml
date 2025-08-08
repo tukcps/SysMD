@@ -2,7 +2,7 @@
 # This is the Gradle build system for JVM applications
 # https://gradle.org/
 # https://github.com/gradle/gradle
-image: gradle:7.6.0-jdk17
+image: gradle:8.12.0-jdk21
 
 stages:
   - build
@@ -55,11 +55,6 @@ publish:
   stage: deploy
   script:
     - 'gradle publish'
-    - export BUILD_VERSION=$(gradle properties -q | grep -oP 'version:\s*\K.*')
-    - echo "SYSMD_BUILD_VERSION=${BUILD_VERSION}" >> build.env
-  artifacts:
-    reports:
-      dotenv: build.env
   cache:
     key: "$CI_COMMIT_REF_NAME"
     policy: pull
@@ -67,12 +62,7 @@ publish:
       - build
       - .gradle
   only:
-    - Releases/2.7
-    - Releases/2.8
-    - Releases/2.9
-    - Releases/2.10
-    - Releases/2.11
-    - Releases/2.12
+    - Releases/3.9
   tags:
     - testing
 

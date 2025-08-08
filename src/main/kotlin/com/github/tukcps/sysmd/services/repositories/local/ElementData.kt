@@ -94,6 +94,7 @@ fun ElementDAO.toElement(): Element {
         "Element"           -> ElementImplementation()
         "Feature"           -> FeatureImplementation(direction = enumValueOf<Feature.FeatureDirectionKind>(direction?:"IN"))
         "FeatureChaining"   -> FeatureChainingImplementation()
+        "FeatureMembership" -> FeatureMembershipImplementation()
         "FeatureTyping"     -> FeatureTypingImplementation()
         "Function"          -> FunctionImplementation()
         "InterfaceDefinition" -> InterfaceDefinitionImplementation()

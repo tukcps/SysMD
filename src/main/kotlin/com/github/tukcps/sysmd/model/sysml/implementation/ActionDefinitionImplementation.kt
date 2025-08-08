@@ -1,5 +1,6 @@
 package com.github.tukcps.sysmd.model.sysml.implementation
 
+import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.sysml.ActionDefinition
 import com.github.tukcps.sysmd.model.util.SimpleName
 

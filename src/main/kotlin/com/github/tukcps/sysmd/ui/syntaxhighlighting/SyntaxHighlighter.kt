@@ -86,7 +86,6 @@ object SyntaxHighlighter {
     ): TextFieldValue
    {
 
-
         /** If TextField only consists of one char, skip the whole Syntax Highlighting and return the new Text-field as is*/
         if (newTFV.text.length < 2) {
             return newTFV

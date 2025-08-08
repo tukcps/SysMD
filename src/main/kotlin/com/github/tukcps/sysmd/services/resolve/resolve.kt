@@ -2,7 +2,6 @@ package com.github.tukcps.sysmd.services.resolve
 
 import com.github.tukcps.sysmd.exceptions.ElementNotFoundException
 import com.github.tukcps.sysmd.exceptions.Issue
-import com.github.tukcps.sysmd.exceptions.SysMDError
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.util.*
 

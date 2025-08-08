@@ -78,9 +78,6 @@ const double freq = 1000.0;  // MHz
 </table>
 
 
-
-
-
 ## 2.2 Variables
 Attributes that have different min/max values are mapped to variables.\
 The variable is declared in the Header File with annotations about its unit and

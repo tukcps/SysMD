@@ -24,7 +24,8 @@ fun Namespace.resolveVars(qualifiedName: QualifiedName, searchInSuperClass: Bool
     if (found is Feature && found.variable is Variable)
         return found.variables
 
-    model?.status?.error("'$qualifiedName' could be resolved, but is of wrong type", element = found,
+    model?.status?.error("'$qualifiedName' could be resolved, but is of wrong type",
+        element = found,
         cause = ElementNotFoundException(this, "'$qualifiedName' could be resolved, but is of wrong type"))
     return emptyList()
 }

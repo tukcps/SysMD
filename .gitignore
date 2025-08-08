@@ -10,6 +10,7 @@ src/main/resources/version
 
 # User-specific stuff
 .idea/*
+.kotlin/
 
 # VSCode
 .vscode/
@@ -239,13 +240,17 @@ buildNumber.properties
 ### exclude GUI settings from git ###
 agila_settings.json
 src/test/resources/importResultsTestDir/testFile.json
-sysmd_settings.json
+sysmd.log*
 
 ### exlude locally created SystemC templates from git ###
 /src/test/resources/toSystemC/test/
 /src/test/resources/toSystemC/Amp_Pipecleaner/
+/src/test/resources/importResultsTestDir/testFile.json
 
 .kotlin/sessions/
 # new
 .archive/
 
+src/test/resources/saveAndLoadProjectData/name/.meta.json
+src/test/resources/saveAndLoadProjectData/name/.project.json
+src/test/resources/saveAndLoadProjectData/project/.project.json

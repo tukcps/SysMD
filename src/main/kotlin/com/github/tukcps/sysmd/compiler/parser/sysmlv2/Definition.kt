@@ -73,7 +73,7 @@ fun SysMLv2.DefinitionDeclaration() {
  *          (',' OwnedSubclassification)*
  *      OwnedSubclassification = QualifiedName
  */
-fun KerML.SubclassificationPart() {
+fun SysMLv2.SubclassificationPart() {
     SPECIALIZES()
     QualifiedName().also { semantics.addSubclassification(it) }
     noOrMore(COMMA) {

@@ -55,8 +55,6 @@ fun SysMLv2.ConnectionUsage() = ConnectionUsageActions<ConnectionUsage>(semantic
 val connectionUsageStart = setOf(CONNECT, CONNECTION)
 
 
-
-
 /**
  * ConnectorPart = BinaryConnectorPart | NaryConnectorPart
  */

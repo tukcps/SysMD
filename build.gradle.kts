@@ -16,7 +16,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
  * - also set the value standalone according to your setup
  */
 group   = "com.github.tukcps"
-version = "4.1.1"               // must be number.number.number
+version = "4.1.2"               // must be number.number.number
 val aaddVersion = "0.1.11"
 val sysmlapiVersion = "3.9.5"
 val useMavenAADD = true
@@ -37,7 +37,7 @@ plugins {
     id("idea")
     kotlin("jvm") version "2.2.0"
     kotlin("plugin.serialization") version "2.2.0"
-    id("org.springframework.boot") version "3.5.3"
+    id("org.springframework.boot") version "3.5.4"
     id("io.spring.dependency-management") version "1.1.7"
     alias(libs.plugins.jetbrainsCompose) apply true
     alias(libs.plugins.compose.compiler) apply true
@@ -96,12 +96,12 @@ dependencies {
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
 
     // Parsing markdown to AST
-    implementation("org.commonmark:commonmark:0.25.0")
-    implementation("org.commonmark:commonmark-ext-gfm-tables:0.25.0")
-    implementation("org.commonmark:commonmark-ext-image-attributes:0.25.0")
-    implementation("org.commonmark:commonmark-ext-yaml-front-matter:0.25.0")
-    implementation("org.commonmark:commonmark-ext-gfm-strikethrough:0.25.0")
-    implementation("org.commonmark:commonmark-ext-ins:0.25.0")
+    implementation("org.commonmark:commonmark:0.25.1")
+    implementation("org.commonmark:commonmark-ext-gfm-tables:0.25.1")
+    implementation("org.commonmark:commonmark-ext-image-attributes:0.25.1")
+    implementation("org.commonmark:commonmark-ext-yaml-front-matter:0.25.1")
+    implementation("org.commonmark:commonmark-ext-gfm-strikethrough:0.25.1")
+    implementation("org.commonmark:commonmark-ext-ins:0.25.1")
 
     // Some more icons ...
     implementation(compose.components.resources)
@@ -121,7 +121,7 @@ dependencies {
 
     // compose ui tests
     testImplementation(kotlin("test"))
-    testImplementation("org.springframework.boot:spring-boot-starter-test:3.5.3") {
+    testImplementation("org.springframework.boot:spring-boot-starter-test:3.5.4") {
         exclude(group = "org.mockito", module = "mockito-core")
     }
 

@@ -4,6 +4,7 @@ package com.github.tukcps.sysmd.compiler.parser.sysmlv2
 
 import com.github.tukcps.sysmd.compiler.SysMLv2
 import com.github.tukcps.sysmd.compiler.parser.kerml.*
+import com.github.tukcps.sysmd.compiler.parser.util.Unsupported
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
 import com.github.tukcps.sysmd.model.kerml.Element
@@ -54,7 +55,7 @@ fun SysMLv2.BasicUsagePrefix() {
  */
 fun SysMLv2.UsageExtensionKeyword() {
     HASHTAG.consume()
-    TODO()
+    Unsupported("Usage extension keyword are not supported yet")
 }
 
 /**
