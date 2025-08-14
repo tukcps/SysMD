@@ -1,4 +1,7 @@
 # Some publications on SysMD Notebook 
+- A. Ratzke, J. Koch, C. Grimm, _"Modeling and Analysis of System Models with Constraints in SysMLv2"_,
+  2025 20th Annual System of Systems Engineering Conference (SoSE). 
+  https://ieeexplore.ieee.org/abstract/document/11083847
 
 - S. Post, J. Koch, A. Bevrnja and C. Grimm, _"OpenCar: A SysML v2 Modeling Framework for Early Analysis of BoardNet Architectures,"_
   DVCon Europe 2024, Munich, Germany, 2024.

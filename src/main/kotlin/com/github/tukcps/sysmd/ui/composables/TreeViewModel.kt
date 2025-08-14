@@ -21,6 +21,7 @@ interface TreeViewNodeModel {
     val name: String
     fun children(): List<TreeViewNodeModel>
     fun icon(): ImageVector
+    fun element(): Any
 }
 
 
@@ -49,6 +50,7 @@ class TreeViewModel(
 
     inner class Item(val item: ExpandableItem) {
         val name: String get() = item.node.name
+        val element: Any get() = item.node.element()
         val level: Int get() = item.level
         val node: ExpandableItem = item
 

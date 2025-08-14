@@ -1,4 +1,4 @@
-package sysmdtests
+package compiler
 
 import com.github.tukcps.sysmd.cspsolver.VariableImplementation
 import com.github.tukcps.sysmd.cspsolver.propagate
@@ -6,8 +6,10 @@ import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.SpecializationImplementation
 import util.mockup.loadKerML
 import util.testSession
-import kotlin.test.*
-
+import kotlin.test.Test
+import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class ErrorHandlingTests {
 
@@ -16,14 +18,14 @@ class ErrorHandlingTests {
      */
     @Test
     fun errorMessageDependencyStringTest() = testSession {
-            var p = FeatureImplementation(declaredName="XXX")
-            p.expression = "asdf+asdf" // nonsense
-            p = addOwnedMember(p, global)
-            addOwnedRelationship(SpecializationImplementation(p, anything), p)
-            p.variable = VariableImplementation(p)
-            p.resolveNames()
-            p.variable?.compileExpression()
-            assertNotEquals(0, status.issues.size)
+        var p = FeatureImplementation(declaredName = "XXX")
+        p.expression = "asdf+asdf" // nonsense
+        p = addOwnedMember(p, global)
+        addOwnedRelationship(SpecializationImplementation(p, anything), p)
+        p.variable = VariableImplementation(p)
+        p.resolveNames()
+        p.variable?.compileExpression()
+        assertNotEquals(0, status.issues.size)
     }
 
     /**

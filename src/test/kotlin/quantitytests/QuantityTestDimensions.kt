@@ -49,12 +49,11 @@ class QuantityTestDimensions {
 
 
     @Test
-    fun unitskinematik3() = testSession("SI") {
+    fun unitsKinematic3() = testSession("SI") {
         loadKerML("""
             feature t: SI::Time = 2000.0 [ms] ;
             feature v: SI::Speed = 36.0 [km/h];
             feature s: SI::Length  = v*t;"""
-
         )
         propagate()
         assertEquals("m / s", global.resolveVar("v")!!.vectorQuantity.unit.toString())
@@ -69,7 +68,7 @@ class QuantityTestDimensions {
 
     // Test Fails caused by parser error with sqr, works without adding v0*t
     @Test
-    fun unitskinematik4() = testSession("SI") {
+    fun unitsKinematic4() = testSession("SI") {
         loadKerML("""
                 feature t: SI::Time = 2.0 [s];
                 feature v0: SI::Speed  = 1.0 [m/s];
@@ -87,7 +86,7 @@ class QuantityTestDimensions {
     }
 
     @Test
-    fun unitskinematik5() = testSession("SI") {
+    fun unitsKinematic5() = testSession("SI") {
         loadKerML("""
             feature t: SI::Time = 1.0 [s];
             feature v: SI::Speed  = 3.0 [m/s];
@@ -104,7 +103,7 @@ class QuantityTestDimensions {
     }
 
     @Test
-    fun unitskinematik6() = testSession("SI") {
+    fun unitsKinematic6() = testSession("SI") {
         loadKerML("""
             feature h: SI::Length = 100.0 [dm];
             feature v0: SI::Speed  = 3.0 [m/s];
@@ -121,7 +120,7 @@ class QuantityTestDimensions {
     }
 
     @Test
-    fun unitskinematik7() = testSession("SI") {
+    fun unitsKinematic7() = testSession("SI") {
         loadKerML("""
             feature r: SI::Length = 100.0 [cm];
             feature Omega: SI::Frequency = 3.0 [Hz];
@@ -139,7 +138,7 @@ class QuantityTestDimensions {
     }
 
     @Test
-    fun unitskinematik8() = testSession("SI")  {
+    fun unitsKinematic8() = testSession("SI")  {
         loadKerML("""
             feature r: SI::Length  = 1.0 [m];
             feature Omega: SI::Frequency = 3.0 [Hz]; 

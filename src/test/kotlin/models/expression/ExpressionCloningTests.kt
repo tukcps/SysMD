@@ -52,8 +52,8 @@ class ExpressionCloningTests
 
 		assertEquals(original.direction, clone.direction)
 
-		assertNullOr(original.multiplicityProperty, clone.multiplicityProperty, ::assertProperClone)
-		assertEquals(original.multiplicity, clone.multiplicity)
+		assertNullOr(original.multiplicity(), clone.multiplicity(), ::assertProperClone)
+		assertEquals(original.multiplicityRange, clone.multiplicityRange)
 
 		assertEquals(original.isEnd, clone.isEnd)
 		assertEquals(original.isComposite, clone.isPortion)

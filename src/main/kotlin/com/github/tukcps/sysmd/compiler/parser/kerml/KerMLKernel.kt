@@ -297,7 +297,6 @@ fun KerML.MetadataBodyFeature() = FeatureActions<Feature>(semantics, ::FeatureIm
 }
 
 
-
 /**
  *      Invariant :- "inv" Identification "{" Expression "}"
  *

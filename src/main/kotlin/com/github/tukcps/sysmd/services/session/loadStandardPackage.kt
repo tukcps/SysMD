@@ -60,8 +60,8 @@ object LibraryRepository {
                 logger.error("Issue while compiling arrangement '$packageNames': ${session.status.issues.joinToString(", ")}")
             }
 
-            val elementDAO = session.export().map { it -> it.payloadElementSnapshot!! }
-            libraries.put(key, elementDAO)
+            val elementDAO = session.export().map { it.payloadElementSnapshot!! }
+            libraries[key] = elementDAO
             return elementDAO
         } catch (e: Exception) {
             logger.error("Error while loading standard library '$packageNames'", e)
@@ -82,8 +82,8 @@ val Arrangements = hashMapOf(
     "Links"         to listOf("Base", "ScalarValues", "Links"),
     "Occurrences"   to listOf("Base", "ScalarValues", "Links", "Occurrences"),
     "Objects"       to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects"),
-    "Ranges"        to listOf("Base", "ScalarValues", "SI", "Ranges"),
-    "SI"            to listOf("Base", "ScalarValues", "SI", "Ranges"),
+    "Ranges"        to listOf("Base", "ScalarValues", "SI", "Ranges", "ISQ"),
+    "SI"            to listOf("Base", "ScalarValues", "SI", "Ranges", "ISQ"),
     "Ports"         to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Ports"),
     "Items"         to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Items"),
     "Parts"         to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Items", "Parts"),
@@ -97,9 +97,9 @@ val Arrangements = hashMapOf(
     "Actions"       to listOf("Base", "ScalarValues", "Links", "Occurrences", "Actions"),
     "Context"       to listOf("Base", "ScalarValues", "Context"),
     "KerML"         to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Ranges", "KerML"),
-    "KerMLLibraries" to listOf("Base", "ScalarValues", "Ranges", "Objects", "Links", "Occurrences", "Performances", "SI", "Ranges"),
+    "KerMLLibraries" to listOf("Base", "ScalarValues", "Ranges", "Objects", "Links", "Occurrences", "Performances", "SI", "Ranges", "ISQ"),
     "SysMLLibraries" to listOf("Base", "ScalarValues", "Ranges", "Objects", "Links", "Occurrences", "Performances", "Items", "SI", "Ranges",
-        "Ports", "Parts", "Calculations", "Constraints", "Requirements", "Interfaces", "Actions", "States", "Connections", "Signals"),
+        "Ports", "Parts", "Calculations", "Constraints", "Requirements", "Interfaces", "Actions", "States", "Connections", "Signals", "ISQ"),
     "ISO26262"      to listOf("Base", "ScalarValues", "Ranges", "Objects", "Links", "Occurrences", "ISO26262"),
     "Signals"       to listOf("Base", "ScalarValues", "Links", "Occurrences", "Signals"),
     "SysMD"         to listOf("Base", "ScalarValues", "SysMD")

@@ -18,12 +18,12 @@ import com.github.tukcps.sysmd.model.util.SimpleName
 open class TypeActions<T: Type>(
     context: ActionsContext,
     creator: (SimpleName?, SimpleName?) -> T,
-    defaultType: String = "Base::Anything",
-): NamespaceActions<T>(context, creator, defaultType) {
+    var defaultType: String? = "Base::Anything",
+): NamespaceActions<T>(context, creator) {
 
     override fun finish() {
-        if (created.specialization.isEmpty()) {
-            context.addSpecialization(defaultType)
+        if (created.specialization.isEmpty() && defaultType != null) {
+            context.addSpecialization(defaultType!!)
         }
         super.finish()
     }
@@ -47,8 +47,8 @@ open class ClassActions<T: Class>(
     specializes: String = "Occurrences::Occurrence",
 ): ClassifierActions<Class>(context, creator, specializes) {
     override fun finish() {
-        if (created.specialization.isEmpty()) {
-            context.addSubclassification(defaultType)
+        if (created.specialization.isEmpty() && defaultType != null) {
+            context.addSubclassification(defaultType!!)
         }
         super.finish()
     }
@@ -74,7 +74,7 @@ open class DataTypeActions<T: DataType>(
 open class StructureActions<T: Structure>(
     context: ActionsContext,
     creator: (SimpleName?, SimpleName?) -> T,
-    specializes: String = "Occurrences::Occurrence",
+    specializes: String = "Objects::Object",
 ): ClassifierActions<T>(
     context, creator, specializes
 )
@@ -108,9 +108,11 @@ open class FeatureActions<T: Feature>(
     }
 
     override fun finish() {
-        if (created.specialization.isEmpty()) {
-            context.addTyping(defaultType)
-        }
+        if (created.redefining == null) {
+            if (created.specialization.isEmpty() && defaultType != null) {
+                context.addTyping(defaultType!!)
+            }
+        } else defaultType = null
         super.finish()
     }
 }

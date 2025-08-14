@@ -41,7 +41,9 @@ open class VariableImplementation (
     override var valueSpecs: MutableList<Any?> = mutableListOf()
 
     override val unitSpec: String
-        get() = feature.unitConstraint?:""
+        get() = feature.unitConstraint?:
+                feature.features().firstOrNull { it.name == "unit"}?.expression?.trim('"')?:
+                ""
 
     /** access methods for the valueSpec field; returns different types */
     override val rangeSpecs: MutableList<Range>
@@ -126,8 +128,8 @@ open class VariableImplementation (
                         val unitDimension = feature.type.firstOrNull { it.qualifiedName?.startsWith("SI::") == true }
                             ?.qualifiedName?.replace("SI::","")
                             ?: feature.type.first().qualifiedName!!
-                        vectorQuantity = VectorQuantity(values, unitSpec,unitDimension)
-                    }else
+                        vectorQuantity = VectorQuantity(values, unitSpec, unitDimension)
+                    } else
                         vectorQuantity = VectorQuantity(values, unitSpec)
                 }
 

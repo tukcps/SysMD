@@ -4,7 +4,6 @@ import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.services.check.checkOwnership
-import com.github.tukcps.sysmd.services.checkConsistencyOfInheritance
 import com.github.tukcps.sysmd.services.inheritance.getAllInheritedFeatures
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.findAllOwnedElements
@@ -12,6 +11,7 @@ import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import io.github.tukcps.aadd.values.IntegerRange
 import io.github.tukcps.aadd.values.Range
+import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.*
@@ -37,10 +37,10 @@ class InheritanceTests {
         assertEquals(1, ax.ownedElement.filter { it is Specialization }.size)
         assertEquals(2, ax.ownedElement.size)
         assertEquals(1, ax.ownedElement.filter { it is Multiplicity }.size)
-        assertEquals(IntegerRange(1,2), ax.multiplicity)
+        assertEquals(IntegerRange(1,2), ax.multiplicityRange)
 
         assertEquals(1, bx.ownedElement.filter { it is Multiplicity }.size)
-        assertEquals(IntegerRange(1,2), bx.multiplicity)
+        assertEquals(IntegerRange(1,2), bx.multiplicityRange)
         assertEquals(1, bx.ownedElement.filter { it is Specialization }.size)
         assertEquals(2, bx.ownedElement.size)
         // assertTrue(bx.getOwnedElementOfType<Multiplicity>()!!.isImpliedIncluded)
@@ -75,7 +75,7 @@ class InheritanceTests {
         assertNotNull(t2features)
         val t2f = global.resolve<Feature>("t2::f")
         assertNotNull(t2f)
-        assertEquals(IntegerRange(2,2), t2f.multiplicity)
+        assertEquals(IntegerRange(2,2), t2f.multiplicityRange)
         assertEquals("ScalarValues::Natural", t2f.type.firstOrNull()?.qualifiedName)
     }
 
@@ -99,7 +99,7 @@ class InheritanceTests {
         assertNotNull(t2features)
         val t2f = global.resolve<Feature>("t2::f")
         assertNotNull(t2f)
-        assertEquals(IntegerRange(2,2), t2f.multiplicity)
+        assertEquals(IntegerRange(2,2), t2f.multiplicityRange)
         assertEquals("ScalarValues::Integer", t2f.type.firstOrNull()?.qualifiedName)
 
         val t3 = global.resolve<Type>("t3")
@@ -109,7 +109,7 @@ class InheritanceTests {
         val t3f = global.resolve<Feature>("t3::f")
         assertNotNull(t3f)
         assertNotEquals(t2f, t3f) // they shall have at least different id
-        assertEquals(IntegerRange(2,2), t3f.multiplicity)
+        assertEquals(IntegerRange(2,2), t3f.multiplicityRange)
         assertEquals("ScalarValues::Integer", t3f.type.firstOrNull()?.qualifiedName)
     }
 
@@ -204,14 +204,14 @@ class InheritanceTests {
      * Then, no error is thrown, and the range from the superclass' property is used.
      */
     @Test
-    fun agilaGetPropertiesTest5() = testSession("ScalarValues", "Ranges") {
+    fun getInheritedFeaturesTest5() = testSession("ScalarValues", "Ranges") {
         loadKerML (""" 
             type e1 :> Base::Anything {
                 feature p: Ranges::RealInRange {:>> range = "1 .. 2";} 
             }
-            class e2 :> e1; 
+            class e2 :> e1;
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val e2 = global.resolve<Type>("e2")
         assertNotNull(e2)
         val e =  e2.resolveVar("p")
@@ -320,7 +320,7 @@ class InheritanceTests {
         val c = global.resolve<Type>("c")!!
         assertTrue(b in a.allSupertypes())
         assertTrue(c in b.allSupertypes())
-        assertTrue(a.ownedElement.find { it is Feature }!!.declaredName == "f" )
+        assertEquals("f", a.ownedElement.find { it is Feature }!!.declaredName)
     }
 
 
@@ -342,7 +342,7 @@ class InheritanceTests {
         val c = global.resolve<Type>("c")!!
         assertTrue(b in a.allSupertypes())
         assertTrue(c in b.allSupertypes())
-        assertTrue(a.ownedElement.find { it is Feature }!!.declaredName == "f" )
+        assertEquals("f", a.ownedElement.find { it is Feature }!!.declaredName)
     }
 
 
@@ -358,8 +358,8 @@ class InheritanceTests {
         val xy = global.resolve<Feature>("x::y")
         assertNotNull(zy)
         assertTrue(zy !== xy)
-        assertTrue(zy.multiplicityProperty !== xy?.multiplicityProperty)
-        assertTrue(zy.multiplicity !== xy?.multiplicity)
+        assertTrue(zy.multiplicity() !== xy?.multiplicity())
+        assertTrue(zy.multiplicityRange !== xy?.multiplicityRange)
         assertTrue(zy.ownedSpecialization !== xy?.ownedSpecialization)
         assertTrue(zy.isImpliedIncluded)
     }
@@ -409,8 +409,8 @@ class InheritanceTests {
         assertNotEquals(aax, bax)
         assertNotEquals(aax, cax)
         assertNotEquals(bax, cax)
-        assertEquals(IntegerRange(2,8), bax?.multiplicity)
-        assertEquals(IntegerRange(3,4), cax?.multiplicity)
+        assertEquals(IntegerRange(2,8), bax?.multiplicityRange)
+        assertEquals(IntegerRange(3,4), cax?.multiplicityRange)
     }
 
     // Fixed with 2.0.30.
@@ -648,7 +648,7 @@ class InheritanceTests {
         assertEquals(0, status.issues.size, status.issues.toString())
         val vwWheels = global.resolve<Feature>("VW::wheels")
         assertNotNull(vwWheels)
-        assertEquals(IntegerRange(1.0, 4.0), vwWheels.multiplicity)
+        assertEquals(IntegerRange(1.0, 4.0), vwWheels.multiplicityRange)
     }
 
 
@@ -664,7 +664,7 @@ class InheritanceTests {
         propagate()
         assertEquals(status.issues.firstOrNull()?.kind, Issue.Kind.WARN_INCONSISTENCY) // Inconsistency !!!
         val audiWheels = global.resolve<Feature>("Audi::wheels")
-        assertEquals(IntegerRange(2, 5), audiWheels?.multiplicity)
+        assertEquals(IntegerRange(2, 5), audiWheels?.multiplicityRange)
     }
 
 
@@ -684,9 +684,9 @@ class InheritanceTests {
         val vwWheels = global.resolve<Feature>("VW::wheels")
         val carWheels = global.resolve<Feature>("Car::wheels")
 
-        assertEquals(IntegerRange(2, 4), audiWheels?.multiplicity)
-        assertEquals(IntegerRange(2, 3), vwWheels?.multiplicity)
-        assertEquals(IntegerRange(1, 4), carWheels?.multiplicity)
+        assertEquals(IntegerRange(2, 4), audiWheels?.multiplicityRange)
+        assertEquals(IntegerRange(2, 3), vwWheels?.multiplicityRange)
+        assertEquals(IntegerRange(1, 4), carWheels?.multiplicityRange)
     }
 
     @Test

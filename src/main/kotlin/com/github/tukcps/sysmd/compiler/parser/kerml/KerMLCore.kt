@@ -11,7 +11,6 @@ import com.github.tukcps.sysmd.compiler.semantics.kerml.*
 import com.github.tukcps.sysmd.exceptions.SyntaxError
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.*
-import com.github.tukcps.sysmd.model.util.QualifiedName
 import io.github.tukcps.aadd.values.IntegerRange
 
 /**
@@ -139,25 +138,23 @@ fun KerML.UnioningPart() {
  */
 fun KerML.IntersectingPart() {
     INTERSECTS.consume()
-    QualifiedName().also     { Unsupported("Intersection not yet implemented") }
+    QualifiedName().also     { semantics.addIntersecting(it) }
     noOrMore(start = COMMA) {
         COMMA.consume()
-        QualifiedName().also { Unsupported("Interaection not yet implemented") }
+        QualifiedName().also { semantics.addIntersecting(it) }
     }
 }
 
 /**
  *      DifferencingPart : Type = 'differences' Differencing( ',' ownedRelationship += Differencing )*
  */
-fun KerML.DifferencingPart(): List<QualifiedName> {
-    val differencing = mutableListOf<QualifiedName>()
+fun KerML.DifferencingPart() {
     DIFFERENCES.consume()
-    QualifiedName().also     { differencing.add(it) }
+    QualifiedName().also     { semantics.addDifferencing(it) }
     noOrMore(start = COMMA) {
         COMMA.consume()
-        QualifiedName().also { differencing.add(it) }
+        QualifiedName().also { semantics.addDifferencing(it) }
     }
-    return differencing
 }
 
 /**
@@ -357,7 +354,7 @@ fun KerML.ExpressionFeature() = FeatureActions<Feature>(semantics, ::FeatureImpl
 fun KerML.FeatureDeclaration() {
     ALL.optional { semantics.element<Feature>().isSufficient = true }
     alternatives {
-        NAME_LIT starts {
+        NAME_LIT or LT starts {
             Identification().also { semantics.create(it) }
             alternatives {
                 featureSpecializationPartStart starts { FeatureSpecializationPart() }

@@ -16,7 +16,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
  * - also set the value standalone according to your setup
  */
 group   = "com.github.tukcps"
-version = "4.1.2"               // must be number.number.number
+version = "4.1.3"               // must be number.number.number
 val aaddVersion = "0.1.11"
 val sysmlapiVersion = "3.9.5"
 val useMavenAADD = true

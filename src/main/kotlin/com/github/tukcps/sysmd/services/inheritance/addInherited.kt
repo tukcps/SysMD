@@ -3,7 +3,6 @@ package com.github.tukcps.sysmd.services.inheritance
 import com.github.tukcps.sysmd.compiler.semantics.Identification
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureTypingImplementation
-import com.github.tukcps.sysmd.model.kerml.implementation.MultiplicityImplementation
 import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.session.Session
 
@@ -49,9 +48,10 @@ private fun Type.addInheritedFeaturesFromGeneral() {
         }
     }
 
-    // For redefinitions, add new type, multiplicity, constraints
+    // For redefinitions, replace type, multiplicity, constraints from redefinition
     redefinitions.forEach { feature ->
-        if(feature.redefining != null && feature.redefining is Unresolved) {
+        // If redefining feature is unresolve, resolve it first
+        if(feature.redefining is Unresolved) {
             var found: Feature? = null
             generalization.forEach { supertype ->
                 found = supertype.resolve<Feature>((feature.redefining as Unresolved).relativeName!!)
@@ -61,21 +61,35 @@ private fun Type.addInheritedFeaturesFromGeneral() {
             }
         }
 
-        // get Type from redefining feature
-        feature.redefining?.type?.forEach { type ->
-            // Add all types of refined property
-            val typing = FeatureTypingImplementation(
-                typedFeature = feature,
-                type = type
-            ).also {
-                it.isImplied
-            }
-            model!!.addOwnedRelationship(typing, feature)
+        // Clone the features from redefined class, except multiplicity and ValueDomain
+        // Clone stops cloning if in the model a feature already exists.
+        feature.redefining!!.features().filter { it !is Multiplicity }.forEach {
+            it.deepCloneWithInheritedFeature(feature)
         }
 
+        // get Type from redefining feature iff not given.
+        if (feature.typing.isEmpty())
+            feature.redefining?.type?.forEach { type ->
+                // Add all types of refined property
+                val typing = FeatureTypingImplementation(
+                    typedFeature = feature,
+                    type = type
+                ).also {
+                    it.isImplied
+                }
+                model!!.addOwnedRelationship(typing, feature)
+            }
+
         // get Multiplicity from redefining feature iff not defined
-        if (feature.redefining?.multiplicityProperty != null && feature.multiplicityProperty == null) {
-            model?.addOwnedMember(feature.redefining!!.multiplicityProperty!!.clone(), feature)
+        if (feature.redefining?.multiplicity() != null && feature.multiplicity() == null)
+            model?.addOwnedMember(feature.redefining!!.multiplicity()!!.clone(), feature)
+
+        if (feature.redefining?.getOwnedElement("range") != null && feature.getOwnedElement("range") == null) {
+            model?.addOwnedMember(feature.redefining!!.getOwnedElement("range")!!.clone(), feature)
+        }
+
+        if (feature.redefining?.getOwnedElement("unit") != null && feature.getOwnedElement("unit") != null) {
+            model?.addOwnedMember(feature.redefining!!.getOwnedElement("unit")!!.clone(), feature)
         }
 
 
@@ -85,13 +99,13 @@ private fun Type.addInheritedFeaturesFromGeneral() {
         feature.isPortion = feature.redefining!!.isPortion
         feature.isDerived = feature.redefining!!.isDerived
         feature.isOrdered = feature.redefining!!.isOrdered
-        feature.typeConstraint = feature.redefining!!.typeConstraint
-        feature.unitConstraint = feature.redefining!!.unitConstraint
         feature.isSufficient = feature.redefining!!.isSufficient
+
+        // Below here is "hack".
         if (feature.name == "range" || feature.name == "spec") { //range for Integer, Real, spec for Boolean
             if (feature.owner is Feature) {
                 // remove """ and " " from the string
-                val specString = feature.expression!!.replace("\"", "").replace(" ", "")
+                val specString = feature.expression!!.trim('"', ' ')
                 // set the type constraint to the list of specs split by "," (vectors)
                 (feature.owner as Feature).typeConstraint.clear()
                 (feature.owner as Feature).typeConstraint.addAll(specString.split(","))
@@ -99,8 +113,6 @@ private fun Type.addInheritedFeaturesFromGeneral() {
         } else if (feature.name == "unit") {
             if (feature.owner is Feature)
                 (feature.owner as Feature).unitConstraint = feature.expression!!.replace("\"", "")
-        } else this.features().forEach { feature ->
-            feature.deepCloneWithInheritedFeature(this)
         }
     }
 
@@ -175,7 +187,7 @@ private fun Session.mergeFeatures(own: Collection<Feature>, inherited: Collectio
                 if ( i in o.allSupertypes(true) )
                     status.inconsistency("subclass type  of '${o.qualifiedName}' must be subclass of '${i.qualifiedName}'", element = o)
 
-                if (o.multiplicity !in i.multiplicity)
+                if (o.multiplicityRange !in i.multiplicityRange)
                     status.inconsistency("multiplicity of subclass '${i.qualifiedName}' must be subset of superclass '${o.qualifiedName}'", element = o)
 
                 overridden = true

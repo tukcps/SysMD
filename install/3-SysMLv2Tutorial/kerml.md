@@ -151,7 +151,7 @@ Specific kind of AnnotatingElement are
 **Example**
 
 In the example below, we add a Documentation and two comments to the package tutorial::kerml.
-```KerML::tutorial::kerml::AnnotationExample
+```KerML::tutorial::kerml::annotations
 doc kermel /* The package tutorial::kerml is the top-level package that owns all artefacts of the tutorial. */ 
 comment /* The owning package is specified in the header of each SysMD cell. */ 
 comment c1 about tutorial /* Comments and Documents can have names! */ 
@@ -178,7 +178,7 @@ Note that the syntax schema throughout KerML and SysML is to start all elements 
 - Optionally, a name and short name  (in < ... >) and/or name 
 - Optionally, a body in curly braces where owned elements are modeled
 
-```KerML::tutorial::kerml::NamespaceExample
+```KerML::tutorial::kerml::namespaces
 namespace Car {
   doc /* Engine text … */
   doc /* Wheels text … */ 
@@ -216,19 +216,18 @@ An import makes imported elements available as member in the importing namespace
 
 **Example: Import**
 
-```KerML::tutorial::kerml::ImportExample
-namespace CarLibrary {
+```KerML::tutorial::kerml::imports
+namespace CarPartLibrary {
   classifier Engine; // ... 
 }
  
-classifier CarDesign {
-  private import CarLibrary::*;
+feature Car {
+  private import CarPartLibrary::*;
   feature engine: Engine;
 }
 ```
 
 # Core Layer: Types - Classifiers and Features
-
 
 SysML v2 has an ontological foundation.
 The core layer introduces _types_ to describe and classify things that exist 
@@ -249,7 +248,7 @@ Note that SysML v2 further adds _individuals_ that occur individually in the phy
 
 ## Classifiers 
 
-```KerML::tutorial::kerml::ClassifiersAndFeaturesExample
+```KerML::tutorial::kerml::classifiers
 classifier Vehicle; 
 classifier Car specializes Vehicle;
 classifier Truck :> Vehicle disjoint from Car;
@@ -261,11 +260,11 @@ As types can be seen as a kind of set of features, one can define relations on t
 - intersection, that defines a type as the intersection of the extent of types, 
 - differencing, that defines a type as the difference of a set from another set.
 
-```KerML::tutorial::kerml::RelationshipsBetweenTypesExample
+```KerML::tutorial::kerml::relationships_of_classifiers
 classifier WinterTire; 
 classifier SummerTire; 
 classifier Tire unions WinterTire, SummerTire; 
-// classifier AllSeasonTire intersects WinterTire, SummerTire; 
+classifier AllSeasonTire intersects WinterTire, SummerTire; 
 classifier WinterOnly differences WinterTire, AllSeasonTire; 
 ```
 
@@ -293,7 +292,7 @@ If all vehicles have one or more wheels, then also some special kinds of vehicle
 Features also have a **Multiplicity**.
 A Multiplicity allows giving constraints on the number of features.
 
-```KerML::tutorial::kerml::FeatureExample
+```KerML::tutorial::kerml::features
 // Common features of all vehicles
 classifier Wheel;  
 classifier Engine; 
@@ -349,7 +348,7 @@ The standard library `ScalarValues` introduces some basic data types, including
 
 The standard library `Occurrences` introduces the class `Occurrence` that has features to locate an element in space and time. 
 
-```KerML::tutorial::kerml::DataTypeClassExample
+```KerML::tutorial::kerml::datatype_class
 datatype Positive :> ScalarValues::Real; 
 
 class Engine; 
@@ -368,7 +367,7 @@ In consequence, like with Classifiers/Features, we can use
 - Associations to classify connectors by the _types_ that its sources and targets connect.
 - Connectors that are typed by an Association, to connect features of the types (and number) given in the respective Association.
 
-```KerML::tutorial::kerml::AssociationConnectorExample
+```KerML::tutorial::kerml::association_connector
 class Device; 
 assoc Wire {
   end startOfWire: Device :>> source; 
@@ -391,7 +390,7 @@ A behavior is a sequence of steps that are performed one after the other,
 where the order is introduces by a Succession that is a kind of connection between 
 first (source) and then (target). 
 
-```KerML::tutorial::kerml::StructureBehaviorExample
+```KerML::tutorial::kerml::structure_behavior
 struct Car {
   feature body; 
   feature engine; 
@@ -407,7 +406,7 @@ struct Car {
 
 A package (keyword: `package`, KerML class: Package) is a kind of namespace. 
 It directly serves as a hierarchical container for other elements, and that has no other purpose than this.
-```KerML::tutorial::kerml
+```KerML::tutorial::kerml::package
 package vehicleLibrary {
     // some elements inside library 
     class Engine; 
@@ -431,21 +430,20 @@ package vehicleLibrary {
 Relationships can only be identified by its name and that cannot be classified or
 
 Associations are relationships.
-```KerML::tutorial::kerml
-package associationsAndConnectors {
+```KerML::tutorial::kerml::associations_connectors
     class A;
     class B;
     assoc r {
         end feature end1: A;
         end feature end2: B;
     }
-}
 ```
-```KerML::tutorial::kerml::associationsAndConnectors
+```KerML::tutorial::kerml::associations_connectors
     feature a: A; 
     feature b: B; 
     connector c: r from a to b; 
 ```
+
 ## Functions and Expressions
 
 Remember the differences between Classifiers and Classes and Features.
@@ -472,7 +470,7 @@ Below are some examples.
 
 **Example: Model-Level Evaluation 
 
-```KerML::tutorial::kerml::functionExample
+```KerML::tutorial::kerml::functions_expressions
 private import ScalarValues::*;
 function Area {
     in w: ScalarValues::Real;
@@ -488,7 +486,7 @@ feature area: Real = Area(w1, l); // Calls function Area
 
 It has two Boolean variables, a and b that are free variables of type `Boolean`. 
 An assertion `c` is bound to the value `true` and to the expression `a and b`. 
-```KerML::tutorial::kerml::invariantExample
+```KerML::tutorial::kerml::invariant
 feature a: ScalarValues::Boolean;
 feature b: ScalarValues::Boolean;
 inv c { a and b }
@@ -497,12 +495,10 @@ inv c { a and b }
 
 One can also add predicates as shown in the example below.
 Note that constraining types to subtypes as below is not standard, it is added by SysMD. 
-```KerML::tutorial::kerml::expressionExamples
-    package hybridExample {
-        feature a: ScalarValues::Real(1.0 .. 2.0);
-        feature b: ScalarValues::Real(1.1 .. 2.1) = a + 0.1;
-        inv c { a < b }
-    }
+```KerML::tutorial::kerml::constraint_propagation_hybrid
+feature a: ScalarValues::Real(1.0 .. 2.0);
+feature b: ScalarValues::Real(1.1 .. 2.1) = a + 0.1;
+inv c { a < b }
 ```
 
 **Example: Arithmetic expressions**
@@ -516,13 +512,14 @@ To make the specification of constraints for execution more easy, SysMD introduc
 
 >Note that we use a proprietary way of SysMD to specify additional constraints in the example below.
 > It will be replaced in the next SysMD version by a standard-conformant way. 
-```KerML::tutorial::kerml::expressionExamples
-    package partWithVolume {
-        feature height:  SI::Length = oneOf(10.0 .. 100.0 [cm]);
-        feature width:   SI::Length = oneOf(1.0 .. 1.1 [m]);
-        feature length:  SI::Length = oneOf(1.0 .. 1.1 [m]);
-        feature volume:  SI::Volume(1000 .. 2000) [l] = height * width * length;
-    }
+```KerML::tutorial::kerml::constraint_propagation
+feature height:  ISQ::LengthValue = oneOf(10.0 .. 100.0 [cm]);
+feature width:   ISQ::LengthValue = oneOf(1.0 .. 1.1 [m]);
+feature length:  ISQ::LengthValue = oneOf(1.0 .. 1.1 [m]);
+feature volume:  ISQ::VolumeValue = height * width * length  {
+    :>> range = "1000..2000"; 
+    :>> unit = "l";     
+}
 ```
 Expressions on the right side of a feature can constrain the value of a feature, 
 or the multiplicity of another feature. 
@@ -543,14 +540,14 @@ the unit left of a dependency, and the unit right of it must be convertible into
 
 Note that you can also specify (as constraint of the subtype) and check the consistency of units.
 An example is shown below.
-```KerML::tutorial::kerml::expressionExamples
-    package unitsExample {
-        feature t: SI::Time         = 1.0 [s];
-        feature v: SI::Speed        = 3.0 [m/s];
-        feature g: SI::Acceleration = 4.0 [m/s^2];
-        feature s: SI::Speed        = sqrt(sqr(v)+sqr(g)*sqr(t)); 
-    }
+
+```KerML::tutorial::kerml::units
+feature t: ISQ::TimeValue          = 1.0 [s];
+feature v: ISQ::SpeedValue         = 3.0 [m/s];
+feature g: ISQ::AccelerationValue  = 4.0 [m/s^2];
+feature s: ISQ::SpeedValue         = sqrt(sqr(v)+sqr(g)*sqr(t)); 
 ```
+
 **Predefined functions**
 
 SysMD supports the following types:
@@ -593,20 +590,20 @@ it models that
 _the mass of a Vehicle is the mass of all its parts._
 ```KerML::tutorial::kerml::carMassSumup
 class Body {
-    feature mass: SI::Mass = oneOf(100.0 .. 200.0 [kg]);
+    feature mass: ISQ::MassValue = oneOf(100.0 .. 200.0 [kg]);
 }
 class Engine {
-    feature mass: SI::Mass = oneOf(100.0 .. 300.0 [kg]);
+    feature mass: ISQ::MassValue = oneOf(100.0 .. 300.0 [kg]);
 }
 class Wheel {
-    feature mass: SI::Mass = 50.0 [kg];
+    feature mass: ISQ::MassValue = 50.0 [kg];
 }
 
 class Car {
     feature body:   Body;
     feature wheels: Wheel[4];
     feature engine: Engine[1 .. 2]; 
-    feature mass: SI::Mass [kg] = sumOverParts(mass); 
+    feature mass: ISQ::MassValue [kg] = sumOverParts(mass); 
     inv m { mass < 500.0 [kg] }
 }
 ```

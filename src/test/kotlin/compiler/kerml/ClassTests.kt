@@ -32,7 +32,7 @@ class ClassTests {
         val occ = global.resolve<Type>("Occurrences::Occurrence")
         assertNotNull(a)
         assertNotNull(occ)
-        val subclassifier = a.getOwnedElementOfType<Subclassifier>()
+        val subclassifier = a.getOwnedElementOfType<Subclassification>()
         assertNotNull(subclassifier)
         assertEquals(occ, subclassifier.general)
         assertEquals(global.resolve<Type>("Occurrences::Occurrence"), a.allSupertypes().first())

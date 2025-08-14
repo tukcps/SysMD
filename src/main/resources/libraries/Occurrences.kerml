@@ -1,6 +1,8 @@
 standard library package Occurrences { 
      
-    class Occurrence :> Base::Anything; 
+    class Occurrence :> Base::Anything;
+    abstract feature occurrences: Occurrence[0..*] nonunique subsets Base::things;
+
     class Life :> Occurrence;  
     
     assoc HappensLink :> Links::BinaryLink {
@@ -15,13 +17,13 @@ standard library package Occurrences {
 
     feature all happensBeforeLinks: HappensBefore[0..*] nonunique; // subsets Links::binaryLinks;
 
-    assoc HappensJustBefore :> HappensBefore;
+    assoc all HappensJustBefore :> HappensBefore;
   
-    assoc HappensDuring :> Links::BinaryLink;
+    assoc all HappensDuring :> Links::BinaryLink;
    
-    assoc OutsideOf :> Links::BinaryLink; 
+    assoc all OutsideOf :> Links::BinaryLink;
     
-    assoc JustOutsideOf :> Links::BinaryLink; 
+    assoc all JustOutsideOf :> Links::BinaryLink;
     
-    assoc InsideOf :> Links::BinaryLink;
+    assoc all InsideOf :> Links::BinaryLink;
 }

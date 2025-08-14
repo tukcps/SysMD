@@ -1,5 +1,6 @@
 package sysmlv2tests
 
+import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.sysml.PartDefinition
 import com.github.tukcps.sysmd.model.sysml.PartUsage
@@ -23,10 +24,12 @@ class PartAndPortTests {
     fun portTest1() = testSession("Ports") {
         loadSysMLv2("""
             port p; 
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        """)
+        assertNoIssues()
         val p = global.resolve<PortUsage>("p")
         assertNotNull(p)
+        val type = p.type
+        assertTrue(global.resolve<Type>("Ports::Port") in type)
     }
 
     /**
@@ -36,10 +39,12 @@ class PartAndPortTests {
     fun portTestDirection() = testSession("Ports") {
         loadSysMLv2("""
             out port p; 
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        """)
+        assertNoIssues()
         val p = global.resolve<PortUsage>("p")
         assertNotNull(p)
+        assertTrue(p.direction == Feature.FeatureDirectionKind.OUT)
+        assertTrue { global.resolve<Type>("Ports::Port") in p.type }
     }
 
     /**
@@ -49,8 +54,8 @@ class PartAndPortTests {
     fun portDefTest() = testSession("Ports") {
         loadSysMLv2("""
             port def <short> p; 
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        """)
+        assertNoIssues()
         val p = global.resolve<PortDefinition>("p")
         assertNotNull(p)
         assertTrue(p.allSupertypes().first().qualifiedName == "Ports::Port")
@@ -66,9 +71,11 @@ class PartAndPortTests {
             port def p1 {
                 attribute value: ScalarValues::Real; 
             }
-            port def p2 :> p1;
+            port def p2 :> p1 {
+                :>> value; 
+            }
             out port p3 : p2; 
-        """.trimIndent())
+        """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         val p2 = global.resolve<PortDefinition>("p2")
         assertNotNull(p2)
@@ -88,7 +95,8 @@ class PartAndPortTests {
         assertNoIssues()
         val p = global.resolve<PartUsage>("p")
         assertNotNull(p)
-        assertTrue(p.allSupertypes().first().qualifiedName == "Parts::Part")
+        val type = p.type
+        assertTrue(type.first().qualifiedName == "Parts::Part")
     }
 
     /**

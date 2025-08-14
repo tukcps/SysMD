@@ -22,14 +22,15 @@ interface Feature: Type {
     enum class FeatureDirectionKind { IN, OUT, INOUT}
     var direction: FeatureDirectionKind
     
-    /** Getter and setter for the owned Multiplicity (if any). */
+    @Deprecated("Use standard value multiplicity instead.", ReplaceWith("multiplicity"))
     val multiplicityProperty: Multiplicity?
+        get() = multiplicity()
 
     /**
      * Getter and setter for the specified multiplicity; via
      * the owned Multiplicity element.
      */
-    val multiplicity: IntegerRange
+    val multiplicityRange: IntegerRange
 
     /** Variable that is true if the feature constrains the source/target of a relationship.*/
     var isEnd: Boolean

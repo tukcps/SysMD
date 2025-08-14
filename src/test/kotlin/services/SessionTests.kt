@@ -180,7 +180,7 @@ class SessionTests {
     fun loadProject() {
         val session = SessionImplementation(libraries = mutableListOf())
         session.loadProject("Base")
-        assertTrue(session.global.ownedRelationship.size == 1)
+        assertEquals(1, session.global.ownedRelationship.size)
         assertTrue(session.status.issues.isEmpty())
     }
 
@@ -269,10 +269,10 @@ class SessionTests {
         val specs2 = getAllOfClass<Specialization>()
 
         checkOwnership()
-        assertEquals(multiplicities1.size, multiplicities2.size, "added multiplicities: ${multiplicities2-multiplicities1}")
-        assertEquals(specs1.size, specs2.size, "added specialization: ${specs2-specs1}")
-        assertEquals(imports1.size, imports2.size,"added import: ${imports2-imports1}")
-        assertEquals(elem1.size, elem2.size, "added elements: ${elem2-elem1}")
+        assertEquals(multiplicities1.size, multiplicities2.size, "added multiplicities: ${multiplicities2- multiplicities1.toSet()}")
+        assertEquals(specs1.size, specs2.size, "added specialization: ${specs2- specs1.toSet()}")
+        assertEquals(imports1.size, imports2.size,"added import: ${imports2- imports1.toSet()}")
+        assertEquals(elem1.size, elem2.size, "added elements: ${elem2- elem1.toSet()}")
         assertNoIssues()
     }
 

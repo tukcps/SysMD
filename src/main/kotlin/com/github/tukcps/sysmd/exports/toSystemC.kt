@@ -677,7 +677,7 @@ class Exporter {
                 usage = Usage(
                     instanceName = element.escapedName().toString(),
                     className = "", //The class name is set down in the apply{} scope
-                    amount = (element.multiplicity.max.toInt()),
+                    amount = (element.multiplicityRange.max.toInt()),
                     module = allModules[element.qualifiedName + "_CLASS"].let { mod1 ->
                         (if(mod1?.useSuperClass == true) mod1.superClassModule else mod1) ?:allModules[element.type.first().qualifiedName].let { mod2 ->
                             mod2 ?: allModules[element.type.first().qualifiedName + "_CLASS"].let { mod3 ->
@@ -694,7 +694,7 @@ class Exporter {
                 usage = Usage(
                     instanceName = element.escapedName().toString(),
                     className = element.name.toString() + "_CLASS",
-                    amount = (element.multiplicity.max.toInt()),
+                    amount = (element.multiplicityRange.max.toInt()),
                     module = allModules[element.qualifiedName + "_CLASS"].let { mod1 ->
                             mod1 ?: throw SysMDFatalInternalError("No Module found for Usage: ${element.declaredName}")
                         }

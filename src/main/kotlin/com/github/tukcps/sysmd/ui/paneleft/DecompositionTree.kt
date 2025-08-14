@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.ui.composables.ButtonSelection
 import com.github.tukcps.sysmd.ui.composables.TreeViewModel
 import com.github.tukcps.sysmd.ui.composables.TreeViewPlus
@@ -43,7 +44,7 @@ fun DecompositionTree(
 
         if (!collapsed) {
             Column(modifier = Modifier.padding(start=10.dp)) {
-                ButtonSelection(standards, "Standard libraries")
+                ButtonSelection(standards, "Libraries")
                 ButtonSelection(annotations, "Metadata")
             }
         }
@@ -54,7 +55,7 @@ fun DecompositionTree(
 
         TreeViewPlus(composition) {
             !   (
-                    ((!standards.value) && it.name.endsWith("(standard library)"))  ||
+                    ((!standards.value) && (it.element as Element).isLibraryElement)  ||
                     ((!annotations.value) && it.name.startsWith("[MetadataFeature]"))
                 )
         }

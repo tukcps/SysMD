@@ -184,7 +184,7 @@ class IssuesAndRegressions {
         val test = global.resolve<Type>("Test") !!
         val comp = test.resolve<Feature>("comp") !!
         assertEquals(1, comp.getOwnedElementsOfType<Multiplicity>().size) // Just the multiplicity
-        assertEquals(IntegerRange(1, 2), comp.multiplicity)
+        assertEquals(IntegerRange(1, 2), comp.multiplicityRange)
     }
 
     /** Use of multiplicity as variable. */
@@ -241,9 +241,9 @@ class IssuesAndRegressions {
         assertNotEquals(s1, s2)
         assertNotEquals(s1, s3)
         assertNotEquals(s2, s3)
-        assertEquals(IntegerRange(4,5), global.resolve<Feature>("Device::sensor")?.multiplicity)
-        assertEquals(IntegerRange(4,4), global.resolve<Feature>("DeviceB::sensor")?.multiplicity)
-        assertEquals(IntegerRange(5,5), global.resolve<Feature>("DeviceA::sensor")?.multiplicity)
+        assertEquals(IntegerRange(4,5), global.resolve<Feature>("Device::sensor")?.multiplicityRange)
+        assertEquals(IntegerRange(4,4), global.resolve<Feature>("DeviceB::sensor")?.multiplicityRange)
+        assertEquals(IntegerRange(5,5), global.resolve<Feature>("DeviceA::sensor")?.multiplicityRange)
     }
 
 

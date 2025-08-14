@@ -31,7 +31,8 @@ By importing the namespace of the package ```ScalarValues``` we can access it
 by its simple name as follows:
 ```SysML::kickstart
   private import ScalarValues::*;            // Allows us shortcuts to Real, Integer, etc. 
-  private import SI::*;                      // Allows us shortcuts to Domains
+  private import SI::*;                      // Allows us shortcuts to use Units. 
+  private import ISQ::*;                     // Allows us to use ISQ dimensions.  
   private import Ranges::*;                  // Allows us to specify constraints & co/contravariance 
   attribute r: Real = oneOf(2.0 .. 3.0);     // assigns r a value, constraine to the range 2 to 3.
   attribute i: Integer = 2;                  // assigns i the value 2.  
@@ -83,10 +84,10 @@ dependency ```volume = height*width*length```, click on the calculator symbol le
 To display the values, click on the i in a circle left of the cell._
 ```SysML::kickstart
 part rangeExample {
-    attribute height:  Length = oneOf(10.0 .. 100.0 [cm]);
-    attribute width:   Length = oneOf(1.0 .. 1.1 [m]);
-    attribute length:  Length = oneOf(1.0 .. 1.1 [m]);
-    attribute volume:  Volume, Ranges::QuantityInRange  = height * width * length {
+    attribute height:  LengthValue = oneOf(10.0 .. 100.0 [cm]);
+    attribute width:   LengthValue = oneOf(1.0 .. 1.1 [m]);
+    attribute length:  LengthValue = oneOf(1.0 .. 1.1 [m]);
+    attribute volume:  VolumeValue = height * width * length {
         :>> range = "1000.0 .. 2000.0";
         :>> unit =  "l";  
     }
@@ -141,42 +142,42 @@ We will change the name in future versions.
 
 Units are converted automatically before computations are done, and the consistency of units in equations is checked:
 the unit left of a dependency, and the unit right of it must be convertible into each other.
-```SysML::kickstart
-    package unitsExample {
-        attribute t: Time             = 1.0 [s];
-        attribute v: Speed            = 3.0 [m/s];
-        attribute g: Acceleration     = 4.0 [m/s^2];
-        attribute s: Speed            = sqrt(sqr(v)+sqr(g)*sqr(t)); 
-    }
+```SysML::kickstart::units
+attribute t: TimeValue         = 1.0 [s];
+attribute v: SpeedValue        = 3.0 [m/s];
+attribute g: AccelerationValue = 4.0 [m/s^2];
+attribute s: SpeedValue        = sqrt(sqr(v)+sqr(g)*sqr(t)); 
 ```
 Play with the units, e.g., by changing the unit after the type declaration or try ms instead of s.
 
 For date and time, the ISO format is supported.
 We can add and subtract times in this format.
-```SysML::kickstart::unitsExample
-    attribute date: Time [DateTime] = DateTime("2021-10-10T03:00:00");
-    attribute time: Time = 1.0 a {:>> unit="a";}
-    attribute dateResult: Time [DateTime] = date + time;
+```SysML::kickstart::units_datetime
+attribute date: Time [DateTime] = DateTime("2021-10-10T03:00:00");
+attribute time: Time = 1.0 a {:>> unit="a";}
+attribute dateResult: Time [DateTime] = date + time;
 ```
+
 ### Vectors
 There is also the possibility to use vectors instead of scalar values.
 They can be used with the same operations as normal values in addition to some special
 operations like the angle or cross-product.
-Here is an example for defining vectors:
-```SysML::kickstart
-package vectors {
-    attribute a: Mass = (0.5,1.5) kg {:>> range="0.0..1.0,1.0..2.0";}
-    attribute b: Mass = (0.5,1.5) kg; 
-    attribute c: Mass = (-5.0, -1.0, 3.0) kg {:>> range="-5.0..-1.0,-1.0..2.0, 2.0..4.0";}
-}
+Below is an example for defining vectors:
+
+```SysML::kickstart::vecors
+attribute a: Mass = (0.5,1.5) kg { :>> range = "0.0..1.0, 1.0..2.0"; }
+attribute b: Mass = (0.5,1.5) kg; 
+attribute c: Mass = (-5.0, -1.0, 3.0) kg { :>> range="-5.0..-1.0, -1.0..2.0, 2.0..4.0"; }
 ```
+
 In the next example, there is a calculation with Vectors with the cross-product and angle.
-```SysML::kickstart::vectors
-    attribute a2: Real, InRange {:>> range="1..1,5..5,10..10";}
-    attribute b2: Real, InRange {:>> range="5..5,1..1,10..10";}
-    attribute c2: Real  = a2 cross b2;
-    attribute d2: Quantity = angle(a2,b2) {:>>unit="°";} 
+```SysML::kickstart::vectorfunctions
+attribute a2: Real, InRange { :>> range="1..1,5..5, 10..10";}
+attribute b2: Real, InRange { :>> range="5..5,1..1, 10..10";}
+attribute c2: Real  = a2 cross b2;
+attribute d2: Quantity = angle(a2,b2) {:>>unit="°";} 
 ```
+
 ## Types and Functions in Expressions
 SysMD supports the following types:
 
@@ -206,6 +207,7 @@ In expressions, the following functions can be used:
 - ```a or b```
 
 *Additional functions are available that permit computing over collections of values.*
+
 #### Functions over collections of values
 
 SysMD also has pre-defined functions that query values and calculate aggregations over the collection.
@@ -248,19 +250,21 @@ We first create a package that defines vehicle parts and add e.g., an engine and
 Then, we can explain what differentiates a bicycle from a car.
 Reminder: we can access the elements of this package from the package of
 vehicles via its path as shown in the example below.
+
 ```SysML::kickstart
-    package carParts {
-        part def Body {
-            attribute mass: Mass {:>> range="300.0";}
-        }
-        part def Engine {
-            attribute mass: Mass {:>> range="300.0";}
-        }
-        part def Wheel {
-            attribute mass: Mass {:>> range="50.0";}
-        }
+package carParts {
+    part def Body {
+        attribute mass: MassValue {:>> range="300.0"; :>> unit = "kg"; }
     }
+    part def Engine {
+        attribute mass: MassValue {:>> range="300.0"; :>> unit = "kg"; }
+    }
+    part def Wheel {
+        attribute mass: MassValue {:>> range="50.0"; :>> unit = "kg"; }
+    }
+}
 ```
+
 As can be seen, we can now make statements about the different kinds of vehicle's different features.
 This is done by listing them as a feature using the hasA relationship.
 Generally, each feature is listed with:
@@ -288,30 +292,29 @@ In SysML v2 there are part definitions (```part def```) and part usages (```part
 The definitions create a kind of class; the usages create an instance.
 Part definitions and usages can feature parts and attributes.
 Specializations inherit features.
-```SysML::kickstart
-    package vehicles {
-        // We consider a vehicle to be anything that has at least one wheel. 
-        // The bySubclasses determines a consistent value for mass with min diameter. 
-        part def Vehicle {
-          attribute mass: Mass = bySpecializations(mass) {:>> range ="0..1000";}
-          part wheels: carParts::Wheel[1 .. *];        
-        }
-        
-        // A car is a vehicle with Body and Engine. 
-        // the sumOverParts determines a consistent minimal range consistent with parts.
-        part def Car  :> Vehicle {
-           attribute redefines mass: Mass = sumOverParts(mass) {:>> range ="0 .. 1000";}
-           part wheels: carParts::Wheel[4 .. 10]; 
-           part body:   carParts::Body;
-           part engine: carParts::Engine;
-        }
-        
-        part def Bicycle :> Vehicle {
-           attribute :>> mass: Mass = 10.0 .. 20.0 [kg]; 
-        }
-        part def VW   :> Car;
-        part def BMW  :> Car;
-    }
+
+```SysML::kickstart::mass_rollup
+// We consider a vehicle to be anything that has at least one wheel. 
+// The bySubclasses determines a consistent value for mass with min diameter. 
+part def Vehicle {
+  attribute mass: MassValue = bySpecializations(mass) {:>> range ="0..1000";}
+  part wheels: carParts::Wheel[1 .. *];        
+}
+
+// A car is a vehicle with Body and Engine. 
+// the sumOverParts determines a consistent minimal range consistent with parts.
+part def Car  :> Vehicle {
+   attribute redefines mass: Mass = sumOverParts(mass) {:>> range ="0 .. 1000";}
+   part wheels: carParts::Wheel[4 .. 10]; 
+   part body:   carParts::Body;
+   part engine: carParts::Engine;
+}
+
+part def Bicycle :> Vehicle {
+   attribute :>> mass: MassValue = 10.0 .. 20.0 [kg]; 
+}
+part def VW   :> Car;
+part def BMW  :> Car;
 ```
 Besides a decomposition into further elements, we can also model some numerical or
 Boolean properties. They may also have a physical unit. Then, we specify:
@@ -323,24 +326,23 @@ Boolean properties. They may also have a physical unit. Then, we specify:
 
 There is also a possibility to define user defined functions with any number of input variables .
 These functions can be defined once and used multiple times.
-```SysML::kickstart
-     package CalculationExample {
-        // Definition of a Calculation
-        calc def calcEnergy {
-          in v : Speed; 
-          in m : Mass; 
-          return result : Energy = 0.5 * m * sqr(v); 
-        }
-    
-        // Usage of the defined calculation Energy
-        attribute a: Speed = 36.0 [km/h]; 
-        attribute b: Mass = 200.0 [kg]; 
-        attribute energy1: Energy = calcEnergy(a, b); 
-        attribute e: Speed = 72.0 [km/h]; 
-        attribute f: Mass = 800.0 [kg]; 
-        attribute energy2: Energy = calcEnergy(e,f); 
-    }
+```SysML::kickstart::calculation
+// Definition of a Calculation
+calc def calcEnergy {
+  in v : SpeedValue; 
+  in m : MassValue; 
+  return result : EnergyValue = 0.5 * m * sqr(v); 
+}
+
+// Usage of the defined calculation Energy
+attribute a: SpeedValue        = 36.0 [km/h]; 
+attribute b: MassValue         = 200.0 [kg]; 
+attribute energy1: EnergyValue = calcEnergy(a, b); 
+attribute e: SpeedValue        = 72.0 [km/h]; 
+attribute f: MassValue         = 800.0 [kg]; 
+attribute energy2: EnergyValue = calcEnergy(e,f); 
 ```
+
 ## Inheritance
 
 As of now, we skipped one important thing: inheritance.
@@ -371,14 +373,20 @@ This is checked by the SysMD solver.
 A VW and a BMW can differ from a generic “Car.”
 But only in a way such that the Liskov principle holds.
 Assume, we model the power of Cars and its subclasses as follows:
-```SysMD::kickstart::vehicles
-    // Interactive scription with SysMD -- NOT SysML v2 syntax. 
-    // Modifies existing model
-    Car hasA feature power: Power(10 .. 1000) [kW].
-    VW  hasA feature power: Power(20 .. 100) [kW].
-    BMW hasA feature power: Power(150 .. 400) [kW].
+
+```SysML::kickstart::vehicles
+part def Car { 
+    attribute power: PowerValue(10..1000) [kW]; 
+}
+part def VW :> Car { 
+    :>> power: PowerValue(20..100) [kW]; 
+}
+part def BMW :> Car { 
+    :>> power: PowerValue(150..1100) [kW]; 
+}
 ```
-These specifications are consistent with the Liskov principle:
+
+These specifications might be consistent with the Liskov principle:
 If one wants a car with a power from 10 to 1000 kW,
 a VW or BMW will satisfy this constraint. However, if we change the specification
 of VW to a power of max. 1100 kW, this is in contradiction to line 1 which says

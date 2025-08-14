@@ -4,7 +4,6 @@ import io.github.tukcps.aadd.values.Range
 import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.services.resolve.resolve
-import org.junit.jupiter.api.Disabled
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Ignore
@@ -116,7 +115,7 @@ class BuiltInFunctionsTests {
         assertEquals(Range(1.0 .. 1.0), r.variable!!.vectorQuantity.value.asAadd().getRange())
     }
 
-    @Test @Disabled //TODO: Fix semantics of anyOf!
+    @Test @Ignore //TODO: Fix semantics of anyOf!
     fun anyOfOperationTest() = testSession("ScalarValues") {
         loadKerML("feature r: ScalarValues::Real = anyOf(1.0 .. 2.0);")
         propagate()

@@ -6,7 +6,6 @@ import com.github.tukcps.sysmd.model.kerml.Multiplicity
 import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
-import com.github.tukcps.sysmd.services.resolve.resolveVars
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.mockup.loadSysMLv2
@@ -39,14 +38,15 @@ class RedefinitionTests {
         val af = global.resolve<Feature>("a::f")
 
         assertNotNull(af)
-        assertEquals(1L, af.multiplicity.min  )
-        assertEquals(4L, af.multiplicity.max  )
+        assertEquals(1L, af.multiplicityRange.min  )
+        assertEquals(4L, af.multiplicityRange.max  )
         assertEquals(anything, af.generalization.first() )
 
         assertNotNull(bf)
-        assertEquals(1L, bf.multiplicity.min)
-        assertEquals(4L, bf.multiplicity.max)
-        assertEquals(repo.realType, bf.generalization.first() )
+        assertEquals(1L, bf.multiplicityRange.min)
+        assertEquals(4L, bf.multiplicityRange.max)
+        assertTrue(repo.realType in bf.generalization)
+        assertTrue(af in bf.generalization)
     }
 
 
@@ -63,38 +63,35 @@ class RedefinitionTests {
         """)
         val af = global.resolve<Feature>("a::f")
         assertNotNull(af)
-        assertEquals(1L, af.multiplicity.min  )
-        assertEquals(4L, af.multiplicity.max  )
+        assertEquals(1L, af.multiplicityRange.min  )
+        assertEquals(4L, af.multiplicityRange.max  )
         assertTrue(repo.realType in af.generalization)
 
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         val bf = global.resolve<Feature>("b::f")
         assertNotNull(bf)
-        assertEquals(2L, bf.multiplicity.min )
-        assertEquals(3L, bf.multiplicity.max  )
+        assertEquals(2L, bf.multiplicityRange.min )
+        assertEquals(3L, bf.multiplicityRange.max  )
         assertTrue(repo.realType in bf.generalization )
     }
 
     @Test
     fun redefinitionTestBareRedefinition3() = testSession("ScalarValues", "SI") {
         loadSysMLv2("""
-            package attributeDefExample {
-
-                attribute def Position {
-                    attribute x: SI::Length [m]; 
-                    attribute y: SI::Length [m]; 
-                    attribute z: SI::Length [m];     
-                }
-                
-                attribute p: Position { 
-                  redefines x = 1.0 [m];
-                  redefines y = 2.0 [m]; 
-                  redefines z = 1.5 [m]; 
-                }
+            attribute def Position {
+                attribute x: SI::Length [m]; 
+                attribute y: SI::Length [m]; 
+                attribute z: SI::Length [m];     
+            }
+            
+            attribute p: Position { 
+              redefines x = 1.0 [m];
+              redefines y = 2.0 [m]; 
+              redefines z = 1.5 [m]; 
             }
         """)
         propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -116,12 +113,12 @@ class RedefinitionTests {
         """)
 
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val bf = global.resolve<Type>("b::f")
+        val bf = global.resolve<Feature>("b::f")
 
         assertNotNull(bf)
         assertEquals(2L, bf.ownedElement.filterIsInstance<Multiplicity>().first().variable!!.min()  )
         assertEquals(3L, bf.ownedElement.filterIsInstance<Multiplicity>().first().variable!!.max()  )
-        assertEquals(repo.realType, bf.generalization.first() )
+        assertTrue(repo.realType in bf.typing.map { it.type } )
 
         val af = global.resolve<Type>("a::f")
         assertNotNull(af)
@@ -167,15 +164,19 @@ class RedefinitionTests {
     fun nestedRedefinitionTest3()  = testSession("ScalarValues") {
         loadKerML("""
             datatype Old {
-                feature a: ScalarValues::String = "old";
+                feature a: ScalarValues::String default "old";
             }
             datatype OwnsOld {
                 feature ownedOld: Old;
             }
-            feature redefinedOld: Old { :>> a = "new"; }
             feature ownsOld: OwnsOld { :>> ownedOld = redefinedOld; } 
+            feature redefinedOld: Old { :>> a = "new"; }
         """)
-        assertTrue(status.issues.isEmpty(), "${status.issues}")
-        assertEquals("new", global.resolveVars("ownsOld::ownedOld::a")[0]!!.vectorQuantity.value.asStrDD().toString())
+        assertNoIssues()
+        propagate()
+        // val ownsOld = global.resolve<Feature>("ownsOld")
+        // val redefinedOld = global.resolve<Feature>("redefinedOld")
+        // val new = global.resolveVar("ownsOld::ownedOld::a")!!.ast!!.evalUpRec()
+        assertEquals("new", global.resolveVar("ownsOld::ownedOld::a")!!.vectorQuantity.value.asStrDD().toString())
     }
 }

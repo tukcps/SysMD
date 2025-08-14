@@ -145,14 +145,13 @@ class QuantityToStringTests {
 
     @Test
     fun quantityToString2() = testSession("SI") {
-        loadKerML(
-            """feature a: SI::Quantity(10.0 .. 1000.0) [A^2];
-                    feature b: SI::Quantity(10.0 .. 1000.0) [s^4];
-                    feature c: SI::Area(10.0 .. 10.0) [m^2];
-                    feature d: SI::Mass(10.0 .. 10.0) [kg];
-                    feature result: SI::Capacitance = a*b/(c*d)."""
-        )
-        initialize()
+        loadKerML("""
+            feature a: SI::Quantity(10.0 .. 1000.0) [A^2];
+            feature b: SI::Quantity(10.0 .. 1000.0) [s^4];
+            feature c: SI::Area(10.0 .. 10.0) [m^2];
+            feature d: SI::Mass(10.0 .. 10.0) [kg];
+            feature result: SI::Capacitance = a*b/(c*d);
+        """)
         propagate()
         assertEquals("1..10000 F", global.resolveVar("result")!!.vectorQuantity.toString())
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")

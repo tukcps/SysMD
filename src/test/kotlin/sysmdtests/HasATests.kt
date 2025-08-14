@@ -61,8 +61,8 @@ class HasATests {
                 feature x: ScalarValues::Real = Motor::power.
             """)
         assertEquals(4, global.resolve<Element>("hasARange::Auto")?.getOwnedElementsOfType<Feature>()?.size)
-        assertEquals(1, global.resolve<Namespace>("hasARange::Auto")?.getOwned<Feature>("motoren")?.multiplicity?.min )
-        assertEquals(2, global.resolve<Namespace>("hasARange::Auto")?.getOwned<Feature>("motoren")?.multiplicity?.max )
+        assertEquals(1, global.resolve<Namespace>("hasARange::Auto")?.getOwned<Feature>("motoren")?.multiplicityRange?.min )
+        assertEquals(2, global.resolve<Namespace>("hasARange::Auto")?.getOwned<Feature>("motoren")?.multiplicityRange?.max )
         assertEquals(1, (global.resolve<Feature>("hasARange::Auto::motoren::cardinality"))!!.variable!!.intSpecs[0].min )
         assertEquals(2, (global.resolve<Feature>("hasARange::Auto::motoren::cardinality"))!!.variable!!.intSpecs[0].max )
         assertEquals(1.0,
@@ -84,12 +84,12 @@ class HasATests {
                }
             """)
         val b1 = global.resolve<Feature>("b::x")!!
-        assertEquals(IntegerRange(1, 3), b1.multiplicity, "Multiplicity must be 1..3")
+        assertEquals(IntegerRange(1, 3), b1.multiplicityRange, "Multiplicity must be 1..3")
 
         loadSysMD("""b hasA feature x: a [1 .. 2].""")
         assertEquals(0, status.issues.size, status.issues.toString())
         val b2 = global.resolve<Feature>("b::x")!!
-        assertEquals(IntegerRange(1, 2), b2.multiplicity, "An already existing feature shall be updated")
+        assertEquals(IntegerRange(1, 2), b2.multiplicityRange, "An already existing feature shall be updated")
     }
 
 
@@ -101,7 +101,7 @@ class HasATests {
         assertEquals(0, status.issues.size, status.issues.toString())
         val y = global.resolve<Feature>("y")
         loadKerML("feature y: Base::Anything [3 .. 4]; ")
-        assertEquals(IntegerRange(3, 4), y?.multiplicity)
+        assertEquals(IntegerRange(3, 4), y?.multiplicityRange)
     }
 
 

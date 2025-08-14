@@ -131,7 +131,7 @@ open class ActionsContext(
     var namespace: Namespace = model.global
 
     /**
-     * Adds an owned feature typing relationship.
+     * Adds an owned unioning relationship.
      * @param type the name of the type, as in the source code
      */
     fun addUnioning(type: QualifiedName): Unioning {
@@ -139,6 +139,29 @@ open class ActionsContext(
         val unioning = UnioningImplementation(unionedType = owner, unioningType = UnresolvedType(type))
         model.addOwnedRelationship(unioning, owner)
         return unioning
+    }
+
+
+    /**
+     * Adds an owned differencing relationship.
+     * @param type the name of the type, as in the source code
+     */
+    fun addDifferencing(type: QualifiedName): Differencing {
+        val owner = element<Type>()
+        val differencing = DifferencingImplementation(typeDifferenced = owner, differencingType = UnresolvedType(type))
+        model.addOwnedRelationship(differencing, owner)
+        return differencing
+    }
+
+    /**
+     * Adds an owned differencing relationship.
+     * @param type the name of the type, as in the source code
+     */
+    fun addIntersecting(type: QualifiedName): Intersecting {
+        val owner = element<Type>()
+        val intersecting = IntersectingImplementation(typeIntercected = owner, intersectingType = UnresolvedType(type))
+        model.addOwnedRelationship(intersecting, owner)
+        return intersecting
     }
 
     /**
@@ -200,7 +223,7 @@ open class ActionsContext(
      */
     fun addSubclassification(type: String) {
         val owner = element<Type>()
-        val subclassification = SubclassifierImplementation(
+        val subclassification = SubclassificationImplementation(
             subclassification = owner,
             superclassification = UnresolvedType(type)
         )
@@ -294,10 +317,22 @@ open class ActionsContext(
 
     fun addUnitConstraint(unitConstraint: String?) {
         element<Feature>().unitConstraint = unitConstraint
+        if (unitConstraint != null) {
+            val constraint = FeatureImplementation()
+            constraint.declaredName = "unit"
+            constraint.expression = unitConstraint
+            model.addOwnedMember(constraint, element<Feature>())
+        }
     }
 
     fun addTypeConstraint(typeConstraint: MutableList<String>) {
         element<Feature>().typeConstraint = typeConstraint
+        if (typeConstraint.isNotEmpty()) {
+            val constraint = FeatureImplementation()
+            constraint.declaredName = "range"
+            constraint.expression = typeConstraint.firstOrNull()
+            model.addOwnedMember(constraint, element<Feature>())
+        }
     }
 
     

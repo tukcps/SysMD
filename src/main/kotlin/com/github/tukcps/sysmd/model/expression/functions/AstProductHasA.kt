@@ -156,7 +156,7 @@ fun Session.initProductParts(
             }
         }
         if (newAstNode.toString() != propertyAST.toString()) {
-            val multiplicity = elementIterator.multiplicityProperty
+            val multiplicity = elementIterator.multiplicity()
             val multiplicityLeaf = if (multiplicity?.variable != null) AstLeaf(this, multiplicity.variable!!) else null
             val multiplicityConverted = if (isRealProduct)
                 if (multiplicityLeaf != null) AstReal(

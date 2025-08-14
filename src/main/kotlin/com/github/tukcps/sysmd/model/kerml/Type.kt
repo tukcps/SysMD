@@ -19,10 +19,10 @@ interface Type: Namespace {
 
     /** Specialization object; nonsense? */
     val specialization: List<Type>
-        get() = ownedSpecialization.filter { it !is Redefinition }.map { it.specific }
+        get() = ownedSpecialization.map { it.specific }
 
     val ownedSpecialization: List<Specialization>
-        get() = ownedRelationship.filterIsInstance<Specialization>().filter { it !is Redefinition }
+        get() = ownedRelationship.filterIsInstance<Specialization>() // .filter { it !is Redefinition }
 
 
     /**
@@ -67,9 +67,14 @@ interface Type: Namespace {
         return supertypes
     }
 
+    /** All subtypes of this type after initialization */
     val subtypes: MutableSet<Type>
 
+    /** @return All features of this type */
     fun features(): List<Feature> = ownedElement.filterIsInstance<Feature>()
+
+    /** The owned multiplicity element of this type. */
+    fun multiplicity(): Multiplicity? = ownedElement.filterIsInstance<Multiplicity>().firstOrNull()
 
     /**
      * @return owned end-features of direction in

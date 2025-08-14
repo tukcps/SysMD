@@ -1,7 +1,5 @@
 package com.github.tukcps.sysmd.services
 
-import io.github.tukcps.aadd.values.IntegerRange
-import io.github.tukcps.aadd.values.Range
 import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.cspsolver.Variable.BaseType
 import com.github.tukcps.sysmd.cspsolver.VariableImplementation
@@ -13,15 +11,14 @@ import com.github.tukcps.sysmd.model.expression.functions.AstByParts
 import com.github.tukcps.sysmd.model.expression.functions.AstBySpecializations
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.ReferenceSubsettingImplementation
-import com.github.tukcps.sysmd.quantities.Quantity
+import com.github.tukcps.sysmd.services.check.checkConsistencyOfInheritance
 import com.github.tukcps.sysmd.services.check.checkNameResolutionSuccessful
 import com.github.tukcps.sysmd.services.inheritance.*
 import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveFeatureChain
 import com.github.tukcps.sysmd.services.session.Session
 import com.github.tukcps.sysmd.services.session.getAllOfClass
-import java.util.LinkedList
-import kotlin.math.abs
+import java.util.*
 
 private fun Session.fillCache() {
     // Cache frequently used types for use in semantic checks
@@ -56,6 +53,7 @@ private fun Session.giveUUID5(){
 private fun Session.addEndFeatureReferences() {
     get().filterIsInstance<Connector>().forEach { connector ->
         val ends = connector.ownedElement.filter { it is Feature && it.isEnd  }
+        // TODO: consider multiplicity.
         if (connector.source.isNotEmpty() && connector.target.isNotEmpty() && ends.size >= 2) {
             val sourceEnd = ends[0] as Feature
             val targetEnd = ends[1] as Feature
@@ -78,35 +76,34 @@ fun Session.initialize(level: Int = 100) {
                 resolveAllNames()
                 fillCache()
                 get().asSequence().filterIsInstance<Type>().forEach { type -> type.checkForCycles() }
-                get().asSequence().filterIsInstance<Specialization>().forEach {
-                    if (it !is Redefinition)
-                        it.general.subtypes.add(it.specific)
-                }
+                get().asSequence().filterIsInstance<Specialization>().forEach { it.general.subtypes.add(it.specific) }
             }
-            if (level > 1)   // Inheritance and redefinition
+            if (level > 1) {  // Inheritance and redefinition
                 anything.addInheritedToSubtypes() // Calls 'initialize' of types that will add inherited properties.
-
+                anything.addInheritedToSubtypes() // Dirty for redefinitions missed due to race condition
+            }
             if (level > 2) { // Feature chains considering inherited features
                 addEndFeatureReferences()
                 resolveAllNames()
                 resolveAllFeatureChains()
                 giveUUID5()
             }
+
             if (level > 3)
                 checkNameResolutionSuccessful()
 
             if (level > 4) {
                 // We do static semantic checks ...
-                getAllOfClass<Type>().forEach { type ->
+                getAllOfClass<Type>().asSequence().forEach { type ->
                     type.checkForCycles()
                 }
 
-                getAllOfClass<Feature>().forEach { feature -> feature.checkIsNotTypedByOwner() }
+                getAllOfClass<Feature>().asSequence().forEach { feature -> feature.checkIsNotTypedByOwner() }
             }
             if (level > 5) initVariables()
 
             // Now, we only do checking and reporting of issues to the Agenda.
-            if (level > 7) get().filterIsInstance<Type>().forEach {
+            if (level > 7) get().asSequence().filterIsInstance<Type>().forEach {
                 checkConsistencyOfInheritance(it)
             }
         } catch (error: Exception) {
@@ -246,7 +243,7 @@ internal fun Session.initializeAllAssociations() {
         if (endFeature.size >= 2) {
             association.sourceType = endFeature[0]
             association.targetType = mutableListOf(endFeature[1])
-            for(i in 2 .. endFeature.size - 1) {
+            for(i in 2..<endFeature.size) {
                 association.targetType = mutableListOf(endFeature[i])
             }
         }
@@ -427,86 +424,4 @@ fun getVariables(expression: String, namespace: Namespace): List<Feature?> {
     if (variables.size == 1 && variables[0] == null)
         return emptyList()
     return variables
-}
-
-
-
-/**
- * We look at an element and its superclass(es).
- * - The subclass properties must be a subset of the superclass properties with the same name.
- * - Maybe additional needs for other types; t.b.d.
- */
-fun Session.checkConsistencyOfInheritance(element: Type) {
-    element.allSupertypes().forEach { supertype ->
-        element.ownedElement.forEach { ownedElement ->
-            val owned = ownedElement
-            if (owned is Feature) {
-                val superclassFeature = supertype.getOwnedElement(owned.declaredName, owned.declaredShortName)
-                if (owned.isFeatureWithValue() && owned !is Multiplicity && superclassFeature is Feature) {
-                    // Checks for supertype and subclass property
-                    // Basic requirement for inheritance must hold in all cases otherwise something went wrong before ...
-                    if (superclassFeature in owned.allSupertypes(true))
-                        status.inconsistency("specialization ${owned.escapedName()} has feature that must be specialization of feature of its general class ${supertype.escapedName()}", element = owned)
-                    when {
-                        owned.specializes(repo.realType) -> {
-                            //Convert Ranges or owned and supertype to SI
-                            owned.typeConstraint.indices.forEach {
-                                var ownedRangeSpec = owned.typeConstraint.getOrNull(it) ?: "*..*" // Default: all Reals
-                                if (ownedRangeSpec.isBlank()) ownedRangeSpec = "*..*"
-                                if ( (owned.type.first()).specializes(repo.realType)) {
-                                    val ownedRange = Quantity(builder.real(Range(ownedRangeSpec)), owned.unitConstraint ?: "").getRange()
-
-                                    val superClassRangeSpec = if (superclassFeature.typeConstraint.getOrNull(it).isNullOrBlank())
-                                        Range.Reals
-                                    else
-                                        Range(superclassFeature.typeConstraint.getOrNull(it)!!)
-
-                                    val extendedRangeSuperclass = builder.real(
-                                        superClassRangeSpec.min - abs(superClassRangeSpec.min * 0.000001)..superClassRangeSpec.max + abs(superClassRangeSpec.max * 0.000001)
-                                    )
-                                    val superClassRange = Quantity(extendedRangeSuperclass, superclassFeature.unitConstraint?:"").getRange()
-                                    if (ownedRange !in superClassRange && ownedRange != Range.Reals)
-                                        status.inconsistency(
-                                            "value ${owned.typeConstraint} of specialization must be refinement of general ${superclassFeature.escapedName()} with value ${superclassFeature.typeConstraint}",
-                                            element = owned
-                                        )
-                                    if ((!(owned.type[0]).specializes(superclassFeature.type[0]) && owned.type[0] != superclassFeature.type[0]))
-                                        status.inconsistency(
-                                            "Type of specialization ${owned.type} of '${superclassFeature.escapedName()}' must be the same as '${superclassFeature.type}'",
-                                            element = owned
-                                        )
-                                }
-                            }
-                        }
-
-                        owned.specializes(repo.integerType) ->
-                            owned.typeConstraint.indices.forEach {
-                                if (superclassFeature.indices?.contains(it) != false) {
-                                    if (IntegerRange(owned.typeConstraint[it]) !in IntegerRange(superclassFeature.typeConstraint[it]) && IntegerRange(
-                                            owned.typeConstraint[it]
-                                        ) != IntegerRange.Integers
-                                    )
-                                        status.inconsistency(
-                                            "subclass value ${owned.typeConstraint} of ${owned.escapedName()} must be refinement of supertype value ${superclassFeature.typeConstraint}",
-                                            element = owned
-                                        )
-                                }
-                            }
-
-                        owned.specializes(repo.booleanType) -> { // if (owned.boolSpec !in superclassFeature.boolSpec) {
-                            // TODO: Agree with Axel & Sebastian how to handle digital inconsistencies.
-                            // reportError(get(it),
-                            //    "INCONSISTENCY: subclass value ${owned.boolSpec} of ${owned.effectiveName} must be refinement of supertype value ${superclassProperty.boolSpec}"
-                            //)
-                        }
-                    }
-                }
-                if (superclassFeature is Feature && owned.multiplicity !in superclassFeature.multiplicity)
-                    status.inconsistency(
-                        message = "INCONSISTENCY: ${owned.qualifiedName}'s multiplicity (${owned.multiplicity}) must be subset of supertype ${superclassFeature.qualifiedName}'s multiplicity (${superclassFeature.multiplicity}).",
-                        element = superclassFeature
-                    )
-            }
-        }
-    }
 }

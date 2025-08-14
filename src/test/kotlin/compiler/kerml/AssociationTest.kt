@@ -3,7 +3,6 @@ package compiler.kerml
 import com.github.tukcps.sysmd.model.kerml.Association
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolve
 import io.github.tukcps.aadd.values.IntegerRange
 import util.assertNoIssues
@@ -43,8 +42,8 @@ class AssociationTest {
         assertTrue(b.isEnd)
         assertTrue(a.referencedFeature == null)
         assertTrue(b.referencedFeature == null)
-        assertEquals(IntegerRange(1, 2), a.multiplicity)
-        assertEquals(IntegerRange(3, 4), b.multiplicity)
+        assertEquals(IntegerRange(1, 2), a.multiplicityRange)
+        assertEquals(IntegerRange(3, 4), b.multiplicityRange)
         assertEquals(a,rel.sourceType)
         assertEquals(b,rel.targetType.first())
     }

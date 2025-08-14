@@ -32,7 +32,7 @@ class MultiplicitiesTests {
             context.addMultiplicity(IntegerRange(1,2))
         }
         initialize()
-        val multiplicity = feature.multiplicityProperty
+        val multiplicity = feature.multiplicity()
         assertTrue(multiplicity!!.variable is Variable, "After initialization a variable must be created for multiplicity")
         assertEquals(IntegerRange(1,2), multiplicity.variable!!.vectorQuantity.value.asIdd().getRange())
     }
@@ -43,7 +43,7 @@ class MultiplicitiesTests {
             feature f [1 .. 2];
         """)
         val f = global.resolve<Feature>("f")!!
-        val multiplicity = f.multiplicityProperty
+        val multiplicity = f.multiplicity()
         initialize()
         assertTrue(multiplicity!!.variable is Variable, "After initialization a variable must be created for multiplicity")
         assertEquals(IntegerRange(1,2), multiplicity.variable!!.vectorQuantity.value.asIdd().getRange())

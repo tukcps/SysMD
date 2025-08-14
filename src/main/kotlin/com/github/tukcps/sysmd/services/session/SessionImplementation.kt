@@ -187,7 +187,7 @@ class SessionImplementation(
             }
         }
         val owningMembership =  if (element is Feature && namespace is Type)
-                FeatureMembershipImplementation(ownedMemberFeature = element, owningType = namespace as Type)
+                FeatureMembershipImplementation(ownedMemberFeature = element, owningType = namespace)
             else
                 OwningMembershipImplementation(membershipOwningNamespace = namespace, memberElement = element)
         element.owningRelationship = owningMembership

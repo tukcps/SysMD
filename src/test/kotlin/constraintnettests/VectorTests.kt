@@ -19,9 +19,9 @@ class VectorTests {
     @Test
     fun vectorDefineTestReal() = testSession("SI") {
         loadKerML("""
-                feature a: SI::Mass, Ranges::InRange = (0.5,1.5) kg {:>> range = "0.0..1.0,1.0..2.0";}
-                feature b: SI::Mass, Ranges::InRange = (0.5,1.5) kg;
-                feature c: SI::Mass, Ranges::InRange  = (-5.0, -1.0, 3.0) kg {:>> range = "-5.0..-1.0,-1.0..2.0, 2.0..4.0";}
+                feature a: SI::Mass, Ranges::InRange = (0.5, 1.5) kg { :>> range = "0.0..1.0, 1.0..2.0"; }
+                feature b: SI::Mass, Ranges::InRange = (0.5, 1.5) kg;
+                feature c: SI::Mass, Ranges::InRange  = (-5.0, -1.0, 3.0) kg {:>> range = "-5.0..-1.0, -1.0..2.0, 2.0..4.0"; }
             """)
         propagate()
         assertTrue(status.issues.isEmpty() , status.issues.toString())

@@ -41,14 +41,11 @@ open class FeatureImplementation(
     override val ownedTypeFeaturing: List<FeatureTyping>
         get() = getOwnedElementsOfType()
 
-    /** Getter and setter for the owned Multiplicity (if any). */
-    override val multiplicityProperty: Multiplicity?
-        get() = getOwnedElementOfType()
 
     /** Getter and setter for the specified multiplicity. */
-    override var multiplicity: IntegerRange
-        get() = IntegerRange(multiplicityProperty?.typeConstraint?.firstOrNull()?:"1..1")
-        set(value) { multiplicityProperty?.variable?.valueSpecs = mutableListOf(value)}
+    override var multiplicityRange: IntegerRange
+        get() = IntegerRange(multiplicity()?.typeConstraint?.firstOrNull()?:"1..1")
+        set(value) { multiplicity()?.variable?.valueSpecs = mutableListOf(value)}
 
     override val name: String?
         get() = declaredName?: referencedFeature?.name

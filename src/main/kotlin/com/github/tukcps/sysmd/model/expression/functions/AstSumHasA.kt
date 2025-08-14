@@ -152,7 +152,7 @@ fun Session.initSumOverComposition(element: Namespace, propertyAST: AstNode, tra
                 break // no further look in parts because transitive search is not enabled
         }
         if (astNodeUsed) {
-            val multiplicity = elementIterator.multiplicityProperty
+            val multiplicity = elementIterator.multiplicity()
             val multiplicityLeaf = if (multiplicity?.variable != null)
                 AstLeaf(this, multiplicity.variable!!) else null
             val multiplicityConverted = if (isRealSum)

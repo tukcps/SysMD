@@ -163,8 +163,11 @@ class FeatureTests {
     @Test
     fun testFeatureWithTypeAndUnitConstraint() = testSession("SI") {
         loadKerML("""
-                feature f: SI::Length(1.0 .. 2000.0) [mm] = 1.0 m;
-            """)
+            feature f: ISQ::LengthValue = 1.0 m {
+                :>> range = "1..2000"; 
+                :>> unit  = "mm"; 
+            }
+        """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         val f = global.resolve<Feature>("f")
         assertEquals(1000.0 , f!!.variable!!.max(), 0.000001)

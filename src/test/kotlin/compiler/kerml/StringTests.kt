@@ -1,12 +1,13 @@
-package sysmdtests
+package compiler.kerml
 
 import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.services.resolve.resolve
 import util.mockup.loadKerML
-import kotlin.test.*
 import util.testSession
+import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class StringTests {
 

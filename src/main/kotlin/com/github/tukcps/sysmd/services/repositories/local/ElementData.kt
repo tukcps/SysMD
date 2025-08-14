@@ -119,7 +119,7 @@ fun ElementDAO.toElement(): Element {
         "ReferenceSubsetting" -> ReferenceSubsettingImplementation()
         "RequirementUsage"   -> RequirementUsageImplementation()
         "RequirementDefinition" -> RequirementDefinitionImplementation()
-        "Subclassification" -> SubclassifierImplementation()
+        "Subclassification" -> SubclassificationImplementation()
         "TextualRepresentation" -> TextualRepresentationImplementation(body = body!!, language = language!!)
         else             -> throw Exception("Element with unknown type '$type' in response; must be valid entity type.")
     }

@@ -7,7 +7,8 @@ import com.github.tukcps.sysmd.model.kerml.Specialization
 
 /**
  * For inheritance: This function creates a deep copy of a feature.
- * The new feature, its Multiplicity, Specialization will be marked as a transient element.
+ * The cloned feature, including its Multiplicity, Specialization and its owned features,
+ * will be marked as a transient element and added to the namespace given as parameter.
  * @param addTo namespace, to which the cloned elements will be added.
  */
 fun Feature.deepCloneWithInheritedFeature(addTo: Namespace): Feature {

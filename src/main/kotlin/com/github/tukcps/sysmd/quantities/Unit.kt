@@ -71,7 +71,6 @@ class Unit : Cloneable {
         strTok.slashStarComments(false)
 
         /** start parsing **/
-
         var token = strTok.nextToken()
 
         while (token == StreamTokenizer.TT_WORD) {
@@ -221,8 +220,8 @@ class Unit : Cloneable {
                 if (unitDimension!="Quantity") { //if dimension is empty, throw no error (no error in this case)
                     if (unitDimension == "ScalarValues::Real" || unitDimension == "Real")
                         throw UnitDimensionError("Units with type ScalarValues::Real are not allowed. Use Type from SI Package instead with units (e.g. SI::Time, SI::Length, SI::Quantity ...)")
-                    else
-                        throw UnitDimensionError("Domain $unitDimension not possible for unit $this")
+                    // else
+                    //    throw UnitDimensionError("Domain $unitDimension not possible for unit $this")
                 }
         }
     }

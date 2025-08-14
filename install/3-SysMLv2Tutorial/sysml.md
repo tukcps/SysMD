@@ -88,9 +88,9 @@ Below, we give some examples on definition and usage of attributes.
 ```SysML::tutorial::sysml::attributes
 
 attribute def Position {
-    attribute x: SI::Length [m]; 
-    attribute y: SI::Length [m]; 
-    attribute z: SI::Length [m];     
+    attribute x: ISQ::LengthValue; 
+    attribute y: ISQ::LengthValue; 
+    attribute z: ISQ::LengthValue;     
 }
 
 attribute p: Position { 
@@ -132,22 +132,23 @@ In SysML v2, one can define calculations by the keyword `calc` `def`.
 Calculations can be used in expressions as function calls. 
 
 ```SysML::tutorial::sysml::calculations
+private import ISQ::*; 
 private import SI::*; 
 
 // Definition of a Calculation
 calc def calcEnergy {
-  in v : Speed; 
-  in m : Mass; 
-  return result : Energy = 0.5 * m * sqr(v); 
+  in v : SpeedValue; 
+  in m : MassValue; 
+  return result : EnergyValue = 0.5 * m * sqr(v); 
 }
 
 // Usage of the defined calculation Energy
-attribute a: Speed = 36.0 [km/h]; 
-attribute b: Mass = 200.0 [kg]; 
-attribute energy1: Energy = calcEnergy(a, b); 
-attribute e: Speed = 72.0 [km/h]; 
-attribute f: Mass = 800.0 [kg]; 
-attribute energy2: Energy = calcEnergy(e,f); 
+attribute a: SpeedValue = 36.0 [km/h]; 
+attribute b: MassValue = 200.0 [kg]; 
+attribute energy1: EnergyValue = calcEnergy(a, b); 
+attribute e: SpeedValue = 72.0 [km/h]; 
+attribute f: MassValue = 800.0 [kg]; 
+attribute energy2: EnergyValue = calcEnergy(e,f); 
 ```
 
 # Modeling things 
@@ -193,13 +194,16 @@ attributes!
 ```SysML::tutorial::sysml::parts
 package vehicles {
     package carParts {
-        part def Body   { attribute mass: SI::Mass = 100.0 [kg]; }
-        part def Engine { attribute mass: SI::Mass = 200.0 [kg]; }
-        part def Wheel  { attribute mass: SI::Mass  = oneOf(2.0 .. 50.0 [kg]); }
+        part def Body   { attribute mass: ISQ::MassValue = 100.0 [kg]; }
+        part def Engine { attribute mass: ISQ::MassValue = 200.0 [kg]; }
+        part def Wheel  { attribute mass: ISQ::MassValue  = oneOf(2.0 .. 50.0 [kg]); }
     }
     
     part def Vehicle {
-        attribute mass: SI::Mass(0 .. 100000) [kg] = sumOverParts(mass);
+        attribute mass: ISQ::MassValue = sumOverParts(mass) {
+            :>> range = "0..100000"; 
+            :>> unit  = "kg"; 
+        }
         part wheels [1 .. *]: carParts::Wheel;   
         part engine [0 .. 2]: carParts::Engine; 
     }
@@ -225,7 +229,7 @@ A connection is a kind of relationship between parts.
 
 By a connection definition, we can specify which classes and which number of parts can be connected.
 By a connection uses, we can create concrete connections; they must satisfy the constraints of its definition. 
-```SysML::tutorial::sysml
+```SysML::tutorial::sysml::connections
 part def Pad; 
 part def Pin; 
 
@@ -260,10 +264,10 @@ port def BoolPort {
 	in item BoolSignal; 
 }
 part cpu {
-  port clk: BoolPort; 
+    port clk: BoolPort; 
 }
 part clock {
-  port clk: ~BoolPort; // conjugation by ~ inverses direction
+    port clk: ~BoolPort; // conjugation by ~ inverses direction
 }
 interface clockSignal connect cpu.clk to clock.clk;   
 ```
@@ -293,23 +297,29 @@ The body specifies the subject by:
 Also, attributes and calculations can be defined and used. 
 
 An example is given below. 
-```SysML::tutorial::sysml::requirementsExample
-    part Box {
-        attribute w: SI::Length; 
-        attribute h: SI::Length; 
-        attribute l: SI::Length;   
-    }
-    requirement def volumeRequirement {
-        subject box references Box; 
-        attribute volume: SI::Volume = box::w*box::h*box::l; 
-    }    
 
-    part p: Box; 
+```SysML::tutorial::sysml::requirements
+part Box {
+    attribute w: ISQ::LengthValue; 
+    attribute h: ISQ::LengthValue; 
+    attribute l: ISQ::LengthValue;   
+}
+
+requirement def volumeRequirement {
+    subject box references Box; 
+    attribute volume: ISQ::VolumeValue = box::w*box::h*box::l; 
+}    
+
+part p: Box {
+    :>> w = 100.0 cm; 
+    :>> h = 10.0 cm; 
+    :>> l = 10.0 cm;     
+} 
   
-    requirement volumeRequirementUsage : volumeRequirement  {
-        subject box references p; 
-        require constraint r { volume >= 100.0 [cm^3] }
-    }
+requirement volumeRequirementUsage : volumeRequirement  {
+    subject box references p; 
+    require constraint r { volume >= 100.0 [cm^3] }
+}
 ```
 
 # States and Transitions

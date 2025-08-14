@@ -1,18 +1,18 @@
 package compiler.kerml
 
-import com.github.tukcps.sysmd.model.kerml.Class
 import com.github.tukcps.sysmd.model.kerml.Structure
+import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.services.resolve.resolve
+import junit.framework.TestCase.assertTrue
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 class StructTests {
     @Test
-    fun testStruct() = testSession("Occurrences") {
+    fun testStruct() = testSession("Occurrences", "Objects") {
         loadKerML("""
             struct s {
                 in feature f1; 
@@ -24,7 +24,8 @@ class StructTests {
         assertNoIssues()
         val s = global.resolve<Structure>("s")
         assertNotNull(s)
-        val occurrence = global.resolve<Class>("Occurrences::Occurrence")
-        assertEquals(occurrence, s.allSupertypes().firstOrNull())
+        val objects = global.resolve<Type>("Objects::Object")
+        val occurrece = global.resolve<Type>("Occurrences::occurrences")
+        assertTrue(objects in s.allSupertypes())
     }
 }

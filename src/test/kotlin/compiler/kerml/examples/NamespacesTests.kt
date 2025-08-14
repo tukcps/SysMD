@@ -1,5 +1,6 @@
 package kermlspecificationstests
 
+import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
@@ -84,8 +85,8 @@ class NamespacesTests {
                 doc N9_Doc
                     /* This is documentation about namespace N5. */
             }
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        """)
+        assertNoIssues()
     }
 
     /**
@@ -104,7 +105,7 @@ class NamespacesTests {
             datatype D;
             feature f: C;
             package P;
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        """)
+        assertNoIssues()
     }
 }

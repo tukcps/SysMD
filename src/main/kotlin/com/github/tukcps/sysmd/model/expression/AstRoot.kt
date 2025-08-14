@@ -53,7 +53,6 @@ class AstRoot(
             model.status.inconsistency(element = variable.feature, message = "Unit of ${variable.feature.escapedName()} (${variable.vectorQuantity.unit}) does not match the unit of the dependency (${upQuantity.unit})")
         variable.vectorQuantity.values = upQuantity.values
         variable.vectorQuantity.unit = upQuantity.unit
-
     }
 
     /**

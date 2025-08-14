@@ -35,7 +35,7 @@ fun Type.checkForCycles() {
  * This is checked in this function.
  */
 fun Feature.checkIsNotTypedByOwner() {
-    if (owner is Type && owner in allSupertypes(true) && multiplicity.min > 0 && !isEnd && !isDerived && referencedFeature == null) {
+    if (owner is Type && owner in allSupertypes(true) && multiplicityRange.min > 0 && !isEnd && !isDerived && referencedFeature == null) {
         throw CyclicDependency("Cyclic dependency: a feature $qualifiedName may not be typed by its owner and have multiplicity larger than 1.", this)
     }
 }

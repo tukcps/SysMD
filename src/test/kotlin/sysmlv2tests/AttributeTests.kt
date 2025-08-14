@@ -35,7 +35,7 @@ class AttributeTests {
         assertEquals("a", a.declaredName)
         assertEquals("aa", a.declaredShortName)
         assertEquals(repo.realType, a.type.first())
-        assertEquals(IntegerRange(1, 1) , a.multiplicity)
+        assertEquals(IntegerRange(1, 1) , a.multiplicityRange)
     }
 
     @Test
@@ -49,7 +49,7 @@ class AttributeTests {
         assertEquals("a", a.declaredName)
         assertEquals("aa", a.declaredShortName)
         assertEquals(repo.realType, a.type.first())
-        assertEquals(IntegerRange(1, 3) , a.multiplicity)
+        assertEquals(IntegerRange(1, 3) , a.multiplicityRange)
     }
 
     @Test

@@ -1105,15 +1105,13 @@ class UnitTests {
     // The units °C, °F and % do work
     @Test
     fun missingUnitsTest() = testSession("SI") {
-        loadKerML(
-            input = """
+        loadKerML(input = """
             // The units °C, °F and % do not work
                 feature test1: SI::Temperature[°C];
                 feature test2: SI::Temperature[°F];
                 feature test3: SI::Mass ;
                 feature percentage: SI::Quantity[%].
-            """
-        )
+            """)
         initialize()
         propagate()
         assertEquals(0, status.issues.size, status.issues.toString())

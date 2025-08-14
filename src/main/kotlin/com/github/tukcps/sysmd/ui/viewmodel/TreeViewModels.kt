@@ -47,6 +47,7 @@ class IsATree(
     override fun icon(): ImageVector {
         return Icons.Outlined.Token
     }
+    override fun element() = element
 }
 
 /**
@@ -89,6 +90,7 @@ class HasATree(
             else -> Icons.Outlined.AddIcCall
         }
     }
+    override fun element() = element
 }
 
 /**

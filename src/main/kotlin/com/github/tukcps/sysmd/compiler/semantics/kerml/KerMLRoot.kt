@@ -77,7 +77,6 @@ open class AnnotatingElementActions<T: AnnotatingElement>(
 open class NamespaceActions<T: Namespace>(
     context: ActionsContext,
     creator: (SimpleName?, SimpleName?) -> T,
-    val defaultType: String = "Base::Anything",
 ) : SemanticAction<T>(context, creator) {
 
     override fun init() {

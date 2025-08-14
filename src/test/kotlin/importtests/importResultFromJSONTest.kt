@@ -62,8 +62,7 @@ class ImportTest {
                     attribute gain: SI::Quantity(26.0 .. 35.0) [dB] = characterizedResult(productOverParts(gain),"${Paths.get("").toAbsolutePath()}/src/test/resources/importResultsTestDir/testFile.json"); 
                 }
             }
-            """.trimIndent()
-        )
+            """)
         propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals(28.5, global.resolveVar("test::myAmplifier::gain")!!.aadd().min,0.00001)

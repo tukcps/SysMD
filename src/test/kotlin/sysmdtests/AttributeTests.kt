@@ -133,10 +133,10 @@ class AttributeTests {
     fun redefinesTestOtherSyntax2() = testSession("Parts", "Ranges") {
         loadSysMLv2("""
             part def P1 {
-                attribute a: Ranges::RealInRange {:>> range="0..20";}
+                attribute a: Ranges::RealInRange { :>> range="0..20"; }
             }
             part def P2 :> P1 {
-                :>> a: Ranges::RealInRange = 3.0 {:>> range="0..10";}
+                :>> a: Ranges::RealInRange = 3.0 { :>> range="0..10"; }
             }
         """)
         propagate()
