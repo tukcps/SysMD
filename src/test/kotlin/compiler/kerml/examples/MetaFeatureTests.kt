@@ -1,4 +1,4 @@
-package kermlspecificationstests
+package compiler.kerml.examples
 
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Metaclass
@@ -20,7 +20,7 @@ class MetaFeatureTests {
     fun metadataFeatureImplementationTest() = testSession("ScalarValues") {
 
         loadKerML("""
-            public import ScalarValues::Boolean; 
+            public import ScalarValues::*; 
             metaclass SecurityRelated;
             metaclass ApprovalAnnotation {
                 feature approved[1] : Boolean;

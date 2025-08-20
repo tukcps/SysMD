@@ -100,7 +100,7 @@ fun ElementDAO.toElement(): Element {
         "InterfaceDefinition" -> InterfaceDefinitionImplementation()
         "InterfaceUsage"    -> InterfaceUsageImplementation()
         "NamespaceImport"   -> NamespaceImportImplementation()
-        "MembershipImport"  -> MembershipImportImplementation(importedMemberName = importedMemberName)
+        "MembershipImport"  -> MembershipImportImplementation()
         "Metaclass"         -> MetaclassImplementation()
         "MetadataFeature"   -> MetadataFeatureImplementation()
         "Multiplicity"      -> MultiplicityImplementation()
@@ -142,7 +142,6 @@ fun ElementDAO.toElement(): Element {
             if (bodydata?.size == 3) {
                 element.typeConstraint = bodydata[0].split(",").toMutableList()
                 element.typeConstraint.forEach { it.trim() }
-                element.unitConstraint = bodydata[1].trim()
                 element.expression = bodydata[2].trim()
             }
         }

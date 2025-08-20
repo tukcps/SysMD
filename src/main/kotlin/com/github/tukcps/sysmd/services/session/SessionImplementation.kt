@@ -168,7 +168,7 @@ class SessionImplementation(
      * @param element the element to be added; must not be an owned relationship, then use addOwnedRelationship
      * @param namespace the namespace to which the element will be added via a membership
      */
-    override fun <T : Element> addOwnedMember(element: T, namespace: Namespace, index: Int): T {
+    override fun <T : Element> addOwnedMember(element: T, namespace: Namespace, visibility: Import.VisibilityKind): T {
         require(element is Namespace || element is Annotation || element is Dependency || element !is Relationship)
 
         element.model = this
@@ -190,6 +190,9 @@ class SessionImplementation(
                 FeatureMembershipImplementation(ownedMemberFeature = element, owningType = namespace)
             else
                 OwningMembershipImplementation(membershipOwningNamespace = namespace, memberElement = element)
+
+        owningMembership.visibility = visibility
+
         element.owningRelationship = owningMembership
         addOwnedRelationship(owningMembership, namespace)
         if (element.elementId == null) {

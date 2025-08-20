@@ -19,7 +19,7 @@ class StringTests {
         loadKerML("""feature label1: ScalarValues::String = "string value1";""")
         propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val label1 = global.resolve<Feature>("label1")!!.variable!!
-        assertEquals(label1.dependency, "\"string value1\"")
+        val label1 = global.resolve<Feature>("label1")
+        assertEquals( "\"string value1\"", label1?.expression)
     }
 }

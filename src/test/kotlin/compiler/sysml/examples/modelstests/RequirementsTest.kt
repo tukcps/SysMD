@@ -1,19 +1,21 @@
-package sysmlv2specificationtests.modelstests
+package compiler.sysml.examples.modelstests
 
+import com.github.tukcps.sysmd.model.kerml.Element
+import com.github.tukcps.sysmd.services.resolve.resolve
+import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
-import kotlin.test.Ignore
 import kotlin.test.Test
-import kotlin.test.assertTrue
+import kotlin.test.assertNotNull
 
 
 class RequirementsTest {
 
-    @Ignore // satisfy is not yet implemented
+    //  @Ignore // satisfy is not yet implemented
     @Test
     fun testRequirements() = testSession("Requirements", "Parts") {
         loadSysMLv2("""
-           package RequirementTest {
+            package RequirementTest {
                 constraint def C;
                 constraint c : C;
                 private import q::**;
@@ -27,7 +29,7 @@ class RequirementsTest {
                         subject s;
                     }
                 }
-                requirement def R1 {
+                requirement def R1 :> R { // maybe typo in SysML doc? --> added :> R 
                     require constraint c1 :>> c;
                 }
                 part p;
@@ -42,6 +44,8 @@ class RequirementsTest {
                 assert not satisfy r1 by q;
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        val r = global.resolve<Element>("RequirementTest::R")
+        assertNotNull(r)
+        assertNoIssues()
     }
 }

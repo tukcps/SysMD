@@ -36,9 +36,6 @@ interface Variable: ConstraintPropagation {
     var valueSpecs:  MutableList<Any?>
     val unitSpec:   String       // Specified unit as string
 
-    /*  For quantities, constraints, performances: an equation as text, right side of eqn for parser! */
-    val dependency:   String     // equation as text, right side of eqn for parser!
-
     /** access methods for the valueSpec field; returns different types */
     val rangeSpecs: MutableList<Range>
         get() = if(valueStr.size()>0) valueSpecs as MutableList<Range> else mutableListOf(Range.Reals)

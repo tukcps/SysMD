@@ -133,7 +133,6 @@ fun Session.initSumOverComposition(element: Namespace, propertyAST: AstNode, tra
         for (leaf in newAstNode.getLeaves().filter { it.qualifiedName != null }) {
             // Find property with propertyName owned by element ...
             val feature = elementIterator.resolve<Feature>(leaf.qualifiedName as String)
-            if (feature is Variable) feature.variable = feature
             if (feature?.variable != null) {
                 leaf.upQuantity = feature.variable!!.vectorQuantity
                 leaf.downQuantity = feature.variable!!.vectorQuantity
@@ -141,7 +140,7 @@ fun Session.initSumOverComposition(element: Namespace, propertyAST: AstNode, tra
                 leaf.feature = feature
                 if (leaf.upQuantity.values[0] is IDD) isRealSum = false
                 astNodeUsed = true
-            } else if (transitive && !elementIterator.isFeatureWithValue()) { // Transitive: search property in parts (not for ValueFeatures)
+            } else if (transitive ) { // Transitive: search property in parts (not for ValueFeatures)
                 val elementRef = elementIterator.type.first()
                 newAstNode = initSumOverComposition(elementRef as Namespace, propertyAST, true, isRealSum)
                 astNodeUsed = true

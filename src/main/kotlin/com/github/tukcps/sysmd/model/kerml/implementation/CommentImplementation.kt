@@ -1,6 +1,7 @@
 package com.github.tukcps.sysmd.model.kerml.implementation
 
 import com.github.tukcps.sysmd.model.kerml.Comment
+import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.util.SimpleName
 
 open class CommentImplementation(
@@ -15,10 +16,12 @@ open class CommentImplementation(
     body = body,
     elementType = elementType
 ) {
-    override fun clone(): Comment = CommentImplementation(
-            declaredName = declaredName,
-            declaredShortName = declaredShortName,
-            body = body,
-            locale = locale
-        ).also { klon -> klon.updateFrom(this) }
+    override fun clone(): Comment = CommentImplementation()
+        .also { klon -> klon.updateFrom(this) }
+
+    override fun updateFrom(template: Element) {
+        if (template is Comment)
+            locale = template.locale
+        super.updateFrom(template)
+    }
 }

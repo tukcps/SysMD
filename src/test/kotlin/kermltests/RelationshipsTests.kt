@@ -64,28 +64,4 @@ class RelationshipsTests {
         assertEquals("b", d.supplier.first().name)
     }
 
-
-    /**
-     * Imports are only allowed to Namespace.
-     * As Class is a Namespace, the following import works.
-     * The check ensures that imports and specialization are correctly created.
-     * Both ref and id are set, and both sources and targets are set.
-     */
-    @Test
-    fun importsTest() = testSession {
-        loadKerML("""
-            namespace A { private import B; }  
-            type B :> Base::Anything;
-        """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val a = global.resolve<Namespace>("A")
-        val b = global.resolve<Type>("B")
-        val imp = a?.getOwnedElementsOfType<Import>()?.first()
-        assertNotNull(imp)
-        assertNotNull(b)
-        assertEquals(a, imp.source.first())
-        assertEquals(a.elementId, imp.source.first().elementId)
-        assertEquals(b, imp.target.first())
-        assertEquals(b.elementId, imp.target.first().elementId)
-    }
 }

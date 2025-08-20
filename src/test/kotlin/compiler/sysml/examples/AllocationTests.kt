@@ -1,4 +1,4 @@
-package sysmlv2specificationtests
+package compiler.sysml.examples
 
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.sysml.AllocationDefinition
@@ -129,6 +129,7 @@ class AllocationTests {
         """)
 
         val action1 = global.resolve<Element>("part1")
+        assertNotNull(action1)
         assertNoIssues()
     }
 }

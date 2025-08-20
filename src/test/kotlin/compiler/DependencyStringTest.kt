@@ -19,7 +19,7 @@ class DependencyStringTest {
     @Test
     fun dependencyStringTest1() = testSession("ScalarValues") {
         loadKerML("""
-            private import ScalarValues; 
+            private import ScalarValues::*; 
             feature x: Real = 1.0 + 2.0.
             feature x2: Real = 1.0 + 2.0  ;
             feature x3: Real = 1.0 + 2.0;
@@ -27,13 +27,13 @@ class DependencyStringTest {
         """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         val x = global.resolveVar("x") !!
-        assertEquals("1.0 + 2.0", x.dependency)
+        assertEquals("1.0 + 2.0", x.feature.expression)
         val x2 = global.resolveVar("x2") !!
-        assertEquals("1.0 + 2.0", x2.dependency)
+        assertEquals("1.0 + 2.0", x2.feature.expression)
         val x3 = global.resolveVar("x3") !!
-        assertEquals("1.0 + 2.0", x3.dependency)
+        assertEquals("1.0 + 2.0", x3.feature.expression)
         val z = global.resolveVar("z") !!
-        assertEquals("1.0 + 2.0", z.dependency)
+        assertEquals("1.0 + 2.0", z.feature.expression)
     }
 
     /**
@@ -48,13 +48,13 @@ class DependencyStringTest {
               ;
             feature z: Boolean = true""")
         val x = global.resolveVar("x") !!
-        assertEquals("true", x.dependency)
+        assertEquals("true", x.feature.expression)
         val x2 = global.resolveVar("x2") !!
-        assertEquals("true", x2.dependency)
+        assertEquals("true", x2.feature.expression)
         val x3 = global.resolveVar("x3") !!
-        assertEquals("true", x3.dependency)
+        assertEquals("true", x3.feature.expression)
         val z = global.resolveVar("z") !!
-        assertEquals("true", z.dependency)
+        assertEquals("true", z.feature.expression)
     }
 
 
@@ -68,15 +68,15 @@ class DependencyStringTest {
             feature x2: ScalarValues::Integer = 1 + 2  ;
             feature x3: ScalarValues::Integer = 1 + 2
               ;
-            feature z: ScalarValues::Integer = 1 + 2""".trimIndent())
+            feature z: ScalarValues::Integer = 1 + 2;""")
         val x = global.resolveVar("x") !!
-        assertEquals("1 + 2", x.dependency)
+        assertEquals("1 + 2", x.feature.expression)
         val x2 = global.resolveVar("x2") !!
-        assertEquals("1 + 2", x2.dependency)
+        assertEquals("1 + 2", x2.feature.expression)
         val x3 = global.resolveVar("x3") !!
-        assertEquals("1 + 2", x3.dependency)
+        assertEquals("1 + 2", x3.feature.expression)
         val z = global.resolveVar("z") !!
-        assertEquals("1 + 2", z.dependency)
+        assertEquals("1 + 2", z.feature.expression)
     }
 
     /**

@@ -27,7 +27,7 @@ class PartTests {
         part def PartDef2 {
             /* members */
         }
-        """.trimIndent())
+        """)
 
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         val partDef1 = global.resolve<Element>("PartDef1")
@@ -51,7 +51,7 @@ class PartTests {
         part part2 : PartDef1 {
             /* members */
         }
-        """.trimIndent())
+        """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
 
         val partDef1 = global.resolve<Element>("PartDef1")
@@ -88,7 +88,7 @@ class PartTests {
             port p4 : PortDef4;
             port p5 : PortDef5;
         }
-        """.trimIndent())
+        """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
 
         val p0 = global.resolve<Element>("part1::p0")

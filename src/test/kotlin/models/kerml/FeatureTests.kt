@@ -21,7 +21,7 @@ class FeatureTests {
     fun testFeature() = testSession("SI") {
         val feature = FeatureImplementation(declaredName = "f")
         addOwnedMember(feature, global)
-        feature.unitConstraint = "m"
+        addOwnedMember(FeatureImplementation("unit").also { it.expression="\"m\"" }, feature)
         val type = FeatureTypingImplementation(typedFeature = feature, type = global.resolve<Type>("SI::Length")!!)
         addOwnedRelationship(type, feature)
         val kerml = feature.toTextualRepresentation()

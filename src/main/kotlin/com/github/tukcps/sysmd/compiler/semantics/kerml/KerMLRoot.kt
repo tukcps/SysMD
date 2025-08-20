@@ -119,31 +119,51 @@ open class MembershipActions<T: Membership>(
  */
 class ImportActions(
     context: ActionsContext,
-    var all: Boolean? = null,
+    var isImportAll: Boolean = false,
     var isRecursive: Boolean = false,
-    // production: ImportActions.() -> Unit
+    var importQualifiedName: QualifiedName? = null,
 ): SemanticAction<Import>(context, ::NamespaceImportImplementation), RelationshipActions<Import> {
 
-    override fun create(identification: Identification?) {
-        super.create(identification)
-        if (context.visibilityKind == null) {
+    fun createNamespaceImport() {
+        if (context.visibility == null) {
             context.model.status.info("import must be explicit public or private", context.compiler)
         }
-        setImportingNamespace(context.ownerName())
-        context.model.addOwnedRelationship(created, context.element())
+        created = NamespaceImportImplementation()
+        created.isRecursive = isRecursive
+        created.isImportAll = isImportAll
+        setImportedNamespace()
+        super.create(null)
+        setImportingNamespace(context.element())
+    }
+
+    fun createMembershipImport() {
+        if (context.visibility == null) {
+            context.model.status.info("import must be explicit public or private", context.compiler)
+        }
+        created = MembershipImportImplementation()
+        created.isRecursive = isRecursive
+        created.isImportAll = isImportAll
+        setImportedMember()
+        setImportingNamespace(context.element())
+        super.create(null)
+    }
+
+    fun parseImport(production: ImportActions.() -> Unit){
+        production()
     }
 
     override fun finish() {}
 
-    fun setImportingNamespace(namespace: String) {
-        if (namespace.isEmpty())
-            created.source = mutableListOf(context.model.global)
-        else
-            created.source = mutableListOf(UnresolvedNamespace(namespace))
+    fun setImportingNamespace(owningNamespace: Namespace) {
+       created.source = mutableListOf(owningNamespace)
     }
 
-    fun setImportedNamespace(namespace: String) {
-        created.target = mutableListOf(UnresolvedNamespace(namespace))
+    fun setImportedNamespace() {
+        created.target = mutableListOf(UnresolvedNamespace(importQualifiedName))
+    }
+
+    fun setImportedMember() {
+        created.target = mutableListOf(UnresolvedElement(importQualifiedName))
     }
 }
 

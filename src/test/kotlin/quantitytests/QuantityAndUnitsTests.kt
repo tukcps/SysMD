@@ -1054,7 +1054,7 @@ class UnitTests {
 
     @Test
     fun intersectTest() {
-        val p = VariableImplementation(FeatureImplementation(unitConstraint = "m"))
+        val p = VariableImplementation(FeatureImplementation( )) // m
         p.vectorQuantity = Quantity(aaddDummy100, "cm")
         val upQuantity = Quantity(aaddDummy5, "m")
         assertEquals(-1.0, p.vectorQuantity.intersect(upQuantity).value.asAadd().getRange().min, 0.000001)
@@ -1063,7 +1063,7 @@ class UnitTests {
 
     @Test
     fun intersectTestInt() {
-        val p = VariableImplementation(FeatureImplementation(unitConstraint = "1"))
+        val p = VariableImplementation(FeatureImplementation( )) // 1
         p.vectorQuantity = Quantity(iddDummy1)
         val upQuantity = Quantity(iddDummy5)
         assertEquals(-1, p.vectorQuantity.intersect(upQuantity).value.asIdd().getRange().min)
@@ -1072,7 +1072,7 @@ class UnitTests {
 
     @Test
     fun constraintTest() {
-        val p = VariableImplementation(FeatureImplementation(unitConstraint = "m"))
+        val p = VariableImplementation(FeatureImplementation()) // m
         p.valueSpecs = mutableListOf(Range("-0.5..2"))
         p.vectorQuantity = Quantity(aaddDummy100, "cm")
         assertEquals(
@@ -1089,7 +1089,7 @@ class UnitTests {
 
     @Test
     fun constraintTestInt() {
-        val p = VariableImplementation(FeatureImplementation(unitConstraint = "1"))
+        val p = VariableImplementation(FeatureImplementation()) // 1
         p.vectorQuantity = Quantity(iddDummy1)
         p.valueSpecs = mutableListOf(IntegerRange("0..2"))
         assertEquals(0, p.vectorQuantity.constrain(p.intSpecs).value.asIdd().getRange().min)

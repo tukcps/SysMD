@@ -1,4 +1,4 @@
-package sysmlv2specificationtests
+package compiler.sysml.examples
 
 import util.mockup.loadSysMLv2
 import util.testSession

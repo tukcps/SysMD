@@ -13,7 +13,7 @@ open class MembershipImplementation(
     declaredShortName: SimpleName? = null,
     memberElement: Element = UnresolvedElement(),
     membershipOwningNamespace: Namespace = UnresolvedNamespace(),
-    override val visibility: Import.VisibilityKind = Import.VisibilityKind.Public,
+    override var visibility: Import.VisibilityKind = Import.VisibilityKind.Public,
     elementType: String = "Membership",
 ) : RelationshipImplementation(
     declaredName = declaredName,

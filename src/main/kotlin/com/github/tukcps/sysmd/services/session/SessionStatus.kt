@@ -25,7 +25,7 @@ class SessionStatus {
     /**
      * Hashmap of error messages, property id is key, string (error message).
      */
-    val issues = mutableSetOf<Issue>()
+    val issues = linkedSetOf<Issue>()
 
     /**
      * Map of updated values; the element id is the key, and string (updated result).
@@ -96,7 +96,8 @@ class SessionStatus {
             Issue(
                 kind = kind,
                 message = message,
-                input = compiler?.input?:element?.input?:(cause as? SysMDException)?.input?:(cause as? SysMDException)?.element?.input,
+                input = compiler?.input?:element?.input?:element?.owner?.input,
+                indices = element?.indices?:element?.owner?.indices,
                 token = compiler?.token,
                 elementPath = element?.path(),
                 cause = cause
@@ -116,6 +117,7 @@ class SessionStatus {
             kind = kind,
             message = message,
             input = compiler?.input?:element?.input?:(cause as? SysMDException)?.input?:(cause as? SysMDException)?.element?.input,
+            indices = element?.indices,
             token = compiler?.token,
             elementPath = compiler?.semantics?.ownerName()?:element?.path(),
             cause = cause
@@ -135,6 +137,7 @@ class SessionStatus {
                 kind = Issue.Kind.FATAL,
                 message = message+if (cause?.message != null) " - ${cause.message}" else "",
                 input = compiler?.input?:element?.input?:(cause as? SysMDException)?.input?:(cause as? SysMDException)?.element?.input,
+                indices = element?.indices,
                 token = compiler?.token,
                 elementPath = compiler?.semantics?.ownerName()?:element?.path(),
                 cause = cause?:SysMDException(message)

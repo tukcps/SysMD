@@ -9,7 +9,6 @@ import com.github.tukcps.sysmd.compiler.semantics.Identification
 import com.github.tukcps.sysmd.compiler.semantics.kerml.TypeActions
 import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.*
 import com.github.tukcps.sysmd.model.kerml.Type
-import com.github.tukcps.sysmd.model.kerml.UnresolvedFeature
 import com.github.tukcps.sysmd.model.kerml.implementation.ClassImplementation
 import com.github.tukcps.sysmd.model.sysml.SuccessionAsUsage
 import com.github.tukcps.sysmd.model.sysml.implementation.SuccessionAsUsageImplementation
@@ -68,7 +67,7 @@ fun SysMLv2.TransitionUsage() = TransitionUsageActions(semantics).parse {
     val succession = SuccessionAsUsageSemantics<SuccessionAsUsage>(semantics, ::SuccessionAsUsageImplementation)
     succession.parse {
         semantics.create(Identification("succ_" + UUID.randomUUID().toString()))
-        QualifiedName().also { semantics.setSourceEnd(UnresolvedFeature(it)) }
+        QualifiedName().also { semantics.setSourceEnd(unresolvedFeature(it)) }
     }
 
     // EmptyParameterMember()
@@ -85,7 +84,7 @@ fun SysMLv2.TransitionUsage() = TransitionUsageActions(semantics).parse {
 fun SysMLv2.TransitionSuccessionMember() { // = SuccessionAsUsageSemantics(semantics, ::SuccessionAsUsageImplementation).parse {
     QualifiedName().also {
         semantics.create(null)
-        semantics.setTargetEnd(UnresolvedFeature(it))
+        semantics.setTargetEnd(unresolvedFeature(it))
     }
 }
 

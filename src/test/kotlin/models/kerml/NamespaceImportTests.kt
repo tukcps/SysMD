@@ -11,7 +11,7 @@ import kotlin.test.assertNotNull
 class NamespaceImportTests {
     @Test
     fun testNamespaceImport() = testSession("ScalarValues") {
-        loadKerML("private import Base;")
+        loadKerML("private import Base::*;")
         val import = global.getOwnedElementOfType<NamespaceImport>()
         assertNotNull(import)
         assertEquals(1, import.source.size)

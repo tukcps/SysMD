@@ -16,7 +16,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
  * - also set the value standalone according to your setup
  */
 group   = "com.github.tukcps"
-version = "4.1.3"               // must be number.number.number
+version = "4.1.4"               // must be number.number.number
 val aaddVersion = "0.1.11"
 val sysmlapiVersion = "3.9.5"
 val useMavenAADD = true
@@ -36,7 +36,7 @@ plugins {
     id("com.github.ben-manes.versions") version "0.52.0"
     id("idea")
     kotlin("jvm") version "2.2.0"
-    kotlin("plugin.serialization") version "2.2.0"
+    kotlin("plugin.serialization") version "2.2.10"
     id("org.springframework.boot") version "3.5.4"
     id("io.spring.dependency-management") version "1.1.7"
     alias(libs.plugins.jetbrainsCompose) apply true

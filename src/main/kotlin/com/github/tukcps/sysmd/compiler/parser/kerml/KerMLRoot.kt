@@ -8,7 +8,7 @@ import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.compiler.semantics.Identification
 import com.github.tukcps.sysmd.compiler.semantics.kerml.*
 import com.github.tukcps.sysmd.model.kerml.Dependency
-import com.github.tukcps.sysmd.model.kerml.UnresolvedElement
+import com.github.tukcps.sysmd.model.kerml.Import
 import com.github.tukcps.sysmd.model.kerml.implementation.*
 
 /**
@@ -76,9 +76,9 @@ fun KerML.Dependency() {
         FROM.consume()
     } else
         dependency.create(Identification(null, null))
-    QualifiedNameList().forEach { dependency.created.source.add(UnresolvedElement(it)) }
+    QualifiedNameList().forEach { dependency.created.source.add(unresolvedElement(it)) }
     TO.consume()
-    QualifiedNameList().forEach { dependency.created.target.add(UnresolvedElement(it)) }
+    QualifiedNameList().forEach { dependency.created.target.add(unresolvedElement(it)) }
     RelationshipBody()
 }
 
@@ -116,13 +116,13 @@ fun KerML.OwnedRelatedElement() {
  */
 fun KerML.MemberPrefix() {
     alternatives {
-        PUBLIC    starts { PUBLIC.consume();    semantics.visibilityKind = PUBLIC }
-        PRIVATE   starts { PRIVATE.consume();   semantics.visibilityKind = PRIVATE }
-        PROTECTED starts { PROTECTED.consume(); semantics.visibilityKind = PROTECTED }
+        PUBLIC    starts { PUBLIC.consume();    semantics.visibility = Import.VisibilityKind.Public }
+        PRIVATE   starts { PRIVATE.consume();   semantics.visibility = Import.VisibilityKind.Private }
+        PROTECTED starts { PROTECTED.consume(); semantics.visibility = Import.VisibilityKind.Protected }
         others           {  }
     }
     ABSTRACT.optional    { semantics.prefixes.add(ABSTRACT) }
-    INDIVIDUAL.optional  { semantics.prefixes.add(INDIVIDUAL) }
+    // INDIVIDUAL.optional  { semantics.prefixes.add(INDIVIDUAL) }
 }
 
 /**
@@ -164,18 +164,17 @@ fun KerML.NamespaceBodyElement() {
  *          ( 'locale' STRING_VALUE )?
  *          REGULAR_COMMENT
  */
-internal fun KerML.Comment() {
-    val comment = CommentActions(semantics, ::CommentImplementation)
-    comment.create()
+internal fun KerML.Comment() = CommentActions(semantics, ::CommentImplementation).parse {
+    create()
     COMMENT.optional {
         optional(NAME_LIT) {
-            Identification().also { comment.setIdentification(it) }
+            Identification().also { setIdentification(it) }
         }
         ABOUT.optional {
-            QualifiedNameList().also { comment.addAbout(it) }
+            QualifiedNameList().also { (this as CommentActions).addAbout(it) }
         }
     }
-    REGULAR_COMMENT.consume().also { comment.created.body = consumedToken.string.trimIndent().trim() }
+    REGULAR_COMMENT.consume().also { created.body = consumedToken.string.trimIndent().trim() }
 }
 
 /**
@@ -184,11 +183,10 @@ internal fun KerML.Comment() {
  *          ( 'locale' STRING_VALUE )?
  *          REGULAR_COMMENT
  */
-internal fun KerML.Documentation() {
-    val doc = DocumentationActions(semantics)
+internal fun KerML.Documentation() = DocumentationActions(semantics).parse {
     DOC.consume()
-    Identification().also { doc.create(it) }
-    REGULAR_COMMENT.consume().also { doc.created.body = consumedToken.string.trim() }
+    Identification().also { create(it) }
+    REGULAR_COMMENT.consume().also { created.body = consumedToken.string.trim() }
 }
 
 /**
@@ -197,16 +195,15 @@ internal fun KerML.Documentation() {
  *          'language' STRING_VALUE
  *          REGULAR_COMMENT
  */
-internal fun KerML.TextualRepresentation() {
-    val rep = AnnotatingElementActions(semantics, ::TextualRepresentationImplementation)
-    rep.create()
+internal fun KerML.TextualRepresentation() = AnnotatingElementActions(semantics, ::TextualRepresentationImplementation).parse {
+    create()
     optional(REP) {
         REP.consume()
-        Identification().also { rep.setIdentification(it) }
+        Identification().also { setIdentification(it) }
     }
     LANGUAGE.consume()
-    NAME_LIT.consume().also { rep.created.language = consumedToken.string }
-    REGULAR_COMMENT.consume().also { rep.created.body = consumedToken.string.trim(' ') }
+    NAME_LIT.consume().also { created.language = consumedToken.string }
+    REGULAR_COMMENT.consume().also { created.body = consumedToken.string.trim(' ') }
 }
 
 /**
@@ -244,33 +241,52 @@ internal fun KerML.NamespaceBody() {
  *
  *      Import = ( VisibilityIndicator )?
  *              'import' 'all'? ImportDeclaration RelationshipBody
- *
+ */
+internal fun KerML.Import() = ImportActions(semantics).parseImport {
+    IMPORT.consume()
+    ALL.optional            { isImportAll = true }
+    ImportDeclaration(this)
+    RelationshipBody()
+}
+
+/**
  *      ImportDeclaration = MembershipImport | NamespaceImport
- *
- *      MembershipImport = [QualifiedName] ( '::' '**'? )?
- *
- *      NamespaceImport =  [QualifiedName] '::' '*' ( '::' '**'? )?
+ */
+internal fun KerML.ImportDeclaration(actions: ImportActions) {
+    QualifiedName().also { actions.importQualifiedName = it }
+    alternatives {
+        DPDP then TIMES  starts   { NamespaceImport(actions) }
+        others                    { MembershipImport(actions) }
+    }
+}
+
+/**
+ *      MembershipImport = [QualifiedName] ('::' '**'?)?
+ */
+internal fun KerML.MembershipImport(actions: ImportActions) {
+    DPDP.optional {
+        STARSTAR.optional().also { actions.isRecursive = true }
+    }
+    actions.createMembershipImport()
+}
+
+/**
+ *      NamespaceImport =  [QualifiedName] '::' '*' ('::' '**'?)?
  *                         | FilterPackage
  *
- *      FilterPackage  =
- *          ImportDeclaration ( FilterPackageMember )+
+ *      FilterPackage  = ImportDeclaration ( FilterPackageMember )+
  *
  *      FilterPackageMember = '[' OwnedExpression ']'
  */
-internal fun KerML.Import() {
-    val import = ImportActions(semantics)
-    IMPORT.consume().also   { import.create() }
-    ALL.optional            { import.all = true }
-
-    QualifiedName().also    { import.setImportedNamespace(it) }
-    optional(DPDP, consume = true) {
-        alternatives {
-            STARSTAR starts { import.isRecursive = true; STARSTAR.consume() }
-            TIMES    starts { TIMES.consume() }
+internal fun KerML.NamespaceImport(actions: ImportActions) {
+    DPDP.consume()
+    TIMES.optional {
+        DPDP.optional {
+            actions.isRecursive = true
+            STARSTAR.consume()
         }
     }
-    RelationshipBody()
-    import.finish()
+    actions.createNamespaceImport()
 }
 
 /**
@@ -288,7 +304,7 @@ internal fun KerML.AliasMember() {
         aliasMember.created.membershipOwningNamespace = semantics.element()
     }
     FOR.consume()
-    QualifiedName().also { aliasMember.created.target = mutableListOf(UnresolvedElement(it)) }
+    QualifiedName().also { aliasMember.created.target = mutableListOf(unresolvedElement(it)) }
     RelationshipBody()
 }
 

@@ -35,7 +35,7 @@ class Variable(
                     center = (expression.variable!!.rangeSpecs[0].max - ((expression.variable!!.rangeSpecs[0].max-expression.variable!!.rangeSpecs[0].min)/2)).toString()
                 }else{
                     //Access values via dependency String
-                    dependencyStringToMinMax(expression.variable!!.dependency).let {
+                    dependencyStringToMinMax(expression.expression?:"").let {
                         min = it.first.toString()
                         max = it.second.toString()
                         center = (it.second - ((it.second-it.first)/2)).toString()
@@ -53,7 +53,7 @@ class Variable(
                     center = (expression.variable!!.intSpecs[0].max - ((expression.variable!!.intSpecs[0].max-expression.variable!!.intSpecs[0].min)/2)).toDouble().roundToInt().toString()
                 }else{
                     //Access values via dependency String
-                    dependencyStringToMinMax(expression.variable!!.dependency).let {
+                    dependencyStringToMinMax(expression.expression?:"").let {
                         min = it.first.toInt().toString()
                         max = it.second.toInt().toString()
                         center = (it.second - ((it.second-it.first)/2)).roundToInt().toString()
@@ -68,9 +68,9 @@ class Variable(
                 //If it is a String or Boolean, we cannot use min/max values.
                 //Therefor we access the value via the dependency.
                 singleValue = if(dataType == DataType.STRING) {
-                    expression.variable!!.dependency //Take String as is
+                    expression.expression?:"" //Take String as is
                 }else{
-                    expression.variable!!.dependency.lowercase()
+                    expression.expression?:"".lowercase()
                 // Make String to lowercase to match C++ datatype (False -> false, True -> true)
                 }
                 min = null

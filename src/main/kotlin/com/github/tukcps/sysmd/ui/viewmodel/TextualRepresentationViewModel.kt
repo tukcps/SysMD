@@ -112,9 +112,9 @@ open class TextualRepresentationViewModel(
      */
     fun collectVariablesToDisplay() {
         // Update annotations (error messages in the shape of a bell near line no.).
-        session.status.issues.forEach {
-            if (it.input == body.text && it.token?.lineNo != null)
-                annotations[it.token!!.lineNo - 1] = it.message
+        session.status.issues.forEach { issue ->
+            if (issue.input == body.text && issue.line() != null)
+                annotations[issue.line()!!-1] = issue.message
         }
 
         // Update displayed items, part's errors and properties of Display class

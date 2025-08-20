@@ -4,7 +4,6 @@ import com.github.tukcps.sysmd.compiler.KerML
 import com.github.tukcps.sysmd.exceptions.SysMDError
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.session.Session
-import com.github.tukcps.sysmd.services.session.report
 
 
 /**

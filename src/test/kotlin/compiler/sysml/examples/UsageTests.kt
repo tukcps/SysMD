@@ -1,9 +1,10 @@
-package sysmlv2specificationtests
+package compiler.sysml.examples
 
 import util.mockup.loadSysMLv2
 import com.github.tukcps.sysmd.model.sysml.PartDefinition
 import com.github.tukcps.sysmd.model.sysml.PartUsage
 import com.github.tukcps.sysmd.services.resolve.resolve
+import util.assertNoIssues
 import util.testSession
 import kotlin.test.*
 
@@ -19,8 +20,8 @@ class UsageTests {
         loadSysMLv2("""
         part def PartDef1;
         part part1 : PartDef1;
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        """)
+        assertNoIssues()
 
         val partDef1 = global.resolve<PartDefinition>("PartDef1")
         assertNotNull(partDef1)
@@ -40,7 +41,7 @@ class UsageTests {
             part def <PD2> PartDef2;
             part <'p#2'> part2 : PartDef2;
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
 
         val partDef2 = global.resolve<PartDefinition>("PartDef2")
         assertNotNull(partDef2)
@@ -60,8 +61,8 @@ class UsageTests {
                 part part3 : PartDef3;
             }
         }
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        """)
+        assertNoIssues()
 
         val partDef3 = global.resolve<PartDefinition>("PartDef3")
         assertNotNull(partDef3)
@@ -87,7 +88,7 @@ class UsageTests {
                 alias partAlias2 for part1;
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
 
         val partDef1 = global.resolve<PartDefinition>("PartDef1")
         assertNotNull(partDef1)
@@ -107,8 +108,8 @@ class UsageTests {
         loadSysMLv2("""
         part def PartDef1;
         variation part part1 : PartDef1;
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        """)
+        assertNoIssues()
 
         val partDef1 = global.resolve<PartDefinition>("PartDef1")
         assertNotNull(partDef1)
@@ -126,8 +127,8 @@ class UsageTests {
             part def Part2;
             part part2 : Part2 [0..*];
         }
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        """)
+        assertNoIssues()
     }
 
     /**
@@ -143,8 +144,8 @@ class UsageTests {
         part part1 : Part1 [0..1] {
             part part2 : Part2 [0..*];
         }
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        """)
+        assertNoIssues()
     }
 
     /**
@@ -162,6 +163,6 @@ class UsageTests {
             connect part2 to part3;
             part part3;
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 }

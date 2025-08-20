@@ -1,5 +1,6 @@
-package sysmlv2specificationtests
+package compiler.sysml.examples
 
+import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Ignore
@@ -34,8 +35,8 @@ class StateTests {
         state def StateDef1 {
             part def Part1;
         }
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        """)
+        assertNoIssues()
     }
 
     /**
@@ -49,7 +50,7 @@ class StateTests {
         loadSysMLv2("""
         state def StateDef1;
         state state1 : StateDef1;
-        """.trimIndent())
+        """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
@@ -62,7 +63,7 @@ class StateTests {
             /* members */
         }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -71,7 +72,6 @@ class StateTests {
      * Refer to Section: 7.17 States
      * Language Specification Document: https://www.omg.org/spec/SysML/2.0/Beta2/Language/PDF
      */
-    @Ignore // Cyclic recursion in lookup of action1 / action2
     @Test
     fun testStateWithEntryDoExitActions() = testSession("States", "Actions") {
         loadSysMLv2("""
@@ -90,7 +90,7 @@ class StateTests {
                 exit action3;
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
 

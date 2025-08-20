@@ -5,6 +5,7 @@ import com.github.tukcps.sysmd.model.kerml.implementation.*
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
+import util.assertNoIssues
 import util.mockup.loadKerML
 import kotlin.test.*
 import util.testSession
@@ -251,11 +252,9 @@ class NameResolutionTests {
 
     @Test
     fun createFindElement() = testSession {
-        loadKerML(
-            """
+        loadKerML("""
                     package x { package y; } 
-            """
-        )
+            """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         val x1 = global.resolve<Package>("x")!!
         assertNotNull(x1)
@@ -304,5 +303,19 @@ class NameResolutionTests {
         val x = global.resolve<Package>("x")
         assertNotNull(x)
         assertNotNull(x.resolve<Package>("y"))
+    }
+
+    /**
+     * Imports that are public import namespaces public.
+     */
+    @Test
+    fun importsTest() = testSession {
+        loadKerML("""
+            namespace A { public import B; }  
+            type B :> Base::Anything;
+        """)
+        assertNoIssues()
+        val b = global.resolve<Type>("A::B")
+        assertNotNull(b)
     }
 }

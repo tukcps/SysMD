@@ -1,4 +1,4 @@
-package sysmlv2specificationtests
+package compiler.sysml.examples
 
 import com.github.tukcps.sysmd.model.sysml.PartDefinition
 import com.github.tukcps.sysmd.model.sysml.PartUsage
@@ -116,7 +116,7 @@ class NamespaceAndPackageTests {
                 private import Package0::Package1::**;
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**

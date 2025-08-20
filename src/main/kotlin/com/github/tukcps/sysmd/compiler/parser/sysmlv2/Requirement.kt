@@ -3,10 +3,7 @@
 package com.github.tukcps.sysmd.compiler.parser.sysmlv2
 
 import com.github.tukcps.sysmd.compiler.SysMLv2
-import com.github.tukcps.sysmd.compiler.parser.kerml.FeatureSpecializationPart
-import com.github.tukcps.sysmd.compiler.parser.kerml.Identification
-import com.github.tukcps.sysmd.compiler.parser.kerml.OwnedReferenceSubsetting
-import com.github.tukcps.sysmd.compiler.parser.kerml.QualifiedName
+import com.github.tukcps.sysmd.compiler.parser.kerml.*
 import com.github.tukcps.sysmd.compiler.parser.util.Unsupported
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
@@ -54,30 +51,10 @@ fun SysMLv2.RequirementDefinition()  = RequirementDefinitionActions(semantics).p
  *
  *      RequirementUsage = OccurrenceUsagePrefix 'requirement'
  *          ConstraintUsageDeclaration RequirementBody
- *
- *      SatisfyRequirementUsage = OccurrenceUsagePrefix 'assert' ('not'?) 'satisfy'
- *          (OwnedReferenceSubsetting FeatureSpecializationPart?
- *              | 'requirement' UsageDeclaration)
- *          ValuePart?
- *          ('by' ownedRelationship += SatisfactionSubjectMember)?
- *          RequirementBody
- *
- *      SatisfactionSubjectMember = SatisfactionParameter
- *      SatisfactionParameter = SatisfactionFeatureValue
- *      SatisfactionFeatureValue = SatisfactionReferenceExpression
- *      SatisfactionReferenceExpression = FeatureChainMember
  */
 fun SysMLv2.RequirementUsage() = RequirementUsageActions(semantics).parse {
     REQUIREMENT.consume()
-    Identification()   .also { semantics.create(it) }
-    optional(TYPED_BY) {
-        TYPED_BY.consume()
-        QualifiedName().also { semantics.addTyping(it) }
-        noOrMore(COMMA) {
-            COMMA.consume()
-            QualifiedName().also { semantics.addTyping(it) }
-        }
-    }
+    ConstraintUsageDeclaration()
     RequirementBody()
 }
 
@@ -106,6 +83,47 @@ fun SysMLv2.RequirementKind() {
 }
 
 /**
+ *      SatisfyRequirementUsage = OccurrenceUsagePrefix 'assert' ('not'?) 'satisfy'
+ *          (OwnedReferenceSubsetting FeatureSpecializationPart? | 'requirement' UsageDeclaration)
+ *          ValuePart?
+ *          ('by' SatisfactionSubjectMember)?
+ *          RequirementBody
+ */
+fun SysMLv2.SatisfyRequirementUsage() = RequirementUsageActions(semantics).parse {
+    ASSERT.optional()
+    NOT.optional()
+    SATISFY.consume()
+    when (token.kind) {
+        REQUIREMENT -> {
+            REQUIREMENT.consume()
+            UsageDeclaration()
+        }
+        else -> {
+            OwnedReferenceSubsetting()
+            optional(featureSpecializationStart) { FeatureSpecializationPart() }
+            create(null)
+        }
+    }
+    optional(valuePartStart) { ValuePart() }
+    optional(BY) {
+        BY.consume()
+        SatisfactionSubjectMember()
+    }
+    RequirementBody()
+}
+
+/**
+ *      SatisfactionSubjectMember = SatisfactionParameter
+ *      SatisfactionParameter = SatisfactionFeatureValue
+ *      SatisfactionFeatureValue = SatisfactionReferenceExpression
+ *      SatisfactionReferenceExpression = FeatureChainMember
+ */
+fun SysMLv2.SatisfactionSubjectMember() {
+    FeatureChain()
+}
+
+
+/**
  *      RequirementConstraintMember: RequirementConstraintMembership =
  *              MemberPrefix? RequirementKind RequirementConstraintUsage
  *
@@ -118,8 +136,9 @@ fun SysMLv2.RequirementConstraintMember() = RequirementConstraintMemberActions(s
     RequirementKind()
     alternatives {
         NAME_LIT starts {
+            create()
             OwnedReferenceSubsetting()
-            FeatureSpecializationPart()
+            optional(featureSpecializationPartStart) { FeatureSpecializationPart() }
             RequirementBody()
         }
         CONSTRAINT then {

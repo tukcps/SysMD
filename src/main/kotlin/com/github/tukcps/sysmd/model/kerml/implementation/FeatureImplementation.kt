@@ -23,7 +23,6 @@ open class FeatureImplementation(
     override var isReadOnly: Boolean = false,
     textualRepresentation: MutableList<TextualRepresentation> = mutableListOf(),
     elementType: String = "Feature",
-    override var unitConstraint: String? = null,
     override var typeConstraint: MutableList<String> = mutableListOf(),
     override var expression: String? = null,
 ): Feature, TypeImplementation(
@@ -34,6 +33,9 @@ open class FeatureImplementation(
 ){
     override val type: List<Type>
         get() = generalization
+
+    override val unitConstraint: String?
+        get() = getOwned<Feature>("unit")?.expression?.trim('"')?:""
 
     override val typing: List<FeatureTyping>
         get() = getOwnedElementsOfType()
@@ -66,7 +68,6 @@ open class FeatureImplementation(
             klon.model = model
             klon.updated = updated
             klon.typeConstraint = typeConstraint.toMutableList()
-            klon.unitConstraint = unitConstraint
             klon.expression = expression
             klon.isAbstract = isAbstract
             klon.isSufficient = isSufficient
@@ -88,7 +89,6 @@ open class FeatureImplementation(
             updated = template.updated
             expression = template.expression
             typeConstraint = template.typeConstraint.toMutableList()
-            unitConstraint = template.unitConstraint
             expression = template.expression
             isAbstract = template.isAbstract
             direction = template.direction
@@ -142,15 +142,13 @@ fun Feature.toTextualRepresentation(): String? {
     if (typeConstraint.isNotEmpty()) {
         sysml += "($typeConstraint)"
     }
-    if (unitConstraint != null) {
-        sysml += "[$unitConstraint]"
-    }
+
     if (featureWithValue != null) {
         sysml += " = $expression"
     }
     if (variable != null) {
         variables.forEach {
-            sysml += " = ${it!!.dependency}"
+            sysml += " = ${expression?:""}"
         }
     }
     sysml +=";"

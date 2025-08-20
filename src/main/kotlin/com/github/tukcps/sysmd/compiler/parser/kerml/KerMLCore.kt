@@ -244,8 +244,8 @@ fun KerML.SpecificType() =
 
 fun KerML.GeneralType(): Feature =
     when(nextToken.kind) {
-        DOT ->  FeatureChain().let { return UnresolvedFeatureChain(it) }
-        else -> QualifiedName().let { return UnresolvedFeature(it) }
+        DOT ->  FeatureChain().let { return unresolvedFeatureChain(it) }
+        else -> QualifiedName().let { return unresolvedFeature(it) }
     }
 
 /**
@@ -279,9 +279,9 @@ fun KerML.Conjugation() {
         Identification().also { conjugation.create(it) }
     } else conjugation.create(null)
     CONJUGATE.consume()
-    QualifiedName().also { conjugation.created.conjugatedType = UnresolvedType(it) }
+    QualifiedName().also { conjugation.created.conjugatedType = unresolvedType(it) }
     CONJUGATES.consume()
-    QualifiedName().also { conjugation.created.originalType = UnresolvedType(it) }
+    QualifiedName().also { conjugation.created.originalType = unresolvedType(it) }
     RelationshipBody()
 }
 

@@ -65,7 +65,7 @@ interface Feature: Type {
      * Standard-extensions; string-level only.
      * Together, they are serialized as textual representation body
      */
-    var unitConstraint: String?
+    val unitConstraint: String?
     var typeConstraint: MutableList<String>
     var expression: String?
 

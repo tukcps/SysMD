@@ -1,7 +1,6 @@
 
 import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.exceptions.ElementNotFoundException
-import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.SpecializationImplementation
@@ -13,7 +12,7 @@ import io.github.tukcps.aadd.functions.numInternalNodes
 import io.github.tukcps.aadd.values.IntegerRange
 import io.github.tukcps.aadd.values.XBool
 import io.github.tukcps.aadd.values.XBool.Companion.True
-import org.junit.jupiter.api.Disabled
+import util.assertIssue
 import util.assertNoIssues
 import util.findDifferenceById
 import util.mockup.loadKerML
@@ -24,7 +23,7 @@ import kotlin.test.*
 
 class IssuesAndRegressions {
     @Test
-    @Disabled // IDD do not use solver so far, and finding the solution requires the LP solver
+    @Ignore // IDD do not use solver so far, and finding the solution requires the LP solver
     fun minTestMultipleParams3Integer() = testSession("Ranges") {
         loadKerML("""
             feature a: Ranges::IntegerInRange {:>> range = "0..7";}
@@ -217,8 +216,7 @@ class IssuesAndRegressions {
     @Test
     fun typeUnknownIsReportedAsError() = testSession {
         loadKerML(input = " feature x: YYY;")
-        assertTrue(status.issues.find { it.kind.ordinal >= Issue.Kind.WARN.ordinal }?.message?.contains("YYY") == true,
-            "There shall be error reporting that YYY is not defined.")
+        assertIssue("YYY")
     }
 
     @Test
@@ -323,15 +321,14 @@ class IssuesAndRegressions {
     @Test
     fun updateFeatureTest() = testSession( "Ranges") {
         loadKerML("""
-            private import Ranges;
             package X {
+                private import Ranges::*;
                 feature x: RealInRange { :>> range = "10.0..20.0";}
             }
         """)
-        propagate()
-        val x = global.resolveVar("X::x")
-        assertEquals(0, status.issues.size, status.issues.toString())
-        assertEquals(10.0, x?.vectorQuantity?.getMinAsDouble()!!, 0.0001)
+        assertNoIssues()
+        val x = global.resolve<Feature>("X::x")
+        assertEquals(10.0, x?.variable?.vectorQuantity?.getMinAsDouble()!!, 0.0001)
     }
 
 
@@ -634,7 +631,7 @@ class IssuesAndRegressions {
     @Test
     fun issue222SumOverParts() = testSession("ScalarValues") {
         loadKerML("""
-            private import ScalarValues;
+            private import ScalarValues::*;
             type p :> Base::Anything {
                 feature a {
                     feature s: Real = 1.0;
@@ -649,7 +646,7 @@ class IssuesAndRegressions {
     }
 
     //Tests for Issue #243
-    @Test @Disabled
+    @Test @Ignore
     fun issue243indexExplosionBiggerModelTest() = testSession("ScalarValues") {
         loadKerML(
             input = """
@@ -704,7 +701,7 @@ class IssuesAndRegressions {
         println("r4 bdd: ${r4.vectorQuantity.bdd().toIteString()}")
     }
 
-    @Test @Disabled
+    @Test @Ignore
     fun issue243indexExplosionSmallModelTest() = testSession("ScalarValues") {
         loadKerML(
             input = """
@@ -724,7 +721,7 @@ class IssuesAndRegressions {
         println("r1 bdd: ${r1.vectorQuantity.bdd().toIteString()}")
     }
 
-    @Test @Disabled
+    @Test @Ignore
     fun issue243indexExplosionDuplicateComparisonTest() = testSession("ScalarValues") {
         loadKerML(
             input = """
@@ -753,7 +750,7 @@ class IssuesAndRegressions {
         //println("r3: ${r3.vectorQuantity.bdd().toIteString()}")
     }
 
-    @Test @Disabled
+    @Test @Ignore
     fun issue243indexExplosionSmallModelDeltaTest() = testSession("ScalarValues") {
         loadKerML(
             input = """
@@ -796,7 +793,7 @@ class IssuesAndRegressions {
         //println("r4 bdd: ${r4.vectorQuantity.bdd().toIteString()}")
     }
 
-    @Test @Disabled
+    @Test @Ignore
     fun issue243indexExplosionSmallModelAADDTest() = testSession {
         loadKerML(
             input = """
@@ -830,7 +827,7 @@ class IssuesAndRegressions {
         builder.conds.x.forEach { println("Index: ${it.key}, attribute: ${it.value}") }
     }
 
-    @Test @Disabled
+    @Test @Ignore
     fun issue243indexExplosionSmallModelUnrelatedVarsAADDTest() = testSession("ScalarValues") {
         loadKerML(
             input = """
@@ -901,7 +898,7 @@ class IssuesAndRegressions {
     /**
      * Goes into infinite loop --> BUG in IDD * IDD !
      */
-    @Test @Disabled
+    @Test @Ignore
     fun iddTimesLoopIssue267() = testSession("ScalarValues") {
         loadKerML(
             input = """

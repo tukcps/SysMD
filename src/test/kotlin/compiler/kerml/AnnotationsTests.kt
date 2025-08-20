@@ -27,7 +27,7 @@ class AnnotationsTests {
     }
 
     @Test
-    fun testCommentWidhId() = testSession {
+    fun testCommentWithId() = testSession {
         loadKerML("""
             comment test /* comment on something */ 
         """)
@@ -39,7 +39,7 @@ class AnnotationsTests {
     }
 
     @Test
-    fun testCommentWidhIdOnSomething() = testSession {
+    fun testCommentWithIdOnSomething() = testSession {
         loadKerML("""
             namespace x; 
             comment test about x /* comment on something */ 
@@ -75,11 +75,11 @@ class AnnotationsTests {
 
 
     @Test
-    fun testDocWidhId() = testSession {
+    fun testDocWithId() = testSession {
         loadKerML("""
             doc test /* comment on something */ 
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val doc = global.getOwnedElementOfType<AnnotatingElement>()
         assertTrue(doc is Documentation)
         assertEquals("comment on something", doc.body)
@@ -87,7 +87,7 @@ class AnnotationsTests {
     }
 
     @Test
-    fun testRepWidhId() = testSession {
+    fun testRepWithId() = testSession {
         loadKerML("""
             rep test language some /* code on something */ 
         """)
@@ -100,11 +100,11 @@ class AnnotationsTests {
 
 
     @Test
-    fun testRepWidhLanguage() = testSession {
+    fun testRepWithLanguage() = testSession {
         loadKerML("""
             language sysmd /* code on something */ 
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val rep = global.getOwnedElementOfType<AnnotatingElement>()
         assertTrue(rep is TextualRepresentation)
         assertEquals("code on something", rep.body)
@@ -113,7 +113,7 @@ class AnnotationsTests {
 
 
     @Test
-    fun testRepWidhIdAndLanguage2() = testSession {
+    fun testRepWithIdAndLanguage2() = testSession {
         loadKerML("""
             rep test language ltl /* ltl expressions */ 
         """)

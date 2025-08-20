@@ -14,7 +14,6 @@ import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 
 class TypeTests {
 
@@ -26,7 +25,7 @@ class TypeTests {
         assertNoIssues()
         val a = global.resolve<Type>("a")
         assertNotNull(a)
-        assertTrue(a.getOwnedElementOfType<Specialization>()?.general == anything)
+        assertEquals(anything, a.getOwnedElementOfType<Specialization>()?.general)
     }
 
     @Test
@@ -46,9 +45,8 @@ class TypeTests {
     fun testVisibility() = testSession {
         loadKerML("""
             package p {
-                private type t :> Base::Anything; 
-            }
-            
+                type t :> Base::Anything;                 
+            }            
             type A :> p::t; 
         """)
         val pt = global.resolve<Type>("p::t")

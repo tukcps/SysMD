@@ -1,5 +1,5 @@
 [versions]
-kotlin = "2.2.0"
+kotlin = "2.2.10"
 compose-plugin = "1.8.2"
 
 [plugins]

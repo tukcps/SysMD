@@ -1,8 +1,7 @@
-package sysmlv2specificationtests
+package compiler.sysml.examples
 
 import util.mockup.loadSysMLv2
 import util.testSession
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
@@ -66,7 +65,6 @@ class RequirementTests {
      * Refer to Section: 7.20 Requirements
      * Language Specification Document: https://www.omg.org/spec/SysML/2.0/Beta2/Language/PDF
      */
-    @Ignore
     @Test
     fun testSatisfy() = testSession("Requirements", "Parts") {
         loadSysMLv2("""

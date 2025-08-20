@@ -64,7 +64,6 @@ fun Session.letVar(qualifiedName: String, value: DD<*>): Variable {
 fun Session.defScalarVar(name: String, value: String, unitStr: String = "", type: String, namespace: Namespace = global) {
     val feature = FeatureImplementation(
         declaredName = name,
-        unitConstraint = unitStr,
         typeConstraint = mutableListOf(value)
     )
     addOwnedMember(feature, namespace)

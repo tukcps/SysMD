@@ -1,4 +1,4 @@
-package kermlspecificationstests
+package compiler.kerml.examples
 
 import util.assertNoIssues
 import util.mockup.loadKerML

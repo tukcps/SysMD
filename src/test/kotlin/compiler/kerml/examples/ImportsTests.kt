@@ -1,8 +1,9 @@
-package kermlspecificationstests
+package compiler.kerml.examples
 
 import util.mockup.loadKerML
-import org.junit.jupiter.api.Disabled
+import util.assertNoIssues
 import util.testSession
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
@@ -26,11 +27,11 @@ class ImportsTests {
                 private import N4::A;
                 private import N4::C;
                 namespace M {
-                    import C; // "C" is re-imported from N4 into M.
+                    private import C; // "C" is re-imported from N4 into M.
                 }
             }
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        """)
+        assertNoIssues()
     }
 
     /**
@@ -60,7 +61,7 @@ class ImportsTests {
      * Ref: Section 7.2.5.4 - Imports
      * Kernel Modeling Language: https://www.omg.org/spec/KerML/1.0/Beta2/PDF/changebar
      */
-    @Disabled
+    @Ignore
     @Test
     fun testRecursiveImport() = testSession("Occurrences") {
         loadKerML("""
@@ -125,6 +126,6 @@ class ImportsTests {
                 }
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 }

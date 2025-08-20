@@ -9,7 +9,7 @@ package com.github.tukcps.sysmd.model.kerml
  */
 interface Namespace: Element {
 
-    val imports: List<Namespace>
+    val importedNamespaces: List<Namespace>
         get() {
             val result: MutableList<Namespace> = mutableListOf()
             ownedElement.forEach {
@@ -20,5 +20,11 @@ interface Namespace: Element {
             return result
         }
 
-    fun visibleMemberships(): List<Membership> = ownedRelationship.filterIsInstance<Membership>()
+    fun importedMemberships(): List<Membership> = ownedRelationship
+        .filterIsInstance<MembershipImport>()
+        .mapNotNull { it.importedMemberships(emptySet()).firstOrNull() }
+
+    fun visibleMemberships(): List<Membership> = ownedRelationship
+        .filterIsInstance<Membership>()
+        .filter { it.visibility == Import.VisibilityKind.Public }
 }

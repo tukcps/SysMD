@@ -38,14 +38,22 @@ open class ActionsContext(
     val model: Session,
     val compiler: KerML,
     var expression: Feature? = null,
-    var visibilityKind: Token.Kind? = null
 ) {
 
-    val owners: Stack<NamespaceActions<Namespace>> = Stack<NamespaceActions<Namespace>>()
-
+    /**
+     * A stack with allow nested namespaces.
+     */
+    private val owners: Stack<NamespaceActions<Namespace>> = Stack<NamespaceActions<Namespace>>()
 
     /**
-     * A set with the prefixes of a definition or declaration
+     * The visibility of the top of the owners; only needed between prefixes are parsed and semantic action
+     * is started.
+     */
+    var visibility: Import.VisibilityKind? = null
+
+    /**
+     * A set with the prefixes of the currently parsed definition or declaration.
+     * Valid from start of prefixes being parsed and the first semantic actions are executed.
      */
     val prefixes = mutableSetOf<Token.Kind>()
 
@@ -59,7 +67,7 @@ open class ActionsContext(
     }
 
     /**
-     * Adds multiple owning namespaces; needed for SysMD
+     * Adds multiple owning namespaces; needed for SysMD only.
      * @param ownerPrefix a string of owners separated by '::'
      */
     fun addOwningNamespaces(ownerPrefix: String = "") {
@@ -81,8 +89,8 @@ open class ActionsContext(
 
 
     /**
-     * Pushes an owner
-     * @param owner of new
+     * Pushes an owner to the stack of owning namespaces.
+     * @param owner of new elements that will be created.
      */
     fun pushOwningNamespace(owner: NamespaceActions<Namespace>) {
         if (owner != model.global)
@@ -99,6 +107,9 @@ open class ActionsContext(
     fun currentActions(): NamespaceActions<Namespace>?  = if (owners.isEmpty()) null else owners.peek()
 
 
+    /**
+     * @return the currently processed namespace
+     */
     @Suppress("UNCHECKED_CAST")
     fun <T: Namespace> element(): T = (currentActions()?.created as T?) ?: (model.global as T)
 
@@ -316,7 +327,6 @@ open class ActionsContext(
 
 
     fun addUnitConstraint(unitConstraint: String?) {
-        element<Feature>().unitConstraint = unitConstraint
         if (unitConstraint != null) {
             val constraint = FeatureImplementation()
             constraint.declaredName = "unit"

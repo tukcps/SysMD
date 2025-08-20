@@ -353,19 +353,17 @@ class AttributeTests {
 
     @Test
     fun assertAttribute3() = testSession("SI", "Calculations", "Ranges") {
-        loadSysMLv2(
-            """
-            attribute a: SI::Mass { :>> range = "0..2"; :>> unit = "kg";}
-            assert constraint Test {isIn(a, 1000.0..2000.0 [g])}
+        loadSysMLv2("""
+            attribute a: ISQ::MassValue { :>> range = "0..2"; :>> unit = "kg";}
+            assert constraint Test { isIn(a, 1000.0..2000.0 [g]) }
             calc def isIn {
-                in attribute a: SI::Mass;
-                in attribute b: SI::Mass;
+                in attribute a: ISQ::MassValue;
+                in attribute b: ISQ::MassValue;
                 return result: ScalarValues::Boolean = (a <= max(b)) and (a >= min(b));
             }
-        """
-        )
+        """)
         propagate()
-        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+        assertNoIssues()
         assertEquals(1.0, global.resolveVar("a")!!.aadd().min, 0.000001)
     }
 

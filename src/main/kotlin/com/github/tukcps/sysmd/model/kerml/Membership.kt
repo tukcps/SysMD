@@ -22,5 +22,5 @@ interface Membership: Relationship {
         get() = target.first()
         set(value) { target = mutableListOf(value) }
 
-    val visibility: Import.VisibilityKind
+    var visibility: Import.VisibilityKind
 }

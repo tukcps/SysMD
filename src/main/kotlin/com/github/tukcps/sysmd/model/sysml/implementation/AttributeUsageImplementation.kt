@@ -49,7 +49,6 @@ class AttributeUsageImplementation(
             textualRepresentation = textualRepresentation,
         ).also {
             it.model = model
-            it.unitConstraint = unitConstraint
             it.typeConstraint = typeConstraint
             it.expression = expression
         }

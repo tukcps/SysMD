@@ -8,6 +8,7 @@ import com.github.tukcps.sysmd.model.sysml.CalculationDefinition
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
+import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import kotlin.test.*
 
@@ -35,19 +36,20 @@ class CalculationDefinitionTests {
     @Test
     fun userDefFunctionSimple() = testSession("Calculations", "SI") {
         loadSysMLv2("""
+            private import ISQ::*; 
             calc def Velocity {
-                in v1 : SI::Speed {:>> unit = "km/h";} 
-                in v2 : SI::Speed;
-                attribute a: SI::Speed = v1+v2;
-                return result: SI::Speed  = a {:>> unit = "km/h";}  
+                in v1 : ISQ::SpeedValue { :>> unit = "km/h"; }
+                in v2 : SpeedValue;
+                attribute a: SpeedValue = v1+v2;
+                return result: SpeedValue  = a {:>> unit = "km/h";}  
             }
-            attribute a: SI::Speed = 10.0 [km/h];
-            attribute b: SI::Speed = 26.0 [km/h];
-            attribute c: SI::Speed = Velocity(a,b);
-            attribute c2: SI::Speed = Velocity(10.0 [m/s],b);
+            attribute a: SpeedValue = 10.0 [km/h];
+            attribute b: SpeedValue = 26.0 [km/h];
+            attribute c: SpeedValue = Velocity(a, b);
+            attribute c2: SpeedValue = Velocity(10.0 [m/s], b);
         """)
-        initialize()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
+        propagate()
         assert(global.resolveVar("Velocity::v1")!!.feature.direction == Feature.FeatureDirectionKind.IN)
         assert(global.resolveVar("Velocity::v2")!!.feature.direction == Feature.FeatureDirectionKind.IN)
         assert(global.resolveVar("Velocity::a")!!.feature.direction == Feature.FeatureDirectionKind.INOUT)
@@ -60,16 +62,16 @@ class CalculationDefinitionTests {
     fun userDefFunctionTest() = testSession("Calculations", "SI") {
         loadSysMLv2("""
             calc def Energy {
-               in v : SI::Speed;
-               in m : SI::Mass;
-               return result : SI::Energy = 0.5 * m * sqr(v);
+               in v : ISQ::SpeedValue;
+               in m : ISQ::MassValue;
+               return result : ISQ::EnergyValue = 0.5 * m * sqr(v);
             }
-            attribute a: SI::Speed = 10.0 [m/s];
-            attribute a1: SI::Speed = 2.0 [m/s];
-            attribute b: SI::Mass = 200.0 [kg];
-            attribute b1: SI::Mass = 20.0 [kg];
-            attribute c: SI::Energy = Energy(a,b);
-            attribute c1: SI::Energy = Energy(a1,b1);
+            attribute a: ISQ::SpeedValue = 10.0 [m/s];
+            attribute a1: ISQ::SpeedValue = 2.0 [m/s];
+            attribute b: ISQ::MassValue = 200.0 [kg];
+            attribute b1: ISQ::MassValue = 20.0 [kg];
+            attribute c: ISQ::EnergyValue = Energy(a,b);
+            attribute c1: ISQ::EnergyValue = Energy(a1,b1);
          """)
         propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
@@ -80,16 +82,17 @@ class CalculationDefinitionTests {
     @Test
     fun userDefFunctionTestVector() = testSession("Calculations","SI") {
         loadSysMLv2("""
+            private import ISQ::*; 
             calc def Distance {
-                in a : SI::Length;
-                in b : SI::Length;
-                return result : SI::Length = sqrt(sqr(a[0]-b[0])+sqr(a[1]-b[1])+sqr(a[2]-b[2])); 
+                in a : LengthValue;
+                in b : LengthValue;
+                return result : LengthValue = sqrt(sqr(a[0]-b[0])+sqr(a[1]-b[1])+sqr(a[2]-b[2])); 
             }
-            attribute a: SI::Length = (10.0,5.0,20.0) [m];
-            attribute b: SI::Length = (0.0,-5.0,25.0) [m];
-            attribute b1: SI::Length = (10.0,1.0,17.0) [m];
-            attribute c: SI::Length = Distance(a,b);
-            attribute c1: SI::Length = Distance(a,b1);
+            attribute a: LengthValue = (10.0,5.0,20.0) [m];
+            attribute b: LengthValue = (0.0,-5.0,25.0) [m];
+            attribute b1: LengthValue = (10.0,1.0,17.0) [m];
+            attribute c: LengthValue = Distance(a,b);
+            attribute c1: LengthValue = Distance(a,b1);
         """)
         propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
@@ -300,21 +303,21 @@ class CalculationDefinitionTests {
 
 
     @Test
-    fun userDefFunctionTestEvalDown() = testSession("Calculations","SI", "Ranges") {
+    fun userDefFunctionTestEvalDown() = testSession("Calculations","SI") {
         loadSysMLv2("""
             package Test {   
                 calc def Energy {
-                    in v : SI::Speed;
-                    in m : SI::Mass;
-                    return result : SI::Energy = 0.5 * m * sqr(v); 
+                    in v : ISQ::SpeedValue;
+                    in m : ISQ::MassValue;
+                    return result : ISQ::EnergyValue = 0.5 * m * sqr(v); 
                 }
                 package TestModule {
-                    attribute a: SI::Speed;
-                    attribute b: SI::Mass = 200.0 [kg];
-                    attribute c: SI::Energy, Ranges::InRange = Energy(a,b) {:>> range = "10000..10000";}
-                    attribute e: SI::Speed;
-                    attribute f: SI::Mass = 800.0 [kg];
-                    attribute g: SI::Energy, Ranges::InRange = Energy(e,f) {:>> range = "10000..10000";}
+                    attribute a: ISQ::SpeedValue;
+                    attribute b: ISQ::MassValue = 200.0 [kg];
+                    attribute c: ISQ::EnergyValue, Ranges::InRange = Energy(a,b) {:>> range = "10000..10000";}
+                    attribute e: ISQ::SpeedValue;
+                    attribute f: ISQ::MassValue = 800.0 [kg];
+                    attribute g: ISQ::EnergyValue, Ranges::InRange = Energy(e,f) {:>> range = "10000..10000";}
                 }
             } 
         """)

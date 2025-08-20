@@ -15,7 +15,7 @@ import com.github.tukcps.sysmd.model.sysml.implementation.AttributeDefinitionImp
  *
  *       AttributeDefinition = DefinitionPrefix 'attribute' 'def' Definition
  */
-fun SysMLv2.AttributeDefinition() = AttributeDefinitionActions<AttributeDefinition>(this.semantics, ::AttributeDefinitionImplementation).parse {
+fun SysMLv2.AttributeDefinition() = AttributeDefinitionActions(this.semantics, ::AttributeDefinitionImplementation).parse {
     ATTRIBUTE.consume()
     DEF.consume()
     DefinitionDeclaration()

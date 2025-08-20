@@ -2,9 +2,9 @@ package sysmdtests
 
 import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.services.resolve.resolveVar
+import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -83,48 +83,27 @@ class AggregationFunctionsTests {
      * property in its parts shall be used.
      */
     @Test
-    fun sumAggregationTest4() = testSession("Occurrences", "Ranges") {
-        loadKerML(input = """
-            package l {
-                class c1 {
-                    feature p: Ranges::RealInRange {:>> range = "1..2";} 
-                }
-                class c2 {
-                    feature c: c1[5 .. 6];
-                }
-                class c3 {
-                    feature a:  l::c1[1..2];          // 1..2 +
-                    feature b: l::c2[2..3];          // 2..3 * (1..2 * 5..6) 
-                                                            // = 1..2 + 2..3 * (1..2*5..12)
-                                                            // = 1..2 + 2..3 * 5..24
-                                                            // = 1..2 + 10..
-                    feature p3: ScalarValues::Real = sumOverParts(p); 
-                }
+    fun sumAggregationTest4() = testSession( "Ranges") {
+        loadKerML("""
+            classifier c1 {
+                feature p: Ranges::RealInRange { :>> range = "1..2";} 
             }
-            """)
-        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+            classifier c2 {
+                feature c: c1[5 .. 6];
+            }
+            classifier c3 {
+                feature a:  c1[1..2];          // 1..2 +
+                feature b:  c2[2..3];          // 2..3 * (1..2 * 5..6) 
+                                                        // = 1..2 + 2..3 * (1..2*5..12)
+                                                        // = 1..2 + 2..3 * 5..24
+                                                        // = 1..2 + 10..
+                feature p3: ScalarValues::Real = sumOverParts(p); 
+            }
+        """)
+        assertNoIssues()
         propagate()
         // println(resolveName<Expression>("l::c3::p3"))
-        assertEquals(11.0, global.resolveVar("l::c3::p3")!!.vectorQuantity.getMinAsDouble(), 0.0001)
-        assertEquals(40.0, global.resolveVar("l::c3::p3")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
-    }
-
-    /**
-     * The function forAll(BoolExpression): Bool evaluates
-     */
-    @Ignore
-    @Test fun forAllElementsTest() {
-    }
-
-
-    /**
-     * The function existsProperty(scope: String, name: String),
-     */
-    @Ignore
-    @Test fun existsPropertyTest() {
-    }
-
-    @Ignore
-    @Test fun existsInstanceTest() {
+        assertEquals(11.0, global.resolveVar("c3::p3")!!.vectorQuantity.getMinAsDouble(), 0.0001)
+        assertEquals(40.0, global.resolveVar("c3::p3")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
     }
 }

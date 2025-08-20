@@ -1,9 +1,9 @@
-package sysmlv2specificationtests
+package compiler.sysml.examples
 
+import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Test
-import kotlin.test.assertTrue
 
 class CalculationTests {
     
@@ -18,7 +18,7 @@ class CalculationTests {
         loadSysMLv2("""
             calc def CalcDef1;
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -37,7 +37,7 @@ class CalculationTests {
                 return v_f : ScalarValues::Real;
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
 
@@ -53,7 +53,7 @@ class CalculationTests {
                 return nextState; 
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
 
@@ -72,6 +72,6 @@ class CalculationTests {
                 return : ScalarValues::Real = a+b; // Return value has no name. 
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 }

@@ -92,8 +92,8 @@ fun Session.checkNameResolutionSuccessful() {
         relationship.target.filter { it is Unresolved }.forEach {
             status.warn(
                 kind = Issue.Kind.ERROR_UNRESOLVED_NAME,
-                message = "The name '${(it as Unresolved).relativeName}' could not be resolved",
-                element = relationship as? Connector ?: relationship.owningNamespace
+                message = "The target '${(it as Unresolved).relativeName}' could not be resolved",
+                element = relationship
             )
         }
     }

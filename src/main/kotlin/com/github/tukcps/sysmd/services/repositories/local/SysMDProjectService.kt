@@ -1,20 +1,15 @@
 package com.github.tukcps.sysmd.services.repositories.local
 
-import com.github.tukcps.sysmd.services.session.report
-import com.github.tukcps.sysmd.services.session.SessionImplementation
-import com.github.tukcps.sysmd.services.session.loadSysMDFromFile
 import com.github.tukcps.sysmd.settings
 import io.github.tukcps.sysmlv2.api.entities.Branch
 import io.github.tukcps.sysmlv2.api.entities.Project
 import io.github.tukcps.sysmlv2.api.services.ProjectService
 import io.github.tukcps.sysmlv2.interchange.InterchangeProject
-import kotlinx.coroutines.processNextEventInCurrentThread
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
-import kotlin.collections.emptyList
 import kotlin.io.path.*
 
 

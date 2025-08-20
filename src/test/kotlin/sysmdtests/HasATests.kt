@@ -4,6 +4,7 @@ import io.github.tukcps.aadd.values.IntegerRange
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.getOwned
 import com.github.tukcps.sysmd.services.resolve.resolve
+import util.assertNoIssues
 import util.mockup.loadKerML
 import util.mockup.loadSysMD
 import util.testSession
@@ -30,13 +31,13 @@ class HasATests {
      */
     @Test  fun testHasACreation() = testSession("SI") {
         loadKerML(input = """
-        private import ScalarValues; 
-        type x :> Base::Anything {
-            feature a: SI::Voltage (1.0 .. 3.0) [V] = 3000.0 mV; 
-            feature b: SI::ElectricCurrent (2.0 .. 4.0) [A]; 
-        }        
+            private import ScalarValues; 
+            type x :> Base::Anything {
+                feature a: ISQ::VoltageValue (1.0 .. 3.0) [V] = 3000.0 mV; 
+                feature b: ISQ::ElectricCurrentValue (2.0 .. 4.0) [A]; 
+            }        
         """)
-        assertEquals(0, status.issues.size, status.issues.toString())
+        assertNoIssues()
     }
 
 

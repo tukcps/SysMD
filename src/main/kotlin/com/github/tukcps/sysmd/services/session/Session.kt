@@ -5,6 +5,7 @@ import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.model.kerml.Anything
 import com.github.tukcps.sysmd.model.kerml.Element
+import com.github.tukcps.sysmd.model.kerml.Import
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.Relationship
 import com.github.tukcps.sysmd.services.repositories.local.ProjectData
@@ -90,7 +91,7 @@ interface Session {
      * @return the created element with the id field set.
      * Note that it is not necessarily the same as the element passed as argument.
      */
-    fun <T: Element> addOwnedMember(element: T, namespace: Namespace, index: Int = -1): T
+    fun <T: Element> addOwnedMember(element: T, namespace: Namespace, visibility: Import.VisibilityKind= Import.VisibilityKind.Public): T
     fun <T: Relationship> addOwnedRelationship(relationship: T, owningElement: Element?=null): T
 
     /**

@@ -29,21 +29,18 @@ open class VariableImplementation (
     override var feature: Feature,
     override val baseType: BaseType = BaseType.Unknown,
     override var updated: Boolean = true,
-    override var hasBeenChanged: Boolean = true
+    override var hasBeenChanged: Boolean = true,
 ): Variable {
 
+    // The elementId is used to link the variable with an element
     override val elementId: UUID?
         get() = feature.elementId
 
-    override val dependency: String
-        get() = feature.expression?:""
-
+    // A list in which the elements of the (Array) Variable may lie.
     override var valueSpecs: MutableList<Any?> = mutableListOf()
 
     override val unitSpec: String
-        get() = feature.unitConstraint?:
-                feature.features().firstOrNull { it.name == "unit"}?.expression?.trim('"')?:
-                ""
+        get() = feature.features().firstOrNull { it.name == "unit"}?.expression?.trim('"', ' ')?:""
 
     /** access methods for the valueSpec field; returns different types */
     override val rangeSpecs: MutableList<Range>
@@ -324,7 +321,7 @@ open class VariableImplementation (
             if (feature.model != null) {
                 val parserSysMD = KerML(
                     feature.model!!,
-                ).also { it.input = dependency }
+                ).also { it.input = feature.expression?:"" }
 
                 // The parsing itself, can throw exceptions that are caught optionally below.
                 if (feature.model?.repo?.scalarType == null)
@@ -335,7 +332,7 @@ open class VariableImplementation (
                 if (!feature.specializes(feature.model?.repo?.scalarType))
                     feature.model?.status?.error("Expected subtype of ScalarValues::ScalarValue", element = feature)
 
-                if (dependency.isNotBlank()) {
+                if (feature.expression?.isNotBlank() == true) {
                     // set the scope to the element to which the property belongs.
                     feature.owner
                         ?: throw SemanticError("No owner of ${feature.qualifiedName}; initialize identifications before using services.")
@@ -366,7 +363,7 @@ open class VariableImplementation (
         } catch (exception: Exception) {
             ast = null
             feature.model?.status?.error(
-                 "In expression '$dependency' of ${feature.qualifiedName}: ${exception.message}",
+                 "In expression '${feature.expression}' of ${feature.qualifiedName}: ${exception.message}",
                 element = feature,
                 cause = exception)
         }

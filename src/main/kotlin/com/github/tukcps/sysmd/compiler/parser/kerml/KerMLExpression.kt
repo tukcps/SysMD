@@ -39,7 +39,7 @@ fun KerML.BooleanExpression(): AstNode {
 /**
  * conditionalExpression :- IF expression ? expression ELSE expression
  */
-fun KerML.ConditionalExpression(): AstNode? {
+fun KerML.ConditionalExpression(): AstNode {
     val action = ConditionalExpressionActions(semantics)
     IF.consume()
     Expression().also { action.condExpr = it }

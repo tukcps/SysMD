@@ -698,21 +698,23 @@ class InheritanceTests {
             type special :> general {
                 feature x: ScalarValues::Real; 
             }
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        """)
+        assertNoIssues()
     }
 
 
     @Test
-    fun subclassWithoutConstraintsInheritsConstraints2() = testSession("SI", "Ranges") {
+    fun subclassWithoutConstraintsInheritsConstraints2() = testSession("SI") {
         loadKerML("""
             type general :> Base::Anything {
                 feature y: ScalarValues::Real; 
-                feature x:  SI::Time = 1.0 [ms] {:>> range = "0 .. *"; :>> unit = "ms";} 
+                feature x:  SI::Time = 1.0 [ms] {
+                    :>> range = "0 .. *"; 
+                    :>> unit  = "ms"; 
+                } 
             }
             class special :> general; 
-        """.trimIndent())
-        propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        """)
+        assertNoIssues()
     }
 }

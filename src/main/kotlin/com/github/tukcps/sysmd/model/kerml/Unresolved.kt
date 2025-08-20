@@ -7,6 +7,8 @@ import java.util.*
 interface Unresolved {
     var relativeName: QualifiedName?
     var id: UUID?
+    var input: CharSequence?
+    var indices: IntRange?
 }
 
 class UnresolvedElement(
@@ -43,8 +45,8 @@ open class UnresolvedFeature(
 }
 
 class UnresolvedFeatureChain(
-    override var relativeName: QualifiedName? = null,
-    override var id: UUID? = null,
+    relativeName: QualifiedName? = null,
+    id: UUID? = null,
 ): UnresolvedFeature(relativeName, id, elementType = "Unresolved Feature Chain") {
     override fun toString(): String = "Unresolved Feature Chain: $relativeName"
     override fun escapedName(): String? = relativeName
@@ -52,7 +54,7 @@ class UnresolvedFeatureChain(
 
 class UnresolvedNamespace(
     override var relativeName: QualifiedName? = null,
-    override var id: UUID? = null
+    override var id: UUID? = null,
 ): Unresolved, NamespaceImplementation(elementType = "Unresolved Namespace"){
     override fun toString(): String = "Unresolved Namespace: $relativeName"
     override fun escapedName(): String? = relativeName

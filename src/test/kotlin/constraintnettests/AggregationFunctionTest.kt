@@ -1,12 +1,13 @@
 package constraintnettests
 
-import util.testSession
 import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
+import util.assertNoIssues
 import util.mockup.loadKerML
+import util.testSession
 import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -558,79 +559,72 @@ class AggregationFunctionTest {
     @Test
     fun astSumHasATest3() = testSession("Ranges") {
         loadKerML(input = """
-            package l {
                 type c1:> Base::Anything {
                     feature p: Ranges::RealInRange  {:>> range = "1..2";}  
                 }
                 type c2:> Base::Anything {
-                    feature c: l::c1; 
+                    feature c: c1; 
                 }
                 type c3:> Base::Anything {
-                    feature a: l::c1 [1..2];
-                    feature b: l::c2 [2..3];
+                    feature a: c1 [1..2];
+                    feature b: c2 [2..3];
                     feature p3: ScalarValues::Real = sumOverParts(p);
                     feature p4: ScalarValues::Real = sumOverPartsNotTransitive(p); 
                 }
-            }
         """)
-        propagate()
-        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
-        assertEquals(3.0, global.resolveVar("l::c3::p3")!!.vectorQuantity.getMinAsDouble(), 0.0001)
-        assertEquals(10.0, global.resolveVar("l::c3::p3")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
-        assertEquals(1.0, global.resolveVar("l::c3::p4")!!.vectorQuantity.getMinAsDouble(), 0.0001)
-        assertEquals(4.0, global.resolveVar("l::c3::p4")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
+        assertNoIssues()
+        assertEquals(3.0, global.resolveVar("c3::p3")!!.vectorQuantity.getMinAsDouble(), 0.0001)
+        assertEquals(10.0, global.resolveVar("c3::p3")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
+        assertEquals(1.0, global.resolveVar("c3::p4")!!.vectorQuantity.getMinAsDouble(), 0.0001)
+        assertEquals(4.0, global.resolveVar("c3::p4")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
     }
 
     @Test
     fun astSumHasATest3EvalDown() = testSession("Ranges") {
         loadKerML("""
-            package l {
                 type c1:> Base::Anything {
                     feature p: Ranges::RealInRange  {:>> range = "0..20";} 
                 }
                 type c2:> Base::Anything {
-                    feature c: l::c1; 
+                    feature c: c1; 
                 }
                 type c3:> Base::Anything {
-                    feature b: l::c2 [2 .. 3];
+                    feature b: c2 [2 .. 3];
                     feature p3: Ranges::RealInRange  = sumOverParts(p) {:>> range = "12..12";}  
                 }
-            }
         """)
         propagate()
-        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
-        assertEquals(4.0, global.resolveVar("l::c2::c::p")!!.vectorQuantity.getMinAsDouble(), 0.0001)
-        assertEquals(6.0, global.resolveVar("l::c2::c::p")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
+        assertNoIssues()
+        assertEquals(4.0, global.resolveVar("c2::c::p")!!.vectorQuantity.getMinAsDouble(), 0.0001)
+        assertEquals(6.0, global.resolveVar("c2::c::p")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
     }
 
     @Test
     fun astSumHasATest4() = testSession("Ranges") {
         loadKerML("""
-            package l {
                 type c1:> Base::Anything {
                     feature p: Ranges::RealInRange  {:>> range = "1..2";} 
                 }
                 type c2:> Base::Anything {
-                    feature d: l::c1; 
+                    feature d: c1; 
                 }
                 type c3:> Base::Anything {
-                    feature a: l::c1 [1..2];
-                    feature b: l::c2 [2..3];
-                    feature c: l::c4 [1..2];
+                    feature a: c1 [1..2];
+                    feature b: c2 [2..3];
+                    feature c: c4 [1..2];
                     feature p3: ScalarValues::Real = sumOverParts(p/2.0);
                     feature p4: ScalarValues::Real = sumOverPartsNotTransitive(p/2.0); 
                 }
                 type c4:> Base::Anything {
                     feature p: Ranges::RealInRange  {:>> range = "2..3";} 
                 }
-            }
         """)
         propagate()
         assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
-        assertEquals(2.5, global.resolveVar("l::c3::p3")!!.vectorQuantity.getMinAsDouble(), 0.0001)
-        assertEquals(8.0, global.resolveVar("l::c3::p3")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
-        assertEquals(1.5, global.resolveVar("l::c3::p4")!!.vectorQuantity.getMinAsDouble(), 0.0001)
-        assertEquals(5.0, global.resolveVar("l::c3::p4")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
+        assertEquals(2.5, global.resolveVar("c3::p3")!!.vectorQuantity.getMinAsDouble(), 0.0001)
+        assertEquals(8.0, global.resolveVar("c3::p3")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
+        assertEquals(1.5, global.resolveVar("c3::p4")!!.vectorQuantity.getMinAsDouble(), 0.0001)
+        assertEquals(5.0, global.resolveVar("c3::p4")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
     }
 
     @Test
@@ -641,16 +635,16 @@ class AggregationFunctionTest {
                     feature p: Ranges::RealInRange  {:>> range = "1..2";} 
                 }
                 type c2:> Base::Anything {
-                    feature d: l::c1; 
+                    feature d: c1; 
                 }
                 type c3:> Base::Anything {
-                    feature a: l::c1 [1..2];
-                    feature b: l::c2 [2..3];
-                    feature c: l::c4 [1..2];
+                    feature a: c1 [1..2];
+                    feature b: c2 [2..3];
+                    feature c: c4 [1..2];
                     feature p3: Ranges::RealInRange  = sumOverParts(p/2.0) {:>> range = "8..8";} 
                 }
                 type c4:> Base::Anything {
-                    feature p: Ranges::RealInRange  {:>> range = "0..100";} 
+                    feature p: Ranges::RealInRange  {:>> range = "0..100"; } 
                 }
             }
         """)
@@ -685,7 +679,7 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
+        assertNoIssues()
         assertEquals(2.5, global.resolveVar("l::c3::p3")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(8.0, global.resolveVar("l::c3::p3")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
         assertEquals(1.5, global.resolveVar("l::c3::p4")!!.vectorQuantity.getMinAsDouble(), 0.0001)
@@ -717,7 +711,7 @@ class AggregationFunctionTest {
             }
         """)
         propagate()
-        assertTrue(status.issues.isEmpty(), "${status.issues}")
+        assertNoIssues()
         assertEquals(3.0, global.resolveVar("l::c3::c::p")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(13.0, global.resolveVar("l::c3::c::p")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
     }
@@ -772,7 +766,7 @@ class AggregationFunctionTest {
                  }
         """)
         propagate()
-        // assertTrue(status.reports.isEmpty(), "Exceptions: ${status.reports}")
+        // assertNoIssues()
         assertEquals(0.3,
             global.resolveVar("l::c3::securityOfSupply")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(0.3,
@@ -798,7 +792,7 @@ class AggregationFunctionTest {
                  }
         """)
         propagate()
-        assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
+        assertNoIssues()
         assertEquals(6, global.resolveVar("l::c1::securityOfSupply")!!.vectorQuantity.value.asIdd().min)
         assertEquals(8, global.resolveVar("l::c1::securityOfSupply")!!.vectorQuantity.value.asIdd().max)
     }

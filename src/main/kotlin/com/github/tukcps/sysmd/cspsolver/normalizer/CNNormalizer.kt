@@ -62,7 +62,7 @@ class CNNormalizer {
         // add the properties that need no normalization
         var simpleProp : SimpleProperty<XBool>
         for(prop in originalProperties) {
-             simpleProp = SimpleProperty(name = prop.feature.qualifiedName?:prop.feature.path(), expression = prop.dependency, dd = prop.bdd(), simpleAst = prop.ast?.let {
+             simpleProp = SimpleProperty(name = prop.feature.qualifiedName?:prop.feature.path(), expression = prop.feature.expression?:"", dd = prop.bdd(), simpleAst = prop.ast?.let {
                  SimpleAstRoot(it.dependency)
              }, valueSpecs = mutableListOf(prop.valueSpecs[0]))
             normalizedProperties.add(simpleProp)

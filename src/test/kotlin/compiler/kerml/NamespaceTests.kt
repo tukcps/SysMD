@@ -1,11 +1,15 @@
 package compiler.kerml
 
+import com.github.tukcps.sysmd.model.kerml.Import
 import com.github.tukcps.sysmd.model.kerml.Namespace
+import com.github.tukcps.sysmd.model.kerml.OwningMembership
+import com.github.tukcps.sysmd.model.kerml.implementation.getOwned
 import com.github.tukcps.sysmd.services.resolve.resolve
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 class NamespaceTests {
@@ -21,5 +25,16 @@ class NamespaceTests {
         assertNotNull(n)
         val n2 = global.resolve<Namespace>("n::n2")
         assertNotNull(n2)
+    }
+
+    @Test
+    fun namespaceVisibilityKindTest() = testSession {
+        loadKerML("""
+            private namespace n; 
+        """)
+        assertNoIssues()
+        val n = global.getOwned<Namespace>("n")
+        assertNotNull(n)
+        assertEquals(Import.VisibilityKind.Private, (n.owningRelationship as OwningMembership).visibility)
     }
 }

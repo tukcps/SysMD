@@ -14,7 +14,7 @@ class IssueViewModel(
     /**
      * Link to wiki
      */
-    val qualifiedName: String? = issue?.elementPath
+    val qualifiedName: String? = issue?.elementPath?.substringBefore("/")
 
     fun getTitle() = when (issue?.kind) {
         Issue.Kind.TRACE -> "Trace"
@@ -36,11 +36,16 @@ class IssueViewModel(
         null -> "No report present"
     }
 
-    fun getLine() = issue?.token?.lineNo
+    fun getLine() = issue?.line()
     fun getInput() = issue?.input
     fun getMessage(): String {
-        val where = if (issue?.token != null) "at '${issue.token.toString()}': " else ""
-        val str = "$where${issue?.message?:"(no message)"}"
+        val where = when {
+            issue == null -> ""
+            (issue.token != null) -> "at '${issue.token.toString()}':"
+            (issue.input != null && issue.indices != null) -> "at '${issue.input?.substring(issue.indices!!)}'"
+            else -> ""
+        }
+        val str = "${getLine()}, $where: ${issue!!.message}"
         return str
     }
 

@@ -23,7 +23,7 @@ class MultiplicityImplementation(
     }
 
     override val generalization: List<Type>
-        get() = listOf(model?.repo?.naturalType?:UnresolvedType("ScalarValues::Natural"))
+        get() = listOf(model?.repo?.naturalType?: UnresolvedType("ScalarValues::Natural"))
 
     override val ownedSpecialization: List<Specialization>
         get() = mutableListOf()

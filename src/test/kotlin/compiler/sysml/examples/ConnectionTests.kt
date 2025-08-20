@@ -1,4 +1,4 @@
-package sysmlv2specificationtests
+package compiler.sysml.examples
 
 import util.mockup.loadSysMLv2
 import com.github.tukcps.sysmd.model.sysml.ConnectionDefinition
@@ -6,11 +6,11 @@ import com.github.tukcps.sysmd.model.sysml.ConnectionUsage
 import com.github.tukcps.sysmd.model.sysml.PartDefinition
 import com.github.tukcps.sysmd.model.sysml.PartUsage
 import com.github.tukcps.sysmd.services.resolve.resolve
+import util.assertNoIssues
 import util.testSession
 import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 
 class ConnectionTests {
 
@@ -24,8 +24,8 @@ class ConnectionTests {
     fun testNormalConnectionDefinition() = testSession("Connections") {
         loadSysMLv2("""
         connection def ConnectionDef1;
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        """)
+        assertNoIssues()
 
         val connectionDef1 = global.resolve<ConnectionDefinition>("ConnectionDef1")
         assertNotNull(connectionDef1)
@@ -47,8 +47,8 @@ class ConnectionTests {
             end end1 : Part1;
             end end2 : Part2;
         }
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        """)
+        assertNoIssues()
 
         val partDef1 = global.resolve<PartDefinition>("Part1")
         assertNotNull(partDef1)
@@ -76,8 +76,8 @@ class ConnectionTests {
             end end1 : Part1[0..1];
             end end2 : Part2[1..*];
         }
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        """)
+        assertNoIssues()
 
         val partDef1 = global.resolve<PartDefinition>("Part1")
         assertNotNull(partDef1)
@@ -99,18 +99,18 @@ class ConnectionTests {
     @Test
     fun testConnectionUsage() = testSession("Parts", "Connections") {
         loadSysMLv2("""
-        part def Part1;
-        part def Part2;
-        
-        part part1 : Part1;
-        part part2 : Part2;
-         
-        connection def ConnectionDef1 {
-            end end1 ::> part1;
-            end end2 ::> part2;
-        }
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+            part def Part1;
+            part def Part2;
+            
+            part part1 : Part1;
+            part part2 : Part2;
+             
+            connection def ConnectionDef1 {
+                end end1 ::> part1;
+                end end2 ::> part2;
+            }
+        """)
+        assertNoIssues()
 
         val connectionDef1 = global.resolve<ConnectionDefinition>("ConnectionDef1")
         assertNotNull(connectionDef1)
@@ -135,7 +135,7 @@ class ConnectionTests {
             connection def ConnectionDef1;
             connection connection1 : ConnectionDef1 connect part1 to part2;
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
 
         val connectionDef1 = global.resolve<ConnectionDefinition>("ConnectionDef1")
         assertNotNull(connectionDef1)
@@ -171,7 +171,7 @@ class ConnectionTests {
             connection connection1 : ConnectionDef1 connect part2::part4 to part3::part5;
         }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
 
         val partDef1 = global.resolve<PartDefinition>("Part1")
         assertNotNull(partDef1)
@@ -215,8 +215,8 @@ class ConnectionTests {
             
             bind part2::part4R = part3::part4;
         }
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        """)
+        assertNoIssues()
 
         val partDef1 = global.resolve<PartDefinition>("Part1")
         assertNotNull(partDef1)
@@ -253,6 +253,6 @@ class ConnectionTests {
             }
             flow action1::item1 to action2::item1;
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 }

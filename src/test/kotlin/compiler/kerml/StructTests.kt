@@ -12,7 +12,7 @@ import kotlin.test.assertNotNull
 
 class StructTests {
     @Test
-    fun testStruct() = testSession("Occurrences", "Objects") {
+    fun testStruct() = testSession( "Objects") {
         loadKerML("""
             struct s {
                 in feature f1; 
@@ -25,7 +25,6 @@ class StructTests {
         val s = global.resolve<Structure>("s")
         assertNotNull(s)
         val objects = global.resolve<Type>("Objects::Object")
-        val occurrece = global.resolve<Type>("Occurrences::occurrences")
         assertTrue(objects in s.allSupertypes())
     }
 }

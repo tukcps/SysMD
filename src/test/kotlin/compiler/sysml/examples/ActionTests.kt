@@ -1,4 +1,4 @@
-package sysmlv2specificationtests
+package compiler.sysml.examples
 
 import com.github.tukcps.sysmd.model.sysml.ActionDefinition
 import com.github.tukcps.sysmd.model.sysml.ActionUsage

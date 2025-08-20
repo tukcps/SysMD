@@ -58,6 +58,8 @@ abstract class ParserProductionRules(
             nextToken()
     }
 
+    fun Token.Kind.isNext(): Boolean = nextToken.kind == this
+
     /**
      * Checks if the current token in the token stream is equal to this, and if so,
      * consumes the token and then executes the lambda given as an argument.

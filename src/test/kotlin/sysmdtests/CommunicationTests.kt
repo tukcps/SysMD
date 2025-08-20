@@ -5,6 +5,7 @@ import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
+import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.*
@@ -26,8 +27,8 @@ class CommunicationTests {
             }
 
             assoc c {
-                private import a;
-                private import b;
+                private import a::x;
+                private import b::y;
                 inv { x == y }
             }
         """)
@@ -45,7 +46,7 @@ class CommunicationTests {
     fun propTestConnectorXtoYtoZ() {
         testSession("Occurrences", "Links") {
             loadKerML("""
-                private import ScalarValues; 
+                private import ScalarValues::*; 
                 class a {
                     feature x: ScalarValues::Real = 2.0;
                 }
@@ -56,19 +57,18 @@ class CommunicationTests {
                     feature z: ScalarValues::Real;
                 }
                 assoc ab {
-                    private import a; 
-                    private import b;  
+                    private import a::x; 
+                    private import b::y;  
                     inv val { x == y }
                 }        
                 assoc bc {
-                    private import b;
-                    private import c;
+                    private import b::y;
+                    private import c::z;
                     inv { y == z }
                 }
             """)
-            assertTrue(status.issues.isEmpty(), status.issues.toString())
+            assertNoIssues()
             propagate()
-            assertTrue(status.issues.isEmpty(), status.issues.toString())
             assertTrue(global.resolveVar("b::y")!!.aadd().getRange() in Range(1.99 .. 2.01))
             assertTrue( global.resolveVar("c::z")!!.aadd().getRange() in Range(1.99 .. 2.01))
         }
@@ -91,12 +91,12 @@ class CommunicationTests {
                 
                 connector c : Links::Link from a to b {
                     // todo -- use end features and connector
-                    private import a;
-                    private import b;
+                    private import a::x;
+                    private import b::y;
                     inv { x == y }
                 }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         propagate()
         assertEquals(Range(2.0..2.0), global.resolve<Feature>("a::x")!!.variable!!.aadd().getRange())
         assertEquals(Range(2.0..2.0), global.resolve<Feature>("b::y")!!.variable!!.aadd().getRange())

@@ -31,7 +31,7 @@ private fun Session.fillCache() {
     repo.stringType = global.resolve<DataType>("ScalarValues::String")
     repo.inRangeType = global.resolve<DataType>("Ranges::InRange")
     repo.occurrence = global.resolve<Type>("Occurrences::Occurrence")
-    repo.links = global.resolve<Association>("Links::Link")
+    repo.links      = global.resolve<Association>("Links::Link")
 }
 
 private fun Session.giveUUID5(){
@@ -366,7 +366,7 @@ private fun Session.initVariables() {
 
     // Initialize internal AST nodes, starting from leaves upwards.
     repo.schedule.forEach {
-        if (it.dependency.isNotBlank() && it !is RelatedExpression)
+        if (it.feature.expression?.isNotBlank() == true && it !is RelatedExpression)
             it.compileExpression()
         it.ast?.runDepthFirst { initialize() }
     }

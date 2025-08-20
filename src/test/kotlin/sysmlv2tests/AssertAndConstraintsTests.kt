@@ -28,34 +28,34 @@ class AssertAndConstraintsTests {
     }
 
     @Test
-    fun assertTestSyntax3() = testSession("ScalarValues", "Constraints") {
+    fun assertTestSyntax3() = testSession("Constraints") {
         loadSysMLv2("""
             assert not { true and false } 
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     @Test
-    fun assertTest() = testSession("ScalarValues", "Constraints") {
+    fun assertTest() = testSession("Constraints") {
         loadSysMLv2("""
             attribute v1: ScalarValues::Real = 1.0; 
             attribute v2: ScalarValues::Real = 3.0; 
             assert constraint c { v1 < v2 }
         """)
         initialize()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val current = global.resolveVar("c")
         assertEquals(XBool.True, current!!.vectorQuantity.value as XBool)
     }
 
     @Test
-    fun assertTest2() = testSession("ScalarValues") {
+    fun assertTest2() = testSession("Constraints") {
         loadSysMLv2("""
             assert constraint test { (3 >= 3) and (3 <= 3) }
             assert constraint test2 { (3 == 3) }
         """)
         initialize()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val testr = global.resolveVar("test")
         assertEquals(builder.True, testr!!.vectorQuantity.value)
         val testr2 = global.resolveVar("test2")

@@ -21,16 +21,16 @@ fun isVariable(feature : Feature) : Boolean {
     require (feature !is Variable)
     when(feature.variable?.vectorQuantity?.value){
         is AADD -> {
-            return if(feature.variable!!.dependency.isNotEmpty()){
-                feature.variable!!.dependency.contains(" .. ") && dependencyStringToMinMax(feature.variable!!.dependency).let { it.first != it.second }
+            return if(feature.expression?.isNotEmpty() == true){
+                feature.expression?.contains(" .. ") == true && dependencyStringToMinMax(feature.expression?:"").let { it.first != it.second }
             }else{
                 feature.variable!!.rangeSpecs[0].max != feature.variable!!.rangeSpecs[0].min
             }
         }
 
         is IDD -> {
-            return if(feature.variable!!.dependency.isNotEmpty()){
-                feature.variable!!.dependency.contains(" .. ") && dependencyStringToMinMax(feature.variable!!.dependency).let { it.first != it.second }
+            return if(feature.expression?.isNotEmpty() == true){
+                feature.expression?.contains(" .. ") == true && dependencyStringToMinMax(feature.expression?:"").let { it.first != it.second }
             }else{
                 feature.variable!!.intSpecs[0].max != feature.variable!!.intSpecs[0].min
             }
@@ -49,10 +49,10 @@ fun isVariable(feature : Feature) : Boolean {
 fun isVariableWithoutValues(feature : Feature) : Boolean {
     require(feature !is Variable)
     return when {
-        feature.model!!.repo.realType in feature.allSupertypes(true) -> feature.variable!!.dependency.isEmpty() && !feature.variable!!.rangeSpecs[0].isFinite()
-        feature.model!!.repo.integerType in feature.allSupertypes(true)-> feature.variable!!.dependency.isEmpty() && feature.variable!!.intSpecs[0].toString().contains("MAX")
+        feature.model!!.repo.realType in feature.allSupertypes(true) -> feature.expression?.isEmpty() == true && !feature.variable!!.rangeSpecs[0].isFinite()
+        feature.model!!.repo.integerType in feature.allSupertypes(true)-> feature.expression?.isEmpty() ==true  && feature.variable!!.intSpecs[0].toString().contains("MAX")
         feature.model!!.repo.stringType in feature.allSupertypes(true)-> (feature.variable!!.vectorQuantity.value as StrDD.Leaf).value.isEmpty()
-        feature.model!!.repo.booleanType in feature.allSupertypes(true)-> feature.variable!!.dependency.isEmpty()
+        feature.model!!.repo.booleanType in feature.allSupertypes(true)-> feature.expression?.isEmpty() == true
         else -> throw SysMDFatalInternalError("Cannot perform this Variable Check on a Expression with Data Type \"${feature.type.firstOrNull()}\"")
     }
 }

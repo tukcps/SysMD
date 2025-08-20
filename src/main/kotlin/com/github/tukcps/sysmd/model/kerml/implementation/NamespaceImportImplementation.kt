@@ -21,9 +21,6 @@ class NamespaceImportImplementation(
     declaredShortName: SimpleName? = null,
     importingNamespace: Namespace = UnresolvedNamespace(),
     importedNamespace: Namespace = UnresolvedNamespace(),
-    override var visibility: Import.VisibilityKind = Import.VisibilityKind.Private,
-    override var isRecursive: Boolean = true,              // False by default in SysMLv2
-    override var isImportAll: Boolean = false,
     elementType: String = "NamespaceImport"
 ): NamespaceImport, RelationshipImplementation(
     declaredName=declaredName,
@@ -33,7 +30,9 @@ class NamespaceImportImplementation(
     target = mutableListOf(importedNamespace),
     elementType = elementType
 ) {
-
+    override var visibility: Import.VisibilityKind = Import.VisibilityKind.Public
+    override var isRecursive: Boolean = true    // False by default in SysMLv2
+    override var isImportAll: Boolean = false
     override val importOwningNamespace: Namespace?
         get() = owningNamespace
 
@@ -46,22 +45,16 @@ class NamespaceImportImplementation(
         get() = target.first() as Namespace
         set(value) { target = mutableListOf(value) }
 
-    override fun toString(): String = super<RelationshipImplementation>.toString() +
-            if (visibility != Import.VisibilityKind.Public) ", " + visibility.toString() else "" +
+    override fun toString(): String = super.toString() +
+            if (visibility != Import.VisibilityKind.Public) ", $visibility" else "" +
             if (isRecursive) ", recursive" else "" +
             if (isImportAll) ", importAll" else ""
 
     override fun clone() : NamespaceImport {
         return NamespaceImportImplementation(
-            declaredName = declaredName,
-            declaredShortName = declaredShortName,
             importedNamespace = importedNamespace,
-            visibility = visibility,
-            isRecursive = isRecursive,
-            isImportAll = isImportAll
         ).also {
-            it.importedNamespace = importedNamespace
-            it.model = model
+            it.updateFrom(this)
         }
     }
 
@@ -69,9 +62,6 @@ class NamespaceImportImplementation(
         super.updateFrom(template)
         if (template is NamespaceImport) {
             importedNamespace = template.importedNamespace
-            visibility = template.visibility
-            isImportAll = template.isImportAll
-            isRecursive = template.isRecursive
         }
     }
 }

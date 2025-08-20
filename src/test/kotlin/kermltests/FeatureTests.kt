@@ -36,7 +36,7 @@ class FeatureTests {
         assertEquals(0, status.issues.size, "error messages: ${status.issues}")
         val feature = global.resolve<Feature>("x")
         assertEquals("x", feature!!.declaredName)
-        assertEquals("\"test2\"", feature.variable!!.dependency.trim())
+        assertEquals("\"test2\"", feature.expression?.trim())
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
@@ -151,7 +151,7 @@ class FeatureTests {
         loadKerML("""
                 feature f: SI::Length [mm] = 1.0 [m];
             """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val f = global.resolve<Feature>("f")
         assertNotNull(f)
         assertTrue(f.isFeatureWithValue())

@@ -8,7 +8,6 @@ import com.github.tukcps.sysmd.services.findRelationshipsFrom
 import com.github.tukcps.sysmd.services.findRelationshipsTo
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolve
-import io.github.tukcps.aadd.values.IntegerRange
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.*

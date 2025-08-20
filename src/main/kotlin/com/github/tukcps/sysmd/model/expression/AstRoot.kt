@@ -219,9 +219,12 @@ class AstRoot(
                 val min = if (t.isNotEmpty() && f.isNotEmpty()) {
                     if (t.size > f.size) f
                     else t
-                } else if (t.isNotEmpty()) t
-                else if (f.isNotEmpty()) f
-                else mutableMapOf()
+                } else
+                    t.ifEmpty {
+                        f.ifEmpty {
+                            mutableMapOf()
+                        }
+                }
 
                 for (entry in min)
                     path[entry.key] = entry.value

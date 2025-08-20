@@ -1,4 +1,4 @@
-package kermlspecificationstests
+package compiler.kerml.examples
 
 import util.mockup.loadKerML
 import util.testSession

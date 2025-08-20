@@ -3,6 +3,7 @@ package com.github.tukcps.sysmd.services.resolve
 import com.github.tukcps.sysmd.exceptions.ElementNotFoundException
 import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.model.kerml.implementation.getOwned
 import com.github.tukcps.sysmd.model.util.*
 
 
@@ -20,7 +21,7 @@ inline fun <reified T: Element> Namespace.resolve(
     resolveReferences: Boolean = true
 ): T? {
 
-    // For redefinitions, we
+    // For redefinitions ?
     // if (this is Feature && this.redefining != null)
     //     return redefining!!.findRecursive(qualifiedName, emptySet(), emptySet(), true, searchInSuperClass, resolveReferences ) as T?
 
@@ -62,8 +63,7 @@ fun Namespace.resolveLocal(name: SimpleName): Element? {
  * @param searchedSuperClasses optionally, the set of searched superclasses; needed to detect cyclic definitions
  * @param searchInOwner optionally, whether the given qualified name is initially given as a simple name, or just
  * became a simple name via recursion that cuts qualified name down.
- * @param searchInSuperClass optionally, wether to recurse into superclasses.
- * Since 3.1 default off! This has an impact on the redefinitions that might not be handled properly (?), but 20% speedup.
+ * @param searchInSuperClass optionally, whether to recurse into superclasses.
  * @return An element of or null, if the name cannot be resolved.
  */
 fun Namespace.findRecursive(
@@ -78,12 +78,6 @@ fun Namespace.findRecursive(
     if (qualifiedName == "self") return this
     if (qualifiedName == "that") return owner
 
-    // Stop search if we search in Any, or if the name has been shortened to an empty string.
-    if (this is Anything)
-        return null
-    if (qualifiedName.hasNoName())
-        return null
-
     // If we have a simple name, we can search in owned elements that are identified by simple names.
     if (qualifiedName.isSimpleName()) {
         var found = resolveLocal(qualifiedName)
@@ -92,8 +86,6 @@ fun Namespace.findRecursive(
         }
         if (found != null) return found
     } else {
-        // Check for Self and Global name that are just pre-defined alias names.
-
         // Search downwards in matching owned namespaces, shortening the qualified name by 1st name.
         // SysMD: We allow "Global" as explicit entry to start of global search.
         var matchingNamespace = resolveLocal(qualifiedName.firstName())
@@ -102,18 +94,33 @@ fun Namespace.findRecursive(
         } else if (matchingNamespace is Feature && matchingNamespace.isEnd) {
             // We could resolve end features as references.
         }
-        if (matchingNamespace != null && matchingNamespace is Namespace) {
+        if (matchingNamespace is Namespace) {
             val newName: QualifiedName = qualifiedName.dropFirstName()
             val found = matchingNamespace.findRecursive(newName, emptySet(), emptySet(),false, searchInSuperClass)
             if (found != null) return found
         }
     }
 
-    // Search in imports, and track searched paths to avoid cyclic search.
-    imports.forEach {
-        if (this !in searchedImports) {
-            val found = it.findRecursive(qualifiedName, searchedImports+this, searchedSuperClasses, searchInOwner, searchInSuperClass)
-            if (found != null) return found
+    if (this !in searchedImports) {
+        // Search in imports, and track searched paths to avoid cyclic search.
+        ownedElement.asSequence()
+            .filterIsInstance<NamespaceImport>()
+            .forEach { import ->
+                val found = if (import.isRecursive)
+                    import.importedNamespace.findRecursive(
+                        qualifiedName,
+                        searchedImports + this,
+                        searchedSuperClasses,
+                        searchInOwner,
+                        searchInSuperClass
+                    )
+                else
+                    import.importedNamespace.getOwned(qualifiedName)
+                if (found != null)
+                    return found
+            }
+        importedMemberships().forEach { import ->
+            if (qualifiedName == import.memberElement.name) return import.memberElement
         }
     }
 
@@ -132,6 +139,10 @@ fun Namespace.findRecursive(
         null
 }
 
+/**
+ * Resolution of feature chains is easier than name resolution; it only searches in owned features
+ * @param relativeName a feature chain
+ */
 fun Namespace.resolveFeatureChain(relativeName: String): Feature? {
     var segments = relativeName.split(".")
     val start = segments.first()

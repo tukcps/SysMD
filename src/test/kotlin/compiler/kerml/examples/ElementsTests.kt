@@ -1,10 +1,9 @@
-package kermlspecificationstests
+package compiler.kerml.examples
 
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
-import kotlin.test.assertTrue
 
 class ElementsTests {
 

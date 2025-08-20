@@ -4,6 +4,7 @@ import util.mockup.loadSysMLv2
 import com.github.tukcps.sysmd.model.sysml.PortDefinition
 import com.github.tukcps.sysmd.model.sysml.PortUsage
 import com.github.tukcps.sysmd.services.resolve.resolve
+import util.assertNoIssues
 import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertNotNull
@@ -24,8 +25,8 @@ class PortTests {
         port def PortDef2 {
         /* members */
         }
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        """)
+        assertNoIssues()
 
         val portDef1 = global.resolve<PortDefinition>("PortDef1")
         assertNotNull(portDef1)
@@ -48,8 +49,8 @@ class PortTests {
         port port2 : PortDef1 {
             /* members */
         }
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        """)
+        assertNoIssues()
 
         val port1 = global.resolve<PortUsage>("port1")
         assertNotNull(port1)

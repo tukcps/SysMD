@@ -94,7 +94,7 @@ class Unit : Cloneable {
                 unitStr = toString() // Set unitStr to string representation of unit, which is not in SI
                 return
             }
-            else -> throw UnknownUnitError("Problem in Unit string")
+            else -> throw UnknownUnitError("Problem in Unit string in unit ${str}")
         }
         while (token == StreamTokenizer.TT_WORD) {
             val resultUnit = splitBaseExponent(strTok.sval)

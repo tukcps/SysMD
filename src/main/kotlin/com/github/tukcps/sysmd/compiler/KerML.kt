@@ -13,6 +13,11 @@ import com.github.tukcps.sysmd.compiler.semantics.ActionsContext
 import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.exceptions.SyntaxError
 import com.github.tukcps.sysmd.exceptions.SysMDException
+import com.github.tukcps.sysmd.model.kerml.UnresolvedElement
+import com.github.tukcps.sysmd.model.kerml.UnresolvedFeature
+import com.github.tukcps.sysmd.model.kerml.UnresolvedFeatureChain
+import com.github.tukcps.sysmd.model.kerml.UnresolvedNamespace
+import com.github.tukcps.sysmd.model.kerml.UnresolvedType
 import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.services.session.Session
@@ -168,8 +173,8 @@ open class KerML(
             (token.kind != SEMICOLON || nested > 0)
             && token.kind != EOF
             && (token.kind != RCURBRACE || nested <= 0))  {
-            if (token.kind == LCURBRACE) nested = nested+1
-            if (token.kind == RCURBRACE) nested = nested-1
+            if (token.kind == LCURBRACE) nested += 1
+            if (token.kind == RCURBRACE) nested -= 1
             consume()
         }
         // If parser skips right curly brace, we need to also pop one from the owner stack.
@@ -189,8 +194,8 @@ open class KerML(
             && token.kind != EOF
             && (token.kind != RCURBRACE || nested <= 0)
         )  {
-            if (token.kind == LCURBRACE) nested = nested+1
-            if (token.kind == RCURBRACE) nested = nested-1
+            if (token.kind == LCURBRACE) nested += 1
+            if (token.kind == RCURBRACE) nested -= 1
             consume()
         }
         // If parser skips right curly brace, we need to also pop one from the owner stack.
@@ -213,4 +218,34 @@ open class KerML(
             this@KerML.rule()
         }
     }
+
+    fun unresolvedFeature(relativeName: String): UnresolvedFeature =
+        UnresolvedFeature(relativeName = relativeName).also {
+            it.input = input
+            it.indices = indices
+        }
+
+    fun unresolvedFeatureChain(relativeName: String): UnresolvedFeatureChain =
+        UnresolvedFeatureChain(relativeName = relativeName).also {
+            it.input = input
+            it.indices = indices
+        }
+
+    fun unresolvedType(relativeName: String): UnresolvedType =
+        UnresolvedType(relativeName = relativeName).also {
+            it.input = input
+            it.indices = indices
+        }
+
+    fun unresolvedElement(relativeName: String): UnresolvedElement =
+        UnresolvedElement(relativeName = relativeName).also {
+            it.input = input
+            it.indices = indices
+        }
+
+    fun unresolvedNamespace(relativeName: String): UnresolvedNamespace =
+        UnresolvedNamespace(relativeName = relativeName).also {
+            it.input = input
+            it.indices = indices
+        }
 }

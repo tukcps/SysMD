@@ -84,6 +84,7 @@ private fun Type.addInheritedFeaturesFromGeneral() {
         if (feature.redefining?.multiplicity() != null && feature.multiplicity() == null)
             model?.addOwnedMember(feature.redefining!!.multiplicity()!!.clone(), feature)
 
+        // ... ValueDomain ... with unit and range
         if (feature.redefining?.getOwnedElement("range") != null && feature.getOwnedElement("range") == null) {
             model?.addOwnedMember(feature.redefining!!.getOwnedElement("range")!!.clone(), feature)
         }
@@ -110,9 +111,6 @@ private fun Type.addInheritedFeaturesFromGeneral() {
                 (feature.owner as Feature).typeConstraint.clear()
                 (feature.owner as Feature).typeConstraint.addAll(specString.split(","))
             }
-        } else if (feature.name == "unit") {
-            if (feature.owner is Feature)
-                (feature.owner as Feature).unitConstraint = feature.expression!!.replace("\"", "")
         }
     }
 

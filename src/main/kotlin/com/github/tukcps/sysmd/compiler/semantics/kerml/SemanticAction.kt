@@ -9,6 +9,7 @@ import com.github.tukcps.sysmd.compiler.semantics.Identification
 import com.github.tukcps.sysmd.model.kerml.Annotation
 import com.github.tukcps.sysmd.model.kerml.Dependency
 import com.github.tukcps.sysmd.model.kerml.Element
+import com.github.tukcps.sysmd.model.kerml.Import
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.Relationship
 import com.github.tukcps.sysmd.model.util.SimpleName
@@ -37,11 +38,13 @@ open class SemanticAction<T: Element>(
     }
 
     /**
-     * Actions that are done before parsing.
+     * Actions that are done before parsing can be handled here.
+     * This includes
+     * - handling visibility of ownership (Namespace), etc.
      */
     open fun init() {}
 
-    fun parse( production: () -> Unit ): T {
+    fun parse( production: SemanticAction<T>.() -> Unit ): T {
         init()
         production()
         finish()
@@ -59,7 +62,6 @@ open class SemanticAction<T: Element>(
         created.indices = context.compiler.consumedToken.indices
         if ( (STANDARD in context.prefixes) or (LIBRARY in context.prefixes) )
             created.isLibraryElement = true
-        @Suppress("UNCHECKED_CAST")
 
         // determine the owner
         val whereToAdd = if (created == context.element()) context.owner() else context.element()
@@ -68,7 +70,12 @@ open class SemanticAction<T: Element>(
             if (created !is Namespace && created !is Annotation && created !is Dependency && created is Relationship)
                 context.model.addOwnedRelationship(created as Relationship, whereToAdd) as T
             else
-                context.model.addOwnedMember(created, whereToAdd)
+                context.model.addOwnedMember(
+                    created,
+                    whereToAdd,
+                    context.visibility ?: Import.VisibilityKind.Public)
+
+        context.visibility = null
 
         context.model.status.createdElements.add(
             context.ownerName() + "::${created.escapedName()}"
@@ -80,6 +87,7 @@ open class SemanticAction<T: Element>(
      */
     open fun finish() {
         context.prefixes.clear()
+        context.visibility = Import.VisibilityKind.Public
     }
 
     /**
