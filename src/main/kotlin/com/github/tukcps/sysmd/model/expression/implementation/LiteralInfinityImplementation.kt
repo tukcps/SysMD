@@ -24,4 +24,5 @@ class LiteralInfinityImplementation(
     expression = expression,
     elementType = elementType
 ) {
+    var value = "Infinity" //String as workaround. Replace later.
 }

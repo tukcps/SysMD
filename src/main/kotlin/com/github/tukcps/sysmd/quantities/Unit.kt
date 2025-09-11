@@ -1,6 +1,6 @@
 package com.github.tukcps.sysmd.quantities
 
-import com.github.tukcps.sysmd.quantities.derivedUnits.QuantityOfDimensionOne
+import com.github.tukcps.sysmd.quantities.derivedUnits.QuantityOfDomainOne
 import java.io.Reader
 import java.io.StreamTokenizer
 import java.io.StringReader
@@ -10,18 +10,18 @@ import kotlin.math.log
 class Unit : Cloneable {
     var unitSet = mutableSetOf<UnitOfMeasurement>()
     private var unitStr = "" //String before converting to SI unit
-    var unitDimension = "" //dimension calculated by calculateUnitDimension()
+    var unitDomain = "" //domain calculated by calculateUnitDomain()
     var calculatedUnitSymbol = ""  // calculated simplified unitString
     var isLogarithmic = false
     var isDifference = false
 
     constructor()
 
-    constructor(unitStr: String, unitDimension:String="") {
-        this.unitDimension = unitDimension
+    constructor(unitStr: String, unitDomain:String="") {
+        this.unitDomain = unitDomain
         parse(unitStr)
-        if(unitDimension!="")
-            testGivenUnitDimension()
+        if(unitDomain!="")
+            testGivenUnitDomain()
     }
 
     /**
@@ -34,7 +34,7 @@ class Unit : Cloneable {
         }
         clone.unitStr = unitStr
         clone.isLogarithmic = isLogarithmic
-        clone.unitDimension = unitDimension
+        clone.unitDomain = unitDomain
         clone.isDifference = isDifference
         return clone
     }
@@ -144,26 +144,26 @@ class Unit : Cloneable {
     }
 
     /**
-     * Calculate the unit dimension of the current unit after converting to SI unit
-     * Also the unitSymbol of this dimension is saved. It is used by the toString() method
+     * Calculate the unit domain of the current unit after converting to SI unit
+     * Also the unitSymbol of this domain is saved. It is used by the toString() method
      * If the unit is not a combined unit, the type was already assigned before and is simply returned
      */
-    fun calculateUnitDimension(unitSpec: String) {
-        if ((unitDimension.isEmpty() || unitSpec.isNotEmpty()) && unitStr != "?") {
+    fun calculateUnitDomain(unitSpec: String) {
+        if ((unitDomain.isEmpty() || unitSpec.isNotEmpty()) && unitStr != "?") {
             val unitString = if (unitSpec.isNotEmpty()) Unit(unitSpec).unitStr else unitStr
             if (unitSet.isEmpty()) {
-                unitDimension = QuantityOfDimensionOne.One.dimension
+                unitDomain = QuantityOfDomainOne.One.domain
                 return
             }
             val unitList = ConversionTables.unitsMap.values.filter { it.getBaseUnits() == unitSet }
             //only return result directly, if unitStr contains the symbol of the compared unit (remove whitespaces first)
             unitList.firstOrNull { unitString.replace(" ", "").contains(it.symbol) }?.let {
-                unitDimension = it.dimension
+                unitDomain = it.domain
                 isDifference = isDifference || it.isDifference
                 return
             }
             unitList.firstOrNull()?.let {
-                unitDimension = it.dimension
+                unitDomain = it.domain
                 isDifference = isDifference || it.isDifference
             }
         }
@@ -179,47 +179,47 @@ class Unit : Cloneable {
                 calculatedUnitSymbol = unitSpec
                 return
             }
-            if (unitSet.isEmpty()) { // Quantity of dimension one
+            if (unitSet.isEmpty()) { // Quantity of domain one
                 calculatedUnitSymbol = ""
                 return
             }
-            //List of possible units for the dimension
+            //List of possible units for the domains
             val unitList = ConversionTables.unitsMap.values.filter { it.getBaseUnits() == unitSet }
 
-            //if there are units from different (or zero) dimensions
+            //if there are units from different (or zero) domains
             //and also different units (or zero), return empty string, because no unique solution possible
-            if (unitList.groupBy { it.dimension }.size!=1 && unitList.groupBy { it.symbol }.size!=1) {
+            if (unitList.groupBy { it.domain }.size!=1 && unitList.groupBy { it.symbol }.size!=1) {
                 calculatedUnitSymbol = ""
                 return
             } else {
-                //For more than one unit of the same dimension use the unit with the closest conversion factor to one
+                //For more than one unit of the same domain use the unit with the closest conversion factor to one
                 calculatedUnitSymbol = unitList.minByOrNull { abs(log(it.convFac, 10.0)) }?.symbol ?: ""
             }
         }
     }
 
     /**
-     * Test if the given unit dimension is possible and add the base unit to the unitSet
+     * Test if the given unit domain is possible and add the base unit to the unitSet
      */
-    private fun testGivenUnitDimension() {
+    private fun testGivenUnitDomain() {
 
-        if (unitSet.isEmpty() && unitDimension!="") { //unit is not defined
-            // unit is not given -> use Unit of given dimension (remove whitespaces and ignore case)
-            val possibleDimensions = ConversionTables.unitsMap.values.filter { it.dimension.equals(unitDimension,ignoreCase = true) }
-            if(possibleDimensions.isNotEmpty()) {
+        if (unitSet.isEmpty() && unitDomain!="") { //unit is not defined
+            // unit is not given -> use Unit of given domain (remove whitespaces and ignore case)
+            val possibleDomain = ConversionTables.unitsMap.values.filter { it.domain.equals(unitDomain,ignoreCase = true) }
+            if(possibleDomain.isNotEmpty()) {
                 // select unit with the closest conversion factor to 1
-                val selectedUnit = possibleDimensions.minByOrNull { abs(it.convFac - 1 )}!!
+                val selectedUnit = possibleDomain.minByOrNull { abs(it.convFac - 1 )}!!
                 unitSet = mutableSetOf(selectedUnit)
                 unitStr = selectedUnit.symbol
             } else
-                unitDimension = ""
+                unitDomain = ""
         } else { //unit is defined
             val possibleUnits = ConversionTables.unitsMap.values.filter { it.getBaseUnits() == clone().toSI().unitSet }
             //test, if the given unit domain is possible (remove whitespaces and ignore case)
-            if (possibleUnits.none { it.dimension.replace(" ", "").equals(unitDimension, ignoreCase = true) })
-                if (unitDimension!="Quantity") { //if dimension is empty, throw no error (no error in this case)
-                    if (unitDimension == "ScalarValues::Real" || unitDimension == "Real")
-                        throw UnitDimensionError("Units with type ScalarValues::Real are not allowed. Use Type from SI Package instead with units (e.g. SI::Time, SI::Length, SI::Quantity ...)")
+            if (possibleUnits.none { it.domain.replace(" ", "").equals(unitDomain, ignoreCase = true) })
+                if (unitDomain!="Quantity") { //if domain is empty, throw no error (no error in this case)
+                    if (unitDomain == "ScalarValues::Real" || unitDomain == "Real")
+                        throw UnitDomainError("Units with type ScalarValues::Real are not allowed. Use Type from SI Package instead with units (e.g. SI::Time, SI::Length, SI::Quantity ...)")
                     // else
                     //    throw UnitDimensionError("Domain $unitDimension not possible for unit $this")
                 }
@@ -280,14 +280,14 @@ class Unit : Cloneable {
 
     /**
      * Adds difference if isDifference is true
-     * @return dimension of the unit including difference if needed
+     * @return domain of the unit including difference if needed
      */
-    fun getUnitDimension(value: Double): String {
+    fun getUnitDomain(value: Double): String {
         //special case for time:
         return when {
-            unitDimension == "time" || unitDimension == "timestamp" -> if (value < 50 * 365 * 24 * 60 * 60) "time" else "timestamp"
-            isDifference -> "$unitDimension Difference"
-            else -> unitDimension
+            unitDomain == "time" || unitDomain == "timestamp" -> if (value < 50 * 365 * 24 * 60 * 60) "time" else "timestamp"
+            isDifference -> "$unitDomain Difference"
+            else -> unitDomain
         }
     }
 
@@ -311,7 +311,7 @@ class Unit : Cloneable {
     override fun hashCode(): Int {
         var result = unitSet.hashCode()
         result = 31 * result + unitStr.hashCode()
-        result = 31 * result + unitDimension.hashCode()
+        result = 31 * result + unitDomain.hashCode()
         result = 31 * result + isLogarithmic.hashCode()
         result = 31 * result + isDifference.hashCode()
         return result

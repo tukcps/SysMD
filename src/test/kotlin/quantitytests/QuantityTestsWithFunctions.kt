@@ -99,7 +99,7 @@ class QuantityTestsWithFunctions {
         """)
         propagate()
         assertEquals("kg^2 m^4 / A^4 s^6", global.resolveVar("b")!!.vectorQuantity.unit.toString())
-        assertEquals("ElectricalResistance", global.resolveVar("a")!!.vectorQuantity.getDimension())
+        assertEquals("ElectricalResistance", global.resolveVar("a")!!.vectorQuantity.getDomain())
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 

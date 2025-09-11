@@ -6,7 +6,7 @@ package com.github.tukcps.sysmd.quantities
  * @param name Name of the UnitOfMeasurement
  * @param symbol Short symbol of the UnitOfMeasurement
  * @param prefix Prefix of the UnitOfMeasurement (NoPrefix if there is none)
- * @param dimension Dimension string of the UnitOfMeasurement
+ * @param domain Domain string of the UnitOfMeasurement
  * @param convFac Conversion to BaseUnit (Base Value = confFac * Value of current Unit)
  * @param exponent Exponent of the UnitOfMeasurement
  * @param isLogarithmic This value is true, if the value of the current UnitOfMeasurement uses a logarithmic representation (like Decibel)
@@ -16,7 +16,7 @@ open class UnitOfMeasurement(
     val name: String,
     val symbol: String,
     var prefix: Prefix,
-    var dimension: String,
+    var domain: String,
     var convFac: Double,
     var exponent: Int,
     var isLogarithmic: Boolean = false,
@@ -28,7 +28,7 @@ open class UnitOfMeasurement(
             name,
             symbol,
             prefix.clone(),
-            dimension,
+            domain,
             convFac,
             exponent,
             isLogarithmic,
@@ -62,7 +62,7 @@ open class UnitOfMeasurement(
         if (name != other.name) return false
         if (symbol != other.symbol) return false
         if (prefix != other.prefix) return false
-        if (dimension != other.dimension) return false
+        if (domain != other.domain) return false
         if (convFac != other.convFac) return false
         if (exponent != other.exponent) return false
         return isLogarithmic == other.isLogarithmic
@@ -72,7 +72,7 @@ open class UnitOfMeasurement(
         var result = name.hashCode()
         result = 31 * result + symbol.hashCode()
         result = 31 * result + prefix.hashCode()
-        result = 31 * result + dimension.hashCode()
+        result = 31 * result + domain.hashCode()
         result = 31 * result + convFac.hashCode()
         result = 31 * result + exponent
         result = 31 * result + isLogarithmic.hashCode()

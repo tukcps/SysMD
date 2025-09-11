@@ -27,5 +27,5 @@ class DDError internal constructor(msg: String) :
 class VectorDimensionError internal constructor(msg: String):
     Exception("Problem with vector size: $msg")
 
-class UnitDimensionError internal constructor(msg: String):
-    Exception("Problem with unit dimension: $msg")
+class UnitDomainError internal constructor(msg: String):
+    Exception("Problem with unit domain: $msg")

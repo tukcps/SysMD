@@ -22,9 +22,9 @@ class QuantityTestDimensions {
         propagate()
         assertEquals("m", global.resolveVar("s")!!.vectorQuantity.unit.toString())
         assertEquals(10.0, global.resolveVar("s")!!.aadd().getRange().max, 0.00001)
-        assertEquals("Time", global.resolveVar("t")!!.vectorQuantity.getDimension())
-        assertEquals("Speed", global.resolveVar("v")!!.vectorQuantity.getDimension())
-        assertEquals("Length", global.resolveVar("s")!!.vectorQuantity.getDimension())
+        assertEquals("Time", global.resolveVar("t")!!.vectorQuantity.getDomain())
+        assertEquals("Speed", global.resolveVar("v")!!.vectorQuantity.getDomain())
+        assertEquals("Length", global.resolveVar("s")!!.vectorQuantity.getDomain())
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
@@ -40,10 +40,10 @@ class QuantityTestDimensions {
         assertEquals("m / s", global.resolveVar("v2")!!.vectorQuantity.unit.toString())
         assertEquals(10.0, global.resolveVar("v2")!!.aadd().getRange().min, 0.00001)
         assertEquals(20.0, global.resolveVar("s")!!.aadd().getRange().max, 0.00001)
-        assertEquals("Time", global.resolveVar("t")!!.vectorQuantity.getDimension())
-        assertEquals("Speed", global.resolveVar("v")!!.vectorQuantity.getDimension())
-        assertEquals("Speed", global.resolveVar("v2")!!.vectorQuantity.getDimension())
-        assertEquals("Length", global.resolveVar("s")!!.vectorQuantity.getDimension())
+        assertEquals("Time", global.resolveVar("t")!!.vectorQuantity.getDomain())
+        assertEquals("Speed", global.resolveVar("v")!!.vectorQuantity.getDomain())
+        assertEquals("Speed", global.resolveVar("v2")!!.vectorQuantity.getDomain())
+        assertEquals("Length", global.resolveVar("s")!!.vectorQuantity.getDomain())
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
@@ -60,9 +60,9 @@ class QuantityTestDimensions {
         assertEquals(2.0, global.resolveVar("t")!!.aadd().getRange().min, 0.00001)
         assertEquals(10.0, global.resolveVar("v")!!.aadd().getRange().max, 0.00001)
         assertEquals(20.0, global.resolveVar("s")!!.aadd().getRange().min, 0.00001)
-        assertEquals("Time", global.resolveVar("t")!!.vectorQuantity.getDimension())
-        assertEquals("Speed", global.resolveVar("v")!!.vectorQuantity.getDimension())
-        assertEquals("Length", global.resolveVar("s")!!.vectorQuantity.getDimension())
+        assertEquals("Time", global.resolveVar("t")!!.vectorQuantity.getDomain())
+        assertEquals("Speed", global.resolveVar("v")!!.vectorQuantity.getDomain())
+        assertEquals("Length", global.resolveVar("s")!!.vectorQuantity.getDomain())
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
@@ -78,10 +78,10 @@ class QuantityTestDimensions {
         propagate()
         assertEquals("m / s", global.resolveVar("v0")!!.vectorQuantity.unit.toString())
         assertEquals(4.0, global.resolveVar("s")!!.aadd().getRange().min, 0.00001)
-        assertEquals("Time", global.resolveVar("t")!!.vectorQuantity.getDimension())
-        assertEquals("Speed", global.resolveVar("v0")!!.vectorQuantity.getDimension())
-        assertEquals("Acceleration", global.resolveVar("a")!!.vectorQuantity.getDimension())
-        assertEquals("Length", global.resolveVar("s")!!.vectorQuantity.getDimension())
+        assertEquals("Time", global.resolveVar("t")!!.vectorQuantity.getDomain())
+        assertEquals("Speed", global.resolveVar("v0")!!.vectorQuantity.getDomain())
+        assertEquals("Acceleration", global.resolveVar("a")!!.vectorQuantity.getDomain())
+        assertEquals("Length", global.resolveVar("s")!!.vectorQuantity.getDomain())
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
@@ -95,10 +95,10 @@ class QuantityTestDimensions {
         )
         propagate()
         assertEquals(5.0, global.resolveVar("s")!!.aadd().getRange().min, 0.00001)
-        assertEquals("Time", global.resolveVar("t")!!.vectorQuantity.getDimension())
-        assertEquals("Speed", global.resolveVar("v")!!.vectorQuantity.getDimension())
-        assertEquals("Acceleration", global.resolveVar("g")!!.vectorQuantity.getDimension())
-        assertEquals("Speed", global.resolveVar("s")!!.vectorQuantity.getDimension())
+        assertEquals("Time", global.resolveVar("t")!!.vectorQuantity.getDomain())
+        assertEquals("Speed", global.resolveVar("v")!!.vectorQuantity.getDomain())
+        assertEquals("Acceleration", global.resolveVar("g")!!.vectorQuantity.getDomain())
+        assertEquals("Speed", global.resolveVar("s")!!.vectorQuantity.getDomain())
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
@@ -113,10 +113,10 @@ class QuantityTestDimensions {
         propagate()
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(6.0, global.resolveVar("s")!!.aadd().getRange().min, 0.00001)
-        assertEquals("Length", global.resolveVar("h")!!.vectorQuantity.getDimension())
-        assertEquals("Speed", global.resolveVar("v0")!!.vectorQuantity.getDimension())
-        assertEquals("Acceleration", global.resolveVar("g")!!.vectorQuantity.getDimension())
-        assertEquals("Length", global.resolveVar("s")!!.vectorQuantity.getDimension())
+        assertEquals("Length", global.resolveVar("h")!!.vectorQuantity.getDomain())
+        assertEquals("Speed", global.resolveVar("v0")!!.vectorQuantity.getDomain())
+        assertEquals("Acceleration", global.resolveVar("g")!!.vectorQuantity.getDomain())
+        assertEquals("Length", global.resolveVar("s")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -130,10 +130,10 @@ class QuantityTestDimensions {
         propagate()
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(45.0, global.resolveVar("Fz")!!.aadd().getRange().min, 0.00001)
-        assertEquals("Length", global.resolveVar("r")!!.vectorQuantity.getDimension())
-        assertEquals("Frequency", global.resolveVar("Omega")!!.vectorQuantity.getDimension())
-        assertEquals("Mass", global.resolveVar("m")!!.vectorQuantity.getDimension())
-        assertEquals("Force", global.resolveVar("Fz")!!.vectorQuantity.getDimension())
+        assertEquals("Length", global.resolveVar("r")!!.vectorQuantity.getDomain())
+        assertEquals("Frequency", global.resolveVar("Omega")!!.vectorQuantity.getDomain())
+        assertEquals("Mass", global.resolveVar("m")!!.vectorQuantity.getDomain())
+        assertEquals("Force", global.resolveVar("Fz")!!.vectorQuantity.getDomain())
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
@@ -148,10 +148,10 @@ class QuantityTestDimensions {
         propagate()
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(45.0, global.resolveVar("Fz")!!.aadd().getRange().min, 0.00001)
-        assertEquals("Length", global.resolveVar("r")!!.vectorQuantity.getDimension())
-        assertEquals("Frequency", global.resolveVar("Omega")!!.vectorQuantity.getDimension())
-        assertEquals("Mass", global.resolveVar("m")!!.vectorQuantity.getDimension())
-        assertEquals("Force", global.resolveVar("Fz")!!.vectorQuantity.getDimension())
+        assertEquals("Length", global.resolveVar("r")!!.vectorQuantity.getDomain())
+        assertEquals("Frequency", global.resolveVar("Omega")!!.vectorQuantity.getDomain())
+        assertEquals("Mass", global.resolveVar("m")!!.vectorQuantity.getDomain())
+        assertEquals("Force", global.resolveVar("Fz")!!.vectorQuantity.getDomain())
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
@@ -166,9 +166,9 @@ class QuantityTestDimensions {
         propagate()
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(45.0, global.resolveVar("E")!!.aadd().getRange().min, 0.00001)
-        assertEquals("Force", global.resolveVar("F")!!.vectorQuantity.getDimension())
-        assertEquals("Length", global.resolveVar("s")!!.vectorQuantity.getDimension())
-        assertEquals("Energy", global.resolveVar("E")!!.vectorQuantity.getDimension())
+        assertEquals("Force", global.resolveVar("F")!!.vectorQuantity.getDomain())
+        assertEquals("Length", global.resolveVar("s")!!.vectorQuantity.getDomain())
+        assertEquals("Energy", global.resolveVar("E")!!.vectorQuantity.getDomain())
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
@@ -183,9 +183,9 @@ class QuantityTestDimensions {
         propagate()
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(45.0, global.resolveVar("p")!!.aadd().getRange().min, 0.00001)
-        assertEquals("Mass", global.resolveVar("m")!!.vectorQuantity.getDimension())
-        assertEquals("Speed", global.resolveVar("v")!!.vectorQuantity.getDimension())
-        assertEquals("Momentum", global.resolveVar("p")!!.vectorQuantity.getDimension())
+        assertEquals("Mass", global.resolveVar("m")!!.vectorQuantity.getDomain())
+        assertEquals("Speed", global.resolveVar("v")!!.vectorQuantity.getDomain())
+        assertEquals("Momentum", global.resolveVar("p")!!.vectorQuantity.getDomain())
     }
 
     /**Units with gravitation**/
@@ -202,11 +202,11 @@ class QuantityTestDimensions {
         propagate()
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(18.0, global.resolveVar("Epot")!!.aadd().getRange().min, 0.00001)
-        assertEquals("Mass", global.resolveVar("m1")!!.vectorQuantity.getDimension())
-        assertEquals("Mass", global.resolveVar("m2")!!.vectorQuantity.getDimension())
-        assertEquals("Length", global.resolveVar("r1")!!.vectorQuantity.getDimension())
-        assertEquals("Length", global.resolveVar("r2")!!.vectorQuantity.getDimension())
-        assertEquals("Energy", global.resolveVar("Epot")!!.vectorQuantity.getDimension())
+        assertEquals("Mass", global.resolveVar("m1")!!.vectorQuantity.getDomain())
+        assertEquals("Mass", global.resolveVar("m2")!!.vectorQuantity.getDomain())
+        assertEquals("Length", global.resolveVar("r1")!!.vectorQuantity.getDomain())
+        assertEquals("Length", global.resolveVar("r2")!!.vectorQuantity.getDomain())
+        assertEquals("Energy", global.resolveVar("Epot")!!.vectorQuantity.getDomain())
     }
 
     /**Units with electricity**/
@@ -221,9 +221,9 @@ class QuantityTestDimensions {
         )
         propagate()
         assertEquals(26.5258, global.resolveVar("E")!!.aadd().getRange().min, 0.0001)
-        assertEquals("ElectricCharge", global.resolveVar("Q")!!.vectorQuantity.getDimension())
-        assertEquals("Length", global.resolveVar("r")!!.vectorQuantity.getDimension())
-        assertEquals("ElectricField", global.resolveVar("E")!!.vectorQuantity.getDimension())
+        assertEquals("ElectricCharge", global.resolveVar("Q")!!.vectorQuantity.getDomain())
+        assertEquals("Length", global.resolveVar("r")!!.vectorQuantity.getDomain())
+        assertEquals("ElectricField", global.resolveVar("E")!!.vectorQuantity.getDomain())
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
@@ -240,10 +240,10 @@ class QuantityTestDimensions {
         propagate() // Strange, destroys an already correct result.
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(26.5258, global.resolveVar("F")!!.aadd().getRange().min, 0.0001)
-        assertEquals("ElectricCharge", global.resolveVar("Q1")!!.vectorQuantity.getDimension())
-        assertEquals("ElectricCharge", global.resolveVar("Q2")!!.vectorQuantity.getDimension())
-        assertEquals("Length", global.resolveVar("r")!!.vectorQuantity.getDimension())
-        assertEquals("Force", global.resolveVar("F")!!.vectorQuantity.getDimension())
+        assertEquals("ElectricCharge", global.resolveVar("Q1")!!.vectorQuantity.getDomain())
+        assertEquals("ElectricCharge", global.resolveVar("Q2")!!.vectorQuantity.getDomain())
+        assertEquals("Length", global.resolveVar("r")!!.vectorQuantity.getDomain())
+        assertEquals("Force", global.resolveVar("F")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -257,10 +257,10 @@ class QuantityTestDimensions {
         )
         propagate()
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
-        assertEquals("ElectricField", global.resolveVar("E")!!.vectorQuantity.getDimension())
-        assertEquals("ElectricCharge", global.resolveVar("q")!!.vectorQuantity.getDimension())
-        assertEquals("Length", global.resolveVar("s")!!.vectorQuantity.getDimension())
-        assertEquals("Energy", global.resolveVar("W")!!.vectorQuantity.getDimension())
+        assertEquals("ElectricField", global.resolveVar("E")!!.vectorQuantity.getDomain())
+        assertEquals("ElectricCharge", global.resolveVar("q")!!.vectorQuantity.getDomain())
+        assertEquals("Length", global.resolveVar("s")!!.vectorQuantity.getDomain())
+        assertEquals("Energy", global.resolveVar("W")!!.vectorQuantity.getDomain())
         assertEquals(2.0, global.resolveVar("W")!!.aadd().getRange().min, 0.0001)
     }
 
@@ -275,9 +275,9 @@ class QuantityTestDimensions {
         propagate()
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(0.4, global.resolveVar("U")!!.aadd().getRange().min, 0.0001)
-        assertEquals("ElectricField", global.resolveVar("E")!!.vectorQuantity.getDimension())
-        assertEquals("Length", global.resolveVar("d")!!.vectorQuantity.getDimension())
-        assertEquals("Voltage", global.resolveVar("U")!!.vectorQuantity.getDimension())
+        assertEquals("ElectricField", global.resolveVar("E")!!.vectorQuantity.getDomain())
+        assertEquals("Length", global.resolveVar("d")!!.vectorQuantity.getDomain())
+        assertEquals("Voltage", global.resolveVar("U")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -294,9 +294,9 @@ class QuantityTestDimensions {
         propagate()
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("W")!!.aadd().getRange().min, 0.0001)
-        assertEquals("ElectricCharge", global.resolveVar("Q1")!!.vectorQuantity.getDimension())
-        assertEquals("Length", global.resolveVar("r1")!!.vectorQuantity.getDimension())
-        assertEquals("Energy", global.resolveVar("W")!!.vectorQuantity.getDimension())
+        assertEquals("ElectricCharge", global.resolveVar("Q1")!!.vectorQuantity.getDomain())
+        assertEquals("Length", global.resolveVar("r1")!!.vectorQuantity.getDomain())
+        assertEquals("Energy", global.resolveVar("W")!!.vectorQuantity.getDomain())
     }
 
   
@@ -311,7 +311,7 @@ class QuantityTestDimensions {
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(0.2, global.resolveVar("G")!!.aadd().getRange().min, 0.0001)
         assertEquals("m^2 / s^2", global.resolveVar("G")!!.vectorQuantity.unit.toString())
-        assertEquals("AbsorbedDose", global.resolveVar("G")!!.vectorQuantity.getDimension())
+        assertEquals("AbsorbedDose", global.resolveVar("G")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -324,8 +324,8 @@ class QuantityTestDimensions {
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("A")!!.aadd().getRange().min, 0.0001)
         assertEquals("1 / s", global.resolveVar("A")!!.vectorQuantity.unit.toString())
-        assertEquals("Activity", global.resolveVar("A")!!.vectorQuantity.getDimension())
-        assertEquals("Time", global.resolveVar("t1")!!.vectorQuantity.getDimension())
+        assertEquals("Activity", global.resolveVar("A")!!.vectorQuantity.getDomain())
+        assertEquals("Time", global.resolveVar("t1")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -339,7 +339,7 @@ class QuantityTestDimensions {
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(0.5, global.resolveVar("A")!!.aadd().getRange().min, 0.0001)
         assertEquals("m^2", global.resolveVar("A")!!.vectorQuantity.unit.toString())
-        assertEquals("Area", global.resolveVar("A")!!.vectorQuantity.getDimension())
+        assertEquals("Area", global.resolveVar("A")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -353,9 +353,9 @@ class QuantityTestDimensions {
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(2.0, global.resolveVar("C")!!.aadd().getRange().min, 0.0001)
         assertEquals("A^2 s^4 / kg m^2", global.resolveVar("C")!!.vectorQuantity.unit.toString())
-        assertEquals("Capacitance", global.resolveVar("C")!!.vectorQuantity.getDimension())
-        assertEquals("ElectricCharge", global.resolveVar("Q")!!.vectorQuantity.getDimension())
-        assertEquals("Voltage", global.resolveVar("U")!!.vectorQuantity.getDimension())
+        assertEquals("Capacitance", global.resolveVar("C")!!.vectorQuantity.getDomain())
+        assertEquals("ElectricCharge", global.resolveVar("Q")!!.vectorQuantity.getDomain())
+        assertEquals("Voltage", global.resolveVar("U")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -369,9 +369,9 @@ class QuantityTestDimensions {
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("K")!!.aadd().getRange().min, 0.0001)
         assertEquals("mol / s", global.resolveVar("K")!!.vectorQuantity.unit.toString())
-        assertEquals("CatalyticActivity", global.resolveVar("K")!!.vectorQuantity.getDimension())
-        assertEquals("AmountOfSubstance", global.resolveVar("Q")!!.vectorQuantity.getDimension())
-        assertEquals("Time", global.resolveVar("t")!!.vectorQuantity.getDimension())
+        assertEquals("CatalyticActivity", global.resolveVar("K")!!.vectorQuantity.getDomain())
+        assertEquals("AmountOfSubstance", global.resolveVar("Q")!!.vectorQuantity.getDomain())
+        assertEquals("Time", global.resolveVar("t")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -386,9 +386,9 @@ class QuantityTestDimensions {
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(2.0, global.resolveVar("d")!!.aadd().getRange().min, 0.0001)
         assertEquals("kg / m^3", global.resolveVar("d")!!.vectorQuantity.unit.toString())
-        assertEquals("Density", global.resolveVar("d")!!.vectorQuantity.getDimension())
-        assertEquals("Volume", global.resolveVar("V")!!.vectorQuantity.getDimension())
-        assertEquals("Mass", global.resolveVar("m")!!.vectorQuantity.getDimension())
+        assertEquals("Density", global.resolveVar("d")!!.vectorQuantity.getDomain())
+        assertEquals("Volume", global.resolveVar("V")!!.vectorQuantity.getDomain())
+        assertEquals("Mass", global.resolveVar("m")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -402,9 +402,9 @@ class QuantityTestDimensions {
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("G")!!.aadd().getRange().min, 0.0001)
         assertEquals("A^2 s^3 / kg m^2", global.resolveVar("G")!!.vectorQuantity.unit.toString())
-        assertEquals("ElectricalConductance", global.resolveVar("G")!!.vectorQuantity.getDimension())
-        assertEquals("Voltage", global.resolveVar("V")!!.vectorQuantity.getDimension())
-        assertEquals("ElectricCurrent", global.resolveVar("I")!!.vectorQuantity.getDimension())
+        assertEquals("ElectricalConductance", global.resolveVar("G")!!.vectorQuantity.getDomain())
+        assertEquals("Voltage", global.resolveVar("V")!!.vectorQuantity.getDomain())
+        assertEquals("ElectricCurrent", global.resolveVar("I")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -419,9 +419,9 @@ class QuantityTestDimensions {
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("R")!!.aadd().getRange().min, 0.0001)
         assertEquals("kg m^2 / A^2 s^3", global.resolveVar("R")!!.vectorQuantity.unit.toString())
-        assertEquals("ElectricalResistance", global.resolveVar("R")!!.vectorQuantity.getDimension())
-        assertEquals("Voltage", global.resolveVar("U")!!.vectorQuantity.getDimension())
-        assertEquals("ElectricCurrent", global.resolveVar("I")!!.vectorQuantity.getDimension())
+        assertEquals("ElectricalResistance", global.resolveVar("R")!!.vectorQuantity.getDomain())
+        assertEquals("Voltage", global.resolveVar("U")!!.vectorQuantity.getDomain())
+        assertEquals("ElectricCurrent", global.resolveVar("I")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -435,9 +435,9 @@ class QuantityTestDimensions {
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("Q")!!.aadd().getRange().min, 0.0001)
         assertEquals("A s", global.resolveVar("Q")!!.vectorQuantity.unit.toString())
-        assertEquals("ElectricCharge", global.resolveVar("Q")!!.vectorQuantity.getDimension())
-        assertEquals("Time", global.resolveVar("t")!!.vectorQuantity.getDimension())
-        assertEquals("ElectricCurrent", global.resolveVar("I")!!.vectorQuantity.getDimension())
+        assertEquals("ElectricCharge", global.resolveVar("Q")!!.vectorQuantity.getDomain())
+        assertEquals("Time", global.resolveVar("t")!!.vectorQuantity.getDomain())
+        assertEquals("ElectricCurrent", global.resolveVar("I")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -452,9 +452,9 @@ class QuantityTestDimensions {
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("U")!!.aadd().getRange().min, 0.0001)
         assertEquals("kg m^2 / A s^3", global.resolveVar("U")!!.vectorQuantity.unit.toString())
-        assertEquals("Voltage", global.resolveVar("U")!!.vectorQuantity.getDimension())
-        assertEquals("Power", global.resolveVar("P")!!.vectorQuantity.getDimension())
-        assertEquals("ElectricCurrent", global.resolveVar("I")!!.vectorQuantity.getDimension())
+        assertEquals("Voltage", global.resolveVar("U")!!.vectorQuantity.getDomain())
+        assertEquals("Power", global.resolveVar("P")!!.vectorQuantity.getDomain())
+        assertEquals("ElectricCurrent", global.resolveVar("I")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -470,9 +470,9 @@ class QuantityTestDimensions {
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("E")!!.aadd().getRange().min, 0.0001)
         assertEquals("kg m^2 / s^2", global.resolveVar("E")!!.vectorQuantity.unit.toString())
-        assertEquals("Energy", global.resolveVar("E")!!.vectorQuantity.getDimension())
-        assertEquals("Length", global.resolveVar("l")!!.vectorQuantity.getDimension())
-        assertEquals("Force", global.resolveVar("F")!!.vectorQuantity.getDimension())
+        assertEquals("Energy", global.resolveVar("E")!!.vectorQuantity.getDomain())
+        assertEquals("Length", global.resolveVar("l")!!.vectorQuantity.getDomain())
+        assertEquals("Force", global.resolveVar("F")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -487,9 +487,9 @@ class QuantityTestDimensions {
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("ED")!!.aadd().getRange().min, 0.0001)
         assertEquals("kg / m s^2", global.resolveVar("ED")!!.vectorQuantity.unit.toString())
-        assertEquals("EnergyDensity", global.resolveVar("ED")!!.vectorQuantity.getDimension())
-        assertEquals("Energy", global.resolveVar("E")!!.vectorQuantity.getDimension())
-        assertEquals("Volume", global.resolveVar("V")!!.vectorQuantity.getDimension())
+        assertEquals("EnergyDensity", global.resolveVar("ED")!!.vectorQuantity.getDomain())
+        assertEquals("Energy", global.resolveVar("E")!!.vectorQuantity.getDomain())
+        assertEquals("Volume", global.resolveVar("V")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -504,9 +504,9 @@ class QuantityTestDimensions {
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("S")!!.aadd().getRange().min, 0.0001)
         assertEquals("kg m^2 / K s^2", global.resolveVar("S")!!.vectorQuantity.unit.toString())
-        assertEquals("Entropy", global.resolveVar("S")!!.vectorQuantity.getDimension())
-        assertEquals("Temperature", global.resolveVar("T")!!.vectorQuantity.getDimension())
-        assertEquals("Energy", global.resolveVar("E")!!.vectorQuantity.getDimension())
+        assertEquals("Entropy", global.resolveVar("S")!!.vectorQuantity.getDomain())
+        assertEquals("Temperature", global.resolveVar("T")!!.vectorQuantity.getDomain())
+        assertEquals("Energy", global.resolveVar("E")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -521,9 +521,9 @@ class QuantityTestDimensions {
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("F")!!.aadd().getRange().min, 0.0001)
         assertEquals("kg m / s^2", global.resolveVar("F")!!.vectorQuantity.unit.toString())
-        assertEquals("Force", global.resolveVar("F")!!.vectorQuantity.getDimension())
-        assertEquals("Acceleration", global.resolveVar("a")!!.vectorQuantity.getDimension())
-        assertEquals("Mass", global.resolveVar("m")!!.vectorQuantity.getDimension())
+        assertEquals("Force", global.resolveVar("F")!!.vectorQuantity.getDomain())
+        assertEquals("Acceleration", global.resolveVar("a")!!.vectorQuantity.getDomain())
+        assertEquals("Mass", global.resolveVar("m")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -536,8 +536,8 @@ class QuantityTestDimensions {
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("f")!!.aadd().getRange().min, 0.0001)
         assertEquals("1 / s", global.resolveVar("f")!!.vectorQuantity.unit.toString())
-        assertEquals("Frequency", global.resolveVar("f")!!.vectorQuantity.getDimension())
-        assertEquals("Time", global.resolveVar("t")!!.vectorQuantity.getDimension())
+        assertEquals("Frequency", global.resolveVar("f")!!.vectorQuantity.getDomain())
+        assertEquals("Time", global.resolveVar("t")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -554,9 +554,9 @@ class QuantityTestDimensions {
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("E")!!.aadd().getRange().min, 0.0001)
         assertEquals("cd / m^2", global.resolveVar("E")!!.vectorQuantity.unit.toString())
-        assertEquals("Illuminance", global.resolveVar("E")!!.vectorQuantity.getDimension())
-        assertEquals("Area", global.resolveVar("A")!!.vectorQuantity.getDimension())
-        assertEquals("LuminousIntensity", global.resolveVar("I")!!.vectorQuantity.getDimension())
+        assertEquals("Illuminance", global.resolveVar("E")!!.vectorQuantity.getDomain())
+        assertEquals("Area", global.resolveVar("A")!!.vectorQuantity.getDomain())
+        assertEquals("LuminousIntensity", global.resolveVar("I")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -570,9 +570,9 @@ class QuantityTestDimensions {
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("L")!!.aadd().getRange().min, 0.0001)
         assertEquals("kg m^2 / A^2 s^2", global.resolveVar("L")!!.vectorQuantity.unit.toString())
-        assertEquals("Inductance", global.resolveVar("L")!!.vectorQuantity.getDimension())
-        assertEquals("ElectricCurrent", global.resolveVar("I")!!.vectorQuantity.getDimension())
-        assertEquals("MagneticFlux", global.resolveVar("W")!!.vectorQuantity.getDimension())
+        assertEquals("Inductance", global.resolveVar("L")!!.vectorQuantity.getDomain())
+        assertEquals("ElectricCurrent", global.resolveVar("I")!!.vectorQuantity.getDomain())
+        assertEquals("MagneticFlux", global.resolveVar("W")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -586,9 +586,9 @@ class QuantityTestDimensions {
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("v")!!.aadd().getRange().min, 0.0001)
         assertEquals("m^2 / s", global.resolveVar("v")!!.vectorQuantity.unit.toString())
-        assertEquals("KinematicViscosity", global.resolveVar("v")!!.vectorQuantity.getDimension())
-        assertEquals("Time", global.resolveVar("t")!!.vectorQuantity.getDimension())
-        assertEquals("Area", global.resolveVar("A")!!.vectorQuantity.getDimension())
+        assertEquals("KinematicViscosity", global.resolveVar("v")!!.vectorQuantity.getDomain())
+        assertEquals("Time", global.resolveVar("t")!!.vectorQuantity.getDomain())
+        assertEquals("Area", global.resolveVar("A")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -602,9 +602,9 @@ class QuantityTestDimensions {
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("I")!!.aadd().getRange().min, 0.0001)
         assertEquals("cd", global.resolveVar("I")!!.vectorQuantity.unit.toString())
-        assertEquals("Luminance", global.resolveVar("v")!!.vectorQuantity.getDimension())
-        assertEquals("Area", global.resolveVar("A")!!.vectorQuantity.getDimension())
-        assertEquals("LuminousIntensity", global.resolveVar("I")!!.vectorQuantity.getDimension())
+        assertEquals("Luminance", global.resolveVar("v")!!.vectorQuantity.getDomain())
+        assertEquals("Area", global.resolveVar("A")!!.vectorQuantity.getDomain())
+        assertEquals("LuminousIntensity", global.resolveVar("I")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -618,9 +618,9 @@ class QuantityTestDimensions {
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("K")!!.aadd().getRange().min, 0.0001)
         assertEquals("cd s^3 / kg m^2", global.resolveVar("K")!!.vectorQuantity.unit.toString())
-        assertEquals("LuminousEfficacy", global.resolveVar("K")!!.vectorQuantity.getDimension())
-        assertEquals("LuminousFlux", global.resolveVar("A")!!.vectorQuantity.getDimension())
-        assertEquals("Power", global.resolveVar("P")!!.vectorQuantity.getDimension())
+        assertEquals("LuminousEfficacy", global.resolveVar("K")!!.vectorQuantity.getDomain())
+        assertEquals("LuminousFlux", global.resolveVar("A")!!.vectorQuantity.getDomain())
+        assertEquals("Power", global.resolveVar("P")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -634,9 +634,9 @@ class QuantityTestDimensions {
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("Q")!!.aadd().getRange().min, 0.0001)
         assertEquals("cd s", global.resolveVar("Q")!!.vectorQuantity.unit.toString())
-        assertEquals("LuminousEnergy", global.resolveVar("Q")!!.vectorQuantity.getDimension())
-        assertEquals("LuminousFlux", global.resolveVar("A")!!.vectorQuantity.getDimension())
-        assertEquals("Time", global.resolveVar("t")!!.vectorQuantity.getDimension())
+        assertEquals("LuminousEnergy", global.resolveVar("Q")!!.vectorQuantity.getDomain())
+        assertEquals("LuminousFlux", global.resolveVar("A")!!.vectorQuantity.getDomain())
+        assertEquals("Time", global.resolveVar("t")!!.vectorQuantity.getDomain())
     }
 
     @Test  //Ambiguity with cd
@@ -646,7 +646,7 @@ class QuantityTestDimensions {
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("t")!!.aadd().getRange().min, 0.0001)
         assertEquals("cd", global.resolveVar("t")!!.vectorQuantity.unit.toString())
-        assertEquals("LuminousFlux", global.resolveVar("t")!!.vectorQuantity.getDimension())
+        assertEquals("LuminousFlux", global.resolveVar("t")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -659,9 +659,9 @@ class QuantityTestDimensions {
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("Phi")!!.aadd().getRange().min, 0.0001)
         assertEquals("kg m^2 / A s^2", global.resolveVar("Phi")!!.vectorQuantity.unit.toString())
-        assertEquals("MagneticFlux", global.resolveVar("Phi")!!.vectorQuantity.getDimension())
-        assertEquals("Voltage", global.resolveVar("U")!!.vectorQuantity.getDimension())
-        assertEquals("Time", global.resolveVar("t")!!.vectorQuantity.getDimension())
+        assertEquals("MagneticFlux", global.resolveVar("Phi")!!.vectorQuantity.getDomain())
+        assertEquals("Voltage", global.resolveVar("U")!!.vectorQuantity.getDomain())
+        assertEquals("Time", global.resolveVar("t")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -674,9 +674,9 @@ class QuantityTestDimensions {
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("B")!!.aadd().getRange().min, 0.0001)
         assertEquals("kg / A s^2", global.resolveVar("B")!!.vectorQuantity.unit.toString())
-        assertEquals("MagneticFluxDensity", global.resolveVar("B")!!.vectorQuantity.getDimension())
-        assertEquals("Area", global.resolveVar("t")!!.vectorQuantity.getDimension())
-        assertEquals("MagneticFlux", global.resolveVar("Phi")!!.vectorQuantity.getDimension())
+        assertEquals("MagneticFluxDensity", global.resolveVar("B")!!.vectorQuantity.getDomain())
+        assertEquals("Area", global.resolveVar("t")!!.vectorQuantity.getDomain())
+        assertEquals("MagneticFlux", global.resolveVar("Phi")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -690,9 +690,9 @@ class QuantityTestDimensions {
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("B")!!.aadd().getRange().min, 0.0001)
         assertEquals("kg / s", global.resolveVar("B")!!.vectorQuantity.unit.toString())
-        assertEquals("MassFlow", global.resolveVar("B")!!.vectorQuantity.getDimension())
-        assertEquals("Time", global.resolveVar("t")!!.vectorQuantity.getDimension())
-        assertEquals("Mass", global.resolveVar("m")!!.vectorQuantity.getDimension())
+        assertEquals("MassFlow", global.resolveVar("B")!!.vectorQuantity.getDomain())
+        assertEquals("Time", global.resolveVar("t")!!.vectorQuantity.getDomain())
+        assertEquals("Mass", global.resolveVar("m")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -707,9 +707,9 @@ class QuantityTestDimensions {
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("B")!!.aadd().getRange().min, 0.0001)
         assertEquals("kg m^2 / s^2", global.resolveVar("B")!!.vectorQuantity.unit.toString())
-        assertEquals("MomentOfForce", global.resolveVar("B")!!.vectorQuantity.getDimension())
-        assertEquals("Force", global.resolveVar("F")!!.vectorQuantity.getDimension())
-        assertEquals("Length", global.resolveVar("l")!!.vectorQuantity.getDimension())
+        assertEquals("MomentOfForce", global.resolveVar("B")!!.vectorQuantity.getDomain())
+        assertEquals("Force", global.resolveVar("F")!!.vectorQuantity.getDomain())
+        assertEquals("Length", global.resolveVar("l")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -725,9 +725,9 @@ class QuantityTestDimensions {
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("I")!!.aadd().getRange().min, 0.0001)
         assertEquals("kg m^2", global.resolveVar("I")!!.vectorQuantity.unit.toString())
-        assertEquals("MomentOfInertia", global.resolveVar("I")!!.vectorQuantity.getDimension())
-        assertEquals("Area", global.resolveVar("A")!!.vectorQuantity.getDimension())
-        assertEquals("Mass", global.resolveVar("m")!!.vectorQuantity.getDimension())
+        assertEquals("MomentOfInertia", global.resolveVar("I")!!.vectorQuantity.getDomain())
+        assertEquals("Area", global.resolveVar("A")!!.vectorQuantity.getDomain())
+        assertEquals("Mass", global.resolveVar("m")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -742,9 +742,9 @@ class QuantityTestDimensions {
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("p")!!.aadd().getRange().min, 0.0001)
         assertEquals("kg m / s", global.resolveVar("p")!!.vectorQuantity.unit.toString())
-        assertEquals("Momentum", global.resolveVar("p")!!.vectorQuantity.getDimension())
-        assertEquals("Speed", global.resolveVar("v")!!.vectorQuantity.getDimension())
-        assertEquals("Mass", global.resolveVar("m")!!.vectorQuantity.getDimension())
+        assertEquals("Momentum", global.resolveVar("p")!!.vectorQuantity.getDomain())
+        assertEquals("Speed", global.resolveVar("v")!!.vectorQuantity.getDomain())
+        assertEquals("Mass", global.resolveVar("m")!!.vectorQuantity.getDomain())
     }
 
     //Ambiguity Time, period
@@ -762,9 +762,9 @@ class QuantityTestDimensions {
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("epsilon")!!.aadd().getRange().min, 0.0001)
         assertEquals("A^2 s^4 / kg m^3", global.resolveVar("epsilon")!!.vectorQuantity.unit.toString())
-        assertEquals("Permittivity", global.resolveVar("epsilon")!!.vectorQuantity.getDimension())
-        assertEquals("Length", global.resolveVar("l")!!.vectorQuantity.getDimension())
-        assertEquals("Capacitance", global.resolveVar("I")!!.vectorQuantity.getDimension())
+        assertEquals("Permittivity", global.resolveVar("epsilon")!!.vectorQuantity.getDomain())
+        assertEquals("Length", global.resolveVar("l")!!.vectorQuantity.getDomain())
+        assertEquals("Capacitance", global.resolveVar("I")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -779,9 +779,9 @@ class QuantityTestDimensions {
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("P")!!.aadd().getRange().min, 0.0001)
         assertEquals("kg m^2 / s^3", global.resolveVar("P")!!.vectorQuantity.unit.toString())
-        assertEquals("Power", global.resolveVar("P")!!.vectorQuantity.getDimension())
-        assertEquals("Time", global.resolveVar("t")!!.vectorQuantity.getDimension())
-        assertEquals("Energy", global.resolveVar("E")!!.vectorQuantity.getDimension())
+        assertEquals("Power", global.resolveVar("P")!!.vectorQuantity.getDomain())
+        assertEquals("Time", global.resolveVar("t")!!.vectorQuantity.getDomain())
+        assertEquals("Energy", global.resolveVar("E")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -797,9 +797,9 @@ class QuantityTestDimensions {
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("PD")!!.aadd().getRange().min, 0.0001)
         assertEquals("kg / m s^3", global.resolveVar("PD")!!.vectorQuantity.unit.toString())
-        assertEquals("PowerDensity", global.resolveVar("PD")!!.vectorQuantity.getDimension())
-        assertEquals("Volume", global.resolveVar("V")!!.vectorQuantity.getDimension())
-        assertEquals("Power", global.resolveVar("P")!!.vectorQuantity.getDimension())
+        assertEquals("PowerDensity", global.resolveVar("PD")!!.vectorQuantity.getDomain())
+        assertEquals("Volume", global.resolveVar("V")!!.vectorQuantity.getDomain())
+        assertEquals("Power", global.resolveVar("P")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -813,9 +813,9 @@ class QuantityTestDimensions {
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(1.0, global.resolveVar("p")!!.aadd().getRange().min, 0.0001)
         assertEquals("kg / m s^2", global.resolveVar("p")!!.vectorQuantity.unit.toString())
-        assertEquals("Pressure", global.resolveVar("p")!!.vectorQuantity.getDimension())
-        assertEquals("Area", global.resolveVar("A")!!.vectorQuantity.getDimension())
-        assertEquals("Force", global.resolveVar("F")!!.vectorQuantity.getDimension())
+        assertEquals("Pressure", global.resolveVar("p")!!.vectorQuantity.getDomain())
+        assertEquals("Area", global.resolveVar("A")!!.vectorQuantity.getDomain())
+        assertEquals("Force", global.resolveVar("F")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -833,13 +833,13 @@ class QuantityTestDimensions {
         assertEquals(1.0, global.resolveVar("p2")!!.aadd().getRange().min, 0.0001)
         assertEquals(0.01, global.resolveVar("p")!!.aadd().getRange().min, 0.0001)
         assertEquals("kg / m s^2", global.resolveVar("p")!!.vectorQuantity.unit.toString())
-        assertEquals("Pressure", global.resolveVar("p")!!.vectorQuantity.getDimension())
-        assertEquals("Area", global.resolveVar("A")!!.vectorQuantity.getDimension())
-        assertEquals("Force", global.resolveVar("F")!!.vectorQuantity.getDimension())
+        assertEquals("Pressure", global.resolveVar("p")!!.vectorQuantity.getDomain())
+        assertEquals("Area", global.resolveVar("A")!!.vectorQuantity.getDomain())
+        assertEquals("Force", global.resolveVar("F")!!.vectorQuantity.getDomain())
     }
 
     @Test
-    fun quantityOfDimensionOne() = testSession("SI") {
+    fun QuantityOfDomainOne() = testSession("SI") {
         loadKerML("""
             feature E: ScalarValues::Real = 100.0;
             feature p: SI::Quantity  = E {:>> unit = "%";}
@@ -852,10 +852,10 @@ class QuantityTestDimensions {
         assertEquals(20.0, global.resolveVar("f")!!.aadd().getRange().min, 0.0001)
         assertEquals(100.0, global.resolveVar("E2")!!.aadd().getRange().min, 0.0001)
         assertEquals("1", global.resolveVar("p")!!.vectorQuantity.unit.toString())
-        assertEquals("QuantityOfDimensionOne", global.resolveVar("p")!!.vectorQuantity.getDimension())
-        assertEquals("QuantityOfDimensionOne", global.resolveVar("E")!!.vectorQuantity.getDimension())
-        assertEquals("QuantityOfDimensionOne", global.resolveVar("E2")!!.vectorQuantity.getDimension())
-        assertEquals("QuantityOfDimensionOne", global.resolveVar("f")!!.vectorQuantity.getDimension())
+        assertEquals("QuantityOfDomainOne", global.resolveVar("p")!!.vectorQuantity.getDomain())
+        assertEquals("QuantityOfDomainOne", global.resolveVar("E")!!.vectorQuantity.getDomain())
+        assertEquals("QuantityOfDomainOne", global.resolveVar("E2")!!.vectorQuantity.getDomain())
+        assertEquals("QuantityOfDomainOne", global.resolveVar("f")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -872,10 +872,10 @@ class QuantityTestDimensions {
         assertEquals(10.0, global.resolveVar("v1")!!.aadd().getRange().min, 0.0001)
         assertEquals(36.0, global.resolveVar("v2")!!.aadd().getRange().min, 0.0001)
         assertEquals("m / s", global.resolveVar("v1")!!.vectorQuantity.unit.toString())
-        assertEquals("Speed", global.resolveVar("v1")!!.vectorQuantity.getDimension())
-        assertEquals("Speed", global.resolveVar("v2")!!.vectorQuantity.getDimension())
-        assertEquals("Time", global.resolveVar("t")!!.vectorQuantity.getDimension())
-        assertEquals("Length", global.resolveVar("l")!!.vectorQuantity.getDimension())
+        assertEquals("Speed", global.resolveVar("v1")!!.vectorQuantity.getDomain())
+        assertEquals("Speed", global.resolveVar("v2")!!.vectorQuantity.getDomain())
+        assertEquals("Time", global.resolveVar("t")!!.vectorQuantity.getDomain())
+        assertEquals("Length", global.resolveVar("l")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -895,11 +895,11 @@ class QuantityTestDimensions {
         assertEquals(1.0, global.resolveVar("V1")!!.aadd().getRange().min, 0.0001)
         assertEquals(1000.0, global.resolveVar("V2")!!.aadd().getRange().min, 0.0001)
         assertEquals("m^3", global.resolveVar("V1")!!.vectorQuantity.unit.toString())
-        assertEquals("Volume", global.resolveVar("V1")!!.vectorQuantity.getDimension())
-        assertEquals("Volume", global.resolveVar("V2")!!.vectorQuantity.getDimension())
-        assertEquals("Length", global.resolveVar("l1")!!.vectorQuantity.getDimension())
-        assertEquals("Length", global.resolveVar("l2")!!.vectorQuantity.getDimension())
-        assertEquals("Length", global.resolveVar("l3")!!.vectorQuantity.getDimension())
+        assertEquals("Volume", global.resolveVar("V1")!!.vectorQuantity.getDomain())
+        assertEquals("Volume", global.resolveVar("V2")!!.vectorQuantity.getDomain())
+        assertEquals("Length", global.resolveVar("l1")!!.vectorQuantity.getDomain())
+        assertEquals("Length", global.resolveVar("l2")!!.vectorQuantity.getDomain())
+        assertEquals("Length", global.resolveVar("l3")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -917,11 +917,11 @@ class QuantityTestDimensions {
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(0.5, global.resolveVar("BR1")!!.aadd().getRange().min, 0.0001)
         assertEquals(3.0, global.resolveVar("BR2")!!.aadd().getRange().min, 0.0001)
-        assertEquals("InformationCapacity", global.resolveVar("i1")!!.vectorQuantity.getDimension())
-        assertEquals("InformationCapacity", global.resolveVar("i2")!!.vectorQuantity.getDimension())
-        assertEquals("Time", global.resolveVar("t")!!.vectorQuantity.getDimension())
-        assertEquals("BitRate", global.resolveVar("BR1")!!.vectorQuantity.getDimension())
-        assertEquals("BitRate", global.resolveVar("BR2")!!.vectorQuantity.getDimension())
+        assertEquals("InformationCapacity", global.resolveVar("i1")!!.vectorQuantity.getDomain())
+        assertEquals("InformationCapacity", global.resolveVar("i2")!!.vectorQuantity.getDomain())
+        assertEquals("Time", global.resolveVar("t")!!.vectorQuantity.getDomain())
+        assertEquals("BitRate", global.resolveVar("BR1")!!.vectorQuantity.getDomain())
+        assertEquals("BitRate", global.resolveVar("BR2")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -936,18 +936,18 @@ class QuantityTestDimensions {
     }
 
     @Test
-    fun defineDimensionTest1() = testSession("SI") {
-        loadKerML("""
+    fun defineDomainTest1() = testSession("SI") {
+        loadKerML("""  
             
              feature Mass: SI::Mass = 10.0 [kg];
             """)
         propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        assertEquals("Mass", global.resolveVar("Mass")!!.vectorQuantity.unit.unitDimension)
+        assertEquals("Mass", global.resolveVar("Mass")!!.vectorQuantity.unit.unitDomain)
     }
 
     @Test
-    fun defineDimensionTest2() = testSession("SI") {
+    fun defineDomainTest2() = testSession("SI") {
         loadKerML("""
             feature Mass: SI::Mass = 10.0 [kg];
             """
@@ -958,7 +958,7 @@ class QuantityTestDimensions {
     }
 
     @Test
-    fun defineDimensionTestWrongUnit() = testSession("SI") {
+    fun defineDomainTestWrongUnit() = testSession("SI") {
         loadKerML("""
             feature Mass: SI::Mass = 10.0 [m];
         """)

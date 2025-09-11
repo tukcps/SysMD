@@ -1,6 +1,8 @@
 package com.github.tukcps.sysmd.services.repositories.local
 
 import com.github.tukcps.sysmd.model.expression.implementation.InvariantImplementation
+import com.github.tukcps.sysmd.model.expression.implementation.LiteralIntegerImplementation
+import com.github.tukcps.sysmd.model.expression.implementation.OperatorExpressionImplementation
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.*
 import com.github.tukcps.sysmd.model.sysml.implementation.*
@@ -121,6 +123,9 @@ fun ElementDAO.toElement(): Element {
         "RequirementDefinition" -> RequirementDefinitionImplementation()
         "Subclassification" -> SubclassificationImplementation()
         "TextualRepresentation" -> TextualRepresentationImplementation(body = body!!, language = language!!)
+	    "OperatorExpression" -> OperatorExpressionImplementation()
+	    "LiteralInteger" -> LiteralIntegerImplementation()
+	    "ParameterMembership" -> ParameterMembershipImplementation()
         else             -> throw Exception("Element with unknown type '$type' in response; must be valid entity type.")
     }
     element.elementId = elementId

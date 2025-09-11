@@ -49,7 +49,7 @@ standard library package SI {
     datatype Power :> Quantity;
     datatype PowerDensity :> Quantity;
     datatype Pressure :> Quantity;
-    datatype QuantityOfDimensionOne :> Quantity;
+    datatype QuantityOfDomainOne :> Quantity;
     datatype SolidAngle :> Quantity;
     datatype Speed :> Quantity; 
     datatype Timestamp :> Quantity; 

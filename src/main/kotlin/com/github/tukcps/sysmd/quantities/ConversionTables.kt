@@ -114,17 +114,17 @@ object ConversionTables {
         "Gy" to AbsorbedDose.Gray,
         "Sv" to DoseEquivalent.Sievert,
         "kat" to CatalyticActivity.Katal,
-        "dB" to QuantityOfDimensionOne.Decibel,
+        "dB" to QuantityOfDomainOne.Decibel,
         "St" to KinematicViscosity.Stokes,
         "sb" to Luminance.Stilb,
-        "%" to QuantityOfDimensionOne.Percent,
-        "1" to QuantityOfDimensionOne.One,
-        "°" to QuantityOfDimensionOne.Degree,
-        "deg" to QuantityOfDimensionOne.Degree,
-        "rad" to QuantityOfDimensionOne.One,
-        "Pi" to QuantityOfDimensionOne.Radiant,
-        "pi" to QuantityOfDimensionOne.Radiant,
-        "π" to QuantityOfDimensionOne.Radiant,
+        "%" to QuantityOfDomainOne.Percent,
+        "1" to QuantityOfDomainOne.One,
+        "°" to QuantityOfDomainOne.Degree,
+        "deg" to QuantityOfDomainOne.Degree,
+        "rad" to QuantityOfDomainOne.One,
+        "Pi" to QuantityOfDomainOne.Radiant,
+        "pi" to QuantityOfDomainOne.Radiant,
+        "π" to QuantityOfDomainOne.Radiant,
         "g" to Mass.Gram,
         "DateTime" to Timestamp.UnixTimeStamp,
         "Year" to Timestamp.UnixTimeStamp,
@@ -158,7 +158,7 @@ object ConversionTables {
 /**
  * Adds a new Unit to the ConversionTable
  */
-fun addUnit(name: String, symbol: String, baseUnit: String, dimension: String, convFac: Double, isLogarithmic: Boolean = false) {
+fun addUnit(name: String, symbol: String, baseUnit: String, domain: String, convFac: Double, isLogarithmic: Boolean = false) {
     //Generate unit and convert it to Base Units. After that get the BaseUnits
     val newUnit = Unit(baseUnit)
     val unitSet=newUnit.toSI().unitSet
@@ -166,7 +166,7 @@ fun addUnit(name: String, symbol: String, baseUnit: String, dimension: String, c
     val newBaseUnitSet = mutableSetOf<BaseUnit>()
     unitSet.forEach { newBaseUnitSet.add(it as BaseUnit) } // can be done, because newUnit is in SI
     // Generate unitOfMeasurement and add it to ConversionTables unitsMap
-    val unitOfMeasurement = DerivedUnit(name, symbol, NoPrefix, dimension, newBaseUnitSet, convFac, isLogarithmic = isLogarithmic)
+    val unitOfMeasurement = DerivedUnit(name, symbol, NoPrefix, domain, newBaseUnitSet, convFac, isLogarithmic = isLogarithmic)
     if(symbol !in ConversionTables.unitsMap.keys) //only add if symbol not in conversion table
         ConversionTables.unitsMap[symbol] = unitOfMeasurement
 }

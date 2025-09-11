@@ -24,4 +24,5 @@ class LiteralBooleanImplementation(
     expression = expression,
     elementType = elementType
 )  {
+    var value: Boolean? = null
 }

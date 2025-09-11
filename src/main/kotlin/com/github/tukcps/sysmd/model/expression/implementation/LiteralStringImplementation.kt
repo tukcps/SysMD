@@ -24,4 +24,5 @@ class LiteralStringImplementation(
     expression = expression,
     elementType = elementType
 ) {
+    var vlaue: String? = null
 }

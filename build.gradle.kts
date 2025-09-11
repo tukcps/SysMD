@@ -1,7 +1,5 @@
-
 import org.gradle.internal.os.OperatingSystem
 import org.jetbrains.compose.ExperimentalComposeLibrary
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 /*
  * Gradle build file for SysMD Notebook.
@@ -16,7 +14,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
  * - also set the value standalone according to your setup
  */
 group   = "com.github.tukcps"
-version = "4.1.4"               // must be number.number.number
+version = "4.1.5"               // must be number.number.number
 val aaddVersion = "0.1.11"
 val sysmlapiVersion = "3.9.5"
 val useMavenAADD = true
@@ -53,6 +51,9 @@ repositories {
     maven ("https://jitpack.io")
 }
 
+kotlin {
+    jvmToolchain(21)
+}
 
 // Dependencies
 dependencies {
@@ -72,7 +73,7 @@ dependencies {
         println("  *** using SysMLv2API from project clone in ./sysmlapi     ***")
         implementation(project(":sysmlapi"))
     } else {
-        println("  *** using SysML API $sysmlapiVersion from the Maven repository   ***")
+        println("  *** using SysML API $sysmlapiVersion from Maven repository        ***")
         implementation("io.github.tukcps:sysmlapi:$sysmlapiVersion")
     }
 
@@ -150,17 +151,6 @@ compose.resources {
 // Configuration of tasks
 tasks.test {
     useJUnitPlatform()
-}
-
-// Generate Bytecode for v17
-kotlin {
-    compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_21)
-    }
-}
-
-tasks.withType<JavaCompile> {
-    options.release.set(21)
 }
 
 /**

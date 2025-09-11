@@ -111,15 +111,15 @@ class UnitTests {
     fun parseTestTemperatures() {
         val u = Unit("°F")
         val q = Quantity(ddDummy1, u)
-        assertEquals("Temperature", q.unit.getUnitDimension(1.0))
+        assertEquals("Temperature", q.unit.getUnitDomain(1.0))
 
         val u2 = Unit("°C")
         val q2 = Quantity(ddDummy1, u2)
-        assertEquals("Temperature", q2.unit.getUnitDimension(1.0))
+        assertEquals("Temperature", q2.unit.getUnitDomain(1.0))
 
         val u3 = Unit("K")
         val q3 = Quantity(ddDummy1, u3)
-        assertEquals("Temperature", q3.unit.getUnitDimension(1.0))
+        assertEquals("Temperature", q3.unit.getUnitDomain(1.0))
     }
 
     @Test
@@ -846,7 +846,7 @@ class UnitTests {
         val quant1 = Quantity(ddDummy100, "B")
         assertEquals(800.0, quant1.getMinAsDouble(), 0.0000001)
         assertEquals("bit", quant1.unit.toString())
-        assertEquals("InformationCapacity", quant1.getDimension())
+        assertEquals("InformationCapacity", quant1.getDomain())
 
         val quant2 = Quantity(ddDummy1, "kiB")
         assertEquals(8192.0, quant2.getMinAsDouble(), 0.0000001)
@@ -889,7 +889,7 @@ class UnitTests {
         val quant1 = Quantity(ddDummy10, "dB")
         assertEquals(10.0, quant1.getMinAsDouble(), 0.0000001)
         assertEquals("1", quant1.unit.toString())
-        assertEquals("QuantityOfDimensionOne", quant1.getDimension())
+        assertEquals("QuantityOfDomainOne", quant1.getDomain())
 
         val quant2 = Quantity(ddDummy20, "dB")
         assertEquals(100.0, quant2.getMinAsDouble(), 0.0000001)
@@ -1125,7 +1125,7 @@ class UnitTests {
         assert(!quant2.unit.isDifference)
         val quantResult = quant1.minus(quant2)
         assert(quantResult.unit.isDifference)
-        assertEquals("Force Difference", quantResult.getDimension())
+        assertEquals("Force Difference", quantResult.getDomain())
     }
 
     @Test
@@ -1136,7 +1136,7 @@ class UnitTests {
         assert(!quant2.unit.isDifference)
         val quantResult = quant1.minus(quant2)
         assert(quantResult.unit.isDifference)
-        assertEquals("Temperature Difference", quantResult.getDimension())
+        assertEquals("Temperature Difference", quantResult.getDomain())
         assertEquals("K", quantResult.unit.toString())
         assertEquals(9.0, quantResult.value.asAadd().getRange().max, 0.00001)
     }
@@ -1149,9 +1149,9 @@ class UnitTests {
         assertFalse(quant2.unit.isDifference)
         val quantResult = quant1.minus(quant2)
         assert(quantResult.unit.isDifference)
-        assertEquals("Time", quant1.getDimension())
-        assertEquals("Time", quant2.getDimension())
-        assertEquals("Time Difference", quantResult.getDimension())
+        assertEquals("Time", quant1.getDomain())
+        assertEquals("Time", quant2.getDomain())
+        assertEquals("Time Difference", quantResult.getDomain())
         assertEquals("s", quantResult.unit.toString())
     }
 
@@ -1317,11 +1317,11 @@ class UnitTests {
 
     @Test
     fun addUnitTest1() {
-        addUnit("testunit", "tu", "Nm", "testdimension", 5.0, false)
+        addUnit("testunit", "tu", "Nm", "testdomain", 5.0, false)
         val unit = Unit("tu")
         assertEquals("testunit", unit.unitSet.elementAt(0).name)
         assertEquals("tu", unit.unitSet.elementAt(0).symbol)
-        assertEquals("testdimension", unit.unitSet.elementAt(0).dimension)
+        assertEquals("testdomain", unit.unitSet.elementAt(0).domain)
         assertEquals(5.0, unit.unitSet.elementAt(0).convFac)
         assertFalse(unit.unitSet.elementAt(0).isLogarithmic)
         val baseUnitSet = mutableSetOf(Length.Meter.copy(2), Mass.Kilogram.copy(1), Time.Second.copy(-2))
@@ -1330,7 +1330,7 @@ class UnitTests {
 
     @Test
     fun addUnitTest2() {
-        addUnit("testunit", "tu", "Nm", "testdimension", 5.0, false)
+        addUnit("testunit", "tu", "Nm", "testdomain", 5.0, false)
         val quantity = Quantity(ddDummy1, "tu")
         assertEquals(5.0, quantity.valueIn("Nm").asAadd().getRange().min, 0.00001)
     }

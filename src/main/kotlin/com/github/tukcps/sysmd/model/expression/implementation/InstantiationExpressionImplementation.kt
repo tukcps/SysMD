@@ -3,6 +3,7 @@ package com.github.tukcps.sysmd.model.expression.implementation
 import com.github.tukcps.sysmd.model.expression.Expression
 import com.github.tukcps.sysmd.model.expression.InstantiationExpression
 import com.github.tukcps.sysmd.model.kerml.Feature
+import com.github.tukcps.sysmd.model.kerml.ParameterMembership
 import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
 import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.kerml.implementation.TypeImplementation
@@ -28,10 +29,20 @@ abstract class InstantiationExpressionImplementation(
     elementType = elementType
 )
 {
-    var argument: Set<Expression>? = null
+    override var argument: List<Expression>
+	    get() = ownedRelationship.filterIsInstance<ParameterMembership>()
+		    .filter { it.parameterDirection == Feature.FeatureDirectionKind.IN } // ?
+			.map { it.ownedMemberParameter }
+		    // TODO: What about return parameters & result expressions?
+			// TODO: Standard says we need to take FeatureValue
+			.filterIsInstance<Expression>()
+	    set(value) {
+		    TODO()
+		}
+
     var instantiatedType: Type = this //FIXME: Hack
 
-    fun instantiatedType(): Type? = TODO()
+    open fun instantiatedType(): Type? = this //FIXME: Should be self?
 
     //FIXME: Necessary to also implement TypeImplementation via composition or is this covered by the fact that expression already implements type?
     var internalType: TypeImplementation = this as TypeImplementation

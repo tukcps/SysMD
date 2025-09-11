@@ -8,7 +8,7 @@ import com.github.tukcps.sysmd.quantities.baseUnits.*
  * @param name Name of the BaseUnit
  * @param symbol Short symbol of the BaseUnit
  * @param prefix Prefix of the BaseUnit (NoPrefix if there is none)
- * @param dimension Dimension-string of the BaseUnit
+ * @param domain Domain-string of the BaseUnit
  * @param convFac Conversion to BaseUnit (Base Value = confFac * Value of current BaseUnit)
  * @param exponent Exponent of the BaseUnit
  * @param isDifference This value is true, if the current BaseUnit represents a difference between two Units of the same type
@@ -17,17 +17,17 @@ open class BaseUnit(
     name: String,
     symbol: String,
     prefix: Prefix,
-    dimension: String,
+    domain: String,
     convFac: Double = 1.0,
     exponent: Int = 1,
     isDifference: Boolean = false
 ) :
-    UnitOfMeasurement(name, symbol, prefix, dimension, convFac, exponent, isDifference = isDifference), Cloneable {
+    UnitOfMeasurement(name, symbol, prefix, domain, convFac, exponent, isDifference = isDifference), Cloneable {
 
     override fun clone(): BaseUnit = copy()
 
     open fun copy(exponentValue: Int = exponent): BaseUnit {
-        return BaseUnit(name, symbol, prefix, dimension, convFac, exponentValue, isDifference = isDifference)
+        return BaseUnit(name, symbol, prefix, domain, convFac, exponentValue, isDifference = isDifference)
     }
 
     /**

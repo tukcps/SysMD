@@ -55,6 +55,8 @@ Also, in the folder 'doc' some documentation is provided.
 2. Download the installer of the SysMD Notebook from the 'releases' page in GitHub (https://github.com/tukcps/SysMD/releases)
 3. Run the Installer and use the SysMD Notebook.
 
+Note that eventually on Windows or OS X you have to permit installation of non-signed software in the security settings.  
+
 ### Via Gradle
 
 To run the frontend, just use the build system Gradle: 

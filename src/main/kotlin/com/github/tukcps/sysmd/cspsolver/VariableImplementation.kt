@@ -120,12 +120,12 @@ open class VariableImplementation (
                     }
                     val values = mutableListOf<AADD>()
                     rangeSpecs.forEach{values.add(feature.model!!.builder.real(it,elementId.toString()))}
-                    //Test, if there is a dimension (in namespace SI) defined in the definition of the attribute
+                    //Test, if there is a domain (in namespace SI) defined in the definition of the attribute
                     if(feature.type.firstOrNull()!=null){
-                        val unitDimension = feature.type.firstOrNull { it.qualifiedName?.startsWith("SI::") == true }
+                        val unitDomain = feature.type.firstOrNull { it.qualifiedName?.startsWith("SI::") == true }
                             ?.qualifiedName?.replace("SI::","")
                             ?: feature.type.first().qualifiedName!!
-                        vectorQuantity = VectorQuantity(values, unitSpec, unitDimension)
+                        vectorQuantity = VectorQuantity(values, unitSpec, unitDomain)
                     } else
                         vectorQuantity = VectorQuantity(values, unitSpec)
                 }

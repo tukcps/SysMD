@@ -2,7 +2,6 @@ package com.github.tukcps.sysmd.model.expression.implementation
 
 import com.github.tukcps.sysmd.model.expression.AstLeaf
 import com.github.tukcps.sysmd.model.expression.AstNode
-import com.github.tukcps.sysmd.model.expression.AstRoot
 import com.github.tukcps.sysmd.model.expression.LiteralExpression
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Feature
@@ -11,9 +10,7 @@ import com.github.tukcps.sysmd.model.util.SimpleName
 import io.github.tukcps.aadd.AADD
 import io.github.tukcps.aadd.BDD
 import io.github.tukcps.aadd.DD
-import io.github.tukcps.aadd.DDBuilder
 import io.github.tukcps.aadd.IDD
-import org.springframework.core.codec.StringDecoder
 
 open class LiteralExpressionImplementation(
     declaredName: SimpleName? = null,
@@ -37,13 +34,13 @@ open class LiteralExpressionImplementation(
 {
     override var isModelLevelEvaluable: Boolean = true
 
-    override var value: AstNode?
-        get() {return super.value as AstLeaf}
-        set(value) {super.value = value as AstLeaf}
+    override var internalValue: AstNode?
+        get() {return super.internalValue as AstLeaf}
+        set(value) {super.internalValue = value as AstLeaf}
 
     var literalValue: AstLeaf? //can't narrow value field down to Leaf, so here we go...
-        get() {return value as AstLeaf}
-        set(value) {this.value = value} //FIXME: Unit test to check for overshadowing
+        get() {return internalValue as AstLeaf}
+        set(value) {this.internalValue = value} //FIXME: Unit test to check for overshadowing
 
     override var domain: DD<*>? = null
         get() {

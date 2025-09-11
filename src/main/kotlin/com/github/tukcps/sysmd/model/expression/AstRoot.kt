@@ -122,11 +122,11 @@ class AstRoot(
     /** This may be causing errors with the IntegerRange / IDD datatype(s) */
     override fun evalUpRec() {
         dependency.evalUpRec()
-        //add predefined dimension to the unit
+        //add predefined domain to the unit
         if(feature.specializes(feature.model!!.repo.realType)&& feature.type.size==1) {
             val type =  feature.type[0].declaredName.toString()
             if((feature.type[0] as Type?)?.generalization?.firstOrNull()?.declaredName=="Quantity")
-                dependency.upQuantity.unit.unitDimension = type
+                dependency.upQuantity.unit.unitDomain = type
         }
         evalUp()
     }
@@ -160,11 +160,11 @@ class AstRoot(
     override fun evalDownRec() {
         evalDown()
         dependency.evalDownRec()
-        //add predefined dimension to the unit in the leaves (changed by evalDown)
+        //add predefined domain to the unit in the leaves (changed by evalDown)
         if(feature.specializes(feature.model!!.repo.realType)&& feature.type.size==1) {
             dependency.getLeaves().forEach {
-                val type = it.upQuantity.unit.unitDimension
-                it.variable?.vectorQuantity?.unit?.unitDimension = type
+                val type = it.upQuantity.unit.unitDomain
+                it.variable?.vectorQuantity?.unit?.unitDomain = type
             }
         }
     }

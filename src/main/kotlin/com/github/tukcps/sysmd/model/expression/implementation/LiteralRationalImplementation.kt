@@ -4,6 +4,7 @@ import com.github.tukcps.sysmd.model.expression.LiteralRational
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
 import com.github.tukcps.sysmd.model.util.SimpleName
+import io.github.tukcps.aadd.Real
 
 class LiteralRationalImplementation(
     declaredName: SimpleName? = null,
@@ -24,4 +25,5 @@ class LiteralRationalImplementation(
     expression = expression,
     elementType = elementType
 ) {
+    var value: Real? = null //Real? Or Float/double?
 }

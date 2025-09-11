@@ -4,6 +4,7 @@ import com.github.tukcps.sysmd.model.expression.LiteralInteger
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
 import com.github.tukcps.sysmd.model.util.SimpleName
+import io.github.tukcps.aadd.Integer
 
 class LiteralIntegerImplementation(
     declaredName: SimpleName? = null,
@@ -24,4 +25,5 @@ class LiteralIntegerImplementation(
     expression = expression,
     elementType = elementType
 ) {
+    var value: Int? = null
 }

@@ -1,49 +1,49 @@
 # Table of all supported units
 
 # Basic units
-| Dimension                  | Unit                     |    Symbol     |
-|:---------------------------|:-------------------------|:-------------:|
-| **Area**                   | Square Meter             |      m^2      |
-|                            | Acre                     |      ac       |
-| **BitRate**                | Bits per Second          |  bps or b/s   |
-| **Density**                | Kilogram per Cubic Meter |    kg/m^3     |
-| **InformationCapacity**    | Bit                      |  bit or Bit   |
-|                            | Byte                     |   B or Byte   |
-| **Length**                 | Meter                    |       m       |
-|                            | Inch                     |     inch      |
-|                            | Feet                     |      ft       |
-|                            | Yard                     |      yd       |
-|                            | Mile                     |      mi       |
-|                            | Nautical mile            |      nmi      |
-| **Mass**                   | Kilogram                 |      kg       |
-|                            | Tonne (metric ton)       |       t       |
-|                            | Short Ton                |      tn       |
-|                            | Grain                    |      gr       |
-|                            | Carat                    |      ct       |
-|                            | Ounce                    |      oz       |
-|                            | Pound                    |      lb       |
-| **MassFlow**               | Kilogram per Second      |     kg/s      |
-| **QuantityOfDimensionOne** | Percent                  |       %       |
-|                            | Decibel                  |      dB       |
-|                            | Degree                   |   ° or deg    |
-|                            | Radiant                  |      rad      |
-|                            | Pi                       | Pi or pi or π |
-| **SolidAngle**             | Steradian                |      sr       |
-| **Time**                   | Second                   |       s       |
-|                            | Minute                   |      min      |
-|                            | Hour                     |       h       |
-|                            | Day                      |       d       |
-|                            | Year (= 365 days)        | a or yr or y  |
-| **Volume**                 | Cubic Meter              |      m^3      |
-|                            | Litre                    |       l       |
-|                            | Pint                     |      pt       |
-|                            | Quart                    |      qt       |
-|                            | Gallon                   |      gal      |
-|                            | Barrel                   |      bbl      |
+| Domain                  | Unit                     |    Symbol     |
+|:------------------------|:-------------------------|:-------------:|
+| **Area**                | Square Meter             |      m^2      |
+|                         | Acre                     |      ac       |
+| **BitRate**             | Bits per Second          |  bps or b/s   |
+| **Density**             | Kilogram per Cubic Meter |    kg/m^3     |
+| **InformationCapacity** | Bit                      |  bit or Bit   |
+|                         | Byte                     |   B or Byte   |
+| **Length**              | Meter                    |       m       |
+|                         | Inch                     |     inch      |
+|                         | Feet                     |      ft       |
+|                         | Yard                     |      yd       |
+|                         | Mile                     |      mi       |
+|                         | Nautical mile            |      nmi      |
+| **Mass**                | Kilogram                 |      kg       |
+|                         | Tonne (metric ton)       |       t       |
+|                         | Short Ton                |      tn       |
+|                         | Grain                    |      gr       |
+|                         | Carat                    |      ct       |
+|                         | Ounce                    |      oz       |
+|                         | Pound                    |      lb       |
+| **MassFlow**            | Kilogram per Second      |     kg/s      |
+| **QuantityOfDomainOne** | Percent                  |       %       |
+|                         | Decibel                  |      dB       |
+|                         | Degree                   |   ° or deg    |
+|                         | Radiant                  |      rad      |
+|                         | Pi                       | Pi or pi or π |
+| **SolidAngle**          | Steradian                |      sr       |
+| **Time**                | Second                   |       s       |
+|                         | Minute                   |      min      |
+|                         | Hour                     |       h       |
+|                         | Day                      |       d       |
+|                         | Year (= 365 days)        | a or yr or y  |
+| **Volume**              | Cubic Meter              |      m^3      |
+|                         | Litre                    |       l       |
+|                         | Pint                     |      pt       |
+|                         | Quart                    |      qt       |
+|                         | Gallon                   |      gal      |
+|                         | Barrel                   |      bbl      |
 
 # Atomic units
 
-| Dimension             | Unit      | Symbol |
+| Domain                | Unit      | Symbol |
 |-----------------------|-----------|:------:|
 | **AbsorbedDose**      | Gray      |   Gy   |
 | **AmountOfSubstance** | Mole      |  mol   |
@@ -52,7 +52,7 @@
 | **DoseEquivalent**    | Sievert   |   Sv   |
 
 ## Mechanic units
-| **Dimension**          | **Unit**                  | **Symbol** |
+| **Domain**             | **Unit**                  | **Symbol** |
 |------------------------|---------------------------|:----------:|
 | **Acceleration**       | Meter per Second squared  |   m/s^2    |
 | **Energy**             | Joule                     |     J      |
@@ -77,7 +77,7 @@
 |                        | Miles per hour            |    mph     |
 
 ## Electricity and magnetism units
-| **Dimension**             | **Unit**           | **Symbol** |
+| **Domain**                | **Unit**           | **Symbol** |
 |---------------------------|--------------------|:----------:|
 | **Capacitance**           | Farad              |     F      |
 | **ElectricalConductance** | Siemens            |     S      |
@@ -95,7 +95,7 @@
 
 # Photometry units
 
-| **Dimension**         | **Unit**       | **Symbol** |
+| **Domain**            | **Unit**       | **Symbol** |
 |-----------------------|----------------|:----------:|
 | **Illuminance**       | Lux            |     lx     |
 | **Luminance**         | Stilb          |     sb     |
@@ -106,7 +106,7 @@
 
 # Thermodynamics
 
-| **Dimension**   | **Unit**          | **Symbol** |
+| **Domain**      | **Unit**          | **Symbol** |
 |-----------------|-------------------|:----------:|
 | **Temperature** | Kelvin            |     K      |
 |                 | Degree Celsius    |     °C     |

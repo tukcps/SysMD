@@ -1,10 +1,10 @@
 package com.github.tukcps.sysmd.model.expression.implementation
 
 import com.github.tukcps.sysmd.model.expression.AstNode
-import com.github.tukcps.sysmd.model.expression.AstRoot
 import com.github.tukcps.sysmd.model.expression.Expression
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Feature
+import com.github.tukcps.sysmd.model.kerml.Function
 import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.util.SimpleName
@@ -44,8 +44,10 @@ open class ExpressionImplementation(
         TODO("Not yet implemented")
     }
 
+    override val function: Function? = null
 
-    open var value: AstNode? = null
+    /** Non Standard **/
+    open var internalValue: AstNode? = null
 
     //For solvers
     open var domain: DD<*>? = null //One DD should be enough to encode lb,ub for ints/reals and t,f,x for booleans

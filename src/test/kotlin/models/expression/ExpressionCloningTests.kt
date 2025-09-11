@@ -97,6 +97,7 @@ class ExpressionCloningTests
 		// ensure the original wasn't mutated
 		assertEquals(mapper.writeValueAsString(before), mapper.writeValueAsString(after))
 
+		assertNull(clone.owningRelationship) // clone must be free-standing, but only top-level of deep clone
 		assertProperClone(original, clone)
 
 		// TODO: structural stuff
@@ -108,8 +109,7 @@ class ExpressionCloningTests
             inv a; 
             inv b; 
             feature e: ScalarValues::Boolean = a and b;
-			// doesn't compile (infinite hang)
-			// expr f: ScalarValues::Boolean = a and b;
+			expr f: ScalarValues::Boolean = a and b;
         """) // FIXME: expr doesn't parse
 		assertTrue(this.status.issues.isEmpty(), status.issues.toString())
 

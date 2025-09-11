@@ -122,15 +122,6 @@ fun Editor(
         oldTextFieldValue.value = lines.value
 
         firstRun.value = false
-
-        /*
-        TODO: The following indexing requires consideration of the language: KermL? SysML? SysMD?
-        and then the selection of a suitable compiler.
-
-        with(indexer){
-            lines.value.buildLocalIndexes(localComponentsIndex, localPackagesIndex)
-        }*/
-
     }
 
     // This row needs padding at the end to make space for the scrollbar if needed
@@ -204,10 +195,6 @@ fun Editor(
                     .onPreviewKeyEvent {
                         keyInputHandler(keyEvent = it,lines,suggestions,oldTextFieldValue, keyDelay)
                     }
-                    .onPointerEvent(PointerEventType.Press){
-                        suggestions.value.close()
-                    }
-                    //.withoutWidthConstraints()
                     .horizontalScroll(horizontalState, enabled = true)
                     .onGloballyPositioned { coordinates ->
                     editorHeight.value = with(density) { coordinates.size.height.toDp() }
@@ -385,49 +372,49 @@ private fun keyInputHandler(
     return false
 }
 
-/**This function takes a TextFieldValue and adds indents if a newline was inserted.
+/**
+ * This function takes a TextFieldValue and adds indents if a newline was inserted.
  * @param tfv The most recent TextFieldValue
  * @param oldTfv The previous TextFieldValue of the Editor. Used to check if the size has increased.
- * @return A TextFieldValue that contains the indents if they were added.**/
+ * @return A TextFieldValue that contains the indents if they were added.
+ **/
 private fun checkAndAddIndents(tfv: TextFieldValue, oldTfv: MutableState<TextFieldValue>) : TextFieldValue {
 
-    //Check if the text size has increased by one (we do not add indents if a whole section was pasted) and if a newline was added in front of the cursor
-    if(tfv.text.length-1 == oldTfv.value.text.length){
+    // Check if the text size has increased by one (we do not add indents if a whole section was pasted) and if a newline was added in front of the cursor
+    if (tfv.text.length-1 == oldTfv.value.text.length) {
 
         //Get text before (aka. above) the cursor
         var textAbove = tfv.text.substring(0, tfv.selection.start)
         val textAfter = tfv.text.substring(tfv.selection.end, tfv.text.length)
 
-        when(tfv.text.getOrNull(tfv.selection.start - 1)){
+        when (tfv.text.getOrNull(tfv.selection.start - 1)){
 
-
-            //When a user enters a new line,
+            // When a user enters a new line,
             // calculate required indents and detect if a prefix has to be added to the line (e.g.: a comment)
             '\n' -> {
 
-                /**Tells if the cursors has to be shifted to the left or right independently from any brace indentation*/
+                /** Tells if the cursors has to be shifted to the left or right independently of any brace indentation*/
                 var cursorsShift = 0
 
                 /** Returns the prefix of the current line (e.g.: like "//" for a comment)*/
                 val linePrefix : (Int) -> String= {indents ->
 
-
-                    if(tfv.selection.start < 3) {
+                    if (tfv.selection.start < 3) {
                         //If the cursor near the beginning of the text, we can skip checking - we return an empty string
                         ""
-                    } else if(textAbove.substring(textAbove.length-3,textAbove.length-1) == "/*"){
+                    } else if (textAbove.substring(textAbove.length-3,textAbove.length-1) == "/*"){
                         //If there is a long comment start in front of the cursor, add the long comment behind it
                         "\n" + " ".repeat(indents) + "*/"
-                    }else if(textAbove[textAbove.length-2] == '{'){ //Adds a closing scope brace if needed
+                    } else if (textAbove[textAbove.length-2] == '{'){ //Adds a closing scope brace if needed
                             "\n" + " ".repeat(indents-4) + "}"
-                    }else if(textAfter.substringBefore('\n').contains(Regex("\\S"))){ //In case of this line being a single comment line, check if after cursors follows text. If yes, a "//" single line comment will be added automatically
+                    } else if (textAfter.substringBefore('\n').contains(Regex("\\S"))){ //In case of this line being a single comment line, check if after cursors follows text. If yes, a "//" single line comment will be added automatically
                         val currLine = textAbove.removeRange(textAbove.length-1,textAbove.length).substringAfterLast('\n')
 
-                        if(currLine.contains("//"))  {
+                        if (currLine.contains("//")) {
                             cursorsShift += 2
                             "//"
-                        }else ""
-                    }else{
+                        } else ""
+                    } else {
                         //If no other cases apply, return empty string
                         ""
                     }
@@ -436,9 +423,9 @@ private fun checkAndAddIndents(tfv: TextFieldValue, oldTfv: MutableState<TextFie
                 var braceIndents = 0
                 var whiteSpaceIndents = 0
 
-                /**Last Opening Brace Indent*/
+                /** Last Opening Brace Indent */
                 var lastOBI = 0
-                /**Last Closing Brace Indent*/
+                /** Last Closing Brace Indent */
                 var lastCBI = 0
 
                 var lastBrace = ' '
@@ -455,14 +442,14 @@ private fun checkAndAddIndents(tfv: TextFieldValue, oldTfv: MutableState<TextFie
                     }
                 }
 
-                if(lastBrace == '{'){
+                if (lastBrace == '{'){
                     braceIndents = lastOBI + 4
-                }else if (lastBrace == '}'){
+                } else if (lastBrace == '}'){
                     braceIndents = lastCBI
                 }
 
                 //Make sure indents do not go negative
-                if(braceIndents < 0) braceIndents = 0
+                if (braceIndents < 0) braceIndents = 0
 
 
                 //Return a TextFieldValue with the inserted indents and the cursor position adjusted
@@ -476,7 +463,7 @@ private fun checkAndAddIndents(tfv: TextFieldValue, oldTfv: MutableState<TextFie
             '}' -> {
 
                 if(textAbove.length > 2){
-                    textAbove = textAbove.substring(0,textAbove.length-1)
+                    textAbove = textAbove.dropLast(1)
                     var removableIndents = 0
 
                     //Check how many indentations to the left are needed or if they are needed at all
@@ -494,7 +481,7 @@ private fun checkAndAddIndents(tfv: TextFieldValue, oldTfv: MutableState<TextFie
                             }
                         }else{
                             //If we exceed the 4 positions to the left of the closing brace,
-                            // we are not interested into whitespaces anymore but have to check if withing the same line there is a opening brace "{"
+                            // we are not interested into whitespaces anymore but have to check if withing the same line there is an opening brace "{"
                             if(textAbove[textAbove.length - i] == '\n'){
                                 //If we hit a newLine without having hit an opening brace before, the indentation is legit - we can break here
                                 break

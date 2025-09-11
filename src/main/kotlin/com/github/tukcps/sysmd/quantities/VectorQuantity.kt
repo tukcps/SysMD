@@ -78,11 +78,11 @@ open class VectorQuantity : Cloneable {
         makeCanonical()
     }
 
-    constructor(values: List<Real>, unitString: String, unitDimension: String = "") {
+    constructor(values: List<Real>, unitString: String, unitDomain: String = "") {
         if (values.isEmpty()) throw DDError(msg = "Empty value for VectorQuantity is not supported")
         this.values = values.toList()
         unitSpec = unitString // use unitStr as unitSpec
-        this.unit = Unit(unitString, unitDimension)
+        this.unit = Unit(unitString, unitDomain)
         makeCanonical()
     }
 
@@ -92,15 +92,15 @@ open class VectorQuantity : Cloneable {
      * @param unitObject Unit, which should be added to the new VectorQuantity
      * @param unitSpec The wanted representation of the Unit, toString converts the Unit to this representation
      */
-    constructor(value: DD<*>, unitObject: Unit, unitSpec: String = "", unitDimension: String = "") {
+    constructor(value: DD<*>, unitObject: Unit, unitSpec: String = "", unitDomain: String = "") {
         this.values = listOf<DD<*>>(value.clone())
         this.unit = unitObject.clone()
-        this.unit.unitDimension = unitDimension
+        this.unit.unitDomain = unitDomain
         this.unitSpec = unitSpec
         makeCanonical()
     }
 
-    constructor(values: List<DD<*>>, unitObject: Unit, unitSpec: String = "", unitDimension: String = "") {
+    constructor(values: List<DD<*>>, unitObject: Unit, unitSpec: String = "", unitDomain: String = "") {
         if (values.isEmpty()) throw DDError(msg = "Empty value for VectorQuantity is not supported")
         when(values[0]) {
             is Integer -> values.forEach { if (it !is Integer) throw DDError("Different value types in vector are not supported") }
@@ -111,8 +111,8 @@ open class VectorQuantity : Cloneable {
         }
         this.values = values.toList()
         this.unit = unitObject.clone()
-        if(unitDimension!="")
-            this.unit.unitDimension = unitDimension
+        if(unitDomain!="")
+            this.unit.unitDomain = unitDomain
         this.unitSpec = unitSpec
         makeCanonical()
     }
@@ -121,12 +121,12 @@ open class VectorQuantity : Cloneable {
     public override fun clone(): VectorQuantity = VectorQuantity(values.toList(), unit.clone(), unitSpec.plus(""))
 
     /**
-     *  Transforms the Unit to a canonical SI representation with the right UnitDimension
+     *  Transforms the Unit to a canonical SI representation with the right UnitDomain
      */
     private fun makeCanonical() {
         toSI()
         unit.reduceRedundantUnits()
-        unit.calculateUnitDimension(unitSpec)
+        unit.calculateUnitDomain(unitSpec)
         unit.calculateUnitSymbol(unitSpec)
     }
 
@@ -947,8 +947,8 @@ override fun toString(): String {
         unit.reduceRedundantUnits()
     }
 
-    open fun getDimension(): String {
-        return unit.getUnitDimension(values[0].asAadd().getRange().min)
+    open fun getDomain(): String {
+        return unit.getUnitDomain(values[0].asAadd().getRange().min)
     }
 
     /**

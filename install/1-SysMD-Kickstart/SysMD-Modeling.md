@@ -32,7 +32,7 @@ by its simple name as follows:
 ```SysML::kickstart
   private import ScalarValues::*;            // Allows us shortcuts to Real, Integer, etc. 
   private import SI::*;                      // Allows us shortcuts to use Units. 
-  private import ISQ::*;                     // Allows us to use ISQ dimensions.  
+  private import ISQ::*;                     // Allows us to use ISQ domains.  
   private import Ranges::*;                  // Allows us to specify constraints & co/contravariance 
   attribute r: Real = oneOf(2.0 .. 3.0);     // assigns r a value, constraine to the range 2 to 3.
   attribute i: Integer = 2;                  // assigns i the value 2.  
@@ -137,7 +137,7 @@ The library SI of SysMD supports
 - logarithmic units (Decibel).
 - units for digital information (e.g., KiB, MB)
 
-Note that in SysML v2 standard the package with dimensions is ```ISQ```.
+Note that in SysML v2 standard the package with domains is ```ISQ```.
 We will change the name in future versions.
 
 Units are converted automatically before computations are done, and the consistency of units in equations is checked:

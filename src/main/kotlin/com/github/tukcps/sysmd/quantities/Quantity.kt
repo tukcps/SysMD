@@ -69,12 +69,12 @@ class Quantity : VectorQuantity {
     override fun clone(): Quantity = Quantity(value.clone(), unit.clone(), unitSpec.plus(""))
 
     /**
-     *  Transforms the Unit to a canonical SI representation with the right UnitDimension
+     *  Transforms the Unit to a canonical SI representation with the right UnitDomain
      */
     private fun makeCanonical() {
         toSI()
         unit.reduceRedundantUnits()
-        unit.calculateUnitDimension(unitSpec)
+        unit.calculateUnitDomain(unitSpec)
         unit.calculateUnitSymbol(unitSpec)
     }
 
@@ -711,7 +711,7 @@ class Quantity : VectorQuantity {
         unit.reduceRedundantUnits()
     }
 
-    override fun getDimension(): String = unit.getUnitDimension(value.asAadd().getRange().min)
+    override fun getDomain(): String = unit.getUnitDomain(value.asAadd().getRange().min)
 
     /**
      * Intersects a Quantity with another Quantity of the same property (e.g., upQuantity with downQuantity)
