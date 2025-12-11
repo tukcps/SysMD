@@ -17,10 +17,6 @@ class MultiplicityImplementation(
     typeConstraint = mutableListOf(multiplicity),
     elementType = elementType
 ) {
-    override fun resolveNames(): Boolean {
-        super.resolveNames()
-        return updated
-    }
 
     override val generalization: List<Type>
         get() = listOf(model?.repo?.naturalType?: UnresolvedType("ScalarValues::Natural"))

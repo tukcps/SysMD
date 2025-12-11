@@ -12,7 +12,7 @@ import com.github.tukcps.sysmd.services.session.Session
 internal class AstNormalizeVector(model: Session, args: ArrayList<AstNode>) : AstFunction("norm", model, 1, args) {
     init {
         if (args.size !in 1..1)
-            throw SemanticError("Normalize expects 1 parameter of type Real")
+            throw SemanticError("Normalize expects 1 parameter of type Real  Vector")
     }
 
     override fun initialize() {

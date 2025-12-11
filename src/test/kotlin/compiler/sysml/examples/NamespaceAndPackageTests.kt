@@ -2,7 +2,6 @@ package compiler.sysml.examples
 
 import com.github.tukcps.sysmd.model.sysml.PartDefinition
 import com.github.tukcps.sysmd.model.sysml.PartUsage
-import com.github.tukcps.sysmd.services.resolve.resolve
 import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
@@ -23,7 +22,7 @@ class NamespaceAndPackageTests {
         loadSysMLv2("""
             package Package1;
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -39,7 +38,7 @@ class NamespaceAndPackageTests {
             package Package2;
         }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -57,13 +56,13 @@ class NamespaceAndPackageTests {
             part part2 : Part2;
         }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
 
-        val partDef2 = global.resolve<PartDefinition>("Package1::Part2")
-        assertNotNull(partDef2)
+        val partDef2 = global.resolve("Package1::Part2")
+        assertNotNull(partDef2?.memberElement)
 
-        val part2 = global.resolve<PartUsage>("Package1::part2")
-        assertNotNull(part2)
+        val part2 = global.resolve("Package1::part2")
+        assertNotNull(part2?.memberElement)
     }
 
     /**
@@ -99,7 +98,7 @@ class NamespaceAndPackageTests {
                 private import Package3::*;
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -131,8 +130,8 @@ class NamespaceAndPackageTests {
         package Package1 {
             /* members */
         }
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        """)
+        assertNoIssues()
     }
 
     /**
@@ -150,13 +149,13 @@ class NamespaceAndPackageTests {
             part part1 : PartDef1;
             part part2 : PartDef2;
         }
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        """)
+        assertNoIssues()
 
-        val partDef2 = global.resolve<PartDefinition>("Package1::PartDef2")
-        assertNotNull(partDef2)
+        val partDef2 = global.resolve("Package1::PartDef2")
+        assertTrue(partDef2?.memberElement is PartDefinition)
 
-        val part1 = global.resolve<PartUsage>("Package1::part2")
-        assertNotNull(part1)
+        val part1 = global.resolve("Package1::part2")
+        assertTrue(part1?.memberElement is PartUsage)
     }
 }

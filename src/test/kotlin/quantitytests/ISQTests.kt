@@ -1,8 +1,6 @@
 package quantitytests
 
-import com.github.tukcps.sysmd.cspsolver.propagate
-import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.services.resolve.resolve
+import com.github.tukcps.sysmd.services.resolve.resolveVar
 import util.assertIssue
 import util.assertNoIssues
 import util.mockup.loadKerML
@@ -14,12 +12,12 @@ import kotlin.test.assertNotNull
 class ISQTests {
 
     @Test
-    fun basicTestJustLoading() = testSession("SI")  {
+    fun basicTestJustLoading() = testSession("ISQ")  {
         assertNoIssues()
     }
 
     @Test
-    fun basicTestDefinitionOk() = testSession("SI")  {
+    fun basicTestDefinitionOk() = testSession("ISQ")  {
         loadKerML("""
             feature x: ISQ::LengthValue = 10.0 [km]; 
         """)
@@ -27,7 +25,7 @@ class ISQTests {
     }
 
     @Test
-    fun basicTestDefinitionWrong() = testSession("SI")  {
+    fun basicTestDefinitionWrong() = testSession("ISQ")  {
         loadKerML("""
             feature x: ISQ::LengthValue = 10.0 [V]; 
         """)
@@ -35,18 +33,18 @@ class ISQTests {
     }
 
     @Test
-    fun derivedUnitTest() = testSession("SI")  {
+    fun derivedUnitTest() = testSession("ISQ")  {
         loadKerML("""
             feature x: ISQ::VolumeValue = 1000.0 [cm^3]; 
         """)
         assertNoIssues()
-        val x = global.resolve<Feature>("x")
+        val x = global.resolveVar("x")
         assertNotNull(x)
-        assertEquals(0.001, x.variable!!.min(), 0.000000000001)
+        assertEquals(0.001, x.min(), 0.000000000001)
     }
 
     @Test
-    fun derivedUnitTest2() = testSession("SI", "Occurrences")  {
+    fun derivedUnitTest2() = testSession("ISQ", "Occurrences")  {
         loadKerML("""
             class Car {
                 feature power: ISQ::PowerValue(10..1000) [kW]; 
@@ -56,8 +54,8 @@ class ISQTests {
             }
         """)
         assertNoIssues()
-        val vw = global.resolve<Feature>("VW::power")
+        val vw = global.resolveVar("VW::power")
         assertNotNull(vw)
-        assertEquals(20.0, vw.variable!!.min(), 0.000001)
+        assertEquals(20.0, vw.min(), 0.000001)
     }
 }

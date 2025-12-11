@@ -1,13 +1,14 @@
 package sysmlv2tests
 
-import io.github.tukcps.aadd.values.XBool
-import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolveVar
+import io.github.tukcps.aadd.values.XBool
 import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
-import kotlin.test.*
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class AssertAndConstraintsTests {
 
@@ -16,6 +17,7 @@ class AssertAndConstraintsTests {
         loadSysMLv2("""
             assert { true or false } 
         """)
+        solver.propagate()
         assertNoIssues()
     }
 
@@ -24,6 +26,7 @@ class AssertAndConstraintsTests {
         loadSysMLv2("""
             assert constraint { true or false } 
         """)
+        solver.propagate()
         assertNoIssues()
     }
 
@@ -32,6 +35,7 @@ class AssertAndConstraintsTests {
         loadSysMLv2("""
             assert not { true and false } 
         """)
+        solver.propagate()
         assertNoIssues()
     }
 
@@ -63,14 +67,14 @@ class AssertAndConstraintsTests {
     }
 
     @Test
-    fun assertTestEQWithVariable() = testSession("Calculations", "SI") {
+    fun assertTestEQWithVariable() = testSession("Calculations", "ISQ") {
         loadSysMLv2("""
             attribute a: ScalarValues::Integer(0..4); 
             attribute ASIlFromReliability: ScalarValues::Integer(0..4); 
             attribute ASILCalculated: ScalarValues::Integer = 1;
             assert constraint ASIL { ASIlFromReliability == ASILCalculated }
         """)
-        propagate()
+        solver.propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         val test2 = global.resolveVar("ASILCalculated")
         assertEquals(1, test2!!.vectorQuantity.value.asIdd().min)
@@ -79,14 +83,14 @@ class AssertAndConstraintsTests {
     }
 
     @Test
-    fun assertTestEQWithVariable2() = testSession("Calculations", "SI") {
+    fun assertTestEQWithVariable2() = testSession("Calculations", "ISQ") {
         loadSysMLv2(
             """
             attribute a: ScalarValues::Integer(0..4); 
             attribute ASIlFromReliability: ScalarValues::Integer(0..4) = a; 
             attribute ASILCalculated: ScalarValues::Integer(1) = ASIlFromReliability;
         """)
-        propagate()
+        solver.propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         val test2 = global.resolveVar("ASILCalculated")
         assertEquals(1, test2!!.vectorQuantity.value.asIdd().min)
@@ -95,14 +99,14 @@ class AssertAndConstraintsTests {
     }
 
     @Test
-    fun assertTestEQ() = testSession("Calculations", "SI") {
+    fun assertTestEQ() = testSession("Calculations", "ISQ") {
         loadSysMLv2(
             """
             attribute ASIlFromReliability: ScalarValues::Integer(0..4); 
             attribute ASILCalculated: ScalarValues::Integer = 1;
             assert constraint ASIL { ASIlFromReliability == ASILCalculated }
         """)
-        propagate()
+        solver.propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         val test2 = global.resolveVar("ASILCalculated")
         assertEquals(1, test2!!.vectorQuantity.value.asIdd().min)

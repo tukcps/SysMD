@@ -20,20 +20,16 @@ class Identification(
                 (if (shortName!= null) "shortName: $shortName" else "")+
                 (if (name != null) " name: $name" else "")
 
-    override fun equals(other: Any?): Boolean {
-        if (other == null) return false
-        if (other !is Identification) return false
-        if (other.shortName == this.shortName && this.shortName != null) return true
-        return other.name == this.name && this.name != null
-    }
+    override fun equals(other: Any?) = other is Identification && (
+        (shortName !== null && shortName == other.shortName) ||
+        (name !== null && name == other.name) ||
+        (shortName === null && name === null && other.name === null && other.shortName === null)
+    )
+
 
     public override fun clone(): Identification {
         return Identification(shortName, name)
     }
 
-    override fun hashCode(): Int {
-        var result = shortName?.hashCode() ?: 0
-        result = 31 * result + (name?.hashCode() ?: 0)
-        return result
-    }
+    override fun hashCode() = 1
 }

@@ -1,8 +1,6 @@
 package com.github.tukcps.sysmd.rest.entities.response
 
 import com.github.tukcps.sysmd.exceptions.Issue
-import com.github.tukcps.sysmd.model.kerml.Element
-import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.session.Session
 
 
@@ -29,7 +27,7 @@ data class IssueResponse(
         message = issue.message,
         line = issue.line(),
         token = issue.token?.string,
-        elementId = session?.global?.resolve<Element>(issue.elementPath?:"")?.elementId.toString(),
+        elementId = session?.global?.resolve(issue.elementPath?:"")?.memberElement?.elementId.toString(),
         inputHash = hashBase64UrlSafe(issue.input.toString()),
         indices = issue.indices
     )

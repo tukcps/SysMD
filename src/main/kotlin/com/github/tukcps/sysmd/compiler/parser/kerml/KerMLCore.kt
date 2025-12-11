@@ -584,6 +584,7 @@ fun KerML.TypeConstraint(): MutableList<String> {
  *          | Import
  */
 fun KerML.TypeBody() {
+	semantics.prefixes.clear()
     when(token.kind) {
         LCURBRACE -> {
             LCURBRACE.consume()

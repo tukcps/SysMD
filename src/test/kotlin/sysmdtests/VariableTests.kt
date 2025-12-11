@@ -1,11 +1,12 @@
 package sysmdtests
 
+import com.github.tukcps.sysmd.services.resolve.resolveVar
 import io.github.tukcps.aadd.values.XBool
-import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.services.resolve.resolve
+import util.assertNoIssues
 import util.mockup.loadKerML
-import kotlin.test.*
 import util.testSession
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class VariableTests {
     @Test
@@ -14,9 +15,9 @@ class VariableTests {
                 feature x: ScalarValues::Boolean;
                 feature y: ScalarValues::Boolean = if x ? true else false;
         """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val y = global.resolve<Feature>("y") !!.variable !!
-        assertEquals(XBool.X, y.vectorQuantity.value as XBool)
+        assertNoIssues()
+        val y = global.resolveVar("y")!!
+        assertEquals(XBool.X, y.bool())
      }
 
     @Test
@@ -25,9 +26,9 @@ class VariableTests {
                 feature x: ScalarValues::Boolean = false;
                 feature y: ScalarValues::Boolean = if x ? true else false. 
         """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val y = global.resolve<Feature>("y")!!.variable!!
-        assertEquals(XBool.False, y.vectorQuantity.value as XBool)
+        assertNoIssues()
+        val y = global.resolveVar("y")!!
+        assertEquals(XBool.False, y.bool())
     }
 
     @Test
@@ -36,10 +37,10 @@ class VariableTests {
                feature x: ScalarValues::Boolean;
                feature y: ScalarValues::Real = if x ? 1.0 else 2.0;
         """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val y = global.resolve<Feature>("y")!!.variable!!
-        assertEquals(1.0, y.vectorQuantity.getMinAsDouble(), 0.00001)
-        assertEquals(2.0, y.vectorQuantity.getMaxAsDouble(), 0.00001)
+        assertNoIssues()
+        val y = global.resolveVar("y")!!
+        assertEquals(1.0, y.min(), 0.00001)
+        assertEquals(2.0, y.max(), 0.00001)
     }
 
     @Test
@@ -48,9 +49,9 @@ class VariableTests {
                feature x: ScalarValues::Boolean;
                feature y: ScalarValues::Integer = if x ? 1 else 2;
         """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val y = global.resolve<Feature>("y")!!.variable!!
-        assertEquals(1.0, y.vectorQuantity.getMinAsDouble(), 0.00001)
-        assertEquals(2.0, y.vectorQuantity.getMaxAsDouble(), 0.00001)
+        assertNoIssues()
+        val y = global.resolveVar("y")!!
+        assertEquals(1.0, y.min(), 0.00001)
+        assertEquals(2.0, y.max(), 0.00001)
     }
 }

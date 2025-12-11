@@ -31,8 +31,13 @@ interface Import: Relationship {
     val importOwningNamespace: Namespace?
         get() = owningNamespace
 
-    fun importedMemberships(excluded: Set<Namespace>): MutableSet<Membership>
+    /**
+     * Either the imported Membership's element or the imported Namespace.
+     */
+    val importedElement: Element
 
-    override fun clone(): Import
-    override fun resolveNames(): Boolean
+    fun importedMemberships(
+        excluded: Set<Namespace> = emptySet(),
+        filter: Membership.() -> Boolean = { true }
+    ): List<Membership>
 }

@@ -63,7 +63,7 @@ object Rest {
         return try {
             restTemplate.exchange(generateURI(endpoint, queryParameters), method, request, String::class.java)
         } catch (error: RestClientException) {
-            ResponseEntity<String>("Unknown error in request: ${error.message}", HttpStatus.BAD_GATEWAY)
+            ResponseEntity("Unknown error in request: ${error.message}", HttpStatus.BAD_GATEWAY)
         }
     }
 
@@ -99,7 +99,7 @@ object Rest {
         try {
             val root = objectMapper.readTree(body)
             return root[key].asText()
-        } catch (e: JsonProcessingException) {
+        } catch (_: JsonProcessingException) {
             println("Key $key not found in body.")
         }
         return null
@@ -128,9 +128,9 @@ object Rest {
             auth = loginResult.headers["authorization"].toString().substring(7)
             // remove the closing bracket
             auth = auth.substring(0, auth.length - 1)
-        } catch (e: NullPointerException) {
+        } catch (_: NullPointerException) {
             throw SysMDInfo("login to backend failed")
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             throw SysMDInfo( "backend could not be reached")
         }
     }

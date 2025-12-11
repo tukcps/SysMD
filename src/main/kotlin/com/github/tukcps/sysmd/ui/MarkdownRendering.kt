@@ -2,7 +2,7 @@
 
 package com.github.tukcps.sysmd.ui
 
-import SvgRenderer.renderSvgToImage
+import com.github.tukcps.sysmd.ui.rendering.SvgRenderer.renderSvgToImage
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -274,10 +274,10 @@ fun MDDocument(tabsViewModel: TabsViewModel, document: Node) {
 @Composable
 fun MDHeading(tabsViewModel: TabsViewModel, heading: Heading, modifier: Modifier = Modifier) {
     val style = when (heading.level) {
-        1 -> MDTypography.h1.style
-        2 -> MDTypography.h2.style
-        3 -> MDTypography.h3.style
-        4 -> MDTypography.h4.style
+        1 -> MDTypography.H1.style
+        2 -> MDTypography.H2.style
+        3 -> MDTypography.H3.style
+        4 -> MDTypography.H4.style
         else -> {
             // Invalid header...
             MDBlockChildren(tabsViewModel, heading)
@@ -285,17 +285,17 @@ fun MDHeading(tabsViewModel: TabsViewModel, heading: Heading, modifier: Modifier
         }
     }
     val spaceAbove = when (heading.level) {
-        1 -> MDTypography.h1.spaceAbove
-        2 -> MDTypography.h2.spaceAbove
-        3 -> MDTypography.h3.spaceAbove
-        4 -> MDTypography.h4.spaceAbove
+        1 -> MDTypography.H1.spaceAbove
+        2 -> MDTypography.H2.spaceAbove
+        3 -> MDTypography.H3.spaceAbove
+        4 -> MDTypography.H4.spaceAbove
         else -> 2.dp
     }
     val spaceBelow = when (heading.level) {
-        1 -> MDTypography.h1.spaceBelow
-        2 -> MDTypography.h2.spaceBelow
-        3 -> MDTypography.h3.spaceBelow
-        4 -> MDTypography.h4.spaceBelow
+        1 -> MDTypography.H1.spaceBelow
+        2 -> MDTypography.H2.spaceBelow
+        3 -> MDTypography.H3.spaceBelow
+        4 -> MDTypography.H4.spaceBelow
         else -> 2.dp
     }
 
@@ -332,11 +332,11 @@ fun MDParagraph(tabsViewModel: TabsViewModel, paragraph: Paragraph, modifier: Mo
         val newParagraph = tocRenderer.generateSmallTOC()
         Box(modifier = modifier.padding(bottom = padding)) {
             val styledText = buildAnnotatedString {
-                pushStyle(MDTypography.bodyMedium.style.toParagraphStyle())
+                pushStyle(MDTypography.BodyMedium.style.toParagraphStyle())
                 appendMarkdownChildren(newParagraph, MaterialTheme.colorScheme)
                 pop()
             }
-            MarkdownText(tabsViewModel, styledText, MDTypography.bodyMedium.style)
+            MarkdownText(tabsViewModel, styledText, MDTypography.BodyMedium.style)
         }
     } else if (isElementTOCElement(paragraph)){
         //normal Paragraph
@@ -344,11 +344,11 @@ fun MDParagraph(tabsViewModel: TabsViewModel, paragraph: Paragraph, modifier: Mo
         val newParagraph = tocRenderer.generateTOCAsParagraphElement()
         Box(modifier = modifier.padding(bottom = padding)) {
             val styledText = buildAnnotatedString {
-                pushStyle(MDTypography.bodyMedium.style.toParagraphStyle())
+                pushStyle(MDTypography.BodyMedium.style.toParagraphStyle())
                 appendMarkdownChildren(newParagraph, MaterialTheme.colorScheme)
                 pop()
             }
-            MarkdownText(tabsViewModel, styledText, MDTypography.bodyMedium.style)
+            MarkdownText(tabsViewModel, styledText, MDTypography.BodyMedium.style)
         }
     }
     else {
@@ -356,11 +356,11 @@ fun MDParagraph(tabsViewModel: TabsViewModel, paragraph: Paragraph, modifier: Mo
         val padding = if (paragraph.parent is Document) 8.dp else 30.dp
         Box(modifier = modifier.padding(bottom = padding)) {
             val styledText = buildAnnotatedString {
-                pushStyle(MDTypography.bodyMedium.style.toSpanStyle())
+                pushStyle(MDTypography.BodyMedium.style.toSpanStyle())
                 appendMarkdownChildren(paragraph, MaterialTheme.colorScheme)
                 pop()
             }
-            MarkdownText(tabsViewModel, styledText, MDTypography.bodyMedium.style)
+            MarkdownText(tabsViewModel, styledText, MDTypography.BodyMedium.style)
         }
     }
 }
@@ -519,17 +519,17 @@ fun MDBulletList(tabsViewModel: TabsViewModel, bulletList: BulletList, modifier:
     MDListItems(tabsViewModel, bulletList, modifier = modifier) {
         Row {
             val bullet = buildAnnotatedString {
-                pushStyle(MDTypography.bodyMedium.style.toSpanStyle())
+                pushStyle(MDTypography.BodyMedium.style.toSpanStyle())
                 append("$marker ")
             }
-            MarkdownText(tabsViewModel, bullet, MDTypography.bodyMedium.style, modifier)
+            MarkdownText(tabsViewModel, bullet, MDTypography.BodyMedium.style, modifier)
             Spacer(modifier.width(10.dp))
             val text = buildAnnotatedString {
-                pushStyle(MDTypography.bodyMedium.style.toSpanStyle())
+                pushStyle(MDTypography.BodyMedium.style.toSpanStyle())
                 appendMarkdownChildren(it, MaterialTheme.colorScheme)
                 pop()
             }
-            MarkdownText(tabsViewModel, text, MDTypography.bodyMedium.style, modifier)
+            MarkdownText(tabsViewModel, text, MDTypography.BodyMedium.style, modifier)
         }
         Spacer(modifier.height(4.dp))
     }
@@ -542,12 +542,12 @@ fun MDOrderedList(tabsViewModel: TabsViewModel, orderedList: OrderedList, modifi
     val delimiter = orderedList.markerDelimiter
     MDListItems(tabsViewModel, orderedList, modifier) {
         val text = buildAnnotatedString {
-            pushStyle(MDTypography.bodyMedium.style.toSpanStyle())
+            pushStyle(MDTypography.BodyMedium.style.toSpanStyle())
             append("${number++}$delimiter ")
             appendMarkdownChildren(it, MaterialTheme.colorScheme)
             pop()
         }
-        MarkdownText(tabsViewModel, text, MDTypography.bodyMedium.style, modifier)
+        MarkdownText(tabsViewModel, text, MDTypography.BodyMedium.style, modifier)
         Spacer(modifier.height(5.dp))
     }
 }
@@ -595,7 +595,7 @@ fun MDBlockQuote(blockQuote: BlockQuote, modifier: Modifier = Modifier) {
         )
     }.padding(start = 16.dp, top = 4.dp, bottom = 4.dp)) {
         val text = buildAnnotatedString {
-            pushStyle(MDTypography.bodyMedium.style.toSpanStyle().plus(SpanStyle(fontStyle = FontStyle.Italic)))
+            pushStyle(MDTypography.BodyMedium.style.toSpanStyle().plus(SpanStyle(fontStyle = FontStyle.Italic)))
             appendMarkdownChildren(blockQuote, MaterialTheme.colorScheme)
             pop()
         }
@@ -868,7 +868,7 @@ fun Table(
                         modifier = Modifier.weight(1f / header.size).border(width = 1.dp, color = Color.Gray)
                             .fillMaxHeight()
                     ) {
-                        MarkdownText(tabsViewModel, e, modifier = Modifier.padding(3.dp), style = MDTypography.h4.style)
+                        MarkdownText(tabsViewModel, e, modifier = Modifier.padding(3.dp), style = MDTypography.H4.style)
                     }
                 }
             }
@@ -881,7 +881,7 @@ fun Table(
                         modifier = Modifier.weight(1f / row.size).border(width = 1.dp, color = Color.Gray)
                             .fillMaxHeight()
                     ) {
-                        MarkdownText(tabsViewModel, e, modifier = Modifier.padding(3.dp), style = MDTypography.bodyMedium.style)
+                        MarkdownText(tabsViewModel, e, modifier = Modifier.padding(3.dp), style = MDTypography.BodyMedium.style)
                     }
                 }
             }

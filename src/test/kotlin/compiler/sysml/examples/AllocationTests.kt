@@ -1,9 +1,5 @@
 package compiler.sysml.examples
 
-import com.github.tukcps.sysmd.model.kerml.Element
-import com.github.tukcps.sysmd.model.sysml.AllocationDefinition
-import com.github.tukcps.sysmd.model.sysml.AllocationUsage
-import com.github.tukcps.sysmd.services.resolve.resolve
 import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
@@ -25,7 +21,7 @@ class AllocationTests {
         """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
 
-        val allocationDef1 = global.resolve<AllocationDefinition>("AllocationDef1")
+        val allocationDef1 = global.resolve("AllocationDef1")
         assertNotNull(allocationDef1)
     }
 
@@ -50,12 +46,12 @@ class AllocationTests {
                 part part3 :Part3;
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
 
-        val allocationDef1 = global.resolve<AllocationDefinition>("AllocationDef1")
+        val allocationDef1 = global.resolve("AllocationDef1")
         assertNotNull(allocationDef1)
 
-        val allocation1 = global.resolve<AllocationUsage>("allocation1")
+        val allocation1 = global.resolve("allocation1")
         assertNotNull(allocation1)
     }
 
@@ -78,7 +74,7 @@ class AllocationTests {
                 allocate part3 to part2;
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -127,8 +123,7 @@ class AllocationTests {
                 allocate part1.action1 to part2.action2;
             }
         """)
-
-        val action1 = global.resolve<Element>("part1")
+        val action1 = global.resolve("part1")
         assertNotNull(action1)
         assertNoIssues()
     }

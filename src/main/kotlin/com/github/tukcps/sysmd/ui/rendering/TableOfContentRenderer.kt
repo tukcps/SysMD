@@ -78,9 +78,5 @@ class TableOfContentsRenderer(headingsModel: InternalRefReference) {
         return returnValue
     }
 
-    private var headings: LinkedList<Pair<String, String>>
-
-    init {
-        headings = headingsModel.HeadingsWithNumbering
-    }
+    private var headings: LinkedList<Pair<String, String>> = headingsModel.HeadingsWithNumbering
 }

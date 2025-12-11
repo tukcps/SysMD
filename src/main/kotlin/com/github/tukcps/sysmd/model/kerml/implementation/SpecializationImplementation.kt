@@ -43,13 +43,4 @@ open class SpecializationImplementation(
         super.updateFrom(template)
     }
 
-    /**
-     * Initialize resolves the QualifiedNames and/or uid and adds references and uid to Elements.
-     * @return true if there was a change in this.
-     */
-    override fun resolveNames(): Boolean {
-        require( model != null )
-        updated = super.resolveNames()
-        return updated
-    }
 }

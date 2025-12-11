@@ -117,7 +117,7 @@ Write your model and documentation here.
      */
     fun removeFromIndex(file: String) {
         val newIndex = hashMapOf<String, String>()
-        meta?.index?.forEach { key, value ->
+        meta?.index?.forEach { (key, value) ->
             if (value != file) { newIndex[key] = value }
         }
         meta?.index = newIndex

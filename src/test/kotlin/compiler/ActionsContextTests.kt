@@ -1,8 +1,8 @@
 package compiler
 
 import com.github.tukcps.sysmd.compiler.KerML
-import com.github.tukcps.sysmd.compiler.semantics.Identification
 import com.github.tukcps.sysmd.compiler.semantics.ActionsContext
+import com.github.tukcps.sysmd.compiler.semantics.Identification
 import com.github.tukcps.sysmd.compiler.semantics.kerml.ClassActions
 import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
 import com.github.tukcps.sysmd.compiler.semantics.kerml.NamespaceActions
@@ -11,7 +11,6 @@ import com.github.tukcps.sysmd.model.kerml.implementation.ClassImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.PackageImplementation
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.session.SessionImplementation
 import io.github.tukcps.aadd.values.IntegerRange
 import util.testSession
@@ -42,7 +41,7 @@ class ActionsContextTests {
                 create(Identification("klass"))
             }
             model.initialize(1)
-            val klass = model.global.resolve<Class>("klass")
+            val klass = model.global.resolve("klass")?.memberElement as Class?
             assertNotNull(klass)
             assertTrue(model.status.issues.isEmpty(), model.status.issues.toString())
         }
@@ -63,7 +62,7 @@ class ActionsContextTests {
             }
             model.initialize(1)
             assertTrue(model.status.issues.isEmpty(), model.status.issues.toString())
-            assertNotNull(model.global.resolve<Class>("pkg::klass"))
+            assertNotNull(model.global.resolve("pkg::klass")?.memberElement)
         }
     }
 
@@ -79,7 +78,7 @@ class ActionsContextTests {
                 addMultiplicity(IntegerRange(2, 3))
             }
             model.initialize(1)
-            val feature = model.global.resolve<Feature>("feature")
+            val feature = model.global.resolve("feature")?.memberElement
             assertNotNull(feature)
             val typing = feature.getOwnedElementOfType<FeatureTyping>()
             assertNotNull(typing)

@@ -9,6 +9,8 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
+import kotlin.io.path.toPath
+import kotlin.io.path.writeText
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -53,10 +55,46 @@ class ProjectDataTest {
     }
 
     @Test
-    fun getCellIndexTest() = testSession(testDirectory = "saveAndLoadProjectData/project") {
-        val cells = project!!.getCellIndex()
-        assertNotNull(cells)
-        assertEquals(5, cells["file1.md"]?.size)
-        assertEquals("YAML", cells["file1.md"]?.first()?.language)
+    fun getCellIndexTest() {
+        val dir = (javaClass.getResource( "saveAndLoadProjectData/project")?.toURI()?.toPath())
+            ?: javaClass.classLoader.getResource( "saveAndLoadProjectData/project")?.toURI()?.toPath()
+            ?: throw Exception("Could not load project from saveAndLoadProjectData")
+
+        dir.resolve(".project.json").writeText("""
+            {
+                "name" : "name",
+                "version" : "*",
+                "description" : "description",
+                "license" : null,
+                "maintainer" : null,
+                "website" : null,
+                "topic" : null,
+                "usage" : [ ],
+                "id" : "7733965d-d7c8-44ae-ae27-6df87aa3e875"
+            }
+            """.trimIndent()
+        )
+
+        dir.resolve(".meta.json").writeText("""
+            {
+              "index" : {
+                "a" : "file1.md",
+                "b" : "file2.kerml"
+              },
+              "created" : "2020-01-01T00:00:00Z",
+              "metamodel" : null,
+              "includesDerived" : null,
+              "includesImplied" : null,
+              "checkSum" : null
+            }
+            """.trimIndent()
+        )
+
+        testSession(testDirectory = "saveAndLoadProjectData/project") {
+            val cells = project!!.getCellIndex()
+            assertNotNull(cells)
+            assertEquals(5, cells["file1.md"]?.size)
+            assertEquals("YAML", cells["file1.md"]?.first()?.language)
+        }
     }
 }

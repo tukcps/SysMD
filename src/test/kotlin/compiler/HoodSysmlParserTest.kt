@@ -8,8 +8,6 @@ import com.github.tukcps.sysmd.model.kerml.getOwnedElementsOfType
 import com.github.tukcps.sysmd.model.sysml.PartUsage
 import com.github.tukcps.sysmd.model.sysml.StateUsage
 import com.github.tukcps.sysmd.model.sysml.TransitionUsage
-import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.resolve.resolve
 import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
@@ -24,22 +22,22 @@ class HoodSysmlParserTest {
     @Test
     fun parsesOnePackage() {
         val model = parser.parseString("package firstPackage;")
-        val pkt = model.global.resolve<Package>("firstPackage")
+        val pkt = model.global.resolve("firstPackage")?.member<Package>()
         assertEquals("firstPackage", pkt!!.name)
     }
 
     @Test
     fun parsesTwoPackages() {
         val model = parser.parseString("package firstPackage;\npackage secondPackage;")
-        assertEquals("firstPackage", model.global.resolve<Package>("firstPackage")!!.name)
-        assertEquals("secondPackage", model.global.resolve<Package>("secondPackage")!!.name)
+        assertEquals("firstPackage", model.global.resolve("firstPackage")!!.memberName)
+        assertEquals("secondPackage", model.global.resolve("secondPackage")!!.memberName)
     }
 
     @Test
     fun doesNotParseNestedPackages() {
         val model = parser.parseString("package firstPackage { package subPackage; }")
-        val packageList = model.global.resolve<Package>("firstPackage")!!
-        assertEquals("firstPackage", packageList.name)
+        val packageList = model.global.resolve("firstPackage")?.member<Package>()
+        assertEquals("firstPackage", packageList?.name)
     }
 
 
@@ -219,7 +217,7 @@ class HoodSysmlParserTest {
                  }
             }
         """)
-        val owningPackage = global.resolve<Package>("testPackage")
+        val owningPackage = global.resolve("testPackage")?.member<Package>()
         val parts = owningPackage!!.getOwnedElementsOfType<PartUsage>()
         val part1 = parts[0]
         val status = part1.getOwnedElementsOfType<StateUsage>()[0]
@@ -276,7 +274,7 @@ class HoodSysmlParserTest {
                      }
                 }
             """)
-        assertTrue(model.status.issues.isEmpty(), model.status.issues.toString())
+        model.assertNoIssues()
         val owningPackage = parser.getTopLevelPackage(model, "testPackage")
         val parts = owningPackage!!.getOwnedElementsOfType<PartUsage>()
         val part1 = parts[0]
@@ -311,7 +309,7 @@ class HoodSysmlParserTest {
                  }
             }
         """)
-        // assertTrue(model.status.issues.isEmpty(), model.status.issues.toString())
+	    model.assertNoIssues()
 
         val owningPackage = parser.getTopLevelPackage(model, "testPackage")
         val parts = owningPackage!!.getOwnedElementsOfType<PartUsage>()
@@ -324,6 +322,6 @@ class HoodSysmlParserTest {
         // There are now infrastructures for multi-inheritance.
         // In-line with the standard:
         assertEquals("TurnOn", transition.triggerPayloadParameterType?.name)
-        assertEquals("2 < 5", (transition.guardCondition as Feature).expression)
+        assertEquals("2 < 5", transition.guardCondition?.expression)
     }
 }

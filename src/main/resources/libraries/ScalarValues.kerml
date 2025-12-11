@@ -11,4 +11,3 @@ standard library package ScalarValues {
 	datatype Natural :> Integer;
     datatype Positive :> Natural;
 }		
- 

@@ -1,13 +1,11 @@
 package compiler
 
 import com.github.tukcps.sysmd.compiler.importMD
-import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
 import com.github.tukcps.sysmd.model.kerml.implementation.AnnotatingElementImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.NamespaceImplementation
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.resolve.resolve
 import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -100,8 +98,8 @@ class ImportMDTests {
         importMD(input, fileAnnotation)
         assertEquals(13, get().size)
         // The last one is SysMD with the Language set to SysMD::A::B
-        assertTrue((fileAnnotation.ownedElement.last() as TextualRepresentation).language == "SysMD::A::B")
-        assertTrue((fileAnnotation.ownedElement.last() as TextualRepresentation).getOwnerPrefix() == "A::B")
+        assertEquals((fileAnnotation.ownedElement.last() as TextualRepresentation).language, "SysMD::A::B")
+        assertEquals((fileAnnotation.ownedElement.last() as TextualRepresentation).getOwnerPrefix(), "A::B")
     }
 
     @Test fun importMdWithNoTrailingTicks() = testSession {
@@ -114,7 +112,7 @@ class ImportMDTests {
         """.trimIndent()
         val fileAnnotation = addOwnedMember(NamespaceImplementation(declaredName="test"), global)
         importMD(input, fileAnnotation)
-        assertEquals(3, global.resolve<Namespace>("test")!!.ownedElement.size)
+        assertEquals(3, global.resolve("test")?.member<Namespace>()!!.ownedElement.size)
     }
 
 
@@ -151,7 +149,7 @@ class ImportMDTests {
             }
         }
         initialize()
-        val test = global.resolve<Element>("Test")
+        val test = global.resolve("Test")?.memberElement
         assertNotNull(test)
     }
 

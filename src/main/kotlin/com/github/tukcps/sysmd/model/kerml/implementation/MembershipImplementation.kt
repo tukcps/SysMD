@@ -1,11 +1,6 @@
 package com.github.tukcps.sysmd.model.kerml.implementation
 
-import com.github.tukcps.sysmd.model.kerml.Element
-import com.github.tukcps.sysmd.model.kerml.Import
-import com.github.tukcps.sysmd.model.kerml.Membership
-import com.github.tukcps.sysmd.model.kerml.Namespace
-import com.github.tukcps.sysmd.model.kerml.UnresolvedElement
-import com.github.tukcps.sysmd.model.kerml.UnresolvedNamespace
+import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.util.SimpleName
 
 open class MembershipImplementation(
@@ -23,10 +18,12 @@ open class MembershipImplementation(
     source = mutableListOf(membershipOwningNamespace),
     elementType = elementType
 ), Membership {
+
     override val memberName: String?
-        get() = target.firstOrNull()?.declaredName
+        get() = target.firstOrNull()?.name
+
     override val memberShortName: String?
-        get() = target.firstOrNull()?.declaredShortName
+        get() = target.firstOrNull()?.shortName
 
     override var owningRelatedElement: Element
         get() = source.first()

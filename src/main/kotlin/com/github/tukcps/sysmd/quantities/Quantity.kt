@@ -6,7 +6,7 @@ import io.github.tukcps.aadd.values.IntegerRange
 import io.github.tukcps.aadd.values.Range
 import io.github.tukcps.aadd.values.XBool
 import com.github.tukcps.sysmd.exceptions.SemanticError
-import com.github.tukcps.sysmd.quantities.baseUnits.Temperature
+import com.github.tukcps.sysmd.quantities.baseUnits.ThermodynamicTemperature
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneOffset.UTC
@@ -653,7 +653,7 @@ class Quantity : VectorQuantity {
         if (quantity.unit.unitSet.isNotEmpty() && expectedUnit.unitSet.isNotEmpty()) {
             val unit1 = quantity.unit.unitSet.elementAt(0)
             val unit2 = expectedUnit.unitSet.elementAt(0)
-            if (unit1 is Temperature && unit2 is Temperature && unit2.name != "kelvin")
+            if (unit1 is ThermodynamicTemperature && unit2 is ThermodynamicTemperature && unit2.name != "kelvin")
                 return unit1.convertTo(quantity.value * unit1.prefix.factor, unit2)
         }
         //1) Make expected unit canonical and calculate correlationFac
@@ -701,7 +701,7 @@ class Quantity : VectorQuantity {
                 resultUnit.addUnitOfMeasurement(newUnitElement)
             }
             // Update value
-            if (currentUnit is Temperature) resultValue = currentUnit.toKelvin(resultValue)
+            if (currentUnit is ThermodynamicTemperature) resultValue = currentUnit.toKelvin(resultValue)
             resultValue *= currentUnit.convFac.pow(currentUnit.exponent)
         }
 

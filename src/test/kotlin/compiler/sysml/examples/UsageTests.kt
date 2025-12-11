@@ -3,7 +3,6 @@ package compiler.sysml.examples
 import util.mockup.loadSysMLv2
 import com.github.tukcps.sysmd.model.sysml.PartDefinition
 import com.github.tukcps.sysmd.model.sysml.PartUsage
-import com.github.tukcps.sysmd.services.resolve.resolve
 import util.assertNoIssues
 import util.testSession
 import kotlin.test.*
@@ -23,10 +22,10 @@ class UsageTests {
         """)
         assertNoIssues()
 
-        val partDef1 = global.resolve<PartDefinition>("PartDef1")
+        val partDef1 = global.resolve("PartDef1")?.memberElement as PartDefinition
         assertNotNull(partDef1)
 
-        val part1 = global.resolve<PartUsage>("part1")
+        val part1 = global.resolve("part1")?.memberElement as PartUsage
         assertNotNull(part1)
     }
 
@@ -43,7 +42,7 @@ class UsageTests {
         """)
         assertNoIssues()
 
-        val partDef2 = global.resolve<PartDefinition>("PartDef2")
+        val partDef2 = global.resolve("PartDef2")?.memberElement as PartDefinition
         assertNotNull(partDef2)
     }
 
@@ -64,10 +63,10 @@ class UsageTests {
         """)
         assertNoIssues()
 
-        val partDef3 = global.resolve<PartDefinition>("PartDef3")
+        val partDef3 = global.resolve("PartDef3")?.memberElement as PartDefinition
         assertNotNull(partDef3)
 
-        val part1 = global.resolve<PartUsage>("part1")
+        val part1 = global.resolve("part1")?.memberElement as PartUsage
         assertNotNull(part1)
     }
 
@@ -90,10 +89,11 @@ class UsageTests {
         """)
         assertNoIssues()
 
-        val partDef1 = global.resolve<PartDefinition>("PartDef1")
+        val partDef1 = global.resolve("PartDef1")?.memberElement as PartDefinition
         assertNotNull(partDef1)
 
-        val part1 = global.resolve<PartUsage>("part1")
+        val part1 = global.resolve("part1")?.memberElement as PartUsage
+        assertTrue(part1.isAbstract)
         assertNotNull(part1)
     }
 
@@ -106,12 +106,12 @@ class UsageTests {
     @Test
     fun testVariationNameCompartment() = testSession("Parts") {
         loadSysMLv2("""
-        part def PartDef1;
-        variation part part1 : PartDef1;
+            part def PartDef1;
+            variation part part1 : PartDef1;
         """)
         assertNoIssues()
 
-        val partDef1 = global.resolve<PartDefinition>("PartDef1")
+        val partDef1 = global.resolve("PartDef1")?.memberElement as PartDefinition
         assertNotNull(partDef1)
     }
 
@@ -123,10 +123,10 @@ class UsageTests {
     @Test
     fun testFeatureMembership() = testSession("Parts") {
         loadSysMLv2("""
-        part def PartDef1 {
-            part def Part2;
-            part part2 : Part2 [0..*];
-        }
+            part def PartDef1 {
+                part def Part2;
+                part part2 : Part2 [0..*];
+            }
         """)
         assertNoIssues()
     }
@@ -139,11 +139,11 @@ class UsageTests {
     @Test
     fun testNestedFeatureMembership() = testSession("Parts") {
         loadSysMLv2("""
-        part def Part1;
-        part def Part2;
-        part part1 : Part1 [0..1] {
-            part part2 : Part2 [0..*];
-        }
+            part def Part1;
+            part def Part2;
+            part part1 : Part1 [0..1] {
+                part part2 : Part2 [0..*];
+            }
         """)
         assertNoIssues()
     }

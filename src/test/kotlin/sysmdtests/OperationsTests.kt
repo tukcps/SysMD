@@ -1,10 +1,8 @@
 package sysmdtests
 
-import io.github.tukcps.aadd.values.XBool
+import com.github.tukcps.sysmd.services.resolve.resolveVar
 import io.github.tukcps.aadd.values.XBool.Companion.False
 import io.github.tukcps.aadd.values.XBool.Companion.True
-import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.services.resolve.resolve
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
@@ -17,27 +15,27 @@ class OperationsTests {
     fun notTest1() = testSession("ScalarValues") {
         loadKerML("""
             feature a: ScalarValues::Boolean = not true; 
-        """.trimIndent())
-        val a = global.resolve<Feature>("a")!!.variable
-        assertEquals(False, a?.vectorQuantity?.value as XBool)
+        """)
+        val a = global.resolveVar("a")
+        assertEquals(False, a?.bool())
     }
 
     @Test
     fun notTest2() = testSession("ScalarValues") {
         loadKerML("""
             feature a: ScalarValues::Boolean = not false or false; 
-        """.trimIndent())
-        val a = global.resolve<Feature>("a")!!.variable
+        """)
+        val a = global.resolveVar("a")
         assertTrue(a?.ast?.dependency is com.github.tukcps.sysmd.model.expression.AstBinOp)
-        assertEquals(True, a.vectorQuantity.value as XBool)
+        assertEquals(True, a.bool())
     }
 
     @Test
     fun minusTest1() = testSession("ScalarValues") {
         loadKerML("""
             feature a: ScalarValues::Real = - 1.0 -- 1.0; 
-        """.trimIndent())
-        val a = global.resolve<Feature>("a")!!.variable
-        assertEquals(0.0, a!!.vectorQuantity.getMaxAsDouble(), 0.00000001)
+        """)
+        val a = global.resolveVar("a")
+        assertEquals(0.0, a!!.max(), 0.00000001)
     }
 }

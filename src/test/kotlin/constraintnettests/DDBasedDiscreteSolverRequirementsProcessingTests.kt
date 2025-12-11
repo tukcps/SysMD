@@ -1,12 +1,11 @@
 package constraintnettests
 
-import util.testSession
-import io.github.tukcps.aadd.values.XBool
-import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.services.resolve.resolveVar
-import util.mockup.loadKerML
+import io.github.tukcps.aadd.values.XBool
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import util.mockup.loadKerML
+import util.testSession
 
 class DDBasedDiscreteSolverRequirementsProcessingTests {
 
@@ -16,7 +15,7 @@ class DDBasedDiscreteSolverRequirementsProcessingTests {
             feature weight: ScalarValues::Integer {:>> range = "0..50";}
             inv r { weight <= 30 }
         """)
-        propagate()
+        solver.propagate()
         val r = global.resolveVar("r")
         assertEquals(r!!.boolSpecs.first(), XBool.True)
     }
@@ -27,7 +26,7 @@ class DDBasedDiscreteSolverRequirementsProcessingTests {
             feature weight: ScalarValues::Integer {:>> range = "0..50";}
             inv r { weight <= 30 }
         """)
-        propagate()
+        solver.propagate()
         val r = global.resolveVar("r")
         assertEquals(r!!.boolSpecs.first(), XBool.True)
     }

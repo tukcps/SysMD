@@ -1,8 +1,6 @@
 package compiler.kerml
 
-import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.services.resolve.resolve
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
@@ -17,9 +15,9 @@ class StringTests {
     @Test
     fun stringSyntax() = testSession("ScalarValues") {
         loadKerML("""feature label1: ScalarValues::String = "string value1";""")
-        propagate()
+        solver.propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val label1 = global.resolve<Feature>("label1")
+        val label1 = global.resolve("label1")?.member<Feature>()
         assertEquals( "\"string value1\"", label1?.expression)
     }
 }

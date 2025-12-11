@@ -26,7 +26,8 @@ internal class AstCos(model: Session, args: ArrayList<AstNode>) :
     }
 
     override fun evalDown() {
-        getParam(0).downQuantity = downQuantity.arccos()
+        if( getParam(0).upQuantity.getMinAsDouble()>0.0 &&  getParam(0).upQuantity.getMaxAsDouble()<2.0*Math.PI)
+            getParam(0).downQuantity = downQuantity.arccos()
     }
 
     override fun clone(): AstCos {

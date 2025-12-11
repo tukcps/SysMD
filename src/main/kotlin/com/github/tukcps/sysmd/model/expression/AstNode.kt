@@ -1,12 +1,12 @@
 package com.github.tukcps.sysmd.model.expression
 
 
-import io.github.tukcps.aadd.*
 import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.model.expression.functions.*
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
-import java.util.UUID
+import io.github.tukcps.aadd.*
+import java.util.*
 
 /**
  * The class AstNode implements an interface for an attributed syntax tree (AST).
@@ -18,9 +18,6 @@ import java.util.UUID
  */
 @Suppress("UNCHECKED_CAST")
 abstract class AstNode(val model: Session, val uuid : UUID = UUID.randomUUID()!!) : Cloneable {
-    init {
-        model.astNodes[uuid] = this
-    }
 
     lateinit var upQuantity: VectorQuantity
     lateinit var downQuantity: VectorQuantity

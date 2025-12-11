@@ -10,9 +10,51 @@ interface Type: Namespace {
 
     var isAbstract: Boolean
     var isSufficient: Boolean
-
     val isConjugated: Boolean
         get() = getOwnedElementsOfType<Conjugation>().isNotEmpty()
+
+    /**
+     * If this Type is conjugated, then return just the originalType of the Conjugation.
+     * Otherwise, return the general Types from all ownedSpecializations of this type, and:
+     * @param excludeImplied if excludeImplied = false, no, or all nonimplied ownedSpecializations, if excludeImplied = true
+     */
+    fun supertypes(excludeImplied: Boolean=false) : List<Type>
+
+    /**
+     * Return the public, protected and inherited Memberships of this Type.
+     * @param excludedNamespaces excludes the given set of excludedNamespaces.
+     * @param excludedTypes excludes Types in the given set of excludedTypes.
+     * @param excludeImplied if true, then also exclude any supertypes from implied Specializations.
+     */
+    fun nonPrivateMemberships(
+        excludedNamespaces: Set<Namespace>,
+        excludedTypes: Set<Type>,
+        excludeImplied: Boolean=false
+    ) : List<Membership>
+
+    /**
+     * Returns all the non-private Memberships of all the supertypes of this Type,
+     * excluding any supertypes that are this Type or are in the given set of excludedTypes.
+     * @param excludeImplied If excludeImplied = true, then also transitively exclude any supertypes from implied Specializations.
+     *     body: let excludingSelf : Set(Type) = excludedType->including(self) in
+     *     supertypes(excludeImplied)->reject(t | excludingSelf->includes(t)).
+     *     nonPrivateMemberships(excludedNamespaces, excludingSelf, excludeImplied)
+     */
+    fun inheritableMemberships(
+        excludedNamespaces: Set<Namespace> = emptySet(),
+        excludedTypes: Set<Type> = emptySet(),
+        excludeImplied: Boolean)
+    : List<Membership>
+
+    /**
+     * Return the Memberships inheritable from supertypes of this Type with redefined Features removed.
+     * When computing inheritable Memberships, exclude Imports of excludedNamespaces,
+     * Specializations of excludedTypes.
+     * @param excludedNamespaces to exclude imports
+     * @param excludedTypes to exclude types to prevent cyclic recursion
+     * @param excludeImplied excludes, if true, all implied Specializations.
+     */
+    fun inheritedMemberships(excludedNamespaces: Set<Namespace> = emptySet(), excludedTypes: Set<Type> = emptySet(), excludeImplied: Boolean): List<Membership>
 
     val generalization: List<Type>
         get() = ownedSpecialization.map { it.general }
@@ -71,22 +113,22 @@ interface Type: Namespace {
     val subtypes: MutableSet<Type>
 
     /** @return All features of this type */
-    fun features(): List<Feature> = ownedElement.filterIsInstance<Feature>()
+    fun features(): List<Feature> = member.filterIsInstance<Feature>()
 
     /** The owned multiplicity element of this type. */
-    fun multiplicity(): Multiplicity? = ownedElement.filterIsInstance<Multiplicity>().firstOrNull()
+    fun multiplicity(): Multiplicity? = member.filterIsInstance<Multiplicity>().firstOrNull()
 
     /**
      * @return owned end-features of direction in
      */
     fun input(): List<Feature> =
-        ownedElement.filterIsInstance<Feature>().filter { it.direction==Feature.FeatureDirectionKind.IN && it.isEnd}
+        member.filterIsInstance<Feature>().filter { it.direction==Feature.FeatureDirectionKind.IN && it.isEnd}
 
     /**
      * @return owned end-features of direction out
      */
     fun output(): List<Feature> =
-        ownedElement.filterIsInstance<Feature>().filter { it.direction==Feature.FeatureDirectionKind.OUT && it.isEnd}
+        member.filterIsInstance<Feature>().filter { it.direction==Feature.FeatureDirectionKind.OUT && it.isEnd}
 
     /**
      * Checks if the supertype has a cycle.

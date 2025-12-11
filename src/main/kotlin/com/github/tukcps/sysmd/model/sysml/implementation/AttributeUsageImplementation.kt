@@ -31,7 +31,6 @@ class AttributeUsageImplementation(
     isOrdered = isOrdered,
     isDerived = isDerived,
     isReadOnly = isReadOnly,
-    textualRepresentation = textualRepresentation,
     elementType = elementType
 ) {
     override fun clone(): AttributeUsage = AttributeUsageImplementation(
@@ -46,7 +45,6 @@ class AttributeUsageImplementation(
             isOrdered = isOrdered,
             isDerived = isDerived,
             isReadOnly = isReadOnly,
-            textualRepresentation = textualRepresentation,
         ).also {
             it.model = model
             it.typeConstraint = typeConstraint

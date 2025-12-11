@@ -1,13 +1,12 @@
 package constraintnettests
 
-import util.testSession
-import com.github.tukcps.sysmd.cspsolver.propagate
-import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.services.resolve.resolve
+import com.github.tukcps.sysmd.services.resolve.resolveVar
+import util.assertNoIssues
 import util.mockup.loadKerML
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Assertions.assertTrue
+import util.testSession
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 
 class EvalUpEvalDownTests {
@@ -26,12 +25,12 @@ class EvalUpEvalDownTests {
             feature y: Ranges::RealInRange = x { :>> range = "1.0 .. 2.0";}"""
         )
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        propagate()
+        solver.propagate()
         // now, both x and y must be 1..2
-        assertEquals(1.0, global.resolve<Feature>("y")!!.variable!!.min(), 0.00001)
-        assertEquals(2.0, global.resolve<Feature>("y")!!.variable!!.max(), 0.00001)
-        assertEquals(1.0, global.resolve<Feature>("x")!!.variable!!.min(), 0.00001)
-        assertEquals(2.0, global.resolve<Feature>("x")!!.variable!!.max(), 0.00001)
+        assertEquals(1.0, global.resolveVar("y")!!.min(), 0.00001)
+        assertEquals(2.0, global.resolveVar("y")!!.max(), 0.00001)
+        assertEquals(1.0, global.resolveVar("x")!!.min(), 0.00001)
+        assertEquals(2.0, global.resolveVar("x")!!.max(), 0.00001)
     }
 
     /**
@@ -45,12 +44,12 @@ class EvalUpEvalDownTests {
             feature x: Ranges::RealInRange { :>> range = "1.5 .. 2.5";}
             feature y: Ranges::RealInRange = x { :>> range = "1.0 .. 2.0";}"""
         )
-        assertEquals(0, status.issues.size, status.issues.toString())
-        propagate()
-        assertEquals(1.5, global.resolve<Feature>("y")!!.variable!!.aadd().getRange().min, 0.00001)
-        assertEquals(2.0, global.resolve<Feature>("y")!!.variable!!.aadd().getRange().max, 0.00001)
-        assertEquals(1.5, global.resolve<Feature>("x")!!.variable!!.aadd().getRange().min, 0.00001)
-        assertEquals(2.0, global.resolve<Feature>("x")!!.variable!!.aadd().getRange().max, 0.00001)
+        assertNoIssues()
+        solver.propagate()
+        assertEquals(1.5, global.resolveVar("y")!!.min(), 0.00001)
+        assertEquals(2.0, global.resolveVar("y")!!.max(), 0.00001)
+        assertEquals(1.5, global.resolveVar("x")!!.min(), 0.00001)
+        assertEquals(2.0, global.resolveVar("x")!!.max(), 0.00001)
     }
 
     /**
@@ -62,10 +61,11 @@ class EvalUpEvalDownTests {
             feature x: Ranges::IntegerInRange { :>> range = "1 .. 3";}
             feature y: Ranges::IntegerInRange = x { :>> range = "2 .. 4";}"""
         )
-        propagate()
-        assertEquals(2, global.resolve<Feature>("y")!!.variable!!.idd().getRange().min)
-        assertEquals(3, global.resolve<Feature>("y")!!.variable!!.idd().getRange().max)
-        assertEquals(2, global.resolve<Feature>("x")!!.variable!!.idd().getRange().min)
-        assertEquals(3, global.resolve<Feature>("x")!!.variable!!.idd().getRange().max)
+        assertNoIssues()
+        solver.propagate()
+        assertEquals(2L, global.resolveVar("y")!!.min())
+        assertEquals(3L, global.resolveVar("y")!!.max())
+        assertEquals(2L, global.resolveVar("x")!!.min())
+        assertEquals(3L, global.resolveVar("x")!!.max())
     }
 }

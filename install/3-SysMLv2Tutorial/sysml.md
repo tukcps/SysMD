@@ -133,7 +133,6 @@ Calculations can be used in expressions as function calls.
 
 ```SysML::tutorial::sysml::calculations
 private import ISQ::*; 
-private import SI::*; 
 
 // Definition of a Calculation
 calc def calcEnergy {

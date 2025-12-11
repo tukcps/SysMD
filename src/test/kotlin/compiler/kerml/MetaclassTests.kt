@@ -2,7 +2,6 @@ package compiler.kerml
 
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Metaclass
-import com.github.tukcps.sysmd.services.resolve.resolve
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
@@ -17,7 +16,7 @@ class MetaclassTests {
             metaclass c; 
         """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val c = global.resolve<Metaclass>("c")
+        val c = global.resolve("c")?.member<Metaclass>()
         assertEquals("c", c?.declaredName)
         // val objects = global.resolve<Type>("MetaObjects::MetaObject")
         // assertTrue(c?.specializes(objects) == true)
@@ -32,9 +31,9 @@ class MetaclassTests {
             }
         """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val c = global.resolve<Metaclass>("c")
+        val c = global.resolve("c")?.member<Metaclass>()
         assertNotNull(c)
-        val f = global.resolve<Feature>("c::f")
+        val f = global.resolve("c::f")?.member<Feature>()
         assertNotNull(f)
     }
 }

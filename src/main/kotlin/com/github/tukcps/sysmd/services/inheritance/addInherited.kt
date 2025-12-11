@@ -3,8 +3,6 @@ package com.github.tukcps.sysmd.services.inheritance
 import com.github.tukcps.sysmd.compiler.semantics.Identification
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureTypingImplementation
-import com.github.tukcps.sysmd.services.resolve.resolve
-import com.github.tukcps.sysmd.services.session.Session
 
 /**
  * For a type, iterates overall subtypes, and adds clones of the own owned features to it.
@@ -41,7 +39,7 @@ private fun Type.addInheritedFeaturesFromGeneral() {
 
     // For each supertype, determine the features that are not re-defined; they are cloned.
     generalization.forEach { supertype ->
-        val features = supertype.ownedElement.filterIsInstance<Feature>()
+        val features = supertype.visibleMemberships().filter { it.memberElement is Feature }.map { it.memberElement as Feature }
         features.forEach { feature ->
             if (feature.escapedName() !in redefinedNames)
                 toBeCloned.add(feature)
@@ -52,12 +50,12 @@ private fun Type.addInheritedFeaturesFromGeneral() {
     redefinitions.forEach { feature ->
         // If redefining feature is unresolve, resolve it first
         if(feature.redefining is Unresolved) {
-            var found: Feature? = null
+            var found: Membership? = null
             generalization.forEach { supertype ->
-                found = supertype.resolve<Feature>((feature.redefining as Unresolved).relativeName!!)
+                found = supertype.resolve((feature.redefining as Unresolved).relativeName!!)
             }
             if (found != null) {
-                feature.ownedRelationship.filterIsInstance<Redefinition>().firstOrNull()?.redefinedFeature = found
+                feature.ownedRelationship.filterIsInstance<Redefinition>().firstOrNull()?.redefinedFeature = found.memberElement as Feature
             }
         }
 
@@ -85,12 +83,12 @@ private fun Type.addInheritedFeaturesFromGeneral() {
             model?.addOwnedMember(feature.redefining!!.multiplicity()!!.clone(), feature)
 
         // ... ValueDomain ... with unit and range
-        if (feature.redefining?.getOwnedElement("range") != null && feature.getOwnedElement("range") == null) {
-            model?.addOwnedMember(feature.redefining!!.getOwnedElement("range")!!.clone(), feature)
+        if (feature.redefining?.resolveLocal("range") != null && feature.resolveLocal("range") == null) {
+            model?.addOwnedMember(feature.redefining!!.resolveLocal("range")!!.memberElement, feature)
         }
 
-        if (feature.redefining?.getOwnedElement("unit") != null && feature.getOwnedElement("unit") != null) {
-            model?.addOwnedMember(feature.redefining!!.getOwnedElement("unit")!!.clone(), feature)
+        if (feature.redefining?.resolveLocal("unit") != null && feature.resolveLocal("unit") != null) {
+            model?.addOwnedMember(feature.redefining!!.resolveLocal("unit")!!.memberElement, feature)
         }
 
 
@@ -117,7 +115,7 @@ private fun Type.addInheritedFeaturesFromGeneral() {
     // get all features of general type if that is already resolved
     val supertypeFeatures: MutableList<Feature> = mutableListOf()
     generalization.forEach { general ->
-        supertypeFeatures += general.getOwnedElementsOfType<Feature>()
+        supertypeFeatures += general.visibleMemberships().mapNotNull { if (it is Feature) it.memberElement as Feature else null }
     }
     val existingFeatures = getOwnedElementsOfType<Feature>().associateBy { Identification(it) }
 
@@ -133,67 +131,12 @@ private fun Type.addInheritedFeaturesFromGeneral() {
         if(existingWithSameName == null) {
             // Simple inheritance  -- we just clone it
             superTypeFeature.deepCloneWithInheritedFeature(this)
+            /*
+            model!!.addOwnedRelationship(
+                MembershipImplementation(membershipOwningNamespace = this, memberElement = superTypeFeature),
+                this)
+             */
         }  // else -- needs to differentiate between features that were cloned by previous run (e.g. by reading library) and that were specified by compiler ...
            // model?.status?.error("Attempt to overload feature ${existingWithSameName.escapedName()} of supertype '${superTypeFeature.qualifiedName}'; use redefinition.")
     }
-}
-
-
-/**
- * finds all features in a namespace, while considering inheritance.
- * @param type the type in which features will be searched
- * @return list of all features in a namespace including inherited.
- */
-fun Session.getAllInheritedFeatures(type: Type): Collection<Feature> =
-    when (type) {
-        is Anything -> emptyList()
-        is Feature -> {
-            val result = mutableListOf<Feature>()
-            type.allSupertypes().forEach { typing ->
-                result += mergeFeatures(
-                    type.getOwnedElementsOfType<Feature>(),
-                    getAllInheritedFeatures(typing)
-                )
-            }
-            result
-        }
-        else -> type.getOwnedElementsOfType()
-    }
-
-
-/**
- * @return the joined set of properties in case of inheritance:
- * - properties are added if present in a single properties sets
- * - properties are intersected if present in both properties sets
- * - an exception is thrown if a property is present in both, but the inherited is not a
- *   specified value is not a subset of the superclass.
- *   This is considered as an inconsistency in the model.
- */
-private fun Session.mergeFeatures(own: Collection<Feature>, inherited: Collection<Feature>): Collection<Feature> {
-    val merged = mutableSetOf<Feature>()
-    merged.addAll(own)
-    for (i in inherited) {
-        var overridden = false
-        for (o in own) {
-            // If there is already a property with the same name, compute subset of it.
-
-            if ((o.declaredName == i.declaredName && i.declaredName != null) || (o.declaredShortName == i.declaredShortName) && i.declaredShortName != null) {
-                // Basic requirement for inheritance, must hold in all cases otherwise something went wrong before ...
-                // TODO: Limit this to subclass which is sufficient.
-                if ( o.generalization.isEmpty() ) return merged
-
-                if ( i in o.allSupertypes(true) )
-                    status.inconsistency("subclass type  of '${o.qualifiedName}' must be subclass of '${i.qualifiedName}'", element = o)
-
-                if (o.multiplicityRange !in i.multiplicityRange)
-                    status.inconsistency("multiplicity of subclass '${i.qualifiedName}' must be subset of superclass '${o.qualifiedName}'", element = o)
-
-                overridden = true
-            }
-        }
-        if (!overridden) {
-            merged.add(i)
-        }
-    }
-    return merged
 }

@@ -1,17 +1,12 @@
 package constraintnettests
 
-import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.letVar
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import io.github.tukcps.aadd.BDD
 import util.mockup.loadKerML
 import util.testSession
-import kotlin.test.Ignore
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertSame
-import kotlin.test.assertTrue
+import kotlin.test.*
 
 @Suppress("UNUSED_VARIABLE", "DEPRECATION")
 class KerMLBddTests {
@@ -25,11 +20,11 @@ class KerMLBddTests {
     @Test
     fun bddVariableCreatedTest() = testSession("ScalarValues") {
         loadKerML("feature x: ScalarValues::Boolean;")
-        assertTrue(global.resolveVar("x")!!.bdd().height() == 1)
+        assertEquals(1, global.resolveVar("x")!!.bdd().height())
         loadKerML("feature a: ScalarValues::Boolean = x;")
         assertTrue((global.resolveVar("a")!!.bdd().height() == 1))
         loadKerML("feature b: ScalarValues::Boolean = not(a).")
-        assertTrue(global.resolveVar("x")!!.bdd().height() == 1)
+        assertEquals(1, global.resolveVar("x")!!.bdd().height())
         assertTrue((global.resolveVar("a")!!.bdd().height() == 1))
         initialize()
         val aAndB = global.resolveVar("a")!!.bdd() and global.resolveVar("b")!!.bdd()
@@ -74,7 +69,7 @@ class KerMLBddTests {
             loadKerML("feature complexBDD: ScalarValues::Boolean(true) = (a and c) or (not(b) and not(a));")
 
             assertSame(global.resolveVar("ca")!!.bdd().evaluate(), builder.False)
-            assertTrue((global.resolveVar("ccomplexbdd")!!.bdd().evaluate()).height() == 1)
+            assertEquals(1, (global.resolveVar("ccomplexbdd")!!.bdd().evaluate()).height())
 
             letVar("b", builder.False)
             letVar("a", builder.False)
@@ -95,9 +90,9 @@ class KerMLBddTests {
         """.trimIndent()
         )
         assertEquals(0, status.issues.size, "Messages: ${status.issues}")
-        propagate()
+        solver.propagate()
         val result = global.resolveVar("bdd")!!.ast!!.solveAst()
-        assertTrue(result as BDD === builder.True)
+        assertSame(builder.True, result as BDD)
         assertEquals(builder.True, global.resolveVar("a")?.vectorQuantity?.value)
         assertEquals(builder.True, global.resolveVar("b")?.vectorQuantity?.value)
         // assertTrue(builder.conds.getCondition(1) === builder.True)
@@ -115,9 +110,9 @@ class KerMLBddTests {
             feature c: ScalarValues::Boolean(true);
             feature bdd: ScalarValues::Boolean(false) = a and (b or c);"""
         )
-        propagate()
+        solver.propagate()
         val result = global.resolveVar("bdd")!!.ast!!.solveAst()
-        assertTrue(result as BDD === builder.False)
+        assertSame(result as BDD, builder.False)
         assertSame(builder.conds.getCondition(1), builder.False)
         assertSame(builder.conds.getCondition(2), builder.Bool)
         assertSame(builder.conds.getCondition(3), builder.True)

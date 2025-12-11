@@ -12,7 +12,7 @@ class OccurrenceDefinitionActions(
 ): TypeActions<OccurrenceDefinitionImplementation>(
     context,
     creator = ::OccurrenceDefinitionImplementation,
-    defaultType = "Occurrences::Occurrence",
+    isImplicit = "Occurrences::Occurrence",
 )
 
 

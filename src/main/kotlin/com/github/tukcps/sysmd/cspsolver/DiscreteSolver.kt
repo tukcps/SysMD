@@ -2,9 +2,12 @@ package com.github.tukcps.sysmd.cspsolver
 
 import com.github.tukcps.sysmd.services.session.Session
 
-class DiscreteSolver(val model: Session, val useDDs: Boolean = true) : DiscreteSolverIF {
+class DiscreteSolver(
+    val solver: Solver,
+    val useDDs: Boolean = true
+) : DiscreteSolverIF {
 
-    private val internalSolver: DiscreteSolverIF = if (useDDs) DDBasedDiscreteSolver(model) else SATBasedDiscreteSolver(model)
+    private val internalSolver: DiscreteSolverIF = if (useDDs) DDBasedDiscreteSolver(solver) else SATBasedDiscreteSolver(solver)
 
     override fun isInitialized(): Boolean {
         return internalSolver.isInitialized()

@@ -1,10 +1,7 @@
 package com.github.tukcps.sysmd.cspsolver
 
-import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.kerml.Multiplicity
 import com.github.tukcps.sysmd.services.session.Session
 import io.github.tukcps.aadd.BDD
-import io.github.tukcps.aadd.DDBuilder
 import io.github.tukcps.aadd.values.XBool
 import java.util.*
 
@@ -16,14 +13,15 @@ import java.util.*
  * TODO's: - ConflictTracer (own class?)
  *         - Human readable reasoning (string-msg?)
  */
-
 class DDBasedDiscreteSolver(
-    val model: Session
+    val solver: Solver
 ) : DiscreteSolverIF {
-    val builder: DDBuilder
-        get() = model.builder
 
-    /** A boolean expression that may or may not be true.
+    val builder
+        get() = solver.model.builder
+
+    /**
+     * A boolean expression that may or may not be true.
      * @param about The set of Element IDs referenced in `body`
      * @param body A BDD expressing this statement
      */
@@ -122,8 +120,7 @@ class DDBasedDiscreteSolver(
         }
     }
 
-    private fun openVars(bdd : BDD, ids : MutableSet<Int>)
-    {
+    private fun openVars(bdd : BDD, ids : MutableSet<Int>) {
         if(bdd is BDD.Internal) {
             ids.add(bdd.index)
             openVars(bdd.T, ids)
@@ -131,8 +128,7 @@ class DDBasedDiscreteSolver(
         }
     }
 
-    private fun openVars(bdd : BDD) : Set<Int>
-    {
+    private fun openVars(bdd : BDD) : Set<Int> {
         val acc = mutableSetOf<Int>()
 
         openVars(bdd, acc)
@@ -149,7 +145,7 @@ class DDBasedDiscreteSolver(
     private var initialzed : Boolean = false
 
     /** Set of expressions to check for updates */
-    private val updatedProperties : MutableSet<Feature> = mutableSetOf()
+    private val updatedProperties : MutableSet<Variable> = mutableSetOf()
 
     override fun isInitialized() : Boolean = initialzed
 
@@ -158,49 +154,34 @@ class DDBasedDiscreteSolver(
 
     override fun initialize(model: Session) {
         initialzed = true
-        model.get().filterIsInstance<Variable>().forEach{ update(it) }
     }
 
     override fun update(scheduledProperties: List<Variable>) {
-        updatedProperties.addAll(scheduledProperties.filter { it.updated && (it.feature !is Multiplicity && !(it.baseType === Variable.BaseType.String && it.feature.name?.endsWith("range") == true) && it.baseType === Variable.BaseType.Bool) }.map { it.feature })
+        updatedProperties
+            .addAll(scheduledProperties.filter {
+                it.updated && it.baseType === Variable.BaseType.Bool }
+                .map { it })
     }
 
     override fun update(updatedProperty: Variable) {
-        // skip all multiplicity vars
-        if(updatedProperty.feature is Multiplicity)
-            return
-        // why are these fed into the discrete solver??
-        if(updatedProperty.baseType === Variable.BaseType.String && updatedProperty.feature.name?.endsWith("range") == true)
-            return
-
-        // Only handle boolean variables
-        if(updatedProperty.baseType !== Variable.BaseType.Bool)
-            return//TODO("Only bools are supported currently")
-
-        updatedProperties.add(updatedProperty.feature)
+        updatedProperties.add(updatedProperty)
     }
 
     /** Learns new theorems from any updated variables */
     private fun collectUpdated() : Set<Statement> {
         val newTheorems = mutableSetOf<Statement>()
 
-        for (p in updatedProperties) {
-            if(p is Multiplicity)
-                continue
-
-            val v = p.variable!!
-
+        for (v in updatedProperties) {
             if(v.valueSpecs.size != 1)
                 continue //TODO()
 
             val q = v.vectorQuantity.bdd()
             val s = v.boolSpecs[0]
-            val id = builder.conds.indexes[p.elementId.toString()]
+            val id = builder.conds.indexes[v.elementId.toString()]
 
             when {
                 s === XBool.True -> {
                     newTheorems.add(statement(q))
-
                     if(id !== null)
                         newTheorems.add(Statement( setOf(id), BDD.Internal(builder, id, builder.True, builder.False) ))
                 }
@@ -305,7 +286,7 @@ class DDBasedDiscreteSolver(
 
         for (s in spec.entries) {
             if(s.value === builder.True || s.value === builder.False || s.value === builder.InfeasibleB)
-                builder.conds.x[s.key] = s.value;
+                builder.conds.x[s.key] = s.value
 
             builder.conds.indexes
                 .filter { it.value == s.key }
@@ -317,20 +298,14 @@ class DDBasedDiscreteSolver(
                     }
                 }.filterNotNull()
                 .forEach {
-                    val f = model[it]
-
-                    if(f is Feature) {
-                        val v = f.variable
-
+                        val v = solver.getVariable(it)
                         if(v !== null) {
                             v.valueSpecs = mutableListOf(s.value)
                             v.vectorQuantity.values = mutableListOf(s.value)
                         }
                         else
                             TODO("Builder.conds feature has no variable attached")
-                    }
-                    else
-                        TODO("Builder.conds ID does not point to feature")
+
                 }
         }
     }

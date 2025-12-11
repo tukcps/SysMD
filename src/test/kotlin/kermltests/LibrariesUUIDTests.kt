@@ -5,7 +5,6 @@ import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.services.check.checkLibraryElementIds
 import com.github.tukcps.sysmd.services.check.checkOwnership
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.session.loadLibrary
 import util.assertNoIssues
 import util.mockup.loadKerML
@@ -31,15 +30,15 @@ class LibrariesUUIDTests {
         """)
 
         // assertTrue(status.reports.isEmpty(), status.reports.toString())
-        val x = global.resolve<Package>("x::p")
+        val x = global.resolve("x::p")?.memberElement
         assertNotNull(x)
         assertTrue(x.isLibraryElement)
         assertEquals(5, x.elementId!!.version())
         var uuid5 = Generators.nameBasedGenerator().generate("x::p")
         assertEquals(uuid5, x.elementId)
 
-        // Specialization of class is generates as UUID v5
-        val cSpecialization = global.resolve<Class>("x::c")!!.getOwnedElementOfType<Specialization>()
+        // Specialization of class is generated as UUID v5
+        val cSpecialization = global.resolve("x::c")?.memberElement!!.getOwnedElementOfType<Specialization>()
         val cSpecializationPath = cSpecialization?.path()
         assertEquals(cSpecializationPath, "x::c/0", "Path should use index if no name is available")
         assertTrue(cSpecialization != null)
@@ -49,9 +48,9 @@ class LibrariesUUIDTests {
         assertEquals(uuid5, cSpecialization.elementId)
 
         // Datatype's id
-        val d = global.resolve<DataType>("x::d")
+        val d = global.resolve("x::d")?.memberElement
         assertEquals(5, d?.elementId?.version())
-        val dSpecialization = global.resolve<DataType>("x::d")!!.getOwnedElementOfType<Specialization>()
+        val dSpecialization = global.resolve("x::d")?.memberElement?.getOwnedElementOfType<Specialization>()
         assertTrue(dSpecialization != null)
         assertTrue(dSpecialization.isLibraryElement)
         assertEquals(5, dSpecialization.elementId!!.version())
@@ -59,19 +58,19 @@ class LibrariesUUIDTests {
         assertEquals(uuid5, dSpecialization.elementId)
 
         // Feature's id
-        val f = global.resolve<Feature>("x::f")
+        val f = global.resolve("x::f")?.memberElement
         assertEquals(5, f?.elementId?.version())
-        val fSpecialization = global.resolve<Feature>("x::f")!!.getOwnedElementOfType<Specialization>()
+        val fSpecialization = global.resolve("x::f")?.memberElement!!.getOwnedElementOfType<Specialization>()
         assertTrue(fSpecialization != null)
         assertTrue(fSpecialization.isLibraryElement)
         assertEquals(5, fSpecialization.elementId!!.version())
         uuid5 = Generators.nameBasedGenerator().generate(fSpecialization.path())
         assertEquals(uuid5, fSpecialization.elementId)
-        val fMultiplicity = global.resolve<Feature>("x::f")!!.getOwnedElementOfType<Multiplicity>()
+        val fMultiplicity = global.resolve("x::f")?.memberElement?.getOwnedElementOfType<Multiplicity>()
         assertTrue(fMultiplicity != null)
         assertTrue(fMultiplicity.isLibraryElement)
         assertEquals(5, fMultiplicity.elementId!!.version())
-        val mPath = fMultiplicity.path()
+        // val mPath = fMultiplicity.path()
         uuid5 = Generators.nameBasedGenerator().generate("x::f::cardinality")
         assertEquals(uuid5, fMultiplicity.elementId)
 
@@ -96,7 +95,7 @@ class LibrariesUUIDTests {
             """)
         initialize()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val x = global.resolve<Package>("x")
+        val x = global.resolve("x")?.memberElement
         assertNotNull(x)
         assertTrue(x.isLibraryElement)
         assertEquals(5, x.elementId!!.version())
@@ -121,7 +120,7 @@ class LibrariesUUIDTests {
 
     @Test
     fun loadLinksTest2() = testSession("Links") {
-        val links = global.resolve<Element>("Links::Link")
+        val links = global.resolve("Links::Link")?.memberElement
         assertNotNull(links)
         checkOwnership()
         checkLibraryElementIds()
@@ -130,7 +129,7 @@ class LibrariesUUIDTests {
 
     @Test
     fun loadOccurrencesTest() = testSession("Occurrences") {
-        val occurrence = global.resolve<Element>("Occurrences::Occurrence")
+        val occurrence = global.resolve("Occurrences::Occurrence")?.memberElement
         assertNotNull(occurrence)
         checkOwnership()
         checkLibraryElementIds()
@@ -138,10 +137,10 @@ class LibrariesUUIDTests {
     }
 
     @Test
-    fun loadOccurrencesTest2() = testSession("Occurrences", "SI") {
-        val occurrence = global.resolve<Element>("Occurrences::Occurrence")
+    fun loadOccurrencesTest2() = testSession("Occurrences", "ISQ") {
+        val occurrence = global.resolve("Occurrences::Occurrence")?.memberElement
         assertNotNull(occurrence)
-        assertNotNull(global.resolve<Element>("SI"))
+        assertNotNull(global.resolve("ISQ")).memberElement
         assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
@@ -158,7 +157,7 @@ class LibrariesUUIDTests {
         """)
         checkOwnership()
         checkLibraryElementIds()
-        val bl = global.resolve<Association>("Links::BinaryLink")
+        val bl = global.resolve("Links::BinaryLink")?.memberElement
         assertNotNull(bl)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
     }

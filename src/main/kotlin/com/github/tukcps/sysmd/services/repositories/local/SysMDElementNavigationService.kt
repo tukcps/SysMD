@@ -1,5 +1,6 @@
 package com.github.tukcps.sysmd.services.repositories.local
 
+import com.github.tukcps.sysmd.model.kerml.Membership
 import com.github.tukcps.sysmd.services.session.SessionManager
 import com.github.tukcps.sysmd.services.session.SessionManager.elementNavigationService
 import com.github.tukcps.sysmd.services.session.loadProject
@@ -73,7 +74,7 @@ object SysMDElementNavigationService: ElementNavigationService {
      */
     override fun getRootElements(project: Project, commit: Commit): Collection<ElementDAO> =
         elementNavigationService.getElements(project, commit).filter {
-            it.owner?.id == null
+            it.type == "OwningMembership" && it.source!!.first().id == null
         }
 
 }

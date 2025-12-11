@@ -1,9 +1,6 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.BDD
-import io.github.tukcps.aadd.IDD
-import io.github.tukcps.aadd.StrDD
+import com.github.tukcps.sysmd.exceptions.InternalError
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.model.expression.*
 import com.github.tukcps.sysmd.model.kerml.Feature
@@ -13,8 +10,11 @@ import com.github.tukcps.sysmd.model.kerml.getOwnedElementsOfType
 import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.quantities.Unit
 import com.github.tukcps.sysmd.quantities.VectorQuantity
-import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.session.Session
+import io.github.tukcps.aadd.AADD
+import io.github.tukcps.aadd.BDD
+import io.github.tukcps.aadd.IDD
+import io.github.tukcps.aadd.StrDD
 
 /**
  *  A user defined function call.
@@ -50,7 +50,7 @@ internal class AstUserDefinedFunction(
             else -> throw SemanticError("UserDefinedFunction must have Real, Boolean or Integer result")
         }
         // Get Function with given name
-        val resultResolvingFunctionName = namespace.resolve<Function>(name)
+        val resultResolvingFunctionName = namespace.resolve(name)?.memberElement as Function?
         if (resultResolvingFunctionName != null)
             function = resultResolvingFunctionName
         else
@@ -67,7 +67,8 @@ internal class AstUserDefinedFunction(
             // Test if units are matching
             // create Quantity, to make Unit of expectedFunctionInputs canonical.
             // After that it can be compared with the unit of the parameter
-            val expectedUnit = Quantity(model.builder.real(1.0), Unit(expectedFunctionInputs[it].unitConstraint?:"?")).unit
+            //if(expectedFunctionInputs[it].subUnitConstraint!=null)
+            val expectedUnit = Quantity(model.builder.real(1.0), Unit(expectedFunctionInputs[it].variable?.vectorQuantity?.unit.toString())).unit
             if (expectedUnit != parameters[it].upQuantity.unit)
                 throw SemanticError("Unit error for function $name: for the ${it + 1}. parameter the unit ${expectedFunctionInputs[it].unitConstraint} was expected, but the unit is ${parameters[it].upQuantity.unit}")
             functionInputs[expectedFunctionInputs[it].escapedName()!!] = parameters[it].upQuantity
@@ -82,9 +83,16 @@ internal class AstUserDefinedFunction(
         //if there is more than one calculationStep, these are also needed
         functionCalculations = function.getOwnedElementsOfType<Feature>()
             .filter { it.direction == Feature.FeatureDirectionKind.INOUT }
+        functionCalculations.forEach {
+            it.variable!!.compileExpression()
+        }
+
+        if (resultExpression.variable?.ast == null)
+            resultExpression.variable?.compileExpression()
 
         //Build the AST using all the calculation steps of the input
-        functionAST = resultExpression.variable?.ast?.let { buildAst(it) }!!
+        functionAST = resultExpression.variable?.ast?.let { buildAst(it) }
+            ?: throw InternalError("No AST for result expression found.")
         functionAST.runDepthFirst { initialize() } //initialize Real fkt in AST
         upQuantity = functionAST.upQuantity.clone()
         downQuantity = upQuantity.clone()
@@ -106,7 +114,8 @@ internal class AstUserDefinedFunction(
                     astToInputConnection[node.qualifiedName!!] = leaf
                     return leaf
                 } else if (node.qualifiedName in functionCalculations.map { it.escapedName() }) { //is used in another expression
-                    functionCalculations.find { it.escapedName() == node.qualifiedName }?.variable?.ast?.let { buildAst(it) }!!
+                    functionCalculations.find { it.escapedName() == node.qualifiedName }?.variable?.ast?.let { buildAst(it) } ?:
+                        throw InternalError("(Internal) AST is missing.")
                 } else {
                     throw SemanticError("${node.qualifiedName} is not defined in the function $name.")
                 }
@@ -159,11 +168,12 @@ internal class AstUserDefinedFunction(
                     "bySpecializations" -> return AstBySpecializations(model, namespace, parameters)
                     "byParts" -> return AstByParts(model, namespace, parameters)
                     "byImplements" -> return AstByImplements(model, namespace, parameters)
-                    "linear" -> return AstLinear(model, parameters)
+                    "linear" -> return AstLinearInterpolation(model, parameters)
                     "stepInterpolation" -> return AstStepInterpolation(model,parameters)
                     "ToReal" -> return AstReal(model, parameters)
                     "ToInteger" -> return AstInteger(model, parameters)
                     "norm" -> return AstNormalizeVector(model,parameters)
+                    "size" -> return AstVectorSize(model, parameters)
                     "angle" -> return AstVectorAngle(model,parameters)
                     "cityBlockDistance" -> return AstCityBlockDistance(model,parameters)
                     "quantityOfVectorAtPosition" -> return AstQuantityOfVectorAtPosition(model,parameters)

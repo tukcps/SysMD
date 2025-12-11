@@ -1,12 +1,9 @@
 package compiler.sysml
 
-import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.getOwnedElementOfType
+import com.github.tukcps.sysmd.model.sysml.AllocationDefinition
 import com.github.tukcps.sysmd.model.sysml.AllocationUsage
-import com.github.tukcps.sysmd.model.sysml.ConnectionDefinition
-import com.github.tukcps.sysmd.model.sysml.ConnectionUsage
-import com.github.tukcps.sysmd.services.resolve.resolve
 import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
@@ -29,9 +26,9 @@ class AllocationTests {
         val alloc = global.getOwnedElementOfType<AllocationUsage>()
         assertTrue(alloc != null)
         assertEquals(3, alloc.target.size)
-        val a = global.resolve<Element>("a")
-        val b = global.resolve<Element>("b")
-        val c = global.resolve<Element>("c")
+        val a = global.resolve("a")?.memberElement
+        val b = global.resolve("b")?.memberElement
+        val c = global.resolve("c")?.memberElement
         assertTrue(alloc.target.map { (it as Feature).referencedFeature }.containsAll(listOf(a, b, c)))
     }
 
@@ -58,7 +55,7 @@ class AllocationTests {
             allocation c allocate a to b; 
         """)
         assertNoIssues()
-        val c = global.resolve<AllocationUsage>("c")
+        val c: AllocationUsage? = global.resolve("c")?.member()
         assertNotNull(c)
         assertEquals(1, c.from.size)
         assertEquals(1, c.to.size)
@@ -73,7 +70,7 @@ class AllocationTests {
             allocation c allocate (a, b, d); 
         """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val c = global.resolve<AllocationUsage>("c")
+        val c: AllocationUsage? = global.resolve("c")?.member()
         assertNotNull(c)
         assertEquals(3, c.to.size)
     }
@@ -87,9 +84,9 @@ class AllocationTests {
             allocation c : C allocate a to b;  
         """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val c = global.resolve<ConnectionDefinition>("C")
+        val c: AllocationDefinition? = global.resolve("C")?.member()
         assertNotNull(c)
-        val ci = global.resolve<AllocationUsage>("c")
+        val ci: AllocationUsage? = global.resolve("c")?.member()
         assertNotNull(ci)
     }
 
@@ -103,9 +100,9 @@ class AllocationTests {
             allocation c : C allocate a to b;  
         """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val c = global.resolve<ConnectionDefinition>("C")
+        val c: AllocationDefinition? = global.resolve("C")?.member()
         assertNotNull(c)
-        val ci = global.resolve<ConnectionUsage>("c")
+        val ci: AllocationUsage? = global.resolve("c")?.member()
         assertNotNull(ci)
     }
 }

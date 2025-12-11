@@ -17,6 +17,7 @@ import com.github.tukcps.sysmd.ui.composables.Tabs
 import com.github.tukcps.sysmd.ui.composables.TreeViewPlus
 import com.github.tukcps.sysmd.ui.helper.fitMaxSize
 import com.github.tukcps.sysmd.ui.paneleft.projectlist.ProjectList
+import com.github.tukcps.sysmd.ui.paneleft.projectlist.ProjectListViewModel
 import com.github.tukcps.sysmd.ui.viewmodel.SysMDViewModel
 
 /**
@@ -28,6 +29,12 @@ import com.github.tukcps.sysmd.ui.viewmodel.SysMDViewModel
 fun NavigationPanel(
     sysMDViewModel: SysMDViewModel,
 ) {
+    val projectListViewModel = remember {
+        ProjectListViewModel(
+            sysMDViewModel.sessionState,
+            sysMDViewModel.tabsViewModel,
+            sysMDViewModel::reset)
+    }
     Surface(
         modifier = Modifier.fitMaxSize(),
         color = MaterialTheme.colorScheme.surfaceColorAtElevation(0.2.dp)
@@ -37,7 +44,7 @@ fun NavigationPanel(
             Tabs(listOf(mutableStateOf(" Projects "), mutableStateOf(" Has-A "), mutableStateOf(" Is-A ")), selected)
             Box(Modifier.fillMaxHeight().weight(1F)){
                 when (selected.value) {
-                    0 -> ProjectList(sysMDViewModel.sessionState, sysMDViewModel.tabsViewModel, sysMDViewModel::reset)
+                    0 -> ProjectList(sysMDViewModel.sessionState, sysMDViewModel.tabsViewModel, projectListViewModel, sysMDViewModel::reset)
                     1 -> DecompositionTree(sysMDViewModel.composition)
                     2 -> TreeViewPlus(sysMDViewModel.inheritance)
                 }

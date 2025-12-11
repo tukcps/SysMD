@@ -19,7 +19,7 @@ class Representer(
     private var illegalValue: String = "∅"
 ) {
     enum class InputType {
-        NaN, InfinityIncluded, Illegal, NormalNumbers, CloseRange
+        NaN, InfinityIncluded, Illegal, NormalNumbers, ClosedRange
     }
 
     /**
@@ -42,7 +42,7 @@ class Representer(
             InputType.Illegal   //cases for same, close positive and close negative  values
         else if (min == max || max < min * (1 + 10.0.pow(-precision.toDouble())) || min > max * (1 + 10.0.pow(-precision.toDouble())) ||
             0.0==round(min*10.0.pow(precision)) && 0.0==round(max*10.0.pow(precision))) //special case for 0
-            InputType.CloseRange
+            InputType.ClosedRange
         else
             InputType.NormalNumbers
     }
@@ -57,12 +57,12 @@ class Representer(
         findInputType()
         return when (this.inputType) {
             InputType.NaN -> naNString
-            InputType.InfinityIncluded -> when {
-                min == Double.NEGATIVE_INFINITY && max == Double.POSITIVE_INFINITY -> "$infinityString..$infinityString"
-                min == Double.NEGATIVE_INFINITY -> "$infinityString.." + toEngineeringNotation(max)
+            InputType.InfinityIncluded -> when (min) {
+                Double.NEGATIVE_INFINITY if max == Double.POSITIVE_INFINITY -> "$infinityString..$infinityString"
+                Double.NEGATIVE_INFINITY -> "$infinityString.." + toEngineeringNotation(max)
                 else -> toEngineeringNotation(min) + "..$infinityString"
             }
-            InputType.CloseRange -> toEngineeringNotation(min)
+            InputType.ClosedRange -> toEngineeringNotation(min)
             InputType.Illegal -> illegalValue
             InputType.NormalNumbers -> if (abs(max / min) > 10.0.pow(precision + 1)) "0.." + toEngineeringNotation(max)
                                        else toEngineeringNotation(min) + ".." + toEngineeringNotation(max)
@@ -80,7 +80,7 @@ class Representer(
         return when (this.inputType) {
             InputType.NaN -> InputType.NaN
             InputType.InfinityIncluded -> InputType.InfinityIncluded
-            InputType.CloseRange -> InputType.CloseRange
+            InputType.ClosedRange -> InputType.ClosedRange
             InputType.Illegal -> InputType.Illegal
             InputType.NormalNumbers -> InputType.NormalNumbers
         }
@@ -153,7 +153,7 @@ class Representer(
             var sigValues = plainString2.subSequence(
                 scales2[1], min(plainString2.length, precision + scales2[1] + 1)
             ).replace("\\.".toRegex(), "")
-            sigValues = sigValues.substring(0, dotPosition) + "." + sigValues.substring(dotPosition, sigValues.length)
+            sigValues = sigValues.take(dotPosition) + "." + sigValues.substring(dotPosition, sigValues.length)
             
             var endResult: String = sigValues
             endResult = endResult + "e" + scales2[2]

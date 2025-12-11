@@ -1,11 +1,9 @@
 
-import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.exceptions.ElementNotFoundException
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.SpecializationImplementation
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.session.loadLibrary
 import io.github.tukcps.aadd.functions.numInternalNodes
@@ -32,8 +30,8 @@ class IssuesAndRegressions {
             feature d: Ranges::IntegerInRange {:>> range = "3..4";}
             feature e: Ranges::IntegerInRange = min(a,b,c,d) {:>> range = "4..5";}
         """)
-        propagate()
-        assertEquals(0, status.issues.size, status.issues.toString())
+        solver.propagate()
+        assertNoIssues()
         val result = global.resolveVar("a")
         assertEquals(4, result!!.vectorQuantity.value.asIdd().min)
         assertEquals(7, result.vectorQuantity.value.asIdd().max)
@@ -46,7 +44,7 @@ class IssuesAndRegressions {
         val result3 = global.resolveVar("d")
         assertEquals(4, result3!!.vectorQuantity.value.asIdd().min)
         assertEquals(4, result3.vectorQuantity.value.asIdd().max)
-        assertEquals(0, status.issues.size, status.issues.toString())
+        assertNoIssues()
     }
 
     /** Issue #247 in Gitlab */
@@ -68,7 +66,7 @@ class IssuesAndRegressions {
                    type Car :> Vehicle;
                 }
             """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
 
@@ -86,8 +84,8 @@ class IssuesAndRegressions {
                 feature carPrice: Ranges::RealInRange = sumOverParts(price);
             }
         """)
-        propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        solver.propagate()
+        assertNoIssues()
         val price = global.resolveVar("Car::carPrice")!!
         assertEquals(3.0, price.min(), 0.000001)
         assertEquals(3.0, price.max(), 0.000001)
@@ -100,11 +98,11 @@ class IssuesAndRegressions {
     @Test fun elementsNotAppearTwice() = testSession("Base") {
         loadLibrary("ScalarValues")
         initialize()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val elements = get()
         loadLibrary("ScalarValues")
         initialize()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val elements2 = get()
         assertEquals(elements.size, elements2.size)
     }
@@ -122,7 +120,7 @@ class IssuesAndRegressions {
         loadLibrary("Links")
         loadLibrary("Occurrences")
         initialize()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val first = mutableListOf<Element>().also { it.addAll(get()) }
 
         loadLibrary("Base")
@@ -146,22 +144,22 @@ class IssuesAndRegressions {
      * Fixed: 2.6.4; EvalDown called the superclass method.
      */
     @Test
-    fun unitDisappearsTest() = testSession("Occurrences", "SI") {
+    fun unitDisappearsTest() = testSession("Occurrences", "ISQ") {
         loadKerML("""
                     class Vehicle {
-                        feature mass: SI::Mass = bySpecializations(mass);
+                        feature mass: ISQ::MassValue = bySpecializations(mass);
                     }
                     class Car :> Vehicle {
-                        feature mass: SI::Mass = 100.0 kg;
+                        feature mass: ISQ::MassValue = 100.0 kg;
                     }
                     class Bicycle :> Vehicle {
-                        feature mass: SI::Mass = oneOf(10.0 .. 20.0 [kg]);
+                        feature mass: ISQ::MassValue = oneOf(10.0 .. 20.0 [kg]);
                     }
             """)
-        propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val vehicle = global.resolve<Namespace>("Vehicle") !!
-        val mass =vehicle.resolveVar("mass")!!
+        solver.propagate()
+        assertNoIssues()
+        val vehicle: Class? = global.resolve("Vehicle")!!.member()
+        val mass =vehicle?.resolveVar("mass")!!
         assertTrue(mass.vectorQuantity.getMinAsDouble() in 9.99..10.01)
         assertTrue(mass.vectorQuantity.getMaxAsDouble() in 99.99..100.01)
         assertEquals("kg", mass.vectorQuantity.unit.toString())
@@ -178,10 +176,10 @@ class IssuesAndRegressions {
                 feature comp: Base::Anything[1 .. 2];
             }
         """)
-        propagate()
-        assertEquals(0, status.issues.size, status.issues.toString())
-        val test = global.resolve<Type>("Test") !!
-        val comp = test.resolve<Feature>("comp") !!
+        solver.propagate()
+        assertNoIssues()
+        val test = global.resolve("Test")?.member<Type>()
+        val comp = test!!.resolve("comp")?.member<Feature>()!!
         assertEquals(1, comp.getOwnedElementsOfType<Multiplicity>().size) // Just the multiplicity
         assertEquals(IntegerRange(1, 2), comp.multiplicityRange)
     }
@@ -198,9 +196,9 @@ class IssuesAndRegressions {
                     feature numAxis: ScalarValues::Integer = wheels::cardinality/2;
                 }
             }""")
-        propagate()
-        assertEquals(0, status.issues.size, status.issues.toString())
-        val multi = global.resolve<Feature>("ExampleDesign::Chassis::wheels::cardinality")!!.variable
+        solver.propagate()
+        assertNoIssues()
+        val multi = global.resolveVar("ExampleDesign::Chassis::wheels::cardinality")!!
         assertNotNull(multi)
         assertEquals(2L, multi.min())
         assertEquals(6L, multi.max())
@@ -232,16 +230,16 @@ class IssuesAndRegressions {
                 feature sensor [4..4];
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val s1 = global.resolve<Feature>("Device::sensor")
-        val s2 = global.resolve<Feature>("DeviceB::sensor")
-        val s3 = global.resolve<Feature>("DeviceA::sensor")
+        assertNoIssues()
+        val s1: Feature? = global.resolve("Device::sensor")?.member()
+        val s2: Feature? = global.resolve("DeviceB::sensor")?.member()
+        val s3: Feature? = global.resolve("DeviceA::sensor")?.member()
         assertNotEquals(s1, s2)
         assertNotEquals(s1, s3)
         assertNotEquals(s2, s3)
-        assertEquals(IntegerRange(4,5), global.resolve<Feature>("Device::sensor")?.multiplicityRange)
-        assertEquals(IntegerRange(4,4), global.resolve<Feature>("DeviceB::sensor")?.multiplicityRange)
-        assertEquals(IntegerRange(5,5), global.resolve<Feature>("DeviceA::sensor")?.multiplicityRange)
+        assertEquals(IntegerRange(4,5), global.resolve("Device::sensor")?.member<Feature>()?.multiplicityRange)
+        assertEquals(IntegerRange(4,4), global.resolve("DeviceB::sensor")?.member<Feature>()?.multiplicityRange)
+        assertEquals(IntegerRange(5,5), global.resolve("DeviceA::sensor")?.member<Feature>()?.multiplicityRange)
     }
 
 
@@ -257,10 +255,10 @@ class IssuesAndRegressions {
         loadSysMD("""
                 b::f1 hasA feature f: Base::Anything;
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val inherited = global.resolve<Element>( "b::f1")
+        assertNoIssues()
+        val inherited = global.resolve( "b::f1")?.memberElement
         assertNotNull(inherited)
-        val inheritedUpdated = global.resolve<Element>("b::f1::f")
+        val inheritedUpdated = global.resolve("b::f1::f")?.memberElement
         assertNotNull(inheritedUpdated)
     }
 
@@ -268,18 +266,17 @@ class IssuesAndRegressions {
      * Check that features from a superclass are inherited to a subclass.
      */
     @Test
-    fun issue112_inheritPartsShort2() = testSession("ScalarValues") {
+    fun issue112_inheritPartsShort2() = testSession("Occurrences") {
         settings.catchExceptions = false
-        loadKerML(
-            """
-                class a specializes Base::Anything {
-                    feature f1: Base::Anything;
-                }
-                class b :> a;
-            """)
-        val bF1 = global.resolve<Feature>("b::f1")
+        loadKerML("""
+            class a {
+                feature f1: Base::Anything;
+            }
+            class b :> a;
+        """)
+        val bF1: Feature? = global.resolve("b::f1")?.member()
         assertNotNull(bF1)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     @Test
@@ -302,12 +299,12 @@ class IssuesAndRegressions {
     }
 
     @Test
-    fun issue123_ThreeQualifiedNames() = testSession("ScalarValues") {
+    fun issue123_ThreeQualifiedNames() = testSession("Occurrences") {
         loadSysMD("""
-            Global hasA class A :>  Base::Anything.
-            A hasA feature B:  Base::Anything.
-            A::B hasA feature C:  Base::Anything.
-            A::B::C hasA feature D:  Base::Anything.
+            Global hasA class A.
+            A hasA feature B.
+            A::B hasA feature C.
+            A::B::C hasA feature D.
         """)
         assertNoIssues()
     }
@@ -327,8 +324,9 @@ class IssuesAndRegressions {
             }
         """)
         assertNoIssues()
-        val x = global.resolve<Feature>("X::x")
-        assertEquals(10.0, x?.variable?.vectorQuantity?.getMinAsDouble()!!, 0.0001)
+        val x = global.resolveVar("X::x")
+        assertNotNull(x)
+        assertEquals(10.0, x.min(), 0.0001)
     }
 
 
@@ -345,21 +343,21 @@ class IssuesAndRegressions {
                     feature x: Real = 10.0;
                 }
             }
-            """)
-        propagate()
-        assertTrue( status.issues.isEmpty(), status.issues.toString())
+        """)
+        solver.propagate()
+        assertNoIssues()
         loadSysMD("""
             X::Z hasA feature x: Real = 10.0.
         """)
-        propagate()
+        solver.propagate()
         loadSysMD("""
             X::Z hasA feature x: Real = 10.0.
         """)
-        propagate()
+        solver.propagate()
         //  val generated = getOwnedElement(textualRepresentation,"Generated elements") as Annotation?
 
         val x = global.resolveVar("X::Z::x")
-        assertEquals(0, status.issues.size, status.issues.toString())
+        assertNoIssues()
         assertEquals(10.0, x?.vectorQuantity?.getMinAsDouble()!!, 0.0001)
     }
 
@@ -375,7 +373,7 @@ class IssuesAndRegressions {
         val created = addOwnedMember(value, global)
         addOwnedRelationship(SpecializationImplementation(created, UnresolvedType("ScalarValues::String")), created)
         initialize()
-        propagate()
+        solver.propagate()
         val str = global.resolveVar("testPropertyString")
         assertNotNull(str)
     }
@@ -388,7 +386,7 @@ class IssuesAndRegressions {
             feature b: Ranges::RealInRange {:>> range = "0..5";}
             feature c: Ranges::RealInRange = a*b {:>> range = "2..2";}
         """)
-        propagate()
+        solver.propagate()
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(2.0, global.resolveVar("b")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(2.0, global.resolveVar("b")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
@@ -403,13 +401,13 @@ class IssuesAndRegressions {
             feature a: Ranges::RealInRange {:>> range = "1..1";}
             feature b: Ranges::RealInRange {:>> range = "0..5";}
             feature c: Ranges::RealInRange = max(a,b) {:>> range = "2..2";}
-            """)
-        propagate()
-        assertEquals(0, status.issues.size, status.issues.toString())
+        """)
+        solver.propagate()
+        assertNoIssues()
         val result = global.resolveVar("b")
         assertEquals(2.0,result!!.vectorQuantity.getMinAsDouble(),0.000001)
         assertEquals(2.0,result.vectorQuantity.getMaxAsDouble(),0.000001)
-        assertEquals(0, status.issues.size, status.issues.toString())
+        assertNoIssues()
     }
 
 
@@ -417,34 +415,34 @@ class IssuesAndRegressions {
      * There was a problem with repeated analysis of the same model.
      * We test it here by an example.
      */
-    @Test //Multiple executions of initialize() and propagate() lead to not working detection of redefinition
-    fun repeatedExecutionCausesWrongResultsTest() = testSession("SI") {
+    @Test //Multiple executions of initialize() and solver.propagate() lead to not working detection of redefinition
+    fun repeatedExecutionCausesWrongResultsTest() = testSession("ISQ") {
         val model = """
                         type PartWithVolume :> Base::Anything {
-                            feature height:  SI::Length = oneOf(10.0 .. 100.0 [cm]);
-                            feature width:   SI::Length = oneOf(1.0 .. 1.1  [m]);
-                            feature length:  SI::Length = oneOf(1.0 .. 1.1  [m]);
-                            feature volume:  SI::Volume = height * width * length {:>> range = "1 .. 2"; :>> unit = "m^3";}
+                            feature height:  ISQ::LengthValue = oneOf(10.0 .. 100.0 [cm]);
+                            feature width:   ISQ::LengthValue = oneOf(1.0 .. 1.1  [m]);
+                            feature length:  ISQ::LengthValue = oneOf(1.0 .. 1.1  [m]);
+                            feature volume:  ISQ::VolumeValue = height * width * length {:>> range = "1 .. 2"; :>> unit = "m^3";}
                         }
                     """
         loadKerML(model)
         assertNoIssues()
-        var volume = global.resolve<Feature>("PartWithVolume::volume")!!.variable
-        val height = global.resolve<Feature>("PartWithVolume::height")!!.variable
+        var volume = global.resolveVar("PartWithVolume::volume")!!
+        val height = global.resolveVar("PartWithVolume::height")!!
         assertNotNull(height)
-        assertEquals(1.0, volume!!.vectorQuantity.getMinAsDouble(), 0.000001)
-        assertEquals(1.21, volume.vectorQuantity.getMaxAsDouble(), 0.001)
-        propagate()
+        assertEquals(1.0, volume.min(), 0.000001)
+        assertEquals(1.21, volume.max(), 0.001)
+        solver.propagate()
         initialize()
         initialize()
-        volume = global.resolve<Feature>("PartWithVolume::volume")!!.variable
-        assertEquals(1.0, volume!!.vectorQuantity.getMinAsDouble(), 0.000001)
-        assertEquals(1.21, volume.vectorQuantity.getMaxAsDouble(), 0.001)
+        volume = global.resolveVar("PartWithVolume::volume")!!
+        assertEquals(1.0, volume.min(), 0.000001)
+        assertEquals(1.21, volume.max(), 0.001)
         loadKerML(model)
-        propagate()
+        solver.propagate()
         assertNoIssues()
-        assertEquals(1.0, volume.vectorQuantity.getMinAsDouble(), 0.000001)
-        assertEquals(1.21, volume.vectorQuantity.getMaxAsDouble(), 0.001)
+        assertEquals(1.0, volume.min(), 0.000001)
+        assertEquals(1.21, volume.max(), 0.001)
     }
 
     @Test
@@ -456,15 +454,15 @@ class IssuesAndRegressions {
                 }
             }
         """.trimIndent())
-        assertEquals(0, status.issues.size, status.issues.toString())
-        val a = global.resolve<Package>("a")
-        val ab = global.resolve<Type>("a::b")
-        val abc = global.resolve<Type>("a::b::c")
+        assertNoIssues()
+        val a: Package? = global.resolve("a")?.member()
+        val ab: Type? = global.resolve("a::b")?.member()
+        val abc: Type? = global.resolve("a::b::c")?.member()
         assertNotNull(a)
         assertNotNull(ab)
         assertNotNull(abc)
-        val ab2 = a.resolve<Type>("b")
-        val abc2 = ab.resolve<Type>("c")
+        val ab2: Type? = a.resolve("b")?.member()
+        val abc2: Type? = ab.resolve("c")?.member()
         assertNotNull(ab2)
         assertNotNull(abc2)
     }
@@ -480,9 +478,9 @@ class IssuesAndRegressions {
                     feature property: ScalarValues::Real = 4.0; // property: Real(0 .. *) = 4.0. works
                 }
             """)
-        assertEquals(0, status.issues.size, status.issues.toString())
-        val result = global.resolve<Feature>("Car::property")!!.variable
-        assertEquals(4.0, result!!.vectorQuantity.getMinAsDouble(), 0.000001)
+        assertNoIssues()
+        val result = global.resolveVar("Car::property")!!
+        assertEquals(4.0, result.vectorQuantity.getMinAsDouble(), 0.000001)
     }
 
 
@@ -494,7 +492,7 @@ class IssuesAndRegressions {
             type Test specializes Test;
             type P specializes Test;
         """)
-        propagate()
+        solver.propagate()
         assertTrue(status.issues.isNotEmpty(), status.issues.toString())
     }
 
@@ -508,7 +506,7 @@ class IssuesAndRegressions {
             feature a : Ranges::IntegerInRange { :>> range = "0 .. 5";}
             feature x: a; // Here, a Type is needed. And a feature is a type ...
         """)
-        propagate()
+        solver.propagate()
         assertTrue(status.issues.isEmpty(), "Features should be OK for typing features?")
     }
 
@@ -518,10 +516,10 @@ class IssuesAndRegressions {
             feature weight: ScalarValues::Integer = oneOf(0..50);
             feature weightBoundary1: ScalarValues::Integer = oneOf(15);
             feature weightBoundary2: ScalarValues::Integer = oneOf(15);
-            feature r: Ranges::BooleanInSpec = weight <= (weightBoundary1 + weightBoundary2) {:>> spec="true";}
+            inv r { weight <= (weightBoundary1 + weightBoundary2) }
         """)
-        propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        solver.propagate()
+        assertNoIssues()
         val wb1 = global.resolveVar("weightBoundary1")!!
         val wb2 = global.resolveVar("weightBoundary2")!!
 
@@ -536,15 +534,15 @@ class IssuesAndRegressions {
             namespace p { namespace p; }
          """)
         // Failure: 'Specialization' object is created in package p, not in element p.
-        val pp = global.resolve<Element>("p::p") // there is no p in p.
-        propagate()
+        val pp = global.resolve("p::p")?.memberElement // there is no p in p.
+        solver.propagate()
         assertEquals("p", pp!!.escapedName())
-        assertEquals(0, status.issues.size, status.issues.toString())
+        assertNoIssues()
     }
 
     @Test fun issue189nameResolutionIncorrect3() = testSession {
         loadKerML("""class p :> Base::Anything;""")
-        val pp = global.resolve<Element>("p::p") // there is no p in p.
+        val pp = global.resolve("p::p")?.memberElement // there is no p in p.
         assertEquals(null, pp)
     }
 
@@ -561,42 +559,42 @@ class IssuesAndRegressions {
      * Evolution of the issue ... we continuously check that the Modeling example works.
      */
     @Test
-    fun issue190test() = testSession("SI", "ISO26262", "Parts")  {
+    fun issue190test() = testSession("ISQ", "ISO26262", "Parts")  {
         loadSysMLv2("""
-            private import ScalarValues::*;
-            private import ISO26262::*;
             package archExample {
-                part def Vehicle :> Component {
+                private import ScalarValues::*;
+                private import ISO26262::*;
+                part def Vehicle :> ISO26262::Component {
                     part engine : Engine[1..2];
-                    attribute power: SI::Power in [kW] = engine::power * ToReal(engine::cardinality);
+                    attribute power: ISQ::PowerValue in [kW] = engine::power * ToReal(engine::cardinality);
                 }
                 // Drive is a Function that has NO subclasses; its implementation alternatives are hence not
                 // "by Subclasses, but "by Implements relationship".
                 part def Drive :> Function;
                 // Engine implements Drive.
-                part def Engine :> Component {
-                    attribute power: SI::Power in [kW] = [10.0 .. 100.0] kW; // bySpecializations(power);
+                part def Engine :> ISO26262::Component {
+                    attribute power: ISQ::PowerValue in [kW] = [10.0 .. 100.0] kW; // bySpecializations(power);
                 }
                 part def ElectricDrive :> Engine {
-                    attribute power: SI::Power(1..50) in [kW];
+                    attribute power: ISQ::PowerValue(1..50) in [kW];
                 }
                 part def CombustionEngine :> Engine {
-                    attribute power: SI::Power(10..200) in [kW];
+                    attribute power: ISQ::PowerValue(10..200) in [kW];
                 }
 
                 part vehicle: Vehicle;
                 part drive: Drive {
-                    attribute power: SI::Power in [kW] = byImplements(power);
+                    attribute power: ISQ::PowerValue in [kW] = byImplements(power);
                 }
                 connection r: ISO26262::implements connect vehicle::engine to drive;
                 assert constraint enoughPower { drive::power > 0.0 kW }
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val drive = global.resolve<Feature>("archExample::drive")
+        assertNoIssues()
+        val drive = global.resolve("archExample::drive")?.member<Feature>()
         assertNotNull(drive)
-        propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        solver.propagate()
+        assertNoIssues()
         // val engine = global.resolveName<Type>("archExample::Engine")
         // val power = global.resolveName<Expression>("archExample::drive::power")
         val enoughPower = global.resolveVar("archExample::enoughPower")
@@ -612,9 +610,9 @@ class IssuesAndRegressions {
         loadSysMLv2("""
             attribute result3: ScalarValues::Real = power2(10000000000.0);
         """)
-        propagate()
+        solver.propagate()
         // println(status.numberOfPropagateIterations)
-        assertTrue( status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     @Test
@@ -625,7 +623,7 @@ class IssuesAndRegressions {
                 }
                 type Test2 :> Test;
             """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     @Test
@@ -641,7 +639,7 @@ class IssuesAndRegressions {
                 }
                 feature s1: Real = sumOverParts(s);
         }""")
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         assertEquals(3.0, global.resolveVar("p::s1")!!.min(), 0.0001)
     }
 
@@ -666,9 +664,9 @@ class IssuesAndRegressions {
             attribute y4: ScalarValues::Real = [1.0..3.0];
             attribute r4: ScalarValues::Boolean = x4 <= y4;
         """)
-        assertEquals(0, status.issues.size, status.issues.toString())
-        propagate()
-        assertEquals(0, status.issues.size, status.issues.toString())
+        assertNoIssues()
+        solver.propagate()
+        assertNoIssues()
         global.resolveVar("x1")!!
         global.resolveVar("y1")!!
         val r1 = global.resolveVar("r1")!!
@@ -710,9 +708,9 @@ class IssuesAndRegressions {
             attribute r1: ScalarValues::Boolean = x1 <= y1;
             """
         )
-        assertEquals(0, status.issues.size, status.issues.toString())
-        propagate()
-        assertEquals(0, status.issues.size, status.issues.toString())
+        assertNoIssues()
+        solver.propagate()
+        assertNoIssues()
         global.resolveVar("x1")!!
         global.resolveVar("y1")!!
         val r1 = global.resolveVar("r1")!!
@@ -732,9 +730,9 @@ class IssuesAndRegressions {
             //attribute r3: ScalarValues::Boolean = r1 and r2;
             """
         )
-        assertEquals(0, status.issues.size, status.issues.toString())
-        propagate()
-        assertEquals(0, status.issues.size, status.issues.toString())
+        assertNoIssues()
+        solver.propagate()
+        assertNoIssues()
         global.resolveVar("x1")!!
         global.resolveVar("y1")!!
         val r1 = global.resolveVar("r1")!!
@@ -763,9 +761,9 @@ class IssuesAndRegressions {
             attribute r4: ScalarValues::Boolean = x1 <= y1;
             """
         )
-        assertEquals(0, status.issues.size, status.issues.toString())
-        propagate()
-        assertEquals(0, status.issues.size, status.issues.toString())
+        assertNoIssues()
+        solver.propagate()
+        assertNoIssues()
         global.resolveVar("x1")!!
         global.resolveVar("y1")!!
         val r1 = global.resolveVar("r1")!!
@@ -805,9 +803,9 @@ class IssuesAndRegressions {
             //attribute rn: ScalarValues::Boolean = z1 > x1;
             """
         )
-        assertEquals(0, status.issues.size, status.issues.toString())
-        propagate()
-        assertEquals(0, status.issues.size, status.issues.toString())
+        assertNoIssues()
+        solver.propagate()
+        assertNoIssues()
         val x1 = global.resolveVar("x1")!!
         val y1 = global.resolveVar("y1")!!
         //val r1 = global.resolveName<Expression>("r1")!!
@@ -840,9 +838,9 @@ class IssuesAndRegressions {
             attribute rn: ScalarValues::Boolean = x2 <= y2;
             """
         )
-        assertEquals(0, status.issues.size, status.issues.toString())
-        propagate()
-        assertEquals(0, status.issues.size, status.issues.toString())
+        assertNoIssues()
+        solver.propagate()
+        assertNoIssues()
         val x1 = global.resolveVar("x1")!!
         val y1 = global.resolveVar("y1")!!
         val r1 = global.resolveVar("r1")!!
@@ -868,8 +866,8 @@ class IssuesAndRegressions {
                 inv a1 { x >= 95.0 }
                 inv a2 { x <= 96.0 }
         """)
-        propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        solver.propagate()
+        assertNoIssues()
         global.resolveVar("x")
     }
 
@@ -878,8 +876,8 @@ class IssuesAndRegressions {
         loadKerML("""
             feature x: ScalarValues::Real = 2.0 ^ 2.0 ^ 3.0;
         """.trimIndent())
-        val x = global.resolve<Feature>("x")
-        assertEquals(256.0, x!!.variable!!.min(), 0.0001)
+        val x = global.resolveVar("x")
+        assertEquals(256.0, x!!.min(), 0.0001)
     }
 
     @Test @Ignore //TODO: Problem in Parser: After or only Product possible, but EE is not in Product
@@ -891,8 +889,8 @@ class IssuesAndRegressions {
             attribute a: ScalarValues::Boolean = c == 0 or b == 0.
             """.trimIndent()
         )
-        propagate()
-        assertEquals(0, status.issues.size, status.issues.toString())
+        solver.propagate()
+        assertNoIssues()
     }
 
     /**
@@ -918,8 +916,8 @@ class IssuesAndRegressions {
             }
             """.trimIndent(), catchExceptions = true
         )
-        propagate()
-        assertEquals(0, status.issues.size, status.issues.toString())
+        solver.propagate()
+        assertNoIssues()
     }
 
     /**
@@ -927,11 +925,11 @@ class IssuesAndRegressions {
      * BUT: Supertypes are duplicated.
      */
     @Test
-    fun referenceDuplicatesTestIssue260() = testSession("ScalarValues", "SI", "Parts", "Ports", "Requirements") {
+    fun referenceDuplicatesTestIssue260() = testSession("ScalarValues", "ISQ", "Parts", "Ports", "Requirements") {
         settings.catchExceptions = true
         loadSysMLv2("""
             private import ScalarValues::*;
-            private import SI::*;
+            private import ISQ::*;
             part testPart {
                 attribute att: Real [m];
                 in port input;
@@ -941,9 +939,9 @@ class IssuesAndRegressions {
                 subject testRef references testPart;
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val ref = global.resolve<Feature>("testReq::testRef")
-        val testPart = global.resolve<Feature>("testPart")
+        assertNoIssues()
+        val ref = global.resolve("testReq::testRef")?.memberElement
+        val testPart = global.resolve("testPart")?.memberElement
         val testReq = global.getOwnedElement("testReq")
         val testRef = testReq?.getOwnedElement("testRef") as Feature
         assertSame(testPart, testRef.referencedFeature as Feature)
@@ -964,82 +962,82 @@ class IssuesAndRegressions {
                 part def detectLongDistanceCollision :> accSystem::avoidCollision;
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     @Test
-    fun assertTestRealMultiplication() = testSession("ScalarValues", "SI", "Ranges") {
+    fun assertTestRealMultiplication() = testSession("ScalarValues", "ISQ", "Ranges") {
         loadSysMLv2("""
             attribute f: ScalarValues::Real = oneOf(1.0 .. 4.0); 
             assert constraint ass { 2.0 * f < 4.0 } 
         """)
-        propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        assertEquals(1.0, global.resolveVar("f")!!.aadd().getRange().min, 0.00001)
+        solver.propagate()
+        assertNoIssues()
+        assertEquals(1.0, global.resolveVar("f")!!.min(), 0.00001)
         assertEquals(2.0, global.resolveVar("f")!!.aadd().getRange().max, 0.00001)
     }
 
     @Ignore
     @Test
-    fun assertTestRealDiv() = testSession("ScalarValues", "SI", "Ranges") {
+    fun assertTestRealDiv() = testSession("ScalarValues", "ISQ", "Ranges") {
         loadSysMLv2("""
             attribute f: ScalarValues::Real = oneOf(1.0 .. 4.0); 
             assert constraint ass {  1.0 < 2.0 / f } 
         """)
-        propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        assertEquals(1.0, global.resolveVar("f")!!.aadd().getRange().min, 0.00001)
-        assertEquals(2.0, global.resolveVar("f")!!.aadd().getRange().max, 0.00001)
+        solver.propagate()
+        assertNoIssues()
+        assertEquals(1.0, global.resolveVar("f")!!.min(), 0.00001)
+        assertEquals(2.0, global.resolveVar("f")!!.max(), 0.00001)
     }
 
     @Ignore
     @Test
-    fun assertTestRealAdd() = testSession("ScalarValues", "SI", "Ranges") {
+    fun assertTestRealAdd() = testSession("ScalarValues") {
         loadSysMLv2("""
             attribute f: ScalarValues::Real; 
             assert constraint ass { 6.0 + f < 8.0 } 
         """)
-        propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        //assertEquals(-2.0, global.resolveVar("f")!!.aadd().getRange().min, 0.00001)
+        solver.propagate()
+        assertNoIssues()
+        //assertEquals(-2.0, global.resolveVar("f")!!.min(), 0.00001)
         assertEquals(2.0, global.resolveVar("f")!!.aadd().getRange().max, 0.00001)
     }
 
     @Test
-    fun assertTestRealSub() = testSession("ScalarValues", "SI", "Ranges") {
+    fun assertTestRealSub() = testSession("ScalarValues") {
         loadSysMLv2("""
             attribute f: ScalarValues::Real = oneOf(1.0 .. 4.0); 
             assert constraint ass { 6.0 - f < 4.0 } 
         """)
-        propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        assertEquals(2.0, global.resolveVar("f")!!.aadd().getRange().min, 0.00001)
+        solver.propagate()
+        assertNoIssues()
+        assertEquals(2.0, global.resolveVar("f")!!.min(), 0.00001)
         assertEquals(4.0, global.resolveVar("f")!!.aadd().getRange().max, 0.00001)
     }
 
     @Ignore
     @Test
-    fun assertTestRealDiv2() = testSession("ScalarValues", "SI", "Ranges") {
+    fun assertTestRealDiv2() = testSession("ScalarValues") {
         loadSysMLv2("""
             attribute f: ScalarValues::Real = oneOf(1.0 .. 8.0); 
             assert constraint ass {  8.0/f > 4.0 } 
         """)
-        propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        assertEquals(1.0, global.resolveVar("f")!!.aadd().getRange().min, 0.00001)
-        assertEquals(2.0, global.resolveVar("f")!!.aadd().getRange().max, 0.00001)
+        solver.propagate()
+        assertNoIssues()
+        assertEquals(1.0, global.resolveVar("f")!!.min(), 0.00001)
+        assertEquals(2.0, global.resolveVar("f")!!.max(), 0.00001)
     }
 
 
     @Test
     @Ignore
-    fun issueExpression() = testSession("ScalarValues", "SI", "Ranges") {
+    fun issueExpression() = testSession("ScalarValues", "ISQ", "Ranges") {
         loadSysMLv2("""
             private import ScalarValues::*;
             attribute constraint FLOPS: Real = 5/5.0 ;
         """)
-        propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        solver.propagate()
+        assertNoIssues()
     }
 
 
@@ -1051,7 +1049,7 @@ class IssuesAndRegressions {
             attribute b: ScalarValues::Real;
             assert constraint {  a < b }
         """)
-        propagate()
+        solver.propagate()
         assertNoIssues()
     }
 

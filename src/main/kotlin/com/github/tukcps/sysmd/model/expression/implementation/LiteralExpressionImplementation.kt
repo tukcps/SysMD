@@ -1,46 +1,41 @@
 package com.github.tukcps.sysmd.model.expression.implementation
 
-import com.github.tukcps.sysmd.model.expression.AstLeaf
-import com.github.tukcps.sysmd.model.expression.AstNode
-import com.github.tukcps.sysmd.model.expression.LiteralExpression
-import com.github.tukcps.sysmd.model.kerml.Element
-import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
-import com.github.tukcps.sysmd.model.util.SimpleName
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.BDD
-import io.github.tukcps.aadd.DD
-import io.github.tukcps.aadd.IDD
+import com.github.tukcps.sysmd.model.expression.*
+import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.model.util.*
+import com.github.tukcps.sysmd.services.resolve.resolveOld
+import io.github.tukcps.aadd.*
 
-open class LiteralExpressionImplementation(
+abstract class LiteralExpressionImplementation(
     declaredName: SimpleName? = null,
     declaredShortName: SimpleName? = null,
     direction: Feature.FeatureDirectionKind = Feature.FeatureDirectionKind.INOUT,
     isEnd: Boolean = false,
     typeConstraint: MutableList<String> = mutableListOf(),
     expression: String? = null,
-    textualRepresentation:  MutableList<TextualRepresentation> = mutableListOf(),
     elementType: String = "LiteralExpression"
 ) : LiteralExpression, ExpressionImplementation(
     declaredName = declaredName,
     declaredShortName = declaredShortName,
     direction = direction,
     isEnd = isEnd,
-    textualRepresentation = textualRepresentation,
     typeConstraint = typeConstraint,
     expression = expression,
     elementType = elementType
 )
 {
+    abstract val value : Any?
+
     override var isModelLevelEvaluable: Boolean = true
 
-    override var internalValue: AstNode?
-        get() {return super.internalValue as AstLeaf}
-        set(value) {super.internalValue = value as AstLeaf}
+    final override var internalValue: AstNode?
+        get() = literalValue
+        set(value) {
+            // TODO
+            // require(literalValue == value) { "Cannot modify value of literal" }
+        }
 
-    var literalValue: AstLeaf? //can't narrow value field down to Leaf, so here we go...
-        get() {return internalValue as AstLeaf}
-        set(value) {this.internalValue = value} //FIXME: Unit test to check for overshadowing
+    abstract val literalValue: AstLeaf? //can't narrow value field down to Leaf, so here we go...
 
     override var domain: DD<*>? = null
         get() {
@@ -55,6 +50,15 @@ open class LiteralExpressionImplementation(
             }
         }
 
+    /** Qualified name of this literal's type */
+    abstract val typeName : QualifiedName
+    protected abstract val cachedType : Type?
+
+    final override val type : List<Type>
+        get() = listOfNotNull(
+            cachedType ?: (owningNamespace ?: model?.global)?.resolve(typeName)?.member<Type>()
+        )
+
     override fun checkCondition(target: Element): Boolean {
         return super.checkCondition(target)
     }
@@ -65,5 +69,24 @@ open class LiteralExpressionImplementation(
 
     override fun modelLevelEvaluable(visited: Set<Feature>): Boolean {
         return super.modelLevelEvaluable(visited)
+    }
+
+    final override fun initialize()
+    {
+        evalUp()
+        downQuantity = upQuantity
+    }
+
+    final override fun evalUp()
+    {
+        upQuantity = literalValue!!.literalVal!!
+    }
+
+    final override fun evalDown()
+    {}
+
+    override fun toAstString(b : StringBuilder, precedence : Int)
+    {
+        b.append(value ?: "unknown")
     }
 }

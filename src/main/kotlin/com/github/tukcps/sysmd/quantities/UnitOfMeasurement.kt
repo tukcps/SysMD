@@ -21,6 +21,7 @@ open class UnitOfMeasurement(
     var exponent: Int,
     var isLogarithmic: Boolean = false,
     var isDifference: Boolean = false,
+    var alternativeDomain: String = "",
 ) : Cloneable {
 
     public override fun clone(): UnitOfMeasurement {
@@ -32,7 +33,8 @@ open class UnitOfMeasurement(
             convFac,
             exponent,
             isLogarithmic,
-            isDifference
+            isDifference,
+            alternativeDomain
         )
     }
 
@@ -58,14 +60,23 @@ open class UnitOfMeasurement(
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other !is UnitOfMeasurement) return false
-        if (name != other.name) return false
-        if (symbol != other.symbol) return false
-        if (prefix != other.prefix) return false
-        if (domain != other.domain) return false
-        if (convFac != other.convFac) return false
-        if (exponent != other.exponent) return false
-        return isLogarithmic == other.isLogarithmic
+        var result = true
+        if (other !is UnitOfMeasurement)
+            return false
+        if (name != other.name)
+            result = false
+        if (symbol != other.symbol)
+            result = false
+        if (prefix != other.prefix)
+            result = false
+        if (domain != other.domain)
+            result =false
+        if (convFac != other.convFac)
+            result = false
+        if (exponent != other.exponent)
+            result = false
+        result = result && isLogarithmic == other.isLogarithmic
+        return result
     }
 
     override fun hashCode(): Int {

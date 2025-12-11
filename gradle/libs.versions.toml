@@ -1,6 +1,6 @@
 [versions]
-kotlin = "2.2.10"
-compose-plugin = "1.8.2"
+kotlin = "2.2.21"
+compose-plugin = "1.9.1"
 
 [plugins]
 jetbrainsCompose = { id = "org.jetbrains.compose", version.ref = "compose-plugin" }

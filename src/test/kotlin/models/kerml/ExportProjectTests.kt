@@ -1,19 +1,18 @@
 package models.kerml
 
-import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.exceptions.Issue
-import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Relationship
 import com.github.tukcps.sysmd.model.kerml.Specialization
+import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.kerml.getOwnedElementOfType
 import com.github.tukcps.sysmd.model.kerml.implementation.*
 import com.github.tukcps.sysmd.services.check.checkOwnership
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.session.loadLibrary
 import io.github.tukcps.aadd.values.IntegerRange
 import io.github.tukcps.sysmlv2.api.entities.ElementDAO
 import io.github.tukcps.sysmlv2.api.entities.getElements
+import util.assertNoIssues
 import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -33,7 +32,7 @@ class ExportProjectTests {
         assertNotNull(classifier.getOwnedElementOfType<Specialization>())
         assertNotNull(classifier.getOwnedElementOfType<Specialization>()?.elementId)
         initialize()
-        assertEquals(0, status.issues.size, status.issues.toString())
+        assertNoIssues()
         val record = export()
         assertNotNull(record)
         // c is in record
@@ -59,14 +58,14 @@ class ExportProjectTests {
             assertNotNull(classifier.getOwnedElementOfType<Specialization>())
             assertNotNull(classifier.getOwnedElementOfType<Specialization>()?.elementId)
             // initialize()
-            assertEquals(0, status.issues.size, status.issues.toString())
+            assertNoIssues()
             export = export().getElements()
         }
         testSession {
             import(export)
             checkOwnership()
             initialize()
-            val c = global.resolve<TypeImplementation>("c")
+            val c = global.resolve("c")?.member<Type>()
             assertNotNull(c)
             assertTrue(c.ownedSpecialization.isNotEmpty())
             assertEquals(c.ownedSpecialization.first().owningRelatedElement.elementId, c.elementId)
@@ -114,9 +113,9 @@ class ExportProjectTests {
         }
         testSession {
             import(export)
-            val p = global.resolve<PackageImplementation>("p")
-            assertNotNull(p)
-            assertTrue(p.owner == global)
+            val p = global.resolve("p")
+            assertNotNull(p?.memberElement as? PackageImplementation)
+            assertEquals(p.owner, global)
         }
     }
 
@@ -127,7 +126,7 @@ class ExportProjectTests {
     fun importScalarValuesTest() {
         var export: List<ElementDAO> = emptyList()
         testSession("ScalarValues") {
-            assertEquals(0, status.issues.size, status.issues.toString())
+            assertNoIssues()
             export = export().getElements()
         }
         testSession("ScalarValues") {
@@ -146,7 +145,7 @@ class ExportProjectTests {
     fun importViaRepositoryCache() {
         testSession("ScalarValues") {
             initialize()
-            propagate()
+            solver.propagate()
             get().forEach { element ->
                 assertEquals(builder, element.model?.builder)
                 if (element is Relationship) {
@@ -183,11 +182,11 @@ class ExportProjectTests {
     fun repeatedUsage() {
         testSession {
             loadLibrary("Math")
-            val pi = global.resolve<Feature>("Math::pi")!!
+            val pi = global.resolve("Math::pi")
             loadLibrary("Math")
             loadLibrary("Math")
-            val pi2 = global.resolve<Feature>("Math::pi")!!
-            assertEquals(pi.elementId, pi2.elementId)
+            val pi2 = global.resolve("Math::pi")
+            assertEquals(pi?.memberElement?.elementId, pi2?.memberElement?.elementId)
         }
     }
 }

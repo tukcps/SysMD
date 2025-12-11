@@ -1,6 +1,5 @@
 package com.github.tukcps.sysmd.model.kerml.implementation
 
-import com.github.tukcps.sysmd.model.kerml.Association
 import com.github.tukcps.sysmd.model.kerml.Interaction
 
 class InteractionImplementation(
@@ -12,7 +11,7 @@ class InteractionImplementation(
     declaredShortName = declaredShortName,
     elementType = elementType
 ) {
-    override fun clone(): Association = InteractionImplementation(declaredName, declaredShortName).also {
+    override fun clone(): Interaction = InteractionImplementation(declaredName, declaredShortName).also {
         it.updateFrom(this)
     }
 }

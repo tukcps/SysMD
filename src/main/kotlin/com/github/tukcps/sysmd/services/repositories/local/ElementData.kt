@@ -1,5 +1,6 @@
 package com.github.tukcps.sysmd.services.repositories.local
 
+import com.github.tukcps.sysmd.model.expression.OperatorExpression
 import com.github.tukcps.sysmd.model.expression.implementation.InvariantImplementation
 import com.github.tukcps.sysmd.model.expression.implementation.LiteralIntegerImplementation
 import com.github.tukcps.sysmd.model.expression.implementation.OperatorExpressionImplementation
@@ -39,6 +40,9 @@ data class ElementData(
     override var importedMemberName: String? = null,
     override var importedNamespace: String? = null,
 
+	// For type = OperatorExpression
+	var operator : String? = null, // TODO: add to interface
+
     // For type AnnotationElement, Expression:
     override var language: String? = null,  // language, e.g. SysMD, SysML
     override var body: String? = null,      // The code in e.g., SysMD or SysML v2 textual
@@ -47,6 +51,7 @@ data class ElementData(
     override var isImpliedIncluded: Boolean? = null,
     override var isStandard: Boolean? = false,
     override var isLibraryElement: Boolean? = false,
+    override var visibility: String? = null,
     override var isEnd: Boolean? = false,
     override var isDerived: Boolean? = false,
     override var isAbstract: Boolean? = false,
@@ -94,6 +99,7 @@ fun ElementDAO.toElement(): Element {
         "Disjoining"        -> DisjoiningImplementation()
         "Documentation"     -> DocumentationImplementation(body = body!!)
         "Element"           -> ElementImplementation()
+        "EndFeatureMembership" -> EndFeatureMembershipImplementation()
         "Feature"           -> FeatureImplementation(direction = enumValueOf<Feature.FeatureDirectionKind>(direction?:"IN"))
         "FeatureChaining"   -> FeatureChainingImplementation()
         "FeatureMembership" -> FeatureMembershipImplementation()
@@ -102,6 +108,7 @@ fun ElementDAO.toElement(): Element {
         "InterfaceDefinition" -> InterfaceDefinitionImplementation()
         "InterfaceUsage"    -> InterfaceUsageImplementation()
         "NamespaceImport"   -> NamespaceImportImplementation()
+        "Membership"        -> MembershipImplementation()
         "MembershipImport"  -> MembershipImportImplementation()
         "Metaclass"         -> MetaclassImplementation()
         "MetadataFeature"   -> MetadataFeatureImplementation()
@@ -125,7 +132,8 @@ fun ElementDAO.toElement(): Element {
         "TextualRepresentation" -> TextualRepresentationImplementation(body = body!!, language = language!!)
 	    "OperatorExpression" -> OperatorExpressionImplementation()
 	    "LiteralInteger" -> LiteralIntegerImplementation()
-	    "ParameterMembership" -> ParameterMembershipImplementation()
+        "ParameterMembership" -> ParameterMembershipImplementation()
+        "ReturnParameterMembership" -> ReturnParameterMembershipImplementation()
         else             -> throw Exception("Element with unknown type '$type' in response; must be valid entity type.")
     }
     element.elementId = elementId
@@ -140,6 +148,11 @@ fun ElementDAO.toElement(): Element {
         source?.forEach { element.source.add(UnresolvedElement(id=it.id)) }
         target?.forEach { element.target.add(UnresolvedElement(id=it.id)) }
     }
+
+	if(element is OperatorExpression) {
+		// TODO: add this to ElementDAO interface
+		element.operator = (this as ElementData).operator
+	}
 
     if (element is Feature) {
         if (body != null) {
@@ -184,9 +197,9 @@ fun Element.toDAO(): ElementData {
     }
 
     if (this is Relationship) {
-        dao.owningNamespace = Identified(owningRelatedElement.elementId)
-        source.forEach { if (it.elementId != null) dao.source?.add(Identified(if (it.elementId == model?.global) null else it.elementId)) }
-        target.forEach { if (it.elementId != null) dao.target?.add(Identified(if (it.elementId == model?.global) null else it.elementId)) }
+        dao.owningNamespace = Identified( if (owningRelatedElement == model?.global) null else owningRelatedElement.elementId)
+        source.forEach { if (it.elementId != null) dao.source?.add(Identified(if (it == model?.global) null else it.elementId)) }
+        target.forEach { if (it.elementId != null) dao.target?.add(Identified(if (it == model?.global) null else it.elementId)) }
     } else {
         dao.owningRelationship = Identified(owningRelationship?.elementId)
     }
@@ -199,6 +212,9 @@ fun Element.toDAO(): ElementData {
         ownedElement.forEach { dao.owningNamespace = Identified(it.elementId) }
     }
 
+	if(this is OperatorExpression)
+		dao.operator = operator
+
     when(this) {
         is Multiplicity -> { dao.body = toBody() }
         is Feature -> {
@@ -209,6 +225,7 @@ fun Element.toDAO(): ElementData {
             dao.isOrdered = isOrdered
             dao.isReadOnly = isReadOnly
             dao.isDerived = isDerived
+            dao.isUnique = isUnique
         }
         is TextualRepresentation -> { dao.body = body; dao.language = language }
         is AnnotatingElement -> { dao.body = body }

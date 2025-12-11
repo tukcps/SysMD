@@ -1,16 +1,25 @@
 package com.github.tukcps.sysmd.model.kerml.implementation
 
-import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.kerml.ParameterMembership
-import com.github.tukcps.sysmd.model.kerml.UnresolvedFeature
+import com.github.tukcps.sysmd.model.kerml.*
 
 open class ParameterMembershipImplementation(
 	ownedMemberParameter: Feature = UnresolvedFeature(),
-	owningType: Feature = UnresolvedFeature(),
+	owningType: Type = UnresolvedFeature(),
 	elementType: String = "ParameterMembership",
 	override val parameterDirection : Feature.FeatureDirectionKind = Feature.FeatureDirectionKind.IN,
+	override var parameterIndex : Int = -1
 ) : ParameterMembership, FeatureMembershipImplementation(
 	ownedMemberFeature = ownedMemberParameter,
 	owningType = owningType,
 	elementType = elementType,
-)
+) {
+
+	override fun clone() = ParameterMembershipImplementation(
+		ownedMemberParameter = ownedMemberParameter,
+		owningType = membershipOwningNamespace as Feature,
+		elementType = elementType,
+		parameterDirection = parameterDirection
+	)
+
+	override fun toString() = "[ParameterMembership] ${membershipOwningNamespace.escapedName()} owns ${memberElement.escapedName()}"
+}

@@ -2,6 +2,10 @@ package com.github.tukcps.sysmd.services.session
 
 import com.github.tukcps.sysmd.compiler.KerML
 import com.github.tukcps.sysmd.logger
+import com.github.tukcps.sysmd.model.expression.implementation.BuiltinFunctions
+import com.github.tukcps.sysmd.model.kerml.Package
+import com.github.tukcps.sysmd.model.kerml.implementation.FunctionImplementation
+import com.github.tukcps.sysmd.model.kerml.implementation.getOwned
 import com.github.tukcps.sysmd.services.check.checkLibraryElementIds
 import com.github.tukcps.sysmd.services.check.checkOwnership
 import com.github.tukcps.sysmd.services.initialize
@@ -82,8 +86,8 @@ val Arrangements = hashMapOf(
     "Links"         to listOf("Base", "ScalarValues", "Links"),
     "Occurrences"   to listOf("Base", "ScalarValues", "Links", "Occurrences"),
     "Objects"       to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects"),
-    "Ranges"        to listOf("Base", "ScalarValues", "SI", "Ranges", "ISQ"),
-    "SI"            to listOf("Base", "ScalarValues", "SI", "Ranges", "ISQ"),
+    "Ranges"        to listOf("Base", "ScalarValues", "Ranges", "ISQ", "Quantities"),
+    "ISQ"            to listOf("Base", "ScalarValues", "Ranges", "ISQ", "Quantities"),
     "Ports"         to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Ports"),
     "Items"         to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Items"),
     "Parts"         to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Items", "Parts"),
@@ -91,18 +95,19 @@ val Arrangements = hashMapOf(
     "Connections"   to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Connections"),
     "Attributes"    to listOf("Base", "ScalarValues", "Links", "Occurrences", "Attributes"),
     "Allocations"   to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Connections", "Allocations"),
-    "Math"          to listOf("Base", "ScalarValues", "SI", "Ranges", "Math"),
-    "Constraints"   to listOf("Base", "ScalarValues", "SI", "Ranges", "Constraints"),
+    "Math"          to listOf("Base", "ScalarValues", "ISQ", "Ranges", "Math", "Quantities"),
+    "Constraints"   to listOf("Base", "ScalarValues", "ISQ", "Ranges", "Constraints", "Quantities"),
     "Requirements"  to listOf("Base", "ScalarValues", "Constraints", "Requirements"),
     "Actions"       to listOf("Base", "ScalarValues", "Links", "Occurrences", "Actions"),
     "Context"       to listOf("Base", "ScalarValues", "Context"),
     "KerML"         to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Ranges", "KerML"),
-    "KerMLLibraries" to listOf("Base", "ScalarValues", "Ranges", "Objects", "Links", "Occurrences", "Performances", "SI", "Ranges", "ISQ"),
-    "SysMLLibraries" to listOf("Base", "ScalarValues", "Ranges", "Objects", "Links", "Occurrences", "Performances", "Items", "SI", "Ranges",
-        "Ports", "Parts", "Calculations", "Constraints", "Requirements", "Interfaces", "Actions", "States", "Connections", "Signals", "ISQ"),
-    "ISO26262"      to listOf("Base", "ScalarValues", "Ranges", "Objects", "Links", "Occurrences", "ISO26262"),
+    "KerMLLibraries" to listOf("Base", "ScalarValues", "Ranges", "Objects", "Links", "Occurrences", "Performances", "Ranges", "ISQ", "Quantities"),
+    "SysMLLibraries" to listOf("Base", "ScalarValues", "Ranges", "Objects", "Links", "Occurrences", "Performances", "Items", "Ranges",
+        "Ports", "Parts", "Calculations", "Constraints", "Requirements", "Interfaces", "Actions", "States", "Connections", "Signals", "ISQ", "Quantities"),
+    "ISO26262"      to listOf("Base", "ScalarValues", "Ranges", "Objects", "Links", "Occurrences", "ISO26262", "Quantities"),
     "Signals"       to listOf("Base", "ScalarValues", "Links", "Occurrences", "Signals"),
-    "SysMD"         to listOf("Base", "ScalarValues", "SysMD")
+    "SysMD"         to listOf("Base", "ScalarValues", "SysMD"),
+	"DataFunctions" to listOf("Base", "ScalarValues", "DataFunctions"), // FIXME: +BaseFunctions
 )
 
 /**
@@ -120,4 +125,49 @@ fun Session.loadLibrary(library: String) {
             ?: loadLibraryFromResources(library, Arrangements[library]!!)
 
     this.import(daoOfLibrary)
+
+	if(library == "DataFunctions")
+	{
+		fun initArithmetic(pkg : Package)
+		{
+			for(func in pkg.ownedElement.filterIsInstance<FunctionImplementation>())
+			{
+				func.builtin = when(func.name) {
+					"+" -> BuiltinFunctions.PLUS
+					"-" -> BuiltinFunctions.MINUS
+					"*" -> BuiltinFunctions.TIMES
+					"/" -> BuiltinFunctions.DIV
+					"**", "^" -> BuiltinFunctions.EXP
+					"<" -> BuiltinFunctions.LT
+					">" -> BuiltinFunctions.GT
+					"<=" -> BuiltinFunctions.LE
+					">=" -> BuiltinFunctions.GE
+					"==" -> BuiltinFunctions.EE
+					"if" -> BuiltinFunctions.ITE
+					else -> continue
+				}.f
+			}
+		}
+
+		// TODO: unary operators
+		// FIXME: there are more undefined functions in these packages
+		initArithmetic(global.getOwned<Package>("IntegerFunctions")!!)
+		initArithmetic(global.getOwned<Package>("RealFunctions")!!)
+		initArithmetic(global.getOwned<Package>("RationalFunctions")!!)
+		initArithmetic(global.getOwned<Package>("NaturalFunctions")!!)
+
+
+		for(func in global.getOwned<Package>("BooleanFunctions")!!.ownedElement.filterIsInstance<FunctionImplementation>())
+		{
+			func.builtin = when(func.name) {
+				"not" -> BuiltinFunctions.NOT
+				"&" -> BuiltinFunctions.AND
+				"|" -> BuiltinFunctions.OR
+				"==" -> BuiltinFunctions.EE
+				else -> continue
+			}.f
+		}
+
+		global.resolve("")
+	}
 }

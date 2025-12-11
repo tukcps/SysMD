@@ -1,7 +1,5 @@
 package compiler.sysml.examples.modelstests
 
-import com.github.tukcps.sysmd.model.kerml.Element
-import com.github.tukcps.sysmd.services.resolve.resolve
 import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
@@ -44,7 +42,7 @@ class RequirementsTest {
                 assert not satisfy r1 by q;
             }
         """)
-        val r = global.resolve<Element>("RequirementTest::R")
+        val r = global.resolve("RequirementTest::R")?.memberElement
         assertNotNull(r)
         assertNoIssues()
     }

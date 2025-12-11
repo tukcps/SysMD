@@ -3,7 +3,6 @@ package compiler.sysml.examples
 import com.github.tukcps.sysmd.model.sysml.ActionDefinition
 import com.github.tukcps.sysmd.model.sysml.ActionUsage
 import com.github.tukcps.sysmd.model.sysml.ItemDefinition
-import com.github.tukcps.sysmd.services.resolve.resolve
 import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
@@ -25,8 +24,8 @@ class ActionTests {
             action def ActionDef1;
         """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val actionDef1 = global.resolve<ActionDefinition>("ActionDef1")
-        assertNotNull(actionDef1)
+        val actionDef1 = global.resolve("ActionDef1")?.memberElement
+        assertTrue(actionDef1 is ActionDefinition)
     }
 
     /**
@@ -47,8 +46,8 @@ class ActionTests {
         //val actionDef1 = global.resolve<ActionDefinition>("ActionDef1")
         //assertNotNull(actionDef1)
 
-        val action1 = global.resolve<ActionUsage>("action1")
-        assertNotNull(action1)
+        val action1 = global.resolve("action1")
+        assertTrue(action1?.memberElement is ActionUsage)
 
         // val action2 = global.resolve<ActionUsage>("action2")
         // assertNotNull(action2)
@@ -77,13 +76,13 @@ class ActionTests {
         """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
 
-        val itemDef1 = global.resolve<ItemDefinition>("ItemDef1")
+        val itemDef1 = global.resolve("ItemDef1")?.memberElement as ItemDefinition
         assertNotNull(itemDef1)
 
-        val itemDef2 = global.resolve<ItemDefinition>("ItemDef2")
+        val itemDef2 = global.resolve("ItemDef2")?.memberElement as ItemDefinition
         assertNotNull(itemDef2)
 
-        val action1 = global.resolve<ActionUsage>("action1")
+        val action1 = global.resolve("action1")?.memberElement as ActionUsage
         assertNotNull(action1)
     }
 
@@ -110,13 +109,13 @@ class ActionTests {
         """)
         assertNoIssues()
 
-        val action1 = global.resolve<ActionUsage>("actionExample::action3::action1")
+        val action1 = global.resolve("actionExample::action3::action1")?.memberElement as ActionUsage
         assertNotNull(action1)
 
-        val action2 = global.resolve<ActionUsage>("actionExample::action3::action2")
+        val action2 = global.resolve("actionExample::action3::action2")?.memberElement as ActionUsage
         assertNotNull(action2)
 
-        val action3 = global.resolve<ActionUsage>("actionExample::action3")
+        val action3 = global.resolve("actionExample::action3")?.memberElement as ActionUsage
         assertNotNull(action3)
     }
 

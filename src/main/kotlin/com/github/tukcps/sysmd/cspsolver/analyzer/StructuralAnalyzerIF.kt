@@ -11,15 +11,15 @@ interface StructuralAnalyzerIF: AnalyzerIF {
         TODO("Not yet implemented")
     }
 
-    fun conditionInAPath(conditionIndex: Int, property: Variable): Boolean {
+    fun conditionInAPath(conditionIndex: Int, variable: Variable): Boolean {
         TODO("Not yet implemented")
     }
 
-    fun conditionInAllPaths(conditionIndex: Int, property: Variable): Boolean {
+    fun conditionInAllPaths(conditionIndex: Int, variable: Variable): Boolean {
         TODO("Not yet implemented")
     }
 
-    fun getAllocationFromAllPaths(index: Int, property: Variable): DD<*> {
+    fun getAllocationFromAllPaths(index: Int, variable: Variable): DD<*> {
         TODO("Not yet implemented")
     }
 }

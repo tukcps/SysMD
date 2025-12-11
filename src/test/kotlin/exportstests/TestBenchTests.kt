@@ -1,28 +1,25 @@
 package exportstests
 
-import util.testSession
-import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.exports.Exporter
-import com.github.tukcps.sysmd.model.kerml.Element
-import com.github.tukcps.sysmd.services.resolve.resolve
-import util.mockup.loadSysMLv2
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
+import util.mockup.loadSysMLv2
+import util.testSession
 import java.io.File
 
 class TestBenchTests {
 
     @Test @Disabled
-    fun pipecleaner_TB_Test() = testSession("Parts", "Ports", "Requirements", "Connections", "SI") {
+    fun pipecleaner_TB_Test() = testSession("Parts", "Ports", "Requirements", "Connections", "ISQ") {
         loadSysMLv2("""
         package Amp_Pipecleaner {
             private import ScalarValues::*; 
-            private import SI::*; 
+            private import ISQ::*; 
             
             // Library instances --> SystemC classes
             part def Amplifier isA Base::Anything {
-                attribute gain: SI::Quantity = [0.0 .. 100.0] dB {:>> unit = "dB";}
+                attribute gain: Quantities::ScalarQuantityValue = [0.0 .. 100.0] dB {:>> unit = "dB";}
             }
             
             // Concrete model --> SystemC instances of library classes
@@ -34,7 +31,7 @@ class TestBenchTests {
                     out port output{
                        attribute value: ScalarValues::Real;  
                     }   
-                    attribute gain: SI::Quantity = [15.0 .. 20.0] dB {:>> unit = "dB";}  
+                    attribute gain: Quantities::ScalarQuantityValue = [15.0 .. 20.0] dB {:>> unit = "dB";}  
                 }
                 
                 part stage2: Amplifier {
@@ -44,7 +41,7 @@ class TestBenchTests {
                     out port output{
                        attribute value: ScalarValues::Real;  
                     }
-                    attribute gain: SI::Quantity = [5.0 .. 20.0] dB {:>> unit = "dB";}  
+                    attribute gain: Quantities::ScalarQuantityValue = [5.0 .. 20.0] dB {:>> unit = "dB";}  
                 }
                 
                 part driver: Amplifier {
@@ -54,13 +51,13 @@ class TestBenchTests {
                     out port output{
                        attribute value: ScalarValues::Real;  
                     }
-                    attribute gain: SI::Quantity = [5.0 .. 20.0] dB {:>> unit = "dB";}  
+                    attribute gain: Quantities::ScalarQuantityValue = [5.0 .. 20.0] dB {:>> unit = "dB";}  
                 }
                 
-                attribute total_gain: SI::Quantity = productOverParts(gain) {:>> unit = "dB"; :>> range = "20 .. 30";} 
+                attribute total_gain: Quantities::ScalarQuantityValue = productOverParts(gain) {:>> unit = "dB"; :>> range = "20 .. 30";} 
             }
             
-            attribute ambientTemperature : SI::Temperature = [-15.0 .. 40.0] °C {:>> unit = "°C";}
+            attribute ambientTemperature : ISQ::TemperatureValue = [-15.0 .. 40.0] °C {:>> unit = "°C";}
             
             connection def Signal;
             interface lna_to_stage2 : Signal connect Amp_Pipecleaner::myAmplifier::lna::output to Amp_Pipecleaner::myAmplifier::stage2::input;
@@ -83,12 +80,12 @@ class TestBenchTests {
             }
         }
         """)
-        propagate()
+        solver.propagate()
 
         val testDirectory = File("src/test/resources/toSystemC")
         val exporter = Exporter()
 
-        val pack = global.resolve<Element>("Amp_Pipecleaner") as Element
+        val pack = global.resolve("Amp_Pipecleaner")!!.memberElement
         //classResolution(pack,0)
         exporter.analyzeSysMD(pack)
 

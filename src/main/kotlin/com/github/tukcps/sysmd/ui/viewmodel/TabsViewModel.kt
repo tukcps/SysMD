@@ -35,21 +35,30 @@ class TabsViewModel(
         val file = sessionState.value.project?.addIndex("${sessionState.value.project!!.getIndex().size+1}", "Filename-$maxIndex.md") ?: return
         val newTab = TabViewModel(this, sessionState, refreshTrees)
         newTab.file = file
-        newTab.tabTitle.value = " " + file.name + " "
+        newTab.tabTitle.value = file.name
         newTab.editState.value = true
         sessionState.value.loadSysMDFromFile(file, compile = false, 0)
         open(file, false)
         selectedIndex.value = editorTabs.size-1
     }
 
+    /**
+     * Closes the active tab and removes the respective file from the project.
+     */
     fun removeFile() {
         if (removeFile.value != null) {
             val tab = editorTabs.getOrNull(removeFile.value!!)
-            close(tab!!)
-            if (tab.file != null)
-                sessionState.value.project?.removeFromIndex(tab.file!!.name)
-            if (selectedIndex.value > 1) selectedIndex.value -= 1
+            if (tab != null) {
+                close(tab)
+                if (tab.file != null)
+                    sessionState.value.project?.removeFromIndex(tab.file!!.name)
+                if (selectedIndex.value > 1) selectedIndex.value -= 1
+            }
         }
+    }
+
+    fun removeFile(file: String) {
+
     }
 
     /**
@@ -113,11 +122,11 @@ class TabsViewModel(
      */
     fun rename(index: Int, name: String) {
         val tab = editorTabs[index]
-        tab.fileAnnotation?.declaredName = "$name.md"
-        sessionState.value.project!!.updateIndexFilename(tab.file!!.name, "$name.md")
-        tab.tabTitle.value = " $name "
+        tab.fileAnnotation?.declaredName = name
+        sessionState.value.project!!.updateIndexFilename(tab.file!!.name, name)
+        tab.tabTitle.value = name
         tab.save()
-        val newFile = File(tab.file!!.parent, "$name.md")
+        val newFile = File(tab.file!!.parent, name)
         tab.file!!.renameTo(newFile)
     }
 

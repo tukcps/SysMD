@@ -41,11 +41,6 @@ open class ConnectorImplementation(
     final override var source: MutableList<Element> = mutableListOf()
     final override var target: MutableList<Element> = mutableListOf()
 
-    override fun resolveNames(): Boolean {
-        updated = updated or super.resolveNames()
-        return updated
-    }
-
     override fun clone(): Connector{
         return ConnectorImplementation(
             declaredName = declaredName,

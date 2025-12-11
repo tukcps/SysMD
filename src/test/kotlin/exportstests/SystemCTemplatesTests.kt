@@ -1,10 +1,7 @@
 package exportstests
 
-import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.exports.Exporter
-import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.resolve.resolve
 import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
@@ -20,11 +17,10 @@ class SystemCTemplatesTests {
 
     @Test @Ignore //Does not accept changes of ScalarValues
     fun generalConnectivityTest() = testSession("Parts", "Ports", "Connections") {
-        settings.catchExceptions = true
         loadSysMLv2("""
         package test {
             import ScalarValues::*; 
-            import SI::*; 
+            import ISQ::*; 
             
             part wirelessDevice{
                 part transmitter{
@@ -44,7 +40,6 @@ class SystemCTemplatesTests {
             interface interface_wire : Signal connect wirelessDevice.transmitter.ausgang1 to wirelessDevice.receiver.eingang1;
             connection connector_wire : Signal connect  wirelessDevice.transmitter.ausgang2 to wirelessDevice.receiver.eingang2;
             connection connection_wire : Signal connect wirelessDevice.transmitter.ausgang3_Attribute to wirelessDevice.receiver.eingang3_Attribute; 
-            
         }
         """)
         assertNoIssues()
@@ -52,7 +47,7 @@ class SystemCTemplatesTests {
         val testDirectory = File("src/test/resources/toSystemC")
         val exporter = Exporter()
 
-        val pkg = global.resolve<Element>("test") as Element
+        val pkg = global.resolve("test")!!.memberElement
         exporter.analyzeSysMD(pkg)
         exporter.toSystemC(pathIn = testDirectory.path, tbLibFolder = "")
 
@@ -63,11 +58,10 @@ class SystemCTemplatesTests {
 
     @Test @Ignore //Does not accept changes of ScalarValues
     fun hierarchicalChannelTest() = testSession("Parts", "Ports", "Requirements", "Connections") {
-        settings.catchExceptions = true
         loadSysMLv2("""
         package test {
             import ScalarValues::*; 
-            import SI::*; 
+            import ISQ::*; 
             
             part wirelessDevice{
                 part transmitter{
@@ -83,7 +77,6 @@ class SystemCTemplatesTests {
                 }
             }
             
-     
             connection def ComplexSignal;
             interface interface_wire : ComplexSignal connect test::wirelessDevice::transmitter::ausgang1 to test::wirelessDevice::receiver::eingang1;
             connection connector_wire : ComplexSignal connect  test::wirelessDevice::transmitter::ausgang2 to test::wirelessDevice::receiver::eingang2;
@@ -91,18 +84,18 @@ class SystemCTemplatesTests {
             
         }
         """)
-        propagate()
+        solver.propagate()
         val testDirectory = File("src/test/resources/toSystemC")
         val exporter = Exporter()
 
-        val pkg = global.resolve<Element>("test") as Element
+        val pkg = global.resolve("test")!!.memberElement
         exporter.analyzeSysMD(pkg)
         exporter.toSystemC(pathIn = testDirectory.path, tbLibFolder = "")
 
         //Now compare all generated SystemC Files to the "ground-truth" files
         compareToFiles(Thread.currentThread().stackTrace[1].methodName, pkg.name.toString())
 
-        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
+        assertNoIssues()
     }
 
     /** Problem with connection with 2 inputs and 2 outputs */
@@ -111,7 +104,7 @@ class SystemCTemplatesTests {
         loadSysMLv2("""
             package test {
                 import ScalarValues::*; 
-                import SI::*; 
+                import ISQ::*; 
 
                 part def compA{
                     attribute output1: Real;
@@ -146,14 +139,14 @@ class SystemCTemplatesTests {
         val exporter = Exporter()
 
         
-        val pkg = global.resolve<Element>("test") as Element
+        val pkg = global.resolve("test")!!.memberElement
         exporter.analyzeSysMD(pkg)
         exporter.toSystemC(pathIn = testDirectory.path, tbLibFolder = "")
 
         //Now compare all generated SystemC Files to the "ground-truth" files
         compareToFiles(Thread.currentThread().stackTrace[1].methodName, pkg.name.toString())
 
-        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
+        assertNoIssues()
     }
 
     @Test @Ignore //Does not accept changes of ScalarValues
@@ -161,7 +154,7 @@ class SystemCTemplatesTests {
         loadSysMLv2("""
         package test {
             import ScalarValues::*; 
-            import SI::*; 
+            import ISQ::*; 
             
             part def SuperClass{
                 attribute superAttribute : Real;
@@ -190,27 +183,27 @@ class SystemCTemplatesTests {
             }
         }
         """)
-        propagate()
+        solver.propagate()
         val testDirectory = File("src/test/resources/toSystemC")
         val exporter = Exporter()
 
-        val pkg = global.resolve<Element>("test") as Element
+        val pkg = global.resolve("test")!!.memberElement
         exporter.analyzeSysMD(pkg)
         exporter.toSystemC(pathIn = testDirectory.path, tbLibFolder = "")
 
         //Now compare all generated SystemC Files to the "ground-truth" files
         compareToFiles(Thread.currentThread().stackTrace[1].methodName, pkg.name.toString())
 
-        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
+        assertNoIssues()
     }
 
     @Test
-    fun connectionsInMainAndModules() = testSession("SI", "Signals", "Parts", "Ports", "Connections") {
+    fun connectionsInMainAndModules() = testSession("ISQ", "Signals", "Parts", "Ports", "Connections") {
         settings.catchExceptions = true
         loadSysMLv2("""
             package test {
                 private import ScalarValues::*; 
-                private import SI::*; 
+                private import ISQ::*; 
                 
                 part def XYZ;
                 
@@ -239,14 +232,14 @@ class SystemCTemplatesTests {
         val testDirectory = File("src/test/resources/toSystemC")
         val exporter = Exporter()
 
-        val pkg = global.resolve<Element>("test") as Element
+        val pkg = global.resolve("test")!!.memberElement
         exporter.analyzeSysMD(pkg)
         exporter.toSystemC(pathIn = testDirectory.path, tbLibFolder = "")
 
         //Now compare all generated SystemC Files to the "ground-truth" files
         compareToFiles(Thread.currentThread().stackTrace[1].methodName, pkg.name.toString())
 
-        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
+        assertNoIssues()
     }
 
 
@@ -256,7 +249,7 @@ class SystemCTemplatesTests {
         loadSysMLv2("""
         package test {
             import ScalarValues::*; 
-            import SI::*; 
+            import ISQ::*; 
 
             // 1. -- CHECK IF EXPRESSIONS WORK IN MODULES
             
@@ -320,14 +313,14 @@ class SystemCTemplatesTests {
         val exporter = Exporter()
 
 
-        val pkg = global.resolve<Element>("test") as Element
+        val pkg = global.resolve("test")!!.memberElement
         exporter.analyzeSysMD(pkg)
         exporter.toSystemC(pathIn = testDirectory.path, tbLibFolder = "")
 
         //Now compare all generated SystemC Files to the "ground-truth" files
         compareToFiles(Thread.currentThread().stackTrace[1].methodName, pkg.name.toString())
 
-        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
+        assertNoIssues()
     }
 
     /**Ensures that:
@@ -345,7 +338,7 @@ class SystemCTemplatesTests {
         loadSysMLv2("""
         package test {
             import ScalarValues::*; 
-            import SI::*; 
+            import ISQ::*; 
             
             connection def Signal;
             
@@ -417,14 +410,14 @@ class SystemCTemplatesTests {
         val exporter = Exporter()
 
 
-        val pkg = global.resolve<Element>("test") as Element
+        val pkg = global.resolve("test")!!.memberElement
         exporter.analyzeSysMD(pkg)
         exporter.toSystemC(pathIn = testDirectory.path, tbLibFolder = "")
 
         //Now compare all generated SystemC Files to the "ground-truth" files
         compareToFiles(Thread.currentThread().stackTrace[1].methodName, pkg.name.toString())
 
-        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
+        assertNoIssues()
     }
 
     /**Checks that Channels are located at the correct location in the SystemC Project**/
@@ -435,7 +428,7 @@ class SystemCTemplatesTests {
         loadSysMLv2("""
         package test {
             import ScalarValues::*; 
-            import SI::*; 
+            import ISQ::*; 
             
             connection def Signal;
             
@@ -466,14 +459,14 @@ class SystemCTemplatesTests {
         val exporter = Exporter()
 
 
-        val pkg = global.resolve<Element>("test") as Element
+        val pkg = global.resolve("test")!!.memberElement
         exporter.analyzeSysMD(pkg)
         exporter.toSystemC(pathIn = testDirectory.path, tbLibFolder = "")
 
         //Now compare all generated SystemC Files to the "ground-truth" files
         compareToFiles(Thread.currentThread().stackTrace[1].methodName, pkg.name.toString())
 
-        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
+        assertNoIssues()
     }
 
     /**
@@ -481,11 +474,11 @@ class SystemCTemplatesTests {
      * Also ensures that a Channel has only one driving port (output port) but allows multiple listening ports (input ports)
      **/
     @Test
-    fun restrictMultipleBindingTest() = testSession("SI", "Parts", "Ports", "Connections", "Signals") {
+    fun restrictMultipleBindingTest() = testSession("ISQ", "Parts", "Ports", "Connections", "Signals") {
         loadSysMLv2("""
         package test {
             private import ScalarValues::*; 
-            private import SI::*; 
+            private import ISQ::*; 
                         
             part A {
                 out port outp;
@@ -524,21 +517,21 @@ class SystemCTemplatesTests {
             interface if4 : Signals::Signal connect test::X::output to test::Y::input;
         }
         """)
-        propagate()
-        val if1 = global.resolve<Element>("test::if1")
-        val d = global.resolve<Element>("test::D")
+        solver.propagate()
+        val if1 = global.resolve("test::if1")?.memberElement
+        val d = global.resolve("test::D")?.memberElement
         assertNoIssues()
         val testDirectory = File("src/test/resources/toSystemC")
         val exporter = Exporter()
 
-        val pkg = global.resolve<Element>("test") as Element
+        val pkg = global.resolve("test")!!.memberElement
         exporter.analyzeSysMD(pkg)
         exporter.toSystemC(pathIn = testDirectory.path, tbLibFolder = "")
 
         //Now compare all generated SystemC Files to the "ground-truth" files
         compareToFiles(Thread.currentThread().stackTrace[1].methodName, pkg.name.toString())
 
-        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
+        assertNoIssues()
     }
 
     private fun compareToFiles(folderName: String, packageName: String){

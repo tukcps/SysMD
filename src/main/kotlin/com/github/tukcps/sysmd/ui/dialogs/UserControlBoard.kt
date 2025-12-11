@@ -37,7 +37,7 @@ import java.nio.file.Paths
 import kotlin.io.path.Path
 
 /**Name of the Folder in which all generated SystemC files should be placed*/
-private val exportFolderName = "systemC_Exports"
+private const val exportFolderName = "systemC_Exports"
 
 /**The Folder in which the library of existing Test-Benches is located*/
 private val referenceTestBenchFolder = Paths.get("").toAbsolutePath().toString() + "/src/test/resources/toSystemC/TestBenches"
@@ -365,7 +365,7 @@ fun RequiremenTextBox(
             if(checkedStateAllRequirements.value) checkedState.value = true
             if(checkedStateNoRequirements.value) checkedState.value = false
             requirement.generateTB = checkedState.value
-            println("${requirement} ${requirement.generateTB}")
+            println("$requirement ${requirement.generateTB}")
         }
 
         //Text(requirement.requirementName, modifier = Modifier.padding(40.dp, 10.dp ,10.dp ,10.dp))
@@ -387,7 +387,7 @@ private fun existsTestBench(requirement: Requirement): Boolean {
  * Special Text Box for the processing() macro which MUST NOT be disabled!
  */
 @Composable
-fun MacroTextBoxAlwaysEnabled(macro_name: String, macros: BooleanArray, pos : Int) {
+fun MacroTextBoxAlwaysEnabled(macroName: String, macros: BooleanArray, pos : Int) {
 
     val checkedState = remember { mutableStateOf(true) }
 
@@ -395,7 +395,7 @@ fun MacroTextBoxAlwaysEnabled(macro_name: String, macros: BooleanArray, pos : In
     Row(
         modifier = Modifier.padding(start = 10.dp).height(35.dp)
     ) {
-        Text(text = macro_name, modifier = Modifier.fillMaxWidth(0.5f))
+        Text(text = macroName, modifier = Modifier.fillMaxWidth(0.5f))
         Checkbox(
             checked = checkedState.value,
             onCheckedChange = { checkedState.value = true}

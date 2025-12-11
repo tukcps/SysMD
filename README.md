@@ -84,15 +84,17 @@ SysMD Notebook is a work in progress and does not (yet) support the full range o
 However, a significant subset is supported with a focus on the intended use case.
 The following gives some indications on what is supported: 
  
-- _Supported_: modeling of packages, parts, ports, attributes, calculations, expressions, interfaces, requirements and constraints; both usages and definitions.
-- _Not supported_: modeling of automata, states, time slices, user-defined keywords, etc. 
+- _Supported_: modeling of packages, items, parts, ports, interfaces, connections, attributes, calculations, expressions, requirements, constraints, states; both usages and definitions.
+- _Not supported_: time slices, user-defined keywords, views, etc. 
 
 Note that automata and states might compile, but the constraint propagation mechanism does not use the respective parts properly. 
 Also, KerML is implemented with support for features, classes, packages, expressions, etc. -- but with some restrictions for expressions.  
 
 # Release notes (only major versions)
 
-- SysMD 4.0 implements parts of the platform-specific REST API of SysML v2 (projects endpoint, but not versioning). For this purpose, SysMD 4.0 includes Spring Boot for the REST API.
+- SysMD 4.0+ implements parts of the platform-specific REST API of SysML v2 (projects endpoint, but not versioning). 
+  It permits access to the local projects and elements. 
+  For this purpose, SysMD 4.0 includes Spring Boot for the REST API.
 
 # Acknowledgements 
 

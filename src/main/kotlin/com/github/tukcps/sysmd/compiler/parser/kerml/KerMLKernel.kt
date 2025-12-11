@@ -7,8 +7,6 @@ import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.compiler.semantics.Identification
 import com.github.tukcps.sysmd.compiler.semantics.expression.InvariantActions
 import com.github.tukcps.sysmd.compiler.semantics.kerml.*
-import com.github.tukcps.sysmd.cspsolver.VariableImplementation
-import com.github.tukcps.sysmd.model.expression.AstRoot
 import com.github.tukcps.sysmd.model.expression.Invariant
 import com.github.tukcps.sysmd.model.expression.implementation.InvariantImplementation
 import com.github.tukcps.sysmd.model.kerml.*
@@ -155,10 +153,8 @@ fun KerML.ValuePart() {
 fun KerML.OwnedExpression() {
     val iBeforeExpression = token.indices.first
     val feature = semantics.element<Feature>()
-    feature.variable = VariableImplementation(feature)
     semantics.expression = feature
     Expression().also {
-        feature.variable?.ast = AstRoot(model, semantics.expression!!, it)
         feature.indices = iBeforeExpression..consumedToken.indices.last
         feature.expression = input.subSequence(feature.indices!!).toString().trim()
     }
@@ -364,7 +360,8 @@ fun KerML.LibraryPackage() = NamespaceActions(semantics, ::PackageImplementation
  *      Function = TypePrefix 'function' ClassifierDeclaration FunctionBody
  */
 fun KerML.Function() = FunctionActions(semantics, ::FunctionImplementation).parse {
-    FUNCTION.consume()
+    TypePrefix()
+	FUNCTION.consume()
     ClassifierDeclaration()
     FunctionBody()
 }
@@ -456,6 +453,7 @@ fun KerML.Step() = FeatureActions<Feature>(semantics, ::StepImplementation, "Per
  *      ResultExpressionMember = MemberPrefix OwnedExpression
  */
 internal fun KerML.FunctionBody() {
+	semantics.prefixes.clear()
     alternatives {
         LCURBRACE then {
             noOrMore(typeBodyElementStarts+HASHTAG+RETURN) {

@@ -3,10 +3,8 @@ package com.github.tukcps.sysmd.model.expression.functions
 import com.github.tukcps.sysmd.compiler.semantics.ActionsContext
 import com.github.tukcps.sysmd.model.expression.AstLeaf
 import com.github.tukcps.sysmd.model.expression.AstNode
-import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.quantities.Quantity
-import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.session.Session
 
 class AstHasA(
@@ -26,9 +24,9 @@ class AstHasA(
 
     override fun evalUp() {
         // Search for
-        val owner = nameSpace.resolve<Element>(ownerName)
+        val owner = if (ownerName == "Global") model.global else nameSpace.resolve(ownerName)?.memberElement
         if (owner is Namespace) {
-            upQuantity = if (owner.resolve<Element>(ownedName) != null)
+            upQuantity = if (owner.resolve(ownedName)?.memberElement != null)
                 Quantity(model.builder.True)
             else Quantity(model.builder.False)
         } else

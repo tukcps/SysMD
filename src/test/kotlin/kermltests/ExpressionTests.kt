@@ -1,7 +1,6 @@
 package kermltests
 
-import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.services.resolve.resolve
+import com.github.tukcps.sysmd.services.resolve.resolveVar
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
@@ -16,7 +15,7 @@ class ExpressionTests {
             feature f: ScalarValues::Real = oneOf(1.0 .. 2.0);    
         """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val f = global.resolve<Feature>("f")
-        assertEquals(2.0, f!!.variable!!.max())
+        val f = global.resolveVar("f")
+        assertEquals(2.0, f!!.max())
     }
 }

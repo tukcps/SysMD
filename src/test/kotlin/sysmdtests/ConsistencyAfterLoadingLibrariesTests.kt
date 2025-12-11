@@ -4,14 +4,13 @@ import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.services.check.checkLibraryElementIds
 import com.github.tukcps.sysmd.services.check.checkOwnership
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.session.Session
 import com.github.tukcps.sysmd.services.session.SessionImplementation
-import util.mockup.loadKerML
 import com.github.tukcps.sysmd.services.session.loadLibrary
 import org.junit.jupiter.api.parallel.ResourceAccessMode.READ_WRITE
 import org.junit.jupiter.api.parallel.ResourceLock
 import org.junit.jupiter.api.parallel.Resources.SYSTEM_PROPERTIES
+import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.*
 
@@ -71,7 +70,7 @@ class ConsistencyAfterLoadingLibrariesTests {
                 type f :> Base::Anything; 
             }
         """)
-        val f = global.resolve<Type>("test::f") !!
+        val f = global.resolve("test::f")!!.member<Type>()!!
         val spec = f.getOwnedElementOfType<Specialization>() !!
         val idVersion = spec.elementId!!.version()
         assertEquals(5, idVersion)
@@ -174,7 +173,8 @@ class ConsistencyAfterLoadingLibrariesTests {
     /** ISO26262 in particular uses Links */
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
     fun readISO26262FromRepository() = testSession("ISO26262") {
-        val implements = global.resolve<Association>("ISO26262::implements")
+        val implements = global.resolve("ISO26262::implements")?.member<Association>()
+        assertNotNull(implements)
         assertNotNull(implements)
         assertTrue(status.issues.isEmpty(), "${status.issues}")
         assertTrue(4 <= global.getOwnedElementsOfType<Element>().size)

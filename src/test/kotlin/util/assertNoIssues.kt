@@ -10,7 +10,7 @@ fun Session.assertNoIssues() {
     assertTrue(status.issues.isEmpty(), "Expected 0 issues, but session has ${status.issues.size} issues: \n$message")
 }
 
-fun Session.assertIssue(messageSubstring: String) {
+fun Session.assertIssue(messageSubstring: String, message: String? = null) {
     val found = status.issues.any { it.message.contains(messageSubstring) }
-    assertTrue(found, "Expected issue with $messageSubstring, but not found.")
+    assertTrue(found, message?:"Expected issue with substring '$messageSubstring', but not found.")
 }

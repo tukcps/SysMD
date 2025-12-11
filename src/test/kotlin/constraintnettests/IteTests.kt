@@ -1,15 +1,10 @@
-package sysmltests.constraintnettests
+package constraintnettests
 
-import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import util.mockup.loadKerML
 import util.mockup.loadSysMLv2
-import org.junit.jupiter.api.Disabled
 import util.testSession
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
+import kotlin.test.*
 
 class IteTests {
 
@@ -21,7 +16,7 @@ class IteTests {
                 feature value2: Ranges::RealInRange = a + ITE( (b > 1.0) and (b < 100.0), 10.0, 20.0) {:>> range = "1 .. 100";} 
             """.trimIndent(), catchExceptions = false)
         settings.catchExceptions = false
-        propagate()
+        solver.propagate()
         assertEquals(0, status.issues.size, status.issues.toString())
     }
 
@@ -33,16 +28,16 @@ class IteTests {
                 feature value2: Ranges::IntegerInRange = a + ITE( (b > 1) and (b < 100), 10, 20) {:>> range = "1 .. 100";}
             """.trimIndent(), catchExceptions = false)
         settings.catchExceptions = false
-        propagate()
+        solver.propagate()
         assertEquals(0, status.issues.size, status.issues.toString())
     }
 
-    @Test @Disabled
-    fun nestedITETest() = testSession("ScalarValues", "SI", "ISO26262", "Ranges") {
+    @Test @Ignore
+    fun nestedITETest() = testSession("ScalarValues", "ISQ", "ISO26262", "Ranges") {
         loadSysMLv2("""   
             package Smartgrid{
                 private import ISO26262::*;
-                private import SI::*;
+                private import ISQ::*;
                 private import Ranges::*;
                 private import ScalarValues::*;
                 part def microgrid isA Component;
@@ -53,13 +48,13 @@ class IteTests {
                 part def Vehicle isA Component;
                 part def EnergyMobilitysystem isA Component;
                 part def Vehicle {
-                    attribute stateOfCharge: RealInRange {:>> unit="%"; :>> range="20..90";}
-                    attribute startDischargingLimit: Real {:>> unit="%";}
-                    attribute startChargingLimit: Real {:>> unit="%";}
-                    attribute capacity: Charge {:>> unit="Ah";}
-                    attribute voltage: Voltage 
-                    attribute maximumChargePower: Power {:>> unit="kW";} 
-                    attribute maximumDischargePower: Power {:>> unit="kW";}
+                    attribute stateOfCharge: DimensionOne {:>> unit="%"; :>> range="20..90";}
+                    attribute startDischargingLimit: DimensionOne {:>> unit="%";}
+                    attribute startChargingLimit: DimensionOne {:>> unit="%";}
+                    attribute capacity: ChargeValue {:>> unit="Ah";}
+                    attribute voltage: VoltageValue 
+                    attribute maximumChargePower: PowerValue {:>> unit="kW";} 
+                    attribute maximumDischargePower: PowerValue {:>> unit="kW";}
                     attribute isSupplier: Boolean = if stateOfCharge >= startChargingLimit ? true else false;
                     attribute isCharging: Boolean = if stateOfCharge <= startDischargingLimit ? true else false;
                     attribute vehiclePowConsumption: Power = if isSupplier ? maximumDischargePower else 
@@ -69,64 +64,64 @@ class IteTests {
             
             package Microgrid{
                 import ISO26262::*;
-                import SI::*;
+                import ISQ::*;
                 import Ranges::*;
                 import ScalarValues::*;
                 package Consumers;
                 package Vehicles{
                     part def PublicTrafficVehicle isA Smartgrid::Vehicle{
-                        attribute capacity: Charge = 360.0 [Ah] {:>> unit="Ah";}
-                        attribute startDischargingLimit: Real = 30.0 [%] {:>> unit="%";}
-                        attribute startChargingLimit: Real = 70.0 [%] {:>> unit="%";}
-                        attribute voltage: Voltage = 384.0 [V];
-                        attribute maximumChargePower: Power = 108.0 [kW] {:>> unit="kW";}
-                        attribute maximumDischargePower: Power = - 147.9 [kW] {:>> unit="kW";}
+                        attribute capacity: ChargeValue = 360.0 [Ah] {:>> unit="Ah";}
+                        attribute startDischargingLimit: DimensionOne = 30.0 [%] {:>> unit="%";}
+                        attribute startChargingLimit: DimensionOne = 70.0 [%] {:>> unit="%";}
+                        attribute voltage: VoltageValue = 384.0 [V];
+                        attribute maximumChargePower: PowerValue = 108.0 [kW] {:>> unit="kW";}
+                        attribute maximumDischargePower: PowerValue = - 147.9 [kW] {:>> unit="kW";}
                     }
                     part def PublicTrafficVehicle2 isA Smartgrid::Vehicle{
-                        attribute capacity: Charge = 360.0 [Ah] {:>> unit="Ah";}
-                        attribute startDischargingLimit: Real = 30.0 [%] {:>> unit="%";}
-                        attribute startChargingLimit: Real = 70.0 [%] {:>> unit="%";}
-                        attribute voltage: Voltage = 384.0 [V];
-                        attribute maximumChargePower: Power = 108.0 [kW] {:>> unit="kW";}
-                        attribute maximumDischargePower: Power = - 147.9 [kW] {:>> unit="kW";}
+                        attribute capacity: ChargeValue = 360.0 [Ah] {:>> unit="Ah";}
+                        attribute startDischargingLimit: DimensionOne = 30.0 [%] {:>> unit="%";}
+                        attribute startChargingLimit: DimensionOne = 70.0 [%] {:>> unit="%";}
+                        attribute voltage: VoltageValue = 384.0 [V];
+                        attribute maximumChargePower: PowerValue = 108.0 [kW] {:>> unit="kW";}
+                        attribute maximumDischargePower: PowerValue = - 147.9 [kW] {:>> unit="kW";}
                     }
                 }
                 import Smartgrid::*;
                 part def VehicleChargingStation isA Component {
                     part vehicles8: [1..1] Microgrid::Vehicles::PublicTrafficVehicle,
                     part vehicles9: [1..1] Microgrid::Vehicles::PublicTrafficVehicle2,
-                    attribute vehiclePowConsumption: Real  = sumOverParts(vehiclePowConsumption) {:>> unit="kW";}
+                    attribute vehiclePowConsumption: PowerValue  = sumOverParts(vehiclePowConsumption) {:>> unit="kW";}
                 }
                 part def connectGrid isA Component {
                     part chargingStation: Microgrid::VehicleChargingStation,  
                     attribute mainsupplyOn: Boolean {:>> spec ="true";}
-                    attribute mainsupply: RealInRange {:>> unit="MW";:>> range="2..2";}
-                    attribute powDemand: Real =  chargingStation::vehiclePowConsumption {:>> unit="kW";}
+                    attribute mainsupply: PowerValue {:>> unit="MW";:>> range="2..2";}
+                    attribute powDemand: PowerValue =  chargingStation::vehiclePowConsumption {:>> unit="kW";}
                     //attribute outageCover: Boolean = ITE(mainsupplyOn, powDemand < mainsupply, powDemand < (battery::capacity / 0.5[h])).
                 }
             }
-           """)
-        propagate()
+        """)
+        solver.propagate()
         assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
     }
 
-    @Test @Disabled
-    fun ITERuntimeTest() = testSession("ScalarValues", "Ranges") {
+    @Test @Ignore
+    fun iteRuntimeTest() = testSession("ScalarValues", "Ranges") {
         loadKerML("""  
             import ScalarValues::*;
             import Ranges::*;
             feature x: RealInRange {:>> range="0.2..0.8";}
             feature cond: Boolean = if x <= 0.3 ? true else false;
             feature res: Real = if cond? 2.0 else 0.0.
-           """)
-        propagate()
+        """)
+        solver.propagate()
         val x = global.resolveVar("x")
         assertNotNull(x)
         val cond = global.resolveVar("cond")
         val res = global.resolveVar("res")
         assertTrue(cond!!.bdd().height() < 2)
         assertTrue(res!!.aadd().height() < 2)
-        propagate()
+        solver.propagate()
         assertTrue(status.issues.isEmpty(), "Exceptions: ${status.issues}")
     }
 }

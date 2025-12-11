@@ -3,14 +3,10 @@ package com.github.tukcps.sysmd.model.expression.functions
 import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.model.expression.AstLeaf
 import com.github.tukcps.sysmd.model.expression.AstNode
-import com.github.tukcps.sysmd.model.kerml.Association
-import com.github.tukcps.sysmd.model.kerml.Connector
-import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.kerml.Namespace
+import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.services.getRelationshipsTo
-import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.session.Session
 import io.github.tukcps.aadd.AADD
@@ -26,7 +22,7 @@ class AstByImplements(model: Session, namespace: Namespace, args: ArrayList<AstN
 
     private val inNameSpace: Namespace = namespace
     private var propertyName: QualifiedName? = null
-    private var feature: Feature? = null
+    private var membership: Membership? = null
     private var implementsAssociation: Association? = null
     private var implements: Connector? = null
     var component: Namespace? = null    // source
@@ -35,16 +31,16 @@ class AstByImplements(model: Session, namespace: Namespace, args: ArrayList<AstN
     override fun initialize() {
         propertyName = (getParam(0) as AstLeaf).qualifiedName!!
 
-        feature = inNameSpace.resolve<Feature>(propertyName!!)
-        if (feature == null) model.status.error( "Could not resolve name '$propertyName'", element = feature, kind = Issue.Kind.ERROR_UNRESOLVED_NAME)
+        membership = inNameSpace.resolve(propertyName!!)
+        if (membership == null) model.status.error( "Could not resolve name '$propertyName'", element = membership, kind = Issue.Kind.ERROR_UNRESOLVED_NAME)
 
-        implementsAssociation = model.global.resolve<Association>("ISO26262::implements")
+        implementsAssociation = model.global.resolve("ISO26262::implements")?.member()
         if (implementsAssociation == null)
-            model.status.error("Could not find Association 'ISO26262::implements'", element = feature)
+            model.status.error("Could not find Association 'ISO26262::implements'", element = membership)
 
-        implements = model.getRelationshipsTo(feature?.owner!!, "*", implementsAssociation).firstOrNull() as Connector?
+        implements = model.getRelationshipsTo(membership?.owningNamespace!!, "*", implementsAssociation).firstOrNull() as Connector?
         if (implements == null)
-            model.status.error("could not find suitable connector typed by 'implements'", element = feature)
+            model.status.error("Could not find suitable connector typed by 'implements'", element = membership)
 
         component = implements!!.source.firstOrNull() as Namespace
         function = implements!!.target.firstOrNull() as Namespace

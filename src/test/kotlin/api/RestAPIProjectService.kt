@@ -6,7 +6,6 @@ import com.github.tukcps.sysmd.rest.Rest
 import com.github.tukcps.sysmd.rest.controller.ProjectController
 import com.github.tukcps.sysmd.services.session.SessionManager.projectService
 import com.github.tukcps.sysmd.settings
-import io.github.tukcps.sysmlv2.api.entities.Project
 import io.github.tukcps.sysmlv2.api.entities.responseModels.ProjectResponse
 import org.junit.jupiter.api.TestInstance
 import org.springframework.boot.test.context.SpringBootTest
@@ -188,6 +187,7 @@ class RestAPIProjectService() {
         assertEquals(HttpStatus.CREATED.value(), response.statusCode.value())
         assertNotNull(Rest.extractKeyFromBody("@id", response.body))
 
+        val projects = projectService.getProjects()
         val id: String
         // Check if a project is correct in the SysMD folder resp. internal buffer.
         with(projectService.getProjects().first() { it.name == "postProjectTest" }) {

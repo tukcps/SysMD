@@ -1,14 +1,9 @@
 package compiler
 
 import com.github.tukcps.sysmd.compiler.importMD
-import com.github.tukcps.sysmd.model.kerml.Classifier
-import com.github.tukcps.sysmd.model.kerml.MetadataFeature
-import com.github.tukcps.sysmd.model.kerml.Package
 import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
 import com.github.tukcps.sysmd.model.kerml.implementation.MetadataFeatureImplementation
-import com.github.tukcps.sysmd.model.kerml.implementation.NamespaceImplementation
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.resolve.resolve
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
@@ -46,7 +41,7 @@ class ImportDocumentTests {
         initialize()
         Assertions.assertTrue((fileAnnotation.ownedElement.last() as TextualRepresentation).language == "KerML::X")
         Assertions.assertTrue((fileAnnotation.ownedElement.last() as TextualRepresentation).getOwnerPrefix() == "X")
-        val test = global.resolve<Package>("X::Y")
+        val test = global.resolve("X::Y")?.memberElement
         assertNotNull(test)
     }
 
@@ -72,7 +67,7 @@ class Test;
         initialize()
         Assertions.assertTrue((fileAnnotation.ownedElement.last() as TextualRepresentation).language == "KerML::ScalarValues")
         Assertions.assertTrue((fileAnnotation.ownedElement.last() as TextualRepresentation).getOwnerPrefix() == "ScalarValues")
-        val test = global.resolve<Classifier>("ScalarValues::Test")
+        val test = global.resolve("ScalarValues::Test")?.memberElement
         assertNotNull(test)
     }
 }

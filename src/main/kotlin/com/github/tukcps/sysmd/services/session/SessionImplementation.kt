@@ -1,20 +1,16 @@
 package com.github.tukcps.sysmd.services.session
 
 import com.fasterxml.uuid.Generators
-import com.github.tukcps.sysmd.cspsolver.DiscreteSolver
-import com.github.tukcps.sysmd.cspsolver.Variable
+import com.github.tukcps.sysmd.cspsolver.Solver
 import com.github.tukcps.sysmd.logger
-import com.github.tukcps.sysmd.model.expression.AstNode
+import com.github.tukcps.sysmd.model.expression.Expression
+import com.github.tukcps.sysmd.model.expression.InstantiationExpression
 import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.model.kerml.implementation.FeatureMembershipImplementation
-import com.github.tukcps.sysmd.model.kerml.implementation.NamespaceImplementation
-import com.github.tukcps.sysmd.model.kerml.implementation.OwningMembershipImplementation
-import com.github.tukcps.sysmd.model.kerml.implementation.PackageImplementation
-import com.github.tukcps.sysmd.model.kerml.implementation.getOwned
+import com.github.tukcps.sysmd.model.kerml.Function
+import com.github.tukcps.sysmd.model.kerml.implementation.*
 import com.github.tukcps.sysmd.services.check.checkConsistency
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.repositories.local.*
-import com.github.tukcps.sysmd.services.resolve.resolve
 import io.github.tukcps.aadd.DDBuilder
 import io.github.tukcps.sysmlv2.api.entities.CommitDataObject
 import io.github.tukcps.sysmlv2.api.entities.ElementDAO
@@ -34,11 +30,10 @@ class SessionImplementation(
     override var settings: SessionSettings = SessionSettings(),
     override var builder: DDBuilder = DDBuilder(),
     override val repo: Repository = Repository(),
-    override val astNodes: MutableMap<UUID, AstNode> = HashMap(),
     override var project: ProjectData? = null
 ): Session {
 
-    override var dSolver = DiscreteSolver(this)
+    override var solver = Solver(this)
 
     /**
      * We have one special package "Global" that is the highest level package.
@@ -116,7 +111,7 @@ class SessionImplementation(
             // Now everything should be clean
             initialize()
             // New solver-related stuff
-            dSolver = DiscreteSolver(this)
+            solver = Solver(this)
 
             loadLibraries()
             status.updatedValues.clear()
@@ -124,12 +119,8 @@ class SessionImplementation(
                 initialize(1)
 
             /** Caches of important types */
-            repo.numberType = null
-            repo.realType = null
-            repo.booleanType = null
-            repo.integerType = global.resolve<DataType>("ScalarValues::Integer")
-            repo.stringType = null
-            repo.schedule.clear()
+            repo.integerType = global.resolve("ScalarValues::Integer")?.member<DataType>()
+            solver.schedule.clear()
         } catch (_: Exception) {
             status.fatal("Error during reset; it is recommended to re-start SysMD!")
         }
@@ -186,10 +177,35 @@ class SessionImplementation(
                 }
             }
         }
-        val owningMembership =  if (element is Feature && namespace is Type)
-                FeatureMembershipImplementation(ownedMemberFeature = element, owningType = namespace)
+        val owningMembership = when (element) {
+            is Feature if namespace is Function -> when {
+                // FIXME: Distinguish unnamed out and return parameters
+                element.direction == Feature.FeatureDirectionKind.OUT && element.name === null -> ReturnParameterMembershipImplementation(
+                    ownedMemberParameter = element,
+                    owningType = namespace,
+                    parameterIndex = namespace.parameter.size
+                )
+
+                else -> ParameterMembershipImplementation(
+                    ownedMemberParameter = element,
+                    owningType = namespace,
+                    parameterIndex = namespace.parameter.size
+                )
+            }
+
+            is Expression if namespace is InstantiationExpression -> ParameterMembershipImplementation(
+                ownedMemberParameter = element,
+                owningType = namespace,
+                parameterIndex = namespace.parameter.size
+            )
+
+            is Feature if namespace is Type -> if (element.isEnd)
+                EndFeatureMembershipImplementation(namespace, element)
             else
-                OwningMembershipImplementation(membershipOwningNamespace = namespace, memberElement = element)
+                FeatureMembershipImplementation(ownedMemberFeature = element, owningType = namespace)
+
+            else -> OwningMembershipImplementation(membershipOwningNamespace = namespace, memberElement = element)
+        }
 
         owningMembership.visibility = visibility
 
@@ -236,9 +252,9 @@ class SessionImplementation(
                     return found as T
                 if (relationship.general is Unresolved) {
                     val resolved = if (relationship !is Redefinition)
-                            (relationship.owningNamespace?.resolve<Type>((relationship.general as Unresolved).relativeName!!) )
+                            (relationship.owningNamespace?.resolve((relationship.general as Unresolved).relativeName!!) )?.member<Type>()
                         else
-                            (relationship.owningNamespace as Type).resolve<Feature>((relationship.general as Unresolved).relativeName!!)
+                            (relationship.owningNamespace as Type).resolve((relationship.general as Unresolved).relativeName!!)?.member<Feature>()
                     if ( resolved?.escapedName() == found.general.escapedName() )
                         @Suppress("UNCHECKED_CAST")
                         return found as T
@@ -308,26 +324,22 @@ class SessionImplementation(
 
         // Replace source's and target's ids against references
         added.forEach { dao ->
-            val element = get(dao.elementId)
+            val element = get(dao.elementId)!!
 
-            if ( element is Relationship) {
-                element.source.clear()
-                element.target.clear()
-                dao.source?.forEach { id -> element.source.add(get(id.id!!)!!) }
-                dao.target?.forEach { id -> element.target.add(get(id.id!!)!!) }
+            if (element is Relationship) {
+                dao.source?.forEach { id ->
+                    // element.source.add(get(id.id?:global.elementId!!)!!)
+                    if (id.id == null)
+                        global.ownedRelationship.add(element)
+                }
             }
 
             if (element is Relationship && element !is Namespace) {
                 element.owningRelatedElement = get(dao.owningNamespace?.id?:global.elementId!!)!!
                 element.owningRelatedElement.ownedRelationship.add(element)
             } else {
-                if (dao.owner?.id == null)
-                    addOwnedMember(element!!, global)
-                else {
-                    element!!.owningRelationship = get(dao.owningRelationship?.id ?: dao.owner?.id!!) as Relationship
-                    element.owningRelationship?.ownedElement?.add(element)
-                }
-
+                element.owningRelationship = get(dao.owningRelationship?.id!!) as OwningMembership
+                element.owningRelationship?.ownedElement?.add(element)
                 element.ownedRelationship = dao.ownedRelationship.map { get(it.id!!)!! as Relationship }.toMutableList()
             }
         }
@@ -339,8 +351,8 @@ class SessionImplementation(
             if (element is Relationship) {
                 element.source.clear()
                 element.target.clear()
-                dao.source?.forEach { id -> element.source.add(get(id.id!!)!!) }
-                dao.target?.forEach { id -> element.target.add(get(id.id!!)!!) }
+                dao.source?.forEach { id -> element.source.add( get( id.id?:global.elementId!! )!!) }
+                dao.target?.forEach { id -> element.target.add( get( id.id!! )!! ) }
             }
         }
     }
@@ -374,7 +386,7 @@ class SessionImplementation(
                 }
             }
 
-            if (element != global && !(element is OwningMembership && element.owningNamespace == global) )
+            if (element != global)
                 exportCollection.add(element.toDAO())
         }
 
@@ -419,16 +431,6 @@ class SessionImplementation(
 
     override fun toString(): String {
         return "Session { project=${project?.name}, $status }"
-    }
-
-    /**
-     * Returns a list of all Feature's variables.
-     * @param List with variables of all features
-     */
-    override fun getVariables(): List<Variable> {
-        val variables = mutableListOf<Variable>()
-        get().filterIsInstance<Feature>().forEach { if (it.variable != null) variables.add(it.variable!!) }
-        return variables
     }
 }
 

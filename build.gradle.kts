@@ -14,9 +14,9 @@ import org.jetbrains.compose.ExperimentalComposeLibrary
  * - also set the value standalone according to your setup
  */
 group   = "com.github.tukcps"
-version = "4.1.5"               // must be number.number.number
+version = "4.1.6"               // must be number.number.number
 val aaddVersion = "0.1.11"
-val sysmlapiVersion = "3.9.5"
+val sysmlapiVersion = "3.9.12"
 val useMavenAADD = true
 val useMavenSysMLAPI = true
 
@@ -31,11 +31,11 @@ if (JavaVersion.current() < JavaVersion.VERSION_21) {
 // Plugins needed: id and versions.
 plugins {
     // Plugin that checks for updates of dependencies
-    id("com.github.ben-manes.versions") version "0.52.0"
+    id("com.github.ben-manes.versions") version "0.53.0"
     id("idea")
-    kotlin("jvm") version "2.2.0"
-    kotlin("plugin.serialization") version "2.2.10"
-    id("org.springframework.boot") version "3.5.4"
+    kotlin("jvm") version "2.2.21"
+    kotlin("plugin.serialization") version "2.2.21"
+    id("org.springframework.boot") version "4.0.0"
     id("io.spring.dependency-management") version "1.1.7"
     alias(libs.plugins.jetbrainsCompose) apply true
     alias(libs.plugins.compose.compiler) apply true
@@ -89,7 +89,7 @@ dependencies {
     implementation("org.hibernate.validator:hibernate-validator:9.0.1.Final")
 
     // Open API / Swagger
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13")
 
     // Needed for annotations for Spring Boot in package rest
     implementation("com.fasterxml.jackson.core:jackson-databind")
@@ -97,12 +97,12 @@ dependencies {
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
 
     // Parsing markdown to AST
-    implementation("org.commonmark:commonmark:0.25.1")
-    implementation("org.commonmark:commonmark-ext-gfm-tables:0.25.1")
-    implementation("org.commonmark:commonmark-ext-image-attributes:0.25.1")
-    implementation("org.commonmark:commonmark-ext-yaml-front-matter:0.25.1")
-    implementation("org.commonmark:commonmark-ext-gfm-strikethrough:0.25.1")
-    implementation("org.commonmark:commonmark-ext-ins:0.25.1")
+    implementation("org.commonmark:commonmark:0.26.0")
+    implementation("org.commonmark:commonmark-ext-gfm-tables:0.26.0")
+    implementation("org.commonmark:commonmark-ext-image-attributes:0.26.0")
+    implementation("org.commonmark:commonmark-ext-yaml-front-matter:0.26.0")
+    implementation("org.commonmark:commonmark-ext-gfm-strikethrough:0.26.0")
+    implementation("org.commonmark:commonmark-ext-ins:0.26.0")
 
     // Some more icons ...
     implementation(compose.components.resources)
@@ -118,7 +118,7 @@ dependencies {
     implementation("org.apache.xmlgraphics:batik-codec:1.19")
 
     // Use the Kotlin JUnit integration.
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:2.2.0")
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:2.2.20")
 
     // compose ui tests
     testImplementation(kotlin("test"))
@@ -128,10 +128,16 @@ dependencies {
 
     @OptIn(ExperimentalComposeLibrary::class)
     testImplementation(compose.uiTest)
-    testImplementation(compose.desktop.currentOs)
     testImplementation(compose.desktop.uiTestJUnit4)
-    testImplementation(compose.desktop.currentOs)
 }
+
+/**
+ * Prevents compose desktop to be twice in jar (via spring boot and direct)
+ */
+tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
 
 // Don't use the regular jar as the project is a spring boot project.
 tasks.named<Jar>("jar") {
@@ -205,4 +211,16 @@ tasks.register<Exec>("sysMDPackage") {
 
     // Finally, execute jPackage command line
     commandLine(args)
+}
+
+/**
+ * Clean also deletes the log files.
+ */
+tasks.named<Delete>("clean") {
+    delete(
+        "sysmd.log",
+        fileTree(projectDir) {
+            include("sysmd.log.*.gz")   // z. B. sysmd.log.2025-11-25.gz
+        }
+    )
 }

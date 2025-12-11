@@ -1,12 +1,11 @@
 package ui
 
-import util.testSession
-import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.rest.RESTRepository
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.session.SessionManager
-import util.mockup.loadKerML
 import com.github.tukcps.sysmd.ui.viewmodel.SysMDViewModel
+import util.mockup.loadKerML
+import util.testSession
 import kotlin.test.*
 
 class BoardViewModelTest {
@@ -21,7 +20,7 @@ class BoardViewModelTest {
         loadKerML("""
             class A specializes B; 
         """)
-        propagate()
+        solver.propagate()
         val agenda = sysMdViewModel.agenda
         agenda.update()
 
@@ -41,7 +40,7 @@ class BoardViewModelTest {
            }
         """.trimIndent())
         initialize()
-        // propagate()
+        // solver.propagate()
         assertTrue(status.issues.isNotEmpty())
     }
 
@@ -56,7 +55,7 @@ class BoardViewModelTest {
         loadKerML("""
             type A :> B; 
         """)
-        propagate()
+        solver.propagate()
 
         val agenda = sysMdViewModel.agenda
         agenda.update()
@@ -70,7 +69,7 @@ class BoardViewModelTest {
         loadKerML("""
             type A :> C; 
         """)
-        propagate()
+        solver.propagate()
 
         agenda.update()
 
@@ -104,7 +103,7 @@ class BoardViewModelTest {
             """
         """.trimIndent()
         )
-        propagate()
+        solver.propagate()
         agenda.update()
         assertEquals(0, agenda.size())
         assertEquals(true, agenda.isEmpty())
@@ -137,7 +136,7 @@ class BoardViewModelTest {
             class A :> B; 
             class C :> D; 
         """)
-        propagate()
+        solver.propagate()
 
         val agenda = sysMdViewModel.agenda
         agenda.update()
@@ -157,7 +156,7 @@ class BoardViewModelTest {
         loadKerML("""
             type A :> B; 
         """)
-        propagate()
+        solver.propagate()
 
         val agenda = sysMdViewModel.agenda
         agenda.update()
@@ -170,7 +169,7 @@ class BoardViewModelTest {
         loadKerML("""
             type B :> Base::Anything; 
         """)
-        propagate()
+        solver.propagate()
         agenda.update()
         assertEquals(true, agenda.isEmpty())
     }
@@ -184,7 +183,7 @@ class BoardViewModelTest {
             type C :> D; 
             type A :> B; 
         """)
-        propagate()
+        solver.propagate()
 
         val agenda = sysMdViewModel.agenda
         agenda.update()
@@ -197,7 +196,7 @@ class BoardViewModelTest {
         loadKerML("""
             type B :> Base::Anything; 
         """)
-        propagate()
+        solver.propagate()
         agenda.update()
         assertEquals(1, agenda.size())
         status.issues.clear()
@@ -206,7 +205,7 @@ class BoardViewModelTest {
         loadKerML("""
             type D :> Base::Anything; 
         """.trimIndent())
-        propagate()
+        solver.propagate()
 
         agenda.update()
 
@@ -225,7 +224,7 @@ class BoardViewModelTest {
             class B; 
             class A :> C; 
         """)
-        session.propagate()
+        session.solver.propagate()
         assertEquals(1, session.status.issues.size, session.status.issues.toString())
         assertTrue(session.status.issues.any { it.message.contains("C") }, "Error message is expected reporting C as undefined")
         val agenda = sysMdViewModel.agenda
@@ -246,7 +245,7 @@ class BoardViewModelTest {
             type C :> D; 
             type A :> B;
         """)
-        propagate()
+        solver.propagate()
 
         val agenda = sysMdViewModel.agenda
         agenda.update()

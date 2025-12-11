@@ -9,7 +9,6 @@ import com.github.tukcps.sysmd.model.expression.functions.*
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.*
 import com.github.tukcps.sysmd.model.util.QualifiedName
-import com.github.tukcps.sysmd.services.resolve.resolveLocal
 import com.github.tukcps.sysmd.services.session.Session
 import io.github.tukcps.aadd.values.IntegerRange
 import java.util.*
@@ -74,7 +73,7 @@ open class ActionsContext(
         val ownersPrefixes = ownerPrefix.split("::").filter { it.isNotBlank() }
         ownersPrefixes.forEach {
             if (it.isNotEmpty()) {
-                val found = element<Namespace>().resolveLocal(it)
+                val found = element<Namespace>().resolveLocal(it)?.memberElement
                 val action = NamespaceActions<Namespace>(this, ::PackageImplementation)
                 action.parse {
                     if (found != null)
@@ -388,14 +387,14 @@ open class ActionsContext(
             "anyOf" -> return AstAnyOf(model, param)
             "sum_i" -> return AstSumI(namespace, model, param)
             "sum" -> return AstSum(namespace, model, param)
-            "sumOverParts" -> return AstSumHasA(model, namespace, param, transitive = true)
-            "sumOverSubclasses" -> return AstSumIsA(model, namespace, param, transitive = true)
-            "productOverParts" -> return AstProductHasA(model, namespace, param, transitive = true)
-            "productOverSubclasses" -> return AstProductIsA(model, namespace, param, transitive = true)
-            "sumOverPartsNotTransitive" -> return AstSumHasA(model, namespace, param, transitive = false)
-            "sumOverSubclassesNotTransitive" -> return AstSumIsA(model, namespace, param, transitive = false)
-            "productOverPartsNotTransitive" -> return AstProductHasA(model, namespace, param, transitive = false)
-            "productOverSubclassesNotTransitive" -> return AstProductIsA(model, namespace, param, transitive = false)
+            "sumOverParts" -> return AstSumOverParts(model, namespace, param, transitive = true)
+            "sumOverSubclasses" -> return AstSumOverSubclasses(model, namespace, param, transitive = true)
+            "productOverParts" -> return AstProductOverParts(model, namespace, param, transitive = true)
+            "productOverSubclasses" -> return AstProductOverSubclasses(model, namespace, param, transitive = true)
+            "sumOverPartsNotTransitive" -> return AstSumOverParts(model, namespace, param, transitive = false)
+            "sumOverSubclassesNotTransitive" -> return AstSumOverSubclasses(model, namespace, param, transitive = false)
+            "productOverPartsNotTransitive" -> return AstProductOverParts(model, namespace, param, transitive = false)
+            "productOverSubclassesNotTransitive" -> return AstProductOverSubclasses(model, namespace, param, transitive = false)
             "characterizedResult" -> return AstCharacterizedResult(model, namespace, param)
             "ln" -> return AstLn(model, param)
             "exp" -> return AstExp(model, param)
@@ -423,11 +422,12 @@ open class ActionsContext(
             "bySpecializations" -> return AstBySpecializations(model, namespace, param)
             "byParts" -> return AstByParts(model, namespace, param)
             "byImplements" -> return AstByImplements(model, namespace, param)
-            "linear" -> return AstLinear(model, param)
+            "linearInterpolation" -> return AstLinearInterpolation(model, param)
             "stepInterpolation" -> return AstStepInterpolation(model,param)
             "ToReal" -> return AstReal(model, param)
             "ToInteger" -> return AstInteger(model, param)
             "norm" -> return AstNormalizeVector(model,param)
+            "size" -> return AstVectorSize(model, param)
             "angle" -> return AstVectorAngle(model,param)
             "cityBlockDistance" -> return AstCityBlockDistance(model,param)
             "quantityOfVectorAtPosition" -> return AstQuantityOfVectorAtPosition(model,param)

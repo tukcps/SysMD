@@ -20,6 +20,10 @@ class PackageImplementation(
         this.isLibraryElement = (owner?.isStandard == true) or isLibraryElement
     }
 
-    override fun clone(): Package = PackageImplementation().also { klon -> klon.updateFrom(this) }
+    override fun clone(): Package = PackageImplementation().also { klon ->
+        klon.isLibraryElement = isLibraryElement
+        klon.isStandard = isStandard
+        klon.updateFrom(this)
+    }
     override fun toString() = super.toString() + if (isStandard) " (standard library)" else ""
 }

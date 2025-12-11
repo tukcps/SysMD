@@ -1,11 +1,9 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.quantities.Quantity
-import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.session.Session
 
 
@@ -24,27 +22,25 @@ class AstHasType(
     private val superclassName: QualifiedName
 ) : AstFunction("hasType", model, 0) {
 
+    private var subtype: Type? = null
+    private var supertype: Type? = null
+
     override fun initialize() {
         upQuantity = Quantity(model.builder.Bool)
-        evalUp()
+        subtype = owningNamespace.resolve(subclassName)?.member()
+        supertype = owningNamespace.resolve(superclassName)?.member()
+        if (subtype is Type && supertype is Type) {
+            evalUp()
+        } else
+            model.status.error("Evaluation of hasType not possible as parameters are no types.", element = owningNamespace)
         downQuantity = upQuantity.clone()
     }
 
     override fun evalUp() {
-        // Search for
-        val subtype = owningNamespace.resolve<Element>(subclassName)
-        val supertype = owningNamespace.resolve<Element>(superclassName)
-
-        if (subtype is Type && supertype is Type) {
-            upQuantity = Quantity(
-                if (supertype in subtype.allSupertypes(true)) model.builder.True else model.builder.False
-            )
-        } else
-            model.status.error("Evaluation of hasType not possible as parameters are no types.", element = owningNamespace)
+        if (subtype is Type && supertype is Type)
+            upQuantity = Quantity(if (supertype in subtype!!.allSupertypes(true)) model.builder.True else model.builder.False)
     }
 
-    override fun evalDown() {
-        // getParam(0).downQuantity = downQuantity.log()
-    }
+    override fun evalDown() {}
 
 }

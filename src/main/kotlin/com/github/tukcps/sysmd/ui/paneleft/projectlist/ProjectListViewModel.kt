@@ -24,9 +24,13 @@ class ProjectListViewModel(
     var tabsViewModel: TabsViewModel,
     var reset: () -> Unit
 ) {
+    /**
+     * The project that is edited in the current session. Note that currently only one single session
+     * is supported by the UI (but we might supporte more in future).
+     */
+    var projectOfSession:     MutableState<ProjectViewModel?> = mutableStateOf(null)
     var showNewProjectDialog: MutableState<Boolean> = mutableStateOf(false)
     var viewModelsOfProjects: MutableState<SnapshotStateList<ProjectViewModel>> = mutableStateOf(mutableStateListOf())
-    var projectOfSession:    MutableState<ProjectViewModel?> = mutableStateOf(null)
     var projectToUpdate:      MutableState<ProjectViewModel?> = mutableStateOf(null)
 
     init {
@@ -79,6 +83,16 @@ class ProjectListViewModel(
             viewModelsOfProjects.value.remove(projectViewModel)
             projectService.deleteProject(projectViewModel.project?.id!!)
             SysMDProjectService.logger.info("Deleted project ${projectViewModel.project?.name}")
+        }
+    }
+
+    /**
+     * Starts a session of a project
+     * @param projectViewModel the project view model that shall be rendered. If necessary, a new session is started.
+     */
+    fun openProject(projectViewModel: ProjectViewModel) {
+        if (projectViewModel != projectOfSession.value) {
+            projectViewModel.openProject()
         }
     }
 

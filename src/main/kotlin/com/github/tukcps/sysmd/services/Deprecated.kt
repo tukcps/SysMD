@@ -1,9 +1,5 @@
 package com.github.tukcps.sysmd.services
 
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.BDD
-import io.github.tukcps.aadd.DD
-import io.github.tukcps.aadd.IDD
 import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.exceptions.ElementNotFoundException
 import com.github.tukcps.sysmd.exceptions.SemanticError
@@ -12,9 +8,12 @@ import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.SpecializationImplementation
 import com.github.tukcps.sysmd.quantities.Quantity
-import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.session.Session
+import io.github.tukcps.aadd.AADD
+import io.github.tukcps.aadd.BDD
+import io.github.tukcps.aadd.DD
+import io.github.tukcps.aadd.IDD
 
 
 /**
@@ -67,5 +66,5 @@ fun Session.defScalarVar(name: String, value: String, unitStr: String = "", type
         typeConstraint = mutableListOf(value)
     )
     addOwnedMember(feature, namespace)
-    addOwnedRelationship(SpecializationImplementation(feature, global.resolve<Classifier>(type)!!), feature)
+    addOwnedRelationship(SpecializationImplementation(feature, global.resolve(type)!!.member<Classifier>()!!), feature)
 }

@@ -2,15 +2,13 @@ package compiler.sysml.examples
 
 import com.github.tukcps.sysmd.model.sysml.OccurrenceDefinition
 import com.github.tukcps.sysmd.model.sysml.OccurrenceUsage
-import com.github.tukcps.sysmd.services.resolve.resolve
-import util.mockup.loadSysMLv2
 import org.junit.jupiter.api.Disabled
 import util.assertNoIssues
+import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 
 class OccurrenceTests {
 
@@ -23,17 +21,17 @@ class OccurrenceTests {
     @Test
     fun testOccurrenceDefinition() = testSession("Occurrences") {
         loadSysMLv2("""
-        occurrence def OccurrenceDef1;
-        occurrence def OccurrenceDef2 {
-            /* members */
+            occurrence def OccurrenceDef1;
+            occurrence def OccurrenceDef2 {
+                /* members */
         }
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        """)
+        assertNoIssues()
 
-        val occurrenceDef1 = global.resolve<OccurrenceDefinition>("OccurrenceDef1")
+        val occurrenceDef1 = global.resolve("OccurrenceDef1")?.memberElement as OccurrenceDefinition
         assertNotNull(occurrenceDef1)
 
-        val occurrenceDef2 = global.resolve<OccurrenceDefinition>("OccurrenceDef2")
+        val occurrenceDef2 = global.resolve("OccurrenceDef2")?.memberElement as OccurrenceDefinition
         assertNotNull(occurrenceDef2)
     }
 
@@ -54,13 +52,13 @@ class OccurrenceTests {
         """)
         assertNoIssues()
 
-        val occurrenceDef1 = global.resolve<OccurrenceDefinition>("OccurrenceDef1")
+        val occurrenceDef1 = global.resolve("OccurrenceDef1")?.memberElement as OccurrenceDefinition
         assertNotNull(occurrenceDef1)
 
-        val occurrence1 = global.resolve<OccurrenceUsage>("occurrence1")
+        val occurrence1 = global.resolve("occurrence1")?.memberElement as OccurrenceUsage
         assertNotNull(occurrence1)
 
-        val occurrence2 = global.resolve<OccurrenceUsage>("occurrence2")
+        val occurrence2 = global.resolve("occurrence2")?.memberElement as OccurrenceUsage
         assertNotNull(occurrence2)
     }
 
@@ -78,10 +76,10 @@ class OccurrenceTests {
         """)
         assertNoIssues()
 
-        val occurrenceDef1 = global.resolve<OccurrenceDefinition>("OccurrenceDef1")
+        val occurrenceDef1 = global.resolve("OccurrenceDef1")?.memberElement as OccurrenceDefinition
         assertNotNull(occurrenceDef1)
 
-        val occurrenceDef11 = global.resolve<OccurrenceDefinition>("OccurrenceDef1-1")
+        val occurrenceDef11 = global.resolve("OccurrenceDef1-1")?.memberElement as OccurrenceDefinition
         assertNotNull(occurrenceDef11)
     }
 

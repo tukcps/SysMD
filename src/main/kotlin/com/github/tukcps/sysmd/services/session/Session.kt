@@ -1,13 +1,7 @@
 package com.github.tukcps.sysmd.services.session
 
-import com.github.tukcps.sysmd.cspsolver.DiscreteSolver
-import com.github.tukcps.sysmd.cspsolver.Variable
-import com.github.tukcps.sysmd.model.expression.AstNode
-import com.github.tukcps.sysmd.model.kerml.Anything
-import com.github.tukcps.sysmd.model.kerml.Element
-import com.github.tukcps.sysmd.model.kerml.Import
-import com.github.tukcps.sysmd.model.kerml.Namespace
-import com.github.tukcps.sysmd.model.kerml.Relationship
+import com.github.tukcps.sysmd.cspsolver.Solver
+import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.services.repositories.local.ProjectData
 import io.github.tukcps.aadd.DDBuilder
 import io.github.tukcps.sysmlv2.api.entities.CommitDataObject
@@ -57,12 +51,9 @@ interface Session {
     /** data contains data structures that represent the model and support efficient access, i.e. caches */
     val repo: Repository
 
-    /** specific information from the discrete solver */
-    var dSolver: DiscreteSolver
+    /** The variables and the solver */
+    var solver: Solver
     val builder: DDBuilder
-
-    /** The AST subtrees for all subexpressions */
-    val astNodes : MutableMap<UUID, AstNode>
 
     /**
      * Adds new elements to the session.
@@ -123,5 +114,4 @@ interface Session {
      */
     fun reset()
 
-    fun getVariables(): List<Variable>
 }

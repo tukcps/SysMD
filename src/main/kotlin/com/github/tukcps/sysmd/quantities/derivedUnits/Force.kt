@@ -5,9 +5,9 @@ import com.github.tukcps.sysmd.quantities.NoPrefix
 import com.github.tukcps.sysmd.quantities.Prefix
 import com.github.tukcps.sysmd.quantities.baseUnits.Length
 import com.github.tukcps.sysmd.quantities.baseUnits.Mass
-import com.github.tukcps.sysmd.quantities.baseUnits.Time
+import com.github.tukcps.sysmd.quantities.baseUnits.Duration
 
-private var siUnitSet = setOf(Length.Meter.copy(), Mass.Kilogram.copy(), Time.Second.copy(-2))
+private var siUnitSet = setOf(Length.Meter.copy(), Mass.Kilogram.copy(), Duration.Second.copy(-2))
 
 open class Force(name: String, symbol: String, prefix: Prefix, convFac: Double, exponent: Int = 1, isLogarithmic: Boolean = false) :
     DerivedUnit(name, symbol, prefix, "Force", siUnitSet, convFac, exponent, isLogarithmic) {

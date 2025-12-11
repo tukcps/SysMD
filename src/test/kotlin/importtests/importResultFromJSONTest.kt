@@ -1,10 +1,9 @@
 package importtests
 
-import util.testSession
-import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import util.mockup.loadSysMLv2
+import util.testSession
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -27,7 +26,7 @@ class ImportTest {
     // This test checks if a proper .json can be loaded and its values intersect with the result of the AstFunction
     // ASTFunction           JSON result   Final result
     // [26.0,35.0] intersect [28.0,32.0] = [28.0,32.0]
-    fun baseTest() = testSession("Parts", "SI") {
+    fun baseTest() = testSession("Parts", "ISQ") {
 
         Files.createDirectories(Paths.get("src/test/resources/importResultsTestDir"))
 
@@ -39,31 +38,31 @@ class ImportTest {
         loadSysMLv2("""
             package test {
                 private import ScalarValues::*; 
-                private import SI::*; 
+                private import ISQ::*; 
                            
                 part def Amplifier :> Base::Anything;
             
                 part def LNA :> Amplifier {    
-                    attribute gain: SI::Quantity = [5.0 .. 20.0] dB {:>> unit = "dB";}
+                    attribute gain: Quantities::ScalarQuantityValue = [5.0 .. 20.0] dB {:>> unit = "dB";}
                 }
             
                 part def Stage2 :> Amplifier { 
-                    attribute gain: SI::Quantity = [11.0 .. 20.0] dB {:>> unit = "dB";}
+                    attribute gain: Quantities::ScalarQuantityValue = [11.0 .. 20.0] dB {:>> unit = "dB";}
                 }
             
                 part def Driver :> Amplifier {
-                    attribute gain: SI::Quantity = [10.0 .. 30.0] dB {:>> unit = "dB";}
+                    attribute gain: Quantities::ScalarQuantityValue = [10.0 .. 30.0] dB {:>> unit = "dB";}
                 }
                 
                 part myAmplifier {
                     part lna:    LNA;  
                     part stage2: Stage2;  
                     part driver: Driver;  
-                    attribute gain: SI::Quantity(26.0 .. 35.0) [dB] = characterizedResult(productOverParts(gain),"${Paths.get("").toAbsolutePath()}/src/test/resources/importResultsTestDir/testFile.json"); 
+                    attribute gain: Quantities::ScalarQuantityValue(26.0 .. 35.0) [dB] = characterizedResult(productOverParts(gain),"${Paths.get("").toAbsolutePath()}/src/test/resources/importResultsTestDir/testFile.json"); 
                 }
             }
             """)
-        propagate()
+        solver.propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals(28.5, global.resolveVar("test::myAmplifier::gain")!!.aadd().min,0.00001)
         assertEquals(28.5,global.resolveVar("test::myAmplifier::gain")!!.aadd().max,0.00001)
@@ -72,7 +71,7 @@ class ImportTest {
 
     @Test
     //In this test, the range of the imported Result is larger than the range of the upQuantity of the ASTFunction
-    fun baseTestResultNotInBounds() = testSession("SI", "Parts") {
+    fun baseTestResultNotInBounds() = testSession("ISQ", "Parts") {
 
         Files.createDirectories(Paths.get("src/test/resources/importResultsTestDir"))
 
@@ -84,32 +83,32 @@ class ImportTest {
         loadSysMLv2("""
             package test {
                 private import ScalarValues::*; 
-                private import SI::*; 
+                private import Quantities::*; 
                            
                 part def Amplifier :> Base::Anything;
             
                 part def LNA :> Amplifier {    
-                    attribute gain: Quantity(5..20) [dB];
+                    attribute gain: ScalarQuantityValue(5..20) [dB];
                 }
             
                 part def Stage2 :> Amplifier { 
-                    attribute gain: Quantity(11..20)[dB];
+                    attribute gain: ScalarQuantityValue(11..20)[dB];
                 }
             
                 part def Driver :> Amplifier {
-                    attribute gain: Quantity(20..30)[dB]; 
+                    attribute gain: ScalarQuantityValue(20..30)[dB]; 
                 }
                 
                 part myAmplifier {
                     part lna:    LNA;  
                     part stage2: Stage2;  
                     part driver: Driver;  
-                    attribute gain: Quantity(26.0 .. 35.0) [dB] = characterizedResult(productOverParts(gain),"${Paths.get("").toAbsolutePath()}/src/test/resources/importResultsTestDir/testFile.json"); 
+                    attribute gain: ScalarQuantityValue(26.0 .. 35.0) [dB] = characterizedResult(productOverParts(gain),"${Paths.get("").toAbsolutePath()}/src/test/resources/importResultsTestDir/testFile.json"); 
                 }
             }
         """)
         assertTrue(status.issues.isEmpty(), "${status.issues}")
-        propagate()
+        solver.propagate()
         assertTrue(global.resolveVar("test::myAmplifier::gain")!!.aadd().isEmpty())
         assertEquals(1, status.issues.size, "Error messages: ${status.issues}")
     }
@@ -123,36 +122,36 @@ class ImportTest {
     @Test
     //This test deliberately uses a non-existing JSON file which causes the function to use a [-Inf,+Inf] range as intersection partner
     //The result should therefore be the actual result of the ASTFunction
-    fun wrongFileNameTest() = testSession("Parts", "SI") {
+    fun wrongFileNameTest() = testSession("Parts", "ISQ") {
         Files.createDirectories(Paths.get("src/test/resources/importResultsTestDir"))
         loadSysMLv2("""
             package test {
                 private import ScalarValues::*; 
-                private import SI::*; 
+                private import Quantities::*; 
                            
                 part def Amplifier :> Base::Anything;
             
                 part def LNA :> Amplifier {    
-                    attribute gain: Quantity(5.0 .. 20.0) [dB];
+                    attribute gain: ScalarQuantityValue(5.0 .. 20.0) [dB];
                 }
             
                 part def Stage2 :> Amplifier { 
-                    attribute gain: Quantity(11.0 .. 20.0) [dB];
+                    attribute gain: ScalarQuantityValue(11.0 .. 20.0) [dB];
                 }
             
                 part def Driver :> Amplifier {
-                    attribute gain: Quantity(10.0 .. 30.0) [dB];
+                    attribute gain: ScalarQuantityValue(10.0 .. 30.0) [dB];
                 }
                 
                 part myAmplifier {
                     part lna:    LNA;  
                     part stage2: Stage2;  
                     part driver: Driver;  
-                    attribute gain: Quantity(26.0 .. 35.0) [dB] = characterizedResult(productOverParts(gain),"wrongFileNameThatDoesntWork.json"); 
+                    attribute gain: ScalarQuantityValue(26.0 .. 35.0) [dB] = characterizedResult(productOverParts(gain),"wrongFileNameThatDoesntWork.json"); 
                 }
             }
         """)
-        propagate()
+        solver.propagate()
         assertEquals(1, status.issues.size, "Expected an error message that reports missing file with JSON")
         assertEquals(26.0, global.resolveVar("test::myAmplifier::gain")!!.aadd().min,0.00001)
         assertEquals(35.0,global.resolveVar("test::myAmplifier::gain")!!.aadd().max,0.00001)
@@ -161,7 +160,7 @@ class ImportTest {
     @Test
     //This test deliberately declares a wrong unit in the JSON file which causes the function to use a [-Inf,+Inf] range as intersection partner
     //The result should therefore be the actual result of the ASTFunction
-    fun wrongUnitTest() = testSession("Parts", "SI", "Ranges") {
+    fun wrongUnitTest() = testSession("Parts", "ISQ", "Ranges") {
         Files.createDirectories(Paths.get("src/test/resources/importResultsTestDir"))
         writeJson(
             resultValue = 28.5,
@@ -171,31 +170,31 @@ class ImportTest {
         loadSysMLv2("""
             package test {
                 private import ScalarValues::*; 
-                private import SI::*; 
+                private import Quantities::*; 
                            
                 part def Amplifier;
             
                 part def LNA :> Amplifier {    
-                    attribute gain: Quantity(5.0 .. 20.0) [dB]; 
+                    attribute gain: ScalarQuantityValue(5.0 .. 20.0) [dB]; 
                 }
             
                 part def Stage2 :> Amplifier { 
-                    attribute gain: Quantity(11.0 .. 20.0) [dB];
+                    attribute gain: ScalarQuantityValue(11.0 .. 20.0) [dB];
                 }
             
                 part def Driver :> Amplifier {
-                    attribute gain: Quantity(10.0 .. 30.0) [dB];
+                    attribute gain: ScalarQuantityValue(10.0 .. 30.0) [dB];
                 }
                 
                 part myAmplifier {
                     part lna:    LNA;  
                     part stage2: Stage2;  
                     part driver: Driver;  
-                    attribute gain: Quantity(26.0 .. 35.0) [dB] = characterizedResult(productOverParts(gain),"${Paths.get("").toAbsolutePath()}/src/test/resources/importResultsTestDir/testFile.json"); 
+                    attribute gain: ScalarQuantityValue(26.0 .. 35.0) [dB] = characterizedResult(productOverParts(gain),"${Paths.get("").toAbsolutePath()}/src/test/resources/importResultsTestDir/testFile.json"); 
                 }
             }
         """)
-        propagate()
+        solver.propagate()
         //assertTrue(status.issues.isEmpty(), "${status.issues}")
         assertEquals(26.0, global.resolveVar("test::myAmplifier::gain")!!.aadd().min, 0.00001)
         assertEquals(35.0,global.resolveVar("test::myAmplifier::gain")!!.aadd().max, 0.00001)
@@ -204,7 +203,7 @@ class ImportTest {
 
     @Test
     //This test checks the behavior if an illegal argument is passed as second parameter
-    fun wrongSecondArgumentTest() = testSession("Parts", "SI", "Ranges") {
+    fun wrongSecondArgumentTest() = testSession("Parts", "ISQ", "Ranges") {
 
         Files.createDirectories(Paths.get("src/test/resources/importResultsTestDir"))
 
@@ -216,31 +215,31 @@ class ImportTest {
         loadSysMLv2("""
             package test {
                 private import ScalarValues::*; 
-                private import SI::*; 
+                private import ISQ::*; 
                            
                 part def Amplifier;
             
                 part def LNA :> Amplifier {    
-                    attribute gain: SI::Quantity(5.0 .. 20.0) [dB]; 
+                    attribute gain: Quantities::ScalarQuantityValue(5.0 .. 20.0) [dB]; 
                 }
             
                 part def Stage2 :> Amplifier { 
-                    attribute gain: SI::Quantity(11.0 .. 20.0) [dB];
+                    attribute gain: Quantities::ScalarQuantityValue(11.0 .. 20.0) [dB];
                 }
             
                 part def Driver :> Amplifier {
-                    attribute gain: SI::Quantity(10.0 .. 30.0) [dB]; 
+                    attribute gain: Quantities::ScalarQuantityValue(10.0 .. 30.0) [dB]; 
                 }
                 
                 part myAmplifier {
                     part lna:    LNA;  
                     part stage2: Stage2;  
                     part driver: Driver;  
-                    attribute gain: SI::Quantity(26.0 .. 35.0) [dB] = characterizedResult(productOverParts(gain), productOverParts(gain)); 
+                    attribute gain: Quantities::ScalarQuantityValue(26.0 .. 35.0) [dB] = characterizedResult(productOverParts(gain), productOverParts(gain)); 
                 }
             }
         """)
-        propagate()
+        solver.propagate()
        // assertTrue(status.issues.isEmpty(), "${status.issues}")
         assertEquals(26.0, global.resolveVar("test::myAmplifier::gain")!!.rangeSpecs[0].min,0.00001)
         assertEquals(35.0,global.resolveVar("test::myAmplifier::gain")!!.rangeSpecs[0].max,0.00001)
@@ -259,7 +258,7 @@ class ImportTest {
     @Test
     //This test checks if the characterizedResult function can handle an AstMax Node
     //The max function returns [10 … 30] which is intersected with [25 … 26]
-    fun maxFunctionTest() = testSession("Parts", "SI") {
+    fun maxFunctionTest() = testSession("Parts", "ISQ") {
 
         Files.createDirectories(Paths.get("src/test/resources/importResultsTestDir"))
 
@@ -269,14 +268,14 @@ class ImportTest {
             attrFQN = "gain")
 
         loadSysMLv2("""       
-            attribute a: SI::Length = [5.0 .. 30.0] m;
-            attribute b: SI::Length = [10.0 .. 20.0] m;
+            attribute a: ISQ::LengthValue = [5.0 .. 30.0] m;
+            attribute b: ISQ::LengthValue = [10.0 .. 20.0] m;
             attribute gain: ScalarValues::Real = characterizedResult(max(a,b),"${Paths.get("").toAbsolutePath()}/src/test/resources/importResultsTestDir/testFile.json"); 
         """)
-        propagate()
+        solver.propagate()
 
-        assertEquals(28.5, global.resolveVar("gain")!!.aadd().min,0.00001)
-        assertEquals(28.5,global.resolveVar("gain")!!.aadd().max,0.00001)
+        assertEquals(28.5, global.resolveVar("gain")!!.min(),0.00001)
+        assertEquals(28.5,global.resolveVar("gain")!!.max(),0.00001)
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 

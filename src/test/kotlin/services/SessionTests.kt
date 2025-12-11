@@ -1,18 +1,11 @@
 package services
 
 import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.model.kerml.implementation.AnnotationImplementation
-import com.github.tukcps.sysmd.model.kerml.implementation.ElementImplementation
-import com.github.tukcps.sysmd.model.kerml.implementation.NamespaceImplementation
-import com.github.tukcps.sysmd.model.kerml.implementation.RedefinitionImplementation
-import com.github.tukcps.sysmd.model.kerml.implementation.SpecializationImplementation
-import com.github.tukcps.sysmd.model.kerml.implementation.TypeImplementation
-import com.github.tukcps.sysmd.model.kerml.implementation.getOwned
+import com.github.tukcps.sysmd.model.kerml.implementation.*
 import com.github.tukcps.sysmd.model.sysml.PartUsage
 import com.github.tukcps.sysmd.services.check.checkOwnership
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.repositories.local.ElementData
-import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.session.SessionImplementation
 import com.github.tukcps.sysmd.services.session.getAllOfClass
 import com.github.tukcps.sysmd.services.session.loadLibrary
@@ -28,7 +21,6 @@ import kotlin.test.assertTrue
 
 class SessionTests {
 
-
     @Test fun testStartSession() {
         val session = SessionImplementation(libraries = mutableListOf())
         assertTrue(session.status.issues.isEmpty(), session.status.issues.toString())
@@ -36,13 +28,12 @@ class SessionTests {
 
     @Test fun testSessionResolveElement() {
         val session = SessionImplementation(libraries = mutableListOf())
-        val base = session.global.resolve<Package>("Base")
+        val base = session.global.resolve("Base")?.member<Package>()
         assertNotNull(base)
         assertEquals("Base", base.name)
         assertEquals(session.global, base.owner)
         assertTrue(session.status.issues.isEmpty(), session.status.issues.toString())
     }
-
 
     @Test
     fun countOwnedTest1() {
@@ -91,9 +82,9 @@ class SessionTests {
             type t2 :> t { :>> f; }
         """)
         assertNoIssues()
-        val t2 = global.resolve<Type>("t2")!!
-        val tf = global.resolve<Feature>("t::f")!!
-        val t2f = global.resolve<Feature>("t2::f")!!
+        val t2 = global.resolve("t2")?.member<Type>()!!
+        val tf = global.resolve("t::f")?.member<Feature>()!!
+        val t2f = global.resolve("t2::f")?.member<Feature>()!!
         assertEquals(2,t2f.ownedRelationship.size)
         assertTrue(tf !== t2f)
         // Try to make a duplicate
@@ -114,10 +105,10 @@ class SessionTests {
             type t2 :> t { :>> f; }
         """)
         assertNoIssues()
-        val t = global.resolve<Type>("t")!!
-        val t2 = global.resolve<Type>("t2")!!
-        val tf = global.resolve<Feature>("t::f")!!
-        val t2f = global.resolve<Feature>("t2::f")!!
+        val t: Type? = global.resolve("t")?.member()
+        val t2: Type? = global.resolve("t2")?.member()
+        val tf: Feature? = global.resolve("t::f")!!.member()
+        val t2f: Feature = global.resolve("t2::f")!!.member()!!
         assertEquals(2,t2f.ownedRelationship.size)
         assertTrue(tf !== t2f)
         // Try to make a duplicate
@@ -131,17 +122,19 @@ class SessionTests {
      * reset of a session creates new repo, new libraries, that are of similar size as before.
      */
     @Test
-    fun resetTest() = testSession("Parts") {
+    fun resetTest() = testSession("ScalarValues") {
         val size = repo.elements.size // Before
-        val elements = repo.elements.clone() as HashMap<*, *>
+        @Suppress("UNCHECKED_CAST")
+        val elements = repo.elements.clone() as HashMap<*, Element>
         reset()
+        loadLibrary("ScalarValues")
         val elements2 = repo.elements
         val diff = mutableListOf<Element>()
-        elements2.forEach {
-            if (it.key !in elements.keys) diff.add(it.value)
-        }
+        val diff2 = mutableListOf<Element>()
+        elements2.forEach { if (it.key !in elements.keys) diff.add(it.value) }
+        elements.forEach { if (it.key !in elements2.keys) diff2.add(it.value) }
         val libs = global.ownedElement
-        assertTrue(5 <= libs.size)
+        assertTrue(2 <= libs.size)
         assertEquals(size, repo.elements.size)
     }
 
@@ -153,8 +146,8 @@ class SessionTests {
                 feature f: Base::Anything;
             }
         """)
-        val t = global.resolve<Element>("Base::t")
-        val f = global.resolve<Element>("Base::f")
+        val t = global.resolve("Base::t")?.memberElement
+        val f = global.resolve("Base::f")?.memberElement
         assertNotNull(t)
         assertNotNull(f)
         val ex = export()
@@ -172,8 +165,8 @@ class SessionTests {
         loadLibrary("Base")
         assertNoIssues()
         assertEquals(1, global.ownedRelationship.size, "Only the Base library ownership must exist, once")
-        assertNotNull(global.resolve<Classifier>("Base::Anything"))
-        assertNotNull(global.resolve<Feature>("Base::things"))
+        assertNotNull(global.resolve("Base::Anything")?.member<Classifier>())
+        assertNotNull(global.resolve("Base::things")?.member<Feature>())
     }
 
     @Test
@@ -191,7 +184,7 @@ class SessionTests {
         """)
         initialize()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val test = global.resolve<Namespace>("test")
+        val test: Namespace? = global.resolve("test")?.member()
         assertNotNull(test)
     }
 
@@ -202,7 +195,7 @@ class SessionTests {
         """)
         initialize()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val test = global.resolve<PartUsage>("test")
+        val test: PartUsage? = global.resolve("test")?.member()
         assertNotNull(test)
     }
 
@@ -217,7 +210,7 @@ class SessionTests {
             }
         """)
         assertNoIssues()
-        val p = global.resolve<MetadataFeature>("p")
+        val p: MetadataFeature? = global.resolve("p")?.member()
         assertNotNull(p)
         assertEquals("p", p.name)
         assertEquals("name", p.getOwned<Feature>("name")?.variable?.valueStr)
@@ -232,7 +225,7 @@ class SessionTests {
     @Test
     fun typesNotAppearTwice() = testSession {
         loadKerML("type t :> Base::Anything; ")
-        assertTrue(status.issues.isEmpty())
+        assertNoIssues()
         val elem1 = getAllOfClass<Element>().toSet()
         loadKerML("type t :> Base::Anything; ")
         assertTrue( status.issues.isEmpty(), status.issues.toString())

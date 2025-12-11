@@ -14,7 +14,7 @@ class ItemDefinitionActions(
 ): TypeActions<ItemDefinitionImplementation>(
     context,
     creator = ::ItemDefinitionImplementation,
-    defaultType = "Items::Item",
+    isImplicit = "Items::Item",
 )
 
 

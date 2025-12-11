@@ -11,8 +11,10 @@ import io.github.tukcps.aadd.values.Range
 import io.github.tukcps.aadd.values.XBool
 import com.github.tukcps.sysmd.model.expression.AstRoot
 import com.github.tukcps.sysmd.model.kerml.Feature
+import com.github.tukcps.sysmd.model.kerml.Membership
 import com.github.tukcps.sysmd.model.util.size
 import com.github.tukcps.sysmd.quantities.VectorQuantity
+import io.github.tukcps.aadd.DDBuilder
 import java.util.*
 
 
@@ -26,10 +28,13 @@ import java.util.*
 interface Variable: ConstraintPropagation {
     enum class BaseType {Bool, Int, String, Real, Unknown}
 
-    var feature: Feature
+    var membership: Membership
+    val builder: DDBuilder
+
+    val feature: Feature
     val elementId: UUID?
-    val name
-        get() = feature.qualifiedName
+    val name: String?
+
     val baseType: BaseType
 
     /** Holds either an IntegerRange, a Range, or an XBool, depending on the type. */
@@ -92,7 +97,13 @@ interface Variable: ConstraintPropagation {
     fun bdd(): BDD
     fun idd(): IDD
     fun compileExpression()
+    fun checkForCyclicDependency()
 
+    /**
+     * Methods to get the result as Number.
+     */
     fun <T: Number> min(index: Int = 0): T
     fun <T: Number> max(index: Int = 0): T
+    fun <T: Comparable<T> > range(index: Int = 0): ClosedRange<T>
+    fun bool(): XBool
 }

@@ -7,7 +7,6 @@ import com.github.tukcps.sysmd.model.kerml.UnresolvedType
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.SpecializationImplementation
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import util.mockup.loadKerML
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -31,28 +30,28 @@ class VariableTests {
         // allowed identifier declaration
         var p = FeatureImplementation(declaredName="Property12_2test")
         addOwnedMember(p, global)
-        addOwnedRelationship(SpecializationImplementation(p, global.resolve<Type>("ScalarValues::Real")!!), p)
+        addOwnedRelationship(SpecializationImplementation(p, global.resolve("ScalarValues::Real")!!.memberElement as Type), p)
         initialize()
-        assertTrue(p.variable!!.vectorQuantity.value is AADD)
+        assertTrue(solver.getVariable("Property12_2test")!!.vectorQuantity.value is AADD)
 
         p = FeatureImplementation(declaredName="Property12_2test2")
         addOwnedMember(p, global)
         addOwnedRelationship(SpecializationImplementation(p, repo.booleanType!!), p)
         initialize()
-        assertTrue(p.variable!!.vectorQuantity.value is BDD)
+        assertTrue(solver.getVariable("Property12_2test2")!!.vectorQuantity.value is BDD)
 
         p = FeatureImplementation(declaredName="Property12_2test3")
         addOwnedMember(p, global)
         addOwnedRelationship(SpecializationImplementation(p, UnresolvedType("ScalarValues::Real")), p)
         initialize()
-        assertTrue(p.variable!!.vectorQuantity.value is AADD)
+        assertTrue(solver.getVariable("Property12_2test3")!!.vectorQuantity.value is AADD)
 
         p = FeatureImplementation(declaredName="Property12_2test4", typeConstraint = mutableListOf( "true" ))
         addOwnedMember(p, global)
         addOwnedRelationship(SpecializationImplementation(p, UnresolvedType("ScalarValues::Boolean")), p)
         initialize()
         initialize()
-        assertTrue(p.variable!!.vectorQuantity.value is BDD)
+        assertTrue(solver.getVariable("Property12_2test4")!!.vectorQuantity.value is BDD)
     }
 
 

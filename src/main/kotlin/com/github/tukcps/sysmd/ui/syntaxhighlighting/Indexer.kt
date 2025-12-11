@@ -20,7 +20,7 @@ import org.apache.logging.log4j.LogManager
 var globalComponentsIndex : MutableSet<String> = mutableSetOf("Anything::Base") //As "Anything" is a build in class, its declaration cannot be found in the files and therefore is initially added here
 
 /**The global index of Packages*/
-var globalPackagesIndex : MutableSet<String> = mutableSetOf("SI")
+var globalPackagesIndex : MutableSet<String> = mutableSetOf("ISQ")
 
 
 val indexerScope = CoroutineScope(Dispatchers.Default)

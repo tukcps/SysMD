@@ -17,11 +17,11 @@ author:   University of Kaiserslautern-Landau, Chair of Cyber-Physical Systems
 ```SysML
 package OpAmpExample {
     part def OpAmp {
-        attribute slewRate: SI::Quantity [V/ms];
+        attribute slewRate: Quantities::ScalarQuantityValue {:>> unit = "V/ms";}
     } 
     requirement def SlewRateRequirement {
         subject dut: OpAmp;
-        attribute minSlewRate: SI::Quantity [V/ms];
+        attribute minSlewRate: Quantities::ScalarQuantityValue {:>> unit = "V/ms";}
         constraint minSlewRateConstraint { dut::slewRate > minSlewRate }   
     }
 }
@@ -34,7 +34,7 @@ Application example:
      
     requirement slewRate: SlewRateRequirement {
         subject dut references myOpAmp;
-        attribute redefines minSlewRate: SI::Quantity [V/ms] = 10.0 [V/ms]; 
+        attribute redefines minSlewRate: Quantities::ScalarQuantityValue = 10.0 [V/ms]; 
     }
 ```
 
@@ -53,23 +53,23 @@ Note that we could also just write the product manually as:
 ```SysML
 package AmplifierExample {
     private import ScalarValues::*; 
-    private import SI::*; 
+    private import ISQ::*; 
     // Library instances --> SystemC classes
     part def Amplifier {
-        attribute gain: Quantity [dB] = [0.0 .. 100.0] dB;     
+        attribute gain: DimensionOneValue = [0.0 .. 100.0] dB {:>> unit = "dB";}        
     }
     // Concrete model --> SystemC instances of library classes
     part myAmplifier {
         part lna:    Amplifier {
-            attribute gain: Quantity [dB] = oneOf(15.0 .. 20.0 [dB]);  
+            attribute gain: DimensionOneValue = oneOf(15.0 .. 20.0 [dB]) {:>> unit = "dB";}
         }
         part stage2: Amplifier {
-            attribute gain: Quantity [dB] = oneOf(5.0 .. 20.0 [dB]);  
+            attribute gain: DimensionOneValue = oneOf(5.0 .. 20.0 [dB]) {:>> unit = "dB";}
         }
         part driver: Amplifier {
-            attribute gain: Quantity [dB] = oneOf(5.0 .. 20.0 [dB]);  
+            attribute gain: DimensionOneValue = oneOf(5.0 .. 20.0 [dB]) {:>> unit = "dB";}  
         }
-        attribute gain: Quantity(20 .. 30) [dB] = productOverParts(gain); 
+        attribute gain: DimensionOneValue = productOverParts(gain) {:>> unit = "dB"; :>> range = "20..30";} 
     }
     // TODO: Test specification
 }
@@ -77,26 +77,26 @@ package AmplifierExample {
 /*
 package demo2 {
     import ScalarValues::*; 
-    import SI::*; 
+    import ISQ::*; 
     // Library instances --> SystemC classes
     part def Amplifier isA Base::Anything {
-        attribute gain: Quantity [dB] = [0.0 .. 100.0] dB;     
+        attribute gain: DimensionOneValue = [0.0 .. 100.0] dB {:>> unit = "dB";}    
     }
     // Concrete model --> SystemC instances of library classes
     part myAmplifier {
         part lna:    Amplifier {
-            attribute gain: Quantity [dB] = characterizedResult(
-                oneOf(15.0 .. 20.0 [dB]), "Amplifier/importResultsLna");             ;  
+            attribute gain: DimensionOneValue = characterizedResult(
+                oneOf(15.0 .. 20.0 [dB]), "Amplifier/importResultsLna") {:>> unit = "dB";}   
         }
         part stage2: Amplifier {
-            attribute gain: Quantity [dB] = characterizedResult(
-                oneOf(5.0 .. 20.0 [dB]), "Amplifier/importResultsStage2");  
+            attribute gain: DimensionOneValue = characterizedResult(
+                oneOf(5.0 .. 20.0 [dB]), "Amplifier/importResultsStage2") {:>> unit = "dB";}    
         }
         part driver: Amplifier {
-            attribute gain: Quantity [dB] = characterizedResult(
-                oneOf(0.0 .. 3.0 [dB]), "Amplifier/importResultsDriver");  
+            attribute gain: DimensionOneValue = characterizedResult(
+                oneOf(0.0 .. 3.0 [dB]), "Amplifier/importResultsDriver") {:>> unit = "dB";}     
         }
-        attribute gain: Quantity(20 .. 30) [dB] = productOverParts(gain); 
+        attribute gain: DimensionOneValue = productOverParts(gain)  {:>> unit = "dB"; :>> value = "20..30";}    
     }
 }*/ 
 ```

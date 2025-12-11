@@ -1,7 +1,6 @@
 package compiler.kerml
 
 import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.services.resolve.resolve
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
@@ -33,7 +32,7 @@ class ImportTests {
             }
         """)
         assertNoIssues()
-        val a = global.resolve<Namespace>("a")
+        val a: Namespace? = global.resolve("a")?.member()
         assertNotNull(a)
         val imp = a.getOwnedElementOfType<Import>()
         assertNotNull(imp)
@@ -51,8 +50,8 @@ class ImportTests {
             type B :> Base::Anything;
         """)
         assertNoIssues()
-        val a = global.resolve<Namespace>("A")
-        val b = global.resolve<Type>("B")
+        val a: Namespace? = global.resolve("A")?.member()
+        val b: Membership? = global.resolve("B")
         val imp = a?.getOwnedElementsOfType<Import>()?.first()
         assertNotNull(imp)
         assertNotNull(b)
@@ -83,12 +82,28 @@ class ImportTests {
     }
 
     @Test
-    fun importNonRecursiveTest() = testSession {
+    fun importMembershipTest() = testSession {
         loadKerML("""
-            private import Base::*;  
+            private import Base::Anything;
+            type t :> Anything;
         """)
         assertNoIssues()
-        val imp = global.getOwnedElementOfType<Import>()
+        val imp = global.ownedImport.firstOrNull()
+        assertEquals(1, global.importedMemberships().size)
+        val g = global.visibleMemberships()
+        assertEquals(3, global.visibleMemberships().size) // Including membership of Anything!
+        assertEquals(false, imp?.isRecursive)
+        assertEquals(false, imp?.isImportAll)
+    }
+
+    @Test
+    fun importNonRecursiveTest() = testSession {
+        loadKerML("""
+            private import Base::*;
+        """)
+        assertNoIssues()
+        val imp = global.getOwnedElementOfType<NamespaceImport>()
+        assertNotNull(global.resolve("Anything")?.member())
         assertEquals(false, imp?.isRecursive)
         assertEquals(false, imp?.isImportAll)
     }
@@ -109,7 +124,7 @@ class ImportTests {
         val imp = global.getOwnedElementOfType<Import>()
         assertEquals(true, imp?.isRecursive)
         assertEquals(false, imp?.isImportAll)
-        val any = global.resolve<Type>("Anything")
+        val any: Type? = global.resolve("Anything")?.member()
         assertNotNull(any)
     }
 }

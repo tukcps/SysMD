@@ -7,7 +7,6 @@ import androidx.compose.ui.text.input.TextFieldValue
 import com.github.tukcps.sysmd.compiler.KerML
 import com.github.tukcps.sysmd.compiler.SysMD
 import com.github.tukcps.sysmd.compiler.SysMLv2
-import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.exceptions.SysMDException
 import com.github.tukcps.sysmd.imports.ResultAnnotation
@@ -16,7 +15,6 @@ import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Multiplicity
 import com.github.tukcps.sysmd.model.sysml.implementation.CalculationDefinitionImplementation
-import com.github.tukcps.sysmd.services.inheritance.getAllInheritedFeatures
 import com.github.tukcps.sysmd.services.session.Session
 import com.github.tukcps.sysmd.ui.inCompile
 import io.github.tukcps.aadd.values.IntegerRange
@@ -93,7 +91,7 @@ open class TextualRepresentationViewModel(
                 }
 
                 if (propagate) {
-                    session.propagate()
+                    session.solver.propagate()
                     collectVariablesToDisplay()
                     refreshTrees()
                 }
@@ -127,14 +125,15 @@ open class TextualRepresentationViewModel(
                     is Classifier -> {
                         if (element !is CalculationDefinitionImplementation){
                             displayItems.add(TextFieldValue("${element.elementType} ${element.path()} created or updated "))
-                            session.getAllInheritedFeatures(element).forEach {
-                                when (it) {
-                                    is Classifier -> displayItems.add(TextFieldValue("   Classifier: ${it.escapedName()}"))
+                            element.visibleMemberships().forEach { membership ->
+                                val variable = session.solver.getVariable(membership.memberElement.path())
+                                when (val member = membership.memberElement) {
+                                    is Classifier -> displayItems.add(TextFieldValue("   Classifier: ${member.escapedName()}"))
                                     else -> {
-                                        if ( !(( it is Multiplicity) && it.variable!!.intSpecs.first() == IntegerRange(1,1))) {
-                                            var string = "    Feature: ${it.escapedName()} "
-                                            if (it.variable != null && it.variable!!.vectorQuantity.isConstrained()) {
-                                                string += " = ${it.variable!!.vectorQuantity}"
+                                        if ( !(( member is Multiplicity) && member.variable!!.intSpecs.first() == IntegerRange(1,1))) {
+                                            var string = "    Feature: ${member.escapedName()} "
+                                            if (variable != null && variable.vectorQuantity.isConstrained()) {
+                                                string += " = ${variable.vectorQuantity}"
                                                 displayItems.add(TextFieldValue(string))
                                             }
                                         }

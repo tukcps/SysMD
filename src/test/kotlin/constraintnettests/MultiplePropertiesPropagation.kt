@@ -1,13 +1,12 @@
 package constraintnettests
 
-import io.github.tukcps.aadd.values.Range
-import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.services.resolve.resolveVar
+import io.github.tukcps.aadd.values.Range
+import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Assertions.assertEquals
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
 
 class MultiplePropertiesPropagation {
@@ -18,15 +17,16 @@ class MultiplePropertiesPropagation {
      * - stable is set to false if in the last computation of it there was no change in its value.
      */
     @Test
-    fun updateTest()  = testSession("ScalarValues", "Ranges") {
+    fun updateTest()  = testSession( "Ranges") {
         loadKerML("""
             feature a: Ranges::RealInRange {:>> range = "1.3 .. 1.3";}
             feature b: ScalarValues::Real = a;
         """)
+        assertNoIssues()
         global.resolveVar("b")!!.updated = false
         // 1st call of evalUp is done instantly after compiler run; might be 2.
         // assertEquals(false, resolveName<Expression>("b").stable)
-        propagate()
+        solver.propagate()
         assertEquals(true, global.resolveVar("b")!!.stable)
         assertEquals(true, global.resolveVar("b")!!.updated)
     }
@@ -35,14 +35,14 @@ class MultiplePropertiesPropagation {
      * Dependencies across properties: direct dependency, forward.
      */
     @Test
-    fun upTest1() = testSession("ScalarValues", "Ranges") {
+    fun upTest1() = testSession("Ranges") {
         loadKerML("""
             feature x: Ranges::RealInRange {:>> range = "1 .. 10";}
             feature y: Ranges::RealInRange = x {:>> range = "1 .. 100";}
             feature z: Ranges::RealInRange = y;""")
         // y should be 1 .. 10 via y = x.
-        propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        solver.propagate()
+        assertNoIssues()
         val y = global.resolveVar("y")
         assertEquals(10.0, global.resolveVar("y")!!.max(), 0.000001)
     }
@@ -59,7 +59,7 @@ class MultiplePropertiesPropagation {
             feature c: ScalarValues::Real = 2.0 {:>> range = "1 .. 10";}
             // y should be 1 .. 10 via y = x.
         """)
-        propagate()
+        solver.propagate()
         assertEquals(Range(2.0..2.0), global.resolveVar("y")!!.vectorQuantity.aadd().getRange())
     }
 
@@ -72,9 +72,9 @@ class MultiplePropertiesPropagation {
         loadKerML("""
             feature x: Ranges::RealInRange {:>> range = "1 .. 100";}
             feature y: Ranges::RealInRange = x {:>> range = "1 .. 10";}
-            """)
+        """)
         // y should be 1 .. 10 via y = x
-        propagate()
+        solver.propagate()
         assertEquals(10.0, global.resolveVar("x")!!.vectorQuantity.aadd().getRange().max, 0.000001)
     }
 }

@@ -5,7 +5,12 @@ import io.github.tukcps.aadd.IDD
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.quantities.Quantity
+import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
+import io.github.tukcps.aadd.values.IntegerRange
+import kotlin.math.ceil
+import kotlin.math.floor
+import kotlin.math.pow
 
 /**
  * Predefined functions: 2^x (two to the power of x)
@@ -29,7 +34,20 @@ internal class AstPower2(model: Session, args: ArrayList<AstNode>) :
     }
 
     override fun evalUp() {
-        upQuantity = getParam(0).upQuantity.pow2()
+        upQuantity = when (getParam(0).upQuantity.values[0]) {
+            is AADD -> getParam(0).upQuantity.pow2()
+            is IDD -> {
+                val results = mutableListOf<IDD>()
+                getParam(0).upQuantity.idds().forEach {
+                    val min= floor(2.0.pow(it.min.toDouble())).toLong()
+                    val max = ceil(2.0.pow(it.max.toDouble())).toLong()
+                    results.add(model.builder.integer(min..max))
+
+                }
+                 VectorQuantity(results)
+            }
+            else -> throw SemanticError("pow2 function must have a Real or Integer parameter")
+        }
     }
 
     override fun evalDown() {

@@ -305,7 +305,7 @@ fun KerML.Value(): AstNode {
                 }
         }
         NAME_LIT starts { // QualifiedName [ '(' Parameters ')' | '[' Integer ']' ]
-            var name = QualifiedName()
+            val name = QualifiedName()
             alternatives {
                 LBRACE starts {
                     Parameters().also {

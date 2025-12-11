@@ -22,22 +22,22 @@ class Issue(
     var cause: Throwable? = null,
 ) {
     enum class Kind {
-        TRACE { override fun toString(): String = "Trace" },
-        DEBUG { override fun toString(): String = "Debug information" },
-        INFO  { override fun toString(): String = "Information" },
-        WARN  { override fun toString(): String = "Warning" },
-        WARN_ITERATIONS_EXCEEDED { override fun toString(): String = "Number of iterations exceeded upper bound" },
-        WARN_UNRESOLVED_OWNER { override fun toString(): String = "Element for which the owner could not be resolved" },
-        WARN_UNRESOLVED_TYPE { override fun toString(): String = "The type of an element could not be resolved" },
-        WARN_INCONSISTENCY { override fun toString(): String = "Inconsistency" },
-        ERROR { override fun toString(): String = "Error" },
-        ERROR_UNRESOLVED_NAME { override fun toString(): String = "Unresolved name" },
-        ERROR_SEMANTIC { override fun toString(): String = "Semantic error" },
-        ERROR_TYPE_WRONG { override fun toString(): String = "Element with different type expected" },
-        ERROR_CYCLIC_DEPENDENCY { override fun toString(): String = "Cyclic dependency" },
-        ERROR_SYNTACTICAL { override fun toString(): String = "Syntax error" },
-        ERROR_LEXICAL { override fun toString(): String = "Lexical error" },
-        FATAL { override fun toString(): String = "Fatal error" };
+        TRACE,
+        DEBUG,
+        INFO,
+        WARN,
+        WARN_ITERATIONS_EXCEEDED,
+        WARN_UNRESOLVED_OWNER,
+        WARN_UNRESOLVED_TYPE,
+        WARN_INCONSISTENCY,
+        ERROR,
+        ERROR_UNRESOLVED_NAME,
+        ERROR_SEMANTIC,
+        ERROR_TYPE_WRONG,
+        ERROR_CYCLIC_DEPENDENCY,
+        ERROR_SYNTACTICAL,
+        ERROR_LEXICAL,
+        FATAL;
     }
 
     /**
@@ -72,7 +72,6 @@ class Issue(
         } else
             return token?.lineNo
     }
-
 
     override fun toString() = message
 }

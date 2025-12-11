@@ -1,13 +1,11 @@
 package sysmdtests
 
-import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class AggregationFunctionsTests {
     /**
@@ -25,7 +23,7 @@ class AggregationFunctionsTests {
                 feature p3: ScalarValues::Real = sumOverParts(p); 
             }
         """)
-        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+        assertNoIssues()
         // println(resolveName<Expression>(global, "c3::p3"))
         assertEquals(5.0, global.resolveVar("c3::p3")!!.vectorQuantity.getMinAsDouble(), 0.000001)
     }
@@ -44,8 +42,8 @@ class AggregationFunctionsTests {
                 feature b:  c2[2..3];
                 feature p3: ScalarValues::Real = sumOverParts(p); 
             }""")
-        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
-        propagate()
+        assertNoIssues()
+        solver.propagate()
         assertEquals(5.0, global.resolveVar("c3::p3")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(10.0, global.resolveVar("c3::p3")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
     }
@@ -58,23 +56,22 @@ class AggregationFunctionsTests {
      */
     @Test
     fun sumAggregationTest3() = testSession("Occurrences", "Ranges") {
-        loadKerML(input = """
-            package l { 
-                class c1 {
-                    feature p: Ranges::RealInRange {:>> range = "1..2";}
-                }  
-                class c2; 
-                class c3 {
-                    feature a: Global::l::c1 [1..2];    // 1..2 * 1..2 
-                    feature b: Global::l::c2 [2..3];    // shall be 0 as no property p is not defined.
-                    feature p3: ScalarValues::Real = sumOverParts(p). 
-                }
-            }""")
-        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
-        propagate()
+        loadKerML("""
+            class c1 {
+                feature p: Ranges::RealInRange { :>> range = "1..2"; }
+            }  
+            class c2; 
+            class c3 {
+                feature a: c1 [1..2];    // 1..2 * 1..2 
+                feature b: c2 [2..3];    // shall be 0 as no property p is not defined.
+                feature p3: ScalarValues::Real = sumOverParts(p). 
+            }
+        """)
+        assertNoIssues()
+        solver.propagate()
         // println(resolveName<Expression>("l::c3::p3"))
-        assertEquals(1.0, global.resolveVar("l::c3::p3")!!.vectorQuantity.getMinAsDouble(), 0.0001)
-        assertEquals(4.0, global.resolveVar("l::c3::p3")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
+        assertEquals(1.0, global.resolveVar("c3::p3")!!.min(), 0.0001)
+        assertEquals(4.0, global.resolveVar("c3::p3")!!.max(), 0.0001)
     }
 
     /**
@@ -101,7 +98,7 @@ class AggregationFunctionsTests {
             }
         """)
         assertNoIssues()
-        propagate()
+        solver.propagate()
         // println(resolveName<Expression>("l::c3::p3"))
         assertEquals(11.0, global.resolveVar("c3::p3")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(40.0, global.resolveVar("c3::p3")!!.vectorQuantity.getMaxAsDouble(), 0.0001)

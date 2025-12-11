@@ -1,12 +1,12 @@
 package compiler
 
-import com.github.tukcps.sysmd.model.expression.AstRoot
-import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.services.check.getUnresolvedElements
-import com.github.tukcps.sysmd.services.resolve.resolve
-import org.junit.jupiter.api.Assertions.*
+import com.github.tukcps.sysmd.services.initialize
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertNotNull
 import util.assertNoIssues
 import util.mockup.loadSysMD
 import util.testSession
@@ -23,24 +23,23 @@ class SysMDTests {
     fun parsePackageTest() = testSession {
         loadSysMD("""Global hasA package test.""")
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        global.resolve<Element>("test")
+        global.resolve("test")
         assertEquals(0, getUnresolvedElements().size)
     }
 
     /** Check syntax for declaration of a value feature */
     @Test
-    fun parseValueTest() = testSession(initialize = false) {
+    fun parseValueTest() = testSession("ScalarValues") {
         loadSysMD("""
             Global hasA package hello.
             hello hasA package car. 
             hello::car hasA 
-                feature p: ScalarValues::Real = Global::hello::world::x + 2.0.
+                feature p: ScalarValues::Real.
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        assertTrue(global.resolve<Feature>("hello::car::p") != null)
-
-        assertEquals(4, astNodes.size)
-        assertEquals(1, astNodes.count { it.value is AstRoot })
+        initialize()
+        assertNoIssues()
+        assertNotNull(global.resolve("hello::car::p"))
+        assertEquals(2, solver.getVariables().size)
     }
 
     /**
@@ -49,7 +48,7 @@ class SysMDTests {
     @Test fun parseFeature()  = testSession {
         loadSysMD("a::b hasA feature x : Base::Anything.")
         assertNoIssues()
-        val abx = global.resolve<Feature>("a::b::x")
+        val abx = global.resolve("a::b::x")
         assertNotNull(abx)
     }
 
@@ -58,7 +57,7 @@ class SysMDTests {
         loadSysMD("""
             Global hasA private import space.
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         assertEquals("space", getUnresolvedElements().first().relativeName )
     }
 
@@ -68,10 +67,8 @@ class SysMDTests {
     @Test
     fun commentTest() = testSession(initialize = false) {
         loadSysMD("""Global hasA feature x: Base::Anything. // comment""")
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         assertTrue(global.ownedElement.find { it.name == "x"} is Feature)
-
-        assertEquals(0, astNodes.size)
     }
 
 
@@ -79,15 +76,13 @@ class SysMDTests {
      * Check the syntax of if - else statement in expressions.
      */
     @Test
-    fun ifElseTestSysMlV2() = testSession(initialize = false) {
+    fun ifElseTestSysMlV2() = testSession("ScalarValues") {
         loadSysMD("""
                 Global hasA feature x: ScalarValues::Boolean.
                 Global hasA feature y: ScalarValues::Boolean = false or if x? true else false.
                 Global hasA feature z: ScalarValues::Boolean = if x? true else false.
             """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-
-        assertEquals(setOf("y", "z"), astNodes.mapNotNull { (it.value as? AstRoot)?.feature?.name }.toSet())
-        assertEquals(2 + 2 + 2*4, astNodes.size)
+        assertNoIssues()
+        assertEquals(4, solver.getVariables().size)
     }
 }

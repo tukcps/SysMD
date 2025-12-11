@@ -2,10 +2,7 @@ package ui
 
 import com.github.tukcps.sysmd.compiler.KerML
 import com.github.tukcps.sysmd.compiler.SysMLv2
-import com.github.tukcps.sysmd.model.kerml.Package
-import com.github.tukcps.sysmd.model.sysml.AttributeUsage
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.resolve.resolve
 import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -22,7 +19,7 @@ class TagInputTests {
         val input1 = "package p;"
         KerML(this).parse(input1)
         initialize(1)
-        val p = global.resolve<Package>("p")
+        val p = global.resolve("p")?.memberElement
         assertNotNull(p)
         assertEquals(input1, p.input)
 
@@ -38,7 +35,7 @@ class TagInputTests {
         val input1 = "attribute p;"
         SysMLv2(this).parse(input1)
         initialize(1)
-        val p = global.resolve<AttributeUsage>("p")
+        val p = global.resolve("p")?.memberElement
         assertNotNull(p)
         assertEquals(input1, p.input)
 

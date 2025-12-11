@@ -1,15 +1,14 @@
 package constraintnettests
 
-import io.github.tukcps.aadd.values.Range
-import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.resolve.resolve
+import com.github.tukcps.sysmd.services.resolve.resolveVar
+import io.github.tukcps.aadd.values.Range
 import util.mockup.loadKerML
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Disabled
-import org.junit.jupiter.api.Test
 import util.testSession
+import kotlin.test.Ignore
+import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class UpdateNotificationsTests {
@@ -18,7 +17,8 @@ class UpdateNotificationsTests {
      * The map 'status.updates' holds key/value pairs of all changes.
      * It must be reset explicitly.
      */
-    @Test @Disabled //TODO: Fix updated variables
+    @Test
+    @Ignore //TODO: Fix updated variables
     fun updateNotificationTest() = testSession("ScalarValues", "Ranges") {
         loadKerML(""" 
                 feature p1: Ranges::RealInRange {:>> range = "1.0 ..6.0";}
@@ -32,15 +32,15 @@ class UpdateNotificationsTests {
                 status.updatedValues[it.elementId!!] = it.variable?.vectorQuantity.toString()
         }
         status.updatedValues.clear()
-        propagate() // No additional updates.
+        solver.propagate() // No additional updates.
         assertEquals(1, status.updatedValues.size) // No additional updates, all stable
-        propagate()
+        solver.propagate()
         status.updatedValues.clear()
         get().forEach { it.updated = false }
         // Change a variable
         loadKerML("feature p1: ScalarValues::Real(2.0 ..3.0);")
         assertEquals(1, status.updatedValues.size)
-        propagate()
+        solver.propagate()
         assertEquals(2, status.updatedValues.size)
     }
 
@@ -52,12 +52,12 @@ class UpdateNotificationsTests {
             feature y: Ranges::RealInRange = x + p {:>> range = "2.0";}
         """)
 
-        assertEquals(true, global.resolve<Feature>("x")!!.variable!!.updated)
-        assertEquals(true, global.resolve<Feature>("p")!!.variable!!.updated)
-        assertEquals(true, global.resolve<Feature>("y")!!.variable!!.updated)
+        assertEquals(true, global.resolveVar("x")?.updated)
+        assertEquals(true, global.resolveVar("p")?.updated)
+        assertEquals(true, global.resolveVar("y")?.updated)
 
-        propagate()
-        assertEquals(true, global.resolve<Feature>("x")!!.variable!!.updated)
-        assertTrue(global.resolve<Feature>("x")!!.variable!!.vectorQuantity.values.first().asAadd().getRange() in Range(-4.87..-4.85))
+        solver.propagate()
+        assertEquals(true, global.resolveVar("x")?.updated)
+        assertTrue(global.resolveVar("x")!!.vectorQuantity.values.first().asAadd().getRange() in Range(-4.87..-4.85))
     }
 }

@@ -76,7 +76,7 @@ fun CellList(
                 items(editorTabModel.cells.size) { index ->
                     Column(modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
                         TooltipInstant(
-                            tooltipText = "Click empty space between two cells to insert a new cell between them",
+                            tooltipText = "Double-click empty space between two cells to insert a new cell between them",
                             { editorTabModel.onAddRequest(index) }) {
                             Row(// whole row; double click adds a new element.
                                 modifier = Modifier

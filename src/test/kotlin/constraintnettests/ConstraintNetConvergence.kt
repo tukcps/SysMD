@@ -1,14 +1,12 @@
 package constraintnettests
 
-import util.testSession
-import com.github.tukcps.sysmd.cspsolver.propagate
-import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolveVar
-import util.mockup.loadKerML
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTimeoutPreemptively
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
+import util.mockup.loadKerML
+import util.testSession
 import java.time.Duration
 import java.util.concurrent.TimeUnit
 import kotlin.math.PI
@@ -29,8 +27,7 @@ class ConstraintNetConvergence {
                     feature density: ScalarValues::Real = 1.0; 
                  """)
             assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
-            initialize()
-            propagate()
+            solver.propagate()
             assertEquals(4.0/3.0*PI*1E9,
                 global.resolveVar("volume")!!.vectorQuantity.getMinAsDouble(), 10000.0)
             assertEquals(4.0/3.0*PI*1E9,
@@ -49,7 +46,7 @@ class ConstraintNetConvergence {
                 feature volume:  ScalarValues::Real = 4.0/3.0*3.141 * r * r; 
                 feature density: ScalarValues::Real = 10.0;              
             """)
-            propagate()
+            solver.propagate()
         }
     }
 
@@ -67,7 +64,7 @@ class ConstraintNetConvergence {
                     feature volume:  ScalarValues::Real = 4.0/3.0*3.141*r*r*r; 
                     feature density: ScalarValues::Real = 1.0; 
                     """)
-            propagate()
+            solver.propagate()
             assertEquals(0, status.issues.size, status.issues.toString())
             assertEquals(41.88749E5, global.resolveVar("volume")!!.vectorQuantity.getMinAsDouble(), 0.01E5)
         }

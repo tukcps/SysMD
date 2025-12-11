@@ -3,9 +3,8 @@ package compiler.kerml
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Metaclass
 import com.github.tukcps.sysmd.model.kerml.MetadataFeature
-import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.model.kerml.getOwnedElementsOfType
 import com.github.tukcps.sysmd.model.kerml.implementation.getOwned
-import com.github.tukcps.sysmd.services.resolve.resolve
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
@@ -24,9 +23,9 @@ class MetafeatureTest {
             metadata d : m ; 
         """)
         assertNoIssues()
-        val m = global.resolve<Metaclass>("m")
+        val m = global.resolve("m")?.member<Metaclass>()
         assertNotNull(m)
-        val d = global.resolve<MetadataFeature>("d")
+        val d = global.resolve("d")?.member<MetadataFeature>()
         assertNotNull(d)
     }
 
@@ -41,9 +40,9 @@ class MetafeatureTest {
             }
         """)
         assertNoIssues()
-        val m = global.resolve<Metaclass>("m")
+        val m = global.resolve("m")?.member<Metaclass>()
         assertNotNull(m)
-        val d = global.resolve<MetadataFeature>("d")
+        val d = global.resolve("d")?.member<MetadataFeature>()
         assertNotNull(d)
         val dx = d.getOwned<Feature>("x")
         assertNotNull(dx)
@@ -64,7 +63,7 @@ class MetafeatureTest {
             }
         """)
         assertNoIssues()
-        val m = global.resolve<Metaclass>("m")
+        val m = global.resolve("m")?.member<Metaclass>()
         assertNotNull(m)
         val d = global.getOwnedElementsOfType<MetadataFeature>().first()
         assertNotNull(d)
@@ -85,7 +84,7 @@ class MetafeatureTest {
             @m { x = "test"; }
         """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val m = global.resolve<Metaclass>("m")
+        val m = global.resolve("m")?.member<Metaclass>()
         assertNotNull(m)
         val d = global.getOwnedElementsOfType<MetadataFeature>().first()
         assertNotNull(d)

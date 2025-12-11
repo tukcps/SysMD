@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.sp
 object MDTypography {
 
     /** H1 Heading */
-    object h1 {
+    object H1 {
         val style = TextStyle(
             fontFamily = FontFamily.SansSerif,
             fontSize = 24.sp,
@@ -26,7 +26,7 @@ object MDTypography {
         val spaceBelow = 8.dp
     }
 
-    object h2 {
+    object H2 {
         val style = TextStyle(
             fontFamily = FontFamily.SansSerif,
             fontSize = 18.sp,
@@ -37,7 +37,7 @@ object MDTypography {
         val spaceBelow = 8.dp
     }
 
-    object h3 {
+    object H3 {
         val style = TextStyle(
             fontFamily = FontFamily.SansSerif,
             fontSize = 16.sp,
@@ -48,7 +48,7 @@ object MDTypography {
         val spaceBelow = 6.dp
     }
 
-    object h4 {
+    object H4 {
         val style = TextStyle(
             fontFamily = FontFamily.SansSerif,
             fontSize = 15.sp,
@@ -60,7 +60,7 @@ object MDTypography {
     }
 
     /** Regular text */
-    object bodyMedium {
+    object BodyMedium {
         val style =
             TextStyle(
                 fontFamily = FontFamily.SansSerif,

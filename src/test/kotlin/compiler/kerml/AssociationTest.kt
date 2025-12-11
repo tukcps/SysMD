@@ -1,9 +1,7 @@
 package compiler.kerml
 
 import com.github.tukcps.sysmd.model.kerml.Association
-import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.services.resolve.resolve
 import io.github.tukcps.aadd.values.IntegerRange
 import util.assertNoIssues
 import util.mockup.loadKerML
@@ -32,16 +30,16 @@ class AssociationTest {
             }
         """)
         assertNoIssues()
-        val rel = global.resolve<Association>("rel")
-        val a = global.resolve<Feature>("rel::a")
-        val b = global.resolve<Feature>("rel::b")
+        val rel = global.resolve("rel")?.member<Association>()
+        val a = global.resolve("rel::a")?.member<Feature>()
+        val b = global.resolve("rel::b")?.member<Feature>()
         assertNotNull(rel)
         assertNotNull(a)
         assertNotNull(b)
         assertTrue(a.isEnd)
         assertTrue(b.isEnd)
-        assertTrue(a.referencedFeature == null)
-        assertTrue(b.referencedFeature == null)
+        assertNull(a.referencedFeature)
+        assertNull(b.referencedFeature)
         assertEquals(IntegerRange(1, 2), a.multiplicityRange)
         assertEquals(IntegerRange(3, 4), b.multiplicityRange)
         assertEquals(a,rel.sourceType)
@@ -58,7 +56,7 @@ class AssociationTest {
                 end feature a: A redefines target [1..5];
             }
         """)
-        val rel = global.resolve<Association>("rel")
+        val rel = global.resolve("rel")?.member<Association>()
         assertNotNull(rel)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
@@ -68,7 +66,7 @@ class AssociationTest {
      */
     @Test
     fun associationTest3() = testSession("Links") {
-        val link = global.resolve<Association>("Links::BinaryLink")
+        val link = global.resolve("Links::BinaryLink")?.member<Association>()
         assertNotNull(link)
         assertEquals(1, link.source.size)
         assertEquals(1, link.target.size)
@@ -76,7 +74,7 @@ class AssociationTest {
         loadKerML("""
             assoc a; 
         """)
-        val a = global.resolve<Association>("a")
+        val a = global.resolve("a")?.member<Association>()
         assertNotNull(a)
         assertNotNull(a.sourceType)
         assertNotNull(a.targetType)
@@ -92,13 +90,13 @@ class AssociationTest {
             assoc rel :> Links::Link; 
         """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val rel = global.resolve<Association>("rel")
-        val link = global.resolve<Element>("Links::Link")
+        val rel = global.resolve("rel")?.member<Association>()
+        val link = global.resolve("Links::Link")?.memberElement
         assertNotNull(rel)
         assertNotNull(link)
-        val source = global.resolve<Feature>("rel::source")
+        val source = global.resolve("rel::source")?.member<Feature>()
         assertNotNull(source)
-        val target = global.resolve<Feature>("rel::target")
+        val target = global.resolve("rel::target")?.member<Feature>()
         assertNotNull(target)
         assertTrue(link in rel.generalization)
     }
@@ -128,7 +126,7 @@ class AssociationTest {
             }
         """)
         assertNoIssues()
-        val linkRedef = global.resolve<Association>("LinkRedef")
+        val linkRedef = global.resolve("LinkRedef")?.member<Association>()
         assertNotNull(linkRedef)
     }
 }

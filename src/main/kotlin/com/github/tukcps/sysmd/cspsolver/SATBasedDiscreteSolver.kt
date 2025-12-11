@@ -2,7 +2,9 @@ package com.github.tukcps.sysmd.cspsolver
 
 import com.github.tukcps.sysmd.services.session.Session
 
-class SATBasedDiscreteSolver(val model: Session) : DiscreteSolverIF {
+class SATBasedDiscreteSolver(
+    val solver: Solver
+) : DiscreteSolverIF {
 
     override fun isInitialized(): Boolean {
         TODO("Not yet implemented")

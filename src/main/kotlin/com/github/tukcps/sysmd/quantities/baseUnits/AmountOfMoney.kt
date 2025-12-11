@@ -11,6 +11,8 @@ open class AmountOfMoney(name: String, symbol: String, prefix: Prefix, convFac: 
      * generate UnitObjects and add them to the UnitList
      */
     object Euro : AmountOfMoney("euro", "€", NoPrefix)
+    object Dollar : AmountOfMoney("USD", "$", NoPrefix)
+    object Pound : AmountOfMoney("pound", "£", NoPrefix)
 
     override fun copy(exponentValue: Int): AmountOfMoney {
         return AmountOfMoney(name, symbol, prefix, convFac, exponentValue)

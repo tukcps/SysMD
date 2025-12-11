@@ -5,7 +5,6 @@ package com.github.tukcps.sysmd.model.kerml
  * The multiplicity is a Feature that is an integer range or set.
  */
 interface Multiplicity: Feature {
-    override fun resolveNames(): Boolean
 
     /**
      * initializes the fields quantity, up- and downQuantity, and valueSpec.

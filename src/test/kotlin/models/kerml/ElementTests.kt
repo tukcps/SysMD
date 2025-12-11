@@ -1,12 +1,11 @@
 package models.kerml
 
 import com.fasterxml.uuid.Generators
-import com.github.tukcps.sysmd.model.kerml.Element
+import com.github.tukcps.sysmd.model.kerml.Association
 import com.github.tukcps.sysmd.model.kerml.implementation.AssociationImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.ElementImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.NamespaceImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.SpecializationImplementation
-import com.github.tukcps.sysmd.services.resolve.resolve
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
@@ -49,8 +48,8 @@ class ElementTests {
                 assoc a; 
             }
         """)
-        val a = global.resolve<Element>("p::a")
-        val qn = a?.qualifiedName
+        val a = global.resolve("p::a")?.memberElement  as Association
+        assertEquals("p::a", a.qualifiedName)
     }
 
     @Test

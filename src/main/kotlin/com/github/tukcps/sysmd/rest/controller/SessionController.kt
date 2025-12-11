@@ -2,7 +2,6 @@ package com.github.tukcps.sysmd.rest.controller
 
 import com.github.tukcps.sysmd.configuration.OpenAPIConfig
 import com.github.tukcps.sysmd.cspsolver.Variable
-import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.kerml.implementation.TextualRepresentationImplementation
 import com.github.tukcps.sysmd.rest.entities.requests.CodeRequest
@@ -106,12 +105,7 @@ class SessionController {
      * - `GET /session/index`
      * - Gets a list of all files in a session's project
      */
-    @CrossOrigin(origins = [
-        "http://localhost:3000",
-        "http://localhost:4200",
-        "http://cps-testing.cs.rptu.de",
-        "https://cps-testing.cs.rptu.de"
-    ])
+
     @ResponseStatus(HttpStatus.OK)
     @Operation(
         summary = "Gets all model files in the index of a project.",
@@ -140,12 +134,6 @@ class SessionController {
      * @param request A CodeRequest entity that consists of the code and the level
      * to which the compiler will analyze, from 0 (nothing) to 7 (constraint propagation).
      */
-    @CrossOrigin(origins = [
-        "http://localhost:3000",
-        "http://localhost:4200",
-        "http://cps-testing.cs.rptu.de",
-        "https://cps-testing.cs.rptu.de"
-    ])
     @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "Compiles the code and adds generated elements to the model in the session.")
     @PutMapping(path = ["/session/code"], produces = [MediaType.APPLICATION_JSON_VALUE])
@@ -159,7 +147,7 @@ class SessionController {
             .compile()
 
         session!!.initialize(request.level)
-        if (request.level > 6) { session.propagate() }
+        if (request.level > 6) { session.solver.propagate() }
 
         return ResponseEntity(SessionStatusResponse(session.status), HttpStatus.OK)
     }
@@ -170,12 +158,6 @@ class SessionController {
      * - `PUT /session/index`
      * - Puts all model files into the project-directory of the session and updates the index of a project.
      */
-    @CrossOrigin(origins = [
-        "http://localhost:3000",
-        "http://localhost:4200",
-        "http://cps-testing.cs.rptu.de",
-        "https://cps-testing.cs.rptu.de"
-    ])
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Puts all model files into a project. Old index and files are overwritten.")
     @PutMapping(path = ["/session/index"], produces = [MediaType.APPLICATION_JSON_VALUE])
@@ -203,12 +185,6 @@ class SessionController {
      *
      * `GET /session/files`
      */
-    @CrossOrigin(origins = [
-        "http://localhost:3000",
-        "http://localhost:4200",
-        "http://cps-testing.cs.rptu.de",
-        "https://cps-testing.cs.rptu.de"
-    ])
     @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "Gets all document file names.")
     @GetMapping(path = ["/session/files"], produces = [MediaType.APPLICATION_JSON_VALUE])
@@ -228,12 +204,6 @@ class SessionController {
      *
      * `GET /session/files`
      */
-    @CrossOrigin(origins = [
-        "http://localhost:3000",
-        "http://localhost:4200",
-        "http://cps-testing.cs.rptu.de",
-        "https://cps-testing.cs.rptu.de"
-    ])
     @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "Gets all document file names.")
     @GetMapping(path = ["/session/cells"], produces = [MediaType.APPLICATION_JSON_VALUE])
@@ -259,12 +229,6 @@ class SessionController {
      * **Get a file by name**
      * - `GET /session/files/NAME`
      */
-    @CrossOrigin(origins = [
-        "http://localhost:3000",
-        "http://localhost:4200",
-        "http://cps-testing.cs.rptu.de",
-        "https://cps-testing.cs.rptu.de"
-    ])
     @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "Gets a document file, typically a picture in .png format, by its name.")
     @GetMapping(path = ["/session/files/{name}"], produces = [MediaType.APPLICATION_JSON_VALUE])
@@ -293,12 +257,6 @@ class SessionController {
      * Post a file
      * `POST /session/files`
      */
-    @CrossOrigin(origins = [
-        "http://localhost:3000",
-        "http://localhost:4200",
-        "http://cps-testing.cs.rptu.de",
-        "https://cps-testing.cs.rptu.de"
-    ])
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Uploads a document file, typically a picture in .png format, to the project.")
     @PostMapping(path = ["/session/files"], consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
@@ -334,12 +292,6 @@ class SessionController {
      * **Get all elements in the session**
      * - `GET /session/elements`
      */
-    @CrossOrigin(origins = [
-        "http://localhost:3000",
-        "http://localhost:4200",
-        "http://cps-testing.cs.rptu.de",
-        "https://cps-testing.cs.rptu.de"
-    ])
     @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "Gets all elements of a session.")
     @GetMapping(path = ["/session/elements"], produces = [MediaType.APPLICATION_JSON_VALUE])
@@ -364,12 +316,6 @@ class SessionController {
      * **Get all elements in the session**
      * - `GET /session/elements`
      */
-    @CrossOrigin(origins = [
-        "http://localhost:3000",
-        "http://localhost:4200",
-        "http://cps-testing.cs.rptu.de",
-        "https://cps-testing.cs.rptu.de"
-    ])
     @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "Gets all variables of a solver run.")
     @GetMapping(path = ["/session/variables"], produces = [MediaType.APPLICATION_JSON_VALUE])
@@ -380,7 +326,7 @@ class SessionController {
             val session = SessionManager.getSession(sessionId)
 
             if (session != null) {
-                ResponseEntity.ok().body(VariablesResponse(session.getVariables()))
+                ResponseEntity.ok().body(VariablesResponse(session.solver.getVariables()))
             } else {
                 ResponseEntity.status(HttpStatus.NOT_FOUND).body(VariablesResponse(emptyList<Variable>()))
             }
@@ -394,12 +340,6 @@ class SessionController {
      * **Get all elements in the session**
      * - `GET /session/elements/$id/subtypes`
      */
-    @CrossOrigin(origins = [
-        "http://localhost:3000",
-        "http://localhost:4200",
-        "http://cps-testing.cs.rptu.de",
-        "https://cps-testing.cs.rptu.de"
-    ])
     @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "Gets all variables of a solver run.")
     @GetMapping(path = ["/session/elements/{elementId}/subtypes"], produces = [MediaType.APPLICATION_JSON_VALUE])

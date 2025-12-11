@@ -12,6 +12,7 @@ import com.github.tukcps.sysmd.quantities.baseUnits.*
  * @param convFac Conversion to BaseUnit (Base Value = confFac * Value of current BaseUnit)
  * @param exponent Exponent of the BaseUnit
  * @param isDifference This value is true, if the current BaseUnit represents a difference between two Units of the same type
+ * @param alternativeDomain This value is used for alternative domains
  */
 open class BaseUnit(
     name: String,
@@ -20,14 +21,17 @@ open class BaseUnit(
     domain: String,
     convFac: Double = 1.0,
     exponent: Int = 1,
-    isDifference: Boolean = false
+    isDifference: Boolean = false,
+    alternativeDomain: String = ""
 ) :
-    UnitOfMeasurement(name, symbol, prefix, domain, convFac, exponent, isDifference = isDifference), Cloneable {
+    UnitOfMeasurement(name, symbol, prefix, domain, convFac, exponent, isDifference, alternativeDomain = alternativeDomain), Cloneable {
 
     override fun clone(): BaseUnit = copy()
 
     open fun copy(exponentValue: Int = exponent): BaseUnit {
-        return BaseUnit(name, symbol, prefix, domain, convFac, exponentValue, isDifference = isDifference)
+        return BaseUnit(name, symbol, prefix, domain, convFac, exponentValue, isDifference = isDifference,
+            this@BaseUnit.alternativeDomain
+        )
     }
 
     /**
@@ -38,12 +42,12 @@ open class BaseUnit(
         return when (this) {
             is AmountOfSubstance -> setOf(AmountOfSubstance.Mole.copy())
             is ElectricCurrent -> setOf(ElectricCurrent.Ampere.copy())
-            is InformationCapacity -> setOf(InformationCapacity.Bit.copy())
+            is StorageCapacity -> setOf(StorageCapacity.Bit.copy())
             is Length -> setOf(Length.Meter.copy())
             is LuminousIntensity -> setOf(LuminousIntensity.Candela.copy())
             is Mass -> setOf(Mass.Kilogram.copy())
-            is Temperature -> setOf(Temperature.Kelvin.copy())
-            is Time -> setOf(Time.Second.copy())
+            is ThermodynamicTemperature -> setOf(ThermodynamicTemperature.Kelvin.copy())
+            is Duration -> setOf(Duration.Second.copy())
             is EmptyUnit -> setOf(EmptyUnit.Empty.copy())
             is AmountOfMoney -> setOf(AmountOfMoney.Euro.copy())
             else -> throw UnknownUnitError("$this should be a base unit, but it is not defined")

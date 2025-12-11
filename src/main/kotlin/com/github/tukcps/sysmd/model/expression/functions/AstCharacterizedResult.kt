@@ -14,6 +14,13 @@ import com.github.tukcps.sysmd.quantities.Unit
 import com.github.tukcps.sysmd.services.session.Session
 import java.io.File
 
+
+/**
+ * A specific function to read a value from simulation that is in a Json file.
+ * @param model The current session
+ * @param namespace The current namespace form which name resolution must start
+ * @param parameters The parameters that must include the path the Json file
+ */
 internal class AstCharacterizedResult (
     model: Session,
     private val namespace: Namespace,

@@ -1,13 +1,10 @@
 package kermltests
 
-import com.github.tukcps.sysmd.cspsolver.propagate
-import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Type
-import com.github.tukcps.sysmd.services.resolve.resolve
+import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
-import kotlin.test.assertTrue
 
 class SubsettingTests {
     @Test
@@ -18,10 +15,10 @@ class SubsettingTests {
             feature Type; 
   			derived feature f : Type[0..1] subsets a, b;
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val f = global.resolve<Feature>("f")
-        propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
+        val f = global.resolve("f")?.memberElement
+        solver.propagate()
+        assertNoIssues()
     }
 
     @Test
@@ -35,10 +32,10 @@ class SubsettingTests {
             }
             type t2 :> t; 
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val t2 = global.resolve<Type>("t2")
-        propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
+        val t2 = global.resolve("t2")?.member<Type>()
+        solver.propagate()
+        assertNoIssues()
     }
 
 }

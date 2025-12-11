@@ -1,15 +1,14 @@
 package kermltests
 
 import com.github.tukcps.sysmd.compiler.KerML
-import io.github.tukcps.aadd.values.IntegerRange
-import com.github.tukcps.sysmd.compiler.semantics.Identification
 import com.github.tukcps.sysmd.compiler.semantics.ActionsContext
+import com.github.tukcps.sysmd.compiler.semantics.Identification
 import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
 import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.resolve.resolve
+import io.github.tukcps.aadd.values.IntegerRange
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
@@ -42,7 +41,7 @@ class MultiplicitiesTests {
         loadKerML("""
             feature f [1 .. 2];
         """)
-        val f = global.resolve<Feature>("f")!!
+        val f = global.resolve("f")!!.memberElement as Feature
         val multiplicity = f.multiplicity()
         initialize()
         assertTrue(multiplicity!!.variable is Variable, "After initialization a variable must be created for multiplicity")

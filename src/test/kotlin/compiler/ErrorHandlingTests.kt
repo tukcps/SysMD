@@ -1,13 +1,13 @@
 package compiler
 
 import com.github.tukcps.sysmd.cspsolver.VariableImplementation
-import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
+import com.github.tukcps.sysmd.model.kerml.implementation.MembershipImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.SpecializationImplementation
+import util.assertIssue
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
-import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -17,15 +17,14 @@ class ErrorHandlingTests {
      * Errors are generated and appear in 'status.errors'
      */
     @Test
-    fun errorMessageDependencyStringTest() = testSession {
+    fun errorMessageDependencyStringTest() = testSession("ScalarValues")  {
         var p = FeatureImplementation(declaredName = "XXX")
         p.expression = "asdf+asdf" // nonsense
         p = addOwnedMember(p, global)
         addOwnedRelationship(SpecializationImplementation(p, anything), p)
-        p.variable = VariableImplementation(p)
-        p.resolveNames()
-        p.variable?.compileExpression()
-        assertNotEquals(0, status.issues.size)
+        solver.addVariable(p.path(), VariableImplementation(MembershipImplementation(memberElement = p), this.builder))
+        solver.getVariable("XXX")!!.compileExpression()
+        assertIssue("Expected subtype")
     }
 
     /**
@@ -38,15 +37,15 @@ class ErrorHandlingTests {
             package p;
             p defines isA.
         """)
-        assertTrue(status.issues.isNotEmpty())
+        assertIssue("Expected")
     }
 
 
     @Test
     fun missingSuperClassError() = testSession {
-        loadKerML("Engine :>.")
-        propagate()
-        assertTrue(status.issues.isNotEmpty())
+        loadKerML("Engine :> ; ")
+        solver.propagate()
+        assertIssue("Expected")
     }
 
     @Test
@@ -55,9 +54,9 @@ class ErrorHandlingTests {
             package SportsCar;
             type Porsche911 :> SportsCar;
         """)
-        propagate()
-        propagate()
-        assertTrue(status.issues.size > 0, "Expected issue with SportsCar that is inappropriate type")
+        solver.propagate()
+        solver.propagate()
+        assertIssue("SportsCar", "Expected issue with SportsCar that is inappropriate type")
     }
 
 
@@ -71,7 +70,7 @@ class ErrorHandlingTests {
             type Bicycle specializes Vehicle;
             type
         """)
-        propagate()
+        solver.propagate()
         assertTrue(status.issues.isNotEmpty(), "Error messages: ${status.issues}")
         assertNotNull(status.issues.first().input)
     }

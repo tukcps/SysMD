@@ -8,7 +8,6 @@ import com.github.tukcps.sysmd.compiler.parser.kerml.MemberPrefix
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
 import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.CalculationDefinitionActions
-import com.github.tukcps.sysmd.model.expression.AstRoot
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
@@ -67,7 +66,7 @@ fun SysMLv2.CalculationBody() {
     alternatives {
         SEMICOLON then { }
         LCURBRACE then {
-            noOrMore(end = { !CalculationbodyItemStarts() } ) {
+            noOrMore({ CalculationbodyItemStarts() } ) {
                 CalculationBodyItem()
             }
             optional ({token.kind != RCURBRACE}) {
@@ -85,18 +84,16 @@ fun SysMLv2.CalculationBody() {
  */
 fun SysMLv2.CalculationBodyItem() {
     MemberPrefix()
-    alternatives {
-        RETURN starts {
+    when {
+        tokenIs(RETURN) -> {
             RETURN.consume().also { semantics.prefixes.add(OUT) }
             UsageElement()
         }
-        others {
-            if (actionBodyItemStarts()) {
-                ActionBodyItem() }
-        }
+        actionBodyItemStarts() -> ActionBodyItem()
+        else -> handleSyntaxError("Expected Calculation body item, but read '$token'")
     }
 }
-fun SysMLv2.CalculationbodyItemStarts(): Boolean = usageElementStarts() or (token.kind == RETURN)
+fun SysMLv2.CalculationbodyItemStarts(): Boolean = actionBodyItemStarts() || (token.kind == RETURN)
 
 /**
  *      ResultExpressionMember = MemberPrefix?  OwnedExpression
@@ -106,7 +103,6 @@ fun SysMLv2.ResultExpressionMember() {
     val iBeforeExpression = token.indices.first
     Expression().also {
         if (owner is Feature) {
-            owner.featureWithValue = AstRoot(model, owner, it)
             owner.indices = iBeforeExpression..consumedToken.indices.last
             owner.expression = input.subSequence(owner.indices!!).toString().trim()
         }

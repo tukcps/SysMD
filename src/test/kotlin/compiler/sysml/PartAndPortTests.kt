@@ -1,12 +1,11 @@
-package sysmlv2tests
+package compiler.sysml
 
-import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.kerml.Feature
+import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.sysml.PartDefinition
 import com.github.tukcps.sysmd.model.sysml.PartUsage
 import com.github.tukcps.sysmd.model.sysml.PortDefinition
 import com.github.tukcps.sysmd.model.sysml.PortUsage
-import com.github.tukcps.sysmd.services.resolve.resolve
 import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
@@ -26,10 +25,10 @@ class PartAndPortTests {
             port p; 
         """)
         assertNoIssues()
-        val p = global.resolve<PortUsage>("p")
+        val p = global.resolve("p")?.memberElement as PortUsage?
         assertNotNull(p)
         val type = p.type
-        assertTrue(global.resolve<Type>("Ports::Port") in type)
+        assertTrue(global.resolve("Ports::Port")?.memberElement as Type in type)
     }
 
     /**
@@ -41,10 +40,11 @@ class PartAndPortTests {
             out port p; 
         """)
         assertNoIssues()
-        val p = global.resolve<PortUsage>("p")
+        val p = global.resolve("p")?.memberElement
+        assertTrue(p is PortUsage)
         assertNotNull(p)
-        assertTrue(p.direction == Feature.FeatureDirectionKind.OUT)
-        assertTrue { global.resolve<Type>("Ports::Port") in p.type }
+        assertEquals(p.direction, Feature.FeatureDirectionKind.OUT)
+        assertTrue { global.resolve("Ports::Port")?.memberElement as Type in p.type }
     }
 
     /**
@@ -56,9 +56,10 @@ class PartAndPortTests {
             port def <short> p; 
         """)
         assertNoIssues()
-        val p = global.resolve<PortDefinition>("p")
+        val p = global.resolve("p")?.memberElement
+        assertTrue(p is PortDefinition)
         assertNotNull(p)
-        assertTrue(p.allSupertypes().first().qualifiedName == "Ports::Port")
+        assertEquals(p.allSupertypes().first().qualifiedName, "Ports::Port")
     }
 
     /**
@@ -76,12 +77,12 @@ class PartAndPortTests {
             }
             out port p3 : p2; 
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val p2 = global.resolve<PortDefinition>("p2")
+        assertNoIssues()
+        val p2 = global.resolve("p2")?.memberElement as PortDefinition
         assertNotNull(p2)
-        assertTrue(p2.allSupertypes().first().qualifiedName == "p1")
-        val p3 = global.resolve<PortUsage>("p3")
-        assertEquals(Feature.FeatureDirectionKind.OUT, p3!!.direction)
+        assertEquals(p2.allSupertypes().first().qualifiedName, "p1")
+        val p3 = global.resolve("p3")?.memberElement as PortUsage
+        assertEquals(Feature.FeatureDirectionKind.OUT, p3.direction)
     }
 
     /**
@@ -93,10 +94,10 @@ class PartAndPortTests {
             part p; 
         """)
         assertNoIssues()
-        val p = global.resolve<PartUsage>("p")
-        assertNotNull(p)
+        val p = global.resolve("p")?.memberElement
+        assertTrue(p is PartUsage)
         val type = p.type
-        assertTrue(type.first().qualifiedName == "Parts::Part")
+        assertEquals(type.first().qualifiedName, "Parts::Part")
     }
 
     /**
@@ -108,10 +109,10 @@ class PartAndPortTests {
             part def p1; 
             part def p2 :> p1; 
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val p2 = global.resolve<PartDefinition>("p2")
-        assertNotNull(p2)
-        assertTrue(p2.allSupertypes().first().qualifiedName == "p1")
+        assertNoIssues()
+        val p2 = global.resolve("p2")?.memberElement
+        assertTrue(p2 is PartDefinition)
+        assertEquals(p2.allSupertypes().first().qualifiedName, "p1")
     }
 
 }

@@ -2,10 +2,7 @@
 
 package com.github.tukcps.sysmd.model.kerml.implementation
 
-import com.github.tukcps.sysmd.model.kerml.Association
-import com.github.tukcps.sysmd.model.kerml.Element
-import com.github.tukcps.sysmd.model.kerml.Type
-import com.github.tukcps.sysmd.model.kerml.UnresolvedFeature
+import com.github.tukcps.sysmd.model.kerml.*
 
 
 /**
@@ -15,25 +12,24 @@ import com.github.tukcps.sysmd.model.kerml.UnresolvedFeature
 open class AssociationImplementation(
     declaredName: String? = null,
     declaredShortName: String? = null,
-    sourceType: MutableList<Element> = mutableListOf(),
-    targetType: MutableList<Element> = mutableListOf(),
     elementType: String = "Association"
-): Association, RelationshipImplementation(
+): Association, ClassifierImplementation(
     declaredName = declaredName,
     declaredShortName = declaredShortName,
-    owningRelatedElement = UnresolvedFeature(elementType),
-    source = sourceType,
-    target = targetType,
     elementType = elementType
 ) {
+    override var isImplied: Boolean = false
+    override var owningRelatedElement: Element = UnresolvedNamespace()
+    override var ownedRelatedElement: MutableList<Element> = ownedElement
+
     override var isAbstract: Boolean = false
     override var isSufficient: Boolean = false
     override var isConjugated: Boolean = false
+    final override var source: MutableList<Element> = mutableListOf()
+    final override var target: MutableList<Element> = mutableListOf()
 
     override val owner: Element?
         get() = owningRelationship?.owningRelatedElement
-
-    override fun resolveNames(): Boolean { return false }
 
     override fun toString(): String = super.toString() +
             if (isAbstract) ", abstract " else "" +
@@ -41,7 +37,7 @@ open class AssociationImplementation(
             if (isConjugated) ", conjugated" else ""
 
     override var sourceType: Type?
-        get() = source.firstOrNull() as Type
+        get() = source.firstOrNull() as Type?
         set(value) { source = if (value != null) mutableListOf(value) else mutableListOf() }
 
     override var targetType: MutableList<Type>
@@ -55,8 +51,6 @@ open class AssociationImplementation(
         return AssociationImplementation(
             declaredName = declaredName,
             declaredShortName = declaredShortName,
-            sourceType = source.toMutableList(),
-            targetType = target.toMutableList()
         ).also { klon -> klon.updateFrom(this) }
     }
 

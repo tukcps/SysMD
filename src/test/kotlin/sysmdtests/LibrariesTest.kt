@@ -1,20 +1,13 @@
 package sysmdtests
 
 import com.fasterxml.uuid.Generators
-import com.github.tukcps.sysmd.cspsolver.propagate
-import com.github.tukcps.sysmd.model.kerml.Association
-import com.github.tukcps.sysmd.model.kerml.Classifier
-import com.github.tukcps.sysmd.model.kerml.DataType
 import com.github.tukcps.sysmd.model.kerml.Metaclass
-import com.github.tukcps.sysmd.model.kerml.implementation.ClassImplementation
 import com.github.tukcps.sysmd.services.check.checkConsistency
 import com.github.tukcps.sysmd.services.check.checkLibraryElementIds
 import com.github.tukcps.sysmd.services.check.checkOwnership
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.session.LibraryRepository
 import com.github.tukcps.sysmd.services.session.LibraryRepository.loadLibraryFromResources
-import util.mockup.loadKerML
 import com.github.tukcps.sysmd.services.session.loadLibrary
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.parallel.Isolated
@@ -22,6 +15,7 @@ import org.junit.jupiter.api.parallel.ResourceAccessMode.READ_WRITE
 import org.junit.jupiter.api.parallel.ResourceLock
 import org.junit.jupiter.api.parallel.Resources.SYSTEM_PROPERTIES
 import util.assertNoIssues
+import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -60,8 +54,8 @@ class LibrariesTest {
         loadLibraryFromResources("Base", listOf("Base"))
         assertNotNull(LibraryRepository.get("Base"))
         loadLibrary("Base")
-        assertNotNull(global.resolve<Classifier>("Base::Anything"))
-        assertNotNull(global.resolve<Classifier>("Base::DataValue"))
+        assertNotNull(global.resolve("Base::Anything"))
+        assertNotNull(global.resolve("Base::DataValue"))
         checkLibraryElementIds()
         checkOwnership()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
@@ -72,11 +66,11 @@ class LibrariesTest {
         loadLibraryFromResources("ScalarValues", listOf("Base", "ScalarValues"))
         assertNotNull(LibraryRepository.get("ScalarValues"))
         loadLibrary("ScalarValues")
-        assertNotNull(global.resolve<DataType>("ScalarValues::Natural"))
-        assertNotNull(global.resolve<DataType>("ScalarValues::Real"))
-        assertNotNull(global.resolve<DataType>("ScalarValues::Integer"))
+        assertNotNull(global.resolve("ScalarValues::Natural"))
+        assertNotNull(global.resolve("ScalarValues::Real"))
+        assertNotNull(global.resolve("ScalarValues::Integer"))
         initialize()
-        propagate()
+        solver.propagate()
         checkLibraryElementIds()
         checkOwnership()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
@@ -84,11 +78,11 @@ class LibrariesTest {
 
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
     fun scalarLibraryTest2() = testSession("ScalarValues") {
-        assertNotNull(global.resolve<DataType>("ScalarValues::Natural"))
-        assertNotNull(global.resolve<DataType>("ScalarValues::Real"))
-        assertNotNull(global.resolve<DataType>("ScalarValues::Integer"))
+        assertNotNull(global.resolve("ScalarValues::Natural"))
+        assertNotNull(global.resolve("ScalarValues::Real"))
+        assertNotNull(global.resolve("ScalarValues::Integer"))
         initialize()
-        propagate()
+        solver.propagate()
         checkLibraryElementIds()
         checkOwnership()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
@@ -101,7 +95,7 @@ class LibrariesTest {
         loadLibrary("KerML")
         assertEquals(Generators.nameBasedGenerator().generate("Base::Anything"), anything.elementId )
         assertEquals(Generators.nameBasedGenerator().generate("Global"), global.elementId )
-        val dataType = global.resolve<Metaclass>("KerML::Kernel::DataType") // Key for ScalarValues etc.
+        val dataType = global.resolve("KerML::Kernel::DataType")?.member<Metaclass>() // Key for ScalarValues etc.
         assertTrue(dataType!!.isLibraryElement)
         assertNotNull(dataType)
         assertEquals(Generators.nameBasedGenerator().generate("KerML::Kernel::DataType"), dataType.elementId)
@@ -114,8 +108,8 @@ class LibrariesTest {
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
     fun linksTest() = testSession("Links") {
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        assertNotNull(global.resolve<Association>("Links::Link"))
-        assertNotNull(global.resolve<Association>("Links::BinaryLink"))
+        assertNotNull(global.resolve("Links::Link"))
+        assertNotNull(global.resolve("Links::BinaryLink"))
         initialize()
         checkLibraryElementIds()
         checkOwnership()
@@ -125,7 +119,7 @@ class LibrariesTest {
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
     fun occurrencesTest() = testSession("Occurrences") {
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        assertNotNull(global.resolve<ClassImplementation>("Occurrences::Occurrence"))
+        assertNotNull(global.resolve("Occurrences::Occurrence"))
         checkOwnership()
         checkLibraryElementIds()
         assertNoIssues()
@@ -224,7 +218,7 @@ class LibrariesTest {
                 }
             }
             """)
-        val links = global.resolve<Association>("ISO26262::implements")
+        val links = global.resolve("ISO26262::implements")
         assertNotNull(links)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
     }

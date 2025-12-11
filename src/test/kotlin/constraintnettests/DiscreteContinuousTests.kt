@@ -1,18 +1,17 @@
 package constraintnettests
 
-import util.testSession
-import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.resolve.resolveVar
-import util.mockup.loadKerML
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
+import util.mockup.loadKerML
+import util.testSession
 
 class DiscreteContinuousTests {
 
     @Test
-    fun discreteContinuousIssue1() = testSession("SI", "Ranges") {
+    fun discreteContinuousIssue1() = testSession("ISQ", "Ranges") {
         loadKerML(
             catchExceptions = false,
             input = """
@@ -21,15 +20,15 @@ class DiscreteContinuousTests {
                 inv z false { x and y }
                 package Dependencies { 
                     type component :> Base::Anything { 
-                        feature d: SI::Length(10..20) [mm];
-                        feature c: SI::Length(2.0 .. 3.0) [m]; 
-                        feature b: SI::Length(1.0 .. 2.0) [km]
-                        feature a: SI::Volume = b*c*d;
+                        feature d: ISQ::LengthValue {:>> unit = "mm"; :>> range = "10.0 .. 20.0";}
+                        feature c: ISQ::LengthValue { :>> unit = "m"; :>> range = "2.0 .. 3.0";}
+                        feature b: ISQ::LengthValue {:>> unit = "km"; :>> range = "1.0 .. 2.0";}
+                        feature a: ISQ::VolumeValue = b*c*d;
                     }
                 }
             """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        propagate()
+        solver.propagate()
 
         assertEquals(VectorQuantity(builder.real(1.0..2.0), "km"),
             global.resolveVar("Dependencies::component::b")!!.vectorQuantity)

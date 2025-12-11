@@ -1,19 +1,12 @@
 package compiler.kerml
 
 import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.model.kerml.implementation.TypeImplementation
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.resolve.resolve
 import util.assertIssue
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
-import kotlin.test.Ignore
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
+import kotlin.test.*
 
 
 class ClassTests {
@@ -28,14 +21,14 @@ class ClassTests {
             class a; 
         """)
         assertNoIssues()
-        val a = global.resolve<Class>("a")
-        val occ = global.resolve<Type>("Occurrences::Occurrence")
+        val a = global.resolve("a")?.member<Class>()
+        val occ = global.resolve("Occurrences::Occurrence")?.member<Type>()
         assertNotNull(a)
         assertNotNull(occ)
         val subclassifier = a.getOwnedElementOfType<Subclassification>()
         assertNotNull(subclassifier)
         assertEquals(occ, subclassifier.general)
-        assertEquals(global.resolve<Type>("Occurrences::Occurrence"), a.allSupertypes().first())
+        assertEquals(global.resolve("Occurrences::Occurrence")?.memberElement, a.allSupertypes().first())
     }
 
     /**
@@ -48,24 +41,24 @@ class ClassTests {
             class a; 
             class b :> a.
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val b = global.resolve<Class>("b")
+        assertNoIssues()
+        val b = global.resolve("b")?.member<Class>()
         assertEquals("a", b?.allSupertypes()?.first()?.declaredName)
     }
 
     /**
      * A class' specialization is an occurrence. Else, an error is reported.
      */
-    @Test fun isATestParser() = testSession {
+    @Test fun classTypedByOccurrence() = testSession {
         loadKerML("""
             namespace Occurrences { type Occurrence :> Base::Anything; }
             class a :> Base::Anything;
         """)
-        val a = global.resolve<Class>("a")
+        val a = global.resolve("a")?.member<Class>()
         assertNotNull(a)
         assertTrue(anything in a.allSupertypes(true))
         a.checkConstraints()
-        assertFalse(status.issues.isEmpty(), status.issues.toString())
+        assertIssue("Occurrence")
     }
 
 
@@ -75,16 +68,16 @@ class ClassTests {
             class x :> Base::Anything; 
             class y :> x; 
         """)
-        val y = global.resolve<Class>("y")
-        val x = global.resolve<Type>("x")
-        assertTrue(y?.allSupertypes()?.contains(x) == true )
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        val y = global.resolve("y")?.member<Class>()
+        val x = global.resolve("x")?.member<Class>()!!
+        assertEquals(y?.allSupertypes()?.contains(x), true)
+        assertNoIssues()
     }
 
     @Test fun testSuperclassCannotBeItself() = testSession {
         loadKerML("namespace Occurrences { type Occurrence :> Base::Anything; }")
         loadKerML("class A :> A;")
-        val a = global.resolve<Type>("A")
+        val a = global.resolve("A")?.member<Class>()
         assertNotNull(a)
         assertIssue("cannot be itself")
     }
@@ -107,21 +100,21 @@ class ClassTests {
         loadKerML("""
             type c :> Base::things; // Superclass must be Classifier, but not a Feature. 
         """)
-        val a = global.resolve<Type>("c")!!
-        assertNotNull(a.allSupertypes().firstOrNull())
+        val a = global.resolve("c")!!.member<Class>()
+        assertNotNull(a?.allSupertypes()?.firstOrNull())
         assertTrue(status.issues.isNotEmpty(), status.issues.toString())
     }
 
-    @Test fun testOrderOfIsAIsIrrelevant() = testSession {
+    @Test fun testOrderOfIsAIsIrrelevant() = testSession("Base") {
         loadKerML("""
             package Occurrences { classifier Occurrence; }
             class A :> B; 
             class B; 
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val a = global.resolve<TypeImplementation>("A")!!
-        val b = global.resolve<TypeImplementation>("B")!!
-        assertTrue(b in a.allSupertypes())
+        assertNoIssues()
+        val a = global.resolve("A")!!.member<Class>()
+        val b = global.resolve("B")!!.member<Class>()!!
+        assertTrue(b in a!!.allSupertypes())
         assertTrue(anything in b.allSupertypes(transitive = true))
     }
 
@@ -133,12 +126,12 @@ class ClassTests {
             class B { feature b; }
             class AB :> A, B; 
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val ab = global.resolve<Class>("AB")
+        assertNoIssues()
+        val ab = global.resolve("AB")?.member<Class>()
         assertNotNull(ab)
         assertEquals(2, ab.allSupertypes().size)
-        val aba = global.resolve<Feature>("AB::a")
-        val abb = global.resolve<Feature>("AB::b")
+        val aba = global.resolve("AB::a")?.member<Feature>()
+        val abb = global.resolve("AB::b")?.member<Feature>()
         assertNotNull(aba)
         assertNotNull(abb)
     }

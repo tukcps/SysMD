@@ -1,9 +1,8 @@
 package services
 
-import com.github.tukcps.sysmd.cspsolver.propagate
 import util.mockup.loadKerML
-import org.junit.jupiter.api.Test
 import util.testSession
+import kotlin.test.Test
 
 class SessionMgrTests {
     @Test
@@ -19,7 +18,7 @@ class SessionMgrTests {
             feature y: Real = x+0.1; 
             feature r: Requirement = x >= y; 
             """.trimIndent())
-        propagate()
+        solver.propagate()
         export()
         // Export does some checks
     }

@@ -31,7 +31,6 @@ By importing the namespace of the package ```ScalarValues``` we can access it
 by its simple name as follows:
 ```SysML::kickstart
   private import ScalarValues::*;            // Allows us shortcuts to Real, Integer, etc. 
-  private import SI::*;                      // Allows us shortcuts to use Units. 
   private import ISQ::*;                     // Allows us to use ISQ domains.  
   private import Ranges::*;                  // Allows us to specify constraints & co/contravariance 
   attribute r: Real = oneOf(2.0 .. 3.0);     // assigns r a value, constraine to the range 2 to 3.
@@ -143,7 +142,7 @@ We will change the name in future versions.
 Units are converted automatically before computations are done, and the consistency of units in equations is checked:
 the unit left of a dependency, and the unit right of it must be convertible into each other.
 ```SysML::kickstart::units
-attribute t: TimeValue         = 1.0 [s];
+attribute t: DurationValue     = 1.0 [s];
 attribute v: SpeedValue        = 3.0 [m/s];
 attribute g: AccelerationValue = 4.0 [m/s^2];
 attribute s: SpeedValue        = sqrt(sqr(v)+sqr(g)*sqr(t)); 
@@ -153,9 +152,9 @@ Play with the units, e.g., by changing the unit after the type declaration or tr
 For date and time, the ISO format is supported.
 We can add and subtract times in this format.
 ```SysML::kickstart::units_datetime
-attribute date: Time [DateTime] = DateTime("2021-10-10T03:00:00");
-attribute time: Time = 1.0 a {:>> unit="a";}
-attribute dateResult: Time [DateTime] = date + time;
+attribute date: TimeValue = DateTime("2021-10-10T03:00:00");
+attribute time: TimeValue = 1.0 a {:>> unit="a";}
+attribute dateResult: TimeValue = date + time;
 ```
 
 ### Vectors
@@ -165,17 +164,17 @@ operations like the angle or cross-product.
 Below is an example for defining vectors:
 
 ```SysML::kickstart::vecors
-attribute a: Mass = (0.5,1.5) kg { :>> range = "0.0..1.0, 1.0..2.0"; }
-attribute b: Mass = (0.5,1.5) kg; 
-attribute c: Mass = (-5.0, -1.0, 3.0) kg { :>> range="-5.0..-1.0, -1.0..2.0, 2.0..4.0"; }
+attribute a: CartesianPosition3dVector = (0.5, 1.5, 2.5) m;
+attribute b: CartesianPosition3dVector = (0.5, 1.5, 0.5) m; 
+attribute c: CartesianPosition3dVector = a + b { :>> range="-5.0..2.0, -1.0..4.0, 2.0..4.0"; }
 ```
 
 In the next example, there is a calculation with Vectors with the cross-product and angle.
 ```SysML::kickstart::vectorfunctions
-attribute a2: Real, InRange { :>> range="1..1,5..5, 10..10";}
-attribute b2: Real, InRange { :>> range="5..5,1..1, 10..10";}
-attribute c2: Real  = a2 cross b2;
-attribute d2: Quantity = angle(a2,b2) {:>>unit="°";} 
+attribute a2: CartesianForce3dVector { :>> range="1..1,5..5, 10..10";}
+attribute b2: CartesianPosition3dVector { :>> range="5..5,1..1, 10..10";}
+attribute c2: CartesianMomentOfForce3dVector  = a2 cross b2;
+attribute d2: DimensionOneValue = angle(a2,b2) {:>>unit="°";} 
 ```
 
 ## Types and Functions in Expressions
@@ -186,8 +185,8 @@ SysMD supports the following types:
 - ```ScalarValues::Boolean```
 - ```ScalarValues::String```
 
-For Quantities with units, Domains from the SI package must be used as a type (see doc/AvailableUnits.md). If no domain is
-known, ```SI::Quantity``` should be used
+For Quantities with units, Domains from the ISQ package must be used as a type (see doc/AvailableUnits.md). If no domain is
+known, ```Quantities::ScalarQuantityValue``` should be used
 
 In expressions, the following functions can be used:
 
@@ -199,7 +198,7 @@ In expressions, the following functions can be used:
 - ```powerb(base, x)``` – base to the power of x
 - ```sqr(x)``` - square of x
 - ```sqrt(x)``` - square root of x
-- ```linear(a, b, c, d, …)``` – linear interpolation through pairs of values specifying (x, y).
+- ```linearInterpolation(a, b, c, d, …)``` – linear interpolation through pairs of values specifying (x, y).
 - ```ITE(condition, if, else)``` – ITE function; if Condition then if-value, else then-value
 - ```sum_i(...)``` Iteration over i – Not for IRIS.
 - ```not(x)```
@@ -304,7 +303,7 @@ part def Vehicle {
 // A car is a vehicle with Body and Engine. 
 // the sumOverParts determines a consistent minimal range consistent with parts.
 part def Car  :> Vehicle {
-   attribute redefines mass: Mass = sumOverParts(mass) {:>> range ="0 .. 1000";}
+   attribute redefines mass: MassValue = sumOverParts(mass) {:>> range ="0 .. 1000";}
    part wheels: carParts::Wheel[4 .. 10]; 
    part body:   carParts::Body;
    part engine: carParts::Engine;
@@ -405,12 +404,12 @@ The below example demonstrates this behavior.
 ```SysML::kickstart
     package inheritanceExample {
         part def Coin {
-            attribute diameter: SI::Length = oneOf(5.0 ..200.0 [mm]);
-            attribute circumference: SI::Length [mm] = diameter*3.141; // 15.7 .. 628.2 mm 
+            attribute diameter: ISQ::LengthValue= oneOf(5.0 ..200.0 [mm]) { :>> unit = "mm"; }
+            attribute circumference: ISQ::LengthValue = diameter*3.141 { :>> unit = "mm"; } // 15.7 .. 628.2 mm 
         }
         
         part oneEuroCoin : Coin { 
-            attribute diameter: SI::Length [mm] = 23.25 mm; 
+            attribute diameter: ISQ::LengthValue = 23.25 [mm]; 
             // circumference is inherited. Must be re-evaluated with correct diameter.
             // Expected behavior:  re-evaluate dependency in new scope, but without changing diameter of Coin. 
         }

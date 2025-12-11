@@ -7,7 +7,7 @@ import io.github.tukcps.aadd.values.Range
 import io.github.tukcps.aadd.values.XBool
 import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.exceptions.SemanticError
-import com.github.tukcps.sysmd.quantities.baseUnits.Temperature
+import com.github.tukcps.sysmd.quantities.baseUnits.ThermodynamicTemperature
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneOffset.UTC
@@ -214,10 +214,11 @@ open class VectorQuantity : Cloneable {
         val resultUnit = if (unit.toString() == "?" || quantity.unit.toString() == "?") {
             Unit("?")
         } else {
-            Unit().apply {
-                unit.unitSet.forEach { addUnitOfMeasurement(it) }
-                quantity.unit.unitSet.forEach { addUnitOfMeasurement(it) }
-            }
+            // Create a new unit by multiplying the units of both vectors
+            val newUnit = Unit()
+            unit.unitSet.forEach { newUnit.addUnitOfMeasurement(it.clone()) }
+            quantity.unit.unitSet.forEach {  newUnit.addUnitOfMeasurement(it.clone())}
+            newUnit
         }
         //Cross-product calculation
         val resultingValues = listOf(
@@ -554,7 +555,7 @@ open class VectorQuantity : Cloneable {
      */
     open fun ln(): VectorQuantity {
         //Test if unit is 1, otherwise it is not possible
-        if (unit.toString() != "1" && unit.toString() != "?") {
+        if (unit.toString() !in setOf("1", "?", "dB", "%")) {
             throw SemanticError("Log with units is not allowed")
         }
         val finalValues = mutableListOf<DD<*>>()
@@ -617,7 +618,7 @@ open class VectorQuantity : Cloneable {
      */
     open fun pow2(): VectorQuantity {
         //Test if unit is 1, otherwise it is not possible
-        if (unit.toString() != "1" && unit.toString() != "?") throw SemanticError("Pow2 with units is not allowed")
+        if (unit.toString() !in setOf("1", "?", "%", "dB")) throw SemanticError("Pow2 with units is not allowed")
         val finalValues = mutableListOf<DD<*>>()
         when (values[0]) {
             is Real -> values.forEach { finalValues.add((it as Real).power2()) }
@@ -634,7 +635,7 @@ open class VectorQuantity : Cloneable {
      */
     open fun pow(exponent: DD<*>): VectorQuantity {
         //Test if unit is 1, otherwise it is not possible
-        if (unit.toString() !in setOf("1", "?", "dB"))
+        if (unit.toString() !in setOf("1", "?", "dB", "%"))
             throw SemanticError("Power with units is not allowed")
         val finalValues = mutableListOf<DD<*>>()
         when (values[0]) {
@@ -874,10 +875,10 @@ override fun toString(): String {
                     ten * it.asAadd().log() / ten.log()
                 }
                 //Special case for temperature to temperature conversion From K to °C/°F
-                unit.unitSet.isNotEmpty() && unit.unitSet.first() is Temperature &&
-                expectedUnit.unitSet.isNotEmpty() && expectedUnit.unitSet.first() is Temperature -> {
-                    val unit1 = unit.unitSet.first() as Temperature
-                    val unit2 = expectedUnit.unitSet.first() as Temperature
+                unit.unitSet.isNotEmpty() && unit.unitSet.first() is ThermodynamicTemperature &&
+                expectedUnit.unitSet.isNotEmpty() && expectedUnit.unitSet.first() is ThermodynamicTemperature -> {
+                    val unit1 = unit.unitSet.first() as ThermodynamicTemperature
+                    val unit2 = expectedUnit.unitSet.first() as ThermodynamicTemperature
                     if (unit2.name != "kelvin") unit1.convertTo(it * unit1.prefix.factor, unit2) else it
                 }
                 else -> {
@@ -935,7 +936,7 @@ override fun toString(): String {
                 }
                 // Update values
                 for (i in values.indices) {
-                    if (currentUnit is Temperature) resultingValues[i] = currentUnit.toKelvin(resultingValues[i])
+                    if (currentUnit is ThermodynamicTemperature) resultingValues[i] = currentUnit.toKelvin(resultingValues[i])
                     if (currentUnit.convFac.pow(currentUnit.exponent) != 1.0)
                         resultingValues[i] = resultingValues[i] * currentUnit.convFac.pow(currentUnit.exponent)
                 }
@@ -1232,6 +1233,10 @@ override fun toString(): String {
 
             else -> throw DDError("Unsupported value for abs: $values")
         }
+    }
+
+    open fun size(): Quantity {
+        return Quantity(value.builder.integer(values.size.toLong()))
     }
 
     /**

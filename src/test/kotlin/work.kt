@@ -1,31 +1,54 @@
 
-import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.github.tukcps.sysmd.model.kerml.Anything
+import com.github.tukcps.sysmd.model.kerml.Membership
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.repositories.local.toDAO
 import com.github.tukcps.sysmd.services.session.loadLibrary
+import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Ignore
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
  * We keep here tests from daily works; they eventually might be moved to other tests if
  * considered generally useful.
  */
-@Ignore
 class WorkInProgress {
     val  objectMapper = ObjectMapper()
     //  objectMapper.writeValue(new File("target/car.json"), car);
 
-
-    @Test
-    // Just to experiment with cast of Semantic Actions
-    fun test() = testSession("ScalarValues") {
-        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL)
-        val g = objectMapper.writeValueAsString(global.toDAO())
+    @Test fun work() = testSession {
+        loadKerML("""
+            namespace c {
+                import Base::Anything;             
+            } 
+            namespace a {
+                namespace x; 
+                namespace b {
+                    namespace x; 
+                    namespace c; 
+                    namespace y; 
+                }
+                namespace c; 
+            }
+            namespace x; 
+            type t :> Base::Anything {
+                feature f; 
+            }
+            feature f2: t; 
+        """)
+        val r = global.resolveNew("a::b::c")
+        assertTrue(r is Membership)
+        assertEquals("a::b::c", r.memberElement.qualifiedName)
+        val anything = global.resolveNew("c::Anything")?.memberElement as Anything
+        assertEquals(anything, this.anything)
+        // val f2f = global.resolveNew("f2:f")
     }
 
+
+    @Ignore
     @Test
     fun benchmarkLoading() = testSession {
         val start = System.currentTimeMillis()

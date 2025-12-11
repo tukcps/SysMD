@@ -20,10 +20,8 @@ package com.github.tukcps.sysmd.model.kerml
  * The target relatedTypes for this Association. This includes all the relatedTypes other than the sourceType.
  */
 interface Association: Relationship, Classifier {
-    override fun resolveNames(): Boolean
     override fun updateFrom(template: Element)
     override fun toString(): String
-    override fun visibleMemberships(): List<Membership> = ( ownedRelationship + source + target ).filterIsInstance<Membership>()
 
     var sourceType: Type?
     var targetType: MutableList<Type>

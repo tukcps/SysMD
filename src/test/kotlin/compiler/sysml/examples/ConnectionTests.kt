@@ -1,16 +1,16 @@
 package compiler.sysml.examples
 
-import util.mockup.loadSysMLv2
 import com.github.tukcps.sysmd.model.sysml.ConnectionDefinition
 import com.github.tukcps.sysmd.model.sysml.ConnectionUsage
 import com.github.tukcps.sysmd.model.sysml.PartDefinition
 import com.github.tukcps.sysmd.model.sysml.PartUsage
-import com.github.tukcps.sysmd.services.resolve.resolve
 import util.assertNoIssues
+import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class ConnectionTests {
 
@@ -27,7 +27,7 @@ class ConnectionTests {
         """)
         assertNoIssues()
 
-        val connectionDef1 = global.resolve<ConnectionDefinition>("ConnectionDef1")
+        val connectionDef1 = global.resolve("ConnectionDef1")?.memberElement as ConnectionDefinition
         assertNotNull(connectionDef1)
     }
 
@@ -37,27 +37,26 @@ class ConnectionTests {
      * Refer to Section: 7.13 Connections
      * Language Specification Document: https://www.omg.org/spec/SysML/2.0/Beta2/Language/PDF
      */
-    @Ignore
     @Test
     fun testConnectionDefinition() = testSession("Connections", "Parts", "Items") {
         loadSysMLv2("""
-        connection def ConnectionDef1 {
-            part def Part1;
-            part def Part2;
-            end end1 : Part1;
-            end end2 : Part2;
-        }
+            connection def ConnectionDef1 {
+                part def Part1;
+                part def Part2;
+                end end1 : Part1;
+                end end2 : Part2;
+            }
         """)
         assertNoIssues()
 
-        val partDef1 = global.resolve<PartDefinition>("Part1")
-        assertNotNull(partDef1)
+        val partDef1 = global.resolve("ConnectionDef1::Part1")?.memberElement
+        assertTrue(partDef1 is PartDefinition)
 
-        val partDef2 = global.resolve<PartDefinition>("Part2")
-        assertNotNull(partDef2)
+        val partDef2 = global.resolve("ConnectionDef1::Part2")?.memberElement
+        assertTrue(partDef2 is PartDefinition)
 
-        val connectionDef1 = global.resolve<ConnectionDefinition>("ConnectionDef1")
-        assertNotNull(connectionDef1)
+        val connectionDef1 = global.resolve("ConnectionDef1")?.memberElement
+        assertTrue(connectionDef1 is ConnectionDefinition)
     }
 
     /**
@@ -66,7 +65,6 @@ class ConnectionTests {
      * Refer to Section: 7.13 Connections
      * Language Specification Document: https://www.omg.org/spec/SysML/2.0/Beta2/Language/PDF
      */
-    @Ignore
     @Test
     fun testSeperatedConnectionDefinition() = testSession("Connections", "Parts") {
         loadSysMLv2("""
@@ -79,14 +77,14 @@ class ConnectionTests {
         """)
         assertNoIssues()
 
-        val partDef1 = global.resolve<PartDefinition>("Part1")
-        assertNotNull(partDef1)
+        val partDef1 = global.resolve("ConnectionDef1::Part1")?.memberElement
+        assertTrue(partDef1 is PartDefinition)
 
-        val partDef2 = global.resolve<PartDefinition>("Part2")
-        assertNotNull(partDef2)
+        val partDef2 = global.resolve("ConnectionDef1::Part2")?.memberElement
+        assertTrue(partDef2 is PartDefinition)
 
-        val connectionDef1 = global.resolve<ConnectionDefinition>("ConnectionDef1")
-        assertNotNull(connectionDef1)
+        val connectionDef1 = global.resolve("ConnectionDef1")?.memberElement
+        assertTrue(connectionDef1 is ConnectionDefinition)
     }
 
     /**
@@ -95,7 +93,6 @@ class ConnectionTests {
      * Refer to Section: 7.13 Connections
      * Language Specification Document: https://www.omg.org/spec/SysML/2.0/Beta2/Language/PDF
      */
-    @Ignore
     @Test
     fun testConnectionUsage() = testSession("Parts", "Connections") {
         loadSysMLv2("""
@@ -112,11 +109,8 @@ class ConnectionTests {
         """)
         assertNoIssues()
 
-        val connectionDef1 = global.resolve<ConnectionDefinition>("ConnectionDef1")
-        assertNotNull(connectionDef1)
-
-        val connection1 = global.resolve<ConnectionUsage>("connection1")
-        assertNotNull(connection1)
+        val connectionDef1 = global.resolve("ConnectionDef1")
+        assertTrue(connectionDef1?.memberElement is ConnectionDefinition)
     }
 
     /**
@@ -137,11 +131,11 @@ class ConnectionTests {
         """)
         assertNoIssues()
 
-        val connectionDef1 = global.resolve<ConnectionDefinition>("ConnectionDef1")
-        assertNotNull(connectionDef1)
+        val connectionDef1 = global.resolve("ConnectionDef1")
+        assertTrue(connectionDef1?.memberElement is ConnectionDefinition)
 
-        val connection1 = global.resolve<ConnectionUsage>("connection1")
-        assertNotNull(connection1)
+        val connection1 = global.resolve("connection1")
+        assertTrue(connection1?.memberElement is ConnectionUsage)
     }
 
     /**
@@ -173,20 +167,20 @@ class ConnectionTests {
         """)
         assertNoIssues()
 
-        val partDef1 = global.resolve<PartDefinition>("Part1")
-        assertNotNull(partDef1)
+        val partDef1 = global.resolve("Part1")
+        assertTrue(partDef1?.memberElement is PartDefinition)
 
-        val partDef2 = global.resolve<PartDefinition>("Part2")
-        assertNotNull(partDef2)
+        val partDef2 = global.resolve("Part2")
+        assertTrue(partDef2?.memberElement is PartDefinition)
 
-        val part2 = global.resolve<PartUsage>("Part1::part2")
-        assertNotNull(part2)
+        val part2 = global.resolve("Part1::part2")
+        assertTrue(part2?.memberElement is PartUsage)
 
-        val part4 = global.resolve<PartUsage>("Part1::part2::part4")
-        assertNotNull(part4)
+        val part4 = global.resolve("Part1::part2::part4")
+        assertTrue(part4?.memberElement is PartUsage)
 
-        val connection1 = global.resolve<ConnectionUsage>("Part1::connection1")
-        assertNotNull(connection1)
+        val connection1 = global.resolve("Part1::connection1")
+        assertTrue(connection1?.memberElement is ConnectionUsage)
     }
 
     /**
@@ -199,35 +193,35 @@ class ConnectionTests {
     @Test
     fun testBindingConnection() = testSession("Connections", "Parts", "Items") {
         loadSysMLv2("""
-        part def Part1;
-        part def Part2;
-        part def Part3;
-        part def Part4;
-        part part1 : Part1 {
-        
-            part part2 : Part2 {
-                part part4R : Part4;
-            }
+            part def Part1;
+            part def Part2;
+            part def Part3;
+            part def Part4;
+            part part1 : Part1 {
             
-            part part3 : Part3 {
-                part part4 : Part4;
+                part part2 : Part2 {
+                    part part4R : Part4;
+                }
+                
+                part part3 : Part3 {
+                    part part4 : Part4;
+                }
+                
+                bind part2::part4R = part3::part4;
             }
-            
-            bind part2::part4R = part3::part4;
-        }
         """)
         assertNoIssues()
 
-        val partDef1 = global.resolve<PartDefinition>("Part1")
+        val partDef1 = global.resolve("Part1")?.memberElement
         assertNotNull(partDef1)
 
-        val partDef2 = global.resolve<PartDefinition>("Part2")
+        val partDef2 = global.resolve("Part2")?.memberElement
         assertNotNull(partDef2)
 
-        val part2 = global.resolve<PartUsage>("part2")
+        val part2 = global.resolve("part1::part2")?.memberElement
         assertNotNull(part2)
 
-        val part4 = global.resolve<PartUsage>("Part4")
+        val part4 = global.resolve("Part4")?.memberElement
         assertNotNull(part4)
     }
 

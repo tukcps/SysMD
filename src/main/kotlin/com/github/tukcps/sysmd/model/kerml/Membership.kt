@@ -22,5 +22,15 @@ interface Membership: Relationship {
         get() = target.first()
         set(value) { target = mutableListOf(value) }
 
+    /**
+     * The member element
+     * @return the member element cast to template class or null
+     */
+    @Suppress("UNCHECKED_CAST")
+    fun <T: Element> member() = memberElement as T?
+
     var visibility: Import.VisibilityKind
+
+    @Deprecated("use memberElement.path()", replaceWith = ReplaceWith("memberElement.path()"))
+    fun memberQualifiedName() = memberElement.path()
 }

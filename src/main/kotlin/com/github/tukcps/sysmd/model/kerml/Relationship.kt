@@ -30,13 +30,12 @@ interface Relationship: Element {
 
     /** The owned Elements, for a Relationship */
     override var ownedElement: MutableList<Element>
-        get() = if (this !is Association && this !is Connector) ownedRelatedElement else super<Element>.ownedElement.toMutableList()
+        get() = if (this !is Association && this !is Connector) ownedRelatedElement else super.ownedElement.toMutableList()
         set(value) { ownedRelatedElement = value }
 
     /**
      * Initialize resolves the QualifiedNames and/or uid and replaces Unresolved Types or Features with model instances.
      */
-    override fun resolveNames(): Boolean
     override fun updateFrom(template: Element)
 
     /**

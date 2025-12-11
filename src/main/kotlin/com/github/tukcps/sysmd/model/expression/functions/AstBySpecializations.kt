@@ -1,17 +1,16 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
+import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.model.expression.AstLeaf
 import com.github.tukcps.sysmd.model.expression.AstNode
-import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.quantities.VectorDimensionError
 import com.github.tukcps.sysmd.quantities.VectorQuantity
-import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.session.Session
 import io.github.tukcps.aadd.AADD
@@ -66,13 +65,13 @@ class AstBySpecializations(model: Session, namespace: Namespace, args: ArrayList
         //TODO Add Vectors to bySubclasses
         if (getParam(0).upQuantity.values.size != 1)
             throw VectorDimensionError("BySubclasses is not supported with Vectors")
-        val feature = inNameSpace.resolve<Feature>(propertyName)
+        val variable = inNameSpace.resolveVar(propertyName)
 
-        upQuantity = when {
-            feature!!.specializes(model.repo.booleanType) -> Quantity(model.builder.Bool)
-            feature.specializes(model.repo.integerType) -> Quantity(model.builder.Integers)
-            feature.specializes(model.repo.realType) -> Quantity(model.builder.Reals, "?")
-            else -> throw SemanticError("Undefined type in function bySubclasses: '${feature.qualifiedName}'", feature)
+        upQuantity = when(variable?.baseType) {
+            Variable.BaseType.Bool -> Quantity(model.builder.Bool)
+            Variable.BaseType.Int -> Quantity(model.builder.Integers)
+            Variable.BaseType.Real -> Quantity(model.builder.Reals, "?")
+            else -> throw SemanticError("Undefined type in function bySubclasses: '${variable?.name}'", variable?.feature)
         }
         downQuantity = upQuantity.clone()
     }

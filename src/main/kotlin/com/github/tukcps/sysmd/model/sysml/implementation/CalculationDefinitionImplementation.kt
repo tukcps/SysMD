@@ -5,13 +5,15 @@ import com.github.tukcps.sysmd.model.sysml.CalculationDefinition
 class CalculationDefinitionImplementation(
     declaredName: String? = null,
     declaredShortName: String? = null,
-    elementType: String = "CalculationDefinition"
+    elementType: String = "CalculationDefinition",
+	override val isModelLevelEvaluable: Boolean = false,
 ): CalculationDefinition, ActionDefinitionImplementation(
     declaredName=declaredName,
     declaredShortName=declaredShortName,
     elementType=elementType
 ) {
+	override val builtin : Nothing? = null
 
-    override fun clone() = CalculationDefinitionImplementation()
+    override fun clone() = CalculationDefinitionImplementation(isModelLevelEvaluable = isModelLevelEvaluable)
         .also { it.updateFrom(this) }
 }

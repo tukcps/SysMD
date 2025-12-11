@@ -542,7 +542,7 @@ Note that you can also specify (as constraint of the subtype) and check the cons
 An example is shown below.
 
 ```KerML::tutorial::kerml::units
-feature t: ISQ::TimeValue          = 1.0 [s];
+feature t: ISQ::DurationValue      = 1.0 [s];
 feature v: ISQ::SpeedValue         = 3.0 [m/s];
 feature g: ISQ::AccelerationValue  = 4.0 [m/s^2];
 feature s: ISQ::SpeedValue         = sqrt(sqr(v)+sqr(g)*sqr(t)); 
@@ -567,7 +567,7 @@ In SysMD expressions, the following functions can be used:
 - `power2(x)` – computes 2 to the power of x
 - `powerb(base, x)` – base to the power of x
 - `sqr(x)` - square of x; and `sqrt(x)` - square root of x
-- `linear(a, b, c, d, …)` – linear interpolation through pairs of values specifying (x, y).
+- `linearInterpolation(a, b, c, d, …)` – linear interpolation through pairs of values specifying (x, y).
 - `sum_i(...)` Iteration over i 
 - Boolean functions: `not`, `and`,`or`
 

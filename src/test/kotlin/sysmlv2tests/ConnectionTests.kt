@@ -1,25 +1,18 @@
 package sysmlv2tests
 
-import io.github.tukcps.aadd.values.XBool
-import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.model.kerml.Connector
-import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.getOwnedElementOfType
 import com.github.tukcps.sysmd.model.sysml.ConnectionDefinition
 import com.github.tukcps.sysmd.model.sysml.ConnectionUsage
 import com.github.tukcps.sysmd.model.sysml.PartUsage
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
+import io.github.tukcps.aadd.values.XBool
 import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
-import kotlin.test.Ignore
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
+import kotlin.test.*
 
 class ConnectionTests {
     /**
@@ -48,7 +41,7 @@ class ConnectionTests {
             part b;
             connect a to b; 
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val c = global.getOwnedElementOfType<ConnectionUsage>()
         assertTrue(c != null)
         assertEquals(1, c.from.size)
@@ -61,9 +54,9 @@ class ConnectionTests {
             part a;
             part b;
             connection c connect a to b; 
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val c = global.resolve<ConnectionUsage> ("c")
+        """)
+        assertNoIssues()
+        val c = global.resolve("c")?.member<ConnectionUsage>()
         assertTrue(c != null)
         assertEquals(1, c.from.size)
         assertEquals(1, c.to.size)
@@ -76,9 +69,9 @@ class ConnectionTests {
             part b;
             part c;
             connection d connect (a, b, c); 
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val d = global.resolve<ConnectionUsage> ("d")
+        """)
+        assertNoIssues()
+        val d = global.resolve("d")?.member<ConnectionUsage>()
         assertTrue(d != null)
         assertEquals(3, d.to.size)
     }
@@ -90,11 +83,11 @@ class ConnectionTests {
             part a;
             part b;
             connection c : C connect a to b;  
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val c = global.resolve<ConnectionDefinition> ("C")
+        """)
+        assertNoIssues()
+        val c = global.resolve("C")?.member<ConnectionDefinition>()
         assertNotNull(c)
-        val ci = global.resolve<ConnectionUsage> ("c")
+        val ci = global.resolve("c")?.member<ConnectionUsage>()
         assertNotNull(ci)
     }
 
@@ -106,11 +99,11 @@ class ConnectionTests {
             connection def C1; 
             connection def C :> C1; 
             connection c : C connect a to b;  
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val c = global.resolve<ConnectionDefinition> ("C")
+        """)
+        assertNoIssues()
+        val c = global.resolve("C")?.member<ConnectionDefinition>()
         assertNotNull(c)
-        val ci = global.resolve<ConnectionUsage> ("c")
+        val ci = global.resolve("c")?.member<ConnectionUsage>()
         assertNotNull(ci)
     }
 
@@ -122,7 +115,7 @@ class ConnectionTests {
             part c;
             interface d connect (a, b, c); 
         """)
-        val c = global.resolve<ConnectionUsage> ("d")
+        val c = global.resolve("d")?.member<ConnectionUsage>()
         assertNoIssues()
         assertTrue(c != null)
         assertEquals(3, c.to.size)
@@ -137,10 +130,10 @@ class ConnectionTests {
             interface def C :> C1; 
             interface c : C connect a to b;  
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val c = global.resolve<ConnectionDefinition> ("C")
+        assertNoIssues()
+        val c = global.resolve("C")?.member<ConnectionDefinition>()
         assertNotNull(c)
-        val ci = global.resolve<ConnectionUsage> ("c")
+        val ci = global.resolve("c")?.member<ConnectionUsage>()
         assertNotNull(ci)
     }
 
@@ -160,11 +153,11 @@ class ConnectionTests {
                 connection c : C connect a to b;  
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
 
-        val a = global.resolve<PartUsage> ("connection_example::a")
+        val a = global.resolve("connection_example::a")?.member<PartUsage>()
         assertNotNull(a)
-        val c = global.resolve<ConnectionUsage> ("connection_example::c")
+        val c = global.resolve("connection_example::c")?.member<ConnectionUsage>()
         assertNotNull(c)
 
         loadSysMLv2("""
@@ -210,19 +203,19 @@ class ConnectionTests {
                 end feature target: ScalarValues::Real references b::y; 
             }
         """)
-        assertTrue(status.issues.isEmpty(), "Errors: ${status.issues}")
-        val a = global.resolve<Feature>("a")
-        val b = global.resolve<Feature>("b")
-        val c = global.resolve<Connector>("c")
+        assertNoIssues()
+        val a = global.resolve("a")?.member<Feature>()
+        val b = global.resolve("b")?.member<Feature>()
+        val c = global.resolve("c")?.member<Connector>()
         assertNotNull(a)
         assertNotNull(b)
         assertNotNull(c)
-        val source2 = global.resolve<Element>("c::source")
+        val source2 = global.resolve("c::source")?.memberElement
         assertNotNull(source2)
-        propagate()
-        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
-        assertEquals(3.0, global.resolve<Feature>("a::x")!!.variable!!.min(),0.00001)
-        assertEquals(3.0, global.resolve<Feature>("b::y")!!.variable!!.min(),0.00001)
-        assertEquals(3.0, global.resolve<Feature>("b::y")!!.variable!!.max(),0.00001)
+        solver.propagate()
+        assertNoIssues()
+        assertEquals(3.0, global.resolveVar("a::x")!!.min(),0.00001)
+        assertEquals(3.0, global.resolveVar("b::y")!!.min(),0.00001)
+        assertEquals(3.0, global.resolveVar("b::y")!!.max(),0.00001)
     }
 }

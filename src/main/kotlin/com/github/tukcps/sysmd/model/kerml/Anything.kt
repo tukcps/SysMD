@@ -24,7 +24,6 @@ class Anything(
 
     override val ownedSpecialization: MutableList<Specialization> = mutableListOf()
     override var generalization: MutableList<Type> = mutableListOf()
-    override fun resolveNames() = false
     override fun clone(): Anything = this
     override fun toString(): String = "Anything"
 }

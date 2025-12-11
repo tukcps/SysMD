@@ -1,17 +1,14 @@
 package constraintnettests
 
-import com.github.tukcps.sysmd.cspsolver.propagate
-import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.SpecializationImplementation
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
+import util.assertNoIssues
 import util.mockup.loadKerML
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Test
 import util.testSession
-import kotlin.test.assertTrue
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
 /**
  * In these tests, the interaction between the symbol table, the selected property and the parser is tested.
@@ -36,7 +33,7 @@ class VariableInteractionTest {
         val c =addOwnedMember(FeatureImplementation(declaredName="c", typeConstraint = mutableListOf("1.0..8.0"), expression = "a+b+2.0"), global)
         addOwnedRelationship(SpecializationImplementation(c, repo.realType!!), c)
         initialize()
-        propagate()
+        solver.propagate()
         assertEquals(0, status.issues.size, status.issues.toString())
         assertEquals(8.0, global.resolveVar("c")!!.aadd().getRange().max, 0.0001)
         assertEquals(7.0, global.resolveVar("c")!!.aadd().getRange().min, 0.0001)
@@ -46,7 +43,7 @@ class VariableInteractionTest {
     @Test
     fun evalUpPropertyDirectTest() = testSession("ScalarValues", "Ranges") {
         loadKerML("feature speed: Ranges::RealInRange = 5.0+6.0 {:>> range = \"2.0 .. 22.0\";}")
-        val speed = global.resolve<Feature>("speed")!!.variable
+        val speed = global.resolveVar("speed")
         assertEquals(11.0, speed!!.min(), 0.000001)
         assertEquals(11.0, speed.max(), 0.000001)
     }
@@ -58,9 +55,9 @@ class VariableInteractionTest {
          loadKerML("""
              feature speed2: Ranges::RealInRange {:>> range = "10.0 .. 10000.0";}
              feature speed:  Ranges::RealInRange = speed2 {:>> range = "-100.0 ..200.0";}""")
-        propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val speed = global.resolve<Feature>("speed")!!.variable!!.aadd().getRange()
+        solver.propagate()
+        assertNoIssues()
+        val speed = global.resolveVar("speed")!!.aadd().getRange()
         assertEquals(10.0, speed.min, 0.0000001)
         assertEquals(200.0, speed.max, 0.0000001)
     }

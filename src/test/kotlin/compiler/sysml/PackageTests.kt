@@ -1,7 +1,6 @@
 package compiler.sysml
 
 import com.github.tukcps.sysmd.model.kerml.Package
-import com.github.tukcps.sysmd.services.resolve.resolve
 import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
@@ -17,8 +16,8 @@ class PackageTests {
                 doc /* test */ 
             }
         """)
-        val openCar = global.resolve<Package>("openCar")
-        val openCarLong = global.resolve<Package>("Open Car")
+        val openCar: Package? = global.resolve("openCar")?.member()
+        val openCarLong: Package? = global.resolve("Open Car")?.member()
         assertNotNull(openCar)
         assertNotNull(openCarLong)
         assertNoIssues()

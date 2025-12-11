@@ -21,7 +21,7 @@ class ActionDefinitionActions<T: Class>(
 ): ClassActions<T>(
     context = context,
     creator = creator,
-    specializes = specializes,
+    isImplicit = specializes,
 )
 
 class ActionUsageActions<T: ActionUsage>(

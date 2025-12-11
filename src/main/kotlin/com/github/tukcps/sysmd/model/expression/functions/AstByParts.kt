@@ -10,7 +10,6 @@ import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.quantities.VectorDimensionError
 import com.github.tukcps.sysmd.quantities.VectorQuantity
-import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.session.Session
 import io.github.tukcps.aadd.DD
@@ -32,11 +31,11 @@ class  AstByParts(model: Session, namespace: Namespace, args: ArrayList<AstNode>
      * all found properties in subclasses.
      */
     override fun evalUp() {
-        var ownedElements = inNameSpace.getOwnedElementsOfType<Feature>().filter { it.variable == null }
+        var ownedElements = inNameSpace.member.filterIsInstance<Feature>().filter { it.variable == null }
         if (ownedElements.isNotEmpty()) {
             val firstOwnedElement = ownedElements.first()
             ownedElements = ownedElements.drop(1)
-            val quantity = firstOwnedElement.resolve<Feature>(propertyName)?.variable!!.vectorQuantity
+            val quantity = firstOwnedElement.resolveVar(propertyName)!!.vectorQuantity
             var result: DD<*> = quantity.values[0].clone()
             for (part in ownedElements) {
                 // TODO: generate a variable for it!
@@ -60,7 +59,7 @@ class  AstByParts(model: Session, namespace: Namespace, args: ArrayList<AstNode>
         //TODO Add Vectors to byParts
         if (getParam(0).upQuantity.values.size != 1)
             throw VectorDimensionError("BySubclasses is not possible with Vectors")
-        val type = inNameSpace.resolve<Feature>(propertyName)?.type?.firstOrNull()
+        val type = inNameSpace.resolve(propertyName)?.member<Feature>()?.type?.firstOrNull()
 
         if (type != null && type.model?.builder != model.builder)
             throw Exception("Internal error -- Mix of two models?")

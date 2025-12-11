@@ -1,15 +1,13 @@
 package constraintnettests
 
-import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.kerml.Multiplicity
-import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
-import util.mockup.loadKerML
-import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.Test
 import util.assertNoIssues
+import util.mockup.loadKerML
 import util.testSession
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
 class MultiplicityTests {
     /**
@@ -21,14 +19,14 @@ class MultiplicityTests {
             feature  p [0 .. 2];
             feature v: ScalarValues::Integer(1) = p::cardinality;
         """)
-        propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val p = global.resolve<Feature>("p")
-        val m = p?.resolve<Multiplicity>("cardinality")
-        val v = global.resolve<Feature>("v")!!.variable
+        solver.propagate()
+        assertNoIssues()
+        val p = global.resolve("p")?.member<Feature>()
+        val multiplicity = p?.resolveVar("cardinality")
+        val v = global.resolveVar("v")
         assertEquals(1L, v?.min())
-        assertEquals(1L, m?.variable?.min())
-        assertEquals(1L, m?.variable?.min())
+        assertEquals(1L, multiplicity?.min())
+        assertEquals(1L, multiplicity?.min())
     }
 
     /**
@@ -40,11 +38,11 @@ class MultiplicityTests {
            feature p [0 .. 2];
            feature v: ScalarValues::Integer(2) = p::cardinality*2;
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        propagate()
-        val p = global.resolve<Feature>("p")
-        val m = p?.resolve<Multiplicity>("cardinality")?.variable
-        val v = global.resolve<Feature>("v")?.variable
+        assertNoIssues()
+        solver.propagate()
+        val p = global.resolve("p")!!.member<Feature>()
+        val m = p?.resolveVar("cardinality")
+        val v = global.resolveVar("v")
         assertEquals(2L, v?.min())
         assertEquals(1L, m?.min())
         assertEquals(1L, m?.max())
@@ -63,12 +61,12 @@ class MultiplicityTests {
                 feature j: ScalarValues::Real = 5.0; 
             }
         """)
-        propagate()
+        solver.propagate()
         assertNoIssues()
         val weight = global.resolveVar("b::weight")
         assertNotNull(weight)
-        assertEquals(0L, global.resolve<Feature>("b::partC::cardinality")!!.variable!!.vectorQuantity.value.asIdd().min)
-        assertEquals(7, global.resolve<Feature>("b::partC::cardinality")!!.variable!!.vectorQuantity.value.asIdd().max)
+        assertEquals(0L, global.resolveVar("b::partC::cardinality")!!.min())
+        assertEquals(7L, global.resolveVar("b::partC::cardinality")!!.max())
     }
 
     @Test
@@ -84,12 +82,12 @@ class MultiplicityTests {
                 feature j: ScalarValues::Integer(5); 
             }
         """)
-        propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        solver.propagate()
+        assertNoIssues()
         val w = global.resolveVar("b::weight")
         assertNotNull(w)
-        assertEquals(0, global.resolveVar("b::partC::cardinality")!!.vectorQuantity.value.asIdd().min)
+        assertEquals(0L, global.resolveVar("b::partC::cardinality")!!.min())
         // it is 7, why??
-        assertEquals(6, global.resolveVar("b::partC::cardinality")!!.vectorQuantity.value.asIdd().max)
+        assertEquals(6L, global.resolveVar("b::partC::cardinality")!!.max())
     }
 }

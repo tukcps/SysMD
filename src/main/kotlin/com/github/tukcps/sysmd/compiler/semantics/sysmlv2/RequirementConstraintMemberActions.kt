@@ -15,7 +15,7 @@ class RequirementConstraintMemberActions(
     override fun finish() {
         if (created.type.isEmpty()) {
             context.addTyping("ScalarValues::Boolean")
-            if (defaultType != null) context.addTyping(defaultType!!)
+            if (isImplicit != null) context.addTyping(isImplicit!!)
         }
         if (created.kind == RequirementConstraintMember.Kind.ASSUME)
             context.addTypeConstraint(mutableListOf("true"))

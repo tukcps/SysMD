@@ -4,7 +4,10 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Modifier
@@ -26,10 +29,10 @@ import com.github.tukcps.sysmd.ui.viewmodel.TabViewModel
         TextButton(
             border = BorderStroke(1.dp, AppTheme.colors.iconRed),
             onClick = {
-            if (editorTabModel.cells.size > 0 && idx.value == 0)
+            if (editorTabModel.cells.isNotEmpty() && idx.value == 0)
                 editorTabModel.cells.removeAt(0)
             else
-                if (editorTabModel.cells.size >= 1 && idx.value in editorTabModel.cells.indices)
+                if (editorTabModel.cells.isNotEmpty() && idx.value in editorTabModel.cells.indices)
                     editorTabModel.cells.removeAt(idx.value)
             showConfirmDelete.value = false
         }) { Text("Delete cell") }

@@ -7,7 +7,6 @@ import com.github.tukcps.sysmd.services.check.checkConsistencyOfBuilders
 import com.github.tukcps.sysmd.services.findRelationshipsFrom
 import com.github.tukcps.sysmd.services.findRelationshipsTo
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.resolve.resolve
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.*
@@ -23,7 +22,7 @@ class KerMLModelTests {
     fun predefinedAnyGlobalPackageTest() = testSession {
         assertNotNull(get(global.elementId!!))
         assertNotNull(get(anything.elementId!!))
-        assertNotNull(global.resolve<Anything>("Base::Anything"))
+        assertNotNull(global.resolve("Base::Anything")?.member<Anything>())
     }
 
     /**
@@ -90,7 +89,7 @@ class KerMLModelTests {
         assertEquals(1, class2inClass1.getOwnedElementsOfType<Element>().size)
         assertEquals("name", global.getOwnedElement("name")?.declaredName)
         assertEquals("name2", class1.getOwnedElement("name2")?.declaredName)
-        assertEquals("name2", class1.resolve<Element>("name2")?.declaredName)
+        assertEquals("name2", class1.resolve("name2")?.memberElement?.declaredName)
     }
 
 
@@ -154,7 +153,7 @@ class KerMLModelTests {
         loadKerML("package X;")
         loadKerML("X hasA class B :> Base::Anything.")
         loadKerML("X hasA class A :> B.")
-        val x = global.resolve<Element>("X")
+        val x = global.resolve("X")?.memberElement
         val no = x!!.ownedElement.size
         loadKerML("X hasA class A :> B.")
         val no2 = x.ownedElement.size

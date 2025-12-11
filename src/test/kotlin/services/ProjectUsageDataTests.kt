@@ -1,11 +1,9 @@
 package services
 
 import com.github.tukcps.sysmd.model.kerml.Specialization
-import com.github.tukcps.sysmd.model.kerml.implementation.TypeImplementation
 import com.github.tukcps.sysmd.services.check.checkConsistencyOfBuilders
 import com.github.tukcps.sysmd.services.check.checkOwnership
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.session.SessionManager.projectService
 import com.github.tukcps.sysmd.services.session.loadLibrary
 import com.github.tukcps.sysmd.services.session.loadProject
@@ -68,7 +66,7 @@ class ProjectUsageDataTests {
         loadLibrary("Base")
         loadLibrary("ScalarValues")
         val numElements = get().size
-        val bool = global.resolve<TypeImplementation>("ScalarValues::Boolean")
+        val bool = global.resolve("ScalarValues::Boolean")
         val builder = bool?.model?.builder
         assertNotNull(bool)
         assertNotNull(builder)
@@ -82,7 +80,7 @@ class ProjectUsageDataTests {
         assertEquals(numElements, get().size)
         checkConsistencyOfBuilders()
 
-        val bool2 = global.resolve<TypeImplementation>("ScalarValues::Boolean")
+        val bool2 = global.resolve("ScalarValues::Boolean")
         val builder2 = bool2?.model?.builder
         assertNotNull(bool2)
         assertEquals(builder, builder2)

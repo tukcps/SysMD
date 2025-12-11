@@ -2,11 +2,9 @@ package models.kerml
 
 import com.fasterxml.uuid.Generators
 import com.github.tukcps.sysmd.model.kerml.DataType
-import com.github.tukcps.sysmd.model.kerml.Element
-import com.github.tukcps.sysmd.model.kerml.Package
+import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.session.loadLibrary
 import util.assertNoIssues
 import util.mockup.loadKerML
@@ -24,12 +22,12 @@ class LibrariesTests {
     @Test
     fun initBaseTest() = testSession("Base") {
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val dataValue = global.resolve<Type>("Base::DataValue")
-        assertNotNull(dataValue)
-        val dataValues = global.resolve<Type>("Base::dataValues")
-        assertNotNull(dataValues)
-        val things = global.resolve<Type>("Base::things")
-        assertNotNull(things)
+        val dataValue = global.resolve("Base::DataValue")?.memberElement
+        assertNotNull(dataValue as? Type)
+        val dataValues = global.resolve("Base::dataValues")?.memberElement
+        assertNotNull(dataValues as? Feature)
+        val things = global.resolve("Base::things")?.memberElement
+        assertNotNull(things as? Feature)
     }
 
     /**
@@ -39,8 +37,8 @@ class LibrariesTests {
     fun initScalarValuesTest() = testSession("ScalarValues", initialize = false) {
         initialize()
         assertEquals(0, status.issues.size, status.issues.toString())
-        val real = global.resolve<Element>("ScalarValues::Real")
-        assertNotNull(real)
+        val real = global.resolve("ScalarValues::Real")?.memberElement
+        assertNotNull(real as? DataType)
     }
 
     @Test
@@ -60,8 +58,8 @@ class LibrariesTests {
                     }
             """)
         assertNoIssues()
-        val real = global.resolve<Element>("ScalarValues::Real")
-        assertNotNull(real)
+        val real = global.resolve("ScalarValues::Real")?.memberElement
+        assertNotNull(real as? DataType)
     }
 
     /**
@@ -73,12 +71,12 @@ class LibrariesTests {
     fun loadLibrary() = testSession {
         loadLibrary("ScalarValues")
         initialize()
-        val real = global.resolve<DataType>("ScalarValues::Real")
-        val sv = global.resolve<Package>("ScalarValues")
+        val real = global.resolve("ScalarValues::Real")?.memberElement
+        val sv = global.resolve("ScalarValues")?.memberElement
         assertEquals(5, real?.elementId?.version())
         assertEquals(5, sv?.elementId?.version())
         assertTrue(sv!!.isLibraryElement)
-        println (" sv path ${sv.path()}")
+        // println (" sv path ${sv.path()}")
         assertEquals(Generators.nameBasedGenerator().generate(sv.path() ), sv.elementId)
         assertEquals(Generators.nameBasedGenerator().generate("ScalarValues::Real"), real!!.elementId)
     }

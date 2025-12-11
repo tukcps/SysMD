@@ -1,8 +1,8 @@
 package compiler.sysml.examples
 
-import util.mockup.loadSysMLv2
 import com.github.tukcps.sysmd.model.sysml.PartDefinition
-import com.github.tukcps.sysmd.services.resolve.resolve
+import util.assertNoIssues
+import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Ignore
 import kotlin.test.Test
@@ -20,11 +20,11 @@ class DefinitionTests {
     @Test
     fun testNameCompartment() = testSession("Parts") {
         loadSysMLv2("""
-        part def PartDef1;
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+            part def PartDef1;
+        """)
+        assertNoIssues()
 
-        val partDef1 = global.resolve<PartDefinition>("PartDef1")
+        val partDef1 = global.resolve("PartDef1")
         assertNotNull(partDef1)
     }
 
@@ -37,14 +37,14 @@ class DefinitionTests {
     @Test
     fun testNameCompartmentWithShortname() = testSession("Parts") {
         loadSysMLv2("""
-        part def <PD2> PartDef2;
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+            part def <PD2> PartDef2;
+        """)
+        assertNoIssues()
 
-        val partDef2 = global.resolve<PartDefinition>("PartDef2")
+        val partDef2 = global.resolve("PartDef2")
         assertNotNull(partDef2)
 
-        val pd2 = global.resolve<PartDefinition>("PD2")
+        val pd2 = global.resolve("PD2")
         assertNotNull(pd2)
     }
 
@@ -62,8 +62,8 @@ class DefinitionTests {
                 part def PartDef3;
             }
         }
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        """)
+        assertNoIssues()
 
         //val partDef3 = global.resolve<PartDefinition>("PartDef3")
         //assertNotNull(partDef3)
@@ -78,12 +78,13 @@ class DefinitionTests {
     @Test
     fun testAbstractNameCompartment() = testSession("Parts") {
         loadSysMLv2("""
-        abstract part def PartDef1;
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+            abstract part def PartDef1;
+        """)
+        assertNoIssues()
 
-        val partDef1 = global.resolve<PartDefinition>("PartDef1")
-        assertNotNull(partDef1)
+        val partDef1 = global.resolve("PartDef1")
+        assertTrue(partDef1?.memberElement is PartDefinition)
+        assertTrue((partDef1.memberElement as PartDefinition).isAbstract)
     }
 
     /**
@@ -96,8 +97,11 @@ class DefinitionTests {
     @Test
     fun testVariationNameCompartment() = testSession("Parts") {
         loadSysMLv2("""
-        variation part def PartDef1;
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+            variation part def PartDef1;
+        """)
+        assertNoIssues()
+        val partDef1 = global.resolve("PartDef1")
+        assertTrue(partDef1?.memberElement is PartDefinition)
+        // assertTrue((partDef1.memberElement as PartDefinition).isVariation)
     }
 }

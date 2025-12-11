@@ -1,11 +1,10 @@
 package com.github.tukcps.sysmd.compiler
 
 import com.github.tukcps.sysmd.model.kerml.Element
-import com.github.tukcps.sysmd.model.kerml.getOwnedElementsOfType
+import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.sysml.ActionUsage
 import com.github.tukcps.sysmd.model.sysml.AttributeDefinition
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.session.Session
 import com.github.tukcps.sysmd.services.session.SessionImplementation
 
@@ -20,13 +19,13 @@ class HoodSysmlParser {
     }
 
     fun getTopLevelPackage(model: Session, packageName: String): KerMLPackage? =
-        model.global.resolve<KerMLPackage>(packageName)
+        model.global.resolve(packageName)?.member()
 
-    fun getAttributeDefinitions(owner: Element): List<AttributeDefinition>  =
-        owner.getOwnedElementsOfType<AttributeDefinition>()
+    fun getAttributeDefinitions(owner: Namespace): List<AttributeDefinition>  =
+        owner.visibleMemberships().mapNotNull { it.member() }
 
-    fun getActionUsages(owner: Element): List<ActionUsage> =
-        owner.getOwnedElementsOfType<ActionUsage>()
+    fun getActionUsages(owner: Namespace): List<ActionUsage> =
+        owner.visibleMemberships().mapNotNull { it.member() }
 
     fun getOwner(it: Element) = it.owner
 }

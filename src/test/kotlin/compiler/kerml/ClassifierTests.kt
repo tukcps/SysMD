@@ -1,12 +1,12 @@
 package compiler.kerml
 
 import com.github.tukcps.sysmd.model.kerml.Classifier
-import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.services.check.checkOwnership
-import com.github.tukcps.sysmd.services.resolve.resolve
+import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -19,12 +19,12 @@ class ClassifierTests {
             classifier c :> a, b; 
         """)
         checkOwnership()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val a = global.resolve<Classifier>("a")
-        assertTrue(a?.isAbstract == true)
-        val c = global.resolve<Classifier>("c")
+        assertNoIssues()
+        val a = global.resolve("a")?.member<Classifier>()
+        assertEquals(a?.isAbstract, true)
+        val c = global.resolve("c")?.member<Classifier>()
         assertNotNull(c)
-        assertTrue(c.specializes(global.resolve<Type>("b")))
-        assertTrue(c.specializes(global.resolve<Type>("a")))
+        assertTrue(c.specializes(global.resolve("b")?.member<Classifier>()))
+        assertTrue(c.specializes(global.resolve("a")?.member<Classifier>()))
     }
 }

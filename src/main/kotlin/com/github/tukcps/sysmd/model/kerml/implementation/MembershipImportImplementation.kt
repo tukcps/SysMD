@@ -1,6 +1,13 @@
 package com.github.tukcps.sysmd.model.kerml.implementation
 
-import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.model.kerml.Element
+import com.github.tukcps.sysmd.model.kerml.Membership
+import com.github.tukcps.sysmd.model.kerml.MembershipImport
+import com.github.tukcps.sysmd.model.kerml.Namespace
+import com.github.tukcps.sysmd.model.kerml.Unresolved
+import com.github.tukcps.sysmd.model.kerml.UnresolvedMembership
+import com.github.tukcps.sysmd.model.kerml.UnresolvedNamespace
+import com.github.tukcps.sysmd.model.util.SimpleName
 
 
 /**
@@ -16,42 +23,46 @@ import com.github.tukcps.sysmd.model.kerml.*
  * its owned sub-Namespaces.
  */
 class MembershipImportImplementation(
-    override var visibility: Import.VisibilityKind = Import.VisibilityKind.Private,
-    override var isRecursive: Boolean = false,     // False by default in SysMLv2
-    override var isImportAll: Boolean = false,
-    owningRelatedElement: Element = UnresolvedNamespace(),
+    name: String? = null,
+    shortName: String? = null,
     elementType: String = "MembershipImport",
-): MembershipImport, RelationshipImplementation(
-    owningRelatedElement = owningRelatedElement,
-    elementType = elementType
-) {
-    override val importOwningNamespace: Namespace?
-        get() = owningNamespace
+): MembershipImport, ImportImplementation(elementType) {
 
+    init {
+        source = mutableListOf(UnresolvedNamespace())
+        target = mutableListOf(UnresolvedMembership())
+    }
+
+    override val importedElement: Element
+        get() = importedMembership
+
+    val importedMembership: Membership
+        get() = target.first() as Membership
+
+    /**
+     * Returns Memberships that are to become importedMemberships of the importOwningNamespace.
+     * @param excluded used to handle the possibility of circular Import Relationships.
+     * @return set of memberships that are imported.
+     */
     @Suppress("UNCHECKED_CAST")
-    override fun importedMemberships(excluded: Set<Namespace>): MutableSet<Membership> {
-        val targetsResolved = target
-            .filter { it !is Unresolved && it !in excluded }
-            .map { it.owningRelationship }.toMutableSet() as MutableSet<Membership>
-        return targetsResolved
-    }
+    override fun importedMemberships(
+        excluded: Set<Namespace>,
+        filter: Membership.() -> Boolean
+    ): List<Membership> {
 
-    override fun clone() : MembershipImport{
-        return MembershipImportImplementation(
-            visibility = visibility,
-            isRecursive = isRecursive,
-            isImportAll = isImportAll
-        ).also {
-            it.updateFrom(this)
+        if (importedMembership is Unresolved
+            || (importedMembership is Namespace && importedMembership as Namespace in excluded)
+            || !importedMembership.filter())
+            return listOf()
+
+        if (!isRecursive) {
+            return listOf(importedMembership)
+        } else {
+            return listOf(importedMembership)
         }
     }
 
-    override fun updateFrom(template: Element) {
-        super.updateFrom(template)
-        if (template is MembershipImport) {
-            visibility = template.visibility
-            isImportAll = template.isImportAll
-            isRecursive = template.isRecursive
-        }
-    }
+    override fun clone() : MembershipImport =
+        MembershipImportImplementation().also { it.updateFrom(this) }
+
 }

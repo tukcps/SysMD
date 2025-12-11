@@ -1,16 +1,14 @@
 package examples
 
 
-import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
+import util.assertNoIssues
 import util.mockup.loadKerML
 import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 
 class TutorialExamples {
@@ -26,10 +24,10 @@ class TutorialExamples {
                 }
             }
         """)
-        val pc2p = global.resolve<Feature>("p::c2::p")
-        val p = pc2p?.resolve<Feature>("p")    // Was an issue: p search inside p does not resolve to p.
+        val pc2p = global.resolve("p::c2::p")?.member<Feature>()
+        val p = pc2p?.resolve("p")?.member<Feature>()   // Was an issue: p search inside p does not resolve to p.
         assertEquals(p, pc2p)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
 
@@ -49,8 +47,8 @@ class TutorialExamples {
                }
            }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        propagate()
+        assertNoIssues()
+        solver.propagate()
         val p = global.resolveVar("Reason::General::p")!!
         assertEquals(p.vectorQuantity.getMaxAsDouble(), 3.0, 0.000001)
         assertEquals(p.vectorQuantity.getMinAsDouble(), 2.0, 0.000001)
@@ -58,27 +56,27 @@ class TutorialExamples {
 
 
     @Test
-    fun deCompositionExample() = testSession("Occurrences", "SI", "Ranges") {
+    fun deCompositionExample() = testSession("Occurrences", "ISQ", "Ranges") {
         loadKerML(catchExceptions = false, input = """
             package Example {
                 class Engine { 
-                    feature mass: SI::Mass(10..500);  
+                    feature mass: ISQ::MassValue(10..500);  
                 }
 
                 class Wheel {
-                    feature mass: SI::Mass(20..50);  
+                    feature mass: ISQ::MassValue(20..50);  
                 }
 
                 class Car { 
                     feature engine: Engine [1..1];
                     feature wheels: Wheel [2..6]; 
-                    feature totalMass: SI::Mass = sumOverParts(mass); 
+                    feature totalMass: ISQ::MassValue = sumOverParts(mass); 
                 }
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
+        solver.propagate()
+        assertNoIssues()
         val mass = global.resolveVar("Example::Car::totalMass")!!
         assertEquals(800.0, mass.vectorQuantity.getMaxAsDouble(), 0.00001)
         assertEquals(50.0, mass.vectorQuantity.getMinAsDouble(), 0.00001)
@@ -89,8 +87,8 @@ class TutorialExamples {
         loadSysMLv2("""
             attribute x: ScalarValues::Boolean(true) = 1.0 < 2.0 + 1.0;
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        propagate()
+        assertNoIssues()
+        solver.propagate()
         val x = global.resolveVar("x")!!
         assertEquals(builder.True, x.vectorQuantity.value)
     }
@@ -98,49 +96,49 @@ class TutorialExamples {
     /**
      * First Example from the SysMD Kickstart.
      */
-    @Test fun volumeExample() = testSession("SI", "Ranges")  {
+    @Test fun volumeExample() = testSession("ISQ", "Ranges")  {
         loadKerML(""" 
             feature partWithVolume {
-                feature height:  SI::Length {:>> unit = "cm"; :>> range = "10 .. 100";}
-                feature width:   SI::Length{:>> range = "1 .. 1.1";}
-                feature length:  SI::Length {:>> range = "1 .. 1.1";}
-                feature volume:  SI::Volume = height * width * length {:>> unit = "l"; :>> range = "1000 .. 2000";}
+                feature height:  ISQ::LengthValue {:>> unit = "cm"; :>> range = "10 .. 100";}
+                feature width:   ISQ::LengthValue{:>> range = "1 .. 1.1";}
+                feature length:  ISQ::LengthValue {:>> range = "1 .. 1.1";}
+                feature volume:  ISQ::VolumeValue = height * width * length {:>> unit = "l"; :>> range = "1000 .. 2000";}
             }
         """)
 
-        propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        solver.propagate()
+        assertNoIssues()
 
-        val volume = global.resolve<Feature>("partWithVolume::volume")!!.variable!!
-        val height = global.resolve<Feature>("partWithVolume::height")!!.variable!!
+        val volume = global.resolveVar("partWithVolume::volume")!!
+        val height = global.resolveVar("partWithVolume::height")!!
         assertEquals(82.6, height.min(), 0.1)
         assertEquals(1210.0, volume.max(), 1.0)
     }
 
     @Test
-    fun issueExample() = testSession("SI", "Occurrences", "Ranges") {
+    fun issueExample() = testSession("ISQ", "Occurrences", "Ranges") {
         loadKerML("""
             // A general class 
             class Wheel {
                 feature tire: Tire; 
                 feature rim: Rim; 
-                feature totalMass: SI::Mass = sumOverParts(mass);
+                feature totalMass: ISQ::MassValue = sumOverParts(mass);
             }
             
             class Rim {
-                feature mass: SI::Mass, Ranges::QuantityInRange {:>> range = "20 .. 30";}
+                feature mass: ISQ::MassValue {:>> range = "20 .. 30";}
             }
             
             class Tire {
-                feature mass: SI::Mass, Ranges::QuantityInRange {:>> range = "10 .. 20";}
+                feature mass: ISQ::MassValue {:>> range = "10 .. 20";}
             }
             
             class SummerTire {
-                feature mass: SI::Mass, Ranges::QuantityInRange {:>> range = "10 .. 10";}
+                feature mass: ISQ::MassValue {:>> range = "10 .. 10";}
             }
             
             class WinterTire { 
-                feature mass: SI::Mass, Ranges::QuantityInRange {:>> range = "20 .. 20";}
+                feature mass: ISQ::MassValue {:>> range = "20 .. 20";}
             }
 
             // We calculate the sum inside the specific elements
@@ -152,13 +150,13 @@ class TutorialExamples {
                 feature tire: WinterTire;
             }
         """)
-        propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        solver.propagate()
+        assertNoIssues()
         val summerWheel = global.resolveVar("SummerWheel::totalMass") !!
         val winterWheel = global.resolveVar("WinterWheel::totalMass") !!
-        assertEquals(30.0, summerWheel.vectorQuantity.getMinAsDouble(), 0.0000001)
-        assertEquals(40.0, summerWheel.vectorQuantity.getMaxAsDouble(), 0.0000001)
-        assertEquals(40.0, winterWheel.vectorQuantity.getMinAsDouble(), 0.0000001)
-        assertEquals(50.0, winterWheel.vectorQuantity.getMaxAsDouble(), 0.0000001)
+        assertEquals(30.0, summerWheel.min(), 0.0000001)
+        assertEquals(40.0, summerWheel.max(), 0.0000001)
+        assertEquals(40.0, winterWheel.min(), 0.0000001)
+        assertEquals(50.0, winterWheel.max(), 0.0000001)
     }
 }

@@ -18,7 +18,8 @@ open class SubsettingImplementation(
     elementType = elementType
 ) {
     override var subsettedFeature: Feature
-        get() = general as Feature
+        get() = if (general is Feature) general as Feature else
+            TODO()
         set(value) { general = value }
 
     override var subsettingFeature: Feature

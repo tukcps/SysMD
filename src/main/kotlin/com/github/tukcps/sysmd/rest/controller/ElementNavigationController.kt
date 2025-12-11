@@ -13,7 +13,6 @@ import org.apache.logging.log4j.LogManager
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RestController
@@ -30,12 +29,6 @@ class ElementNavigationController {
      * @param commitId ID of the commit
      * @return  list
      */
-    @CrossOrigin(origins = [
-        "http://localhost:3000",
-        "http://localhost:4200",
-        "http://cps-testing.cs.rptu.de",
-        "https://cps-testing.cs.rptu.de"
-    ])
     @Operation(summary = "Gets all elements from the current commit.")
     @GetMapping(
         path = ["/projects/{projectId}/commits/{commitId}/elements"],
@@ -64,12 +57,6 @@ class ElementNavigationController {
      * @param commitId ID of the commit
      * @return List of root elements (those with an owner == null)
      */
-    @CrossOrigin(origins = [
-        "http://localhost:3000",
-        "http://localhost:4200",
-        "http://cps-testing.cs.rptu.de",
-        "https://cps-testing.cs.rptu.de"
-    ])
     @Operation(summary = "Gets all root elements from the commit.")
     @GetMapping(
         path = ["/projects/{projectId}/commits/{commitId}/roots"],
@@ -99,12 +86,6 @@ class ElementNavigationController {
      * @param elementId ID of the element
      * @return element with id if found
      */
-    @CrossOrigin(origins = [
-        "http://localhost:3000",
-        "http://localhost:4200",
-        "http://cps-testing.cs.rptu.de",
-        "https://cps-testing.cs.rptu.de"
-    ])
     @Operation(summary = "Gets an element by project, commit and its id.")
     @GetMapping(path = ["/projects/{projectId}/commits/{commitId}/elements/{elementId}"])
     fun getElementById(

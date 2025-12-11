@@ -13,6 +13,7 @@ import com.github.tukcps.sysmd.model.expression.AstRoot
 import com.github.tukcps.sysmd.model.expression.Expression
 import com.github.tukcps.sysmd.model.expression.implementation.ExpressionImplementation
 import com.github.tukcps.sysmd.model.kerml.Feature
+import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.sysml.TransitionUsage
 import com.github.tukcps.sysmd.model.sysml.implementation.TransitionUsageImplementation
 import java.util.UUID
@@ -70,13 +71,12 @@ fun SysMLv2.guardedSuccessionStarts(): Boolean =
     token.kind == SUCCESSION || (token.kind == FIRST && nextToken.kind == IF)
 
 
-fun SysMLv2.GuardExpressionMember() = FeatureActions<Feature>(semantics, ::ExpressionImplementation).parse {
+fun SysMLv2.GuardExpressionMember() = FeatureActions<Feature>(semantics, ::FeatureImplementation).parse {
     IF.consume()
     val iBeforeExpression = token.indices.first
     Expression().also {
-        val guardCondition = semantics.element<Expression>()
+        val guardCondition = semantics.element<Feature>()
         semantics.create(Identification("guard_" + UUID.randomUUID().toString()))
-        semantics.element<Expression>().featureWithValue = AstRoot(model, guardCondition, it)
         guardCondition.indices = iBeforeExpression..consumedToken.indices.last
         guardCondition.expression = input.subSequence(guardCondition.indices!!).toString().trim()
     }

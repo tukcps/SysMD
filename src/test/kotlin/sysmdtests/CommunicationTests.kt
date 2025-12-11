@@ -1,14 +1,13 @@
 package sysmdtests
 
-import io.github.tukcps.aadd.values.Range
-import com.github.tukcps.sysmd.cspsolver.propagate
-import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
+import io.github.tukcps.aadd.values.Range
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
-import kotlin.test.*
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class CommunicationTests {
 
@@ -32,10 +31,10 @@ class CommunicationTests {
                 inv { x == y }
             }
         """)
-        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
-        propagate()
-        assertEquals(Range(2.0..2.0), global.resolve<Feature>(qualifiedName = "a::x")!!.variable!!.aadd().getRange())
-        assertEquals(Range(2.0..2.0), global.resolve<Feature>(qualifiedName = "b::y")!!.variable!!.aadd().getRange())
+        assertNoIssues()
+        solver.propagate()
+        assertEquals(Range(2.0..2.0), solver.getVariable( "a::x")!!.range())
+        assertEquals(Range(2.0..2.0), solver.getVariable("b::y")!!.range())
     }
 
 
@@ -68,7 +67,7 @@ class CommunicationTests {
                 }
             """)
             assertNoIssues()
-            propagate()
+            solver.propagate()
             assertTrue(global.resolveVar("b::y")!!.aadd().getRange() in Range(1.99 .. 2.01))
             assertTrue( global.resolveVar("c::z")!!.aadd().getRange() in Range(1.99 .. 2.01))
         }
@@ -97,8 +96,8 @@ class CommunicationTests {
                 }
         """)
         assertNoIssues()
-        propagate()
-        assertEquals(Range(2.0..2.0), global.resolve<Feature>("a::x")!!.variable!!.aadd().getRange())
-        assertEquals(Range(2.0..2.0), global.resolve<Feature>("b::y")!!.variable!!.aadd().getRange())
+        solver.propagate()
+        assertEquals(Range(2.0..2.0), solver.getVariable("a::x")!!.range())
+        assertEquals(Range(2.0..2.0), solver.getVariable("b::y")!!.range())
     }
 }

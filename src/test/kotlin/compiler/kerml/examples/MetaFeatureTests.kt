@@ -4,7 +4,6 @@ import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Metaclass
 import com.github.tukcps.sysmd.model.kerml.MetadataFeature
 import com.github.tukcps.sysmd.model.kerml.getOwnedElementOfType
-import com.github.tukcps.sysmd.services.resolve.resolve
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
@@ -28,9 +27,9 @@ class MetaFeatureTests {
             }
         """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val securityRelated = global.resolve<Metaclass>("SecurityRelated")
+        val securityRelated: Metaclass? = global.resolve("SecurityRelated")?.member()
         assertNotNull(securityRelated)
-        val approvalAnnotation = global.resolve<Metaclass>("ApprovalAnnotation")
+        val approvalAnnotation: Metaclass? = global.resolve("ApprovalAnnotation")?.member()
         assertNotNull(approvalAnnotation)
     }
 
@@ -50,7 +49,7 @@ class MetaFeatureTests {
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         val approvalAnnotation = global.getOwnedElementOfType<MetadataFeature>()
         assertNotNull(approvalAnnotation)
-        val approver = approvalAnnotation.resolve<Feature>("approver")
+        val approver: Feature? = approvalAnnotation.resolve("approver")?.member()
         assertNotNull(approver)
         assertEquals(""""John Smith"""", approver.expression)
     }

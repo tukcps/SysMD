@@ -2,7 +2,6 @@ package api
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.github.tukcps.sysmd.SysMdRunner
-import com.github.tukcps.sysmd.model.kerml.Package
 import com.github.tukcps.sysmd.model.sysml.AttributeUsage
 import com.github.tukcps.sysmd.rest.Rest
 import com.github.tukcps.sysmd.rest.entities.requests.CodeRequest
@@ -13,7 +12,6 @@ import com.github.tukcps.sysmd.rest.entities.response.SessionStatusResponse
 import com.github.tukcps.sysmd.rest.entities.response.VariablesResponse
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.repositories.local.ProjectData
-import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.session.SessionManager
 import com.github.tukcps.sysmd.services.session.SessionManager.projectService
 import com.github.tukcps.sysmd.settings
@@ -118,7 +116,7 @@ class RestAPISessionServiceTest {
         val codeRequestJson = jsonMapper.writeValueAsString(codeRequest)
         val session = SessionManager.startSession(project)
         val response = Rest.put("/session/code", codeRequestJson, sessionId = session.id.toString())
-        val test = session.global.resolve<Package>("test")
+        val test = session.global.resolve("test")?.memberElement
         assertNotNull(test)
         assertEquals(HttpStatus.OK.value(), response.statusCode.value())
     }
@@ -138,7 +136,7 @@ class RestAPISessionServiceTest {
         val codeRequestJson = jsonMapper.writeValueAsString(codeRequest)
         val session = SessionManager.startSession(project)
         val response = Rest.put("/session/code", codeRequestJson, sessionId = session.id.toString())
-        val test = session.global.resolve<AttributeUsage>("test")
+        val test = session.global.resolve("test")?.member<AttributeUsage>()
         assertNotNull(test)
         assertEquals(HttpStatus.OK.value(), response.statusCode.value())
     }

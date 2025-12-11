@@ -53,7 +53,7 @@ import java.util.*
                 RESTRepository.serverSessionId = postSession()
                 println("   REST Login as $user succeeded.")
             }
-        } catch (exception: Exception) {
+        } catch (_: Exception) {
             println("Login to backend failed. Check if backend is online and login credentials are ok.")
             println(" --> Will disable REST tests and not report errors.")
             online = false

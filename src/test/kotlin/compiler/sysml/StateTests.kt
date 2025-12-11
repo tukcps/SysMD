@@ -1,11 +1,9 @@
 package compiler.sysml
 
-import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.kerml.getOwnedElementOfType
 import com.github.tukcps.sysmd.model.sysml.ActionUsage
 import com.github.tukcps.sysmd.model.sysml.StateUsage
 import com.github.tukcps.sysmd.model.sysml.TransitionUsage
-import com.github.tukcps.sysmd.services.resolve.resolve
 import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
@@ -24,7 +22,7 @@ class StateTests {
             }
         """)
         assertNoIssues()
-        val s = global.resolve<StateUsage>("a::s")
+        val s = global.resolve("a::s")?.member<StateUsage>()
         assertNotNull(s)
     }
 
@@ -39,13 +37,13 @@ class StateTests {
             }
         """)
         assertNoIssues()
-        val s = global.resolve<StateUsage>("a::s")
+        val s = global.resolve("a::s")?.member<StateUsage>()
         assertNotNull(s)
         assertEquals("States::StateAction", s.allSupertypes().first().qualifiedName)
-        val s1 = s.resolve<StateUsage>("s1")
+        val s1 = s.resolve("s1")?.member<StateUsage>()
         assertNotNull(s1)
         assertEquals("States::StateAction", s1.allSupertypes().first().qualifiedName)
-        val s2 = s.resolve<ActionUsage>("s2")
+        val s2 = s.resolve("s2")?.member<ActionUsage>()
         assertNotNull(s2)
     }
 
@@ -61,13 +59,13 @@ class StateTests {
             }
         """)
         assertNoIssues()
-        val s = global.resolve<StateUsage>("a::s")
+        val s = global.resolve("a::s")?.member<StateUsage>()
         assertNotNull(s)
         assertTrue("States::StateAction" in s.allSupertypes().map { it.qualifiedName })
-        val s1 = s.resolve<StateUsage>("s1")
+        val s1 = s.resolve("s1")?.member<StateUsage>()
         assertNotNull(s1)
         assertTrue("States::StateAction" in s1.allSupertypes().map { it.qualifiedName })
-        val s2 = s.resolve<ActionUsage>("s2")
+        val s2 = s.resolve("s2")?.member<ActionUsage>()
         assertNotNull(s2)
         val t = s.getOwnedElementOfType<TransitionUsage>()
         assertNotNull(t)

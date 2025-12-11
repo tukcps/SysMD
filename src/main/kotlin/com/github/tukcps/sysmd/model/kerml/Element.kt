@@ -1,6 +1,7 @@
 package com.github.tukcps.sysmd.model.kerml
 
 import com.fasterxml.uuid.Generators
+import com.github.tukcps.sysmd.compiler.semantics.Identification
 import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.model.util.SimpleName
 import com.github.tukcps.sysmd.services.ModelServices
@@ -61,7 +62,7 @@ interface Element: ModelServices {
     var ownedRelationship: MutableList<Relationship>
 
     /** Reified Relationship from which owner and the below properties are derived. */
-    var owningRelationship: Relationship?
+    var owningRelationship: OwningMembership?
 
     /** The ownership is modeled by a set of owned elements.*/
     val ownedElement: List<Element>
@@ -134,14 +135,14 @@ inline fun <reified T: Element> Element.getOwnedElementsOfType(): List<T> =
 
 /**
  * Returns the owned element with a given name.
- * @param name A SimpleName that is searched for
+ * @param id An identification to search for
  */
-fun Element.getOwnedElement(name: SimpleName?, shortName: SimpleName? = null): Element? {
+fun Element.getOwnedElement(id : Identification): Element? {
     ownedElement.forEach {
-        if (name != null && it.name == name
-            || (shortName == null) && it.declaredShortName == name
-            || (shortName!= null) && it.declaredShortName == shortName)
+        if(Identification(it) == id)
             return it
     }
     return null
 }
+
+fun Element.getOwnedElement(id : String) = getOwnedElement(Identification(null, id))

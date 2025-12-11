@@ -13,18 +13,19 @@ import com.github.tukcps.sysmd.model.util.SimpleName
 /**
  * Semantic action for the declaration of a Type.
  * @param context object with the overall semantic action's context of the parser
- * @param defaultType The qualified name of the Type's superclass
+ * @param isImplicit The qualified name of the Type's superclass
  */
 open class TypeActions<T: Type>(
     context: ActionsContext,
     creator: (SimpleName?, SimpleName?) -> T,
-    var defaultType: String? = "Base::Anything",
+    var isImplicit: String? = "Base::Anything",
 ): NamespaceActions<T>(context, creator) {
 
     override fun finish() {
-        if (created.specialization.isEmpty() && defaultType != null) {
-            context.addSpecialization(defaultType!!)
+        if (created.specialization.isEmpty() && isImplicit != null) {
+            context.addSpecialization(isImplicit!!)
         }
+        if (Token.Kind.ABSTRACT in context.prefixes) created.isAbstract = true
         super.finish()
     }
 }
@@ -32,23 +33,23 @@ open class TypeActions<T: Type>(
 open class ClassifierActions<T: Classifier>(
     context: ActionsContext,
     creator: (SimpleName?, SimpleName?) -> T,
-    specializes: String = "Base::Anything",
-): TypeActions<T>(context, creator, specializes)
+    isImplicit: String = "Base::Anything",
+): TypeActions<T>(context, creator, isImplicit)
 
 /**
  * Semantic action for the declaration of a Class.
  * @param context object with the semantic actions of the parser
  * @param creator function that creates a Class element
- * @param specializes class that is general for non-abstract classes; also default for missing general class
+ * @param isImplicit class that is general for non-abstract classes; also default for missing general class
  */
 open class ClassActions<T: Class>(
     context: ActionsContext,
     creator: (SimpleName?, SimpleName?) -> T,
-    specializes: String = "Occurrences::Occurrence",
-): ClassifierActions<Class>(context, creator, specializes) {
+    isImplicit: String = "Occurrences::Occurrence",
+): ClassifierActions<Class>(context, creator, isImplicit) {
     override fun finish() {
-        if (created.specialization.isEmpty() && defaultType != null) {
-            context.addSubclassification(defaultType!!)
+        if (created.specialization.isEmpty() && isImplicit != null) {
+            context.addSubclassification(isImplicit!!)
         }
         super.finish()
     }
@@ -94,8 +95,8 @@ open class FeatureActions<T: Feature>(
 ): TypeActions<T>(context, creator, defaultType) {
 
     override fun create(identification: Identification?) {
-        super.create(identification)
         created.direction = context.directionFromPrefixes()
+        super.create(identification)
         created.isEnd = END in context.prefixes
         created.isComposite = Token.Kind.COMPOSITE in context.prefixes
         created.isPortion = Token.Kind.PORTION in context.prefixes
@@ -109,10 +110,10 @@ open class FeatureActions<T: Feature>(
 
     override fun finish() {
         if (created.redefining == null) {
-            if (created.specialization.isEmpty() && defaultType != null) {
-                context.addTyping(defaultType!!)
+            if (created.specialization.isEmpty() && isImplicit != null) {
+                context.addTyping(isImplicit!!)
             }
-        } else defaultType = null
+        } else isImplicit = null
         super.finish()
     }
 }

@@ -2,7 +2,6 @@ package compiler.kerml
 
 import com.github.tukcps.sysmd.model.kerml.Structure
 import com.github.tukcps.sysmd.model.kerml.Type
-import com.github.tukcps.sysmd.services.resolve.resolve
 import junit.framework.TestCase.assertTrue
 import util.assertNoIssues
 import util.mockup.loadKerML
@@ -22,9 +21,9 @@ class StructTests {
             } 
         """)
         assertNoIssues()
-        val s = global.resolve<Structure>("s")
+        val s = global.resolve("s")?.member<Structure>()
         assertNotNull(s)
-        val objects = global.resolve<Type>("Objects::Object")
+        val objects = global.resolve("Objects::Object")?.member<Type>()
         assertTrue(objects in s.allSupertypes())
     }
 }

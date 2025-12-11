@@ -4,7 +4,6 @@ import com.github.tukcps.sysmd.model.kerml.Import
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.OwningMembership
 import com.github.tukcps.sysmd.model.kerml.implementation.getOwned
-import com.github.tukcps.sysmd.services.resolve.resolve
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
@@ -21,9 +20,9 @@ class NamespaceTests {
             } 
         """)
         assertNoIssues()
-        val n = global.resolve<Namespace>("n")
+        val n = global.resolve("n")?.memberElement
         assertNotNull(n)
-        val n2 = global.resolve<Namespace>("n::n2")
+        val n2 = global.resolve("n::n2")?.memberElement
         assertNotNull(n2)
     }
 

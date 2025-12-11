@@ -1,10 +1,8 @@
 package kermltests
 
-import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Multiplicity
 import com.github.tukcps.sysmd.model.kerml.Type
-import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import util.assertNoIssues
 import util.mockup.loadKerML
@@ -16,7 +14,6 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class RedefinitionTests {
-
 
     /**
      * A redefined feature should add a multiplicity and also refine its value.
@@ -34,8 +31,8 @@ class RedefinitionTests {
         """)
         assertNoIssues()
 
-        val bf = global.resolve<Feature>("b::f")
-        val af = global.resolve<Feature>("a::f")
+        val bf: Feature? = global.resolve("b::f")?.member()
+        val af: Feature? = global.resolve("a::f")?.member()
 
         assertNotNull(af)
         assertEquals(1L, af.multiplicityRange.min  )
@@ -61,14 +58,14 @@ class RedefinitionTests {
                 :>> f [2..3];   // Must be of type Real 
             }
         """)
-        val af = global.resolve<Feature>("a::f")
+        val af: Feature? = global.resolve("a::f")?.member()
         assertNotNull(af)
         assertEquals(1L, af.multiplicityRange.min  )
         assertEquals(4L, af.multiplicityRange.max  )
         assertTrue(repo.realType in af.generalization)
 
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val bf = global.resolve<Feature>("b::f")
+        val bf = global.resolve("b::f")?.memberElement as Feature
         assertNotNull(bf)
         assertEquals(2L, bf.multiplicityRange.min )
         assertEquals(3L, bf.multiplicityRange.max  )
@@ -76,12 +73,12 @@ class RedefinitionTests {
     }
 
     @Test
-    fun redefinitionTestBareRedefinition3() = testSession("ScalarValues", "SI") {
+    fun redefinitionTestBareRedefinition3() = testSession("ScalarValues", "ISQ") {
         loadSysMLv2("""
             attribute def Position {
-                attribute x: SI::Length [m]; 
-                attribute y: SI::Length [m]; 
-                attribute z: SI::Length [m];     
+                attribute x: ISQ::LengthValue [m]; 
+                attribute y: ISQ::LengthValue [m]; 
+                attribute z: ISQ::LengthValue [m];     
             }
             
             attribute p: Position { 
@@ -90,7 +87,7 @@ class RedefinitionTests {
               redefines z = 1.5 [m]; 
             }
         """)
-        propagate()
+        solver.propagate()
         assertNoIssues()
     }
 
@@ -113,14 +110,14 @@ class RedefinitionTests {
         """)
 
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val bf = global.resolve<Feature>("b::f")
+        val bf = global.resolve("b::f")?.memberElement as Feature
 
         assertNotNull(bf)
         assertEquals(2L, bf.ownedElement.filterIsInstance<Multiplicity>().first().variable!!.min()  )
         assertEquals(3L, bf.ownedElement.filterIsInstance<Multiplicity>().first().variable!!.max()  )
         assertTrue(repo.realType in bf.typing.map { it.type } )
 
-        val af = global.resolve<Type>("a::f")
+        val af = global.resolve("a::f")?.memberElement as Type?
         assertNotNull(af)
         assertEquals(1L, af.ownedElement.filterIsInstance<Multiplicity>().first().variable!!.min()  )
         assertEquals(4L, af.ownedElement.filterIsInstance<Multiplicity>().first().variable!!.max()  )
@@ -150,12 +147,12 @@ class RedefinitionTests {
                 :>> quantityPowerFactors = lengthPF; 
             }
         """)
-        propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        assertEquals(1, global.resolveVar("quantityDimension::quantityPowerFactors::exponent")!!.vectorQuantity.idd().getRange().max)
+        solver.propagate()
+        assertNoIssues()
+        assertEquals(1L, global.resolveVar("quantityDimension::quantityPowerFactors::exponent")!!.max() )
         assertEquals("m", global.resolveVar("quantityDimension::quantityPowerFactors::unit")!!.vectorQuantity.value.asStrDD().toString())
         assertEquals("m", global.resolveVar("lengthPF::unit")!!.vectorQuantity.value.asStrDD().toString())
-        assertEquals(1, global.resolveVar("lengthPF::exponent")!!.vectorQuantity.idd().getRange().min)
+        assertEquals(1L, global.resolveVar("lengthPF::exponent")!!.min() )
     }
 
     // The types are not set as expected in addInheritedFeatures (the function should be right but not correctly called for the elements),
@@ -173,7 +170,7 @@ class RedefinitionTests {
             feature redefinedOld: Old { :>> a = "new"; }
         """)
         assertNoIssues()
-        propagate()
+        solver.propagate()
         // val ownsOld = global.resolve<Feature>("ownsOld")
         // val redefinedOld = global.resolve<Feature>("redefinedOld")
         // val new = global.resolveVar("ownsOld::ownedOld::a")!!.ast!!.evalUpRec()

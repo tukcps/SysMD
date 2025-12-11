@@ -12,6 +12,7 @@ package com.github.tukcps.sysmd.quantities
  * @param exponent Exponent of the DerivedUnit
  * @param isLogarithmic This value is true, if the value of the current DerivedUnit uses a logarithmic representation (like Decibel)
  * @param isDifference This value is true, if the current DerivedUnit represents a difference between two Units of the same type
+ * @param alternativeDomain This value is used for alternative domains
  */
 open class DerivedUnit(
     name: String,
@@ -22,14 +23,15 @@ open class DerivedUnit(
     convFac: Double,
     exponent: Int = 1,
     isLogarithmic: Boolean = false,
-    isDifference: Boolean = false
-) : UnitOfMeasurement(name, symbol, prefix, domain, convFac, exponent, isLogarithmic, isDifference), Cloneable {
+    isDifference: Boolean = false,
+    alternativeDomain: String = ""
+) : UnitOfMeasurement(name, symbol, prefix, domain, convFac, exponent, isLogarithmic , isDifference, alternativeDomain), Cloneable {
     open fun copy(): DerivedUnit {
         val unitSet = mutableSetOf<BaseUnit>()
         baseUnitSet.forEach {
             unitSet.add(it.copy())
         }
-        return DerivedUnit(name, symbol, prefix, domain, unitSet, convFac, exponent, isLogarithmic, isDifference)
+        return DerivedUnit(name, symbol, prefix, domain, unitSet, convFac, exponent, isLogarithmic, isDifference, alternativeDomain)
     }
 
     override fun clone(): UnitOfMeasurement {

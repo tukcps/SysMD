@@ -8,17 +8,31 @@ fun QualifiedName(str: String): QualifiedName {
 }
 
 /**
- * Removes the remainder after removing the first simple name of a qualified name.
+ * Removes the first segment name of a qualified name.
  */
 fun QualifiedName.dropFirstName() : QualifiedName {
     val asArray = this.split("::")
     val reducedArray =  asArray.subList(1, asArray.lastIndex+1)
-    var result = ""
-    for(name in reducedArray) {
-        result += "::$name"
-    }
-    result = result.removePrefix("::")
+    val result = reducedArray.joinToString(separator = "::")
     return QualifiedName(result)
+}
+
+/**
+ * Removes last segment name of a qualified name.
+ */
+fun QualifiedName.qualification() : QualifiedName? {
+    val asArray = this.split("::")
+    val reducedArray = asArray.subList(0, asArray.lastIndex)
+    val result = reducedArray.joinToString(separator = "::")
+    return QualifiedName(result)
+}
+
+/**
+ * Returns the name (unqualified name) of a Qualified Name.
+ */
+fun QualifiedName.unqualifiedName() : SimpleName {
+    val asArray = this.split("::")
+    return asArray.last()
 }
 
 

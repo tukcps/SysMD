@@ -1,7 +1,6 @@
 package compiler
 
 import com.github.tukcps.sysmd.model.kerml.Package
-import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import util.assertIssue
 import util.mockup.loadKerML
@@ -57,8 +56,8 @@ class ErrorReportingTests {
         loadSysMLv2("""
             package test;  
         """)
-        val test = global.resolve<Package>("test")!!
-        val token = test.input?.substring(test.indices!!)
+        val test = global.resolve("test")?.member<Package>()
+        val token = test?.input?.substring(test.indices!!)
         assertEquals("test", token)
     }
 

@@ -81,7 +81,6 @@ class AstBinOp(
     override fun evalDown() {
         val prevL = l
         val prevR = r
-        // Only for arithmetic operations; boolean are handled via BDD only bottom-up.
 
         when (op) {
             AND -> {

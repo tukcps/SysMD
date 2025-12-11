@@ -98,8 +98,6 @@ interface Connector: Relationship, Feature {
     var isDirected: Boolean
     override fun clone(): Connector
     override fun updateFrom(template: Element)
-    override fun resolveNames(): Boolean
-    override fun visibleMemberships(): List<Membership> = (ownedRelationship + from + to).filterIsInstance<Membership>()
 
     var sourceFeature: Feature?
         get() = source.firstOrNull() as Feature?

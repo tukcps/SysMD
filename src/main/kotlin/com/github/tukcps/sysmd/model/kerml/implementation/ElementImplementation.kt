@@ -27,7 +27,7 @@ open class ElementImplementation(
     final override var declaredShortName: SimpleName? = null,
     final override var aliasIds: Collection<String> = emptyList(),
     final override var ownedRelationship: MutableList<Relationship> = mutableListOf(),
-    final override var owningRelationship: Relationship? = null,
+    final override var owningRelationship: OwningMembership? = null,
     final override var textualRepresentation: MutableList<TextualRepresentation> = mutableListOf(),
     final override var documentation: MutableList<Documentation> = mutableListOf(),
     final override var isImpliedIncluded: Boolean = false,
@@ -84,7 +84,7 @@ open class ElementImplementation(
     final override val qualifiedName: QualifiedName?
         get() = when {
             this == model?.global -> null
-            this.owner == model?.global -> escapedName()
+            this.owningNamespace == model?.global -> escapedName()
             escapedName() != null -> "${owner?.qualifiedName}::${escapedName()}"
             else -> null
         }
@@ -124,15 +124,6 @@ open class ElementImplementation(
                 position ++
             }
         return position
-    }
-
-     /**
-     * The method searches for (qualified) names in the element and
-     * adds the id and reference to identifications, where the search
-     * was successful or reports an error where not.
-     */
-    override fun resolveNames(): Boolean {
-        return false
     }
 
     override fun toString(): String = "[$elementType] " +

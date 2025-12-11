@@ -1,11 +1,10 @@
 package compiler
 
 import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
-import util.mockup.loadKerML
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.assertTrue
 
@@ -46,7 +45,7 @@ class DependencyStringTest {
             feature x2: ScalarValues::Boolean = true  ;
             feature x3: ScalarValues::Boolean = true
               ;
-            feature z: Boolean = true""")
+            feature z: ScalarValues::Boolean = true""")
         val x = global.resolveVar("x") !!
         assertEquals("true", x.feature.expression)
         val x2 = global.resolveVar("x2") !!
@@ -89,14 +88,14 @@ class DependencyStringTest {
                 feature x2: ScalarValues::Integer = 1 + 2  ;
                 feature x3: ScalarValues::Integer = 1 + 2
                 ;
-                feature z: ScalarValues::Integer = 1 + 2""".trimIndent())
-        val x = global.resolve<Feature>("x") !!
+                feature z: ScalarValues::Integer = 1 + 2""")
+        val x = global.resolve("x")?.member<Feature>()!!
         assertEquals("1 + 2", x.expression)
-        val x2 = global.resolve<Feature>("x2") !!
+        val x2 = global.resolve("x2")?.member<Feature>()!!
         assertEquals("1 + 2", x2.expression)
-        val x3 = global.resolve<Feature>("x3") !!
+        val x3 = global.resolve("x3")?.member<Feature>()!!
         assertEquals("1 + 2", x3.expression)
-        val z = global.resolve<Feature>("z") !!
+        val z = global.resolve("z")?.member<Feature>()!!
         assertEquals("1 + 2", z.expression)
     }
 
@@ -105,7 +104,7 @@ class DependencyStringTest {
      */
     @Test fun dotAfterIntegerDot() = testSession("ScalarValues") {
         loadKerML("feature x: ScalarValues::Integer = 1.")
-        val x = global.resolve<Feature>("x") !!
+        val x = global.resolve("x")?.member<Feature>()!!
         assertEquals("1", x.expression)
     }
 }

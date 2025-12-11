@@ -21,7 +21,6 @@ open class AnnotatingElementImplementation(
     declaredShortName = declaredShortName,
     elementType = elementType
 ) {
-    override fun resolveNames() = false
 
     override fun clone(): AnnotatingElement =  AnnotatingElementImplementation()
         .also { klon -> klon.updateFrom(this) }

@@ -1,7 +1,10 @@
 package sysmlv2tests
 
-import com.github.tukcps.sysmd.model.sysml.*
-import com.github.tukcps.sysmd.services.resolve.resolve
+import com.github.tukcps.sysmd.model.sysml.ItemDefinition
+import com.github.tukcps.sysmd.model.sysml.ItemUsage
+import com.github.tukcps.sysmd.model.sysml.OccurrenceDefinition
+import com.github.tukcps.sysmd.model.sysml.OccurrenceUsage
+import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Test
@@ -20,8 +23,8 @@ class ItemAndOccurrenceUsageTests {
         loadSysMLv2("""
             item p; 
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val p = global.resolve<ItemUsage>("p")
+        assertNoIssues()
+        val p = global.resolve("p")?.memberElement as ItemUsage?
         assertNotNull(p)
         // assertTrue(p.superclass?.ref?.qualifiedName == "Items::Item")
     }
@@ -35,10 +38,10 @@ class ItemAndOccurrenceUsageTests {
             item def p1; 
             item def p2 :> p1; 
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val p2 = global.resolve<ItemDefinition>("p2")
-        assertNotNull(p2)
-        assertTrue(p2.allSupertypes().first().qualifiedName == "p1")
+        assertNoIssues()
+        val p2 = global.resolve("p2")?.memberElement
+        assertNotNull(p2 as? ItemDefinition)
+        assertEquals(p2.allSupertypes().first().qualifiedName, "p1")
     }
 
     /**
@@ -49,9 +52,9 @@ class ItemAndOccurrenceUsageTests {
         loadSysMLv2("""
             occurrence p; 
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val p = global.resolve<OccurrenceUsage>("p")
-        assertNotNull(p)
+        assertNoIssues()
+        val p = global.resolve("p")?.memberElement 
+        assertTrue(p is OccurrenceUsage)
         assertEquals("Occurrences::Occurrence", p.allSupertypes().first().qualifiedName)
     }
 
@@ -64,9 +67,9 @@ class ItemAndOccurrenceUsageTests {
             occurrence def p1; 
             occurrence def p2 :> p1; 
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val p2 = global.resolve<OccurrenceDefinition>("p2")
-        assertNotNull(p2)
-        assertTrue(p2.allSupertypes().first().qualifiedName == "p1")
+        assertNoIssues()
+        val p2 = global.resolve("p2")?.memberElement
+        assertNotNull(p2 as? OccurrenceDefinition)
+        assertEquals(p2.allSupertypes().first().qualifiedName, "p1")
     }
 }

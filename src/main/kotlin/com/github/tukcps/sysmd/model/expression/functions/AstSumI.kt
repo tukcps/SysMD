@@ -48,8 +48,13 @@ internal class AstSumI(
 
         // Check that 2nd parameter is int or real
         if (!endI.isInt && !endI.isReal)
-            throw SemanticError("sum_i function expected: 2nd parameter of type Integer, got: ${getParam(1).upQuantity}")
+            throw SemanticError("sum_i function expected: 2nd parameter of type Integer or Real, got: ${getParam(1).upQuantity}")
 
+        if(startI.isInt && startI.idd.min>endI.idd.min||startI.isReal && startI.aadd.min>endI.aadd.min)
+            throw SemanticError("sum_i expects startI.min<=endI.min")
+
+        if(startI.isInt && startI.idd.max>endI.idd.max || startI.isReal && startI.aadd.max>endI.aadd.max)
+            throw SemanticError("sum_i expects startI.max<=endI.max")
         // Check that 3rd parameter is int or real
         if (!iteration.isInt && !iteration.isReal)
             throw SemanticError("sum_i function expected: 3rd parameter of type Real or Integer, got: ${getParam(2).upQuantity}")
@@ -97,12 +102,12 @@ internal class AstSumI(
                 // calculate endI
                 val endIReverseMin = reverseSumInt(
                     downQuantity.values[0].asIdd().getRange().min,
-                    startI.idds[0].getRange().max,
+                    startI.idds[0].getRange().min,
                     isEnd = true
                 )
                 val endIReverseMax = reverseSumInt(
                     downQuantity.values[0].asIdd().getRange().max,
-                    startI.idds[0].getRange().min,
+                    startI.idds[0].getRange().max,
                     isEnd = true
                 )
                 getParam(1).downQuantity = Quantity(
@@ -117,12 +122,12 @@ internal class AstSumI(
                 // calculate startI
                 val startIReverseMin = reverseSumInt(
                     downQuantity.values[0].asIdd().getRange().max,
-                    endI.idds[0].getRange().max,
+                    endI.idds[0].getRange().min,
                     isEnd = false
                 )
                 val startIReverseMax = reverseSumInt(
                     downQuantity.values[0].asIdd().getRange().min,
-                    endI.idds[0].getRange().min,
+                    endI.idds[0].getRange().max,
                     isEnd = false
                 )
                 getParam(0).downQuantity = Quantity(
@@ -178,6 +183,8 @@ internal class AstSumI(
             iteration.evalUpRec()
             currentSum -= iteration.upQuantity
             if (isEnd) i += 1 else i -= 1
+            if(i<0 && currentSum.values[0].asIdd().getRange().min > 0)
+                i=-2 //special case, because this case does not work otherwise. i+2 is calculated before returning
         }
         return if (currentSum.values[0].asIdd().getRange().min == 0L) //result exact
             if (isEnd)
@@ -186,9 +193,9 @@ internal class AstSumI(
                 IntegerRange(IntegerRange().plusOverflowDetection(i, 1), IntegerRange().plusOverflowDetection(i, 1))
         else
             if (isEnd)
-                IntegerRange(IntegerRange().minusOverflowDetection(i, 2), IntegerRange().minusOverflowDetection(i, 1))
+                IntegerRange(IntegerRange().minusOverflowDetection(i, 2), IntegerRange().minusOverflowDetection(i, 2))
             else
-                IntegerRange(IntegerRange().plusOverflowDetection(i, 1), IntegerRange().plusOverflowDetection(i, 2))
+                IntegerRange(IntegerRange().plusOverflowDetection(i, 2), IntegerRange().plusOverflowDetection(i, 2))
     }
 
     /**
@@ -285,8 +292,6 @@ internal class AstSumI(
         var currSumMin = model.builder.integer(0)
 
         for (i in startI.min..endI.max) {
-            //either in startI, endI or between startI and endI
-            // set variable to i and evaluate iteration for it.
             require(namespace.resolveVar("i") != null)
             namespace.resolveVar("i")!!.intSpec(IntegerRange(i)).initVectorQuantity()
             iteration.evalUpRec()
@@ -294,26 +299,15 @@ internal class AstSumI(
             currSumMax += iterationValue
             currSumMin += iterationValue
             if (i > endI.min) { // (i>=endLow+1) these elements are added to the sum if needed
-                //maxSum
-                // maxSum = (maxSum.greaterThanOrEquals(currSumMax)).asBdd().ite(maxSum, currSumMax) ==> exponential growth of tree size
                 maxSum = model.builder.integer(max(maxSum.max, currSumMax.max))
-                //minSum
-                // minSum = (minSum.lessThanOrEquals(currSumMin)).asBdd().ite(minSum, currSumMin) ==> exponential growth of tree size
                 minSum = model.builder.integer(min(minSum.min, currSumMin.min))
             } else if (i <= startI.max) { // in this area the sum must start
-                //maxSum reset the start of the sum  (use max instead of ite -> otherwise exponential growth of tree size)
-                //currSumMax = (currSumMax.greaterThanOrEquals(iterationValue)).asBdd().ite(currSumMax, iterationValue) ==> exponential growth of tree size
                 currSumMax = model.builder.integer(max(currSumMax.max, iterationValue.max))
                 maxSum = currSumMax
-                //minSum  reset the start of the sum  (use min instead of ite -> otherwise exponential growth of tree size)
-                //currSumMin = (currSumMin.lessThanOrEquals(iterationValue)).asBdd().ite(currSumMin, iterationValue) ==> exponential growth of tree size
                 currSumMin = model.builder.integer(min(currSumMin.min, iterationValue.min))
                 minSum = currSumMin
             } else { //between startI and endI
-                //these elements are required for the sum
-                //maxSum
                 maxSum = currSumMax // not reset of the sum, because this area must be included in the final result
-                //minSum
                 minSum = currSumMin // not reset of the sum, because this area must be included in the final result
             }
         }

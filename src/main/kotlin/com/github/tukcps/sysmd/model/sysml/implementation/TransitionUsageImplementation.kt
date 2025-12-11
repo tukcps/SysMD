@@ -19,8 +19,8 @@ class TransitionUsageImplementation(
     override val target : Element
         get() = getOwnedElementOfType<SuccessionAsUsage>()!!.target[0]
 
-    override val guardCondition : Expression?
-        get() = getOwnedElementOfType<Expression>()
+    override val guardCondition : Feature? // fixme: replace with Expression once implemented
+        get() = member.firstOrNull { it !is Usage && it is Feature } as? Feature
 
     override val triggerPayloadParameter: ReferenceUsage?
         get() {

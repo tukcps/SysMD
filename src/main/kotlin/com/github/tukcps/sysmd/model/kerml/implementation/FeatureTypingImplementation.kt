@@ -16,7 +16,7 @@ class FeatureTypingImplementation(
 ) {
     @Suppress("UNCHECKED_CAST")
     override val owningFeature: Feature
-        get() = owningRelationship?.owner as Feature
+        get() = owningRelatedElement as Feature
 
     override val type: Type
         get() = general

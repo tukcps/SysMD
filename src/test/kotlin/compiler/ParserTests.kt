@@ -3,14 +3,19 @@ package compiler
 import com.github.tukcps.sysmd.compiler.KerML
 import com.github.tukcps.sysmd.compiler.SysMLv2
 import com.github.tukcps.sysmd.model.kerml.Class
+import com.github.tukcps.sysmd.model.kerml.Feature
+import com.github.tukcps.sysmd.model.kerml.Function
+import com.github.tukcps.sysmd.model.kerml.Package
 import com.github.tukcps.sysmd.services.session.SessionImplementation
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.assertTimeoutPreemptively
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
+import kotlin.test.assertNotNull
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
 
@@ -28,8 +33,7 @@ class ParserTests {
     @Test
     fun shortNameTest12() = testSession(initialize = false) {
         loadKerML("""class < abc >; """)
-        assertEquals(0, status.issues.size, status.issues.toString() )
-        assertEquals(0, astNodes.size)
+        assertNoIssues()
     }
 
     /** Short name is given in <> */
@@ -39,8 +43,7 @@ class ParserTests {
         val abc = global.ownedElement.firstOrNull { it is Class }
         assertEquals("shortName", abc!!.shortName)
         assertEquals("longName", abc.name)
-        assertEquals(0, status.issues.size, status.issues.toString() )
-        assertEquals(0, astNodes.size)
+        assertNoIssues()
     }
 
     @Test
@@ -117,4 +120,41 @@ class ParserTests {
             model.assertNoIssues()
         }
     }
+
+	@Test
+	fun testAbstract() : Unit = KerML(SessionImplementation()).run {
+		input = """
+			private import ScalarValues::Real;
+			package p {
+				abstract function foo { in x : Real; return : Real }
+				abstract feature bar {
+					feature x : Real;
+					feature y : Real;
+				}
+			}
+		"""
+		semantics.initOwningNamespaces()
+		parse()
+		model.assertNoIssues()
+
+		val p = assertNotNull(model.global.resolve("p")?.member<Package>())
+
+		assertNotNull(p.resolve("bar")?.member<Feature>()).apply {
+			assertTrue(isAbstract)
+			val x = assertNotNull(resolve("x")?.member<Feature>())
+			val y = assertNotNull(resolve("y")?.member<Feature>())
+
+			assertFalse(x.isAbstract)
+			assertFalse(y.isAbstract)
+		}
+
+		assertNotNull(p.resolve("foo")?.member<Function>()).apply {
+			assertTrue(isAbstract)
+			val args = ownedElement.filterIsInstance<Feature>()
+			// println(args)
+
+			assertEquals(2, args.size)
+			args.forEach { assertFalse(it.isAbstract) }
+		}
+	}
 }

@@ -1,10 +1,8 @@
-package sysmlv2specificationtests
+package compiler.sysml.examples
 
-import util.mockup.loadSysMLv2
 import com.github.tukcps.sysmd.model.sysml.PortDefinition
-import com.github.tukcps.sysmd.model.sysml.PortUsage
-import com.github.tukcps.sysmd.services.resolve.resolve
 import util.assertNoIssues
+import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertNotNull
@@ -21,18 +19,18 @@ class PortTests {
     @Test
     fun testPortsDefinition() = testSession("Ports") {
         loadSysMLv2("""
-        port def PortDef1;
-        port def PortDef2 {
-        /* members */
-        }
+            port def PortDef1;
+            port def PortDef2 {
+            /* members */
+            }
         """)
         assertNoIssues()
 
-        val portDef1 = global.resolve<PortDefinition>("PortDef1")
-        assertNotNull(portDef1)
+        val portDef1 = global.resolve("PortDef1")
+        assertTrue(portDef1?.memberElement is PortDefinition)
 
-        val portDef2 = global.resolve<PortDefinition>("PortDef2")
-        assertNotNull(portDef2)
+        val portDef2 = global.resolve("PortDef2")
+        assertTrue(portDef2?.memberElement is PortDefinition)
     }
 
     /**
@@ -44,21 +42,21 @@ class PortTests {
     @Test
     fun testPortsUsage() = testSession("Ports") {
         loadSysMLv2("""
-        port def PortDef1;
-        port port1 : PortDef1;
-        port port2 : PortDef1 {
-            /* members */
-        }
+            port def PortDef1;
+            port port1 : PortDef1;
+            port port2 : PortDef1 {
+                /* members */
+            }
         """)
         assertNoIssues()
 
-        val port1 = global.resolve<PortUsage>("port1")
+        val port1 = global.resolve("port1")?.memberElement
         assertNotNull(port1)
 
-        val port2 = global.resolve<PortUsage>("port2")
+        val port2 = global.resolve("port2")
         assertNotNull(port2)
 
-        val portDef1 = global.resolve<PortDefinition>("PortDef1")
+        val portDef1 = global.resolve("PortDef1")
         assertNotNull(portDef1)
     }
 }

@@ -1,7 +1,5 @@
 package compiler
 
-import com.github.tukcps.sysmd.model.sysml.AttributeUsage
-import com.github.tukcps.sysmd.services.resolve.resolve
 import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Test
@@ -23,8 +21,8 @@ class ErrorRecoveryTests {
             } 
         """)
         assertEquals(1, status.issues.size, status.issues.toString())
-        assertNotNull(global.resolve<AttributeUsage>("x::a"))
-        assertNotNull(global.resolve<AttributeUsage>("x::c"))
+        assertNotNull(global.resolve("x::a"))
+        assertNotNull(global.resolve("x::c"))
     }
 
     @Test
@@ -37,7 +35,7 @@ class ErrorRecoveryTests {
             attribute c; 
         """)
         assertEquals(1, status.issues.size, status.issues.toString())
-        assertNotNull(global.resolve<AttributeUsage>("x::a"))
-        assertNotNull(global.resolve<AttributeUsage>("c"))
+        assertNotNull(global.resolve("x::a"))
+        assertNotNull(global.resolve("c"))
     }
 }

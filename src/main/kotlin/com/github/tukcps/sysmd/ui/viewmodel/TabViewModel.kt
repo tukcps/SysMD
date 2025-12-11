@@ -131,7 +131,7 @@ class TabViewModel(
 
         if (file.isFile) {
             try {
-                this.tabTitle.value = " " + file.name.dropLast(3) + " "
+                this.tabTitle.value = file.name
                 this.file = file
                 fileAnnotation = session.global.getOwned<Namespace>(name = file.name)
                 buildViewModelFromModel(fileAnnotation!!)

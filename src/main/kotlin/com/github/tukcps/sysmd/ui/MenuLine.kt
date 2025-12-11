@@ -23,6 +23,7 @@ import com.github.tukcps.sysmd.generated.resources.SysMD_Icon
 import com.github.tukcps.sysmd.rest.RESTRepository
 import com.github.tukcps.sysmd.ui.composables.SysMDButton
 import com.github.tukcps.sysmd.ui.dialogs.NewCommitDialog
+import com.github.tukcps.sysmd.ui.dialogs.NoProjectSelectedDialog
 import com.github.tukcps.sysmd.ui.styles.AppTheme
 import com.github.tukcps.sysmd.ui.viewmodel.SysMDViewModel
 import kotlinx.coroutines.launch
@@ -37,9 +38,12 @@ import org.jetbrains.compose.resources.painterResource
  */
 var inCompile: Boolean = false
 val isCommitDialogOpen = mutableStateOf(false)
+val isNoProjectDialogOpen = mutableStateOf(false)
 
 @Suppress("FunctionName") @Composable
 fun MenuLine(sysMDViewModel: SysMDViewModel) {
+    val hasProject = sysMDViewModel.sessionState.value.project != null
+
     Box(
         Modifier
             .height(32.dp)
@@ -74,10 +78,14 @@ fun MenuLine(sysMDViewModel: SysMDViewModel) {
 
                 SysMDButton(
                     icon = Icons.Filled.Transform,
-                    iconTint = AppTheme.colors.iconGreen,
+                    iconTint = if (hasProject) AppTheme.colors.iconGreen else AppTheme.colors.iconGray,
                     text = "Compile",
-                    tooltipText = "Compiles textual representation",
+                    tooltipText = if (hasProject) "Compiles textual representation" else "No project selected",
                     onClick = {
+                        if (!hasProject) {
+                            isNoProjectDialogOpen.value = true
+                            return@SysMDButton
+                        }
                         composableScope.launch {
                             sysMDViewModel.reset()
                             if (!inCompile) {
@@ -93,10 +101,14 @@ fun MenuLine(sysMDViewModel: SysMDViewModel) {
 
                 SysMDButton(
                     icon = Icons.Filled.Calculate,
-                    iconTint = AppTheme.colors.iconGreen,
+                    iconTint = if (hasProject) AppTheme.colors.iconGreen else AppTheme.colors.iconGray,
                     text = "Solve",
-                    tooltipText = "Computes constraint propagation",
+                    tooltipText = if (hasProject) "Computes constraint propagation" else "No project selected",
                     onClick = {
+                        if (!hasProject) {
+                            isNoProjectDialogOpen.value = true
+                            return@SysMDButton
+                        }
                         composableScope.launch {
                             sysMDViewModel.reset()
                             if (!inCompile) {
@@ -112,10 +124,14 @@ fun MenuLine(sysMDViewModel: SysMDViewModel) {
 
                 SysMDButton(
                     icon = Icons.Filled.Save,
-                    iconTint = AppTheme.colors.iconGreen,
+                    iconTint = if (hasProject) AppTheme.colors.iconGreen else AppTheme.colors.iconGray,
                     text = if(RESTRepository.onlineState.value) "Commit" else "Save",
-                    tooltipText = "Saves the project in its files.",
+                    tooltipText = if (hasProject) "Saves the project in its files." else "No project selected",
                     onClick = {
+                        if (!hasProject) {
+                            isNoProjectDialogOpen.value = true
+                            return@SysMDButton
+                        }
                         sysMDViewModel.sessionState.value.project?.saveToInterchangeFiles()
                         sysMDViewModel.tabsViewModel.editorTabs.forEach { editorTabModel ->
                             editorTabModel.save()
@@ -125,10 +141,17 @@ fun MenuLine(sysMDViewModel: SysMDViewModel) {
                 )
 
                 SysMDButton(
-                    icon = Icons.Filled.RestartAlt, iconTint = AppTheme.colors.iconRed,
+                    icon = Icons.Filled.RestartAlt,
+                    iconTint = if (hasProject) AppTheme.colors.iconRed else AppTheme.colors.iconGray,
                     text = "Reset",
-                    tooltipText = "Resets the model, error messages, and results.",
-                    onClick = { sysMDViewModel.reset() }
+                    tooltipText = if (hasProject) "Resets the model, error messages, and results." else "No project selected",
+                    onClick = {
+                        if (!hasProject) {
+                            isNoProjectDialogOpen.value = true
+                            return@SysMDButton
+                        }
+                        sysMDViewModel.reset()
+                    }
                 )
 
                 Spacer(Modifier.width(8.dp))
@@ -136,7 +159,13 @@ fun MenuLine(sysMDViewModel: SysMDViewModel) {
         }
     }
 
-    if (isCommitDialogOpen.value){
+    if (isCommitDialogOpen.value) {
         NewCommitDialog(sysMDViewModel)
+    }
+
+    if (isNoProjectDialogOpen.value) {
+        NoProjectSelectedDialog(
+            onDismiss = { isNoProjectDialogOpen.value = false }
+        )
     }
 }

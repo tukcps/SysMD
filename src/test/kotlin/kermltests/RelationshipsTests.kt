@@ -4,7 +4,7 @@ import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.services.check.checkLibraryElementIds
 import com.github.tukcps.sysmd.services.check.checkOwnership
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.resolve.resolve
+import com.github.tukcps.sysmd.services.resolve.resolveOld
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
@@ -24,8 +24,8 @@ class RelationshipsTests {
                 dependency d from a to b;
             """)
         initialize()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val d = global.resolve<Dependency>("d")
+        assertNoIssues()
+        val d = global.resolve("d")?.memberElement as Dependency?
         assertNotNull(d)
         assertEquals("d", d.name)
         assertEquals("a", d.client.first().name)
@@ -35,11 +35,11 @@ class RelationshipsTests {
     @Test
     fun dependenciesTestWithNoName() = testSession {
         loadKerML("""
-                comment a /* a */ 
-                comment b /* b */ 
-                dependency a to b;
-            """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+            comment a /* a */ 
+            comment b /* b */ 
+            dependency a to b;
+        """)
+        assertNoIssues()
         val d = global.getOwnedElementOfType<Dependency>()
         assertNotNull(d)
         assertEquals("a", d.client.first().name)
@@ -49,16 +49,16 @@ class RelationshipsTests {
     @Test
     fun dependenciesTestWithNoNameInNamespace() = testSession {
         loadKerML("""
-                namespace n {
-                    comment a /* a */ 
-                    comment b /* b */ 
-                    dependency a to b;
-                }
-            """)
+            namespace n {
+                comment a /* a */ 
+                comment b /* b */ 
+                dependency a to b;
+            }
+        """)
         checkOwnership()
         checkLibraryElementIds()
         assertNoIssues()
-        val d = global.resolve<Namespace>("n")?.getOwnedElementOfType<Dependency>()
+        val d = global.resolve("n")?.member<Namespace>()?.getOwnedElementOfType<Dependency>()
         assertNotNull(d)
         assertEquals("a", d.client.first().name)
         assertEquals("b", d.supplier.first().name)

@@ -1,12 +1,6 @@
 package compiler.kerml
 
-import com.github.tukcps.sysmd.model.kerml.Conjugation
-import com.github.tukcps.sysmd.model.kerml.Disjoining
-import com.github.tukcps.sysmd.model.kerml.Specialization
-import com.github.tukcps.sysmd.model.kerml.Type
-import com.github.tukcps.sysmd.model.kerml.getOwnedElementOfType
-import com.github.tukcps.sysmd.model.kerml.implementation.TypeImplementation
-import com.github.tukcps.sysmd.services.resolve.resolve
+import com.github.tukcps.sysmd.model.kerml.*
 import util.assertIssue
 import util.assertNoIssues
 import util.mockup.loadKerML
@@ -23,7 +17,7 @@ class TypeTests {
            type a :> Base::Anything;  
         """)
         assertNoIssues()
-        val a = global.resolve<Type>("a")
+        val a = global.resolve("a")?.member<Type>()
         assertNotNull(a)
         assertEquals(anything, a.getOwnedElementOfType<Specialization>()?.general)
     }
@@ -36,7 +30,7 @@ class TypeTests {
             type AB :> A, B; 
         """)
         assertNoIssues()
-        val ab = global.resolve<TypeImplementation>("AB")
+        val ab = global.resolve("AB")?.member<Type>()
         assertNotNull(ab)
         assertEquals(2, ab.allSupertypes().size)
     }
@@ -49,7 +43,7 @@ class TypeTests {
             }            
             type A :> p::t; 
         """)
-        val pt = global.resolve<Type>("p::t")
+        val pt = global.resolve("p::t")?.member<Type>()
         assertNotNull(pt)
         assertNoIssues()
     }
@@ -85,7 +79,7 @@ class TypeTests {
             type C :> A disjoint from B;  
         """)
         assertNoIssues()
-        val c = global.resolve<TypeImplementation>("C")
+        val c = global.resolve("C")?.member<Type>()
         assertNotNull(c)
         val disjoining = c.getOwnedElementOfType<Disjoining>()
         assertNotNull(disjoining)
@@ -97,7 +91,7 @@ class TypeTests {
             type B conjugates Base::Anything;
         """)
         assertNoIssues()
-        val b = global.resolve<TypeImplementation>("B")
+        val b = global.resolve("B")?.member<Type>()
         assertNotNull(b)
         val conjugation = b.getOwnedElementOfType<Conjugation>()
         assertNotNull(conjugation)

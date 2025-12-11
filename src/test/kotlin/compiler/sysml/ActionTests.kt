@@ -2,7 +2,6 @@ package compiler.sysml
 
 import com.github.tukcps.sysmd.model.sysml.ActionDefinition
 import com.github.tukcps.sysmd.model.sysml.ActionUsage
-import com.github.tukcps.sysmd.services.resolve.resolve
 import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
@@ -16,7 +15,7 @@ class ActionTests {
             action a; 
         """)
         assertNoIssues()
-        val a = global.resolve<ActionUsage>("a")
+        val a: ActionUsage? = global.resolve("a")?.member()
         assertNotNull(a)
     }
 
@@ -26,7 +25,7 @@ class ActionTests {
             action def a;  
         """)
         assertNoIssues()
-        val a = global.resolve<ActionDefinition>("a")
+        val a: ActionDefinition? = global.resolve("a")?.member()
         assertNotNull(a)
     }
 }

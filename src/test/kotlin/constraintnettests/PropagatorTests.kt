@@ -1,14 +1,12 @@
 package constraintnettests
 
+import com.github.tukcps.sysmd.services.resolve.resolveVar
 import io.github.tukcps.aadd.BDD
 import io.github.tukcps.aadd.functions.numInternalNodes
-import com.github.tukcps.sysmd.cspsolver.propagate
-import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.resolve.resolveVar
-import util.mockup.loadKerML
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import util.assertNoIssues
+import util.mockup.loadKerML
 import util.testSession
 
 class PropagatorTests {
@@ -23,7 +21,7 @@ class PropagatorTests {
             feature y: ScalarValues::Boolean = (a and c) or (not(b) and not(a));
             feature z: ScalarValues::Boolean(true) ;
         """)
-        propagate()
+        solver.propagate()
         assertEquals(0, status.issues.size, status.issues.toString())
     }
 
@@ -38,8 +36,7 @@ class PropagatorTests {
             inv z; 
         """)
         assertNoIssues()
-        initialize()
-        propagate()
+        solver.propagate()
         assertEquals(0, status.issues.size, status.issues.toString())
         assertEquals(1, global.resolveVar("a")!!.vectorQuantity.value.numInternalNodes())
     }
@@ -55,8 +52,8 @@ class PropagatorTests {
                     feature g: ScalarValues::Boolean(true) = (a or b or c or d) and f; 
                 """
         ).run {
-            propagate()
-            assertEquals(0, status.issues.size, status.issues.toString())
+            solver.propagate()
+            assertNoIssues()
             assertEquals(true, global.resolveVar("f")!!.vectorQuantity.value is BDD.Leaf)
         }
     }

@@ -24,7 +24,7 @@ class RequirementDefinitionActions(
 ): TypeActions<RequirementDefinitionImplementation>(
     context,
     creator = ::RequirementDefinitionImplementation,
-    defaultType = "Requirements::RequirementDefinition",
+    isImplicit = "Requirements::RequirementDefinition",
 )
 
 class RequirementConstraintUsageActions(

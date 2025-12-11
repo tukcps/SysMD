@@ -1,37 +1,33 @@
 package com.github.tukcps.sysmd.services
 
-import com.github.tukcps.sysmd.cspsolver.Variable
-import com.github.tukcps.sysmd.cspsolver.Variable.BaseType
-import com.github.tukcps.sysmd.cspsolver.VariableImplementation
-import com.github.tukcps.sysmd.cspsolver.valuefeatures.RelatedExpression
-import com.github.tukcps.sysmd.exceptions.*
-import com.github.tukcps.sysmd.model.expression.AstRoot
-import com.github.tukcps.sysmd.model.expression.functions.AstByImplements
-import com.github.tukcps.sysmd.model.expression.functions.AstByParts
-import com.github.tukcps.sysmd.model.expression.functions.AstBySpecializations
+import com.github.tukcps.sysmd.exceptions.Issue
+import com.github.tukcps.sysmd.exceptions.SysMDException
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.ReferenceSubsettingImplementation
+import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.services.check.checkConsistencyOfInheritance
 import com.github.tukcps.sysmd.services.check.checkNameResolutionSuccessful
-import com.github.tukcps.sysmd.services.inheritance.*
-import com.github.tukcps.sysmd.services.resolve.resolve
+import com.github.tukcps.sysmd.services.inheritance.addInheritedToSubtypes
+import com.github.tukcps.sysmd.services.inheritance.checkForCycles
+import com.github.tukcps.sysmd.services.inheritance.checkIsNotTypedByOwner
 import com.github.tukcps.sysmd.services.resolve.resolveFeatureChain
 import com.github.tukcps.sysmd.services.session.Session
 import com.github.tukcps.sysmd.services.session.getAllOfClass
-import java.util.*
 
 private fun Session.fillCache() {
     // Cache frequently used types for use in semantic checks
-    repo.numberType = global.resolve<DataType>("ScalarValues::Number")
-    repo.scalarType = global.resolve<DataType>("ScalarValues::ScalarValue")
-    repo.realType = global.resolve<DataType>("ScalarValues::Real")
-    repo.integerType = global.resolve<DataType>("ScalarValues::Integer")
-    repo.naturalType = global.resolve<DataType>("ScalarValues::Natural")
-    repo.booleanType = global.resolve<DataType>("ScalarValues::Boolean")
-    repo.stringType = global.resolve<DataType>("ScalarValues::String")
-    repo.inRangeType = global.resolve<DataType>("Ranges::InRange")
-    repo.occurrence = global.resolve<Type>("Occurrences::Occurrence")
-    repo.links      = global.resolve<Association>("Links::Link")
+    repo.numberType = global.resolve("ScalarValues::Number")?.member<DataType>()
+    repo.scalarType = global.resolve("ScalarValues::ScalarValue")?.member<DataType>()
+    repo.realType = global.resolve("ScalarValues::Real")?.member<DataType>()
+    repo.integerType = global.resolve("ScalarValues::Integer")?.member<DataType>()
+    repo.naturalType = global.resolve("ScalarValues::Natural")?.member<DataType>()
+    repo.booleanType = global.resolve("ScalarValues::Boolean")?.member<DataType>()
+    repo.stringType = global.resolve("ScalarValues::String")?.memberElement as Type?
+    repo.inRangeType = global.resolve("Ranges::InRange")?.memberElement as Type?
+    repo.occurrence = global.resolve("Occurrences::Occurrence")?.memberElement as Type?
+    repo.links      = global.resolve("Links::Link")?.memberElement as Association?
+    repo.quantity   = global.resolve("Ranges::QuantityInRange")?.memberElement as Type?
+    repo.range      = global.resolve("Ranges::InRange")?.memberElement as Type?
 }
 
 private fun Session.giveUUID5(){
@@ -52,7 +48,7 @@ private fun Session.giveUUID5(){
  */
 private fun Session.addEndFeatureReferences() {
     get().filterIsInstance<Connector>().forEach { connector ->
-        val ends = connector.ownedElement.filter { it is Feature && it.isEnd  }
+        val ends = connector.ownedMembership.filter { it.memberElement is Feature && (it.memberElement as Feature).isEnd  }.map { it.memberElement }
         // TODO: consider multiplicity.
         if (connector.source.isNotEmpty() && connector.target.isNotEmpty() && ends.size >= 2) {
             val sourceEnd = ends[0] as Feature
@@ -80,7 +76,7 @@ fun Session.initialize(level: Int = 100) {
             }
             if (level > 1) {  // Inheritance and redefinition
                 anything.addInheritedToSubtypes() // Calls 'initialize' of types that will add inherited properties.
-                anything.addInheritedToSubtypes() // Dirty for redefinitions missed due to race condition
+                anything.addInheritedToSubtypes()
             }
             if (level > 2) { // Feature chains considering inherited features
                 addEndFeatureReferences()
@@ -100,7 +96,9 @@ fun Session.initialize(level: Int = 100) {
 
                 getAllOfClass<Feature>().asSequence().forEach { feature -> feature.checkIsNotTypedByOwner() }
             }
-            if (level > 5) initVariables()
+
+            if (level > 5)
+                solver.initVariables()
 
             // Now, we only do checking and reporting of issues to the Agenda.
             if (level > 7) get().asSequence().filterIsInstance<Type>().forEach {
@@ -123,67 +121,54 @@ fun Session.initialize(level: Int = 100) {
  */
 internal fun Session.resolveAllNames() {
 
-    fun relationsWithUnresolvedReferences() = get()
-        .asSequence()
-        .filterIsInstance<Relationship>()
+    fun relationsWithUnresolvedReferences() =
+        get().asSequence().filterIsInstance<Relationship>()
         .filter { rel -> rel !is Redefinition && (rel.source.any { it is Unresolved } || rel.target.any { it is Unresolved }) }
         .toSet()
 
-    var relationshipsWithUnresolvedReferences = relationsWithUnresolvedReferences()
+    /**
+     * Replaces an unresolved element by a element from the model.
+     * The element of the model is resolved from a given namespace with a given qualified name.
+     * @param namespace - the namespace where name resolution starts.
+     * @param elements - a mutable list of elements in which unresolved elements are replaced by model elements.
+     */
+    fun resolveQualifiedName(namespace: Namespace, elements: MutableList<Element>) {
+        for (index in elements.indices) {
+            if (elements[index] is Unresolved) {
+                if ((elements[index] as Unresolved).relativeName == null)
+                    status.warn(Issue.Kind.ERROR_UNRESOLVED_NAME, "Unresolved element with no name", element = namespace)
+                else {
+                    val unresolved = elements[index] as Unresolved
+                    // Try resolving all unresolved names except redefinitions that are done later
+                    val resolved = namespace.resolve(unresolved.relativeName!!)
+                    if (resolved != null)
+                        when (unresolved) {
+                            is Feature if (resolved.memberElement !is Feature)
+                                -> status.error("Expecting a kind of feature", kind = Issue.Kind.ERROR_TYPE_WRONG, element = namespace)
+
+                            is Type if (resolved.memberElement !is Type)
+                                -> status.error("Expecting a kind of type", kind = Issue.Kind.ERROR_TYPE_WRONG, element = namespace)
+
+                            is Namespace if (resolved.memberElement !is Namespace)
+                                -> status.error("Expecting a kind of namespace", kind = Issue.Kind.ERROR_TYPE_WRONG, element = namespace)
+
+                            else -> if (unresolved is Membership)
+                                elements[index] = resolved
+                            else
+                                elements[index] = resolved.memberElement
+                        }
+                }
+            }
+        }
+    }
+
+    var relationshipsWithUnresolvedReferences = relationsWithUnresolvedReferences().filter { it !is Redefinition }.toSet()
     var progress = true
 
     while (progress) {
         relationshipsWithUnresolvedReferences.forEach {
-            for (index in it.source.indices) {
-                if (it.source[index] is Unresolved) {
-                    if ((it.source[index] as Unresolved).relativeName == null)
-                        status.warn(Issue.Kind.ERROR_UNRESOLVED_NAME, "Unresolved element with no name", element = it)
-                    else {
-                        val unresolved = it.source[index] as Unresolved
-                        // Try resolving all unresolved names except redefinitions that are done later
-                        val resolved =
-                            if (it is Redefinition) null else it.owningNamespace?.resolve<Element>(unresolved.relativeName!!)
-                        if (resolved != null)
-                            when (unresolved) {
-                                is Feature if (resolved !is Feature)
-                                    -> status.error("Expecting a kind of feature", kind = Issue.Kind.ERROR_TYPE_WRONG, element = it)
-
-                                is Type if (resolved !is Type)
-                                    -> status.error("Expecting a kind of type", kind = Issue.Kind.ERROR_TYPE_WRONG, element = it)
-
-                                is Namespace if (resolved !is Namespace)
-                                    -> status.error("Expecting a kind of namespace", kind = Issue.Kind.ERROR_TYPE_WRONG, element = it)
-
-                                else -> it.source[index] = resolved
-                            }
-                    }
-                }
-            }
-
-            for (index in it.target.indices) {
-                if (it.target[index] is Unresolved) {
-                    if ((it.target[index] as Unresolved).relativeName == null)
-                        status.warn(Issue.Kind.ERROR_UNRESOLVED_NAME, "Unresolved element with no name", element = it)
-                    else {
-                        val unresolved = it.target[index] as Unresolved
-                        val resolved =
-                            if (it is Redefinition) null else it.owningNamespace?.resolve<Element>(unresolved.relativeName!!)
-                        if (resolved != null)
-                            when (unresolved) {
-                                is Feature if (resolved !is Feature)
-                                    -> status.error("Expecting a kind of feature", kind = Issue.Kind.ERROR_TYPE_WRONG, element = it)
-
-                                is Type if (resolved !is Type)
-                                    -> status.error("Expecting a kind of type", kind = Issue.Kind.ERROR_TYPE_WRONG, element = it)
-
-                                is Namespace if (resolved !is Namespace)
-                                    -> status.error("Expecting a kind of namespace", kind = Issue.Kind.ERROR_TYPE_WRONG, element = it)
-
-                                else -> it.target[index] = resolved
-                            }
-                    }
-                }
-            }
+            resolveQualifiedName(it.owningNamespace!!, it.source)
+            resolveQualifiedName(it.owningNamespace!!, it.target)
         }
         val new = relationsWithUnresolvedReferences()
         progress = (relationshipsWithUnresolvedReferences.size - new.size) > 0
@@ -203,36 +188,29 @@ internal fun Session.resolveAllFeatureChains() {
 
     initializeAllAssociations()
 
-    get().asSequence().filterIsInstance<Relationship>().forEach {
-        for (index in it.source.indices) {
-            if (it.source[index] is UnresolvedFeatureChain) {
-                if ( (it.source[index] as Unresolved).relativeName == null)
-                    status.warn(Issue.Kind.ERROR_UNRESOLVED_NAME, "Unresolved feature chain with no name", element = it)
+    fun resolveFeatureChain(namespace: Namespace, elements: MutableList<Element>) {
+        for (index in elements.indices) {
+            if (elements[index] is UnresolvedFeatureChain) {
+                if ( (elements[index] as Unresolved).relativeName == null)
+                    status.warn(Issue.Kind.ERROR_UNRESOLVED_NAME, "Unresolved feature chain with no name", element = elements[index].owningNamespace)
                 else {
-                    val unresolvedFeature = it.source[index] as Unresolved
-                    val resolvedFeature = it.owningNamespace?.resolveFeatureChain(unresolvedFeature.relativeName!!)
+                    val unresolvedFeature = elements[index] as Unresolved
+                    val resolvedFeature = namespace.resolveFeatureChain(unresolvedFeature.relativeName!!)
                     if (resolvedFeature != null)
-                        it.source[index] = resolvedFeature
-                }
-            }
-        }
-        for (index in it.target.indices) {
-            if (it.target[index] is UnresolvedFeatureChain) {
-                if ((it.target[index] as Unresolved).relativeName == null)
-                    status.warn(Issue.Kind.ERROR_UNRESOLVED_NAME, "Unresolved element with no name", element = it)
-                else {
-                    val unresolvedFeature = it.target[index] as UnresolvedFeatureChain
-                    val resolvedFeature = it.owningNamespace?.resolveFeatureChain(unresolvedFeature.relativeName!!)
-                    if (resolvedFeature != null)
-                        it.target[index] = resolvedFeature
+                        elements[index] = resolvedFeature
                 }
             }
         }
     }
+
+    get().asSequence().filterIsInstance<Relationship>().forEach {
+        resolveFeatureChain(it.owningNamespace!!, it.source)
+        resolveFeatureChain(it.owningNamespace!!, it.target)
+    }
 }
 
 /**
- * Sets the Association source and target types to the respecitive end features.
+ * Sets the Association source and target types to the respective end features.
  */
 internal fun Session.initializeAllAssociations() {
     get().asSequence().filterIsInstance<Association>().forEach { association ->
@@ -250,178 +228,23 @@ internal fun Session.initializeAllAssociations() {
     }
 }
 
-
-
 /**
- * Initializes the properties:
- * - Schedules the properties such that they are ordered following their data dependencies,
- * i.e., a property that depends on the computation of another property is scheduled behind it.
- * - Does a single evaluation upwards to propagate types and units; this ensures that the quantity property of each
- * Property is set correctly.
+ *
  */
-private fun Session.initVariables() {
-    repo.schedule.clear()
-    astNodes.clear()
-    // First, we initialize all properties in the symbol table, such that the values are equal to the specified ranges.
-    // This guarantees that if we later infer types, the declared properties are already initialized.
-    // FIXME: Temporary workaround, to preserve order before sorting
+fun getVarNames(namespace: QualifiedName, membership: Membership): List<String> {
+    val element = membership.memberElement
+    val elementName = (if (namespace.isNotEmpty()) "$namespace::" else "") + element.escapedName()
+    val result = mutableListOf<String>()
 
-    // Create a variable for each feature for constraint propagation
-    val variables = mutableListOf<Variable>()
-    val features = get().filterIsInstance<Feature>()
-    features.forEach { feature ->
-        when {
-            feature.owner is Type && (feature.owner as Type).specializes(repo.inRangeType) -> {
-                /* no Variable, handled by constraints of variables */
-            }
+    if (element is Type && element.specializes(element.model!!.repo.scalarType)) {
+        result.add(elementName)
+    }
 
-            feature.specializes(repo.integerType) -> {
-                feature.variable = VariableImplementation(feature, BaseType.Int)
-                variables.add(feature.variable!!)
-            }
-
-            feature.specializes(repo.booleanType) -> {
-                feature.variable = VariableImplementation(feature, BaseType.Bool)
-                variables.add(feature.variable!!)
-            }
-
-            feature.specializes(repo.realType) -> {
-                feature.variable = VariableImplementation(feature, BaseType.Real)
-                variables.add(feature.variable!!)
-            }
-
-            feature.specializes(repo.stringType) -> {
-                feature.variable = VariableImplementation(feature, BaseType.String)
-                variables.add(feature.variable!!)
-            }
+    if (element is Namespace) {
+        element.ownedMembership.forEach {
+            val vars = getVarNames(elementName, it)
+            result.addAll(vars)
         }
     }
-    variables.sortBy { it.name.hashCode() }
-
-    // Then, we set up a list of computed and not-yet-computed properties.
-    val computed = mutableSetOf<Variable>()
-    val notComputed = LinkedList<Variable>()
-    variables.forEach {
-        notComputed += it
-        it.initVectorQuantity()
-    }
-
-    // Check if there is a cyclic dependency in a single expression ... should be better at
-    // overall level -> todo.
-    variables.forEach { variable ->
-        val leaveNames = mutableSetOf<String>()
-        if (variable.ast is AstRoot
-            && (variable.ast as AstRoot).dependency !is AstBySpecializations
-            && (variable.ast as AstRoot).dependency !is AstByParts
-            && (variable.ast as AstRoot).dependency !is AstByImplements
-        ) {
-            variable.ast!!.getLeaves().forEach {
-                if (it.qualifiedName != null)
-                    leaveNames.add(it.qualifiedName!!)
-            }
-            if (variable.feature.declaredName in leaveNames || variable.feature.declaredShortName in leaveNames)
-                throw SemanticError("Cyclic Dependency in ${variable.name}")
-        }
-    }
-
-    // Order the properties by their dependencies into the repo.schedule.
-    // This schedule is used for initialization of the properties.
-    var iterations = 0
-    while (notComputed.isNotEmpty() && (iterations < 10000)) {
-        iterations++
-        val it = notComputed.first()
-        try {
-            if (it.ast != null) {   // For not constants, literals, ...
-                //test if there is a dependency in notComputed
-                val dependentProperties = it.ast?.getDependencyStrings()!!
-                val notComputedElements = notComputed.map { it.name }
-                if (!dependentProperties.any { it in notComputedElements }) {
-                    computed += it
-                    notComputed -= it
-                    repo.schedule += it
-                } else {
-                    notComputed.removeFirst()
-                    notComputed.add(it)
-                }
-            } else {  // For constants, literals, ...
-                notComputed -= it
-                computed += it
-                repo.schedule += it
-            }
-        } catch (exception: Exception) {
-            status.error(message = exception.message ?: "Error during scheduling of constraints", cause = exception)
-            computed += it
-            notComputed -= it
-            // schedule+=it --- we do not schedule an erroneous dependency.
-        }
-    }
-    // add all remaining elements to the schedule
-    if (iterations >= 10000)
-        while (notComputed.isNotEmpty()) {
-            val it = notComputed.first()
-            computed += it
-            notComputed -= it
-            repo.schedule += it
-        }
-
-    // Initialize internal AST nodes, starting from leaves upwards.
-    repo.schedule.forEach {
-        if (it.feature.expression?.isNotBlank() == true && it !is RelatedExpression)
-            it.compileExpression()
-        it.ast?.runDepthFirst { initialize() }
-    }
-
-    repo.schedule.forEach {
-        try {
-            it.ast?.evalUpRec()
-        } catch (exception: Exception) {
-            status.error(exception.message ?: "Problem during initialization", cause = exception)
-        }
-    }
-
-    get().filterIsInstance<Feature>().forEach { feature ->
-        //if(feature.type[0].ref is AttributeDefinitionImplementation)
-        if (feature.expression != null && feature.expression!!.isNotEmpty()) { //for nested attributes, there can be a feature of another type with an expression, which needs to be calculated
-            val namespace = feature.owningNamespace
-
-            val referencingVars = getVariables(feature.expression!!, namespace!!)
-            referencingVars.forEach { referencingVar ->
-                if (referencingVar != null) {
-                    feature.owner!!.ownedElement.find { it == feature }
-                    feature.ownedElement.filter { it is Feature }.forEach { ownedFeature ->
-                        referencingVar.ownedElement.filter { it is Feature }
-                            .forEach { referencingFeature ->
-                                if (ownedFeature.declaredName == referencingFeature.declaredName) {
-                                    if ((ownedFeature as Feature).variable != null)
-                                    if (feature.path() in ownedFeature.variable!!.feature.path()) { //test if the previous feature is already replaced
-                                        ownedFeature.variable = (referencingFeature as Feature).variable
-                                    } else {
-                                        ownedFeature.variables.add((referencingFeature as Feature).variable)
-                                    }
-                                }
-                            }
-                    }
-                }
-            }
-        }
-        if (!dSolver.isInitialized())
-            dSolver.initialize(this)
-        dSolver.update(repo.schedule)
-    }
-}
-
-fun getVariables(expression: String, namespace: Namespace): List<Feature?> {
-    var names = mutableListOf<String>()
-    var expressionString = expression.replace(" ", "") //remove spaces
-    if (expressionString.elementAt(0) == '(' && expression.elementAt(expression.length - 1) == ')') {
-        expressionString = expressionString.removePrefix("(").removeSuffix(")")
-        names = expressionString.split(",").toMutableList()
-    } else {
-        names.add(expression)
-    }
-    val variables = mutableListOf<Feature?>()
-    names.forEach { variables.add(namespace.resolve<Feature>(it)) }
-    if (variables.size == 1 && variables[0] == null)
-        return emptyList()
-    return variables
+    return result
 }

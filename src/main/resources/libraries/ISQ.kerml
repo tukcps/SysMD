@@ -4,37 +4,75 @@ standard library package ISQ {
     // Here we need only base interface that complies with standard ISQ.
     // Note that SI unit strings are not fully compliant.
 
-    datatype Quantity :> Ranges::QuantityInRange;
-    datatype ScalarQuantityValue :> Quantity;
 
     // Base quantities
-    datatype LengthValue :> Quantity   { :>> unit = "m"; }
-    datatype DurationValue :> Quantity { :>> unit = "s"; }
-    datatype MassValue :> Quantity     { :>> unit = "kg"; }
-    datatype ElectricCurrentValue :> Quantity { :>> unit = "A"; }
-    datatype ThermodynamicTemperatureValue :> Quantity { :>> unit = "K"; }
-    datatype LuminousIntensityValue :> Quantity { :>> unit = "cd";  }
-    datatype AmountOfSubstanceValue :> Quantity { :>> unit = "mol"; }
+    datatype LengthValue :> Quantities::ScalarQuantityValue { :>> unit = "m"; }
+    datatype DurationValue :> Quantities::ScalarQuantityValue { :>> unit = "s"; }
+    datatype MassValue :> Quantities::ScalarQuantityValue { :>> unit = "kg"; }
+    datatype ElectricCurrentValue :> Quantities::ScalarQuantityValue { :>> unit = "A"; }
+    datatype ThermodynamicTemperatureValue :> Quantities::ScalarQuantityValue { :>> unit = "K"; }
+    datatype LuminousIntensityValue :> Quantities::ScalarQuantityValue { :>> unit = "cd";  }
+    datatype AmountOfSubstanceValue :> Quantities::ScalarQuantityValue { :>> unit = "mol"; }
+    datatype AmountOfMoneyValue :> Quantities::ScalarQuantityValue { :>> unit = "€"; }
+    datatype StorageCapacityValue :> Quantities::ScalarQuantityValue{ :>> unit = "bit"; }
 
     // Derived quantities
-    datatype VolumeValue :> Quantity { :>> unit = "m^3"; }
-    datatype TimeValue :> Quantity { :>> unit = "s"; }
-    datatype SpeedValue :> Quantity { :>> unit = "m/s"; }
-    datatype AccelerationValue :> Quantity { :>> unit = "m/s^2"; }
-    datatype EnergyValue :> Quantity { :>> unit = "J"; }    // or in Base Units:  kg*m^2 / s^2, but SysMD converts anyhow.
-    datatype PowerValue :> Quantity { :>> unit = "W"; }
+    datatype AbsorbedDoseValue :> Quantities::ScalarQuantityValue { :>> unit = "Gy"; }
+    datatype AreaValue :> Quantities::ScalarQuantityValue { :>> unit = "m^2";  }
+    datatype BitRateValue :> Quantities::ScalarQuantityValue { :>> unit = "bit/s"; }
+    datatype ConductanceValue :> Quantities::ScalarQuantityValue { :>> unit = "S"; }
+    datatype DoseEquivalentValue :> Quantities::ScalarQuantityValue{ :>> unit = "Sv"; }
+    datatype DimensionOneValue :> Quantities::ScalarQuantityValue { :>> unit = "1"; }
+    datatype EnergyValue :> Quantities::ScalarQuantityValue { :>> unit = "J"; }
+    datatype EnergyDensityValue :> Quantities::ScalarQuantityValue { :>> unit = "J/m^3"; }
+    datatype EntropyValue :> Quantities::ScalarQuantityValue { :>> unit = "J/K"; }
+    datatype FrequencyValue :> Quantities::ScalarQuantityValue { :>> unit = "1/s"; }
+    datatype IlluminanceValue :> Quantities::ScalarQuantityValue { :>> unit = "lx"; }
+    datatype KinematicViscosityValue :> Quantities::ScalarQuantityValue { :>> unit = "St"; }
+    datatype LuminanceValue :> Quantities::ScalarQuantityValue { :>> unit = "sb"; }
+    datatype LuminousEfficacyValue :> Quantities::ScalarQuantityValue { :>> unit = "lm/W"; }
+    datatype LuminousEnergyValue :> Quantities::ScalarQuantityValue { :>> unit = "lm s"; }
+    datatype LuminousFluxValue :> Quantities::ScalarQuantityValue { :>> unit = "lm"; }
+    datatype PermittivityValue :> Quantities::ScalarQuantityValue { :>> unit = "F/m"; }
+    datatype MagneticFluxValue :> Quantities::ScalarQuantityValue { :>> unit = "Wb"; }
+    datatype MagneticFluxDensityValue :> Quantities::ScalarQuantityValue { :>> unit = "T"; }
+    datatype MomentOfForceValue :> Quantities::ScalarQuantityValue { :>> unit = "Nm"; }
+    datatype MomentOfInertiaValue :> Quantities::ScalarQuantityValue { :>> unit = "kg m^2"; }
+    datatype NuclearActivityValue :> Quantities::ScalarQuantityValue { :>> unit = "Bq"; }
+    datatype SolidAngularMeasureValue :> Quantities::ScalarQuantityValue { :>> unit = "sr"; }
 
     // Mechanical quantities
-    datatype MassDensityValue :> ScalarQuantityValue { :>> unit = "kg/m^3"; }
+    datatype AccelerationValue :> Quantities::ScalarQuantityValue { :>> unit = "m/s^2"; }
+    datatype ForceValue :> Quantities::ScalarQuantityValue { :>> unit = "N"; }
+    datatype MassDensityValue :> Quantities::ScalarQuantityValue { :>> unit = "kg/m^3"; }
+    datatype MassFlowValue :> Quantities::ScalarQuantityValue { :>> unit = "kg/s"; }
+    datatype MomentumValue :> Quantities::ScalarQuantityValue { :>> unit = "kg m/s"; }
+    datatype PowerValue :> Quantities::ScalarQuantityValue { :>> unit = "W"; }
+    datatype PressureValue :> Quantities::ScalarQuantityValue { :>> unit = "Pa"; }
+    datatype SpeedValue :> Quantities::ScalarQuantityValue { :>> unit = "m/s"; }
+    datatype VolumeValue :> Quantities::ScalarQuantityValue { :>> unit = "m^3"; }
 
     // Electrical quantities
     // Current is in base quantities
-    datatype ElectricChargeValue :> ScalarQuantityValue { :>> unit = "A s"}
-    datatype VoltageValue :> Quantity { :>> unit = "V"; }
-    datatype InductanceValue :> ScalarQuantityValue { :>> unit = "H"; }
-    datatype ResistanceValue :> ScalarQuantityValue { :>> unit = "A/V"; }
-    datatype CapacitanceValue :> ScalarQuantityValue { :>> unit = "A s / V"}
+    datatype CapacitanceValue :> Quantities::ScalarQuantityValue { :>> unit = "A s / V";}
+    datatype ElectricChargeValue :> Quantities::ScalarQuantityValue { :>> unit = "A s";}
+    datatype ElectricFieldStrengthValue :> Quantities::ScalarQuantityValue { :>> unit = "N/C"; }
+    datatype ElectricPotentialValue :> Quantities::ScalarQuantityValue { :>> unit = "V"; }
+    datatype InductanceValue :> Quantities::ScalarQuantityValue { :>> unit = "H"; }
+    datatype ResistanceValue :> Quantities::ScalarQuantityValue { :>> unit = "Ω"; }
+    datatype TimeValue :> Quantities::ScalarQuantityValue { :>> unit = "s"; }
+    datatype VoltageValue :> Quantities::ScalarQuantityValue { :>> unit = "V"; }
 
+
+    // VectorQuantityValues
+    datatype CartesianForce3dVector :> Quantities::'3dVectorQuantityValue' { :>> unit = "N"; }
+    datatype CartesianPosition3dVector :> Quantities::'3dVectorQuantityValue' { :>> unit = "m"; }
+    datatype CartesianVelocity3dVector :> Quantities::'3dVectorQuantityValue' { :>> unit = "m/s"; }
+    datatype CartesianAcceleration3dVector :> Quantities::'3dVectorQuantityValue' { :>> unit = "m/s^2"; }
+    datatype CartesianMomentum3dVector :> Quantities::'3dVectorQuantityValue' { :>> unit = "kg m/s"; }
+    datatype CartesianMomentOfForce3dVector :> Quantities::'3dVectorQuantityValue' { :>> unit = "Nm"; }
+    datatype CartesianElectricFieldStrength3dVector :> Quantities::'3dVectorQuantityValue' { :>> unit = "N/C"; }
+    datatype CartesianMagneticFluxDensity3dVector :> Quantities::'3dVectorQuantityValue' { :>> unit = "T"; }
 
     feature <isq> 'International System of Quantities' {
          feature L: LengthValue[1];

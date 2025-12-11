@@ -1,9 +1,11 @@
 package com.github.tukcps.sysmd.model.expression.implementation
 
-import com.github.tukcps.sysmd.model.expression.LiteralString
-import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
-import com.github.tukcps.sysmd.model.util.SimpleName
+import com.github.tukcps.sysmd.model.expression.*
+import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.model.util.*
+import com.github.tukcps.sysmd.quantities.*
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 class LiteralStringImplementation(
     declaredName: SimpleName? = null,
@@ -12,17 +14,30 @@ class LiteralStringImplementation(
     isEnd: Boolean = false,
     typeConstraint: MutableList<String> = mutableListOf(),
     expression: String? = null,
-    textualRepresentation:  MutableList<TextualRepresentation> = mutableListOf(),
     elementType: String = "LiteralString"
 ) : LiteralString, LiteralExpressionImplementation(
     declaredName = declaredName,
     declaredShortName = declaredShortName,
     direction = direction,
     isEnd = isEnd,
-    textualRepresentation = textualRepresentation,
     typeConstraint = typeConstraint,
     expression = expression,
     elementType = elementType
 ) {
-    var vlaue: String? = null
+    override var value: String? = null
+
+    override val literalValue : AstLeaf?
+        get() {
+            val v = value ?: return null
+            val m = model ?: return null
+            return AstLeaf(m, VectorQuantity(listOf(m.builder.string(v))))
+        }
+
+    override val cachedType get() = model?.repo?.stringType
+    override val typeName = "ScalarValues::String"
+
+    override fun toAstString(b : StringBuilder, precedence : Int)
+    {
+        b.append(Json.encodeToString(value))
+    }
 }

@@ -3,8 +3,8 @@ package com.github.tukcps.sysmd.services.resolve
 import com.github.tukcps.sysmd.exceptions.ElementNotFoundException
 import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.model.kerml.implementation.getOwned
-import com.github.tukcps.sysmd.model.util.*
+import com.github.tukcps.sysmd.model.kerml.implementation.findRecursive
+import com.github.tukcps.sysmd.model.util.QualifiedName
 
 
 /**
@@ -15,7 +15,8 @@ import com.github.tukcps.sysmd.model.util.*
  * @param searchInSuperClass Whether to search in superclasses as well to consider inheritance
  * @param resolveReferences Whether to follow reference if the element found is a reference
  */
-inline fun <reified T: Element> Namespace.resolve(
+@Deprecated("Use direct function of membership")
+inline fun <reified T: Element> Namespace.resolveOld(
     qualifiedName: QualifiedName,
     searchInSuperClass: Boolean = true,
     resolveReferences: Boolean = true
@@ -25,15 +26,12 @@ inline fun <reified T: Element> Namespace.resolve(
     // if (this is Feature && this.redefining != null)
     //     return redefining!!.findRecursive(qualifiedName, emptySet(), emptySet(), true, searchInSuperClass, resolveReferences ) as T?
 
-    var found = findRecursive(qualifiedName, emptySet(), emptySet(),true, searchInSuperClass, resolveReferences)
+    if (qualifiedName == "Global" && this == model!!.global) return model!!.global as T
 
-    // If the element found is a referenced feature, follow the reference and use it
-    if (found is Feature && found.referencedFeature != null && resolveReferences) {
-        found = found.referencedFeature
-    }
+    var found = findRecursive(qualifiedName, emptySet(), emptySet(),true, searchInSuperClass)
 
-    if (found is T?)
-        return found
+    if (found?.memberElement is T?)
+        return found?.memberElement as T?
 
     model?.status?.error("'$qualifiedName' could be resolved, but is of wrong type", element = found,
         cause = ElementNotFoundException(this, "'$qualifiedName' could be resolved, but is of wrong type"),
@@ -44,161 +42,16 @@ inline fun <reified T: Element> Namespace.resolve(
 
 
 /**
- * Returns the owned element with a given name.
- * @param name A SimpleName that is searched for
- */
-fun Namespace.resolveLocal(name: SimpleName): Element? {
-    if (this == model?.global && name == "Global") return model?.global
-    visibleMemberships().forEach {
-        if (it.memberElement.name == name || it.memberElement.shortName == name)
-            return it.memberElement
-    }
-    return null
-}
-
-/**
- * Searches recursively for a qualified name, starting from the namespace.
- * @param qualifiedName the qualified name that is searched
- * @param searchedImports optionally, a set of Namespaces that have already been searched; needed to detect cyclic includes.
- * @param searchedSuperClasses optionally, the set of searched superclasses; needed to detect cyclic definitions
- * @param searchInOwner optionally, whether the given qualified name is initially given as a simple name, or just
- * became a simple name via recursion that cuts qualified name down.
- * @param searchInSuperClass optionally, whether to recurse into superclasses.
- * @return An element of or null, if the name cannot be resolved.
- */
-fun Namespace.findRecursive(
-    qualifiedName: QualifiedName,
-    searchedImports: Set<Namespace>,
-    searchedSuperClasses: Set<Type>,
-    searchInOwner: Boolean = true,
-    searchInSuperClass: Boolean = true,
-    resolveReferences: Boolean = true,
-): Element? {
-
-    if (qualifiedName == "self") return this
-    if (qualifiedName == "that") return owner
-
-    // If we have a simple name, we can search in owned elements that are identified by simple names.
-    if (qualifiedName.isSimpleName()) {
-        var found = resolveLocal(qualifiedName)
-        if (found is Feature && found.referencedFeature != null && resolveReferences) {
-            found = found.referencedFeature
-        }
-        if (found != null) return found
-    } else {
-        // Search downwards in matching owned namespaces, shortening the qualified name by 1st name.
-        // SysMD: We allow "Global" as explicit entry to start of global search.
-        var matchingNamespace = resolveLocal(qualifiedName.firstName())
-        if (matchingNamespace is Feature && matchingNamespace.referencedFeature != null && resolveReferences) {
-            matchingNamespace = matchingNamespace.referencedFeature
-        } else if (matchingNamespace is Feature && matchingNamespace.isEnd) {
-            // We could resolve end features as references.
-        }
-        if (matchingNamespace is Namespace) {
-            val newName: QualifiedName = qualifiedName.dropFirstName()
-            val found = matchingNamespace.findRecursive(newName, emptySet(), emptySet(),false, searchInSuperClass)
-            if (found != null) return found
-        }
-    }
-
-    if (this !in searchedImports) {
-        // Search in imports, and track searched paths to avoid cyclic search.
-        ownedElement.asSequence()
-            .filterIsInstance<NamespaceImport>()
-            .forEach { import ->
-                val found = if (import.isRecursive)
-                    import.importedNamespace.findRecursive(
-                        qualifiedName,
-                        searchedImports + this,
-                        searchedSuperClasses,
-                        searchInOwner,
-                        searchInSuperClass
-                    )
-                else
-                    import.importedNamespace.getOwned(qualifiedName)
-                if (found != null)
-                    return found
-            }
-        importedMemberships().forEach { import ->
-            if (qualifiedName == import.memberElement.name) return import.memberElement
-        }
-    }
-
-    // Search in supertypes
-    if (this is Type && searchInSuperClass && this !in searchedSuperClasses) {
-        this.allSupertypes().forEach {
-            val found = it.findRecursive(qualifiedName, searchedImports+this, searchedSuperClasses+this, searchInOwner=false, searchInSuperClass=true)
-            if (found != null) return found
-        }
-    }
-
-    // Search in owning namespace
-    return if (searchInOwner)
-        owningNamespace?.findRecursive(qualifiedName, searchedImports, searchedSuperClasses, true)
-    else
-        null
-}
-
-/**
  * Resolution of feature chains is easier than name resolution; it only searches in owned features
  * @param relativeName a feature chain
  */
 fun Namespace.resolveFeatureChain(relativeName: String): Feature? {
     var segments = relativeName.split(".")
     val start = segments.first()
-    val startNamespace = resolve<Element>(start)
+    var feature = resolve(start)?.memberElement as Feature?
     segments = segments.drop(1)
-    var feature = startNamespace
     for (segment in segments) {
-        feature = feature?.getOwnedElementsOfType<Feature>()?.firstOrNull {
-            it.escapedName() == segment
-        }
+        feature = feature?.resolveLocal(segment)?.memberElement as Feature?
     }
-    return feature as Feature?
-}
-
-
-/**
- * Recursive collection of all owned features, including inherited from general types until Anything.
- * @param z counter to detect depth of search
- * @return list of all elements found
- */
-fun Namespace.findAllOwnedElements(z: Int=0): Collection<Element> {
-    val owned = mutableListOf<Element>()
-    ownedElement.forEach { owned.add(it) }
-    if (this is Type) {
-        allSupertypes().forEach { superclass ->
-            if (this == superclass)
-                model?.status?.error("Cyclic supertype: ${this.qualifiedName}", element = this)
-            else {
-                val inherited = if (superclass !is Anything) superclass.findAllOwnedElements(z + 1)
-                else emptySet()
-                return mergeOwnedElements(owned, inherited)
-            }
-        }
-    }
-    return owned
-}
-
-
-
-/**
- * Merges the owned elements specified by the hasA relationships from a class with
- * inherited relations that are potentially overridden.
- * The merge method merges features of a class with those of its superclass
- * such that the Liskov principle holds.
- * @param own Features of subclass
- * @param inherited Features of superclass
- */
-private fun mergeOwnedElements(own: Collection<Element>, inherited: Collection<Element>): Collection<Element> {
-    val merged = mutableSetOf<Element>()
-    merged.addAll(own)
-
-    for (i in inherited) {
-        var overridden = false
-        own.forEach { _ -> overridden = true }
-        if (!overridden)
-            merged.add(i)
-    }
-    return merged
+    return feature
 }

@@ -1,18 +1,16 @@
 package com.github.tukcps.sysmd.model.expression
 
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.IDD
-import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.cspsolver.Variable
-import com.github.tukcps.sysmd.cspsolver.VariableImplementation
 import com.github.tukcps.sysmd.exceptions.ElementNotFoundException
 import com.github.tukcps.sysmd.exceptions.Issue
-import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Namespace
+import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.quantities.VectorDimensionError
 import com.github.tukcps.sysmd.quantities.VectorQuantity
-import com.github.tukcps.sysmd.services.resolve.resolve
+import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.session.Session
+import io.github.tukcps.aadd.AADD
+import io.github.tukcps.aadd.IDD
 
 
 /**
@@ -24,15 +22,29 @@ import com.github.tukcps.sysmd.services.session.Session
  */
 class AstLeaf private constructor (
     model: Session,
-    var literalVal: VectorQuantity?,  // The value, if a literal
-    var namespace: Namespace?,        // Owning namespace
-    var qualifiedName: QualifiedName?
+    var literalVal: VectorQuantity?,         // The value, if a literal
+    var qualifiedName: QualifiedName?,       // (relative) qualified name
+    var namespace: Namespace = model.global, // Owning namespace
 ) : AstNode(model) {
 
-    // After name resolution:
-    var feature: Feature? = null                  // Reference to feature after initialization.
+    /**
+     * Fully qualified name of the respective feature.
+     * It can be used as a key to a variable.
+     */
+    var resolvedName: String? = null
+
+    /**
+     * Resolves the qualified name in namespace and returns the path of the element found.
+     * Requires specific variant of resolve once there are no clones.
+     */
+    private fun resolveToPath(): String =
+        namespace.resolveVar(qualifiedName!!)?.name
+            ?: throw ElementNotFoundException(namespace, "Could not resolve name '$qualifiedName'")
+
     val variable: Variable?
-        get() = feature as? Variable ?: feature?.variable
+        get() = if (resolvedName != null) {
+                model.solver.getVariable(resolvedName!!)
+            } else null
 
     // Ugly fix; only for user-defined function until a better solution
     var node: AstNode? = null
@@ -47,15 +59,14 @@ class AstLeaf private constructor (
         }
     }
 
+    /**
+     * Identifies, if a reference, the respective feature and it's variable.
+     * The feature is not necessarily reified;
+     * it might only exist if inheritance is done by cloning.
+     */
     override fun initialize() {
         if (qualifiedName != null) {
-            feature = if(namespace==null) {
-                feature?.resolve<Feature>(qualifiedName!!)
-                    ?: throw ElementNotFoundException(feature, qualifiedName!!)
-            } else {
-                namespace!!.resolve<Feature>(qualifiedName!!)
-                    ?: throw ElementNotFoundException(namespace, qualifiedName!!)
-            }
+            resolvedName = resolveToPath()
             upQuantity = variable!!.vectorQuantity
             downQuantity = variable!!.vectorQuantity
         } else {
@@ -77,12 +88,12 @@ class AstLeaf private constructor (
      * @param model the model
      * @param quantity the value of the literal
      */
-    constructor(model: Session, quantity: VectorQuantity): this(model, quantity, null, null)
+    constructor(model: Session, quantity: VectorQuantity): this(model, quantity, null)
 
     /**
      * Hotfix ... dirty. To help user defined functions.
      */
-    constructor(model: Session, node: AstNode): this(model, null, null, null) {
+    constructor(model: Session, node: AstNode): this(model, null, null) {
         this.node = node
     }
 
@@ -94,7 +105,7 @@ class AstLeaf private constructor (
      * @param qualifiedName the path of the property, relative from the element.
      */
     constructor(namespace: Namespace, qualifiedName: QualifiedName, model: Session)
-            : this(model, null, namespace,qualifiedName) {
+            : this(model, null, qualifiedName, namespace) {
         require(qualifiedName != "")
         this.namespace = namespace
         this.qualifiedName = qualifiedName
@@ -104,9 +115,8 @@ class AstLeaf private constructor (
      * A constructor that is directly invoked with a variable.
      */
     constructor(model: Session, variable: Variable)
-            : this(model, null, null, null) {
-        this.feature = (variable as VariableImplementation).feature
-        this.qualifiedName = variable.feature.qualifiedName
+            : this(model, null, null) {
+        this.qualifiedName = variable.name
     }
 
 
@@ -198,15 +208,16 @@ class AstLeaf private constructor (
         receiver.block()
 
 
+    /** Used in Aggregation functions */
     override fun clone(): AstLeaf {
-        return AstLeaf(model, literalVal, namespace, qualifiedName).also {
-            it.feature = feature
+        return AstLeaf(model, literalVal, qualifiedName, namespace).also {
+            it.resolvedName = resolvedName
             // If it is initialized, the value feature is not null, or literalval is not null.
             if (it.literalVal != null) {
                 it.upQuantity = upQuantity.clone()
                 it.downQuantity = downQuantity.clone()
             }
-            if (it.feature != null) {
+            if (it.resolvedName != null) {
                 it.upQuantity = upQuantity.clone()
                 it.downQuantity = downQuantity.clone()
             }
@@ -243,7 +254,7 @@ class AstLeaf private constructor (
             if (literalVal != null)
                 "AstLeaf($literalVal)"
             else
-                "AstLeaf(${namespace?.qualifiedName} : ${qualifiedName})"
+                "AstLeaf(${namespace.qualifiedName} : ${qualifiedName})"
         }
     }
 }

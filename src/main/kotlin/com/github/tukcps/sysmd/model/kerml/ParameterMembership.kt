@@ -9,8 +9,10 @@ interface ParameterMembership : FeatureMembership, OwningMembership
 {
 	// standard uses Step and Behavior, but we flatten those into Expression/Function
 
+	var parameterIndex : Int
+
 	/** Either this or `owningBehavior` must be non-null */
-	var owningStep : Expression?
+	var owningStep : Step?
 		get() = membershipOwningNamespace as? Expression
 		set(value) {
 			if(value !== null)
@@ -18,7 +20,7 @@ interface ParameterMembership : FeatureMembership, OwningMembership
 		}
 
 	/** Either this or `owningStep` must be non-null */
-	var owningBehavior : Function?
+	var owningBehavior : Behavior?
 		get() = membershipOwningNamespace as? Function
 		set(value) {
 			if(value !== null)
@@ -29,7 +31,9 @@ interface ParameterMembership : FeatureMembership, OwningMembership
 	var ownedMemberParameter : Feature
 		get() = memberElement as Feature
 		set(value) {
-			require(value.direction == parameterDirection)
+			if(value.direction != parameterDirection)
+				throw IllegalArgumentException("ParameterMembership direction (${parameterDirection}) must match " +
+						"direction of the owned member parameter (${value.direction})")
 			memberElement = value
 		}
 

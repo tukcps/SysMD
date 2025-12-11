@@ -6,10 +6,10 @@ import com.github.tukcps.sysmd.quantities.Prefix
 import com.github.tukcps.sysmd.quantities.baseUnits.ElectricCurrent
 import com.github.tukcps.sysmd.quantities.baseUnits.Length
 import com.github.tukcps.sysmd.quantities.baseUnits.Mass
-import com.github.tukcps.sysmd.quantities.baseUnits.Time
+import com.github.tukcps.sysmd.quantities.baseUnits.Duration
 
 private var siUnitSet = setOf(
-    Time.Second.copy(4), ElectricCurrent.Ampere.copy(2),
+    Duration.Second.copy(4), ElectricCurrent.Ampere.copy(2),
     Length.Meter.copy(-3), Mass.Kilogram.copy(-1)
 )
 

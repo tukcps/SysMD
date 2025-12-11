@@ -1,14 +1,12 @@
 package compiler.sysml.examples
 
-import util.mockup.loadSysMLv2
-import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.sysml.AttributeDefinition
 import com.github.tukcps.sysmd.model.sysml.AttributeUsage
-import com.github.tukcps.sysmd.services.resolve.resolve
+import util.assertNoIssues
+import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 
 class AttributeTests {
 
@@ -25,13 +23,13 @@ class AttributeTests {
         attribute def AttributeDef2 {
             /* members */
         }
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        """)
+        assertNoIssues()
 
-        val attributeDef1 = global.resolve<AttributeDefinition>("AttributeDef1")
+        val attributeDef1: AttributeDefinition? = global.resolve("AttributeDef1")?.member()
         assertNotNull(attributeDef1)
 
-        val attributeDef2 = global.resolve<AttributeDefinition>("AttributeDef2")
+        val attributeDef2: AttributeDefinition? = global.resolve("AttributeDef2")?.member()
         assertNotNull(attributeDef2)
     }
 
@@ -47,15 +45,15 @@ class AttributeTests {
             attribute def AttributeDef1;
             attribute attribute1 : AttributeDef1;
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
 
-        val attributeDef1 = global.resolve<AttributeDefinition>("AttributeDef1")
+        val attributeDef1: AttributeDefinition? = global.resolve("AttributeDef1")?.member()
         assertNotNull(attributeDef1)
 
-        val attribute1 = global.resolve<AttributeUsage> ("attribute1")
+        val attribute1: AttributeUsage? = global.resolve ("attribute1")?.member()
         assertNotNull(attribute1)
 
-        val attribute1Element = global.resolve<Element>("attribute1")
+        val attribute1Element = global.resolve("attribute1")?.memberElement
         assertNotNull(attribute1Element)
     }
 

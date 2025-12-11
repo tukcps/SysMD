@@ -1,18 +1,17 @@
 package sysmdtests
 
-import io.github.tukcps.aadd.values.XBool
-import io.github.tukcps.aadd.values.XBool.Companion.True
-import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.services.estimateFeature
-import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
+import io.github.tukcps.aadd.values.XBool
+import io.github.tukcps.aadd.values.XBool.Companion.True
 import org.junit.jupiter.api.Disabled
-import util.mockup.loadKerML
 import org.junit.jupiter.api.parallel.ResourceAccessMode.READ_WRITE
 import org.junit.jupiter.api.parallel.ResourceLock
 import org.junit.jupiter.api.parallel.Resources.SYSTEM_PROPERTIES
+import util.assertNoIssues
+import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Ignore
 import kotlin.test.Test
@@ -21,7 +20,6 @@ import kotlin.test.assertTrue
 
 
 class AvailabilityTests {
-
 
     /**
      * We model the availability of a component at a given time with the ITE function.
@@ -39,11 +37,11 @@ class AvailabilityTests {
                     expression Availability: ScalarValues::Boolean = ITE(T>2035.0, true, false); 
                 }
             }
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        propagate()
+        """)
+        assertNoIssues()
+        solver.propagate()
         // println(global.resolveName<Namespace>(qualifiedName = "t::c1") !!.resolveName<Expression>("Availability")!!.bdd().toIteString())
-        assertEquals(3, global.resolve<Namespace>(qualifiedName = "t::c1") !!.resolveVar("Availability")!!.bdd().height())
+        assertEquals(3, global.resolveVar("t::c1::Availability")!!.bdd().height())
     }
 
     /**
@@ -63,11 +61,10 @@ class AvailabilityTests {
             class c3 :> c1 {              // Possible Refinements of c1
                 feature Availability: ScalarValues::Boolean(true) = true; 
             }
-        """.trimIndent()
-        )
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        propagate()
-        val tc1 = global.resolve<Type>("c1")!!
+        """)
+        assertNoIssues()
+        solver.propagate()
+        val tc1 = global.resolve("c1")!!.member<Type>()!!
         assertEquals(builder.True, estimateFeature(tc1, "Availability").bdd())
     }
 
@@ -85,9 +82,9 @@ class AvailabilityTests {
                 }
             }
         """)
-        propagate()
+        solver.propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val tc1 = global.resolve<Type>("t::c1")!!
+        val tc1 = global.resolve("t::c1")!!.member<Type>()!!
         assertEquals(builder.True, estimateFeature(tc1, "Availability").bdd())
     }
 
@@ -106,9 +103,9 @@ class AvailabilityTests {
             }
             """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        propagate()
-        val tc1 = global.resolve<Namespace>("c1") !!
-        global.resolve<Namespace>("c2") !!
+        solver.propagate()
+        val tc1 = global.resolve("c1")!!.member<Type>()!!
+        global.resolve("c2") !!.member<Namespace>()
         assertEquals(XBool.X, tc1.resolveVar("Availability")?.vectorQuantity?.value as XBool)
         loadKerML("feature T: ScalarValues::Real(2020); ")
         assertEquals(2020.0 ,global.resolveVar("T")!!.min(), 0.01)

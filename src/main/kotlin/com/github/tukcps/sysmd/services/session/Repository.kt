@@ -1,6 +1,5 @@
 package com.github.tukcps.sysmd.services.session
 
-import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Relationship
 import com.github.tukcps.sysmd.model.kerml.Type
@@ -24,9 +23,6 @@ class Repository {
     /** Map that permits finding outgoing relationships of an element */
     val sourceOfRelationship: HashMap<Element, MutableSet<Relationship>> = hashMapOf()
 
-    /** List that stores the features that are part of constraint propagation */
-    val schedule: MutableList<Variable> = mutableListOf()
-
     /** Caches of important types */
     var scalarType: Type? = null
     var numberType: Type? = null
@@ -36,8 +32,10 @@ class Repository {
     var naturalType: Type? = null
     var stringType: Type? = null
     var inRangeType: Type? = null
+    var quantity: Type? = null
     var occurrence: Type? = null
     var links: Type? = null
+    var range: Type? = null
 
 
     /** Projects that have been loaded into the session; as of now identified by name, not ID (!!!) */
@@ -47,7 +45,6 @@ class Repository {
         elements.clear()
         targetOfRelationship.clear()
         sourceOfRelationship.clear()
-        schedule.clear()
         loadedProjects.clear()
         scalarType = null
         numberType = null
@@ -58,5 +55,7 @@ class Repository {
         inRangeType = null
         occurrence = null
         links= null
+        range = null
+        quantity = null
     }
 }

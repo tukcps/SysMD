@@ -1,9 +1,7 @@
 package sysmlv2tests
 
-import com.github.tukcps.sysmd.cspsolver.propagate
+import com.github.tukcps.sysmd.cspsolver.Variable.BaseType
 import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.kerml.Type
-import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import util.assertNoIssues
 import util.mockup.loadSysMLv2
@@ -27,7 +25,7 @@ class RequirementTests {
                 assume constraint ass { f::a == 2.0 }
             }
         """)
-        propagate()
+        solver.propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         val ass = global.resolveVar("test::ass")
         assertEquals(builder.NaB, ass!!.vectorQuantity.value)
@@ -45,7 +43,7 @@ class RequirementTests {
                 assert constraint ass { f::a == 2.0 }
             }
         """)
-        propagate()
+        solver.propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         val ass = global.resolveVar("test::ass")
         assertEquals(builder.True, ass!!.vectorQuantity.value)
@@ -63,13 +61,11 @@ class RequirementTests {
                 require constraint r { f::a == 2.0} 
             }
         """)
-        propagate()
+        solver.propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val r = global.resolve<Feature>("test::r")
-        assertEquals(builder.True, r!!.variable!!.vectorQuantity.value)
-        val const = global.resolve<Type>("ScalarValues::Boolean")
-        assertTrue( r.specializes(const) )
-        assertTrue( r.specializes(global.resolve<Type>("ScalarValues::Boolean")) )
+        val r = global.resolveVar("test::r")
+        assertEquals(builder.True, r!!.bool())
+        assertEquals( BaseType.Bool,r.baseType )
     }
 
     @Test
@@ -84,12 +80,12 @@ class RequirementTests {
                 require constraint r { f::a == 2.0 }
             }
         """)
-        propagate()
+        solver.propagate()
         assertNoIssues()
-        val r = global.resolve<Feature>("test::r")
-        assertEquals(builder.True, r!!.variable!!.vectorQuantity.value)
-        assertTrue(r.specializes(global.resolve<Type>("ScalarValues::Boolean")) )
-        assertTrue(r.specializes(global.resolve<Type>("Constraints::ConstraintUsage")) )
+        val r = global.resolve("test::r")?.member<Feature>()
+        assertEquals(builder.True, r!!.variable!!.bool())
+        assertTrue(r.specializes(global.resolve("ScalarValues::Boolean")?.member()) )
+        assertTrue(r.specializes(global.resolve("Constraints::ConstraintUsage")?.member()) )
     }
 
     @Test
@@ -104,14 +100,14 @@ class RequirementTests {
                 assume constraint r { f::a == false }
             }
         """)
-        propagate()
+        solver.propagate()
         assertNoIssues()
-        val test = global.resolve<Feature>("test")
+        val test = global.resolve("test")?.member<Feature>()
         assertNotNull(test)
-        val testR = global.resolve<Feature>("test::r")
+        val testR = global.resolve("test::r")?.member<Feature>()
         assertNotNull(testR)
         val testRVar = global.resolveVar("test::r")
-        assertEquals(builder.True, testRVar!!.vectorQuantity.value)
+        assertEquals(builder.True, testRVar!!.bool())
     }
 
     @Test
@@ -121,7 +117,6 @@ class RequirementTests {
                 attribute a: ScalarValues::Real; 
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-
+        assertNoIssues()
     }
 }

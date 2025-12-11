@@ -1,11 +1,15 @@
 package models.kerml
 
+import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.kerml.implementation.SpecializationImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.TypeImplementation
 import com.github.tukcps.sysmd.services.initialize
+import util.assertNoIssues
+import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
 
 class TypeTests {
@@ -44,5 +48,24 @@ class TypeTests {
         initialize()
         val aSubtype = a.subtypes
         assertEquals("b", aSubtype.first().declaredName)
+    }
+
+    /**
+     * features are visible members, iff not private
+     */
+    @Test
+    fun getVisibleMembershipTest() = testSession {
+        loadKerML(""" 
+            type t :> Base::Anything {
+                feature f1; 
+                private feature f2; // No - private 
+                type t2 :> Base::Anything; // No - type 
+            }
+        """)
+        assertNoIssues()
+        val t: Type? = global.resolve("t")?.member()
+        assertNotNull(t)
+        val visibleMembers = t.visibleMemberships()
+        assertEquals(2, visibleMembers.size)
     }
 }

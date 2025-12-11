@@ -31,13 +31,27 @@ class NamespaceImportImplementation(
     elementType = elementType
 ) {
     override var visibility: Import.VisibilityKind = Import.VisibilityKind.Public
-    override var isRecursive: Boolean = true    // False by default in SysMLv2
+    override var isRecursive: Boolean = false  // False by default in SysMLv2
     override var isImportAll: Boolean = false
-    override val importOwningNamespace: Namespace?
-        get() = owningNamespace
 
-    override fun importedMemberships(excluded: Set<Namespace>): MutableSet<Membership> {
-        TODO("Not yet implemented")
+    override val importedElement: Namespace
+        get() = target.first() as Namespace
+
+    override fun importedMemberships(
+        excluded: Set<Namespace>,
+        filter: Membership.() -> Boolean
+    ): List<Membership> {
+        if (!isRecursive)
+            return importedNamespace.visibleMemberships(excluded) { filter() }
+        else {
+            val found = importedNamespace.visibleMemberships(excluded) { filter() }
+            if (found.isNotEmpty()) return found
+            importedNamespace.ownedImport.forEach {
+                val found = it.importedMemberships(excluded) { filter() }
+                if (found.isNotEmpty()) return found
+            }
+        }
+        return emptyList()
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -50,13 +64,10 @@ class NamespaceImportImplementation(
             if (isRecursive) ", recursive" else "" +
             if (isImportAll) ", importAll" else ""
 
-    override fun clone() : NamespaceImport {
-        return NamespaceImportImplementation(
+    override fun clone() : NamespaceImport = NamespaceImportImplementation(
             importedNamespace = importedNamespace,
-        ).also {
-            it.updateFrom(this)
-        }
-    }
+        ).also { it.updateFrom(this) }
+
 
     override fun updateFrom(template: Element) {
         super.updateFrom(template)

@@ -1,10 +1,9 @@
 package com.github.tukcps.sysmd.model.kerml.implementation
 
-import io.github.tukcps.aadd.values.IntegerRange
 import com.github.tukcps.sysmd.cspsolver.Variable
-import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.util.SimpleName
+import io.github.tukcps.aadd.values.IntegerRange
 
 /**
  * A feature definition including Multiplicity, as in KerML (mostly).
@@ -21,21 +20,19 @@ open class FeatureImplementation(
     final override var isOrdered: Boolean = false,
     final override var isDerived: Boolean = false,
     override var isReadOnly: Boolean = false,
-    textualRepresentation: MutableList<TextualRepresentation> = mutableListOf(),
     elementType: String = "Feature",
     override var typeConstraint: MutableList<String> = mutableListOf(),
     override var expression: String? = null,
 ): Feature, TypeImplementation(
     declaredName = declaredName,
     declaredShortName = declaredShortName,
-    textualRepresentation = textualRepresentation,
     elementType = elementType
 ){
     override val type: List<Type>
         get() = generalization
 
     override val unitConstraint: String?
-        get() = getOwned<Feature>("unit")?.expression?.trim('"')?:""
+        get() = resolveLocal("unit")?.member<Feature>()?.expression?.trim('"')?:""
 
     override val typing: List<FeatureTyping>
         get() = getOwnedElementsOfType()
@@ -78,8 +75,6 @@ open class FeatureImplementation(
         return klon
     }
 
-    override var featureWithValue: AstNode? = null
-
     final override val referencedFeature: Feature?
         get() = getOwnedElementOfType<ReferenceSubsetting>()?.referencedFeature
 
@@ -104,15 +99,13 @@ open class FeatureImplementation(
         }
     }
 
-    override var variable: Variable?
-        get() = variables.firstOrNull()
-        set(value) { variables = mutableListOf(value) }
-    // For nested attributes, multiple variables are needed
-    override var variables: MutableList<Variable?> = mutableListOf()
+    @Deprecated("To get a variable, one must use getVariable and the suitable membership of a feature.")
+    override val variable: Variable?
+        get() = model!!.solver.getVariable(this.path())
 
     override fun toString(): String = super.toString() +
-            (if (variable != null) " = " +
-                    try { variable?.vectorQuantity.toString() }
+            (if (model!!.solver.getVariable(path()) != null) " = " +
+                    try { model!!.solver.getVariable(path())!!.vectorQuantity.toString() }
                     catch (_: Exception) {"(?)"} else "") +
             (if (isEnd) " end" else "") +
             (if (isComposite) " composite" else "") +
@@ -125,10 +118,8 @@ open class FeatureImplementation(
  * For standard-conform serialization, we use the body field
  * resp. a TextualRepresentation of the feature.
  */
-fun Feature.toTextualRepresentation(): String? {
+fun Feature.toTextualRepresentation(): String {
     // for Features without value we return null
-    if (!isFeatureWithValue())
-        return null
 
     var sysml = "feature"
     // name, short name:
@@ -143,14 +134,8 @@ fun Feature.toTextualRepresentation(): String? {
         sysml += "($typeConstraint)"
     }
 
-    if (featureWithValue != null) {
-        sysml += " = $expression"
-    }
-    if (variable != null) {
-        variables.forEach {
-            sysml += " = ${expression?:""}"
-        }
-    }
+    if (expression?.isNotBlank() == true) sysml += " = $expression"
+
     sysml +=";"
     return sysml
 }

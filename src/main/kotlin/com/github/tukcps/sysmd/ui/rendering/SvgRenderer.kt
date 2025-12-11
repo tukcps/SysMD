@@ -1,3 +1,5 @@
+package com.github.tukcps.sysmd.ui.rendering
+
 import org.jetbrains.skia.Image
 import org.apache.batik.transcoder.TranscoderInput
 import org.apache.batik.transcoder.TranscoderOutput

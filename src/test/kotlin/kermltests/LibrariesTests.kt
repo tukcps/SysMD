@@ -1,11 +1,6 @@
 package kermltests
 
 import com.github.tukcps.sysmd.model.kerml.Association
-import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.resolve.resolve
-import org.junit.jupiter.api.parallel.ResourceAccessMode.READ_WRITE
-import org.junit.jupiter.api.parallel.ResourceLock
-import org.junit.jupiter.api.parallel.Resources.SYSTEM_PROPERTIES
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
@@ -52,8 +47,8 @@ class LibrariesTests {
 
         val links = javaClass.getResourceAsStream("/libraries/Links.kerml")!!.bufferedReader().use { it.readText() }
         loadKerML(links)
-        val link = global.resolve<Association>("Links::Link")
-        val binaryLink = global.resolve<Association>("Links::BinaryLink")
+        val link = global.resolve("Links::Link")?.memberElement as Association?
+        val binaryLink = global.resolve("Links::BinaryLink")?.memberElement as Association?
         assertNotNull(link)
         assertNotNull(binaryLink)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
@@ -64,8 +59,8 @@ class LibrariesTests {
      */
     @Test
     fun linksTestWithRepository() = testSession("Links") {
-        val link = global.resolve<Association>("Links::Link")
-        val binaryLink = global.resolve<Association>("Links::BinaryLink")
+        val link = global.resolve("Links::Link")?.memberElement as Association?
+        val binaryLink = global.resolve("Links::BinaryLink")?.memberElement as Association?
         assertNotNull(link)
         assertNotNull(binaryLink)
         assertTrue(status.issues.isEmpty(), status.issues.toString())

@@ -4,7 +4,6 @@ import com.github.tukcps.sysmd.model.kerml.Behavior
 import com.github.tukcps.sysmd.model.kerml.Step
 import com.github.tukcps.sysmd.model.kerml.Succession
 import com.github.tukcps.sysmd.model.kerml.getOwnedElementOfType
-import com.github.tukcps.sysmd.services.resolve.resolve
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
@@ -27,8 +26,8 @@ class SuccessionTests {
             }
         """)
         assertNoIssues()
-        val focus = global.resolve<Step>("TakePicture::focus")
-        val takePicture = global.resolve<Behavior>("TakePicture")
+        val focus: Step? = global.resolve("TakePicture::focus")?.member()
+        val takePicture: Behavior? = global.resolve("TakePicture")?.member()
         val succession = takePicture?.getOwnedElementOfType<Succession>()
         assertNotNull(succession)
         assertNotNull(focus)

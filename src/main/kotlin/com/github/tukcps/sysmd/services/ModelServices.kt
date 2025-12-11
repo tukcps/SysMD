@@ -27,14 +27,6 @@ interface ModelServices:
     var input: CharSequence?
 
     /**
-     * Resolves the names and UUID used in Identity to references and UUID.
-     * It returns 'true' if a field was updated; the function is overridden
-     * by other classes and used during initialization.
-     * @return true if a field was updated
-     */
-    fun resolveNames(): Boolean
-
-    /**
      * Avoid use of clone - it creates a NEW, independent element that has the same class and
      * fields as this, but a different elementId.
      */

@@ -1,7 +1,7 @@
 package com.github.tukcps.sysmd.cspsolver.analyzer
 
-import com.github.tukcps.sysmd.model.expression.DDInternal
 import com.github.tukcps.sysmd.cspsolver.Variable
+import com.github.tukcps.sysmd.model.expression.DDInternal
 import com.github.tukcps.sysmd.services.session.Session
 import io.github.tukcps.aadd.*
 import io.github.tukcps.aadd.functions.intersect
@@ -40,39 +40,39 @@ open class DDAnalyzer(override val model: Session): StructuralAnalyzerIF {
         findInfeasibility(updatedProperty)
     }
 
-    override fun conditionInAPath(conditionIndex: Int, property: Variable): Boolean {
-        return when (property.vectorQuantity.values[0]) {
-            is BDD -> {
-                val currentPaths = findPathsTo(property.vectorQuantity.values[0].asBdd(), property.boolSpecs[0].bddLeafOf(builder))
+    override fun conditionInAPath(conditionIndex: Int, variable: Variable): Boolean {
+        return when (variable.baseType) {
+            Variable.BaseType.Bool -> {
+                val currentPaths = findPathsTo(variable.vectorQuantity.values[0].asBdd(), variable.boolSpecs[0].bddLeafOf(builder))
                 for (c in currentPaths) {
                     if (c.containsKey(conditionIndex)) return true
                 }
                 false
             }
-            is IDD -> {
-                val currentPaths = findPathsTo(property.vectorQuantity.values[0].asIdd().evaluate(), builder.integer(property.intSpecs[0]))
+            Variable.BaseType.Int -> {
+                val currentPaths = findPathsTo(variable.vectorQuantity.values[0].asIdd().evaluate(), builder.integer(variable.intSpecs[0]))
                 for (c in currentPaths) {
                     if (c.containsKey(conditionIndex)) return true
                 }
                 false
             }
-            is AADD -> {
-                //FIXME: target constructe correctly?
-                val currentPaths = findPathsTo(property.vectorQuantity.values[0].asAadd().evaluate(), builder.real(property.rangeSpecs[0]))
+            Variable.BaseType.Real -> {
+                //FIXME: target construct correctly?
+                val currentPaths = findPathsTo(variable.vectorQuantity.values[0].asAadd().evaluate(), builder.real(variable.rangeSpecs[0]))
                 for (c in currentPaths) {
                     if (c.containsKey(conditionIndex)) return true
                 }
                 false
             }
-            is StrDD -> throw Exception("${property.feature.escapedName()}: StrDD not supported")
-            else -> throw Exception("${property.feature.escapedName()} of unknown data type")
+            Variable.BaseType.String -> throw Exception("${variable.feature.escapedName()}: StrDD not supported")
+            else -> throw Exception("${variable.feature.escapedName()} of unknown data type")
         }
     }
 
-    override fun conditionInAllPaths(conditionIndex: Int, property: Variable): Boolean {
-        return when (property.vectorQuantity.values[0]) {
+    override fun conditionInAllPaths(conditionIndex: Int, variable: Variable): Boolean {
+        return when (variable.vectorQuantity.values[0]) {
             is BDD -> {
-                val currentPaths = findPathsTo(property.vectorQuantity.values[0].asBdd().evaluate(), property.boolSpecs[0].bddLeafOf(builder))
+                val currentPaths = findPathsTo(variable.vectorQuantity.values[0].asBdd().evaluate(), variable.boolSpecs[0].bddLeafOf(builder))
                 if (currentPaths.isEmpty()) return false
                 var result = true
                 for (c in currentPaths) {
@@ -81,7 +81,7 @@ open class DDAnalyzer(override val model: Session): StructuralAnalyzerIF {
                 result
             }
             is IDD -> {
-                val currentPaths = findPathsTo(property.vectorQuantity.values[0].asIdd().evaluate(), builder.integer(property.intSpecs[0]))
+                val currentPaths = findPathsTo(variable.vectorQuantity.values[0].asIdd().evaluate(), builder.integer(variable.intSpecs[0]))
                 if (currentPaths.isEmpty()) return false
                 var result = true
                 for (c in currentPaths) {
@@ -90,7 +90,7 @@ open class DDAnalyzer(override val model: Session): StructuralAnalyzerIF {
                 result
             }
             is AADD -> {
-                val currentPaths = findPathsTo(property.vectorQuantity.values[0].asAadd().evaluate(), builder.real(property.rangeSpecs[0]))
+                val currentPaths = findPathsTo(variable.vectorQuantity.values[0].asAadd().evaluate(), builder.real(variable.rangeSpecs[0]))
                 if (currentPaths.isEmpty()) return false
                 var result = true
                 for (c in currentPaths) {
@@ -98,15 +98,15 @@ open class DDAnalyzer(override val model: Session): StructuralAnalyzerIF {
                 }
                 result
             }
-            is StrDD -> throw Exception("${property.feature.escapedName()}: StrDD not supported")
-            else -> throw Exception("${property.feature.escapedName()} of unknown data type")
+            is StrDD -> throw Exception("${variable.feature.escapedName()}: StrDD not supported")
+            else -> throw Exception("${variable.feature.escapedName()} of unknown data type")
         }
     }
 
-    override fun getAllocationFromAllPaths(index: Int, property: Variable): DD<*> {
-        return when (property.vectorQuantity.values[0]) {
+    override fun getAllocationFromAllPaths(index: Int, variable: Variable): DD<*> {
+        return when (variable.vectorQuantity.values[0]) {
             is BDD -> {
-                val currentPaths = findPathsTo(property.vectorQuantity.values[0].asBdd().evaluate(), property.boolSpecs[0].bddLeafOf(builder))
+                val currentPaths = findPathsTo(variable.vectorQuantity.values[0].asBdd().evaluate(), variable.boolSpecs[0].bddLeafOf(builder))
                 var result = builder.Bool
                 for (c in currentPaths) {
                     val value = if (c[index] == true) builder.True else builder.False
@@ -115,25 +115,25 @@ open class DDAnalyzer(override val model: Session): StructuralAnalyzerIF {
                 result
             }
             is IDD -> {
-                val currentPaths = findPathsTo(property.vectorQuantity.values[0].asIdd().evaluate(),builder.integer(property.intSpecs[0]))
+                val currentPaths = findPathsTo(variable.vectorQuantity.values[0].asIdd().evaluate(),builder.integer(variable.intSpecs[0]))
                 var result:IDD = builder.Integers
                 for (c in currentPaths) {
-                    val value = followPathTo(property.vectorQuantity.values[0].asIdd().evaluate(), c, index)
+                    val value = followPathTo(variable.vectorQuantity.values[0].asIdd().evaluate(), c, index)
                     result = result.intersect(value.asIdd())
                 }
                 result
             }
             is AADD -> {
-                val currentPaths = findPathsTo(property.vectorQuantity.values[0].asAadd().evaluate(), builder.real(property.rangeSpecs[0]))
+                val currentPaths = findPathsTo(variable.vectorQuantity.values[0].asAadd().evaluate(), builder.real(variable.rangeSpecs[0]))
                 var result: AADD = builder.Reals//AFReals
                 for (c in currentPaths) {
-                    val value = followPathTo(property.vectorQuantity.values[0].asAadd().evaluate(), c, index)
+                    val value = followPathTo(variable.vectorQuantity.values[0].asAadd().evaluate(), c, index)
                     result = result.intersect(value.asAadd())
                 }
                 result
             }
-            is StrDD -> throw Exception("${property.feature.escapedName()}: StrDD not supported")
-            else -> throw Exception("${property.feature.escapedName()} of unknown data type")
+            is StrDD -> throw Exception("${variable.feature.escapedName()}: StrDD not supported")
+            else -> throw Exception("${variable.feature.escapedName()} of unknown data type")
         }
     }
 

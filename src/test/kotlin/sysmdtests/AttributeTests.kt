@@ -1,11 +1,6 @@
 package sysmdtests
 
 import com.github.tukcps.sysmd.cspsolver.Variable
-import com.github.tukcps.sysmd.cspsolver.propagate
-import com.github.tukcps.sysmd.model.kerml.Element
-import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.sysml.AttributeUsage
-import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.resolve.resolveVars
 import io.github.tukcps.aadd.BDD
@@ -28,7 +23,7 @@ class AttributeTests {
         """
         )
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        propagate()
+        solver.propagate()
         val a = global.resolveVar("a")
         val b = global.resolveVar("b")
         assertTrue((a!!.vectorQuantity.value is BDD.Internal))
@@ -44,7 +39,7 @@ class AttributeTests {
             attribute b: Ranges::BooleanInSpec{:>> spec="false";}
         """
         )
-        propagate()
+        solver.propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         val a = global.resolveVar("a")
         val b = global.resolveVar("b")
@@ -54,34 +49,30 @@ class AttributeTests {
 
     @Test
     fun booleanAttributeTest3() = testSession("Attributes") {
-        loadSysMLv2(
-            """
+        loadSysMLv2("""
                 attribute a: ScalarValues::Boolean;
                 attribute b: ScalarValues::Boolean = a;
-        """
-        )
-        propagate()
+        """)
+        solver.propagate()
         val a = global.resolveVar("a")
         val b = global.resolveVar("b")
         assertTrue(a!!.vectorQuantity.value is BDD.Leaf && a.vectorQuantity.value == builder.Bool)
         assertTrue(b!!.vectorQuantity.value is BDD.Leaf && b.vectorQuantity.value == builder.Bool)
-        propagate()
+        solver.propagate()
         assertTrue(a.vectorQuantity.value is BDD.Leaf && a.vectorQuantity.value == builder.Bool)
         assertTrue(b.vectorQuantity.value is BDD.Leaf && b.vectorQuantity.value == builder.Bool)
     }
 
     @Test
     fun nestedAttributesTest() = testSession("Attributes") {
-        loadSysMLv2(
-            """
+        loadSysMLv2("""
                 attribute def a{
                     attribute b: ScalarValues::Boolean;
                     attribute c: ScalarValues::Boolean;
                 }
-        """
-        )
-        propagate()
-        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+        """)
+        solver.propagate()
+        assertNoIssues()
     }
 
     @Test
@@ -96,7 +87,7 @@ class AttributeTests {
             }
         """
         )
-        propagate()
+        solver.propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals(0.0, global.resolveVar("P1::a")!!.vectorQuantity.aadd().getRange().min, 0.000001)
         assertEquals(20.0, global.resolveVar("P1::a")!!.vectorQuantity.aadd().getRange().max, 0.000001)
@@ -118,7 +109,7 @@ class AttributeTests {
             part def P3 :> P1; 
         """
         )
-        propagate()
+        solver.propagate()
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals(0.0, global.resolveVar("P1::a")!!.vectorQuantity.aadd().getRange().min, 0.000001)
         assertEquals(20.0, global.resolveVar("P1::a")!!.vectorQuantity.aadd().getRange().max, 0.000001)
@@ -139,10 +130,10 @@ class AttributeTests {
                 :>> a: Ranges::RealInRange = 3.0 { :>> range="0..10"; }
             }
         """)
-        propagate()
+        solver.propagate()
         assertNoIssues()
-        val p1a = global.resolve<AttributeUsage>("P1::a")
-        val p2a = global.resolve<Feature>("P2::a")
+        val p1a = global.resolve("P1::a")
+        val p2a = global.resolve("P2::a")
         assertTrue(p1a !== p2a)
 
         assertEquals(0.0, global.resolveVar("P1::a")!!.vectorQuantity.aadd().getRange().min, 0.000001)
@@ -165,7 +156,7 @@ class AttributeTests {
                 :>> c = 20.0; 
             }
         """)
-        propagate()
+        solver.propagate()
         assertNoIssues()
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
         assertEquals("Real", global.resolveVar("aa::b")!!.baseType.name)
@@ -187,18 +178,10 @@ class AttributeTests {
                 attribute quantityDimension: QuantityDimension { :>> quantityPowerFactors = lengthPF; }
             }
         """)
-        propagate()
-        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
-        assertEquals(
-            "Real",
-            global.resolveVar("test::quantityDimension::quantityPowerFactors::quantity")!!.baseType.name
-        )
-        assertEquals(
-            3.0,
-            global.resolveVar("test::quantityDimension::quantityPowerFactors::quantity")!!.vectorQuantity.aadd()
-                .getRange().max,
-            0.000001
-        )
+        solver.propagate()
+        assertNoIssues()
+        assertEquals("Real", global.resolveVar("test::quantityDimension::quantityPowerFactors::quantity")!!.baseType.name)
+        assertEquals(3.0, global.resolveVar("test::quantityDimension::quantityPowerFactors::quantity")!!.vectorQuantity.aadd().getRange().max, 0.000001)
     }
 
     /**
@@ -220,43 +203,32 @@ class AttributeTests {
             attribute quantityDimension: QuantityDimension { 
                 :>> quantityPowerFactors = lengthPF; 
             }
-        """
-        )
-        propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        """)
+        solver.propagate()
+        assertNoIssues()
         assertEquals(1, global.resolveVar("lengthPF::exponent")!!.vectorQuantity.idd().getRange().min)
-        assertEquals(
-            1,
-            global.resolveVar("quantityDimension::quantityPowerFactors::exponent")!!.vectorQuantity.idd().getRange().max
-        )
+        assertEquals(1, global.resolveVar("quantityDimension::quantityPowerFactors::exponent")!!.vectorQuantity.idd().getRange().max)
         assertTrue(status.issues.isEmpty(), "${status.issues}")
     }
 
     @Test
     fun nestedAttributeTest3() = testSession("Attributes") {
-        loadSysMLv2(
-            """
-            attribute def Old {
-                attribute a: ScalarValues::String = "old";
-            }
-            attribute def OwnsOld {
-                attribute ownedOld: Old;
-            }
-            attribute redefinedOld: Old { :>> a = "new"; }
-            attribute ownsOld: OwnsOld { :>> ownedOld = redefinedOld; }
-        """
-        )
-        assertTrue(status.issues.isEmpty(), "${status.issues}")
-        val redefinedOldA = global.resolve<Element>("redefinedOld::a")
+        loadSysMLv2("""
+            attribute def Old     { attribute a: ScalarValues::String default "old"; }
+            attribute def OwnsOld { attribute ownedOld: Old; }
+            attribute redefinedOld: Old { :>> a default "new"; }
+            attribute ownsOld: OwnsOld  { :>> ownedOld default redefinedOld; }
+        """)
+        assertNoIssues()
+        val redefinedOldA = global.resolve("redefinedOld::a")
         assertNotNull(redefinedOldA)
-        propagate()
+        solver.propagate()
         assertEquals("new", global.resolveVars("ownsOld::ownedOld::a")[0]!!.vectorQuantity.value.asStrDD().toString())
     }
 
     @Test
     fun nestedAttributeTestWithListOfElements() = testSession("Attributes", "Ranges") {
-        loadSysMLv2(
-            """
+        loadSysMLv2("""
                 attribute def QuantityPowerFactor {
                     attribute unit: ScalarValues::String;
                     attribute exponent: Ranges::IntegerInRange {:>> range="-10..10";}
@@ -268,44 +240,29 @@ class AttributeTests {
                 attribute massPF: QuantityPowerFactor { :>> unit = "kg";  :>> exponent = 1;  }
                 attribute timePF: QuantityPowerFactor { :>> unit = "s";  :>> exponent = -2;  }
                 attribute quantityDimension: QuantityDimension { :>> quantityPowerFactors = (lengthPF, massPF, timePF);  }
-        """.trimIndent()
-        )
-        propagate()
-        assertEquals(
-            "m",
-            global.resolveVars("quantityDimension::quantityPowerFactors::unit")[0]!!.vectorQuantity.value.asStrDD()
-                .toString()
-        )
-        assertEquals(
-            "kg",
-            global.resolveVars("quantityDimension::quantityPowerFactors::unit")[1]!!.vectorQuantity.value.asStrDD()
-                .toString()
-        )
-        assertEquals(
-            "s",
-            global.resolveVars("quantityDimension::quantityPowerFactors::unit")[2]!!.vectorQuantity.value.asStrDD()
-                .toString()
-        )
+        """)
+        solver.propagate()
+        assertEquals("m",  global.resolveVars("quantityDimension::quantityPowerFactors::unit")[0]!!.vectorQuantity.value.asStrDD().toString())
+        assertEquals("kg", global.resolveVars("quantityDimension::quantityPowerFactors::unit")[1]!!.vectorQuantity.value.asStrDD().toString())
+        assertEquals("s",  global.resolveVars("quantityDimension::quantityPowerFactors::unit")[2]!!.vectorQuantity.value.asStrDD().toString())
         assertEquals(1, global.resolveVars("quantityDimension::quantityPowerFactors::exponent")[0]!!.idd().max)
         assertEquals(1, global.resolveVars("quantityDimension::quantityPowerFactors::exponent")[1]!!.idd().max)
         assertEquals(-2, global.resolveVars("quantityDimension::quantityPowerFactors::exponent")[2]!!.idd().max)
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
-    // In SI::Mass, there is not the right type stored for unit and range (Base::Anything instead of String
+    // In ISQ::Mass, there is not the right type stored for unit and range (Base::Anything instead of String
     @Test
-    fun newRangeSpec() = testSession("SI", "Attributes", "Ranges") {
-        loadSysMLv2(
-            """
-            attribute a: SI::Mass {
+    fun newRangeSpec() = testSession("Attributes", "Ranges") {
+        loadSysMLv2("""
+            attribute a: ISQ::MassValue {
                 :>> range = "1..100";
                 :>> unit = "kg";
             }
-        """
-        )
-        propagate()
-        assertTrue(status.issues.isEmpty(), "${status.issues}")
-        val a = global.resolve<Feature>("a")
+        """)
+        solver.propagate()
+        assertNoIssues()
+        val a = global.resolve("a")
         assertNotNull(a)
         // assertEquals("String",global.resolveVar("a::range")!!.baseType.name)
         // assertEquals("String",global.resolveVar("a::unit")!!.baseType.name)
@@ -316,8 +273,7 @@ class AttributeTests {
 
     @Test
     fun assertAttribute1() = testSession("Attributes", "Calculations", "Ranges") {
-        loadSysMLv2(
-            """
+        loadSysMLv2("""
             attribute a: Ranges::RealInRange {:>> range="0..2";}
             attribute b: Ranges::RealInRange {:>> range="1..2";}
             assert constraint Test {isIn(a, b)}
@@ -326,10 +282,9 @@ class AttributeTests {
                 in attribute b: ScalarValues::Real;
                 return result: ScalarValues::Boolean = (a <= max(b)) and (a >= min(b));
             }
-        """
-        )
-        propagate()
-        assertTrue(status.issues.isEmpty(), "${status.issues}")
+        """)
+        solver.propagate()
+        assertNoIssues()
         assertEquals(1.0, global.resolveVar("a")!!.aadd().min, 0.000001)
     }
 
@@ -345,14 +300,14 @@ class AttributeTests {
                 return result: ScalarValues::Boolean = (a <= max(b)) and (a >= min(b));
             }
         """)
-        propagate()
+        solver.propagate()
         assertNoIssues()
         assertEquals(1.0, global.resolveVar("a")!!.aadd().min, 0.000001)
     }
 
 
     @Test
-    fun assertAttribute3() = testSession("SI", "Calculations", "Ranges") {
+    fun assertAttribute3() = testSession("ISQ", "Calculations", "Ranges") {
         loadSysMLv2("""
             attribute a: ISQ::MassValue { :>> range = "0..2"; :>> unit = "kg";}
             assert constraint Test { isIn(a, 1000.0..2000.0 [g]) }
@@ -362,7 +317,7 @@ class AttributeTests {
                 return result: ScalarValues::Boolean = (a <= max(b)) and (a >= min(b));
             }
         """)
-        propagate()
+        solver.propagate()
         assertNoIssues()
         assertEquals(1.0, global.resolveVar("a")!!.aadd().min, 0.000001)
     }

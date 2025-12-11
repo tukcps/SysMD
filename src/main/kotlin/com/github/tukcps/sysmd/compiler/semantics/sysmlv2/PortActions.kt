@@ -13,7 +13,7 @@ class PortDefinitionActions(
     context: ActionsContext,
 ): TypeActions<PortDefinitionImplementation>(
     context,
-    defaultType = "Ports::Port",
+    isImplicit = "Ports::Port",
     creator = ::PortDefinitionImplementation,
 )
 

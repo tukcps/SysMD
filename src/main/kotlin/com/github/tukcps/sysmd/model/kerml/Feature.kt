@@ -1,8 +1,7 @@
 package com.github.tukcps.sysmd.model.kerml
 
-import io.github.tukcps.aadd.values.IntegerRange
 import com.github.tukcps.sysmd.cspsolver.Variable
-import com.github.tukcps.sysmd.model.expression.AstNode
+import io.github.tukcps.aadd.values.IntegerRange
 
 
 /**
@@ -21,10 +20,6 @@ interface Feature: Type {
 
     enum class FeatureDirectionKind { IN, OUT, INOUT}
     var direction: FeatureDirectionKind
-    
-    @Deprecated("Use standard value multiplicity instead.", ReplaceWith("multiplicity"))
-    val multiplicityProperty: Multiplicity?
-        get() = multiplicity()
 
     /**
      * Getter and setter for the specified multiplicity; via
@@ -47,19 +42,7 @@ interface Feature: Type {
     val redefining: Feature?
         get() = ownedRelationship.filterIsInstance<Redefinition>().firstOrNull()?.redefinedFeature
 
-
-    /**
-     * Initialize searches for (qualified) names in the element and
-     * adds UId where the search was successful or reports an error where not.
-     */
-    override fun resolveNames(): Boolean
     override fun clone(): Feature
-
-    /**
-     * Features can 'have' a value which is determined by an owned
-     * expression --> implied FeatureValue!
-     */
-    var featureWithValue: AstNode?
 
     /**
      * Standard-extensions; string-level only.
@@ -79,13 +62,10 @@ interface Feature: Type {
      * @return true if there are parts that are relevant for solver
      */
     fun isFeatureWithValue(): Boolean = typeConstraint.isNotEmpty()
-            || unitConstraint != null || featureWithValue != null || variable != null
+            || unitConstraint != null || variable != null
 
     /**
      * A reference to the variable in the constraint solver
      */
-    var variable: Variable?
-        get() = variables.firstOrNull()
-        set(value) { variables = mutableListOf(value) }
-    var variables: MutableList<Variable?> // For nested attributes, multiple variables are necessary
+    val variable: Variable?
 }

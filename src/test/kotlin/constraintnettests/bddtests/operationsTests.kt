@@ -2,20 +2,17 @@
 
 package constraintnettests.bddtests
 
-import com.github.tukcps.sysmd.cspsolver.propagate
-import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.services.defScalarVar
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.letVar
-import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import io.github.tukcps.aadd.values.XBool
+import util.assertNoIssues
 import util.mockup.loadKerML
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Disabled
-import org.junit.jupiter.api.Test
 import util.testSession
+import kotlin.test.Ignore
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
 @Suppress("UNUSED_VARIABLE")
 internal class OperationTests /*: DDBuilderIF by Global.context */{
@@ -34,7 +31,7 @@ internal class OperationTests /*: DDBuilderIF by Global.context */{
         loadKerML("feature r1: ScalarValues::Boolean = a;")
         initialize()
         // println(resolveName<ValueFeature>("a"))        // it is "if a true, else false"
-        assertTrue(global.resolveVar("r1")!!.ast!!.bdd.height() == 1)
+        assertEquals(global.resolveVar("r1")!!.ast!!.bdd.height(), 1)
 
         loadKerML("feature b: ScalarValues::Boolean = true;")
         loadKerML("feature r2: ScalarValues::Boolean = a and b;") //
@@ -42,7 +39,7 @@ internal class OperationTests /*: DDBuilderIF by Global.context */{
 
         val a = letVar("a", builder.True)
         initialize()
-        propagate()
+        solver.propagate()
 
         val r2 = global.resolveVar("r2")!!
         // println("r2 = $r2")
@@ -61,7 +58,7 @@ internal class OperationTests /*: DDBuilderIF by Global.context */{
      * run 'initialize' and 'propagate' to get results.
      * No need to re-build the complete AST.
      */
-    @Test @Disabled
+    @Test @Ignore
     fun setVariableTestAADD() = testSession("ScalarValues") {
             // Create some BDD that depend on variables "a", "b" , "c"
             // set "a" to True or False
@@ -86,7 +83,7 @@ internal class OperationTests /*: DDBuilderIF by Global.context */{
 
             letVar("a", builder.False)
             initialize()
-            propagate()
+            solver.propagate()
             val r2 = global.resolveVar("r1")!!.vectorQuantity.value
             val y = global.resolveVar("y")!!.vectorQuantity.value
             assertEquals(r2.asAadd().min, y.asAadd().min, 0.00001)
@@ -94,7 +91,7 @@ internal class OperationTests /*: DDBuilderIF by Global.context */{
 
             letVar("a", builder.boolean("a"))
             initialize()
-            propagate()
+            solver.propagate()
             val r3 = global.resolveVar("r1")!!.vectorQuantity.value
             assertEquals(0.0, r3.asAadd().min,  0.00001)
             assertEquals(0.9, r3.asAadd().max, 0.00001)
@@ -124,7 +121,7 @@ internal class OperationTests /*: DDBuilderIF by Global.context */{
             feature b: ScalarValues::Boolean;
             feature c: ScalarValues::Boolean;
             feature y: ScalarValues::Boolean = (a and c) or (not(b) and not(a));""")
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val a = global.resolveVar("a")!!
         val b = global.resolveVar("b")!!
         val c = global.resolveVar("c")!!
@@ -148,17 +145,17 @@ internal class OperationTests /*: DDBuilderIF by Global.context */{
     @Test
     fun setBoolValueTest() = testSession("ScalarValues") {
         loadKerML("""
-                feature a: ScalarValues::Boolean(true);
-                feature b: ScalarValues::Boolean(false);
-                feature d: ScalarValues::Boolean;
-            """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        assertEquals(null, global.resolve<Feature>("a")!!.variable!!.ast)
-        assertEquals(null, global.resolve<Feature>( "b")!!.variable!!.ast)
-        assertEquals(null, global.resolve<Feature>( "d")!!.variable!!.ast)
-        assertEquals(XBool.X, global.resolve<Feature>( "d")!!.variable!!.boolSpecs[0])
-        assertEquals(XBool.True, global.resolve<Feature>( "a")!!.variable!!.boolSpecs[0])
-        assertEquals(XBool.False, global.resolve<Feature>( "b")!!.variable!!.boolSpecs[0])
+            feature a: ScalarValues::Boolean(true);
+            feature b: ScalarValues::Boolean(false);
+            feature d: ScalarValues::Boolean;
+        """)
+        assertNoIssues()
+        assertEquals(null, global.resolveVar("a")!!.ast)
+        assertEquals(null, global.resolveVar( "b")!!.ast)
+        assertEquals(null, global.resolveVar( "d")!!.ast)
+        assertEquals(XBool.X, global.resolveVar( "d")!!.boolSpecs[0])
+        assertEquals(XBool.True, global.resolveVar( "a")!!.boolSpecs[0])
+        assertEquals(XBool.False, global.resolveVar( "b")!!.boolSpecs[0])
         /* assertEquals(1, builder.conds.indexes[resolveName<ValueFeature>("a")!!.id])
         assertEquals(2, builder.conds.indexes[resolveName<ValueFeature>("b")!!.id])
         assertEquals(3, builder.conds.indexes[resolveName<ValueFeature>("d")!!.id]) */
@@ -173,17 +170,17 @@ internal class OperationTests /*: DDBuilderIF by Global.context */{
             feature y: ScalarValues::Boolean = (a and c) or (not(b) and not(a));
             feature z: ScalarValues::Boolean(true).""")
         assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
-        propagate()
-        val y = global.resolve<Feature>("y")!!.variable!!
-        val a = global.resolve<Feature>("a")!!.variable!!
-        val b = global.resolve<Feature>("b")!!.variable!!
-        val c = global.resolve<Feature>("c")!!.variable!!
+        solver.propagate()
+        val y = global.resolveVar("y")!!
+        val a = global.resolveVar("a")!!
+        val b = global.resolveVar("b")!!
+        val c = global.resolveVar("c")!!
 
         val brk = 1
         val tst = y.vectorQuantity.bdd().intersect(a.vectorQuantity.bdd())
         val tstEval = tst.evaluate()
         val brk2 = 2
-        assertEquals(0, status.issues.size, status.issues.toString())
+        assertNoIssues()
         //println(this.getProperties().forEach { println(it.toString()) })
     }
 }

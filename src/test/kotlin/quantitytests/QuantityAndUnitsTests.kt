@@ -1,25 +1,26 @@
 package quantitytests
 
+import com.github.tukcps.sysmd.cspsolver.VariableImplementation
+import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
+import com.github.tukcps.sysmd.model.kerml.implementation.MembershipImplementation
+import com.github.tukcps.sysmd.quantities.*
+import com.github.tukcps.sysmd.quantities.Unit
+import com.github.tukcps.sysmd.quantities.baseUnits.Length
+import com.github.tukcps.sysmd.quantities.baseUnits.Mass
+import com.github.tukcps.sysmd.quantities.baseUnits.Duration
+import com.github.tukcps.sysmd.services.initialize
+import com.github.tukcps.sysmd.services.resolve.resolveVar
 import io.github.tukcps.aadd.AADD
 import io.github.tukcps.aadd.DDBuilder
 import io.github.tukcps.aadd.IDD
 import io.github.tukcps.aadd.values.IntegerRange
 import io.github.tukcps.aadd.values.Range
-import com.github.tukcps.sysmd.cspsolver.VariableImplementation
-import com.github.tukcps.sysmd.cspsolver.propagate
-import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
-import com.github.tukcps.sysmd.quantities.*
-import com.github.tukcps.sysmd.quantities.Unit
-import com.github.tukcps.sysmd.quantities.baseUnits.Length
-import com.github.tukcps.sysmd.quantities.baseUnits.Mass
-import com.github.tukcps.sysmd.quantities.baseUnits.Time
-import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.resolve.resolveVar
-import util.mockup.loadKerML
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import util.assertNoIssues
+import util.mockup.loadKerML
 import util.testSession
 import kotlin.math.ln
 import kotlin.math.pow
@@ -48,7 +49,7 @@ class UnitTests {
     private lateinit var iddDummy1: IDD
     private lateinit var iddDummy5: IDD
     private lateinit var iddDummy100: IDD
-    private lateinit var IDDEmtpy: IDD
+    private lateinit var iddEmtpy: IDD
 
     private val precisionExpMinus6 = 0.000001
 
@@ -77,7 +78,7 @@ class UnitTests {
             iddDummy1 = integer(-1L .. 1)
             iddDummy5 = integer(-5L .. 5)
             iddDummy100 = integer(-100L .. 100)
-            IDDEmtpy = EmptyIntegerRange
+            iddEmtpy = EmptyIntegerRange
         }
     }
 
@@ -111,15 +112,15 @@ class UnitTests {
     fun parseTestTemperatures() {
         val u = Unit("°F")
         val q = Quantity(ddDummy1, u)
-        assertEquals("Temperature", q.unit.getUnitDomain(1.0))
+        assertEquals("ThermodynamicTemperature", q.unit.getUnitDomain(1.0))
 
         val u2 = Unit("°C")
         val q2 = Quantity(ddDummy1, u2)
-        assertEquals("Temperature", q2.unit.getUnitDomain(1.0))
+        assertEquals("ThermodynamicTemperature", q2.unit.getUnitDomain(1.0))
 
         val u3 = Unit("K")
         val q3 = Quantity(ddDummy1, u3)
-        assertEquals("Temperature", q3.unit.getUnitDomain(1.0))
+        assertEquals("ThermodynamicTemperature", q3.unit.getUnitDomain(1.0))
     }
 
     @Test
@@ -846,7 +847,7 @@ class UnitTests {
         val quant1 = Quantity(ddDummy100, "B")
         assertEquals(800.0, quant1.getMinAsDouble(), 0.0000001)
         assertEquals("bit", quant1.unit.toString())
-        assertEquals("InformationCapacity", quant1.getDomain())
+        assertEquals("StorageCapacity", quant1.getDomain())
 
         val quant2 = Quantity(ddDummy1, "kiB")
         assertEquals(8192.0, quant2.getMinAsDouble(), 0.0000001)
@@ -889,7 +890,7 @@ class UnitTests {
         val quant1 = Quantity(ddDummy10, "dB")
         assertEquals(10.0, quant1.getMinAsDouble(), 0.0000001)
         assertEquals("1", quant1.unit.toString())
-        assertEquals("QuantityOfDomainOne", quant1.getDomain())
+        assertEquals("DimensionOne", quant1.getDomain())
 
         val quant2 = Quantity(ddDummy20, "dB")
         assertEquals(100.0, quant2.getMinAsDouble(), 0.0000001)
@@ -1054,7 +1055,8 @@ class UnitTests {
 
     @Test
     fun intersectTest() {
-        val p = VariableImplementation(FeatureImplementation( )) // m
+        val builder = DDBuilder()
+        val p = VariableImplementation(MembershipImplementation(memberElement = FeatureImplementation()), builder) // m
         p.vectorQuantity = Quantity(aaddDummy100, "cm")
         val upQuantity = Quantity(aaddDummy5, "m")
         assertEquals(-1.0, p.vectorQuantity.intersect(upQuantity).value.asAadd().getRange().min, 0.000001)
@@ -1063,7 +1065,8 @@ class UnitTests {
 
     @Test
     fun intersectTestInt() {
-        val p = VariableImplementation(FeatureImplementation( )) // 1
+        val builder = DDBuilder()
+        val p = VariableImplementation(MembershipImplementation(memberElement = FeatureImplementation()), builder) // 1
         p.vectorQuantity = Quantity(iddDummy1)
         val upQuantity = Quantity(iddDummy5)
         assertEquals(-1, p.vectorQuantity.intersect(upQuantity).value.asIdd().getRange().min)
@@ -1072,7 +1075,8 @@ class UnitTests {
 
     @Test
     fun constraintTest() {
-        val p = VariableImplementation(FeatureImplementation()) // m
+        val builder = DDBuilder()
+        val p = VariableImplementation(MembershipImplementation(memberElement = FeatureImplementation()), builder) // m
         p.valueSpecs = mutableListOf(Range("-0.5..2"))
         p.vectorQuantity = Quantity(aaddDummy100, "cm")
         assertEquals(
@@ -1089,7 +1093,8 @@ class UnitTests {
 
     @Test
     fun constraintTestInt() {
-        val p = VariableImplementation(FeatureImplementation()) // 1
+        val builder = DDBuilder()
+        val p = VariableImplementation(MembershipImplementation(memberElement = FeatureImplementation()), builder) // 1
         p.vectorQuantity = Quantity(iddDummy1)
         p.valueSpecs = mutableListOf(IntegerRange("0..2"))
         assertEquals(0, p.vectorQuantity.constrain(p.intSpecs).value.asIdd().getRange().min)
@@ -1098,22 +1103,22 @@ class UnitTests {
 
     @Test
     fun emptyIDDDTest() {
-        val quantity2 = Quantity(IDDEmtpy)
+        val quantity2 = Quantity(iddEmtpy)
         assertEquals("∅", quantity2.toString())
     }
 
     // The units °C, °F and % do work
     @Test
-    fun missingUnitsTest() = testSession("SI") {
+    fun missingUnitsTest() = testSession("ISQ") {
         loadKerML(input = """
             // The units °C, °F and % do not work
-                feature test1: SI::Temperature[°C];
-                feature test2: SI::Temperature[°F];
-                feature test3: SI::Mass ;
-                feature percentage: SI::Quantity[%].
+                feature test1: ISQ::ThermodynamicTemperatureValue {:>> unit ="°C";}
+                feature test2: ISQ::ThermodynamicTemperatureValue {:>> unit ="°F";}
+                feature test3: ISQ::MassValue ;
+                feature percentage: Quantities::ScalarQuantityValue[%].
             """)
         initialize()
-        propagate()
+        solver.propagate()
         assertEquals(0, status.issues.size, status.issues.toString())
     }
 
@@ -1136,7 +1141,7 @@ class UnitTests {
         assert(!quant2.unit.isDifference)
         val quantResult = quant1.minus(quant2)
         assert(quantResult.unit.isDifference)
-        assertEquals("Temperature Difference", quantResult.getDomain())
+        assertEquals("ThermodynamicTemperature Difference", quantResult.getDomain())
         assertEquals("K", quantResult.unit.toString())
         assertEquals(9.0, quantResult.value.asAadd().getRange().max, 0.00001)
     }
@@ -1149,78 +1154,78 @@ class UnitTests {
         assertFalse(quant2.unit.isDifference)
         val quantResult = quant1.minus(quant2)
         assert(quantResult.unit.isDifference)
-        assertEquals("Time", quant1.getDomain())
-        assertEquals("Time", quant2.getDomain())
-        assertEquals("Time Difference", quantResult.getDomain())
+        assertEquals("Duration", quant1.getDomain())
+        assertEquals("Duration", quant2.getDomain())
+        assertEquals("Duration Difference", quantResult.getDomain())
         assertEquals("s", quantResult.unit.toString())
     }
 
     @Test
-    fun testYear() = testSession("SI") {
-        loadKerML("""feature date1: SI::Time [Year] = Year("2021").""")
-        propagate()
+    fun testYear() = testSession("ISQ") {
+        loadKerML("""feature date1: ISQ::TimeValue [Year] = Year("2021").""")
+        solver.propagate()
         assertEquals(1609459200.0,
             global.resolveVar("date1")!!.vectorQuantity.value.asAadd().getRange().max, 0.00001)
         assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
-    fun testYear2() = testSession("SI") {
+    fun testYear2() = testSession("ISQ") {
         loadKerML(
             """
-            feature year: SI::Time [Year] = Year("2022").
-            feature time: SI::Time [a] = 200.0 a.
-            feature yearResult: SI::Time [Year] = year + time."""
+            feature year: ISQ::TimeValue [Year] = Year("2022").
+            feature time: ISQ::DurationValue [a] = 200.0 a.
+            feature yearResult: ISQ::TimeValue [Year] = year + time."""
         )
 
-        propagate()
+        solver.propagate()
         assertEquals("2022", global.resolveVar("year")!!.vectorQuantity.toString())
         assertEquals("2222", global.resolveVar("yearResult")!!.vectorQuantity.toString())
         assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
-    fun testYear3() = testSession("SI") {
+    fun testYear3() = testSession("ISQ") {
         loadKerML(
             """
-            feature year: SI::Time [Year] = Year("2021");
-            feature year2: SI::Time [Year] = Year("2023");
-            feature result: SI::Time [a] = year2 - year;"""
+            feature year: ISQ::TimeValue [Year] = Year("2021");
+            feature year2: ISQ::TimeValue [Year] = Year("2023");
+            feature result: ISQ::DurationValue [a] = year2 - year;"""
         )
 
-        propagate()
+        solver.propagate()
         assertEquals(2.0, global.resolveVar("result")!!.vectorQuantity.valuesIn("a")[0].asAadd().min, 0.001)
         assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
-    fun testDateTime() = testSession("SI") {
-        loadKerML("""feature date1: SI::Time = DateTime("2021-10-30T13:00:01+02:00");""")
-        propagate()
+    fun testDateTime() = testSession("ISQ") {
+        loadKerML("""feature date1: ISQ::TimeValue = DateTime("2021-10-30T13:00:01+02:00");""")
+        solver.propagate()
         assertEquals(1635591601.0,
             global.resolveVar("date1")!!.vectorQuantity.value.asAadd().getRange().max, 0.00001)
         assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
-    fun testDateTime2() = testSession("SI") {
-        loadKerML("""feature date: SI::Time [DateTime] = DateTime("2021-10-10T00:00");""")
-        propagate()
+    fun testDateTime2() = testSession("ISQ") {
+        loadKerML("""feature date: ISQ::TimeValue [DateTime] = DateTime("2021-10-10T00:00");""")
+        solver.propagate()
         assertEquals("2021-10-10T00:00", global.resolveVar("date")!!.vectorQuantity.toString())
         assertEquals(0, status.issues.size, status.issues.toString())
     }
 
 
     @Test
-    fun testDateTimeDiff1() = testSession("SI") {
+    fun testDateTimeDiff1() = testSession("ISQ") {
         loadKerML(
             """
-            feature date1: SI::Time = DateTime("2021-10-30T13:00:01+02:00");
-            feature date2: SI::Time = DateTime("2021-10-30T13:01:01+02:00");
-            feature datediff: SI::Time [s] = date2-date1;"""
+            feature date1: ISQ::TimeValue = DateTime("2021-10-30T13:00:01+02:00");
+            feature date2: ISQ::TimeValue = DateTime("2021-10-30T13:01:01+02:00");
+            feature datediff: ISQ::DurationValue [s] = date2-date1;"""
         )
 
-        propagate()
+        solver.propagate()
         assertEquals(1635591601.0,
             global.resolveVar("date1")!!.vectorQuantity.value.asAadd().getRange().max, 0.00001)
         assertEquals(1635591661.0,
@@ -1231,15 +1236,15 @@ class UnitTests {
     }
 
     @Test
-    fun testDateTimeDiff2() = testSession("SI") {
+    fun testDateTimeDiff2() = testSession("ISQ") {
         loadKerML(
             """
-            feature date1: SI::Time = DateTime("2021-10-10T03:00:00+02:00");
-            feature date2: SI::Time = DateTime("2021-10-11T03:00:00+02:00");
-            feature datediff: SI::Time [h] = date2-date1;"""
+            feature date1: ISQ::TimeValue = DateTime("2021-10-10T03:00:00+02:00");
+            feature date2: ISQ::TimeValue = DateTime("2021-10-11T03:00:00+02:00");
+            feature datediff: ISQ::DurationValue [h] = date2-date1;"""
         )
 
-        propagate()
+        solver.propagate()
         assertEquals(1633827600.0,
             global.resolveVar("date1")!!.vectorQuantity.value.asAadd().getRange().max, 0.00001)
         assertEquals(1633914000.0,
@@ -1249,66 +1254,66 @@ class UnitTests {
     }
 
     @Test
-    fun testDateTimeSum() = testSession("SI") {
+    fun testDateTimeSum() = testSession("ISQ") {
         loadKerML("""
-            feature date: SI::Time = DateTime("2021-10-10T03:00:00");
-            feature time: SI::Time [a] = 1.0 a;
-            feature dateResult: SI::Time [DateTime] = date + time;"""
+            feature date: ISQ::TimeValue = DateTime("2021-10-10T03:00:00");
+            feature time: ISQ::DurationValue [a] = 1.0 a;
+            feature dateResult: ISQ::TimeValue [DateTime] = date + time;"""
         )
-        propagate()
+        solver.propagate()
         assertEquals("2022-10-10T03:00", global.resolveVar("dateResult")!!.vectorQuantity.toString())
         assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
-    fun dateTest() = testSession("SI") {
+    fun dateTest() = testSession("ISQ") {
         loadKerML("""
-            feature date: SI::Time [Date] = Date("2022-10-10");
-            feature time: SI::Time [d] = 0.5 d;
-            feature dateResult: SI::Time [Date] = date + time;"""
+            feature date: ISQ::TimeValue [Date] = Date("2022-10-10");
+            feature time: ISQ::DurationValue [d] = 0.5 d;
+            feature dateResult: ISQ::TimeValue [Date] = date + time;"""
         )
 
-        propagate()
+        solver.propagate()
         assertEquals("2022-10-10", global.resolveVar("date")!!.vectorQuantity.toString())
         assertEquals("2022-10-11", global.resolveVar("dateResult")!!.vectorQuantity.toString())
         assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
-    fun monthTest() = testSession("SI") {
+    fun monthTest() = testSession("ISQ") {
         loadKerML("""
-            feature month: SI::Time [Month] = Month("2022-10");
-            feature time: SI::Time [d] = 20.0 d;
-            feature monthResult: SI::Time [Month] = month + time;"""
+            feature month: ISQ::TimeValue [Month] = Month("2022-10");
+            feature time: ISQ::DurationValue [d] = 20.0 d;
+            feature monthResult: ISQ::TimeValue [Month] = month + time;"""
         )
-        propagate()
+        solver.propagate()
         assertEquals("2022-10", global.resolveVar("month")!!.vectorQuantity.toString())
         assertEquals("2022-11", global.resolveVar("monthResult")!!.vectorQuantity.toString())
         assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
-    fun monthTest2() = testSession("SI") {
+    fun monthTest2() = testSession("ISQ") {
         loadKerML(
             """
-            feature month: SI::Time [Month] = Month("2022-10");
-            feature time: SI::Time [a] = 30.0 a;
-            feature monthResult: SI::Time [Month] = month + time;"""
+            feature month: ISQ::TimeValue [Month] = Month("2022-10");
+            feature time: ISQ::DurationValue [a] = 30.0 a;
+            feature monthResult: ISQ::TimeValue [Month] = month + time;"""
         )
-        propagate()
+        solver.propagate()
+        assertEquals(0, status.issues.size, status.issues.toString())
         assertEquals("2022-10", global.resolveVar("month")!!.vectorQuantity.toString())
         assertEquals("2052-10", global.resolveVar("monthResult")!!.vectorQuantity.toString())
-        assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
-    fun monthTest3() = testSession("SI") {
+    fun monthTest3() = testSession("ISQ") {
         loadKerML("""
-            feature month1: SI::Time [Month] = Month("2021-10");
-            feature month2: SI::Time [Month] = Month("2023-10");
-            feature time: SI::Time [a] = month2 - month1;"""
+            feature month1: ISQ::TimeValue [Month] = Month("2021-10");
+            feature month2: ISQ::TimeValue [Month] = Month("2023-10");
+            feature time: ISQ::DurationValue [a] = month2 - month1;"""
         )
-        propagate()
+        solver.propagate()
         assertEquals("2021-10", global.resolveVar("month1")!!.vectorQuantity.toString())
         assertEquals("2023-10", global.resolveVar("month2")!!.vectorQuantity.toString())
         assertEquals("2 a", global.resolveVar("time")!!.vectorQuantity.toString())
@@ -1324,7 +1329,7 @@ class UnitTests {
         assertEquals("testdomain", unit.unitSet.elementAt(0).domain)
         assertEquals(5.0, unit.unitSet.elementAt(0).convFac)
         assertFalse(unit.unitSet.elementAt(0).isLogarithmic)
-        val baseUnitSet = mutableSetOf(Length.Meter.copy(2), Mass.Kilogram.copy(1), Time.Second.copy(-2))
+        val baseUnitSet = mutableSetOf(Length.Meter.copy(2), Mass.Kilogram.copy(1), Duration.Second.copy(-2))
         assertEquals(baseUnitSet, unit.unitSet.elementAt(0).getBaseUnits())
     }
 
@@ -1346,17 +1351,18 @@ class UnitTests {
 
 
     @Test
-    fun unitsMixed() = testSession("SI") {
+    fun unitsMixed() = testSession("ISQ") {
         loadKerML("""
-                feature percentage: SI::Quantity [%] = 10.0 [%];
+                feature percentage: Quantities::ScalarQuantityValue [%] = 10.0 [%];
                 feature number: ScalarValues::Real = 1.0;
                 feature result: ScalarValues::Real = percentage + number;
-                feature ratio: SI::Quantity [dB] = 10.0 [dB];
+                feature ratio: Quantities::ScalarQuantityValue [dB] = 10.0 [dB];
                 feature result2: ScalarValues::Real[1] = ln(ratio)/ln(10.0);
                 feature result3: ScalarValues::Real = power2(ratio);
-                feature result3: ScalarValues::Real = power2(ratio);""")
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        propagate()
+                feature result3: ScalarValues::Real = power2(ratio);
+        """)
+        assertNoIssues()
+        solver.propagate()
         assertEquals(0.1, global.resolveVar("percentage")!!.vectorQuantity.getMinAsDouble(), 0.0000001)
         assertEquals(1.0, global.resolveVar("number")!!.vectorQuantity.getMinAsDouble(), 0.0000001)
         assertEquals(1.1, global.resolveVar("result")!!.vectorQuantity.getMinAsDouble(), 0.0000001)

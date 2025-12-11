@@ -5,15 +5,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.github.tukcps.sysmd.compiler.importMD
-import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.session.Session
 import com.github.tukcps.sysmd.services.session.SessionManager
 import com.github.tukcps.sysmd.services.session.SessionManager.projectService
 import com.github.tukcps.sysmd.services.session.loadSysMDFromFile
-import com.github.tukcps.sysmd.ui.paneright.BoardViewModel
 import com.github.tukcps.sysmd.ui.composables.TreeViewModel
 import com.github.tukcps.sysmd.ui.composables.TreeViewNodeModel
+import com.github.tukcps.sysmd.ui.paneright.BoardViewModel
 
 
 /**
@@ -112,7 +111,7 @@ class SysMDViewModel(
             }
         }
         session.initialize()
-        if (solve) session.propagate()
+        if (solve) session.solver.propagate()
         tabsViewModel.editorTabs.forEach { tab ->
             tab.cells.forEach { cell ->
                 cell.collectVariablesToDisplay() }

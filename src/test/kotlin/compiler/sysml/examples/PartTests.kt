@@ -1,16 +1,14 @@
-package sysmlv2specificationtests
+package compiler.sysml.examples
 
-import util.mockup.loadSysMLv2
-import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.sysml.PartDefinition
 import com.github.tukcps.sysmd.model.sysml.PartUsage
 import com.github.tukcps.sysmd.model.sysml.PortDefinition
 import com.github.tukcps.sysmd.model.sysml.PortUsage
-import com.github.tukcps.sysmd.services.resolve.resolve
+import util.assertNoIssues
+import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 
 class PartTests {
 
@@ -29,11 +27,11 @@ class PartTests {
         }
         """)
 
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val partDef1 = global.resolve<Element>("PartDef1")
+        assertNoIssues()
+        val partDef1 = global.resolve("PartDef1")?.member<PartDefinition>()
         assertNotNull(partDef1)
 
-        val partDef2 = global.resolve<PartDefinition>("PartDef2")
+        val partDef2 = global.resolve("PartDef2")?.member<PartDefinition>()
         assertNotNull(partDef2)
     }
 
@@ -46,21 +44,21 @@ class PartTests {
     @Test
     fun testPartUsage() = testSession("Parts") {
         loadSysMLv2("""
-        part def PartDef1;
-        part part1 : PartDef1;
-        part part2 : PartDef1 {
-            /* members */
-        }
+            part def PartDef1;
+            part part1 : PartDef1;
+            part part2 : PartDef1 {
+                /* members */
+            }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
 
-        val partDef1 = global.resolve<Element>("PartDef1")
+        val partDef1 = global.resolve("PartDef1")?.member<PartDefinition>()
         assertNotNull(partDef1)
 
-        val part1 = global.resolve<PartUsage>("part1")
+        val part1 = global.resolve("part1")?.member<PartUsage>()
         assertNotNull(part1)
 
-        val part2 = global.resolve<Element>("part2")
+        val part2 = global.resolve("part2")?.member<PartUsage>()
         assertNotNull(part2)
     }
 
@@ -72,35 +70,35 @@ class PartTests {
     @Test
     fun testPartWithPorts() = testSession("Parts", "Ports") {
         loadSysMLv2("""
-        port def PortDef0;
-        port def PortDef1;
-        port def PortDef2;
-        port def PortDef3;
-        port def PortDef4;
-        port def PortDef5;
-        
-        part part1 {
-            port p0 : PortDef0 {
-                port p1 : PortDef1;
-                port p2 : PortDef2;
-                port p3 : PortDef3;
+            port def PortDef0;
+            port def PortDef1;
+            port def PortDef2;
+            port def PortDef3;
+            port def PortDef4;
+            port def PortDef5;
+            
+            part part1 {
+                port p0 : PortDef0 {
+                    port p1 : PortDef1;
+                    port p2 : PortDef2;
+                    port p3 : PortDef3;
+                }
+                port p4 : PortDef4;
+                port p5 : PortDef5;
             }
-            port p4 : PortDef4;
-            port p5 : PortDef5;
-        }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
 
-        val p0 = global.resolve<Element>("part1::p0")
+        val p0 = global.resolve("part1::p0")?.member<PortUsage>()
         assertNotNull(p0)
 
-        val part1 = global.resolve<PartUsage>("part1")
+        val part1 = global.resolve("part1")?.member<PartUsage>()
         assertNotNull(part1)
 
-        val p1 = global.resolve<PortUsage>("part1::p0::p1")
+        val p1 = global.resolve("part1::p0::p1")?.member<PortUsage>()
         assertNotNull(p1)
 
-        val portDef1 = global.resolve<PortDefinition>("PortDef1")
+        val portDef1 = global.resolve("PortDef1")?.member<PortDefinition>()
         assertNotNull(portDef1)
     }
 }

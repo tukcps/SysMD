@@ -2,42 +2,64 @@
 
 package com.github.tukcps.sysmd.ui.paneleft.projectlist
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.ContentAlpha
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DeleteOutline
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.FilePresent
+import androidx.compose.material.icons.automirrored.filled.Launch
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.isSecondary
+import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Popup
 import com.github.tukcps.sysmd.logger
-import com.github.tukcps.sysmd.ui.composables.SysMDTooltipArea
+import com.github.tukcps.sysmd.ui.dialogs.ProjectDetailDialog
 import com.github.tukcps.sysmd.ui.dialogs.SaveDialog
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.decodeToImageBitmap
+import kotlin.math.abs
 
 /**
- * Renders a single project
+ * Renders a single project with collapsible details
  * @param projectViewModel The project viewmodel that is rendered.
  * @param projectListViewModel The owning project list view-model.
  */
-@OptIn(ExperimentalResourceApi::class)
+@OptIn(ExperimentalResourceApi::class, ExperimentalComposeUiApi::class)
 @Composable
 fun Project(
     projectViewModel: ProjectViewModel,
     projectListViewModel: ProjectListViewModel,
 ) {
+    val showProjectDetailDialog = remember { mutableStateOf(false) }
+    val showDeleteProjectDialog = remember { mutableStateOf(false) }
+    val showContextMenu = remember { mutableStateOf(false) }
+    val contextMenuOffset = remember { mutableStateOf(IntOffset.Zero) }
+
+    val rotationAngle by animateFloatAsState(
+        targetValue = if (projectViewModel.isExpanded.value) 180f else 0f,
+        animationSpec = tween(durationMillis = 300)
+    )
 
     if (projectViewModel.showSaveDialog.value) {
         SaveDialog(projectViewModel.showSaveDialog,
@@ -46,92 +68,484 @@ fun Project(
         )
     }
 
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(all = 5.dp)
-            .selectable(selected = false) {
-                if (projectViewModel.unsavedChangesExist()) projectViewModel.showSaveDialog.value = true
-                else projectViewModel.openProject() },
-        shape = RoundedCornerShape(12.dp),
-    ) {
-        Box {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(all = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Start
-            ) {
-                val icon: ImageBitmap? = try {
-                    val file = projectViewModel.project?.directory?.resolve("Files")?.resolve("icon.png")?.toFile()
-                    file?.inputStream()?.readAllBytes()?.decodeToImageBitmap()
-                } catch (e: Exception) {
-                    logger.info("No 'icon.png' in the folder 'Files' of project ${projectViewModel.name}': $e")
-                    null
+    /**
+     * A Save-Dialog that changes the project after save.
+     */
+    val showSaveBeforeChangeDialog = remember { mutableStateOf(false) }
+    if (showSaveBeforeChangeDialog.value) {
+        SaveDialog(showSaveBeforeChangeDialog,
+            onSave = { projectListViewModel.tabsViewModel.save()
+                projectListViewModel.viewModelsOfProjects.value.forEach { project ->
+                    project.isExpanded.value = projectViewModel == projectViewModel.activeProject
                 }
+                projectViewModel.isExpanded.value = true
+                projectListViewModel.openProject(projectViewModel)
+                     },
+            onDrop =  {projectViewModel.openProject()
+                showSaveBeforeChangeDialog.value = false }
+        )
+    }
 
-                if (icon != null) {
-                    Image(
-                        modifier = Modifier.size(40.dp),
-                        painter = BitmapPainter(image = icon),
-                        contentScale = ContentScale.Fit,
-                        contentDescription = null
-                    )
-                } else
-                    Icon(
-                        modifier = Modifier.size(40.dp),
-                        imageVector = Icons.Default.FilePresent,
-                        contentDescription = null,
-                    )
+    if (showProjectDetailDialog.value) {
+        ProjectDetailDialog(showDialog = showProjectDetailDialog, projectViewModel = projectViewModel)
+    }
 
-                Column(modifier = Modifier.padding(start = 5.dp).weight(1f)) {
-                    Text(
-                        minLines = 1,
-                        maxLines = 1,
-                        text = projectViewModel.name,
-                        style = MaterialTheme.typography.labelMedium,
-                    )
-                    Text(
-                        maxLines = 2,
-                        minLines = 2,
-                        text = projectViewModel.description,
-                        style = MaterialTheme.typography.labelSmall,
-                    )
-                }
+    if (showDeleteProjectDialog.value) {
+        DeleteProjectDialog(
+            showDialog = showDeleteProjectDialog,
+            onDelete = { projectListViewModel.deleteProject(projectViewModel) }
+        )
+    }
 
-                Column(modifier = Modifier.padding(start = 5.dp)) {
+    Box {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(all = 5.dp)
+                .onPointerEvent(PointerEventType.Press) { event ->
+                    if (event.button?.isSecondary == true) {
+                        // Check if any change was consumed (by a child element)
+                        if (!event.changes.any { it.isConsumed }) {
+                            val position = event.changes.first().position
+                            contextMenuOffset.value = IntOffset(position.x.toInt(), position.y.toInt())
+                            showContextMenu.value = true
+                        }
+                    }
+                },
+            shape = RoundedCornerShape(12.dp),
+        ) {
+            Column {
+                // Header - always visible
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            if (projectViewModel.unsavedChangesExist()) {
+                                showSaveBeforeChangeDialog.value = true
+                            } else {
+                                projectListViewModel.viewModelsOfProjects.value.forEach { project ->
+                                    project.isExpanded.value = projectViewModel == projectViewModel.activeProject
+                                }
+                                projectViewModel.isExpanded.value = true
+                                projectListViewModel.openProject(projectViewModel)
+                            }
+                        }
+                        .padding(all = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Start
+                ) {
+                    val icon: ImageBitmap? = try {
+                        val file = projectViewModel.project?.directory?.resolve("Files")?.resolve("icon.png")?.toFile()
+                        file?.inputStream()?.readAllBytes()?.decodeToImageBitmap()
+                    } catch (e: Exception) {
+                        logger.info("No 'icon.png' in the folder 'Files' of project ${projectViewModel.name}': $e")
+                        null
+                    }
 
-                    IconButton(
-                        onClick = {  projectListViewModel.projectToUpdate.value = projectViewModel; projectListViewModel.showNewProjectDialog.value = true },
-                        modifier = Modifier.size(24.dp).padding(all = 5.dp)
-                    ) {
-                        SysMDTooltipArea(tooltipText = "Edit the project's data record") {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = "Edit Project Data",
-                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = ContentAlpha.medium),
+                    if (icon != null) {
+                        Image(
+                            modifier = Modifier.size(40.dp),
+                            painter = BitmapPainter(image = icon),
+                            contentScale = ContentScale.Fit,
+                            contentDescription = null
+                        )
+                    } else {
+                        Icon(
+                            modifier = Modifier.size(40.dp),
+                            imageVector = Icons.Default.Description,
+                            contentDescription = null,
+                        )
+                    }
+
+                    Column(modifier = Modifier.padding(start = 5.dp).weight(1f)) {
+                        Text(
+                            minLines = 1,
+                            maxLines = 1,
+                            text = projectViewModel.name,
+                            style = MaterialTheme.typography.labelMedium,
+                            overflow = TextOverflow.Ellipsis
+                        )
+
+                        if (!projectViewModel.isExpanded.value) {
+                            Text(
+                                text = projectViewModel.description,
+                                style = MaterialTheme.typography.labelSmall,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = ContentAlpha.medium)
                             )
                         }
                     }
 
-                    val showDeleteProjectDialog = remember { mutableStateOf(false) }
-                    if (showDeleteProjectDialog.value) DeleteProjectDialog(showDialog = showDeleteProjectDialog, onDelete = { projectListViewModel.deleteProject(projectViewModel)})
-                    IconButton(
-                        onClick = { if (projectViewModel!= projectViewModel.activeProject.value) showDeleteProjectDialog.value = true },
-                        modifier = Modifier.size(24.dp).padding(all = 5.dp)
+                    // Expand/Collapse icon
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowDown,
+                        contentDescription = if (projectViewModel.isExpanded.value) "Collapse" else "Expand",
+                        modifier = Modifier
+                            .size(24.dp)
+                            .rotate(rotationAngle)
+                    )
+                }
+
+                // Expanded content
+                AnimatedVisibility(
+                    visible = projectViewModel.isExpanded.value,
+                    enter = expandVertically(animationSpec = tween(300)) + fadeIn(),
+                    exit = shrinkVertically(animationSpec = tween(300)) + fadeOut()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 49.dp, end = 8.dp, bottom = 8.dp, top = 4.dp)
                     ) {
-                        SysMDTooltipArea(tooltipText = "Delete project") {
-                            Icon(
-                                imageVector = Icons.Default.DeleteOutline,
-                                contentDescription = "Delete Project",
-                                tint =
-                                    if (projectViewModel != projectViewModel.activeProject.value) MaterialTheme.colorScheme.onSurface
-                                    else MaterialTheme.colorScheme.onSurface.copy(alpha = ContentAlpha.disabled),                                )
+                        //Markdown Files
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            projectViewModel.project?.getIndex()?.forEachIndexed { index, item ->
+                                if (index in projectViewModel.tabsViewModel.editorTabs.indices)
+                                    FileItem(
+                                        index = index,
+                                        fileName = projectViewModel.tabsViewModel.editorTabs[index].tabTitle,
+                                        projectViewModel = projectViewModel,
+                                        onOpenFile = { projectViewModel.openProjectFile(item.name, projectViewModel) }
+                                    )
+                            }
                         }
                     }
                 }
             }
         }
+
+        if (showContextMenu.value) {
+            Popup(
+                offset = contextMenuOffset.value,
+                onDismissRequest = { showContextMenu.value = false }
+            ) {
+                Surface(
+                    modifier = Modifier.width(200.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    tonalElevation = 3.dp,
+                    shadowElevation = 3.dp
+                ) {
+                    Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                        ContextMenuItemWithIcon(
+                            text = "Open Project",
+                            icon = Icons.Default.FolderOpen,
+                            onClick = {
+                                if (projectViewModel.unsavedChangesExist()) projectViewModel.showSaveDialog.value = true
+                                else projectViewModel.openProject()
+                                showContextMenu.value = false
+                            }
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                        ContextMenuItemWithIcon(
+                            text = "Show Project Details",
+                            icon = Icons.Default.Info,
+                            onClick = {
+                                showProjectDetailDialog.value = true
+                                showContextMenu.value = false
+                            }
+                        )
+                        ContextMenuItemWithIcon(
+                            text = "Edit Project Info",
+                            icon = Icons.Default.Edit,
+                            onClick = {
+                                projectListViewModel.projectToUpdate.value = projectViewModel
+                                projectListViewModel.showNewProjectDialog.value = true
+                                showContextMenu.value = false
+                            }
+                        )
+                        ContextMenuItemWithIcon(
+                            text = "Add File",
+                            icon = Icons.Default.Add,
+                            onClick = {
+                                projectViewModel.createNewFileInProject()
+                                showContextMenu.value = false
+                            }
+                        )
+                        ContextMenuItemWithIcon(
+                            text = "Open in Browser",
+                            icon = Icons.Default.Folder,
+                            onClick = {
+                                projectViewModel.openContainingFolder()
+                                showContextMenu.value = false
+                            }
+                        )
+                        ContextMenuItemWithIcon(
+                            text = "Delete Project",
+                            icon = Icons.Default.DeleteOutline,
+                            onClick = {
+                                if (projectViewModel != projectViewModel.activeProject.value) {
+                                    showDeleteProjectDialog.value = true
+                                    showContextMenu.value = false
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Composable that renders a File name from the project view model.
+ * The file name can be changed, the file can be deleted.
+ * In current version, these actions on file items can only be done if a project is opened.
+ */
+@OptIn(ExperimentalComposeUiApi::class)
+@Composable
+private fun FileItem(
+    index: Int,
+    fileName: MutableState<String>,
+    projectViewModel: ProjectViewModel,
+    onOpenFile: () -> Unit
+) {
+    var isHovered by remember { mutableStateOf(false) }
+    var isEditMode by remember { mutableStateOf(false) }
+    var editedFileName by remember { mutableStateOf(fileName) }
+    var lastClickTime by remember { mutableStateOf(0L) }
+    val showFileContextMenu = remember { mutableStateOf(false) }
+    val fileContextMenuOffset = remember { mutableStateOf(IntOffset.Zero) }
+
+    Box {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(enabled = !isEditMode) {
+                    val currentTime = System.currentTimeMillis()
+                    if (currentTime - lastClickTime < 500) {
+                        // Double click detected
+                        isEditMode = true
+                        editedFileName = fileName
+                    } else {
+                        onOpenFile()
+                    }
+                    lastClickTime = currentTime
+                }
+                .onPointerEvent(PointerEventType.Enter) { isHovered = true }
+                .onPointerEvent(PointerEventType.Exit)  { isHovered = false }
+                .onPointerEvent(PointerEventType.Press) { event ->
+                    if (event.button?.isSecondary == true && !isEditMode) {
+                        val position = event.changes.first().position
+                        fileContextMenuOffset.value = IntOffset(position.x.toInt(), position.y.toInt())
+                        showFileContextMenu.value = true
+                        event.changes.forEach { it.consume() }
+                    }
+                }
+                .padding(vertical = 4.dp, horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.Description,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = if (isHovered && !isEditMode)
+                    MaterialTheme.colorScheme.primary
+                else
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = ContentAlpha.medium)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+
+            if (isEditMode) {
+                // Edit mode: show text field
+                OutlinedTextField(
+                    value = editedFileName.value,
+                    onValueChange = { editedFileName.value = it },
+                    modifier = Modifier.weight(1f),
+                    textStyle = MaterialTheme.typography.bodySmall,
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    ),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone =
+                        { projectViewModel.renameFileInProject(editedFileName.value, index); isEditMode = false }
+                    )
+                )
+
+                Spacer(modifier = Modifier.width(4.dp))
+
+                // Confirm button
+                IconButton(
+                    onClick = { projectViewModel.renameFileInProject(editedFileName.value, index); isEditMode = false },
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = "Confirm rename",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+
+                // Cancel button
+                IconButton(
+                    onClick = {
+                        editedFileName = fileName
+                        isEditMode = false
+                    },
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Cancel rename",
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            } else {
+                // Display only
+                val selected = projectViewModel.tabsViewModel.selectedIndex.value
+                Text(
+                    text = fileName.value,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (isHovered || selected==index)
+                        MaterialTheme.colorScheme.primary
+                    else
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = ContentAlpha.medium),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+
+        if (showFileContextMenu.value) {
+            Popup(
+                offset = fileContextMenuOffset.value,
+                onDismissRequest = { showFileContextMenu.value = false }
+            ) {
+                Surface(
+                    modifier = Modifier.width(180.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    tonalElevation = 3.dp,
+                    shadowElevation = 3.dp
+                ) {
+                    Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                        ContextMenuItemWithIcon(
+                            text = "Open File",
+                            icon = Icons.AutoMirrored.Filled.Launch,
+                            onClick = {
+                                onOpenFile()
+                                showFileContextMenu.value = false
+                            }
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                        ContextMenuItemWithIcon(
+                            text = "Rename File",
+                            icon = Icons.Default.Edit,
+                            onClick = {
+                                isEditMode = true
+                                editedFileName = fileName
+                                showFileContextMenu.value = false
+                            }
+                        )
+                        ContextMenuItemWithIcon(
+                            text = "Delete File",
+                            icon = Icons.Default.Delete,
+                            onClick = {
+                                // TODO: Implement delete functionality
+                                projectViewModel.deleteProjectFile(fileName.value)
+                                showFileContextMenu.value = false
+                            }
+                        )
+                        /* Only make it appear if function is there
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                        ContextMenuItemWithIcon(
+                            text = "Pull",
+                            icon = Icons.Default.Download,
+                            onClick = {
+                                // TODO: Implement pull functionality
+                                showFileContextMenu.value = false
+                            }
+                        )
+                        ContextMenuItemWithIcon(
+                            text = "Push",
+                            icon = Icons.Default.Upload,
+                            onClick = {
+                                // TODO: Implement push functionality
+                                showFileContextMenu.value = false
+                            }
+                        )
+                        ContextMenuItemWithIcon(
+                            text = "File History",
+                            icon = Icons.Default.History,
+                            onClick = {
+                                // TODO: Implement push functionality
+                                showFileContextMenu.value = false
+                            }
+                        ) */
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ContextMenuItemWithIcon(
+    text: String,
+    icon: ImageVector,
+    enabled: Boolean = true,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = enabled) { onClick() }
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Start
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp).padding(end = 4.dp),
+            tint = if (enabled) MaterialTheme.colorScheme.onSurface
+            else MaterialTheme.colorScheme.onSurface.copy(alpha = ContentAlpha.disabled)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (enabled) MaterialTheme.colorScheme.onSurface
+            else MaterialTheme.colorScheme.onSurface.copy(alpha = ContentAlpha.disabled)
+        )
+    }
+}
+
+
+
+/**
+ * Converts a timestamp to a human-readable relative time string
+ * @param timestamp The timestamp in milliseconds
+ * @return A string like "just now", "5 minutes ago", "3 days ago", etc.
+ */
+private fun getRelativeTimeString(timestamp: Long): String {
+    val now = System.currentTimeMillis()
+    val diff = abs(now - timestamp)
+
+    val seconds = diff / 1000
+    val minutes = seconds / 60
+    val hours = minutes / 60
+    val days = hours / 24
+    val weeks = days / 7
+    val months = days / 30
+    val years = days / 365
+
+    return when {
+        seconds < 60 -> "just now"
+        minutes < 2 -> "1 minute ago"
+        minutes < 60 -> "$minutes minutes ago"
+        hours < 2 -> "1 hour ago"
+        hours < 24 -> "$hours hours ago"
+        days < 2 -> "yesterday"
+        days < 7 -> "$days days ago"
+        weeks < 2 -> "1 week ago"
+        weeks < 4 -> "$weeks weeks ago"
+        months < 2 -> "1 month ago"
+        months < 12 -> "$months months ago"
+        years < 2 -> "1 year ago"
+        else -> "$years years ago"
     }
 }

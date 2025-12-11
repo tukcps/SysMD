@@ -35,6 +35,7 @@ object AppTheme {
         val backgroundLight: Color = Color(0xFFECEFF1),  // Bluegray 50, even lighter gray
         val backgroundLightGray: Color = Color(0xFFFAFAFA), // Gray 50, very light
         val iconGreen: Color = Color(0xFF388E3C),
+        val iconGray: Color = Color(0xFF546E7A), // Medium blue-gray
         val iconRed: Color = Color(0xFFC62828),
         val iconYellow: Color = Color(0xFFFDD835 ),
         val iconBlue: Color = Color(0xFF1565C0),

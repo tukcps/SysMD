@@ -2,13 +2,10 @@ package com.github.tukcps.sysmd.exports
 
 import com.github.tukcps.sysmd.exceptions.SysMDFatalInternalError
 import com.github.tukcps.sysmd.exports.systemCElements.*
+import com.github.tukcps.sysmd.exports.systemCElements.DataType
 import com.github.tukcps.sysmd.model.expression.AstBinOp
 import com.github.tukcps.sysmd.model.expression.implementation.InvariantImplementation
-import com.github.tukcps.sysmd.model.kerml.Element
-import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.kerml.Multiplicity
-import com.github.tukcps.sysmd.model.kerml.Package
-import com.github.tukcps.sysmd.model.kerml.Type
+import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.ClassImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.ConnectorImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
@@ -16,7 +13,6 @@ import com.github.tukcps.sysmd.model.kerml.implementation.PackageImplementation
 import com.github.tukcps.sysmd.model.sysml.implementation.PartUsageImplementation
 import com.github.tukcps.sysmd.model.sysml.implementation.PortUsageImplementation
 import com.github.tukcps.sysmd.model.sysml.implementation.RequirementUsageImplementation
-import com.github.tukcps.sysmd.services.resolve.resolve
 import java.io.File
 import java.io.IOException
 import java.nio.file.FileSystems
@@ -503,9 +499,9 @@ class Exporter {
      */
     private fun setUpChannels(element: Element) {
         run {
-            val signal = element.model?.global?.resolve<Element>("Signals::Signal")
-            val complexSignal = element.model?.global?.resolve<Element>("Signals::ComplexSignal")
-            val bus = element.model?.global?.resolve<Element>("Signals::Bus")
+            val signal = element.model?.global?.resolve("Signals::Signal")?.memberElement
+            val complexSignal = element.model?.global?.resolve("Signals::ComplexSignal")?.memberElement
+            val bus = element.model?.global?.resolve("Signals::Bus")?.memberElement
             when(element){
                 is ConnectorImplementation -> {
                     //Create a Channel and add it to allChannels list
@@ -586,7 +582,7 @@ class Exporter {
                             requirement?.constraints?.add(
                                     Constraint(
                                         constraintName = element.declaredName.toString(),
-                                        attributeQUalifiedName = requirement.fullQualifiedName + "::" + element.variable!!.ast!!.leaves.toList()[0].feature!!.declaredName,
+                                        attributeQUalifiedName = requirement.fullQualifiedName + "::" + element.variable!!.ast!!.leaves.toList()[0].resolvedName,
                                         unit = element.variable!!.ast!!.leaves.toList()[0].variable!!.unitSpec,
                                         statement = element.expression!!,
                                         operator = (element.variable!!.ast!!.dependency as AstBinOp).op.name,

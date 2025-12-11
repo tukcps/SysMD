@@ -1,14 +1,14 @@
 package constraintnettests
 
-import util.testSession
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.values.Range
-import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolveVar
-import util.mockup.loadKerML
+import io.github.tukcps.aadd.AADD
+import io.github.tukcps.aadd.values.Range
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
+import util.assertNoIssues
+import util.mockup.loadKerML
+import util.testSession
 
 
 class ConstraintPropagationTests {
@@ -16,31 +16,31 @@ class ConstraintPropagationTests {
     /** ConstNet shall compute top-down with scalars. */
     @Test
     fun evalDownWithUnitsAddition() {
-        testSession("SI", "Ranges") {
+        testSession("ISQ", "Ranges") {
             // -30 .. 50 m == -1000..2000 cm + -10 .. 30 m
             // => -20 .. 50 m == ...
-            loadKerML("feature b: SI::Length  {:>> unit = \"cm\"; :>> range = \"-1000 .. 2000\";}")
-            loadKerML("feature c: SI::Length  {:>> range = \"-10.0..30.0\";}")
-            loadKerML("feature d: SI::Length  {:>> range = \"10.0..10\";}")
-            loadKerML("feature a: SI::Length  = b+c+d {:>> range = \"-30.0 .. 50.0\";}")
-            propagate()
+            loadKerML("feature b: ISQ::LengthValue  {:>> unit = \"cm\"; :>> range = \"-1000 .. 2000\";}")
+            loadKerML("feature c: ISQ::LengthValue  {:>> range = \"-10.0..30.0\";}")
+            loadKerML("feature d: ISQ::LengthValue  {:>> range = \"10.0..10\";}")
+            loadKerML("feature a: ISQ::LengthValue  = b+c+d {:>> range = \"-30.0 .. 50.0\";}")
+            solver.propagate()
             assertEquals("m", global.resolveVar("a")!!.vectorQuantity.unit.toString())
             // println(resolveName<Expression>("b")!!.quantity)
             // println(resolveName<Expression>("b")!!.quantity.valueIn("mm"))
             assertEquals(-1000.0, global.resolveVar("b")!!.vectorQuantity.valuesIn("cm")[0].asAadd().getRange().min, 0.00001)
             assertEquals(2000.0, global.resolveVar("b")!!.vectorQuantity.valuesIn("cm")[0].asAadd().getRange().max, 0.00001)
-            assertEquals(-10.0, global.resolveVar("c")!!.aadd().getRange().min, 0.00001)
-            assertEquals(30.0, global.resolveVar("c")!!.aadd().getRange().max, 0.00001)
-            assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+            assertEquals(-10.0, global.resolveVar("c")!!.min(), 0.00001)
+            assertEquals(30.0, global.resolveVar("c")!!.max(), 0.00001)
+            assertNoIssues()
         }
     }
 
     /** Units shall be converted when computing bottom-up, considering the prefix. */
     @Test
     fun evalUpNoOperation() {
-        testSession("SI") {
-            loadKerML("feature a: SI::Length = 1.0 m;")
-            assertEquals(0, status.issues.size, status.issues.toString())
+        testSession("ISQ") {
+            loadKerML("feature a: ISQ::LengthValue = 1.0 m;")
+            assertNoIssues()
             val a = global.resolveVar("a") !!
             a.ast!!.evalUpRec()
             assertEquals("m", global.resolveVar("a")!!.vectorQuantity.unit.toString())
@@ -50,14 +50,14 @@ class ConstraintPropagationTests {
 
 
     @Test
-    fun evalDownWithRange()  = testSession("SI", "Ranges") {
-        loadKerML("feature a: SI::Voltage  {:>> unit = \"mV\"; :>> range = \"1..20\";}")
+    fun evalDownWithRange()  = testSession("ISQ", "Ranges") {
+        loadKerML("feature a: ISQ::VoltageValue  {:>> unit = \"mV\"; :>> range = \"1..20\";}")
         val a = global.resolveVar("a")
         assertNotNull(a)
         initialize()
-        propagate()
+        solver.propagate()
         assertEquals("1..20 mV", global.resolveVar("a")!!.vectorQuantity.toString())
-        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+        assertNoIssues()
     }
 
     /**
@@ -69,12 +69,12 @@ class ConstraintPropagationTests {
             feature b: Ranges::RealInRange  {:>> range = "1.0 .. 30.0";} // 1..5
             feature c: Ranges::RealInRange  {:>> range = "2.0 .. 20.0";} // 2..10
             feature a: Ranges::RealInRange  = b*c {:>> range = "9.0 .. 10.0";}""")
-        propagate()
+        solver.propagate()
         assertEquals(1.0, global.resolveVar("b")!!.min(), 0.00001)
         assertEquals(5.0, global.resolveVar("b")!!.max(), 0.00001)
-        assertEquals(2.0, global.resolveVar("c")!!.aadd().getRange().min, 0.00001)
-        assertEquals(10.0, global.resolveVar("c")!!.aadd().getRange().max, 0.00001)
-        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+        assertEquals(2.0, global.resolveVar("c")!!.min(), 0.00001)
+        assertEquals(10.0, global.resolveVar("c")!!.max(), 0.00001)
+        assertNoIssues()
     }
 
     /**
@@ -82,19 +82,19 @@ class ConstraintPropagationTests {
      * Division should here avoid including division by zero, which is a separate test case.
      */
     @Test
-    fun evalDownWithUnitsDivision() = testSession("SI", "Ranges") {
+    fun evalDownWithUnitsDivision() = testSession("ISQ", "Ranges") {
         loadKerML("""
-            feature b: SI::Length  {:>> range = "1..20";}                         // 0.5..4, reduced to 1..4 m
-            feature c: SI::Length  {:>> unit = "cm"; :>> range = "100 .. 200";}    // 1..2 m
+            feature b: ISQ::LengthValue  {:>> range = "1..20";}                         // 0.5..4, reduced to 1..4 m
+            feature c: ISQ::LengthValue  {:>> unit = "cm"; :>> range = "100 .. 200";}    // 1..2 m
             feature a: Ranges::RealInRange  = b/c {:>> range = "1.0 .. 2.0";} 
         """)
-        propagate()
+        solver.propagate()
         assertEquals("1", global.resolveVar("a")!!.vectorQuantity.unit.toString())
         assertEquals(1.0, global.resolveVar("b")!!.min(), 0.00001)
         assertEquals(4.0, global.resolveVar("b")!!.max(), 0.00001)
         assertEquals(100.0, global.resolveVar("c")!!.min(), 0.00001)
         assertEquals(200.0, global.resolveVar("c")!!.max(), 0.00001)
-        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+        assertNoIssues()
     }
 
 
@@ -110,27 +110,27 @@ class ConstraintPropagationTests {
                 feature d: ScalarValues::Real = 3.0;
                 feature a: Ranges::RealInRange  = b+c*d {:>> range = "7.0 .. 7.0";} 
             """)
-            propagate()
-            assertEquals(1.0, global.resolveVar("b")!!.aadd().getRange().min, 0.00001)
-            assertEquals(1.0, global.resolveVar("b")!!.aadd().getRange().max, 0.00001)
-            assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+            solver.propagate()
+            assertEquals(1.0, global.resolveVar("b")!!.min(), 0.00001)
+            assertEquals(1.0, global.resolveVar("b")!!.max(), 0.00001)
+            assertNoIssues()
         }
     }
 
     @Test
-    fun evalDownMultiplicationTest() = testSession("Occurrences", "Links","SI", "Ranges") {
+    fun evalDownMultiplicationTest() = testSession("Occurrences", "Links","ISQ", "Ranges") {
         loadKerML("""
                 class Baseplate {
-                    feature width: SI::Length  {:>> unit = "mm"; :>> range = "100 .. 300";} 
-                    feature depth: SI::Length  {:>> unit = "mm"; :>> range = "100 .. 300";} 
-                    feature area:  SI::Area   = width * depth {:>> unit = "cm^2"; :>> range = "800 .. 1000";} 
+                    feature width: ISQ::LengthValue  {:>> unit = "mm"; :>> range = "100 .. 300";} 
+                    feature depth: ISQ::LengthValue  {:>> unit = "mm"; :>> range = "100 .. 300";} 
+                    feature area:  ISQ::AreaValue   = width * depth {:>> unit = "cm^2"; :>> range = "800 .. 1000";} 
                 }
             """.trimIndent())
-        propagate()
+        solver.propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals(0.26666, global.resolveVar("Baseplate::depth")!!.vectorQuantity.getMinAsDouble(), 0.001)
         assertEquals(0.26666, global.resolveVar("Baseplate::width")!!.vectorQuantity.getMinAsDouble(), 0.001)
-        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+        assertNoIssues()
     }
 
 
@@ -147,19 +147,19 @@ class ConstraintPropagationTests {
         val a = global.resolveVar("a") !!
         a.ast!!.evalDown()
         assertTrue(Range(-5.0..8.0) in (global.resolveVar("b")!!.vectorQuantity.values[0] as AADD).getRange())
-        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+        assertNoIssues()
     }
 
 
     /** ConstNet shall compute bottom-up with ranges and units. */
     @Test
-    fun evalUpWithDefinedResult() = testSession("SI", "Ranges")  {
+    fun evalUpWithDefinedResult() = testSession("ISQ", "Ranges")  {
         loadKerML(
             """
-            feature b: SI::Length {:>> range = "10.0 .. 100.0";}
-            feature c: SI::Mass {:>> range = "2.0..5.0";}
-            feature d: SI::Quantity {:>> unit = "s^2";:>> range = "10.0";} 
-            feature a: SI::Force = b*c/d {:>> unit = "kN";}""")
+            feature b: ISQ::LengthValue {:>> range = "10.0 .. 100.0";}
+            feature c: ISQ::MassValue {:>> range = "2.0..5.0";}
+            feature d: Quantities::ScalarQuantityValue {:>> unit = "s^2";:>> range = "10.0";} 
+            feature a: ISQ::ForceValue = b*c/d {:>> unit = "kN";}""")
         assertEquals(0, status.issues.size, "Error message: ${status.issues}")
         val pta = global.resolveVar("a")!!
         pta.ast!!.evalUpRec()
@@ -169,24 +169,24 @@ class ConstraintPropagationTests {
         // Hence, 2..5 kg becomes 2..5 g.
         // In the SI unit system, kg would even be the correct base unit (?).
         assertEquals("0.002..0.05 kN", (global.resolveVar("a")!!.vectorQuantity.toString()))
-        assertEquals(0.002, (global.resolveVar("a")!!.aadd().getRange().min), 0.000001)
-        assertEquals(0.05, (global.resolveVar("a")!!.aadd().getRange().max), 0.000001)
-        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+        assertEquals(0.002, (global.resolveVar("a")!!.min()), 0.000001)
+        assertEquals(0.05, (global.resolveVar("a")!!.max()), 0.000001)
+        assertNoIssues()
     }
 
     /** ConstNet shall compute bottom-up with ranges and units. */
     @Test
-    fun evalUpWithNoDefinedResult() = testSession("SI", "Ranges")  {
+    fun evalUpWithNoDefinedResult() = testSession("ISQ", "Ranges")  {
         loadKerML(catchExceptions = false, input = """
-            feature b: SI::Length {:>> range = "10.0 .. 100.0";}
-            feature c: SI::Mass {:>> range = "2.0..5.0";}
-            feature d: SI::Quantity {:>> unit = "s^2"; :>> range = "10.0";}
-            feature a: SI::Force = b*c/d;""")
-        propagate()
+            feature b: ISQ::LengthValue {:>> range = "10.0 .. 100.0";}
+            feature c: ISQ::MassValue {:>> range = "2.0..5.0";}
+            feature d: Quantities::ScalarQuantityValue {:>> unit = "s^2"; :>> range = "10.0";}
+            feature a: ISQ::ForceValue = b*c/d;""")
+        solver.propagate()
         // Bug: The unit Kg is saved as g, but the value is kept in the original value.
         // Hence, 2..5 kg becomes 2..5 g.
         // In the SI unit system, kg would even be the correct base unit (?).
-         assertEquals(2.0, global.resolveVar("a")!!.min(), 0.0001)
+        assertEquals(2.0, global.resolveVar("a")!!.min(), 0.0001)
         assertEquals(50.0, global.resolveVar("a")!!.max(), 0.0001)
         assertEquals("kg m / s^2", global.resolveVar("a")!!.vectorQuantity.unit.toString())
         assertEquals(0, status.issues.size, "${status.issues}")
@@ -209,8 +209,8 @@ class ConstraintPropagationTests {
             val a = global.resolveVar("a") !!
             a.ast!!.evalDownRec()
             assertEquals(Range(-10.0..20.0), global.resolveVar("b")!!.rangeSpecs[0])
-            assertEquals(7.0, global.resolveVar("b")!!.aadd().getRange().min, 0.00001)
-            assertEquals(8.0, global.resolveVar("b")!!.aadd().getRange().max, 0.00001)
+            assertEquals(7.0, global.resolveVar("b")!!.min(), 0.00001)
+            assertEquals(8.0, global.resolveVar("b")!!.max(), 0.00001)
             assertEquals(0, status.issues.size, "${status.issues}")
     }
 
@@ -227,9 +227,9 @@ class ConstraintPropagationTests {
             feature a: Ranges::RealInRange = b+c {:>> range = "7.0 .. 7.0";}"""
         )
         global.resolveVar("a")!!.ast!!.evalDownRec()
-        assertEquals(5.0, global.resolveVar("b")!!.aadd().getRange().min, 0.00001)
-        assertEquals(5.0, global.resolveVar("b")!!.aadd().getRange().max, 0.00001)
-        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+        assertEquals(5.0, global.resolveVar("b")!!.min(), 0.00001)
+        assertEquals(5.0, global.resolveVar("b")!!.max(), 0.00001)
+        assertNoIssues()
     }
 
     /* ################### EVAL UP SECTION ################### */
@@ -258,11 +258,11 @@ class ConstraintPropagationTests {
         val a = global.resolveVar("a")
         assertNotNull(a)
         assertEquals(7.0, (global.resolveVar("a")!!.aadd() as AADD.Leaf).central)
-        assertEquals(7.0, global.resolveVar("a")!!.aadd().getRange().max, 0.0001)
-        assertEquals(1.0, global.resolveVar("b")!!.aadd().getRange().max, 0.0001)
-        assertEquals(2.0, global.resolveVar("c")!!.aadd().getRange().max, 0.0001)
-        assertEquals(3.0, global.resolveVar("d")!!.aadd().getRange().max, 0.0001)
-        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+        assertEquals(7.0, global.resolveVar("a")!!.max(), 0.0001)
+        assertEquals(1.0, global.resolveVar("b")!!.max(), 0.0001)
+        assertEquals(2.0, global.resolveVar("c")!!.max(), 0.0001)
+        assertEquals(3.0, global.resolveVar("d")!!.max(), 0.0001)
+        assertNoIssues()
     }
 
     /** ConstNet shall compute top-down with scalars. */
@@ -275,28 +275,28 @@ class ConstraintPropagationTests {
             feature a: Ranges::RealInRange = b+c*d {:>> range = "7.0 .. 7.0";}""")
         val a = global.resolveVar("a") !!
         a.ast!!.evalDownRec()
-        assertEquals(1.0, global.resolveVar("b")!!.aadd().getRange().min, 0.00001)
-        assertEquals(1.0, global.resolveVar("b")!!.aadd().getRange().max, 0.00001)
-        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+        assertEquals(1.0, global.resolveVar("b")!!.min(), 0.00001)
+        assertEquals(1.0, global.resolveVar("b")!!.max(), 0.00001)
+        assertNoIssues()
     }
 
     /** ConstNet shall compute top-down with scalars. */
     @Test
-    fun solveWithUnitsSubtraction() = testSession("SI", "Ranges")  {
+    fun solveWithUnitsSubtraction() = testSession("ISQ", "Ranges")  {
         loadKerML("""
-            feature b: SI::Length, Ranges::QuantityInRange {:>> unit = "cm"; :>> range = "-100..200";}
-            feature c: SI::Length, Ranges::InRange {:>> range = "-10..30";}
-            feature a: SI::Length, Ranges::QuantityInRange = b-c {:>> range = "-30.0 .. 60.0";}"""
+            feature b: ISQ::LengthValue {:>> unit = "cm"; :>> range = "-100..200";}
+            feature c: ISQ::LengthValue {:>> range = "-10..30";}
+            feature a: ISQ::LengthValue = b-c {:>> range = "-30.0 .. 60.0";}"""
         )
-        propagate()
+        solver.propagate()
         assertEquals("m", global.resolveVar("a")!!.vectorQuantity.unit.toString())
-        assertEquals(-30.0, global.resolveVar("a")!!.aadd().getRange().min, 0.000001)
-        assertEquals(12.0, global.resolveVar("a")!!.aadd().getRange().max, 0.000001)
-        assertEquals(-100.0, global.resolveVar("b")!!.aadd().getRange().min, 0.00001)
-        assertEquals(200.0, global.resolveVar("b")!!.aadd().getRange().max, 0.00001)
-        assertEquals(-10.0, global.resolveVar("c")!!.aadd().getRange().min, 0.00001)
-        assertEquals(30.0, global.resolveVar("c")!!.aadd().getRange().max, 0.00001)
-        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+        assertEquals(-30.0, global.resolveVar("a")!!.min(), 0.000001)
+        assertEquals(12.0, global.resolveVar("a")!!.max(), 0.000001)
+        assertEquals(-100.0, global.resolveVar("b")!!.min(), 0.00001)
+        assertEquals(200.0, global.resolveVar("b")!!.max(), 0.00001)
+        assertEquals(-10.0, global.resolveVar("c")!!.min(), 0.00001)
+        assertEquals(30.0, global.resolveVar("c")!!.max(), 0.00001)
+        assertNoIssues()
     }
 
     /** ConstNet shall compute bottom-up with ranges. */
@@ -315,85 +315,84 @@ class ConstraintPropagationTests {
             // only outside tests display((displayTree("a", p.getVar("a").value)))
             // println(resolveName<Expression>("a")!!.quantity.value.toIteString())
             assertEquals(10.25, (global.resolveVar("a")!!.aadd() as AADD.Leaf).value.central)
-            assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+            assertNoIssues()
         }
     }
 
     /** ConstNet shall compute bottom-up with ranges and units. */
     @Test
     fun evalUpWithUnitsDivision() {
-        testSession("SI", "Ranges")  {
-            loadKerML("feature b: SI::Length {:>> unit = \"km\"; :>> range = \"1.0..2.0\";}")
-            loadKerML("feature c: SI::Length {:>> range = \"2.0..3.0\";}")
-            loadKerML("feature d: SI::Time {:>> range = \"5.0..10.0\";}")
-            loadKerML("feature a: SI::Frequency = b/c/d;")
-            propagate()
+        testSession("ISQ", "Ranges")  {
+            loadKerML("feature b: ISQ::LengthValue {:>> unit = \"km\"; :>> range = \"1.0..2.0\";}")
+            loadKerML("feature c: ISQ::LengthValue {:>> range = \"2.0..3.0\";}")
+            loadKerML("feature d: ISQ::DurationValue {:>> range = \"5.0..10.0\";}")
+            loadKerML("feature a: ISQ::FrequencyValue = b/c/d;")
+            solver.propagate()
             assertEquals(33.33333333333334, global.resolveVar("a")!!.vectorQuantity.getMinAsDouble(), 0.00000001)
             assertEquals(200.0, global.resolveVar("a")!!.vectorQuantity.getMaxAsDouble(), 0.00000001)
             assertEquals("1 / s", global.resolveVar("a")!!.vectorQuantity.unit.toString())
-            assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+            assertNoIssues()
         }
     }
 
     /** ConstNet shall compute buttom-up with ranges and units. */
     @Test
-    fun evalUpWithUnitsMultiplication() = testSession("SI", "Ranges")  {
+    fun evalUpWithUnitsMultiplication() = testSession("ISQ", "Ranges")  {
         loadKerML("""
-            feature d: SI::Length, Ranges::QuantityInRange {:>> unit = "mm"; :>> range = "10.0 .. 20.0";}
-            feature c: SI::Length, Ranges::QuantityInRange {:>> range = "2.0 .. 3.0";}
-            feature b: SI::Length, Ranges::QuantityInRange {:>> unit = "km"; :>> range = "1.0 .. 2.0";}
-            feature a: SI::Volume = b*c*d;"""
+            feature d: ISQ::LengthValue {:>> unit = "mm"; :>> range = "10.0 .. 20.0";}
+            feature c: ISQ::LengthValue {:>> range = "2.0 .. 3.0";}
+            feature b: ISQ::LengthValue {:>> unit = "km"; :>> range = "1.0 .. 2.0";}
+            feature a: ISQ::VolumeValue = b*c*d;"""
         )
-        propagate()
+        solver.propagate()
         assertEquals(20.0, global.resolveVar("a")!!.min(), 0.0001)
         assertEquals(120.0, global.resolveVar("a")!!.max(), 0.0001)
         assertEquals("m^3", global.resolveVar("a")!!.vectorQuantity.unit.toString())
-        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
     }
 
     /** ConstNet shall compute buttom-up with ranges and units. */
     @Test
     fun evalUpWithUnitsAddition() {
-        testSession("SI", "Ranges")  {
-            loadKerML("feature b: SI::Length {:>> unit = \"mm\"; :>> range = \"1.0..2.0\";}")
-            loadKerML("feature c: SI::Length {:>> range = \"2.0..3.0\";}")
-            loadKerML("feature d: SI::Length{:>> unit = \"km\"; :>> range = \"1.0..4.0\";}")
-            loadKerML("feature a: SI::Length = b+c+d;")
-            propagate()
-            assertEquals(4003.002, global.resolveVar("a")!!.aadd().getRange().max, 0.0001)
-            assertEquals(1002.001, global.resolveVar("a")!!.aadd().getRange().min, 0.0001)
+        testSession("ISQ", "Ranges")  {
+            loadKerML("feature b: ISQ::LengthValue {:>> unit = \"mm\"; :>> range = \"1.0..2.0\";}")
+            loadKerML("feature c: ISQ::LengthValue {:>> range = \"2.0..3.0\";}")
+            loadKerML("feature d: ISQ::LengthValue{:>> unit = \"km\"; :>> range = \"1.0..4.0\";}")
+            loadKerML("feature a: ISQ::LengthValue = b+c+d;")
+            solver.propagate()
+            assertEquals(4003.002, global.resolveVar("a")!!.max(), 0.0001)
+            assertEquals(1002.001, global.resolveVar("a")!!.min(), 0.0001)
             assertEquals("m", global.resolveVar("a")!!.vectorQuantity.unit.toString())
-            assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+            assertNoIssues()
         }
     }
 
-    /** ConstNet shall compute buttom-up with ranges and units. */
+    /** ConstNet shall compute bottom-up with ranges and units. */
     @Test
     fun evalUpWithUnitsSubtraction() {
-        testSession("SI")  {
-            loadKerML("feature b: SI::Length = [1.0 .. 2.0] [m];")
-            loadKerML("feature c: SI::Length = [2.0 .. 3.0] [m];")
-            loadKerML("feature d: SI::Length = [1.0 .. 4.0] [m];")
-            loadKerML("feature a: SI::Length = b-c-d;")
-            assertEquals(0, status.issues.size, status.issues.toString())
-            propagate()
-            assertEquals(-6.0, global.resolveVar("a")!!.aadd().getRange().min, 0.00001)
-            assertEquals(-1.0, global.resolveVar("a")!!.aadd().getRange().max, 0.00001)
+        testSession("ISQ")  {
+            loadKerML("feature b: ISQ::LengthValue = [1.0 .. 2.0] [m];")
+            loadKerML("feature c: ISQ::LengthValue = [2.0 .. 3.0] [m];")
+            loadKerML("feature d: ISQ::LengthValue = [1.0 .. 4.0] [m];")
+            loadKerML("feature a: ISQ::LengthValue = b-c-d;")
+            assertNoIssues()
+            solver.propagate()
+            assertEquals(-6.0, global.resolveVar("a")!!.min(), 0.00001)
+            assertEquals(-1.0, global.resolveVar("a")!!.max(), 0.00001)
             assertEquals("m", global.resolveVar("a")!!.vectorQuantity.unit.toString())
-            assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+            assertNoIssues()
         }
     }
 
     @Test
     fun notEquals() {
-        testSession("SI")  {
-            loadKerML("feature b: SI::Length = [1.0 .. 2.0] [m];")
-            loadKerML("feature c: SI::Length = [3.0 .. 4.0] [m];")
+        testSession("ISQ")  {
+            loadKerML("feature b: ISQ::LengthValue = [1.0 .. 2.0] [m];")
+            loadKerML("feature c: ISQ::LengthValue = [3.0 .. 4.0] [m];")
             loadKerML("feature d: ScalarValues::Boolean = c!=b;")
-            assertEquals(0, status.issues.size, status.issues.toString())
-            propagate()
-            assertEquals("True", global.resolveVar("d")!!.bdd().toString())
-            assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+            assertNoIssues()
+            solver.propagate()
+            assertEquals("True", global.resolveVar("d")!!.bool().toString())
+            assertNoIssues()
         }
     }
 
@@ -405,38 +404,38 @@ class ConstraintPropagationTests {
                 feature c: ScalarValues::Integer = 1;
                 feature d: ScalarValues::Boolean = b!=c;
                 """)
-            assertEquals(0, status.issues.size, status.issues.toString())
-            propagate()
-            assertEquals("False", global.resolveVar("d")!!.bdd().toString())
-            assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+            assertNoIssues()
+            solver.propagate()
+            assertEquals("False", global.resolveVar("d")!!.bool().toString())
+            assertNoIssues()
         }
     }
 
     @Test
     fun notEquals3() {
-        testSession("SI")  {
+        testSession("ISQ")  {
             loadKerML("""
-                feature b: SI::Length = 1.0 m ;
-                feature c: SI::Length = 1.0 m;
+                feature b: ISQ::LengthValue = 1.0 m ;
+                feature c: ISQ::LengthValue = 1.0 m;
                 feature d: ScalarValues::Boolean = b!=c;
             """)
-            assertEquals(0, status.issues.size, status.issues.toString())
-            propagate()
-            assertEquals("False", global.resolveVar("d")!!.bdd().toString())
-            assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+            assertNoIssues()
+            solver.propagate()
+            assertEquals("False", global.resolveVar("d")!!.bool().toString())
+            assertNoIssues()
         }
     }
 
     @Test
     fun equals3() {
-        testSession("SI")  {
-            loadKerML("feature b: SI::Length = 1.0 m ;")
-            loadKerML("feature c: SI::Length = 1.0 m;")
+        testSession("ISQ")  {
+            loadKerML("feature b: ISQ::LengthValue = 1.0 m ;")
+            loadKerML("feature c: ISQ::LengthValue = 1.0 m;")
             loadKerML("feature d: ScalarValues::Boolean = b==c;")
-            assertEquals(0, status.issues.size, status.issues.toString())
-            propagate()
-            assertEquals("True", global.resolveVar("d")!!.bdd().toString())
-            assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+            assertNoIssues()
+            solver.propagate()
+            assertEquals("True", global.resolveVar("d")!!.bool().toString())
+            assertNoIssues()
         }
     }
 }

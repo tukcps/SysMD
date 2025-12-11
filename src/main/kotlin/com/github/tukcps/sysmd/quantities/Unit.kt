@@ -1,6 +1,6 @@
 package com.github.tukcps.sysmd.quantities
 
-import com.github.tukcps.sysmd.quantities.derivedUnits.QuantityOfDomainOne
+import com.github.tukcps.sysmd.quantities.derivedUnits.DimensionOne
 import java.io.Reader
 import java.io.StreamTokenizer
 import java.io.StringReader
@@ -152,7 +152,7 @@ class Unit : Cloneable {
         if ((unitDomain.isEmpty() || unitSpec.isNotEmpty()) && unitStr != "?") {
             val unitString = if (unitSpec.isNotEmpty()) Unit(unitSpec).unitStr else unitStr
             if (unitSet.isEmpty()) {
-                unitDomain = QuantityOfDomainOne.One.domain
+                unitDomain = DimensionOne.One.domain
                 return
             }
             val unitList = ConversionTables.unitsMap.values.filter { it.getBaseUnits() == unitSet }
@@ -205,7 +205,7 @@ class Unit : Cloneable {
 
         if (unitSet.isEmpty() && unitDomain!="") { //unit is not defined
             // unit is not given -> use Unit of given domain (remove whitespaces and ignore case)
-            val possibleDomain = ConversionTables.unitsMap.values.filter { it.domain.equals(unitDomain,ignoreCase = true) }
+            val possibleDomain = ConversionTables.unitsMap.values.filter { it.domain.equals(unitDomain.replace("Value",""),ignoreCase = true) }
             if(possibleDomain.isNotEmpty()) {
                 // select unit with the closest conversion factor to 1
                 val selectedUnit = possibleDomain.minByOrNull { abs(it.convFac - 1 )}!!
@@ -216,12 +216,13 @@ class Unit : Cloneable {
         } else { //unit is defined
             val possibleUnits = ConversionTables.unitsMap.values.filter { it.getBaseUnits() == clone().toSI().unitSet }
             //test, if the given unit domain is possible (remove whitespaces and ignore case)
-            if (possibleUnits.none { it.domain.replace(" ", "").equals(unitDomain, ignoreCase = true) })
-                if (unitDomain!="Quantity") { //if domain is empty, throw no error (no error in this case)
+            if (possibleUnits.none { it.domain.replace(" ", "").equals(unitDomain.replace("Value","").replace("3dVector","").replace("Cartesian",""), ignoreCase = true) ||
+                it.alternativeDomain.replace(" ", "").equals(unitDomain.replace("Value","").replace("3dVector","").replace("Cartesian",""), ignoreCase = true) })
+                if (!unitDomain.contains("QuantityValue")) { //if domain is not defined, throw no error (no error in this case)
                     if (unitDomain == "ScalarValues::Real" || unitDomain == "Real")
-                        throw UnitDomainError("Units with type ScalarValues::Real are not allowed. Use Type from SI Package instead with units (e.g. SI::Time, SI::Length, SI::Quantity ...)")
-                    // else
-                    //    throw UnitDimensionError("Domain $unitDimension not possible for unit $this")
+                        throw UnitDomainError("Units with type ScalarValues::Real are not allowed. Use Type from ISQ Package instead with units (e.g. ISQ::DurationValue, ISQ::LengthValue, Quantities::ScalarQuantityValue ...)")
+                    else
+                        throw UnitDomainError("Domain $unitDomain not possible for unit $this")
                 }
         }
     }
@@ -252,7 +253,12 @@ class Unit : Cloneable {
      * compare this with other unit and return false
      */
     override fun equals(other: Any?): Boolean {
-        return other is Unit && (toString() == "?" || other.toString() == "?" || unitSet == other.unitSet)
+        if (this === other) return true
+        if (other !is Unit) return false
+        if (unitSet == other.unitSet) return true
+        // Special case for unknown units
+        if (toString() == "?" || other.toString() == "?") return true
+        return false
     }
 
 
@@ -285,7 +291,7 @@ class Unit : Cloneable {
     fun getUnitDomain(value: Double): String {
         //special case for time:
         return when {
-            unitDomain == "time" || unitDomain == "timestamp" -> if (value < 50 * 365 * 24 * 60 * 60) "time" else "timestamp"
+            unitDomain == "duration" || unitDomain == "timestamp" -> if (value < 50 * 365 * 24 * 60 * 60) "duration" else "timestamp"
             isDifference -> "$unitDomain Difference"
             else -> unitDomain
         }

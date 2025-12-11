@@ -1,6 +1,5 @@
 package sysmdtests
 
-import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import util.mockup.loadKerML
 import util.testSession
@@ -20,31 +19,31 @@ class FailedTests {
 
     // It is not possible to assign a value without a formula to a non-SI unit
     @Test
-    fun unitTransformTest() = testSession("SI") {
+    fun unitTransformTest() = testSession("ISQ") {
         loadKerML(input = """
             // It is not possible to assign a value without a formula to a non-SI unit
             //only test1 works
             type Test :> Base::Anything {
-                feature test1: SI::ElectricCurrent = 1.0 A;
-                feature test2: SI::Force = 1.0 N;
-                feature test3: SI::ElectricalResistance = 1.0 [Ohm];
-                feature test4: SI::Quantity [Ohm m] = 1.0 [Ohm m];
+                feature test1: ISQ::ElectricCurrentValue = 1.0 A;
+                feature test2: ISQ::ForceValue = 1.0 N;
+                feature test3: ISQ::ResistanceValue = 1.0 [Ohm];
+                feature test4: Quantities::ScalarQuantityValue [Ohm m] = 1.0 [Ohm m];
             }
             """
         )
-        propagate()
+        solver.propagate()
         assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
     }
 
     // The operations exp, power2, sqrt, ln .. are not supported in combination with units yet
-    @Test fun unitsWithOperations()  = testSession("SI") {
+    @Test fun unitsWithOperations()  = testSession("ISQ") {
         loadKerML("""
             package unitsWithOperation {
-                 feature testV: SI::Voltage = 5.0 [V];
-                 feature testVSquare: SI::Quantity [V^2] = 49.0 [V^2]; 
-                 feature test4: SI::Voltage = sqrt(testVSquare); 
-                //Property test5: SI::Voltage = exp(testV)
-                //Property test6: SI::Voltage = power2(testV)
+                 feature testV: ISQ::VoltageValue = 5.0 [V];
+                 feature testVSquare: Quantities::ScalarQuantityValue [V^2] = 49.0 [V^2]; 
+                 feature test4: ISQ::VoltageValue = sqrt(testVSquare); 
+                //Property test5: ISQ::Voltage = exp(testV)
+                //Property test6: ISQ::Voltage = power2(testV)
             }
             """
         )
@@ -52,34 +51,34 @@ class FailedTests {
     }
 
     @Test
-    fun unitsInMultipleIterations() = testSession("Occurrences", "SI", "Math") {
+    fun unitsInMultipleIterations() = testSession("Occurrences", "ISQ", "Math") {
         loadKerML("""package hello { 
             class world {
-                feature density: SI::Density = 1.0 [kg/l];
-                feature r:       SI::Length = 1000.0 km;
-                feature volume:  SI::Volume = 4.0/3.0 * r * r * r * Math::pi;
-                feature mass:    SI::Mass = density * volume;
+                feature density: ISQ::MassDensityValue = 1.0 [kg/l];
+                feature r:       ISQ::LengthValue = 1000.0 km;
+                feature volume:  ISQ::VolumeValue = 4.0/3.0 * r * r * r * Math::pi;
+                feature mass:    ISQ::MassValue = density * volume;
                 }
             }
             """)
-        propagate()
+        solver.propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
     }
 
 
     /** Does not copy up-propagated value into quantity field */
     @Test // @Ignore
-    fun additionTrivial2() = testSession("Occurrences", "SI") {
+    fun additionTrivial2() = testSession("Occurrences", "ISQ") {
         loadKerML(""" 
             package p { 
                 class i {
-                    feature p: SI::Length = 1.0 m + 1.0 km;
+                    feature p: ISQ::LengthValue = 1.0 m + 1.0 km;
                 }
             }
         """)
         // p::i::p is wrongly identified in initialization --> resolveName issue?
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        propagate()
+        solver.propagate()
         // println("p="+global.resolveName<Expression>("p::i::p"))
         assertEquals(1001.0, global.resolveVar("p::i::p")!!.vectorQuantity.getMaxAsDouble(), 0.00001)
     }
@@ -90,14 +89,14 @@ class FailedTests {
      * FIX: in evalDown, unit is not converted if unitSpec is empty string.
      */
     @Test
-    fun fail2() = testSession("SI") {
+    fun fail2() = testSession("ISQ") {
         loadKerML("""
-            feature p: SI::Length = 1.0 m;
-            feature p2:  SI::Length = 1.0 km; 
-            feature p3:  SI::Length = p + p2;
+            feature p: ISQ::LengthValue = 1.0 m;
+            feature p2: ISQ::LengthValue = 1.0 km; 
+            feature p3: ISQ::LengthValue = p + p2;
         """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        propagate()
+        solver.propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         // println(status.errors)
         // println(resolveName<Expression>("p::a::p3"))
@@ -112,18 +111,18 @@ class FailedTests {
      *  it might not be considered properly in p3, hence problems with intersections????
      */
     @Test
-    fun fail3() = testSession("Occurrences", "SI") {
+    fun fail3() = testSession("Occurrences", "ISQ") {
         loadKerML("""
             package p { 
                 class a { 
-                    feature p: SI::Length = 1.0 [m];
-                    feature p2: SI::Length = 1.0 [km];
-                    feature p3: SI::Length = p + p2;
+                    feature p: ISQ::LengthValue = 1.0 [m];
+                    feature p2: ISQ::LengthValue = 1.0 [km];
+                    feature p3: ISQ::LengthValue = p + p2;
                 }
             }
         """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        propagate()
+        solver.propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals(1001.0, global.resolveVar("p::a::p3")!!.vectorQuantity.getMinAsDouble(), 0.001)
     }
@@ -143,7 +142,7 @@ class FailedTests {
             feature p2: ScalarValues::Real = p + 1.0;
             feature p3: ScalarValues::Boolean = ( p > p2 ).
         """)
-        propagate()
+        solver.propagate()
 
         val p = global.resolveVar("p")!!.vectorQuantity.aadd()
         val p2 = global.resolveVar("p2")!!.vectorQuantity.aadd()
@@ -171,7 +170,7 @@ class FailedTests {
         assertEquals(9.9*1.9, global.resolveVar("V")!!.min(), 0.00001)
         assertEquals(10.1*2.1, global.resolveVar("V")!!.max(), 0.00001)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        propagate()
+        solver.propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         // println("V = " + global.resolveName<Expression>("V") + " ")
         assertEquals(9.9*1.9, global.resolveVar("V")!!.min(), 0.00001)
@@ -184,7 +183,7 @@ class FailedTests {
             feature a: ScalarValues::Real; 
             feature b: Ranges::RealInRange {:>> range = "3..5";}
             feature sum: Ranges::RealInRange = a+b {:>> range = "9..10";}""")
-        propagate()
+        solver.propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
         assertEquals(9.0, global.resolveVar("sum")!!.aadd().min, 0.00001)
         assertEquals(10.0, global.resolveVar("sum")!!.aadd().max, 0.000001)
@@ -204,7 +203,7 @@ class FailedTests {
            feature b: Ranges::IntegerInRange {:>> range = "3..5";}
            feature sum: Ranges::IntegerInRange = a+b {:>> range = "9..10";}
            """)
-        propagate()
+        solver.propagate()
         // println(status.errors)
         assertEquals(9, global.resolveVar("sum")!!.idd().getRange().min)
         assertEquals(10, global.resolveVar("sum")!!.idd().getRange().max)
@@ -224,7 +223,7 @@ class FailedTests {
             feature s: ScalarValues::Real = 10.0;
             feature MAC_notb: ScalarValues::Real = sum_i( 0.0, 3.0, s*i );
         """)
-        propagate()
+        solver.propagate()
         assertEquals(60.0, global.resolveVar("MAC_notb")!!.aadd().getRange().min, 0.00001)
         assertEquals(60.0, global.resolveVar("MAC_notb")!!.aadd().getRange().max, 0.00001)
         assertTrue(status.issues.isEmpty(), status.issues.toString())

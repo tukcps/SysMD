@@ -132,8 +132,8 @@ class ImportActions(
         created.isRecursive = isRecursive
         created.isImportAll = isImportAll
         setImportedNamespace()
-        super.create(null)
         setImportingNamespace(context.element())
+        super.create(null)
     }
 
     fun createMembershipImport() {
@@ -163,7 +163,7 @@ class ImportActions(
     }
 
     fun setImportedMember() {
-        created.target = mutableListOf(UnresolvedElement(importQualifiedName))
+        created.target = mutableListOf(UnresolvedMembership(importQualifiedName))
     }
 }
 

@@ -1,12 +1,11 @@
 package compiler.sysml.examples
 
-import util.mockup.loadSysMLv2
 import com.github.tukcps.sysmd.model.sysml.ItemDefinition
 import com.github.tukcps.sysmd.model.sysml.ItemUsage
-import com.github.tukcps.sysmd.services.resolve.resolve
+import util.assertNoIssues
+import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Test
-import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class ItemTests {
@@ -25,13 +24,13 @@ class ItemTests {
                 /* members */
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
 
-        val itemDef1 = global.resolve<ItemDefinition>("ItemDef1")
-        assertNotNull(itemDef1)
+        val itemDef1 = global.resolve("ItemDef1")
+        assertTrue(itemDef1?.memberElement is ItemDefinition)
 
-        val itemDef2 = global.resolve<ItemDefinition>("ItemDef2")
-        assertNotNull(itemDef2)
+        val itemDef2 = global.resolve("ItemDef2")
+        assertTrue(itemDef2?.memberElement is ItemDefinition)
     }
 
     /**
@@ -49,15 +48,15 @@ class ItemTests {
                 /* members */
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
 
-        val itemDef1 = global.resolve<ItemDefinition>("ItemDef1")
-        assertNotNull(itemDef1)
+        val itemDef1 = global.resolve("ItemDef1")
+        assertTrue(itemDef1?.memberElement is ItemDefinition)
 
-        val item1 = global.resolve<ItemUsage>("item1")
-        assertNotNull(item1)
+        val item1 = global.resolve("item1")
+        assertTrue(item1?.memberElement is ItemUsage)
 
-        val item2 = global.resolve<ItemUsage>("item2")
-        assertNotNull(item2)
+        val item2 = global.resolve("item2")
+        assertTrue(item2?.memberElement is ItemUsage)
     }
 }

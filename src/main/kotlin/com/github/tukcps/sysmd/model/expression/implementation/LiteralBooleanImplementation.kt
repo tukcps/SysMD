@@ -1,9 +1,11 @@
 package com.github.tukcps.sysmd.model.expression.implementation
 
+import com.github.tukcps.sysmd.model.expression.AstLeaf
 import com.github.tukcps.sysmd.model.expression.LiteralBoolean
 import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
+import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.util.SimpleName
+import com.github.tukcps.sysmd.quantities.VectorQuantity
 
 class LiteralBooleanImplementation(
     declaredName: SimpleName? = null,
@@ -12,17 +14,25 @@ class LiteralBooleanImplementation(
     isEnd: Boolean = false,
     typeConstraint: MutableList<String> = mutableListOf(),
     expression: String? = null,
-    textualRepresentation:  MutableList<TextualRepresentation> = mutableListOf(),
     elementType: String = "LiteralBoolean"
 ) : LiteralBoolean, LiteralExpressionImplementation(
     declaredName = declaredName,
     declaredShortName = declaredShortName,
     direction = direction,
     isEnd = isEnd,
-    textualRepresentation = textualRepresentation,
     typeConstraint = typeConstraint,
     expression = expression,
     elementType = elementType
 )  {
-    var value: Boolean? = null
+	override var value: Boolean? = null
+
+	override val literalValue : AstLeaf?
+		get() {
+			val v = value ?: return null
+			val m = model ?: return null
+			return AstLeaf(m, VectorQuantity(m.builder.boolean(v)))
+		}
+
+	override val typeName = "ScalarValues::Boolean"
+	override val cachedType : Type? get() = model?.repo?.booleanType
 }

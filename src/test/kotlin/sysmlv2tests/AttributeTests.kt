@@ -1,12 +1,10 @@
 package sysmlv2tests
 
-import io.github.tukcps.aadd.values.IntegerRange
-import com.github.tukcps.sysmd.cspsolver.propagate
 import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.services.resolve.resolveVar
-import util.mockup.loadSysMLv2
+import io.github.tukcps.aadd.values.IntegerRange
 import org.junit.jupiter.api.Assertions
+import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -18,8 +16,10 @@ class AttributeTests {
     fun testSimpleAttribute() = testSession("ScalarValues") {
         loadSysMLv2("attribute <aa> a;")
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val a = global.resolve<Feature>("a")
+        val a = global.resolve("a")?.member<Feature>()
+        val aa = global.resolve("aa")?.member<Feature>()
         assertNotNull(a)
+        assertEquals(aa, a)
         assertEquals("a", a.declaredName)
         assertEquals("aa", a.declaredShortName)
     }
@@ -30,7 +30,7 @@ class AttributeTests {
             attribute <aa> a: ScalarValues::Real; 
         """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val a = global.resolve<Feature>("a")
+        val a = global.resolve("a")?.member<Feature>()
         assertNotNull(a)
         assertEquals("a", a.declaredName)
         assertEquals("aa", a.declaredShortName)
@@ -44,7 +44,7 @@ class AttributeTests {
             attribute <aa> a: ScalarValues::Real [1 .. 3]; 
         """)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val a = global.resolve<Feature>("a")
+        val a = global.resolve("a")?.member<Feature>()
         assertNotNull(a)
         assertEquals("a", a.declaredName)
         assertEquals("aa", a.declaredShortName)
@@ -53,13 +53,13 @@ class AttributeTests {
     }
 
     @Test
-    fun parseUnitTest() = testSession("SI") {
+    fun parseUnitTest() = testSession("ISQ") {
         loadSysMLv2(""" 
-            attribute x: SI::Speed = 10.0 [m/s];
+            attribute x: ISQ::SpeedValue = 10.0 [m/s];
         """)
-        propagate()
+        solver.propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val x = global.resolve<Feature>("x")
+        val x = global.resolve("x")?.member<Feature>()
         assertNotNull(x)
         val unit= x.variable?.vectorQuantity?.unit
         Assertions.assertEquals("m / s", unit.toString())

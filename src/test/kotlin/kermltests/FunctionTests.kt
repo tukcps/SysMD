@@ -1,9 +1,5 @@
 package kermltests
 
-import com.github.tukcps.sysmd.cspsolver.propagate
-import com.github.tukcps.sysmd.model.kerml.Element
-import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.services.resolve.resolve
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
@@ -20,10 +16,10 @@ class FunctionTests {
                 out feature x: ScalarValues::Real = a*a; 
             }
         """)
-        propagate()
+        solver.propagate()
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val f = global.resolve<Element>("f")
-        val a = global.resolve<Feature>("f::a")
+        val f = global.resolve("f")?.memberElement
+        val a = global.resolve("f::a")?.memberElement
         assertNotNull(f)
         assertNotNull(a)
     }

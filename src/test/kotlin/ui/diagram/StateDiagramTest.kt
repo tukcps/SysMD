@@ -2,7 +2,6 @@ package ui.diagram
 
 import com.github.tukcps.sysmd.compiler.HoodSysmlParser
 import com.github.tukcps.sysmd.model.sysml.StateUsage
-import com.github.tukcps.sysmd.services.resolve.resolve
 import com.github.tukcps.sysmd.ui.diagram.StateDiagram
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -37,7 +36,7 @@ class StateDiagramTest {
         """
 
         val model = HoodSysmlParser().parseString(sysml)
-        val statemachine = model.global.resolve<StateUsage>("testPackage::Part1::Statemachine1")
+        val statemachine: StateUsage? = model.global.resolve("testPackage::Part1::Statemachine1")?.member()
         val stateDiagram = StateDiagram(statemachine!!)
 
         val nodes = stateDiagram.nodes()

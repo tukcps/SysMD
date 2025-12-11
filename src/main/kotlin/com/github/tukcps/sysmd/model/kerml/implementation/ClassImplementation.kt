@@ -14,13 +14,8 @@ open class ClassImplementation(
 ) {
 
     override fun clone(): Class {
-        return ClassImplementation(
-            declaredName = declaredName,
-            declaredShortName = declaredShortName,
-            elementType = elementType
-        ).also {
-            it.model = model
-            it.updated = updated
+        return ClassImplementation().also {
+            it.updateFrom(this)
         }
     }
 }

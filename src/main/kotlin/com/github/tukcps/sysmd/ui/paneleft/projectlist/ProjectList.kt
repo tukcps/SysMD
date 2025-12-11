@@ -38,11 +38,12 @@ import java.io.File
 @Composable
 fun ProjectList(
     sessionState: MutableState<Session>,
-    tabsViewModel: TabsViewModel,
+    tabsViewModel: TabsViewModel, // -->
+    projectListViewModel: ProjectListViewModel,
     reset: () -> Unit
 ) {
+    // Where the projects are saved
     val dataFolder           = remember { mutableStateOf(settings.dataFolder) }
-    val projectListViewModel = remember { ProjectListViewModel(sessionState, tabsViewModel, reset = reset) }
 
     if (projectListViewModel.showNewProjectDialog.value)
         UpdateProjectDialog(projectListViewModel)

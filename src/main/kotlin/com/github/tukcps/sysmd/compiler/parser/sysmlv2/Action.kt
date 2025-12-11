@@ -76,8 +76,8 @@ fun SysMLv2.ActionBodyItem() {
 }
 
 fun SysMLv2.actionBodyItemStarts() =
-    nonBehaviorBodyItemStart() or (token.kind == FIRST) or
-            behaviorUsageElementStart.starts() or
+    nonBehaviorBodyItemStart() || (token.kind == FIRST) ||
+            behaviorUsageElementStart.starts() ||
             actionNodeStart.starts()
 
 /**

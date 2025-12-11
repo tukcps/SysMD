@@ -5,9 +5,7 @@ import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.cspsolver.Variable.BaseType
 import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.exceptions.SemanticError
-import com.github.tukcps.sysmd.exceptions.SysMDError
 import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.quantities.VectorDimensionError
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
@@ -15,7 +13,6 @@ import io.github.tukcps.aadd.AADD
 import io.github.tukcps.aadd.DD
 import io.github.tukcps.aadd.IDD
 import io.github.tukcps.aadd.values.XBool
-import java.util.*
 
 typealias DDLeaf=DD.Leaf<*>
 typealias DDInternal=DD.Internal<*>
@@ -49,7 +46,7 @@ class AstRoot(
         downQuantity = dependency.upQuantity.clone()
         leaves = dependency.getLeaves()
         variable.ast = this
-        if(variable.baseType == BaseType.Real && variable.vectorQuantity.unit.clone().toSI()!=upQuantity.unit.clone().toSI())
+        if(variable.baseType == BaseType.Real && variable.vectorQuantity.unit.clone().toSI() != upQuantity.unit.clone().toSI())
             model.status.inconsistency(element = variable.feature, message = "Unit of ${variable.feature.escapedName()} (${variable.vectorQuantity.unit}) does not match the unit of the dependency (${upQuantity.unit})")
         variable.vectorQuantity.values = upQuantity.values
         variable.vectorQuantity.unit = upQuantity.unit
@@ -123,11 +120,7 @@ class AstRoot(
     override fun evalUpRec() {
         dependency.evalUpRec()
         //add predefined domain to the unit
-        if(feature.specializes(feature.model!!.repo.realType)&& feature.type.size==1) {
-            val type =  feature.type[0].declaredName.toString()
-            if((feature.type[0] as Type?)?.generalization?.firstOrNull()?.declaredName=="Quantity")
-                dependency.upQuantity.unit.unitDomain = type
-        }
+        // not needed for ISQ:: where predefined domain is defined in library!
         evalUp()
     }
 
@@ -161,12 +154,7 @@ class AstRoot(
         evalDown()
         dependency.evalDownRec()
         //add predefined domain to the unit in the leaves (changed by evalDown)
-        if(feature.specializes(feature.model!!.repo.realType)&& feature.type.size==1) {
-            dependency.getLeaves().forEach {
-                val type = it.upQuantity.unit.unitDomain
-                it.variable?.vectorQuantity?.unit?.unitDomain = type
-            }
-        }
+        // Not needed if one uses standard-compliant ISQ
     }
 
     override fun toString() =
@@ -236,7 +224,8 @@ class AstRoot(
     }
 
 
-    /*private*/ fun findAllPaths(
+    @Deprecated("Will be phased out")
+    private fun findAllPaths(
         dd: DD<*>,
         target: XBool = XBool.True,
         path: MutableMap<Int, Boolean> = mutableMapOf(),
@@ -282,23 +271,4 @@ class AstRoot(
     override fun clone(): AstRoot =
         AstRoot(model, feature, dependency.clone())
 
-    /**
-     * Returns the (Boolean) Value from the jAADD builder that corresponds to a Boolean Expression
-     * @param index the index in the BDD/AADD
-     * @return the current set value (true, false, X)
-     */
-    private fun getConditionBoolSpec(index: Int): MutableList<XBool> {
-        val id = model.builder.conds.indexes.keys.first { index == model.builder.conds.indexes[it] }
-        return (model.get(elementId = UUID.fromString(id)) as Variable?)?.boolSpecs
-            ?: throw SysMDError("Condition not found; internal issue in getConditionBoolSpec")
-    }
-
-    private fun checkAgainstBoolSpec(value: Boolean, spec: XBool): Boolean {
-        return when (spec) {
-            XBool.True -> value
-            XBool.False -> value.not()
-            XBool.X -> true
-            else -> throw Exception("checkAgainstBoolSpec: NaB, AF")
-        }
-    }
 }

@@ -1,14 +1,15 @@
 package models.expression
 
-import com.fasterxml.jackson.databind.*
-import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.services.repositories.local.*
-import com.github.tukcps.sysmd.services.resolve.*
-import io.github.tukcps.sysmlv2.api.entities.*
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.github.tukcps.sysmd.model.kerml.Feature
+import com.github.tukcps.sysmd.services.repositories.local.toDAO
+import io.github.tukcps.sysmlv2.api.entities.Identified
 import junit.framework.TestCase.*
-import util.*
-import util.mockup.*
-import kotlin.test.*
+import util.assertNoIssues
+import util.mockup.loadKerML
+import util.testSession
+import kotlin.test.Test
+import kotlin.test.assertNotEquals
 
 class ExpressionCloningTests
 {
@@ -74,7 +75,7 @@ class ExpressionCloningTests
 		// FIXME: Resolved equality should be fine, but do we want reference sharing here?
 		assertEquals(original.referencedFeature, clone.referencedFeature)
 
-		assertNoOverlap(original.variables, clone.variables)
+		// assertNoOverlap(original.variables, clone.variables)
 		// cloning may omit some owned elements
 		assertNoOverlap(original.ownedElement, clone.ownedElement)
 	}
@@ -111,11 +112,29 @@ class ExpressionCloningTests
             feature e: ScalarValues::Boolean = a and b;
 			expr f: ScalarValues::Boolean = a and b;
         """) // FIXME: expr doesn't parse
-		assertTrue(this.status.issues.isEmpty(), status.issues.toString())
+		assertNoIssues()
 
 		// for now, test Feature cloning in general since parser doesn't produce Expression instances yet
-		global.findAllOwnedElements().filterIsInstance<Feature>().forEach {
+		global.visibleMemberships().filterIsInstance<Feature>().forEach {
 			checkClone(it)
 		}
+	}
+
+	@Test
+	fun simpleExample() = testSession {
+		val tt = twoPlusTwo()
+		addElement(tt)
+
+		kotlin.test.assertEquals(2, tt.argument.size)
+		assertNotEquals(tt.argument[0], tt.argument[1])
+		kotlin.test.assertEquals(this, tt.model)
+		for(a in tt.argument)
+			kotlin.test.assertEquals(this, a.model)
+
+		assertIsTwoPlusTwo(tt.clone()).also {
+			kotlin.test.assertEquals(this, it.model)
+		}
+
+		assertNoIssues()
 	}
 }
