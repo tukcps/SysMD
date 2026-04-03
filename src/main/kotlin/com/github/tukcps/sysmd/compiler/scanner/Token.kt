@@ -10,7 +10,7 @@ package com.github.tukcps.sysmd.compiler.scanner
  * @param lineNo the line number in which the token started
  * @param indices the indices of the token in the input stream, as first .. last character range
  **/
-class Token(
+data class Token(
     val kind: Kind,
     val string: String,
     val number: Double = 0.0,
@@ -49,7 +49,7 @@ class Token(
         IF, IMPORT, IN, IMPLIES, INCLUDE, INDIVIDUAL, INOUT, INTERACTION, INTERFACE, INTERSECTS, INV, INVERSE, INVERTING, ISTYPE, ITEM,
         JOIN,
         LANGUAGE, LIBRARY, LOOP,
-        MEMBER, METADATA, MERGE, MESSAGE, METACLASS, MULTIPLICITY,
+        MEMBER, META, METADATA, MERGE, MESSAGE, METACLASS, MULTIPLICITY,
         NAMESPACE, NONUNIQUE, NOTE, NULL,
         OBJECTIVE, OCCURRENCE, OF, ORDERED, OUT,
         PACKAGE, PARALLEL, PART, PERFORM, PORT, PORTION, PREDICATE, PRIVATE, PROTECTED, PUBLIC,
@@ -101,7 +101,12 @@ class Token(
         HASHTAG { override fun toString(): String = "#" },
         PERCENT { override fun toString(): String = "%" },
         EURO { override fun toString(): String = "€" },
-        QUESTION { override fun toString(): String = "?" }
+        QUESTION { override fun toString(): String = "?" },
+        ATSIGN { override fun toString() : String = "@" },
+        ATAT { override fun toString() : String = "@@" },
+        EEE { override fun toString() : String = "===" },
+        NEE { override fun toString() : String = "!==" },
+        QQ { override fun toString() : String = "??" }
     }
 
     /** Constants for abbreviating some keywords */
@@ -110,7 +115,7 @@ class Token(
         val WHITESPACE = setOf(' ', '\t', '\n', '\r', 13.toChar())
 
         val charTokens: HashMap<Char, Kind> = hashMapOf(
-            '@' to Kind.METADATA,
+            '@' to Kind.ATSIGN,
             '(' to Kind.LBRACE,
             ')' to Kind.RBRACE,
             '[' to Kind.LCBRACE,
@@ -204,6 +209,7 @@ class Token(
             "language" to Kind.LANGUAGE,
             "library" to Kind.LIBRARY,          // Missing in standard, bug?
             "member" to Kind.MEMBER,
+            "meta" to Kind.META,
             "metaclass" to Kind.METACLASS,
             "metadata" to Kind.METADATA,
             "multiplicity" to Kind.MULTIPLICITY, // todo: fix name of function that gets multiplicity

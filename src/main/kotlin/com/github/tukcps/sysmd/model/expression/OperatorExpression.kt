@@ -15,4 +15,6 @@ interface OperatorExpression: InvocationExpression {
         }
 
     var operatorAst: AstFunction? //Operator as Instance of ASTFunction to execute - necessary?
+
+    override fun clone(): OperatorExpression
 }

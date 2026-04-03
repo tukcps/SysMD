@@ -140,8 +140,8 @@ fun Session.initAstSumSubclasses(
             if (variable != null) {
                 leaf.upQuantity = variable.vectorQuantity
                 leaf.downQuantity = variable.vectorQuantity
-                leaf.qualifiedName = variable.name
-                leaf.resolvedName = variable.name
+                leaf.qualifiedName = variable.path
+                leaf.resolvedName = variable.path
                 if (leaf.upQuantity.values[0] is IDD) isRealSum = false
             } else if (transitive) { // Transitive: search property in parts
                 newAstNode = this.initAstSumSubclasses(subtype, propertyAST, true, isRealSum)

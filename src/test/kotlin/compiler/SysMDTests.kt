@@ -22,7 +22,7 @@ class SysMDTests {
     @Test
     fun parsePackageTest() = testSession {
         loadSysMD("""Global hasA package test.""")
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         global.resolve("test")
         assertEquals(0, getUnresolvedElements().size)
     }
@@ -83,6 +83,6 @@ class SysMDTests {
                 Global hasA feature z: ScalarValues::Boolean = if x? true else false.
             """)
         assertNoIssues()
-        assertEquals(4, solver.getVariables().size)
+        assertEquals(4, solver.getVariables().size, solver.getVariables().joinToString("\n"))
     }
 }

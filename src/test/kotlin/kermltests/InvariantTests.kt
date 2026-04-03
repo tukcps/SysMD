@@ -36,7 +36,7 @@ class InvariantTests {
             inv { e }
         """)
         solver.propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val e = global.resolveVar("e")
         assertNotNull(e)
         val a = global.getOwnedElementOfType<Invariant>()

@@ -1,402 +1,529 @@
 @file:Suppress("FunctionName")
-
 package com.github.tukcps.sysmd.compiler.parser.kerml
 
 import com.github.tukcps.sysmd.compiler.KerML
+import com.github.tukcps.sysmd.compiler.scanner.Token
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
-import com.github.tukcps.sysmd.compiler.semantics.kerml.ConditionalExpressionActions
-import com.github.tukcps.sysmd.exceptions.SemanticError
-import com.github.tukcps.sysmd.exceptions.SyntaxError
-import com.github.tukcps.sysmd.model.expression.AstBinOp
-import com.github.tukcps.sysmd.model.expression.AstLeaf
-import com.github.tukcps.sysmd.model.expression.AstNode
-import com.github.tukcps.sysmd.model.expression.AstUnaryOp
-import com.github.tukcps.sysmd.model.expression.functions.AstHasType
-import com.github.tukcps.sysmd.model.expression.functions.AstNot
-import com.github.tukcps.sysmd.quantities.Quantity
-import com.github.tukcps.sysmd.quantities.VectorQuantity
-import io.github.tukcps.aadd.*
+import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
+import com.github.tukcps.sysmd.exceptions.LexicalError
+import com.github.tukcps.sysmd.model.expression.*
+import com.github.tukcps.sysmd.model.expression.implementation.*
+import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.model.kerml.implementation.*
+import com.github.tukcps.sysmd.model.util.QualifiedName
 
+fun KerML.Expression() : Expression = ConditionalExpression()
 
-/**
- * parseExpression parses an expression and returns the AST as the result.
- * Expression :- Comparison
- * @return an AstNode with the abstract syntax tree
+// FIXME: Result members not to standard yet
+
+/** Grouped information on a set of binary operators that share a precedence
+ * @param preserveTokens If true, the operator tokens should not be consumed before the next level of expression is parsed
+ * @param operatorNameOverride If set, overrides all operators in this level to use that name instead of their parsed tokens
+ * @param legacy If true, this operator is only expected in legacy code, and its right side contains raw names
  */
-fun KerML.Expression(): AstNode {
-    return Comparison()
+private data class PrecedenceLevel(
+	val operatorInformation: Map<Token.Kind, BinaryOperatorInformation>,
+	val rightAssociative: Boolean,
+	val preserveTokens: Boolean = false,
+	val operatorNameOverride: String? = null,
+	val legacy : Boolean = false
+) {
+	init {
+		require(operatorInformation.isNotEmpty())
+	}
+
+	/** The tokens corresponding to these operators */
+	val tokens get() = operatorInformation.keys
+
+	operator fun get(tk : Token.Kind) = operatorInformation[tk]
 }
 
-/**
- *      BooleanExpression =
- *          FeaturePrefix 'bool' FeatureDeclaration ValuePart? FunctionBody
+fun tokenOf(op : String) = Token.kerMLKeywords[op]
+	?: op.singleOrNull()?.let { Token.charTokens[it] }
+	?: Token.Kind.entries.firstOrNull { it.toString() == op }
+
+/** Produces an operator table organized by precedence by applying some filter to binary operators.
+ * Filters out all operators without corresponding tokens.
  */
-fun KerML.BooleanExpression(): AstNode {
-    TODO()
+private val binaryOperators : List<PrecedenceLevel> = BinaryOperatorInformation.bySymbol.entries.filter { (_,i) ->
+	!i.special
+}.groupBy { (_,i) ->
+	i.precedence
+}.entries.sortedBy {
+	it.key
+}.mapNotNull { (_,ops) ->
+	val single = ops.singleOrNull()
+
+	// special handling of space operator
+	if(single?.key == " ")
+	{
+		return@mapNotNull PrecedenceLevel(
+			listOf(INTEGER_LIT, FLOAT_LIT, STRING_LIT, NAME_LIT).associateWith { single.value },
+			rightAssociative = false,
+			preserveTokens = true,
+			operatorNameOverride = " ",
+			legacy  = true
+		)
+	}
+
+	val tks = ops.mapNotNull { (tk,op) -> tokenOf(tk)?.to(op) }
+
+	if(tks.isEmpty())
+		return@mapNotNull null
+
+	val ra = ops.any { it.value.rightAssociative }
+	// associativity should be uniform within  one precedence level
+	assert(!ra || ops.all { it.value.rightAssociative })
+
+	PrecedenceLevel(tks.toMap(), rightAssociative = ra)
 }
 
+private val unaryOperators = UnaryOperatorInformation.bySymbol.entries.mapNotNull { (k,v) ->
+	tokenOf(k)?.to(v)
+}.toMap()
 
-/**
- * conditionalExpression :- IF expression ? expression ELSE expression
+/* FIXME: We cannot use semantic actions because we don't know whether to insert a containing namespace
+    until AFTER infix operator has been seen, i.e. left argument is finished
+*/
+private inline fun<T : Expression> KerML.expressionImplementation(ctor : () -> T, init : (T) -> Unit) = ctor().also {
+	it.model = model
+	it.direction = Feature.FeatureDirectionKind.IN
+
+	init(it)
+}
+
+private fun KerML.invocationExpression(f : QualifiedName, operands : List<Expression>) : InvocationExpression
+= expressionImplementation(::InvocationExpressionImplementation) {
+	it.functionName = f
+
+	for(op in operands)
+		model.addOwnedMember(op, it)
+}
+
+private fun KerML.invocationExpression(f : QualifiedName, operands : Map<String, Expression>) : InvocationExpression
+= expressionImplementation(::InvocationExpressionImplementation) {
+	it.functionName = f
+
+	for((name, op) in operands)
+	{
+		op.declaredName = name
+		op.declaredShortName = name
+		val membership = model.addOwnedMember(op, it).owningRelationship as ParameterMembership
+		// signal that these need to be reordered
+		membership.parameterIndex = -1
+	}
+}
+
+private fun KerML.operatorExpression(op : String, vararg operands : Feature) : OperatorExpression
+= expressionImplementation(::OperatorExpressionImplementation) {
+	it.operator = op
+
+	for(op in operands)
+		model.addOwnedMember(op, it)
+}
+
+private fun KerML.ConditionalExpression() : Expression
+= if(consumeIfTokenIs(IF)) {
+	val c = ConditionalExpression()
+	QUESTION.consume()
+	val t = ConditionalExpression()
+	ELSE.consume()
+	val e = ConditionalExpression()
+
+	operatorExpression("if", c, t, e)
+}
+else
+	BinaryOperatorExpression(0)
+
+private fun functionName(operator : Token.Kind) = operator.toString().lowercase()
+
+/** handles all (non-primary) binary operators, including condition operators
+ * @param step The precedence class of operator to parse, starting at 0
  */
-fun KerML.ConditionalExpression(): AstNode {
-    val action = ConditionalExpressionActions(semantics)
-    IF.consume()
-    Expression().also { action.condExpr = it }
-    QUESTION.consume()
-    Expression().also { action.thenExpr = it }
-    ELSE.consume()
-    Expression().also { action.elseExpr = it; return action.run() }
+private fun KerML.BinaryOperatorExpression(step : Int) : Expression
+{
+	if(step >= binaryOperators.size)
+		return UnaryOperatorExpression()
+
+	var left = BinaryOperatorExpression(step + 1)
+	val lvl = binaryOperators[step]
+
+	/** retrieves the token kind of the applied operator */
+	fun tk() = (if(lvl.preserveTokens) token else consumedToken).kind
+	/** retrieves the proper function name for an operator token*/
+	fun op(tk : Token.Kind) = lvl.operatorNameOverride ?: functionName(tk)
+	// FIXME: check which scopes legacy operators may appear in & skip them otherwise
+
+	if(lvl.rightAssociative)
+	{
+		optional(lvl.tokens, consume = ! lvl.preserveTokens) {
+			val tk = tk()
+			// right-associating type operators make no sense
+			assert(lvl[tk]?.typeOperand == false)
+			val right = withUnresolvedNames(lvl.legacy) { BinaryOperatorExpression(step) }// parser can handle right-recursion here
+
+			left = operatorExpression(op(tk), left, right)
+		}
+	}
+	else
+	{
+		// FIXME: MetaclassificationExpression not quite right (`@@` and `meta`)
+		noOrMore(lvl.tokens, consume = ! lvl.preserveTokens) {
+			val tk = tk()
+			val right = withUnresolvedNames(lvl.legacy) {
+				if(lvl[tk]!!.typeOperand) TypeReferenceMember() else BinaryOperatorExpression(step + 1)
+			}
+
+			left = operatorExpression(op(tk), left, right)
+		}
+	}
+
+	return left
 }
 
-/**
- * parseComparison computes an expression and returns the AST as the result.
- *
- * Expression :- Sum [ relOp Sum]
- */
-fun KerML.Comparison(): AstNode {
-    var result = Sum()
-    optional(GT or LT or EQ or GE or LE or EE or NEQ) {
-        consume()
-        val op = consumedToken.kind
-        val t2 = Sum()
-        result = AstBinOp(result, op, t2)
-    }
-    return result
+private fun KerML.UnaryOperatorExpression() : Expression
+{
+	optional(unaryOperators.keys, consume = true) {
+		val op = consumedToken.kind
+		val right = if(unaryOperators[op]!!.typeOperand) TypeReferenceMember() else UnaryOperatorExpression()
+
+		return operatorExpression(functionName(op), right)
+	}
+
+	return PrimaryExpression()
 }
 
-/** Sum :- Product ( ("+"|"-"|"|") Product )*  */
-fun KerML.Sum(): AstNode {
-    var s1 = Product()
-    while (consumeIfTokenIs(PLUS, MINUS, OR)) {
-        val op = consumedToken.kind
-        val s2 = Product()
-        s1 = AstBinOp(s1, op, s2)
-    }
-    return s1
-}
+private fun KerML.PrimaryExpression() : Expression
+{
+	var left : Expression = SequenceExpression()
+	val stopEarly = mutableSetOf<Token.Kind>() // hack to break out of noOrMore
 
-/** Product :- Exponent ( ("*"|"/"|"&") Exponent )*     */
-fun KerML.Product(): AstNode {
-    var f1 = Exponent()
-    noOrMore (TIMES or DIV or AND or CROSS or DOTProduct, consume = true) {
-        val op = consumedToken.kind
-        val f2 = Exponent()
-        f1 = AstBinOp(f1, op, f2)
-    }
-    return f1
-}
+	noOrMore(start = setOf(HASHTAG, ARROW, DOT, LBRACE, LCBRACE), stop = stopEarly) {
+		alternatives {
+			HASHTAG then { // IndexExpression
+				val ixs = SequenceExpression()
+				left = expressionImplementation(::IndexExpressionImplementation) {
+					model.addOwnedMember(left, it)
+					model.addOwnedMember(ixs, it)
+				}
+			}
+			ARROW then { // FunctionOperationExpression; `x->f(y,z)` is syntax sugar for `f(x,y,z)`
+				// FIXME: Standard uses "InvocationTypeMember" but lacks a definition
+				consume(NAME_LIT)
+				val f = consumedToken.string
 
-/**
- * Exponent :- UnaryOperatorExpression ( "^" Exponent )*
- * Note: right associative via recursion
- */
-fun KerML.Exponent(): AstNode {
-    val exponent = UnaryOperatorExpression()
-    if (tokenIs(EXP)) {
-        consume(EXP)
-        Exponent() .also {
-            return AstBinOp(exponent, EXP, it)
-        }
-    }
-    return exponent
-}
+				alternatives {
+					NAME_LIT starts {
+						val func = QualifiedName()
+						left = invocationExpression(f, listOf(
+							left,
+							referenceTo(func)
+						))
+					}
+					LCURBRACE starts {
+						val lambda = BodyExpression()
+						left = invocationExpression(f, listOf(left, lambda))
+					}
+					LBRACE starts {
+						val args = ArgumentList().first ?: TODO("Named arguments not supported yet")
+						left = invocationExpression(f, listOf(left) + args)
+					}
+				}
+			}
 
-/**
- * UnaryOperatorExpression :- ["+" Value | "-" Value | "not" Value | Value|
- */
-fun KerML.UnaryOperatorExpression(): AstNode {
-    var result: AstNode? = null
-    alternatives {
-        PLUS  then { Value().also { result = it } }
-        MINUS then { Value().also { result = AstUnaryOp(MINUS, it) }}
-        NOT   then { Value().also { result = AstNot(model, arrayListOf(it)) }}
-        others     { Value().also { result = it }}
-    }.also { return result!!  }
-}
+			DOT starts {
+				// break out of noOrMore
+				stopEarly.add(DOT)
+			}
 
-/**
- *  Parameters :-
- *      [ "(" [ Expression ("," Expression)*] ")" ]
- */
-fun KerML.Parameters(): ArrayList<AstNode>? =
-    optional(LBRACE, noMatch = null, consume = true) {
-        val parameters = ArrayList<AstNode>()
-        noOrMore ({token.kind != RBRACE }) {
-            Expression().also { parameters.add(it)}
-            while (consumeIfTokenIs(COMMA)) {
-                Expression().also { parameters.add(it)}
-            }
-        }
-        RBRACE.consume()
-        parameters
-    }
+			// FIXME: Replace with .?
+			(DOT to QUESTION) starts { // SelectExpression
+				consume(DOT)
+				consume(QUESTION)
+				val body = BodyExpression()
 
+				left = expressionImplementation(::SelectExpressionImplementation) {
+					model.addOwnedMember(left, it)
+					model.addOwnedMember(body, it)
+				}
+			}
 
-/**
- *  Unit :-> "%" // Percent as a unit
- *          | ["1"] (NAME_LIT ["^" INTEGER_LIT])* ["/" (NAME_LIT [^INTEGER_LIT] )+]
- **/
-fun KerML.Unit(): String {
-    var unit = ""
+			(DOT then LCURBRACE) starts {// CollectExpression
+				consume(DOT)
+				val body = BodyExpression()
 
-    alternatives {
-        PERCENT then  { unit = "%" }
-        others {
-            optional(INTEGER_LIT, consume = true) {
-                if (consumedToken.number.toInt() != 1)
-                    throw SyntaxError(this, "Unit must not start with number not equal to 1")
-                unit = "1 "
-            }
+				left = expressionImplementation(::CollectExpressionImplementation) {
+					model.addOwnedMember(left, it)
+					model.addOwnedMember(body, it)
+				}
+			}
 
-            noOrMore(NAME_LIT or EURO) {
-                consume().also { unit += consumedToken.toString() }
-                optional(EXP, consume = true) {
-                    INTEGER_LIT.consume().also { unit += "^${consumedToken.number.toInt()}" }
-                }
-                unit += " "
-            }
+			(DOT then NAME_LIT) starts { // FeatureChainExpression
 
-            optional(DIV, consume = true) {
-                unit += "$consumedToken "
-                while (token.kind == NAME_LIT) {
-                    consume().also { unit += consumedToken.toString() }
-                    optional(EXP, consume = true) {
-                        INTEGER_LIT.consume().also { unit += "^${consumedToken.number.toInt()}" }
-                    }
-                    unit += " "
-                }
-            }
-        }
-    }
-    return unit.trim()
-}
-
-
-/**
- * Value :-
- *    NUM_LIT
- * |  TRUE
- * |  FALSE
- * |  '[' ValueRange ']'
- * |  '(' ITE ("," ITE)* ')' ?????? FIX
- * |  QualifiedName Parameters
- */
-fun KerML.Value(): AstNode {
-    var astNode: AstNode? = null            // Value or expression
-    alternatives {
-        LCBRACE then {                   // Range of kind [number, number] unit
-            val quantity: Quantity
-            var unit = ""
-            parseValueRange().also { quantity = it }
-            RCBRACE.consume()
-
-            optional (LCBRACE or NAME_LIT or PERCENT) {
-                alternatives {
-                    LCBRACE starts  {
-                        LCBRACE.consume()
-                        Unit().also { unit = it }
-                        RCBRACE.consume()
-                    }
-                    others {
-                        unit = token.string
-                        NAME_LIT.consume()
-                    }
-                }
-            }
-
-            astNode = when(quantity.value){
-                is AADD ->  AstLeaf(model, Quantity(quantity.value as AADD, unit))
-                is IDD ->  AstLeaf(model, Quantity(quantity.value as IDD))
-                is StrDD ->  AstLeaf(model, Quantity(quantity.value as StrDD))
-                is BDD ->  AstLeaf(model, Quantity(quantity.value as BDD))
-                else -> throw SemanticError("Unsupported type for $quantity.")
-            }
-        }
-
-        FLOAT_LIT then {              // Floating point literal of kind number unit
-            val value = consumedToken.number
-            var upperBound: Double? = null
-            var unit = ""
-            optional(DOTDOT, consume = true) {
-                FLOAT_LIT.consume().also { upperBound = consumedToken.number }
-            }
-
-            optional (LCBRACE or NAME_LIT or PERCENT) {
-                alternatives {
-                    LCBRACE then {
-                        Unit().also { unit = it }
-                        RCBRACE.consume()
-                    }
-                    others {
-                        unit = token.string
-                        NAME_LIT.consume()
-                    }
-                }
-            }
-            val ub = upperBound?:value
-            astNode = AstLeaf(model, Quantity(model.builder.real(value .. ub), unit))
-        }
-
-        INTEGER_LIT then  {            // Integer literal
-            val min = consumedToken.number.toLong()
-            // optional: Extension to range by
-            val max = optional(DOTDOT, consume = true, noMatch = min) {
-                INTEGER_LIT.consume()
-                consumedToken.number.toLong()
-            }!!
-            astNode = AstLeaf(model, Quantity(model.builder.integer(min..max)))
-        }
-
-        STRING_LIT then {            // A string literal
-            astNode = AstLeaf(model, Quantity(StrDD.Leaf(model.builder, consumedToken.string)))
-        }
-
-        TRUE then {               // True literal
-            astNode = AstLeaf(model, Quantity(model.builder.True))
-        }
-
-        FALSE then {              // False literal
-            astNode = AstLeaf(model, Quantity(model.builder.False))
-        }
-
-        // '(' Expression ( ',' Expression)* ')'
-        LBRACE then {
-            var expression: AstNode
-            val values = arrayListOf<AstNode>()
-            do {  // Iterate through all vector elements
-                expression = Expression()
-                if(tokenIs(RBRACE) && values.isEmpty() )
-                    astNode = expression //no vector, only expression in braces
-                else if(expression is AstLeaf || expression is AstUnaryOp) {
-                    values.add(expression)
-                }
-            } while (consumeIfTokenIs(COMMA))
-            //Parse Unit
-            RBRACE.consume()
-            var unit = ""
-            optional (LCBRACE or NAME_LIT or PERCENT) {
-                if (tokenIs(LCBRACE)) {
-                    LCBRACE.consume()
-                    Unit().also { unit = it }
-                    RCBRACE.consume()
+                if (nextNextToken.kind == HAS_A) {
+                    stopEarly.add(DOT)
                 } else {
-                    NAME_LIT.consume().also { unit=consumedToken.string }
-                }
-            }
-            if(astNode == null)
-                try {
-                    val quantityValues = mutableListOf<DD<*>>()
-                    values.forEach {
-                        it.evalUp()
-                        quantityValues.add(it.dd)
-                    }
-                    astNode = AstLeaf(model, VectorQuantity(quantityValues, com.github.tukcps.sysmd.quantities.Unit(unit)))
-                } catch (_: UninitializedPropertyAccessException) {
-                    var resultingString = ""
-                    values.forEach {
-                        resultingString += (it as AstLeaf).qualifiedName
-                        resultingString += ","
-                    }
-                    resultingString=resultingString.removeSuffix(",")
-                    val resultingAST= values[0] as AstLeaf
-                    resultingAST.qualifiedName = resultingString
-                    astNode = resultingAST
-                }
-        }
-        NAME_LIT starts { // QualifiedName [ '(' Parameters ')' | '[' Integer ']' ]
-            val name = QualifiedName()
-            alternatives {
-                LBRACE starts {
-                    Parameters().also {
-                        astNode = semantics.handleFunctionCall(name, it!!, semantics)
+
+                    consume(DOT)
+                    val ch = FeatureChain()
+
+                    left = expressionImplementation(::FeatureChainExpressionImplementation) {
+                        it.targetFeature = ch
+                        model.addOwnedMember(left, it)
                     }
                 }
-                LCBRACE starts {
-                    LCBRACE.consume()
-                    val position = parseIntegerRange()
-                    val rangeQuantity = Quantity(model.builder.integer(position))
-                    astNode = semantics.handleFunctionCall(
-                        function = "quantityOfVectorAtPosition",
-                        param = arrayListOf(AstLeaf(semantics.namespace, name, model), AstLeaf(model,rangeQuantity)),
-                        semantics = semantics
-                    )
-                    RCBRACE.consume()
-                }
-                ISTYPE starts {
-                    ISTYPE.consume()
-                    QualifiedName().also { astNode = AstHasType(model, semantics.namespace, name, it) }
-                }
-                HASTYPE starts {
-                    HASTYPE.consume()
-                    QualifiedName().also { astNode = AstHasType(model, semantics.namespace, name, it) }
-                }
-                others {
-                    astNode = AstLeaf(semantics.namespace, name, model)   // an identifier
-                }
-            }
-        }
-        IF starts { ConditionalExpression().also { astNode = it  } }
-    }
-    return astNode!!
+			}
+
+			LCBRACE then { // BracketExpression
+				val right : Expression = withUnresolvedNames { SequenceExpressionList() }
+				consume(RCBRACE)
+
+				left = operatorExpression("[", left, right)
+			}
+		}
+	}
+
+
+	return left
 }
 
-/** A number literal (Int or Float) */
-fun KerML.ConstReal(): Double {
-    var result = 0.0
-    val neg = consumeIfTokenIs(MINUS) // Sign of negative value.
-    alternatives {
-        (INTEGER_LIT or FLOAT_LIT) starts {           // Number literal
-            val value = token.number
-            consume()
-            result = if (neg) -value else value
-        }
-        NAME_LIT starts {
-            throw SyntaxError(this@ConstReal, "Unsupported Syntax; only number literals supported")
-        }
-        TIMES starts   {
-            consume()
-            result = if(neg) model.settings.minReal else model.settings.maxReal
-        }
-    }
-    return result
+/** An OPTIONALLY parenthesized sequence expression (not exactly to standard) */
+private fun KerML.SequenceExpression() : Expression
+{
+	if(consumeIfTokenIs(LBRACE))
+	{
+		if(consumeIfTokenIs(RBRACE))
+			return NullExpressionImplementation()
+
+		return SequenceExpressionList().also { RBRACE.consume() }
+	}
+
+	return BaseExpression()
 }
 
-/** A number literal (Int or Float) or a property with a known value */
-fun KerML.Number(): String {
-    val neg = consumeIfTokenIs(MINUS) // Sign of negative value.
-    var result = ""
-    alternatives {
-        (INTEGER_LIT or FLOAT_LIT) starts {           // Number literal
-            val value = if (token.number.rem(1).equals(0.0))
-                token.number.toLong().toString()  // No ".0" as in Double.toString ...
-            else
-                token.number.toString()
-            consume()
-            result=if (neg) "-$value" else value
-        }
-        TIMES then  { result="*" }
-    }
-    return result
+/** WITHOUT parens */
+private fun KerML.SequenceExpressionList() : Expression
+{
+	var left = Expression()
+
+	noOrMore(COMMA, consume = true) {
+		if(tokenIs(RBRACE))
+			return left
+
+		val right = Expression()
+		left = operatorExpression(",", left, right)
+	}
+
+	return left
 }
 
-/** A number literal (Int) or a property with known value */
-fun KerML.ConstInt(): Long {
-    val neg = consumeIfTokenIs(MINUS) // Sign of negative value.
-    var result: Long = 0
-    alternatives {
-        INTEGER_LIT starts {           // Number literal
-            val value = token.number
-            consume()
-            result = if (neg) -value.toLong() else value.toLong()
-        }
-        NAME_LIT starts {
-            throw SyntaxError(this@ConstInt, "Unsupported Syntax; only number literals supported")
-        }
-        TIMES starts {
-            consume()
-            result = if (neg) model.settings.minInt else model.settings.maxInt
-        }
-    }
-    return result
+/** WITH parens
+ * @return A positional or named argument list. Both populated when the argument list is ambiguous (i.e. empty)
+ * */
+private fun KerML.ArgumentList() : Pair<List<Expression>?, Map<QualifiedName, Expression>?>
+{
+	// TODO: NamedArgumentMembers
+	LBRACE.consume()
+
+	if(consumeIfTokenIs(RBRACE))
+		return Pair(emptyList(), emptyMap())
+
+	var list : MutableList<Expression>? = null
+	var map : MutableMap<QualifiedName, Expression>? = null
+
+	val (headName, head) = SingleArgument(null)
+
+	if(headName === null)
+		list = mutableListOf(head)
+	else
+		map = mutableMapOf(headName to head)
+
+	noOrMore(COMMA, consume = true) {
+		// trailing comma
+		if(consumeIfTokenIs(RBRACE))
+			return Pair(list, map)
+
+		val (n,v) = SingleArgument(headName !== null)
+
+		list?.add(v)
+		map?.put(n!!, v)?.also { TODO("Name conflict") }
+	}
+
+	RBRACE.consume()
+	return Pair(list, map)
+}
+
+/**
+ * @param named Whether to expect a name for the argument. `null` to accept either.
+ * */
+private fun KerML.SingleArgument(named : Boolean?) : Pair<QualifiedName?, Expression>
+{
+	val name = if(named == true || (named == null && token.kind == NAME_LIT && nextToken.kind == EQ)) {
+		NAME_LIT.consume()
+		val name = consumedToken.string
+		EQ.consume()
+		name
+	} else
+		null
+
+	return name to Expression()
+}
+
+/** A set of special, legacy SysMD functions.
+ * Names within their operands are not resolved statically.
+ */
+private val specialLegacyFunctions = setOf(
+	"owns",
+	"sumOverParts", "productOverParts",
+	"sumOverSubclasses", "productOverSubclasses",
+	"sumOverPartsNotTransitive", "productOverPartsNotTransitive",
+	"sumOverSubclassesNotTransitive", "productOverSubclassesNotTransitive"
+)
+
+private fun KerML.referenceTo(name : QualifiedName)
+= if(unresolvedNamesMode) expressionImplementation(::RawNameExpressionImplementation) {
+	it.rawName = name
+} else expressionImplementation(::FeatureReferenceExpressionImplementation) {
+	it.referent = UnresolvedFeature(name)
+}
+
+private fun KerML.BaseExpression() : Expression
+{
+	var expr : Expression? = null
+
+	alternatives {
+		NULL then {
+			expr = NullExpressionImplementation()
+		}
+		NAME_LIT starts { // FeatureReferenceExpression | InvocationExpression
+			val qn = QualifiedName()
+
+			expr = when {
+				tokenIs(LBRACE) -> { // InvocationExpression
+					val (positional,named) = if(qn in specialLegacyFunctions) withUnresolvedNames { ArgumentList() }
+											 else ArgumentList()
+
+					// FIXME: Standard uses "InstatiatedTypeMember" here which lacks a definition
+					positional?.let { invocationExpression(qn, it) }
+						?: named?.let { invocationExpression(qn, it) }
+				}
+				match(DOT, METADATA) -> {
+					DOT.consume()
+					METADATA.consume()
+
+					expressionImplementation(::MetadataAccessExpressionImplementation) {
+						it.referencedElement = UnresolvedElement(qn)
+					}
+				}
+				// FeatureReferenceExpression
+				else -> referenceTo(qn)
+			}
+		}
+		// TODO: ConstructorExpression, missing "new" keyword
+		LCURBRACE starts { // BodyExpression
+			expr = BodyExpression()
+		}
+
+		TRUE then {
+			expr = expressionImplementation(::LiteralBooleanImplementation) {
+				it.value = true
+			}
+		}
+		FALSE then {
+			expr = expressionImplementation(::LiteralBooleanImplementation) {
+				it.value = false
+			}
+		}
+
+		LCBRACE then { // SysML extension: bracketed ranges
+			// we could also just parse an arbitrary expression here...
+			fun bound() : Expression
+			{
+				var sign = 1
+				alternatives {
+					PLUS then {}
+					MINUS then { sign = -1 }
+					others { }
+				}
+				var x = Double.NaN
+				alternatives {
+					INTEGER_LIT then { x = consumedToken.number }
+					FLOAT_LIT then { x = consumedToken.number }
+				}
+				// negative literals might cause problems elsewhere
+				return expressionImplementation(::LiteralRationalImplementation) {
+					it.value = sign * x
+				}
+			}
+
+			val l = bound()
+			consume(DOTDOT)
+			val r = bound()
+			consume(RCBRACE)
+
+			expr = operatorExpression("..", l, r)
+		}
+
+		FLOAT_LIT then {
+			expr = expressionImplementation(::LiteralRationalImplementation) {
+				it.value = consumedToken.number
+			}
+		}
+
+		INTEGER_LIT then {
+			expr = expressionImplementation(::LiteralIntegerImplementation) {
+				it.value = consumedToken.number.toLong()
+			}
+		}
+
+		STRING_LIT then {
+			expr = expressionImplementation(::LiteralStringImplementation) {
+				it.value = consumedToken.string
+			}
+		}
+
+		TIMES then {
+			expr = expressionImplementation(::LiteralInfinityImplementation) {}
+		}
+
+		IF starts {
+			expr = ConditionalExpression()
+		}
+
+		// hack to implement the percentage unit
+		PERCENT then {
+			expr = referenceTo("%")
+		}
+	}
+
+	// fixme: is this the right fallback?
+	return expr ?: expressionImplementation(::NullExpressionImplementation) {}
+}
+
+/** A function body enclosed in {}
+	```
+		ExpressionBody : Expression = '{' FunctionBodyPart '}'
+	```
+	 FIXME: Standard says this should be a FeatureReferenceExpression, but never assigns a FeatureReferenceMember
+            Also, it references multiple features, and owns those features
+ */
+private fun KerML.BodyExpression() : Expression
+{
+	if(! tokenIs(LCURBRACE))
+		throw LexicalError(this, "after '$consumedToken': expected '{' but read '$token' ")
+
+	// TODO: Hack! What about owner?
+	return FeatureActions<Expression>(semantics, ::BodyExpressionImplementation).parse {
+		FunctionBody()
+	}
+}
+
+private fun KerML.TypeReferenceMember() : Feature
+{
+	val typeName = QualifiedName()
+	return FeatureImplementation().also {
+		model.addOwnedRelationship(FeatureTypingImplementation(
+				type = UnresolvedType(typeName)
+			), it)
+	}
 }

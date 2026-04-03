@@ -1,4 +1,4 @@
-package exportstests
+package exports
 
 import com.github.tukcps.sysmd.exports.Exporter
 import com.github.tukcps.sysmd.services.initialize
@@ -308,7 +308,7 @@ class SystemCTemplatesTests {
         }
         """)
         initialize()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val testDirectory = File("src/test/resources/toSystemC")
         val exporter = Exporter()
 
@@ -405,7 +405,7 @@ class SystemCTemplatesTests {
         }
         """)
         initialize()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val testDirectory = File("src/test/resources/toSystemC")
         val exporter = Exporter()
 
@@ -454,7 +454,7 @@ class SystemCTemplatesTests {
             """.trimIndent()
         )
 
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val testDirectory = File("src/test/resources/toSystemC")
         val exporter = Exporter()
 

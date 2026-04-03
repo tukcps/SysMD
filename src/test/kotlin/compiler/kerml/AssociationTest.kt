@@ -58,7 +58,7 @@ class AssociationTest {
         """)
         val rel = global.resolve("rel")?.member<Association>()
         assertNotNull(rel)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -89,7 +89,7 @@ class AssociationTest {
         loadKerML("""
             assoc rel :> Links::Link; 
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val rel = global.resolve("rel")?.member<Association>()
         val link = global.resolve("Links::Link")?.memberElement
         assertNotNull(rel)
@@ -101,9 +101,8 @@ class AssociationTest {
         assertTrue(link in rel.generalization)
     }
 
-    @Test fun associationTest() = testSession {
+    @Test fun associationTest() = testSession("ScalarValues") {
         loadKerML("""
-            package ScalarValues { datatype Natural :> Base::Anything; datatype Integer :> Base::Anything; }
             assoc Link specializes Base::Anything {
                 end feature source: Base::Anything [1..*];
                 end feature target: Base::Anything [1..*];
@@ -112,9 +111,8 @@ class AssociationTest {
         assertNoIssues()
     }
 
-    @Test fun associationTestWithRedefinition() = testSession {
+    @Test fun associationTestWithRedefinition() = testSession("ScalarValues") {
         loadKerML("""
-            package ScalarValues { datatype Natural :> Base::Anything;  datatype Integer :> Base::Anything; }
             assoc Link specializes Base::Anything {
                 end feature source: Base::Anything [1..*];
                 end feature target: Base::Anything [1..*];

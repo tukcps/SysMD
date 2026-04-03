@@ -2,21 +2,16 @@
 
 package com.github.tukcps.sysmd.compiler.parser.sysmlv2
 
-import com.github.tukcps.sysmd.compiler.SysMLv2
-import com.github.tukcps.sysmd.compiler.parser.kerml.ConnectorEndMember
-import com.github.tukcps.sysmd.compiler.parser.kerml.Expression
-import com.github.tukcps.sysmd.compiler.parser.kerml.FeatureChain
+import com.github.tukcps.sysmd.compiler.*
+import com.github.tukcps.sysmd.compiler.parser.kerml.*
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
-import com.github.tukcps.sysmd.compiler.semantics.Identification
-import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
-import com.github.tukcps.sysmd.model.expression.AstRoot
-import com.github.tukcps.sysmd.model.expression.Expression
-import com.github.tukcps.sysmd.model.expression.implementation.ExpressionImplementation
-import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
-import com.github.tukcps.sysmd.model.sysml.TransitionUsage
-import com.github.tukcps.sysmd.model.sysml.implementation.TransitionUsageImplementation
-import java.util.UUID
+import com.github.tukcps.sysmd.compiler.semantics.*
+import com.github.tukcps.sysmd.compiler.semantics.kerml.*
+import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.model.kerml.implementation.*
+import com.github.tukcps.sysmd.model.sysml.*
+import com.github.tukcps.sysmd.model.sysml.implementation.*
+import java.util.*
 
 /**
  * 8.2.2.17.8 Action Successions
@@ -74,7 +69,7 @@ fun SysMLv2.guardedSuccessionStarts(): Boolean =
 fun SysMLv2.GuardExpressionMember() = FeatureActions<Feature>(semantics, ::FeatureImplementation).parse {
     IF.consume()
     val iBeforeExpression = token.indices.first
-    Expression().also {
+    OwnedExpression().also {
         val guardCondition = semantics.element<Feature>()
         semantics.create(Identification("guard_" + UUID.randomUUID().toString()))
         guardCondition.indices = iBeforeExpression..consumedToken.indices.last

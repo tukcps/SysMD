@@ -207,7 +207,7 @@ class QuantityToStringTests {
                     feature b: ISQ::MassValue(2000000.0 .. 3000000.0) [kg].
                     feature c: Quantities::ScalarQuantityValue(1.0 .. 1.0) [s^3].
                     feature d: Quantities::ScalarQuantityValue(1.0 .. 1.0) [A^1].
-                    feature result: ISQ::VoltageValue = a*b/(c*d)."""
+                    feature result: ISQ::ElectricPotentialDifferenceValue = a*b/(c*d)."""
         )
         initialize()
         solver.propagate()
@@ -378,7 +378,7 @@ class QuantityToStringTests {
         solver.propagate()
         val representer = Representer()
         assertEquals(Representer.InputType.NormalNumbers, representer.returnInputType(global.resolveVar("a")!!.vectorQuantity.values[0].asAadd()))
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     @Test
@@ -389,7 +389,7 @@ class QuantityToStringTests {
         solver.propagate()
         val representer = Representer()
         assertEquals(Representer.InputType.ClosedRange, representer.returnInputType(global.resolveVar("a")!!.vectorQuantity.values[0].asAadd()))
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     @Test
@@ -400,6 +400,6 @@ class QuantityToStringTests {
         solver.propagate()
         val representer = Representer()
         assertEquals(Representer.InputType.ClosedRange, representer.returnInputType(global.resolveVar("a")!!.vectorQuantity.values[0].asAadd()))
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 }

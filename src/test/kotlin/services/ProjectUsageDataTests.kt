@@ -12,6 +12,7 @@ import org.junit.jupiter.api.parallel.Isolated
 import org.junit.jupiter.api.parallel.ResourceAccessMode.READ_WRITE
 import org.junit.jupiter.api.parallel.ResourceLock
 import org.junit.jupiter.api.parallel.Resources.SYSTEM_PROPERTIES
+import util.assertNoIssues
 import util.testSession
 import kotlin.test.*
 
@@ -94,53 +95,4 @@ class ProjectUsageDataTests {
         loadProject("Math")
         assertEquals(get().size, noElements)
     }
-
-    /**
-     * Tests consistency after re-loading identical projects.
-     *
-     * TODO: Specializations that are redundant are not consistently cleaned.
-     * Same for multiplicities, and more.
-     * Not a big issue, but not nice.
-     */
-    @Ignore
-    @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
-    fun repeatedLoadingOfNonStandardProject() = testSession {
-        val before = get().filter { it !is Specialization }.size
-        checkOwnership()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        loadProject("ISO26262", initialize = false)
-        checkOwnership()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        loadProject("ISO26262", initialize = false)
-        checkOwnership()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        initialize()
-        initialize()
-        checkOwnership()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val noElements = get().filter { it !is Specialization }.size
-        val beforeHash = get().associateBy { it.qualifiedName }
-        loadProject("ISO26262", initialize = false)
-        initialize()
-        checkOwnership()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        assertEquals(noElements, get().filter { it !is Specialization }.size)
-        reset()
-        assertEquals(before, get().filter { it !is Specialization }.size)
-        loadProject("ISO26262", initialize = false)
-        initialize()
-        val after = get().filter { it !is Specialization }.size
-        assertEquals(noElements, after)
-        checkOwnership()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val diff = get().filter { it.qualifiedName !in beforeHash.keys }
-        if (diff.isNotEmpty()) {
-            println("Added ${diff.size} Elements after reset:")
-            diff.forEach {
-                println(it.qualifiedName)
-            }
-        }
-        assertTrue(diff.isEmpty())
-    }
-
 }

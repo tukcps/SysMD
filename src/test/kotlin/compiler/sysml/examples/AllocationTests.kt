@@ -19,7 +19,7 @@ class AllocationTests {
         loadSysMLv2("""
         allocation def AllocationDef1;
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
 
         val allocationDef1 = global.resolve("AllocationDef1")
         assertNotNull(allocationDef1)
@@ -92,7 +92,7 @@ class AllocationTests {
             part part2 : Part2;
             allocate part1 to part2;
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**

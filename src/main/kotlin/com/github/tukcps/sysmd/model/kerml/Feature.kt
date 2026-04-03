@@ -35,6 +35,10 @@ interface Feature: Type {
     var isOrdered: Boolean
     var isDerived: Boolean
     var isReadOnly: Boolean
+    /** True if the feature value was assigned with ':=' or 'default =', meaning it can be overridden in subtypes. */
+    var isDefaultValue: Boolean
+    /** True if the feature value was assigned with ':=' or '=', meaning it's an initial value assignment. */
+    var isInitialValue: Boolean
 
     /**
      * Gets the redefining

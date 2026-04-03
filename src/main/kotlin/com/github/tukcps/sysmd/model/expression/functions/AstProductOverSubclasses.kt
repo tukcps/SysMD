@@ -138,8 +138,8 @@ fun Session.initProductSubclasses(
             if (variable != null) {
                 leaf.upQuantity = variable.vectorQuantity
                 leaf.downQuantity = variable.vectorQuantity
-                leaf.qualifiedName = variable.name
-                leaf.resolvedName = variable.name
+                leaf.qualifiedName = variable.path
+                leaf.resolvedName = variable.path
                 if (leaf.upQuantity.values[0] is IDD) isRealProduct = false
             } else if (transitive) { // Transitive: search property in parts
                 newAstNode = this.initProductSubclasses(subclass, propertyAST, true, isRealProduct)

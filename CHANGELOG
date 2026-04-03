@@ -1,0 +1,6 @@
+
+- SysMD 4.2+ starts implementing more standard-compliant expressions, clean solver-api, and a dispatcher for function and operator overloading.
+
+- SysMD 4.0+ implements parts of the platform-specific REST API of SysML v2 (projects endpoint, but not versioning).
+  It permits access to the local projects and elements.
+  For this purpose, SysMD 4.0 includes Spring Boot for the REST API.

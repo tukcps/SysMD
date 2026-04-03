@@ -269,14 +269,14 @@ class QuantityTestDimensions {
             """feature epsilon0: Quantities::ScalarQuantityValue  = 3.0 [A^2 s^2 / N m^2]{:>> unit = "A^2 s^2 / N m^2";}
                 feature E: ISQ::ElectricFieldStrengthValue = 2.0 [V / m];
                 feature d: ISQ::LengthValue = 0.2 [m];
-                feature U: ISQ::VoltageValue = E*d; """
+                feature U: ISQ::ElectricPotentialDifferenceValue= E*d; """
         )
         solver.propagate()
         assertNoIssues()
         assertEquals(0.4, global.resolveVar("U")!!.min(), 0.0001)
         assertEquals("ElectricFieldStrength", global.resolveVar("E")!!.vectorQuantity.getDomain())
         assertEquals("Length", global.resolveVar("d")!!.vectorQuantity.getDomain())
-        assertEquals("Voltage", global.resolveVar("U")!!.vectorQuantity.getDomain())
+        assertEquals("ElectricPotentialDifference", global.resolveVar("U")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -345,7 +345,7 @@ class QuantityTestDimensions {
     fun capacitanceTest() = testSession("ISQ") {
         loadKerML("""
                 feature Q: ISQ::ElectricChargeValue  = 10.0 [C];
-                feature U: ISQ::VoltageValue  = 5.0 [V];
+                feature U: ISQ::ElectricPotentialDifferenceValue = 5.0 [V];
                 feature C: ISQ::CapacitanceValue = Q/U;
             """ )
         solver.propagate()
@@ -354,7 +354,7 @@ class QuantityTestDimensions {
         assertEquals("A^2 s^4 / kg m^2", global.resolveVar("C")!!.vectorQuantity.unit.toString())
         assertEquals("Capacitance", global.resolveVar("C")!!.vectorQuantity.getDomain())
         assertEquals("ElectricCharge", global.resolveVar("Q")!!.vectorQuantity.getDomain())
-        assertEquals("Voltage", global.resolveVar("U")!!.vectorQuantity.getDomain())
+        assertEquals("ElectricPotentialDifference", global.resolveVar("U")!!.vectorQuantity.getDomain())
     }
 
     @Test
@@ -378,7 +378,7 @@ class QuantityTestDimensions {
     fun electricalConductanceTest() = testSession("ISQ") {
         loadKerML(
              """feature I: ISQ::ElectricCurrentValue  = 1000.0 [mA] ;
-            feature V: ISQ::VoltageValue = 1.0 [V] ;
+            feature V: ISQ::ElectricPotentialDifferenceValue= 1.0 [V] ;
             feature G: ISQ::ConductanceValue = I/V;"""
         )
         solver.propagate()
@@ -386,7 +386,7 @@ class QuantityTestDimensions {
         assertEquals(1.0, global.resolveVar("G")!!.min(), 0.0001)
         assertEquals("A^2 s^3 / kg m^2", global.resolveVar("G")!!.vectorQuantity.unit.toString())
         assertEquals("Conductance", global.resolveVar("G")!!.vectorQuantity.getDomain())
-        assertEquals("Voltage", global.resolveVar("V")!!.vectorQuantity.getDomain())
+        assertEquals("ElectricPotentialDifference", global.resolveVar("V")!!.vectorQuantity.getDomain())
         assertEquals("ElectricCurrent", global.resolveVar("I")!!.vectorQuantity.getDomain())
     }
 
@@ -395,7 +395,7 @@ class QuantityTestDimensions {
         loadKerML(
             """
             feature I: ISQ::ElectricCurrentValue = 1000.0 [mA];
-            feature U: ISQ::VoltageValue = 1.0 [V] ;
+            feature U: ISQ::ElectricPotentialDifferenceValue= 1.0 [V] ;
             feature R: ISQ::ResistanceValue  = U/I;"""
         )
         solver.propagate()
@@ -403,7 +403,7 @@ class QuantityTestDimensions {
         assertEquals(1.0, global.resolveVar("R")!!.min(), 0.0001)
         assertEquals("kg m^2 / A^2 s^3", global.resolveVar("R")!!.vectorQuantity.unit.toString())
         assertEquals("Resistance", global.resolveVar("R")!!.vectorQuantity.getDomain())
-        assertEquals("Voltage", global.resolveVar("U")!!.vectorQuantity.getDomain())
+        assertEquals("ElectricPotentialDifference", global.resolveVar("U")!!.vectorQuantity.getDomain())
         assertEquals("ElectricCurrent", global.resolveVar("I")!!.vectorQuantity.getDomain())
     }
 
@@ -429,13 +429,13 @@ class QuantityTestDimensions {
             """
             feature I: ISQ::ElectricCurrentValue = 1000.0 [mA];
             feature P: ISQ::PowerValue = 1.0 [W];
-            feature U: ISQ::VoltageValue = P/I;"""
+            feature U: ISQ::ElectricPotentialDifferenceValue= P/I;"""
         )
         solver.propagate()
         assertNoIssues()
         assertEquals(1.0, global.resolveVar("U")!!.min(), 0.0001)
         assertEquals("kg m^2 / A s^3", global.resolveVar("U")!!.vectorQuantity.unit.toString())
-        assertEquals("Voltage", global.resolveVar("U")!!.vectorQuantity.getDomain())
+        assertEquals("ElectricPotentialDifference", global.resolveVar("U")!!.vectorQuantity.getDomain())
         assertEquals("Power", global.resolveVar("P")!!.vectorQuantity.getDomain())
         assertEquals("ElectricCurrent", global.resolveVar("I")!!.vectorQuantity.getDomain())
     }
@@ -628,7 +628,7 @@ class QuantityTestDimensions {
     @Test
     fun magneticFluxTest() = testSession("ISQ") {
         loadKerML("""
-            feature U: ISQ::VoltageValue = 1.0 [V] ;
+            feature U: ISQ::ElectricPotentialDifferenceValue= 1.0 [V] ;
             feature t: ISQ::DurationValue = 1.0 [s] ;
             feature Phi: ISQ::MagneticFluxValue = U*t;""")
         solver.propagate()
@@ -636,7 +636,7 @@ class QuantityTestDimensions {
         assertEquals(1.0, global.resolveVar("Phi")!!.min(), 0.0001)
         assertEquals("kg m^2 / A s^2", global.resolveVar("Phi")!!.vectorQuantity.unit.toString())
         assertEquals("MagneticFlux", global.resolveVar("Phi")!!.vectorQuantity.getDomain())
-        assertEquals("Voltage", global.resolveVar("U")!!.vectorQuantity.getDomain())
+        assertEquals("ElectricPotentialDifference", global.resolveVar("U")!!.vectorQuantity.getDomain())
         assertEquals("Duration", global.resolveVar("t")!!.vectorQuantity.getDomain())
     }
 

@@ -1,9 +1,9 @@
-package sysmlv2specificationtests.modelstests
+package compiler.sysml.examples.modelstests
 
+import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Test
-import kotlin.test.assertTrue
 
 
 class PortsTest {
@@ -39,9 +39,8 @@ class PortsTest {
                         port engineFuelPort : FuelInPort;
                     }
                 }
-    """.trimIndent()
-        )
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        """)
+        assertNoIssues()
 
     }
 }

@@ -81,7 +81,11 @@ open class NamespaceImplementation(
      */
     override fun resolveLocal(name: SimpleName): Membership? {
         return visibleMemberships(isRecursive = false, includeAll = false) {
-           memberName == name || memberShortName == name
+            if(this.name !== null || this.shortName !== null)
+                // membership name overrides member name (e.g. for aliases)
+                this.name == name || this.shortName == name
+            else
+               memberName == name || memberShortName == name
         }.firstOrNull()
     }
 
@@ -132,7 +136,7 @@ fun Namespace.findRecursive(
 
     // If we have a simple name, we can search in owned elements that are identified by simple names.
     if (qualification.isNullOrEmpty()) {
-        val found = resolveLocal(name) 
+        val found = resolveLocal(name)
         if (found != null) return found
     } else if (qualification == "$")
         return resolveGlobal(qualifiedName)

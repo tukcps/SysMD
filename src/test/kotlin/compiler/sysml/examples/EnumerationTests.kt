@@ -1,10 +1,10 @@
 package compiler.sysml.examples
 
+import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Ignore
 import kotlin.test.Test
-import kotlin.test.assertTrue
 
 class EnumerationTests {
 
@@ -21,7 +21,7 @@ class EnumerationTests {
         enum def EnumerationDef1;
 
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -39,6 +39,6 @@ class EnumerationTests {
             enum enum2;
         }
         """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 }

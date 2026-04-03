@@ -12,14 +12,14 @@ fun Session.literalExpression(value : Long) = literalExpression(value.toString()
 fun Session.literalExpression(value : Int) = literalExpression(value.toLong())
 fun Session.literalExpression(value : Boolean) = literalExpression(value.toString(), value)
 
-fun Session.featureReferenceExpression(name : QualifiedName) : FeatureReferenceExpression = FeatureReferenceExpressionImplementation().also {
+fun Session.featureReferenceExpression(name : QualifiedName, resolve : Boolean = true) : FeatureReferenceExpression = FeatureReferenceExpressionImplementation().also {
 	it.generateUUID()
 	it.declaredName = it.elementId.toString()
 	it.declaredShortName = it.declaredName
 	it.direction = IN
 	it.model = this
 
-	it.identifier = name
+	it.referent = if(resolve) global.resolve(name)!!.member()!! else UnresolvedFeature(name)
 }
 
 fun Session.operatorExpression(op : String, vararg operands : Expression) : OperatorExpression = OperatorExpressionImplementation().also {

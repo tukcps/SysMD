@@ -108,7 +108,7 @@ class ExportProjectTests {
         var export: List<ElementDAO> = emptyList()
         testSession {
             addOwnedMember(PackageImplementation(declaredName="p"), global)
-            assertTrue(status.issues.isEmpty(), status.issues.toString())
+            assertNoIssues()
             export = export().getElements()
         }
         testSession {

@@ -25,25 +25,21 @@ fun Session.letVar(value: Variable, dd: DD<*>): Variable { //TODO not for Vector
     require(dd.builder === builder)
 
     when (dd) {
-        is AADD -> value.valueSpecs = mutableListOf(dd.getRange())
-        is IDD  -> value.valueSpecs = mutableListOf(dd.getRange())
-        is BDD  -> value.valueSpecs = mutableListOf(dd.value)
+        is AADD -> value.rangeSpecs = mutableListOf(dd.getRange())
+        is IDD  -> value.intSpecs = mutableListOf(dd.getRange())
+        is BDD  -> value.boolSpecs = mutableListOf(dd.value)
         else -> throw SemanticError("parameter must be of subtype of DD<*>")
     }
-
-    value.feature.typeConstraint = mutableListOf(dd.toString() )
 
     value.vectorQuantity = when(dd){
         is AADD ->  Quantity(dd, value.unitSpec)
         is BDD ->  Quantity(dd)
         is IDD ->  Quantity(dd)
-        else -> {throw SemanticError("Unsupported type for ${value.vectorQuantity}.")
-        }
     }
 
-    //Sync with Conditions
-    if (builder.conds.indexes[value.elementId.toString()] != null)
-        builder.conds.x[builder.conds.indexes[value.elementId.toString()]!!] = dd
+    //Sync with Conditions in DDBuilder
+    if (builder.conds.indexes[value.path] != null)
+        builder.conds.x[builder.conds.indexes[value.path]!!] = dd
 
     return value
 }

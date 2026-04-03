@@ -1,5 +1,6 @@
 package kermlspecificationstests.simpleexamples
 
+import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
@@ -34,6 +35,6 @@ class BasicSyntaxTest {
                 }
         """.trimIndent()
             )
-            assertTrue(status.issues.isEmpty(), status.issues.toString())
+            assertNoIssues()
         }
 }

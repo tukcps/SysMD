@@ -1,9 +1,9 @@
 package compiler.sysml.examples
 
+import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Test
-import kotlin.test.assertTrue
 
 class DependencyTests {
 
@@ -19,7 +19,7 @@ class DependencyTests {
             package Package2; package Package1; 
             dependency Package2 to Package1;
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -37,7 +37,7 @@ class DependencyTests {
             package Package4; 
             dependency Package1, Package2 to Package3, Package4;
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -58,6 +58,6 @@ class DependencyTests {
                 * not its name. */
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 }

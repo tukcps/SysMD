@@ -91,7 +91,6 @@ private fun Type.addInheritedFeaturesFromGeneral() {
             model?.addOwnedMember(feature.redefining!!.resolveLocal("unit")!!.memberElement, feature)
         }
 
-
         // add prefixes, constraints
         feature.isEnd = feature.redefining!!.isEnd
         feature.isComposite = feature.redefining!!.isComposite
@@ -131,12 +130,6 @@ private fun Type.addInheritedFeaturesFromGeneral() {
         if(existingWithSameName == null) {
             // Simple inheritance  -- we just clone it
             superTypeFeature.deepCloneWithInheritedFeature(this)
-            /*
-            model!!.addOwnedRelationship(
-                MembershipImplementation(membershipOwningNamespace = this, memberElement = superTypeFeature),
-                this)
-             */
-        }  // else -- needs to differentiate between features that were cloned by previous run (e.g. by reading library) and that were specified by compiler ...
-           // model?.status?.error("Attempt to overload feature ${existingWithSameName.escapedName()} of supertype '${superTypeFeature.qualifiedName}'; use redefinition.")
+        }
     }
 }

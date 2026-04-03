@@ -21,7 +21,7 @@ class LibrariesTests {
      */
     @Test
     fun initBaseTest() = testSession("Base") {
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val dataValue = global.resolve("Base::DataValue")?.memberElement
         assertNotNull(dataValue as? Type)
         val dataValues = global.resolve("Base::dataValues")?.memberElement

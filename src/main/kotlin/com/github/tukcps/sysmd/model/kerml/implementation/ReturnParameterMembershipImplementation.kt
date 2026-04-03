@@ -24,4 +24,11 @@ class ReturnParameterMembershipImplementation(
 			if(value != OUT)
 				throw IllegalArgumentException("Direction of return parameter must be OUT")
 		}
+
+	override fun clone() =  ReturnParameterMembershipImplementation(
+		ownedMemberParameter = ownedMemberParameter,
+		owningType = membershipOwningNamespace as Type
+	).also {
+		it.updateFrom(this)
+	}
 }

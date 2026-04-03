@@ -94,7 +94,7 @@ class IteTests {
                 }
                 part def connectGrid isA Component {
                     part chargingStation: Microgrid::VehicleChargingStation,  
-                    attribute mainsupplyOn: Boolean {:>> spec ="true";}
+                    attribute mainsupplyOn: Boolean {:>> range ="true";}
                     attribute mainsupply: PowerValue {:>> unit="MW";:>> range="2..2";}
                     attribute powDemand: PowerValue =  chargingStation::vehiclePowConsumption {:>> unit="kW";}
                     //attribute outageCover: Boolean = ITE(mainsupplyOn, powDemand < mainsupply, powDemand < (battery::capacity / 0.5[h])).

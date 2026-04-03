@@ -1,6 +1,7 @@
 
 import com.github.tukcps.sysmd.exceptions.ElementNotFoundException
 import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.model.kerml.Function
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.SpecializationImplementation
 import com.github.tukcps.sysmd.services.initialize
@@ -10,6 +11,7 @@ import io.github.tukcps.aadd.functions.numInternalNodes
 import io.github.tukcps.aadd.values.IntegerRange
 import io.github.tukcps.aadd.values.XBool
 import io.github.tukcps.aadd.values.XBool.Companion.True
+import org.junit.jupiter.api.assertAll
 import util.assertIssue
 import util.assertNoIssues
 import util.findDifferenceById
@@ -208,7 +210,7 @@ class IssuesAndRegressions {
     @Test
     fun variableUnknownIsReportedAsError() = testSession("ScalarValues") {
         loadKerML(input = "feature x: ScalarValues::Real = yyy;")
-        assertTrue(status.issues.firstOrNull()?.cause is ElementNotFoundException, "There shall be error reporting yyy not defined.")
+        assertTrue(status.issues.any { it.cause is ElementNotFoundException }, "There shall be error reporting yyy not defined.")
     }
 
     @Test
@@ -387,7 +389,7 @@ class IssuesAndRegressions {
             feature c: Ranges::RealInRange = a*b {:>> range = "2..2";}
         """)
         solver.propagate()
-        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+        assertNoIssues()
         assertEquals(2.0, global.resolveVar("b")!!.vectorQuantity.getMinAsDouble(), 0.0001)
         assertEquals(2.0, global.resolveVar("b")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
         assertEquals(1.0, global.resolveVar("a")!!.vectorQuantity.getMinAsDouble(), 0.0001)
@@ -1060,5 +1062,68 @@ class IssuesAndRegressions {
             inv r { weight <= 15 }
         """)
         assertNoIssues()
+    }
+
+    @Test
+    fun newExpr() = testSession("ScalarValues") {
+        loadKerML("""
+            feature x : ScalarValues::Integer = 10;
+        """)
+        assertNoIssues()
+    }
+
+    @Test
+    fun checkFunctions() = testSession("DataFunctions") {
+        assertAll(get().filter { it.isLibraryElement }.filterIsInstance<Function>().map { f -> {
+            val res = assertNotNull(f.result, "${f.qualifiedName} has no result")
+            val param = f.parameter
+
+            assertEquals(Feature.FeatureDirectionKind.OUT, res.direction)
+            assertSame(res, param.last(), "Return of ${f.qualifiedName} isn't last parameter")
+
+            param.dropLast(1).forEach {
+                assertEquals(Feature.FeatureDirectionKind.IN, it.direction, "stdlib functions should be pure")
+            }
+
+            /*println(
+                f.qualifiedName + " :: "  + f.parameter.joinToString(" -> ") {
+                    val type = it.type.first().run { escapedName() ?: path() }
+                    /*it.escapedName()?.let { n ->
+                        "($n :: $type)"
+                    } ?:*/ type
+                }
+            )*/
+        } })
+    }
+
+    @Test
+    fun aliasing() = testSession {
+        loadKerML("""
+            package Foo {
+                feature xyz;
+                alias bar for xyz;
+            }
+            package Foo2 {
+                alias bar for Foo::xyz;
+            }
+        """.trimIndent())
+        assertNoIssues()
+
+        val pkg = assertIs<Package>(global.resolve("Foo")?.memberElement)
+        pkg.visibleMemberships(isRecursive = false, includeAll = false).let { vis ->
+            assertEquals(2, vis.size)
+            assertEquals(1, vis.count { it is OwningMembership })
+            val alias = vis.single { it !is OwningMembership }
+            assertEquals("bar", alias.escapedName())
+        }
+
+        val f = assertIs<Feature>(global.resolve("Foo::bar")?.memberElement)
+        assertEquals("xyz", f.escapedName())
+
+        assertNull(global.resolve("Foo2::xyz"), "alias must not expose underlying feature")
+        val f2 = assertIs<Feature>(global.resolve("Foo2::bar")?.memberElement,
+            "cross-package alias must be visible"
+        )
+        assertEquals("xyz", f2.escapedName())
     }
 }

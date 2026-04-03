@@ -1,17 +1,18 @@
 package models.kerml
 
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.BDD
 import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.kerml.UnresolvedType
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.SpecializationImplementation
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolveVar
-import util.mockup.loadKerML
+import io.github.tukcps.aadd.AADD
+import io.github.tukcps.aadd.BDD
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import util.assertNoIssues
+import util.mockup.loadKerML
 import util.testSession
 
 /**
@@ -58,7 +59,7 @@ class VariableTests {
     /** The property maintains a root node that has a list of AstLeaves */
     @Test fun leavesListCreationTest() = testSession("ScalarValues") {
         loadKerML("feature a: ScalarValues::Real; feature b :ScalarValues::Real; feature c: ScalarValues::Real; feature x: ScalarValues::Real = a+b+c.")
-        assertEquals(0, status.issues.size, status.issues.toString())
+        assertNoIssues()
         assertEquals(3, global.resolveVar("x")!!.ast!!.leaves.size)
     }
 }

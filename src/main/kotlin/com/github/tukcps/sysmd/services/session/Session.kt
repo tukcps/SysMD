@@ -109,9 +109,4 @@ interface Session {
      */
     fun endSession()
 
-    /**
-     * Removes all elements that are not related to textual models.
-     */
-    fun reset()
-
 }

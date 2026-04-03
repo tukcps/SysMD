@@ -6,10 +6,11 @@ import com.github.tukcps.sysmd.quantities.VectorQuantity
 
 /** ref. 8.3.4.7.3 */
 interface Expression: Step {
-    var isModelLevelEvaluable: Boolean //true if not dependent on meta data
+    val isModelLevelEvaluable: Boolean //true if not dependent on meta data
 
 	var upQuantity : VectorQuantity
 	var downQuantity : VectorQuantity
+
 
     fun modelLevelEvaluable(visited: Set<Feature>): Boolean //searches for circular dependencies. Redefined in FeatureReferenceExpression
 
@@ -23,7 +24,7 @@ interface Expression: Step {
 			if(it.isEmpty()) null else it.single()
 	    }
 
-	// function redefines behaviour
+	// function redefines behavior
 	override val behavior : List<Function>
 		get() = super.behavior.map { it as Function }
 
@@ -32,6 +33,9 @@ interface Expression: Step {
 	    get() = ownedRelationship.filterIsInstance<ResultExpressionMembership>().let {
 			if(it.isEmpty()) null else it.single()
 		}?.ownedResultExpression
+
+	/** An approximation of the SysML code that was parsed to produce this expression. */
+	val astString : String
 
 	/** Initializes this expression subtree recursively.
 	 * Assigns default domains to `upQuantity` and `downQuantity` of the correct types for this AST.
@@ -43,9 +47,12 @@ interface Expression: Step {
 	fun evalUpRec()
 	fun evalDownRec()
 
-	fun toAstString(): String = StringBuilder().also {
-		toAstString(it, 0)
-	}.toString()
+	/** Called once to propagate type information, after setting model and adding sub-expressions
+	 * Populates `type` by adding an appropriate FeatureTyping relation.
+	 * */
+	fun initType()
 
 	fun toAstString(b : StringBuilder, precedence : Int)
+
+	override fun clone(): Expression
 }

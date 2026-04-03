@@ -1,9 +1,9 @@
 package sysmlv2tests
 
+import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Test
-import kotlin.test.assertTrue
 
 class OccurrenceTests {
     @Test
@@ -11,7 +11,7 @@ class OccurrenceTests {
         loadSysMLv2("""
             occurrence p;
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     @Test
@@ -19,6 +19,6 @@ class OccurrenceTests {
         loadSysMLv2("""
             event occurrence p;
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 }

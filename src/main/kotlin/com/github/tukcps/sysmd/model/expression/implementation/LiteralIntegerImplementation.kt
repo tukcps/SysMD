@@ -2,23 +2,19 @@ package com.github.tukcps.sysmd.model.expression.implementation
 
 import com.github.tukcps.sysmd.model.expression.AstLeaf
 import com.github.tukcps.sysmd.model.expression.LiteralInteger
-import com.github.tukcps.sysmd.model.kerml.Feature
+import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.util.SimpleName
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 
 class LiteralIntegerImplementation(
     declaredName: SimpleName? = null,
     declaredShortName: SimpleName? = null,
-    direction: Feature.FeatureDirectionKind = Feature.FeatureDirectionKind.INOUT,
-    isEnd: Boolean = false,
     typeConstraint: MutableList<String> = mutableListOf(),
     expression: String? = null,
     elementType: String = "LiteralInteger"
 ) : LiteralInteger, LiteralExpressionImplementation(
     declaredName = declaredName,
     declaredShortName = declaredShortName,
-    direction = direction,
-    isEnd = isEnd,
     typeConstraint = typeConstraint,
     expression = expression,
     elementType = elementType
@@ -38,10 +34,15 @@ class LiteralIntegerImplementation(
     override fun clone() = LiteralIntegerImplementation(
         declaredName = declaredName,
         declaredShortName = declaredShortName,
-        direction = direction,
-        isEnd = isEnd,
         typeConstraint = typeConstraint,
-        expression = expression,
-        elementType = elementType,
-    )
+        expression = expression
+    ).also {
+        it.updateFrom(this)
+    }
+
+    override fun updateFrom(template: Element) {
+        super.updateFrom(template)
+        if (template is LiteralIntegerImplementation)
+            value = template.value
+    }
 }

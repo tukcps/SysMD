@@ -10,6 +10,7 @@ import com.github.tukcps.sysmd.services.session.loadLibrary
 import org.junit.jupiter.api.parallel.ResourceAccessMode.READ_WRITE
 import org.junit.jupiter.api.parallel.ResourceLock
 import org.junit.jupiter.api.parallel.Resources.SYSTEM_PROPERTIES
+import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.*
@@ -32,7 +33,7 @@ class ConsistencyAfterLoadingLibrariesTests {
                     assertEquals(global.elementId, it.elementId)
                 }
             }
-            assertTrue(status.issues.isEmpty(), status.issues.toString())
+            assertNoIssues()
             assertEquals(1, globals)
         }
     }
@@ -100,7 +101,7 @@ class ConsistencyAfterLoadingLibrariesTests {
         checkForOneGlobal(this)
         checkLibraryElementIds()
         checkForParent(this)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         assertEquals(1, elements.size)
     }
 
@@ -117,7 +118,7 @@ class ConsistencyAfterLoadingLibrariesTests {
         checkForOneGlobal(this)
         checkLibraryElementIds()
         checkForParent(this)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         assertEquals(3, elements.size, elements.toString())
     }
 
@@ -129,7 +130,7 @@ class ConsistencyAfterLoadingLibrariesTests {
         checkForOneGlobal(this)
         checkLibraryElementIds()
         checkForParent(this)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         assertEquals(4, elements.size)
     }
 
@@ -141,7 +142,7 @@ class ConsistencyAfterLoadingLibrariesTests {
         val elements = global.getOwnedElementsOfType<Element>()
         checkForOneGlobal(this)
         checkForParent(this)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         assertEquals(2, elements.size)
     }
 
@@ -170,9 +171,23 @@ class ConsistencyAfterLoadingLibrariesTests {
     }
 
 
+    /**
+     * For testing ...
+     */
+    @Test
+    fun readISO26262fromResources() = testSession {
+        loadLibrary("ISO26262")
+        initialize()
+        checkOwnership()
+        assertNoIssues()
+    }
+
     /** ISO26262 in particular uses Links */
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
     fun readISO26262FromRepository() = testSession("ISO26262") {
+        checkOwnership()
+        assertNoIssues()
+        // Serialisierung/Deserialisierung klappt glaub ich nicht richtig hier. Hierarchiche Ownership-Struktur inkonsistent!
         val implements = global.resolve("ISO26262::implements")?.member<Association>()
         assertNotNull(implements)
         assertNotNull(implements)

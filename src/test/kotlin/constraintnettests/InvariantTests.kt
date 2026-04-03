@@ -15,22 +15,26 @@ class InvariantTests {
 
     @Test
     fun restrictInteger1() = testSession("Ranges") {
-        loadSysMLv2("""    
+        loadSysMLv2(
+            """    
                 attribute weight: Ranges::IntegerInRange {:>> range = "0..50";}
                 assert constraint r { weight >= 30 }
-        """)
+        """
+        )
         solver.propagate()
         assertNoIssues()
         assertEquals(30L, global.resolveVar("weight")!!.min())
         assertEquals(50L, global.resolveVar("weight")!!.max())
     }
+
     @Test
     fun restrictInteger1b() = testSession("Ranges") {
         loadSysMLv2(
             """    
                 attribute weight: Ranges::IntegerInRange {:>> range = "0..50";}
                 assert constraint r { 30 >= weight }
-        """)
+        """
+        )
         solver.propagate()
         assertNoIssues()
         assertEquals(0L, global.resolveVar("weight")!!.min())
@@ -39,10 +43,12 @@ class InvariantTests {
 
     @Test
     fun restrictInteger2() = testSession("Ranges") {
-        loadSysMLv2("""    
+        loadSysMLv2(
+            """    
                 attribute weight: Ranges::IntegerInRange {:>> range = "0..50";}
                 assert constraint r { weight > 30 }
-        """)
+        """
+        )
         solver.propagate()
         assertNoIssues()
         assertEquals(31L, global.resolveVar("weight")!!.min())
@@ -51,10 +57,12 @@ class InvariantTests {
 
     @Test
     fun restrictInteger2b() = testSession("Ranges") {
-        loadSysMLv2("""    
+        loadSysMLv2(
+            """    
                 attribute weight: Ranges::IntegerInRange {:>> range = "0..50";}
                 assert constraint r { 30 > weight }
-        """)
+        """
+        )
         solver.propagate()
         assertNoIssues()
         assertEquals(0L, global.resolveVar("weight")!!.min())
@@ -63,10 +71,12 @@ class InvariantTests {
 
     @Test
     fun restrictInteger3() = testSession("Ranges") {
-        loadSysMLv2("""    
+        loadSysMLv2(
+            """    
                 attribute weight: Ranges::IntegerInRange {:>> range = "0..50";}
                 assert constraint r { weight <= 30 }
-        """)
+        """
+        )
         solver.propagate()
         assertNoIssues()
         assertEquals(0L, global.resolveVar("weight")!!.min())
@@ -75,10 +85,12 @@ class InvariantTests {
 
     @Test
     fun restrictInteger3a() = testSession("Ranges") {
-        loadSysMLv2("""    
+        loadSysMLv2(
+            """    
                 attribute weight: Ranges::IntegerInRange {:>> range = "0..50";}
                 assert constraint r { 30 <= weight }
-        """)
+        """
+        )
         solver.propagate()
         assertNoIssues()
         assertEquals(30L, global.resolveVar("weight")!!.min())
@@ -87,10 +99,12 @@ class InvariantTests {
 
     @Test
     fun restrictInteger4() = testSession("Ranges") {
-        loadSysMLv2("""    
+        loadSysMLv2(
+            """    
                 attribute weight: Ranges::IntegerInRange {:>> range = "0..50";}
                 assert constraint r { weight < 30 }
-        """)
+        """
+        )
         solver.propagate()
         assertNoIssues()
         assertEquals(0L, global.resolveVar("weight")!!.min())
@@ -99,10 +113,12 @@ class InvariantTests {
 
     @Test
     fun restrictInteger4a() = testSession("Ranges") {
-        loadSysMLv2("""    
+        loadSysMLv2(
+            """    
                 attribute weight: Ranges::IntegerInRange {:>> range = "0..50";}
                 assert constraint r { 30 < weight }
-        """)
+        """
+        )
         solver.propagate()
         assertNoIssues()
         assertEquals(31L, global.resolveVar("weight")!!.min())
@@ -111,10 +127,12 @@ class InvariantTests {
 
     @Test
     fun restrictIntegerEmpty() = testSession("Ranges") {
-        loadSysMLv2("""    
+        loadSysMLv2(
+            """    
                 attribute weight: Ranges::IntegerInRange {:>> range = "0..50";}
                 assert constraint r { weight <= -10 }
-        """)
+        """
+        )
         solver.propagate()
         assertNoIssues()
         assert(global.resolveVar("weight")!!.vectorQuantity.value.asIdd().isEmpty())
@@ -122,14 +140,17 @@ class InvariantTests {
 
     @Test
     fun restrictIntegerEmpty1() = testSession("Ranges") {
-        loadSysMLv2("""    
+        loadSysMLv2(
+            """    
                 attribute weight: Ranges::IntegerInRange {:>> range = "0..50";}
                 assert constraint r { weight < -10 }
-        """)
+        """
+        )
         solver.propagate()
         assertNoIssues()
         assert(global.resolveVar("weight")!!.vectorQuantity.value.asIdd().isEmpty())
     }
+
     @Test
     fun restrictIntegerEmpty2() = testSession("Ranges") {
         loadSysMLv2(
@@ -142,6 +163,7 @@ class InvariantTests {
         assertNoIssues()
         assert(global.resolveVar("weight")!!.vectorQuantity.value.asIdd().isEmpty())
     }
+
     @Test
     fun restrictIntegerEmpty3() = testSession("Ranges") {
         loadSysMLv2(
@@ -157,58 +179,83 @@ class InvariantTests {
 
     @Test
     fun assertTestIntDiv() = testSession("ScalarValues", "ISQ", "Ranges") {
-        loadSysMLv2("""
+        loadSysMLv2(
+            """
             attribute f: Ranges::IntegerInRange = oneOf(1 .. 4); 
             assert constraint ass { 12 / f < 6 } 
-        """)
+        """
+        )
         solver.propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         Assertions.assertEquals(2, global.resolveVar("f")!!.idd().getRange().min)
         Assertions.assertEquals(4, global.resolveVar("f")!!.idd().getRange().max)
     }
 
     @Test
     fun assertTestIntMultiplication() = testSession("ScalarValues", "ISQ", "Ranges") {
-        loadSysMLv2("""
+        loadSysMLv2(
+            """
             attribute f: Ranges::IntegerInRange = oneOf(1 .. 4); 
             assert constraint ass { 12 * f > 24 } 
-        """)
+        """
+        )
         solver.propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         Assertions.assertEquals(2, global.resolveVar("f")!!.idd().getRange().min)
         Assertions.assertEquals(4, global.resolveVar("f")!!.idd().getRange().max)
     }
-    
+
     @Test
     fun restrictReal1() = testSession("Ranges") {
-        loadKerML("""   
+        loadKerML(
+            """   
                 feature weight: Ranges::RealInRange {:>> range = "0..50";}
                 inv r { weight <= 30.0 }
-        """)
+        """
+        )
         assertNoIssues()
         solver.propagate()
         assertEquals(0.0, global.resolveVar("weight")!!.vectorQuantity.value.asAadd().min, 0.00001)
         assertEquals(30.0, global.resolveVar("weight")!!.max(), 0.00001)
     }
 
-    @Test  // Problem with evalDown of Requirement vs. Expression
+    @Test
     fun restrictReal2() = testSession("Ranges") {
-        loadKerML("""   
+        loadKerML(
+            """   
                 feature weight: Ranges::RealInRange {:>> range = "0..50";} 
                 inv r { weight >= 30.0 }
-        """)
+        """
+        )
         assertNoIssues()
         solver.propagate()
         assertEquals(30.0, global.resolveVar("weight")!!.vectorQuantity.value.asAadd().min, 0.00001)
         assertEquals(50.0, global.resolveVar("weight")!!.max(), 0.00001)
     }
 
+    @Test  // Problem with evalDown of Requirement vs. Expression
+    fun restrictReal2a() = testSession("Ranges") {
+        loadKerML(
+            """   
+                feature weight: Ranges::RealInRange {:>> range = "0..100";} 
+                feature weight2: Ranges::RealInRange = weight/2.0;
+                inv r { weight2 >= 30.0 }
+        """
+        )
+        assertNoIssues()
+        solver.propagate()
+        assertEquals(60.0, global.resolveVar("weight")!!.vectorQuantity.value.asAadd().min, 0.00001)
+        assertEquals(100.0, global.resolveVar("weight")!!.max(), 0.00001)
+    }
+
     @Test // Problem with evalDown of ScalarValues::Requirement vs. Expression
     fun restrictReal3() = testSession("Ranges") {
-        loadKerML("""   
+        loadKerML(
+            """   
                 feature weight: Ranges::RealInRange {:>> range = "0..50";}
                 inv r { weight > 30.0 }
-        """)
+        """
+        )
         solver.propagate()
         assertEquals(30.0, global.resolveVar("weight")!!.vectorQuantity.value.asAadd().min, 0.00001)
         assertEquals(50.0, global.resolveVar("weight")!!.max(), 0.00001)
@@ -216,10 +263,12 @@ class InvariantTests {
 
     @Test
     fun restrictReal4() = testSession("Ranges") {
-        loadKerML("""   
+        loadKerML(
+            """   
                 feature weight: Ranges::RealInRange {:>> range = "0..50";}
                 inv r { weight < 30.0 }
-        """)
+        """
+        )
         solver.propagate()
         assertEquals(0.0, global.resolveVar("weight")!!.vectorQuantity.value.asAadd().min, 0.00001)
         assertEquals(30.0, global.resolveVar("weight")!!.max(), 0.00001)
@@ -227,13 +276,15 @@ class InvariantTests {
 
     @Test
     fun assertTestReal() = testSession("Ranges") {
-        loadKerML("""   
+        loadKerML(
+            """   
                 feature a: Ranges::RealInRange {:>> range = "1..5";}
                 feature b: Ranges::RealInRange {:>> range = "4..6";}
                 inv c { a == b }
-        """)
+        """
+        )
         solver.propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         assertEquals(4.0, global.resolveVar("a")!!.vectorQuantity.value.asAadd().min, 0.00001)
         assertEquals(5.0, global.resolveVar("a")!!.max(), 0.00001)
         assertEquals(4.0, global.resolveVar("b")!!.vectorQuantity.value.asAadd().min, 0.00001)
@@ -242,13 +293,15 @@ class InvariantTests {
 
     @Test
     fun evalUpITEEquality() = testSession("ScalarValues") {
-        loadKerML("""
+        loadKerML(
+            """
             feature a: ScalarValues::Integer = 4;
             feature b: ScalarValues::Integer = 5;
             feature b1: ScalarValues::Boolean = a == 5;
             feature b2: ScalarValues::Boolean = a == 4;
             feature c: ScalarValues::Integer = if b == 6 ? 7 else 6;
-        """)
+        """
+        )
         solver.propagate()
         assertNoIssues()
         assertEquals(6L, global.resolveVar("c")!!.min())
@@ -257,13 +310,15 @@ class InvariantTests {
 
     @Test
     fun evalUpRealITEEquality() = testSession("ScalarValues") {
-        loadKerML("""
+        loadKerML(
+            """
             feature a: ScalarValues::Real = 4.0;
             feature b: ScalarValues::Real = 5.0;
             feature b1: ScalarValues::Boolean = a == 5.0;
             feature b2: ScalarValues::Boolean = a == 4.0;
             feature c: ScalarValues::Real = if b == 6.0 ? 7.0 else 6.0; 
-        """)
+        """
+        )
         solver.propagate()
         assertNoIssues()
         assertEquals(6.0, global.resolveVar("c")!!.aadd().getRange().min)
@@ -272,27 +327,32 @@ class InvariantTests {
 
     @Test
     fun evalDownEquality() = testSession("ScalarValues") {
-        loadKerML("""
+        loadKerML(
+            """
             feature a: ScalarValues::Integer; 
             feature b: ScalarValues::Integer = 5; 
             inv { a == b } 
-        """)
+        """
+        )
         solver.propagate()
         assertNoIssues()
         assertEquals(5L, global.resolveVar("a")!!.min())
         assertEquals(5L, global.resolveVar("a")!!.max())
     }
 
-    @Test @Ignore
+    @Test
     fun restrictRealMultiplication() = testSession("Ranges") {
         loadSysMLv2(
             """    
                 private import ScalarValues::*;
                 attribute result: Real = 1.0..4.0 * 1.0..2.0;
                 assert constraint range {result<=2.0}
-        """)
+        """
+        )
         solver.propagate()
         assertNoIssues()
-        assertEquals(2.0, global.resolveVar("result")!!.max(),0.00001)
+        val resultVar = global.resolveVar("result")!!
+        println("Result range with assert constraint: ${resultVar.min() as Double}..${resultVar.max() as Double}")
+        assertEquals(2.0, resultVar.max(), 0.00001)
     }
 }

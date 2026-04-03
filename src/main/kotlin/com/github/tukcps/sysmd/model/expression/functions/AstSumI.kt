@@ -1,20 +1,19 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.IDD
-import io.github.tukcps.aadd.functions.ceil
-import io.github.tukcps.aadd.functions.floor
-import io.github.tukcps.aadd.values.IntegerRange
-import io.github.tukcps.aadd.values.Range
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.model.expression.AstNode
-import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.quantities.VectorDimensionError
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.session.Session
+import io.github.tukcps.aadd.AADD
+import io.github.tukcps.aadd.IDD
+import io.github.tukcps.aadd.functions.ceil
+import io.github.tukcps.aadd.functions.floor
+import io.github.tukcps.aadd.values.IntegerRange
+import io.github.tukcps.aadd.values.Range
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToLong
@@ -250,8 +249,9 @@ internal class AstSumI(
                     .contains(i.toDouble())
             ) {
                 // set variable to i and evaluate iteration for it.
-                require(namespace.resolveVar("i") != null)
-                namespace.resolveVar("i")!!.rangeSpec(Range(i.toDouble())).initVectorQuantity()
+                val vari = namespace.resolveVar("i")
+                require(vari != null)
+                vari.rangeSpec(Range(i.toDouble())).initVectorQuantity()
                 iteration.evalUpRec()
                 val iterationValue = iteration.upQuantity.values[0] as AADD
                 currSumMax += iterationValue

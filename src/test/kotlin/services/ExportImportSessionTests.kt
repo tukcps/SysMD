@@ -4,6 +4,7 @@ import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.services.check.checkConsistency
 import io.github.tukcps.sysmlv2.api.entities.ElementDAO
 import io.github.tukcps.sysmlv2.api.entities.getElements
+import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
@@ -61,7 +62,7 @@ class ExportImportSessionTests {
                 type B :> Base::Anything;
                 type A :> Base::Anything { private import B; } // Import is created in A 
             """)
-            assertTrue(status.issues.isEmpty(), status.issues.toString())
+            assertNoIssues()
             val a = global.resolve("A")!!.member<Type>()
             val b = global.resolve("B")
 
@@ -86,7 +87,7 @@ class ExportImportSessionTests {
             // Restore it from DB ... and check again
             // loadProject("test", initialize = false)
             import(export)
-            assertTrue(status.issues.isEmpty(), status.issues.toString())
+            assertNoIssues()
             val a = global.resolve("A")!!.member<Type>()!!
             val b = global.resolve("B")!!.member<Type>()!!
             val imp = a.getOwnedElementsOfType<MembershipImport>().first()

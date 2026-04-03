@@ -5,6 +5,9 @@ package com.github.tukcps.sysmd.compiler.parser.kerml
 
 import com.github.tukcps.sysmd.compiler.KerML
 import com.github.tukcps.sysmd.compiler.SysMLv2
+import com.github.tukcps.sysmd.compiler.parser.kerml.legacy.ConstInt
+import com.github.tukcps.sysmd.compiler.parser.kerml.legacy.Number
+import com.github.tukcps.sysmd.compiler.parser.kerml.legacy.Unit
 import com.github.tukcps.sysmd.compiler.parser.util.Unsupported
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.compiler.semantics.kerml.*

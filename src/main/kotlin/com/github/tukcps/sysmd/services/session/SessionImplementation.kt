@@ -2,21 +2,52 @@ package com.github.tukcps.sysmd.services.session
 
 import com.fasterxml.uuid.Generators
 import com.github.tukcps.sysmd.cspsolver.Solver
+import com.github.tukcps.sysmd.exceptions.Issue.Kind.ERROR_UNRESOLVED_NAME
 import com.github.tukcps.sysmd.logger
-import com.github.tukcps.sysmd.model.expression.Expression
 import com.github.tukcps.sysmd.model.expression.InstantiationExpression
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.Function
 import com.github.tukcps.sysmd.model.kerml.implementation.*
 import com.github.tukcps.sysmd.services.check.checkConsistency
+import com.github.tukcps.sysmd.services.check.checkLibraryElementIds
+import com.github.tukcps.sysmd.services.check.checkOwnership
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.repositories.local.*
 import io.github.tukcps.aadd.DDBuilder
 import io.github.tukcps.sysmlv2.api.entities.CommitDataObject
 import io.github.tukcps.sysmlv2.api.entities.ElementDAO
+import io.github.tukcps.sysmlv2.api.entities.Identified
 import java.util.*
 import kotlin.reflect.full.isSubclassOf
 
+/** Merges two lists, ensuring some indices are preserved.
+ * @param filter A filter predicate to apply to `other` (indices are taken beforehand)
+ * @param preserveIndex Predicate under which an element's index mustn't change,
+ *                      regardless of which list it originates from.
+ * @return The first index that two elements are in conflict for, or null if the lists have been merged successfully
+ */
+private inline fun<T> MutableList<T>.mergeWith(other : List<T>, filter : (T) -> Boolean, preserveIndex : (T) -> Boolean) : Int?
+{
+    // the set of fixed indices
+    val fixed = this.withIndex().filter { (_,x) ->
+        preserveIndex(x)
+    }.map {
+        it.index
+    }.toSet()
+
+    for((ix,x) in other.withIndex())
+    {
+        when {
+            !filter(x) -> continue
+            !preserveIndex(x) || ix == size -> addLast(x)
+            ix in fixed -> return ix
+            ix !in indices -> throw IllegalStateException() // impossible by pigeonhole
+            else -> addLast(set(ix, x))
+        }
+    }
+
+    return null
+}
 
 /**
  * This class implements a model representation for use in the frontend SysMD compiler.
@@ -94,38 +125,6 @@ class SessionImplementation(
             initialize(1)
     }
 
-
-    /**
-     * Remove all elements except any or global, and reset all internal data structures and states.
-     */
-    override fun reset() {
-        try {
-
-            // clean model
-            repo.reset()
-            global.ownedRelationship.clear()
-            anything.subtypes.clear()
-            repo.elements[global.elementId!!] = global
-            status.reset()
-
-            // Now everything should be clean
-            initialize()
-            // New solver-related stuff
-            solver = Solver(this)
-
-            loadLibraries()
-            status.updatedValues.clear()
-            if (settings.initialize)
-                initialize(1)
-
-            /** Caches of important types */
-            repo.integerType = global.resolve("ScalarValues::Integer")?.member<DataType>()
-            solver.schedule.clear()
-        } catch (_: Exception) {
-            status.fatal("Error during reset; it is recommended to re-start SysMD!")
-        }
-    }
-
     /**
      * Adds an element to the repo with the hashmap from all the uuids to its elements.
      * If an element with the same elementId exists, it will be updated
@@ -139,7 +138,7 @@ class SessionImplementation(
             if (element.elementId in repo.elements.keys) {
                 if (get(element.elementId!!)!!::class.isSubclassOf(element::class)) {
                     repo.elements[element.elementId]!!.updateFrom(element)
-                    status.updatedValues[element.elementId!!] = "updated: '${element.qualifiedName}'"
+                    status.updatedValues[element.path()] = "updated: '${element.qualifiedName}'"
                 } else
                     status.error("Attempt to update existing, incompatible element ${element.escapedName()}")
             }
@@ -169,7 +168,7 @@ class SessionImplementation(
             if (exists != null) {
                 if (exists::class.isSubclassOf(element::class)) {
                     exists.updateFrom(element)
-                    status.updatedValues[exists.elementId!!] = "updated: '${exists.qualifiedName}'"
+                    status.updatedValues[exists.path()] = "updated: '${exists.qualifiedName}'"
                     @Suppress("UNCHECKED_CAST")
                     return exists as T
                 } else {
@@ -189,11 +188,11 @@ class SessionImplementation(
                 else -> ParameterMembershipImplementation(
                     ownedMemberParameter = element,
                     owningType = namespace,
-                    parameterIndex = namespace.parameter.size
+                    parameterIndex = namespace.parameter.size,
                 )
             }
 
-            is Expression if namespace is InstantiationExpression -> ParameterMembershipImplementation(
+            is Feature if namespace is InstantiationExpression -> ParameterMembershipImplementation(
                 ownedMemberParameter = element,
                 owningType = namespace,
                 parameterIndex = namespace.parameter.size
@@ -308,51 +307,106 @@ class SessionImplementation(
      * @param newElements collection of elements that will be cloned and added.
      */
     override fun import(newElements: Collection<ElementDAO>) {
+        /** Resolves every Unresolved item in a list via its id */
+        fun resolveUUIDs(xs : MutableList<Element>)
+        {
+            val iter = xs.listIterator()
+            while(iter.hasNext()) {
+                val cur = iter.next()
 
-        // Add all elements to built-in hashmap
-        val added = mutableListOf<ElementDAO>()
+                if(cur !is Unresolved)
+                    continue
 
-        // val existing = newElements.filter { it.elementId in repo.elements.keys}
-        newElements.forEach { dao ->
-            if (dao.elementId !in repo.elements.keys) {
-                val element = dao.toElement()
-                repo.elements[dao.elementId] = element
-                element.model = this
-                added.add(dao)
+                assert(cur is UnresolvedElement) // the other types aren't applicable
+
+                val id = cur.id
+                val res = if(id === null) global else get(id)
+
+                if(res === null)
+                {
+                    status.error("Import contains reference to undefined element ID '$id'", kind = ERROR_UNRESOLVED_NAME)
+                    iter.remove()
+                    continue
+                }
+
+                iter.set(res)
             }
         }
+        data class NewElement(val existing : Boolean, val data : ElementDAO, val element : Element)
 
-        // Replace source's and target's ids against references
-        added.forEach { dao ->
-            val element = get(dao.elementId)!!
+        // 1. add elements to model
+        val added = newElements.map { dao ->
+            val id = dao.elementId
+            val existing = get(id)
+            NewElement(existing !== null, dao, existing ?: dao.toElement().also {
+                repo.elements[id] = it
+                it.model = this
+            })
+        }
 
-            if (element is Relationship) {
-                dao.source?.forEach { id ->
-                    // element.source.add(get(id.id?:global.elementId!!)!!)
-                    if (id.id == null)
-                        global.ownedRelationship.add(element)
+        // 2. fix relationships (and set ownING relations)
+        added.filter { !it.existing }.forEach { (_,dao,rel) ->
+            if(rel !is Relationship)
+                return@forEach
+
+            // initialized by toElement()
+            resolveUUIDs(rel.source)
+            resolveUUIDs(rel.target)
+
+            // fix ownership of relation itself
+            if(rel.owningRelatedElement is Unresolved)
+            {
+                // have to read ID from DAO
+                assert((rel.owningRelatedElement as Unresolved).id === null)
+                val id = (dao.owningNamespace ?: TODO("Invalid DAO")).id
+                // should never clobber source, except on invalid DAO (unresolved ID)
+                rel.owningRelatedElement = if(id === null) global else get(id) ?: run {
+                    status.error("Owner of element has undefined element id '$id'", kind = ERROR_UNRESOLVED_NAME)
+                    global
                 }
             }
 
-            if (element is Relationship && element !is Namespace) {
-                element.owningRelatedElement = get(dao.owningNamespace?.id?:global.elementId!!)!!
-                element.owningRelatedElement.ownedRelationship.add(element)
-            } else {
-                element.owningRelationship = get(dao.owningRelationship?.id!!) as OwningMembership
-                element.owningRelationship?.ownedElement?.add(element)
-                element.ownedRelationship = dao.ownedRelationship.map { get(it.id!!)!! as Relationship }.toMutableList()
+            // fix ownership of actually owned elements
+            if(rel is OwningMembership)
+            {
+                assert(rel.memberElement.owningRelationship === null)
+                rel.memberElement.owningRelationship = rel
             }
         }
 
-        // For all elements: take the order of owned relationships
-        newElements.forEach { dao ->
-            val element = get(dao.elementId)!!
-            element.ownedRelationship = dao.ownedRelationship.map { get(it.id!!)!! as Relationship }.toMutableList()
-            if (element is Relationship) {
-                element.source.clear()
-                element.target.clear()
-                dao.source?.forEach { id -> element.source.add( get( id.id?:global.elementId!! )!!) }
-                dao.target?.forEach { id -> element.target.add( get( id.id!! )!! ) }
+        // 3. fix ownED relations
+        for((_,dao,element) in added)
+        {
+            if(element is Relationship && element.owner === global && element !in global.ownedRelationship)
+            {
+                // this element mustn't be index-sensitive
+                global.ownedRelationship.add(element)
+            }
+
+            val toAdd = dao.ownedRelationship.map { get(it.id!!) as Relationship }
+
+            // only need to reconcile indices for path-based UUIDs
+            if(element.isTransient || !element.isLibraryElement || element.ownedRelationship.isEmpty())
+            {
+                element.ownedRelationship.addAll(toAdd)
+                continue
+            }
+
+            // the set of already included UUIDs
+            val present = element.ownedRelationship.mapNotNull { it.elementId }.toHashSet()
+
+            val conflict = element.ownedRelationship.mergeWith(toAdd, {
+                // import only new elements
+                it.elementId!! !in present
+            }, {
+                // only preserve indices when relevant to path
+                it !is OwningMembership || (it.target.firstOrNull()?.escapedName() !== null)
+            })
+
+            if(conflict !== null)
+            {
+                throw IllegalStateException("Conflicting elements for path ${element.path()}/$conflict; " +
+                        "imported ${toAdd[conflict]} but already have ${element.ownedRelationship[conflict]}")
             }
         }
     }
@@ -368,7 +422,6 @@ class SessionImplementation(
      */
     override fun export(): Collection<CommitDataObject> {
         checkConsistency(repo.elements.values, checkForNoTransients = false)
-
         val exportCollection = mutableListOf<ElementDAO>()
 
         // create a collection for export, leaving out global and any

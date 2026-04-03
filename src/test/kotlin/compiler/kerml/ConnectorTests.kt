@@ -77,7 +77,7 @@ class ConnectorTests {
         val a: Feature? = global.resolve("a")?.member()
         val cto = getRelationshipsTo(b!!, "*", c)
         val cFrom = getRelationshipsFrom(a!!, "*", c)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         assertTrue(cto.isNotEmpty())
         assertTrue(cFrom.isNotEmpty())
     }
@@ -185,7 +185,7 @@ class ConnectorTests {
             }
             connector r: rel (aa, bb);
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val source = global.resolve("bb")?.member<Feature>()
         val rel = global.resolve("rel")?.member<Association>()
         val r = global.resolve("r")?.member<Connector>()
@@ -209,7 +209,7 @@ class ConnectorTests {
             }
             connector c from f.a to f.b; 
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val c = global.getOwned<Connector>("c")
         assertNotNull(c)
         assertEquals(1, c.target.size)

@@ -69,9 +69,8 @@ class FeatureTests {
      * Some checks of prefixes
      */
     @Test
-    fun testValueFeaturePrefixes() = testSession("Base") {
+    fun testValueFeaturePrefixes() = testSession("ScalarValues") {
         loadKerML("""
-            standard library package ScalarValues { datatype Natural; } // For multiplicity 
             out feature f1;
             inout feature f2; 
             end feature f3; 
@@ -96,15 +95,14 @@ class FeatureTests {
      * Typed by two types.
      */
     @Test
-    fun testInheritance() = testSession("Base") {
+    fun testInheritance() = testSession("ScalarValues") {
         loadKerML("""
-                package ScalarValues { datatype Natural; } // For multiplicity 
-                type a :> Base::Anything; 
-                type b :> Base::Anything {
-                    feature c: a; 
-                }; 
-                feature f : a, b;
-            """)
+            type a :> Base::Anything; 
+            type b :> Base::Anything {
+                feature c: a; 
+            }; 
+            feature f : a, b;
+        """)
         assertNoIssues()
         val f = global.resolve("f")?.member<Feature>()
         assertEquals( 2, f!!.type.size)

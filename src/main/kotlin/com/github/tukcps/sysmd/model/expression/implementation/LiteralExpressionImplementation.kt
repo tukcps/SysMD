@@ -2,30 +2,24 @@ package com.github.tukcps.sysmd.model.expression.implementation
 
 import com.github.tukcps.sysmd.model.expression.*
 import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.model.kerml.implementation.FeatureTypingImplementation
 import com.github.tukcps.sysmd.model.util.*
-import com.github.tukcps.sysmd.services.resolve.resolveOld
 import io.github.tukcps.aadd.*
 
 abstract class LiteralExpressionImplementation(
     declaredName: SimpleName? = null,
     declaredShortName: SimpleName? = null,
-    direction: Feature.FeatureDirectionKind = Feature.FeatureDirectionKind.INOUT,
-    isEnd: Boolean = false,
     typeConstraint: MutableList<String> = mutableListOf(),
     expression: String? = null,
     elementType: String = "LiteralExpression"
 ) : LiteralExpression, ExpressionImplementation(
     declaredName = declaredName,
     declaredShortName = declaredShortName,
-    direction = direction,
-    isEnd = isEnd,
     typeConstraint = typeConstraint,
     expression = expression,
     elementType = elementType
 )
 {
-    abstract val value : Any?
-
     override var isModelLevelEvaluable: Boolean = true
 
     final override var internalValue: AstNode?
@@ -46,7 +40,7 @@ abstract class LiteralExpressionImplementation(
                 is AADD -> return dom
                 is IDD -> return dom
                 //is String -> throw Exception("TODO")
-                else -> throw Exception("TODO")
+                else -> TODO()
             }
         }
 
@@ -54,22 +48,9 @@ abstract class LiteralExpressionImplementation(
     abstract val typeName : QualifiedName
     protected abstract val cachedType : Type?
 
-    final override val type : List<Type>
-        get() = listOfNotNull(
-            cachedType ?: (owningNamespace ?: model?.global)?.resolve(typeName)?.member<Type>()
-        )
+    /** Propagates type information around this  */
+    override fun learnType() : List<Type> = listOf(cachedType ?: UnresolvedType(typeName))
 
-    override fun checkCondition(target: Element): Boolean {
-        return super.checkCondition(target)
-    }
-
-    override fun evaluate(target: Element): Set<Element> {
-        return super.evaluate(target)
-    }
-
-    override fun modelLevelEvaluable(visited: Set<Feature>): Boolean {
-        return super.modelLevelEvaluable(visited)
-    }
 
     final override fun initialize()
     {
@@ -89,4 +70,6 @@ abstract class LiteralExpressionImplementation(
     {
         b.append(value ?: "unknown")
     }
+
+    abstract override fun clone(): LiteralExpressionImplementation
 }

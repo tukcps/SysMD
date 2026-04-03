@@ -51,7 +51,7 @@ class ConstraintPropagationTests {
 
     @Test
     fun evalDownWithRange()  = testSession("ISQ", "Ranges") {
-        loadKerML("feature a: ISQ::VoltageValue  {:>> unit = \"mV\"; :>> range = \"1..20\";}")
+        loadKerML("feature a: ISQ::ElectricPotentialDifferenceValue {:>> unit = \"mV\"; :>> range = \"1..20\";}")
         val a = global.resolveVar("a")
         assertNotNull(a)
         initialize()
@@ -127,7 +127,7 @@ class ConstraintPropagationTests {
                 }
             """.trimIndent())
         solver.propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         assertEquals(0.26666, global.resolveVar("Baseplate::depth")!!.vectorQuantity.getMinAsDouble(), 0.001)
         assertEquals(0.26666, global.resolveVar("Baseplate::width")!!.vectorQuantity.getMinAsDouble(), 0.001)
         assertNoIssues()

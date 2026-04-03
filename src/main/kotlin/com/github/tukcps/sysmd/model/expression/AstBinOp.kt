@@ -3,6 +3,7 @@ package com.github.tukcps.sysmd.model.expression
 import io.github.tukcps.aadd.AADD
 import io.github.tukcps.aadd.BDD
 import io.github.tukcps.aadd.IDD
+import io.github.tukcps.aadd.values.Range
 import io.github.tukcps.aadd.values.XBool
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.compiler.scanner.Token
@@ -210,16 +211,21 @@ class AstBinOp(
                     val downLs = mutableListOf<AADD>()
                     val downRs = mutableListOf<AADD>()
                     downQuantity.values.indices.forEach {
+                        val isTrue = downQuantity.values[it].asBdd()
                         downLs.add(
-                            downQuantity.values[it].asBdd().ite(
-                                (l.aadds[it] greaterThan r.aadds[it]).ite(l.aadds[it], r.aadds[it]),
-                                (l.aadds[it] lessThanOrEquals r.aadds[it]).ite(l.aadds[it], r.aadds[it])
+                            isTrue.ite(
+                                // When l > r must be true, constrain l to be > r
+                                l.aadds[it].constrainTo(Range(r.aadds[it].min, Double.POSITIVE_INFINITY)),
+                                // When l > r must be false, constrain l to be <= r  
+                                l.aadds[it].constrainTo(Range(Double.NEGATIVE_INFINITY, r.aadds[it].max))
                             )
                         )
                         downRs.add(
-                            downQuantity.values[it].asBdd().ite(
-                                (l.aadds[it] lessThanOrEquals r.aadds[it]).ite(l.aadds[it], r.aadds[it]),
-                                (l.aadds[it] greaterThan r.aadds[it]).ite(l.aadds[it], r.aadds[it])
+                            isTrue.ite(
+                                // When l > r must be true, constrain r to be < l
+                                r.aadds[it].constrainTo(Range(Double.NEGATIVE_INFINITY, l.aadds[it].max)),
+                                // When l > r must be false, constrain r to be >= l
+                                r.aadds[it].constrainTo(Range(l.aadds[it].min, Double.POSITIVE_INFINITY))
                             )
                         )
                     }
@@ -256,16 +262,21 @@ class AstBinOp(
                     val downLs = mutableListOf<AADD>()
                     val downRs = mutableListOf<AADD>()
                     downQuantity.values.indices.forEach {
+                        val isTrue = downQuantity.values[it].asBdd()
                         downLs.add(
-                            downQuantity.values[it].asBdd().ite(
-                                (l.aadds[it] greaterThanOrEquals  r.aadds[it]).ite(l.aadds[it], r.aadds[it]),
-                                (l.aadds[it] lessThan r.aadds[it]).ite(l.aadds[it], r.aadds[it])
+                            isTrue.ite(
+                                // When l >= r must be true, constrain l to be >= r
+                                l.aadds[it].constrainTo(Range(r.aadds[it].min, Double.POSITIVE_INFINITY)),
+                                // When l >= r must be false, constrain l to be < r  
+                                l.aadds[it].constrainTo(Range(Double.NEGATIVE_INFINITY, r.aadds[it].max ))
                             )
                         )
                         downRs.add(
-                            downQuantity.values[it].asBdd().ite(
-                                (l.aadds[it] lessThan r.aadds[it]).ite(l.aadds[it], r.aadds[it]),
-                                (l.aadds[it] greaterThanOrEquals r.aadds[it]).ite(l.aadds[it], r.aadds[it])
+                            isTrue.ite(
+                                // When l >= r must be true, constrain r to be <= l
+                                r.aadds[it].constrainTo(Range(Double.NEGATIVE_INFINITY, l.aadds[it].max)),
+                                // When l >= r must be false, constrain r to be > l
+                                r.aadds[it].constrainTo(Range(l.aadds[it].min, Double.POSITIVE_INFINITY))
                             )
                         )
                     }
@@ -302,16 +313,21 @@ class AstBinOp(
                     val downLs = mutableListOf<AADD>()
                     val downRs = mutableListOf<AADD>()
                     downQuantity.values.indices.forEach {
+                        val isTrue = downQuantity.values[it].asBdd()
                         downLs.add(
-                            downQuantity.values[it].asBdd().ite(
-                                (l.aadds[it] lessThan r.aadds[it]).ite(l.aadds[it], r.aadds[it]),
-                                (l.aadds[it] greaterThanOrEquals r.aadds[it]).ite(l.aadds[it], r.aadds[it])
+                            isTrue.ite(
+                                // When l < r must be true, constrain l to be < r
+                                l.aadds[it].constrainTo(Range(Double.NEGATIVE_INFINITY, r.aadds[it].max )),
+                                // When l < r must be false, constrain l to be >= r  
+                                l.aadds[it].constrainTo(Range(r.aadds[it].min, Double.POSITIVE_INFINITY))
                             )
                         )
                         downRs.add(
-                            downQuantity.values[it].asBdd().ite(
-                                (l.aadds[it] greaterThanOrEquals r.aadds[it]).ite(l.aadds[it], r.aadds[it]),
-                                (l.aadds[it] lessThan r.aadds[it]).ite(l.aadds[it], r.aadds[it])
+                            isTrue.ite(
+                                // When l < r must be true, constrain r to be > l
+                                r.aadds[it].constrainTo(Range(l.aadds[it].min, Double.POSITIVE_INFINITY)),
+                                // When l < r must be false, constrain r to be <= l
+                                r.aadds[it].constrainTo(Range(Double.NEGATIVE_INFINITY, l.aadds[it].max))
                             )
                         )
                     }
@@ -345,26 +361,29 @@ class AstBinOp(
 
             LE -> {
                 if (l.isReal && r.isReal) {
-                    if (l.isReal && r.isReal) {
-                        val downLs = mutableListOf<AADD>()
-                        val downRs = mutableListOf<AADD>()
-                        downQuantity.values.indices.forEach {
-                            downLs.add(
-                                downQuantity.values[it].asBdd().ite(
-                                    (l.aadds[it] lessThanOrEquals r.aadds[it]).ite(l.aadds[it], r.aadds[it]),
-                                    (l.aadds[it] greaterThan r.aadds[it]).ite(l.aadds[it], r.aadds[it])
-                                )
+                    val downLs = mutableListOf<AADD>()
+                    val downRs = mutableListOf<AADD>()
+                    downQuantity.values.indices.forEach {
+                        val isTrue = downQuantity.values[it].asBdd()
+                        downLs.add(
+                            isTrue.ite(
+                                // When l <= r must be true, constrain l to be <= r
+                                l.aadds[it].constrainTo(Range(Double.NEGATIVE_INFINITY, r.aadds[it].max)),
+                                // When l <= r must be false, constrain l to be > r  
+                                l.aadds[it].constrainTo(Range(r.aadds[it].min, Double.POSITIVE_INFINITY))
                             )
-                            downRs.add(
-                                downQuantity.values[it].asBdd().ite(
-                                    (l.aadds[it] greaterThan r.aadds[it]).ite(l.aadds[it], r.aadds[it]),
-                                    (l.aadds[it] lessThanOrEquals r.aadds[it]).ite(l.aadds[it], r.aadds[it])
-                                )
+                        )
+                        downRs.add(
+                            isTrue.ite(
+                                // When l <= r must be true, constrain r to be >= l
+                                r.aadds[it].constrainTo(Range(l.aadds[it].min, Double.POSITIVE_INFINITY)),
+                                // When l <= r must be false, constrain r to be < l
+                                r.aadds[it].constrainTo(Range(Double.NEGATIVE_INFINITY, l.aadds[it].max ))
                             )
-                        }
-                        l.downQuantity = VectorQuantity(downLs, prevL.upQuantity.unit, prevL.upQuantity.unitSpec)
-                        r.downQuantity = VectorQuantity(downRs, prevR.upQuantity.unit, prevR.upQuantity.unitSpec)
+                        )
                     }
+                    l.downQuantity = VectorQuantity(downLs, prevL.upQuantity.unit, prevL.upQuantity.unitSpec)
+                    r.downQuantity = VectorQuantity(downRs, prevR.upQuantity.unit, prevR.upQuantity.unitSpec)
                 } else if (l.isInt && r.isInt) {
                     val downLs = mutableListOf<IDD>()
                     val downRs = mutableListOf<IDD>()

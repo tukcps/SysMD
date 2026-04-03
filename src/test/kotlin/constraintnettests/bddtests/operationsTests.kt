@@ -104,7 +104,7 @@ internal class OperationTests /*: DDBuilderIF by Global.context */{
             loadKerML("feature b: ScalarValues::Boolean;")
             loadKerML("feature c: ScalarValues::Boolean;")
             loadKerML("feature y: ScalarValues::Boolean = (a and c) or (not(b) and not(a));")
-            assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+            assertNoIssues()
             assertEquals(XBool.X, global.resolveVar("a")!!.boolSpecs[0])
             assertEquals(2, global.resolveVar("y")!!.vectorQuantity.value.height())
             // 1) a auf True setzen
@@ -169,7 +169,7 @@ internal class OperationTests /*: DDBuilderIF by Global.context */{
             feature c: ScalarValues::Boolean(true);
             feature y: ScalarValues::Boolean = (a and c) or (not(b) and not(a));
             feature z: ScalarValues::Boolean(true).""")
-        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+        assertNoIssues()
         solver.propagate()
         val y = global.resolveVar("y")!!
         val a = global.resolveVar("a")!!

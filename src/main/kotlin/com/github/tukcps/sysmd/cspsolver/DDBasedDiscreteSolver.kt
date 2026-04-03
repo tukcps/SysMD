@@ -3,7 +3,6 @@ package com.github.tukcps.sysmd.cspsolver
 import com.github.tukcps.sysmd.services.session.Session
 import io.github.tukcps.aadd.BDD
 import io.github.tukcps.aadd.values.XBool
-import java.util.*
 
 /**
  *  Handles discrete propagation. Currently only through one propagate method. Eventually will split in initialization and update.
@@ -142,18 +141,18 @@ class DDBasedDiscreteSolver(
     private val theorems : MutableList<Statement> = mutableListOf()
 
     /** Whether an initialize() overload has been called yet */
-    private var initialzed : Boolean = false
+    private var initialized : Boolean = false
 
     /** Set of expressions to check for updates */
     private val updatedProperties : MutableSet<Variable> = mutableSetOf()
 
-    override fun isInitialized() : Boolean = initialzed
+    override fun isInitialized() : Boolean = initialized
 
     fun initialize(model: Session, ignored: Int)
         = initialize(model)
 
     override fun initialize(model: Session) {
-        initialzed = true
+        initialized = true
     }
 
     override fun update(scheduledProperties: List<Variable>) {
@@ -171,13 +170,13 @@ class DDBasedDiscreteSolver(
     private fun collectUpdated() : Set<Statement> {
         val newTheorems = mutableSetOf<Statement>()
 
-        for (v in updatedProperties) {
-            if(v.valueSpecs.size != 1)
+        for (property in updatedProperties) {
+            if(property.boolSpecs.size != 1)
                 continue //TODO()
 
-            val q = v.vectorQuantity.bdd()
-            val s = v.boolSpecs[0]
-            val id = builder.conds.indexes[v.elementId.toString()]
+            val q = property.vectorQuantity.bdd()
+            val s = property.boolSpecs[0]
+            val id = builder.conds.indexes[property.path]
 
             when {
                 s === XBool.True -> {
@@ -203,7 +202,7 @@ class DDBasedDiscreteSolver(
                             Pair(q.builder.True, q.builder.False) -> {} // simple tautology
                             Pair(q.builder.False, q.builder.True) -> { // simple contradiction
                                 // Should it be entered into the theorem list to "corrupt" other theorems after merge or be handled right now?
-                                newTheorems.add( Statement(ov, builder.False) ) // not in simplest form, may cause problems
+                                newTheorems.add( Statement(ov, builder.False) ) // not in the simplest form, may cause problems
                             }
                             else -> continue//TODO("A self-referencing definition should be a simple tautology or contradiction")
                         }
@@ -290,22 +289,11 @@ class DDBasedDiscreteSolver(
 
             builder.conds.indexes
                 .filter { it.value == s.key }
-                .map {
-                    try {
-                        UUID.fromString(it.key)
-                    } catch(e : IllegalArgumentException) {
-                        null
-                    }
-                }.filterNotNull()
+                .map { solver.getVariable(it.key) }
+                .filterNotNull()
                 .forEach {
-                        val v = solver.getVariable(it)
-                        if(v !== null) {
-                            v.valueSpecs = mutableListOf(s.value)
-                            v.vectorQuantity.values = mutableListOf(s.value)
-                        }
-                        else
-                            TODO("Builder.conds feature has no variable attached")
-
+                    it.boolSpecs = mutableListOf(s.value)
+                    it.vectorQuantity.values = mutableListOf(s.value)
                 }
         }
     }

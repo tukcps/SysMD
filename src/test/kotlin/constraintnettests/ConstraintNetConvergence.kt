@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTimeoutPreemptively
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
+import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
 import java.time.Duration
@@ -26,7 +27,7 @@ class ConstraintNetConvergence {
                     feature volume:  ScalarValues::Real = 4.0/3.0 * 3.14159265359 * r*r*r; 
                     feature density: ScalarValues::Real = 1.0; 
                  """)
-            assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+            assertNoIssues()
             solver.propagate()
             assertEquals(4.0/3.0*PI*1E9,
                 global.resolveVar("volume")!!.vectorQuantity.getMinAsDouble(), 10000.0)

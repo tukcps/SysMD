@@ -12,6 +12,7 @@ import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.ActionUsageActions
 import com.github.tukcps.sysmd.exceptions.throwSyntaxError
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
+import com.github.tukcps.sysmd.model.kerml.implementation.ParameterMembershipImplementation
 import com.github.tukcps.sysmd.model.sysml.implementation.ActionDefinitionImplementation
 import com.github.tukcps.sysmd.model.sysml.implementation.ActionUsageImplementation
 
@@ -204,7 +205,13 @@ val actionNodeStart get() = controlNodeStart
  */
 fun SysMLv2.IfNode() {
     IF.consume()
-    Expression()
+    OwnedExpression()
+    Expression().also {
+        model.addOwnedRelationship(ParameterMembershipImplementation(
+            ownedMemberParameter = it,
+            owningType = semantics.element()
+        ))
+    }
     ActionBodyParameter()
     ELSE.optional {
         ActionBodyItem()

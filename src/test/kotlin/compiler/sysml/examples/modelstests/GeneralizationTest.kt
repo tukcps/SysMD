@@ -1,9 +1,9 @@
 package sysmlv2specificationtests.modelstests
 
+import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Test
-import kotlin.test.assertTrue
 
 
 class GeneralizationTest {
@@ -34,9 +34,8 @@ class GeneralizationTest {
                     part def Person;
                     
                 }
-    """.trimIndent()
-        )
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        """)
+        assertNoIssues()
 
     }
 }

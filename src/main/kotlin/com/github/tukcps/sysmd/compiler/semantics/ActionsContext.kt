@@ -13,7 +13,6 @@ import com.github.tukcps.sysmd.services.session.Session
 import io.github.tukcps.aadd.values.IntegerRange
 import java.util.*
 
-
 /**
  * This class provides methods that add KerML-Element instances to
  * the KerML model in a session.
@@ -36,7 +35,6 @@ import java.util.*
 open class ActionsContext(
     val model: Session,
     val compiler: KerML,
-    var expression: Feature? = null,
 ) {
 
     /**
@@ -344,7 +342,6 @@ open class ActionsContext(
         }
     }
 
-    
     fun addTarget(target: Element) {
         element<Connector>().target.add(target)
     }
@@ -382,7 +379,7 @@ open class ActionsContext(
         when (function) {
             "owns" -> return AstHasA(model, param, semantics)
             "ITE" -> return AstIte(model, param)
-            "oneOf" -> return buildOneOfAst(model, expression = semantics.expression!!, param, semantics)
+            "oneOf" -> return buildOneOfAst(model, param, semantics)
             "allOf" -> return AstAllOf(model, param)
             "anyOf" -> return AstAnyOf(model, param)
             "sum_i" -> return AstSumI(namespace, model, param)

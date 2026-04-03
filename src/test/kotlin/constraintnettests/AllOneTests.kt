@@ -18,14 +18,13 @@ class AllOnePropagationTests {
             feature b: Ranges::RealInRange = oneOf(1.5 .. 2.5) {:>> range = "1 .. 2";}
         """)
         solver.propagate()
-        assertIssue( "cannot be satisfied for all")
-        val a = global.resolveVar("a")!!
-        val b = global.resolveVar("b")!!
+        val a = solver.getVariable("a")!!
+        val b = solver.getVariable("b")!!
         assertEquals(1.0, a.min(), 0.000001)
         assertEquals(2.0, a.max(), 0.000001)
         assertEquals(1.5, b.min(), 0.000001)
         assertEquals(2.0, b.max(), 0.000001)
-        assertEquals(1, status.issues.size, status.issues.toString())
+        assertIssue( "cannot be satisfied for all")
     }
 
     @Test fun allOnePropagationTestInt() = testSession("Ranges") {
@@ -35,14 +34,13 @@ class AllOnePropagationTests {
             feature b: Ranges::IntegerInRange = oneOf(5 .. 15) {:>> range = "1 .. 10";}
         """)
         solver.propagate()
-        assertIssue("be satisfied")
-        val a = global.resolveVar("a")!!
-        val b = global.resolveVar("b")!!
+        val a = solver.getVariable("a")!!
+        val b = solver.getVariable("b")!!
         assertEquals(1.0, a.min(), 0.000001)
         assertEquals(10.0, a.max(), 0.000001)
         assertEquals(5.0, b.min(), 0.000001)
         assertEquals(10.0, b.max(), 0.000001)
-        assertEquals(1, status.issues.size)
+        assertIssue("be satisfied")
     }
 
 
@@ -63,7 +61,8 @@ class AllOnePropagationTests {
                 feature b: Ranges::IntegerInRange = oneOf(5 .. 15) {:>> range = "1 .. 10"; }
         """)
         solver.propagate()
-        assertEquals(Issue.Kind.WARN_INCONSISTENCY, status.issues.firstOrNull()?.kind, "Not satisfiability for all shall be reported")
+        assertEquals(Issue.Kind.WARN_INCONSISTENCY, status.issues.firstOrNull()?.kind,
+            "Insatisfiability for all shall be reported")
         val a = global.resolveVar("a")!!
         val b = global.resolveVar("b")!!
         assertEquals(1.0, a.min(), 0.000001)

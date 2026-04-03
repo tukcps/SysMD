@@ -6,6 +6,7 @@ import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
 import com.github.tukcps.sysmd.model.kerml.implementation.AnnotatingElementImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.NamespaceImplementation
 import com.github.tukcps.sysmd.services.initialize
+import util.assertNoIssues
 import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -38,7 +39,7 @@ class ImportMDTests {
         val fileAnnotation = addOwnedMember(NamespaceImplementation(declaredName="test"), global)
         importMD(input, fileAnnotation)
         initialize()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         assertEquals(4, fileAnnotation.ownedElement.size)
         assertTrue( (fileAnnotation.ownedElement.last() as TextualRepresentation).body.contains("text"))
     }
@@ -176,6 +177,6 @@ class ImportMDTests {
         // Import the resulting segments of TextualRepresentation / Documentation in MD into the model
         // They shall become owned elements of the file.
         importMD(input, fileAnnotation)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 }

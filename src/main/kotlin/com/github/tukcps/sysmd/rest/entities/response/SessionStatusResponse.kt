@@ -17,7 +17,7 @@ data class SessionStatusResponse (
     val issues: MutableCollection<IssueResponse> = mutableListOf(),
 
     /** Map of updated properties, property id is key, and string (updated result). */
-    val updates: MutableMap<UUID, String> = hashMapOf()
+    val updates: MutableMap<String, String> = hashMapOf()
 ) {
     constructor(sessionStatus: SessionStatus): this(
         sessionStatus.numberOfPropagateIterations,

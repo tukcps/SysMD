@@ -45,11 +45,11 @@ class CalculationDefinitionTests {
         """)
         assertNoIssues()
         solver.propagate()
-        assertEquals(global.resolveVar("Velocity::v1")!!.feature.direction, Feature.FeatureDirectionKind.IN)
-        assertEquals(global.resolveVar("Velocity::v2")!!.feature.direction, Feature.FeatureDirectionKind.IN)
-        assertEquals(global.resolveVar("Velocity::a")!!.feature.direction, Feature.FeatureDirectionKind.INOUT)
-        assertEquals(global.resolveVar("Velocity::result")!!.feature.direction, Feature.FeatureDirectionKind.OUT)
-        assertTrue(10.0 in global.resolveVar("c")!!.vectorQuantity.aadd().getRange())
+        assertEquals(global.resolve("Velocity::v1")!!.member<Feature>()!!.direction, Feature.FeatureDirectionKind.IN)
+        assertEquals(global.resolve("Velocity::v2")!!.member<Feature>()!!.direction, Feature.FeatureDirectionKind.IN)
+        assertEquals(global.resolve("Velocity::a")!!.member<Feature>()!!.direction, Feature.FeatureDirectionKind.INOUT)
+        assertEquals(global.resolve("Velocity::result")!!.member<Feature>()!!.direction, Feature.FeatureDirectionKind.OUT)
+        assertTrue(10.0 in global.resolveVar("c")!!.range<Double>())
         assertTrue(62.0 in global.resolveVar("c2")!!.vectorQuantity.valuesIn("km/h")[0].asAadd().getRange())
     }
 
@@ -115,7 +115,7 @@ class CalculationDefinitionTests {
             attribute e1: ScalarValues::Integer = SumOfFourValues(d,c,b,a);
         """)
         solver.propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         assert(30 in global.resolveVar("e")!!.vectorQuantity.idd().getRange())
         assert(30 in global.resolveVar("e1")!!.vectorQuantity.idd().getRange())
     }
@@ -141,7 +141,7 @@ class CalculationDefinitionTests {
             attribute e2: Ranges::IntegerInRange = SumOfFourValues(8,7,6,d2) {:>> range = "40..40";}
         """)
         solver.propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         assertEquals(14, global.resolveVar("d1")!!.vectorQuantity.idd().getRange().min)
         assertEquals(14, global.resolveVar("d1")!!.vectorQuantity.idd().getRange().max)
         assert(14 in global.resolveVar("d1")!!.vectorQuantity.idd().getRange())
@@ -167,7 +167,7 @@ class CalculationDefinitionTests {
              }    
         """)
         solver.propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         assertEquals(13, global.resolveVar("Test::TestModule::d1")!!.vectorQuantity.idd().getRange().min)
         assertEquals(13, global.resolveVar("Test::TestModule::d1")!!.vectorQuantity.idd().getRange().max)
         assert(13 in global.resolveVar("Test::TestModule::d1")!!.vectorQuantity.idd().getRange())
@@ -193,7 +193,7 @@ class CalculationDefinitionTests {
              }    
         """)
         solver.propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         assertEquals(14.0, global.resolveVar("Test::TestModule::d1")!!.vectorQuantity.aadd().getRange().min, 0.000001)
         assertEquals(14.0, global.resolveVar("Test::TestModule::d1")!!.vectorQuantity.aadd().getRange().max, 0.000001)
         assert(14.0 in global.resolveVar("Test::TestModule::d1")!!.vectorQuantity.aadd().getRange())
@@ -321,7 +321,7 @@ class CalculationDefinitionTests {
         val b = global.resolve("Test::TestModule::b")
         assertNotNull(b)
         solver.propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         assert(10000.0 in global.resolveVar("Test::TestModule::c")!!.vectorQuantity.aadd().getRange())
         //sqrt could be positive or negative value
         assertEquals(-10.0, global.resolveVar("Test::TestModule::a")!!.vectorQuantity.aadd().getRange().min,0.000001)
@@ -343,7 +343,7 @@ class CalculationDefinitionTests {
             attribute a: ScalarValues::Integer = ConvertASILtoInt("QM"); 
         """)
         solver.propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         //sqrt could be positive or negative value
         assertEquals(1, global.resolveVar("a")!!.vectorQuantity.idd().getRange().min)
     }
@@ -360,7 +360,7 @@ class CalculationDefinitionTests {
             attribute a: ScalarValues::String = ConvertIntToASIL(1);
         """)
         solver.propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         assertEquals("A", global.resolveVar("a")!!.vectorQuantity.value.asStrDD().toString())
     }
 
@@ -386,7 +386,7 @@ class CalculationDefinitionTests {
             attribute a: ScalarValues::String = ASILDecomposition("A","QM");                
         """)
         solver.propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         //sqrt could be positive or negative value
         assertEquals("A", global.resolveVar("a")!!.vectorQuantity.value.asStrDD().toString())
     }
@@ -404,7 +404,7 @@ class CalculationDefinitionTests {
              """
         )
         solver.propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         //sqrt could be positive or negative value
         assertEquals(2, global.resolveVar("e")!!.vectorQuantity.idd().getRange().min)
     }
@@ -422,7 +422,7 @@ class CalculationDefinitionTests {
              """
         )
         solver.propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         //sqrt could be positive or negative value
         assertEquals(0, global.resolveVar("e")!!.vectorQuantity.idd().getRange().min)
     }
@@ -434,7 +434,7 @@ class CalculationDefinitionTests {
             attribute f: ScalarValues::String("A") = if i==0 ? "QM" else if i==1 ? "A" else "B";      
              """)
         solver.propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         //sqrt could be positive or negative value
         assertEquals(1, global.resolveVar("i")!!.vectorQuantity.idd().getRange().min)
     }
@@ -466,7 +466,7 @@ class CalculationDefinitionTests {
             }
         """)
         solver.propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         assertEquals(62.5, global.resolveVar("stopDist")!!.vectorQuantity.valuesIn("m")[0].asAadd().getRange().min,0.000001)
         assertEquals(70.0, global.resolveVar("stopDist")!!.vectorQuantity.valuesIn("m")[0].asAadd().getRange().max,0.000001)
         assertEquals(1600.0, global.resolveVar("mass")!!.vectorQuantity.valuesIn("kg")[0].asAadd().getRange().min,0.000001)

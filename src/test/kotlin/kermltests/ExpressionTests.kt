@@ -1,11 +1,11 @@
 package kermltests
 
 import com.github.tukcps.sysmd.services.resolve.resolveVar
+import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 
 class ExpressionTests {
@@ -14,7 +14,7 @@ class ExpressionTests {
         loadKerML("""
             feature f: ScalarValues::Real = oneOf(1.0 .. 2.0);    
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val f = global.resolveVar("f")
         assertEquals(2.0, f!!.max())
     }

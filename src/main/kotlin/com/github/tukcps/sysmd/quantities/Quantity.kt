@@ -1,12 +1,12 @@
 package com.github.tukcps.sysmd.quantities
 
+import com.github.tukcps.sysmd.exceptions.SemanticError
+import com.github.tukcps.sysmd.quantities.baseUnits.ThermodynamicTemperature
 import io.github.tukcps.aadd.*
 import io.github.tukcps.aadd.functions.*
 import io.github.tukcps.aadd.values.IntegerRange
 import io.github.tukcps.aadd.values.Range
 import io.github.tukcps.aadd.values.XBool
-import com.github.tukcps.sysmd.exceptions.SemanticError
-import com.github.tukcps.sysmd.quantities.baseUnits.ThermodynamicTemperature
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneOffset.UTC
@@ -134,7 +134,7 @@ class Quantity : VectorQuantity {
 
         return if (unit == quantity.unit || quantity.unit.toString() == "?")
             Quantity(quantity.value + value, unit, unitSpec)
-        else return if (unit.toString() == "?")
+        else if (unit.toString() == "?")
             Quantity(quantity.value + value, quantity.unit, quantity.unitSpec)
         else {
             // Possibility to add 0 to a Quantity with a unit.

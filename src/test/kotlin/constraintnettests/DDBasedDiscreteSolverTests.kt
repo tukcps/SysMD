@@ -4,7 +4,6 @@ package constraintnettests
 
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.resolve.resolveVar
 import io.github.tukcps.aadd.BDD
 import io.github.tukcps.aadd.values.Range
 import org.junit.jupiter.api.Assertions.*
@@ -31,13 +30,13 @@ class DDBasedDiscreteSolverTests {
                 inv q false; 
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         solver.propagate()
-        val v1p = global.resolveVar("Variant1::p")
-        val v2p = global.resolveVar("Variant2::p")
+        val v1p = solver.getVariable("Variant1::p")
+        val v2p = solver.getVariable("Variant2::p")
         assertEquals(0, status.issues.size, "Errors: ${status.issues}")
-        val p = global.resolveVar("General::p")!!
-        val q = global.resolveVar("General::q")!!
+        val p = solver.getVariable("General::p")!!
+        val q = solver.getVariable("General::q")!!
         assertEquals(builder.True, p.vectorQuantity.value)
         //assertNotEquals(builder.Bool, q.vectorQuantity.value) //FIXME: Do we want internal with ITE(x, t, f) or unknown leaf?
         assertEquals(builder.Bool, q.vectorQuantity.value)
@@ -80,7 +79,7 @@ class DDBasedDiscreteSolverTests {
         """)
         solver.propagate()
         assertNoIssues()
-        val b = global.resolveVar("b")!!
+        val b = solver.getVariable("b")!!
         assertEquals("Contradiction", b.vectorQuantity.value.toString()
         ) //FIXME: want contradiction? or exception during evaluation?
     }
@@ -103,10 +102,10 @@ class DDBasedDiscreteSolverTests {
             feature x: ScalarValues::Real =[1.0..3.0].
             inv r { x > 1.0+1.0 }
         """.trimIndent())
-        assertEquals(0, status.issues.size, status.issues.toString())
+        assertNoIssues()
         solver.propagate()
-        assertEquals(0, status.issues.size, status.issues.toString())
-        val x = global.resolveVar("x")!!
+        assertNoIssues()
+        val x = solver.getVariable("x")!!
         // println(x)
         assertTrue(x.vectorQuantity.getMinAsDouble() <= 2.0)
     }
@@ -122,11 +121,11 @@ class DDBasedDiscreteSolverTests {
             inv r { x >= 1.0+1.0}
         """.trimIndent()
         )
-        assertEquals(0, status.issues.size, status.issues.toString())
+        assertNoIssues()
         initialize()
         solver.propagate()
-        assertEquals(0, status.issues.size, status.issues.toString())
-        val x = global.resolveVar("x")!!
+        assertNoIssues()
+        val x = solver.getVariable("x")!!
         // println(x.quantity.getMinAsDouble())
         assertTrue(x.vectorQuantity.getMinAsDouble() <= 2.0)
     }
@@ -138,10 +137,10 @@ class DDBasedDiscreteSolverTests {
             inv r { x < 1.0+1.0 }
         """.trimIndent()
         )
-        assertEquals(0, status.issues.size, status.issues.toString())
+        assertNoIssues()
         solver.propagate()
-        assertEquals(0, status.issues.size, status.issues.toString())
-        val x = global.resolveVar("x")!!
+        assertNoIssues()
+        val x = solver.getVariable("x")!!
         // println(x.quantity.getMaxAsDouble())
         assertTrue(x.vectorQuantity.getMaxAsDouble() >= 2.0)
     }
@@ -155,10 +154,10 @@ class DDBasedDiscreteSolverTests {
             inv r { x <= 1.0+1.0 }
         """.trimIndent()
         )
-        assertEquals(0, status.issues.size, status.issues.toString())
+        assertNoIssues()
         solver.propagate()
-        assertEquals(0, status.issues.size, status.issues.toString())
-        val x = global.resolveVar("x")!!
+        assertNoIssues()
+        val x = solver.getVariable("x")!!
         // println(x.quantity.getMaxAsDouble())
         assertTrue(x.vectorQuantity.getMaxAsDouble() >= 2.0)
     }
@@ -171,12 +170,12 @@ class DDBasedDiscreteSolverTests {
             feature y: ScalarValues::Real = x+0.1;
             inv r { x == y}
         """)
-        assertEquals(0, status.issues.size, status.issues.toString())
+        assertNoIssues()
         solver.propagate()
-        assertEquals(0, status.issues.size, status.issues.toString())
-        val x = global.resolveVar("x")!!
-        val y = global.resolveVar("y")!!
-        val r = global.resolveVar("r")!!
+        assertNoIssues()
+        val x = solver.getVariable("x")!!
+        val y = solver.getVariable("y")!!
+        val r = solver.getVariable("r")!!
         assertTrue(x.vectorQuantity.aadd().isEmpty())
 //         assertTrue(y.vectorQuantity.aadd().isEmpty())
         assertEquals("Infeasible", r.valueStr)
@@ -192,9 +191,9 @@ class DDBasedDiscreteSolverTests {
         assertNoIssues()
         solver.propagate()
         assertNoIssues()
-        val x = global.resolveVar("x")!!
-        val y = global.resolveVar("y")!!
-        val r = global.resolveVar("r")!!
+        val x = solver.getVariable("x")!!
+        val y = solver.getVariable("y")!!
+        val r = solver.getVariable("r")!!
         assertTrue(x.vectorQuantity.aadd().isEmpty())
         // assertTrue(y.vectorQuantity.aadd().isEmpty())
         assertEquals("Infeasible", r.valueStr)
@@ -223,8 +222,8 @@ class DDBasedDiscreteSolverTests {
             inv d { (a and c) or (not(b) and not(a)) }
         """)
         solver.propagate()
-        val a = global.resolveVar("a")
-        val b = global.resolveVar("b")
+        val a = solver.getVariable("a")
+        val b = solver.getVariable("b")
         assertNotNull(a)
         assertNotNull(b)
         //println(y!!.quantity.bdd().toIteString())
@@ -244,9 +243,8 @@ class DDBasedDiscreteSolverTests {
             catchExceptions = false, input = """
             feature x: ScalarValues::Real = [1.0 .. 3.0];
             feature y: ScalarValues::Real = [1.0 .. 4.0];
-            feature a: ScalarValues::Boolean = x >= y {:>> spec = "true";}
-        """.trimIndent()
-        )
+            feature a: ScalarValues::Boolean = x >= y {:>> range = "true";}
+        """)
         initialize()
         //TODO: The actual test^^
     }
@@ -258,10 +256,9 @@ class DDBasedDiscreteSolverTests {
             catchExceptions = false, input = """
             feature x: ScalarValues::Real = [1.0 .. 3.0];
             feature y: ScalarValues::Real = [1.0 .. 4.0];
-            feature a: ScalarValues::Boolean = x >= y {:>> spec = "true";}
+            feature a: ScalarValues::Boolean = x >= y {:>> range = "true";}
             feature z: ScalarValues::Real = ITE(a, 3.0, 2.0) {:>> range = "1.0 .. 2.0";}
-        """.trimIndent()
-        )
+        """)
         initialize()
         //TODO: The actual test^^
     }
@@ -269,32 +266,28 @@ class DDBasedDiscreteSolverTests {
     @Test
     fun discContCyclicDependencyTest()  //not yet finished!
             = testSession("ScalarValues") {
-        loadKerML(
-            catchExceptions = false, input = """
-        feature x: ScalarValues::Real = [1.0..3.0];
-        feature y: ScalarValues::Real = [1.0..4.0];
-        feature a: ScalarValues::Boolean = x >= y {:>> spec = "true";}
-        feature z: ScalarValues::Real = ITE(a, 3.0, 2.0) {:>> range = "2.0..3.0";}
-        feature f: ScalarValues::Boolean = z >= y;
-        feature g: ScalarValues::Real = ITE(f, 1.5, 1.0);
-        """.trimIndent()
-        ).run {
-            initialize()
-            solver.propagate()
-            //println(getProperties().toString())
-            //this.letVar(UId("f"), builder.scalar(1.0)) //FIXME: Probably breaks...
-            //TODO: The actual test^^
-        }
+        loadKerML("""
+            feature x: ScalarValues::Real = [1.0..3.0];
+            feature y: ScalarValues::Real = [1.0..4.0];
+            feature a: ScalarValues::Boolean = x >= y {:>> range = "true";}
+            feature z: ScalarValues::Real = ITE(a, 3.0, 2.0) {:>> range = "2.0..3.0";}
+            feature f: ScalarValues::Boolean = z >= y;
+            feature g: ScalarValues::Real = ITE(f, 1.5, 1.0);
+        """)
+        solver.propagate()
+        //println(getProperties().toString())
+        //this.letVar(UId("f"), builder.scalar(1.0)) //FIXME: Probably breaks...
+        //TODO: The actual test^^
     }
 
     @Test
     fun complexBDDdownTest() = testSession("ScalarValues") {
         loadKerML("""
         feature a: ScalarValues::Boolean;
-        feature b: ScalarValues::Boolean {:>> spec = "false";}
-        feature c: ScalarValues::Boolean {:>> spec = "true";}
-        feature y: ScalarValues::Boolean = (a and c) or (not(b) and not(a)) {:>> spec = "true";}
-        """.trimIndent())
+        feature b: ScalarValues::Boolean {:>> range = "false";}
+        feature c: ScalarValues::Boolean {:>> range = "true";}
+        feature y: ScalarValues::Boolean = (a and c) or (not(b) and not(a)) {:>> range = "true";}
+        """)
         // 1) y auf true setzen
         // 2) impact auf a, b, c checken
         // 3) y auf False setzen
@@ -317,9 +310,9 @@ class DDBasedDiscreteSolverTests {
             inv y { (a and c) or (not(b) and not(a)) }
             inv z false { a and c }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         solver.propagate()
-        val y = global.resolveVar("z")
+        val y = solver.getVariable("z")
         assertNotNull(y)
         assertTrue(y!!.vectorQuantity.value == builder.False)
         //disc.solve(props)
@@ -329,18 +322,17 @@ class DDBasedDiscreteSolverTests {
     @Test
     fun exampleTest() = testSession("ScalarValues") {
         loadKerML("""
-                inv a { true }
-                feature b: ScalarValues::Boolean;
-                inv c { a and b }
-            """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        //val disc = solver.discSolver
+            inv a { true }
+            feature b: ScalarValues::Boolean;
+            inv c { a and b }
+        """)
+        assertNoIssues()
         solver.propagate()
-        val a = global.resolveVar("a")
+        val a = solver.getVariable("a")
         assertEquals(builder.True, a!!.vectorQuantity.bdd())
-        val b = global.resolveVar("b")
+        val b = solver.getVariable("b")
         assertEquals(builder.True, b!!.vectorQuantity.bdd())
-        val c = global.resolveVar("c")
+        val c = solver.getVariable("c")
         assertEquals(builder.True, c!!.vectorQuantity.bdd())
     }
 
@@ -351,16 +343,16 @@ class DDBasedDiscreteSolverTests {
             feature b: ScalarValues::Boolean;
             feature c: ScalarValues::Boolean = a and b;
         """)
+        assertNoIssues()
         solver.propagate()
-        val a = global.resolveVar("a")
+        val a = solver.getVariable("a")
         assertEquals(builder.True, a!!.vectorQuantity.bdd())
-        val b = global.resolveVar("b")
+        val b = solver.getVariable("b")
         assertTrue(b!!.vectorQuantity.bdd() === b.vectorQuantity.value.builder.Bool)
-        val c = global.resolveVar("c")
+        val c = solver.getVariable("c")
         assertTrue(c!!.vectorQuantity.bdd() === c.vectorQuantity.value.builder.Bool)
     }
 
-    //WIP: 10 Tests!
     @Test
     fun logicOperatorsAndTest() = testSession("ScalarValues") {
         loadKerML("""
@@ -375,27 +367,27 @@ class DDBasedDiscreteSolverTests {
             inv c3 { a3 and b3 }
         """)
         solver.propagate()
-        val a1 = global.resolveVar("a1")
+        val a1 = solver.getVariable("a1")
         assertEquals(builder.True, a1!!.vectorQuantity.bdd())
-        val a2 = global.resolveVar("a2")
+        val a2 = solver.getVariable("a2")
         //assertEquals(builder.BOOL, a2!!.quantity.bdd())
         assertTrue(a2!!.valueStr.startsWith("Unknown"))
 
-        val b1 = global.resolveVar("b1")
+        val b1 = solver.getVariable("b1")
         // println(b1.toString())
         assertEquals(builder.True, b1!!.vectorQuantity.bdd())
-        val b2 = global.resolveVar("b2")
+        val b2 = solver.getVariable("b2")
         //assertEquals(builder.BOOL, b2!!.quantity.bdd())
         assertTrue(b2!!.valueStr.startsWith("Unknown"))
 
-        val c1 = global.resolveVar("c1")
-        val c2 = global.resolveVar("c2")
+        val c1 = solver.getVariable("c1")
+        val c2 = solver.getVariable("c2")
         assertNotNull(c1)
         assertNotNull(c2)
 
-        val c3 = global.resolveVar("c3")
-        val b3 = global.resolveVar("c3")
-        val a3 = global.resolveVar("c3")
+        val c3 = solver.getVariable("c3")
+        val b3 = solver.getVariable("c3")
+        val a3 = solver.getVariable("c3")
 
         assertEquals(builder.True, c3!!.vectorQuantity.bdd(), "c3")
         assertEquals(builder.True, b3!!.vectorQuantity.bdd(), "b3")
@@ -410,12 +402,12 @@ class DDBasedDiscreteSolverTests {
             inv c { a and b }
         """)
         solver.propagate()
-        val a = global.resolveVar("a")
-        val b = global.resolveVar("b")
-        val c = global.resolveVar("c")
+        val a = solver.getVariable("a")
+        val b = solver.getVariable("b")
+        val c = solver.getVariable("c")
+        assertEquals(builder.True, c!!.vectorQuantity.value, "c (= a and b) should be true")
         assertEquals(builder.True, a!!.vectorQuantity.value, "a should be true")
         assertEquals(builder.True, b!!.vectorQuantity.value, "b should be true")
-        assertEquals(builder.True, c!!.vectorQuantity.value, "c (= a and b) should be true")
     }
 
     @Test
@@ -432,20 +424,20 @@ class DDBasedDiscreteSolverTests {
             feature c4: ScalarValues::Boolean = a4 or b4;
         """)
         solver.propagate()
-        val a2 = global.resolveVar("a2")
-        val a3 = global.resolveVar("a3")
-        val a4 = global.resolveVar("a4")
+        val a2 = solver.getVariable("a2")
+        val a3 = solver.getVariable("a3")
+        val a4 = solver.getVariable("a4")
 
-        val b2 = global.resolveVar("b2")
+        val b2 = solver.getVariable("b2")
         assertEquals(builder.True, b2!!.vectorQuantity.bdd())
-        val b3 = global.resolveVar("b3")
-        val b4 = global.resolveVar("b4")
+        val b3 = solver.getVariable("b3")
+        val b4 = solver.getVariable("b4")
 
-        val c2 = global.resolveVar("c2")
+        val c2 = solver.getVariable("c2")
         assertEquals(builder.True, c2!!.vectorQuantity.bdd())
-        val c3 = global.resolveVar("c3")
+        val c3 = solver.getVariable("c3")
         //assertTrue(c3!!.valueStr.startsWith("Unknown")) //Can make no assumption
-        val c4 = global.resolveVar("c4")
+        val c4 = solver.getVariable("c4")
         assertTrue(c4!!.valueStr.startsWith("Unknown"))
         //TODO!
     }
@@ -460,18 +452,18 @@ class DDBasedDiscreteSolverTests {
             feature a5: ScalarValues::Boolean;
             inv b5 { not(a5) }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         solver.propagate()
-        val a1 = global.resolveVar("a1")
-        val a2 = global.resolveVar("a2")
-        val a5 = global.resolveVar("a5")
+        val a1 = solver.getVariable("a1")
+        val a2 = solver.getVariable("a2")
+        val a5 = solver.getVariable("a5")
         assertEquals(builder.False, a5!!.vectorQuantity.bdd())
 
-        val b1 = global.resolveVar("b1")
+        val b1 = solver.getVariable("b1")
         assertEquals(builder.True, b1!!.vectorQuantity.bdd())
-        val b2 = global.resolveVar("b2")
+        val b2 = solver.getVariable("b2")
         assertEquals(builder.False, b2!!.vectorQuantity.bdd())
-        val b5 = global.resolveVar("b5")
+        val b5 = solver.getVariable("b5")
         assertEquals(builder.True, b5!!.vectorQuantity.bdd())
     }
 
@@ -485,7 +477,7 @@ class DDBasedDiscreteSolverTests {
         """)
         solver.propagate()
         //TODO: hier weiter
-        val a = global.resolveVar("a")
+        val a = solver.getVariable("a")
         assertEquals(builder.False, a!!.vectorQuantity.value.asBdd())
     }
 
@@ -495,11 +487,11 @@ class DDBasedDiscreteSolverTests {
             feature x: ScalarValues::Real = oneOf(1.0 .. 3.0);
             feature y: ScalarValues::Real = oneOf(1.0 .. 4.0);
             feature b: ScalarValues::Boolean;
-            feature a: ScalarValues::Boolean = (x >= y) and not(b) {:>> spec = "true";}
+            feature a: ScalarValues::Boolean = (x >= y) and not(b) {:>> range = "true";}
         """)
         solver.propagate()
-        val x = global.resolveVar("x")
-        val a = global.resolveVar("a")
+        val x = solver.getVariable("x")
+        val a = solver.getVariable("a")
 
         // val solver = solver.discreteSolver
 
@@ -533,7 +525,7 @@ class DDBasedDiscreteSolverTests {
             }
             """.trimIndent()
         )
-        assertEquals(0, status.issues.size, status.issues.toString())
+        assertNoIssues()
         solver.propagate()
         val ex3d = global.resolve("Example3::d")?.memberElement as Namespace
         val tst = ex3d.resolve("test")
@@ -555,16 +547,16 @@ class DDBasedDiscreteSolverTests {
         // There is no exor function ... yet. Either we add one ...
         initialize()
         solver.propagate()
-        assertEquals(0, status.issues.size, status.issues.toString())
-        val a = global.resolveVar("a")
+        assertNoIssues()
+        val a = solver.getVariable("a")
         assertTrue(a!!.valueStr.startsWith("Unknown"))
-        val b = global.resolveVar("b")
+        val b = solver.getVariable("b")
         assertTrue(b!!.valueStr.startsWith("True"))
-        val c = global.resolveVar("c")
-        val d = global.resolveVar("d")
-        val e = global.resolveVar("e")
-        val f = global.resolveVar("f")
-        val g = global.resolveVar("g")
+        val c = solver.getVariable("c")
+        val d = solver.getVariable("d")
+        val e = solver.getVariable("e")
+        val f = solver.getVariable("f")
+        val g = solver.getVariable("g")
     }
 
     @Test
@@ -575,9 +567,9 @@ class DDBasedDiscreteSolverTests {
             inv c { a or b }
         """)
         solver.propagate()
-        val a = global.resolveVar("a")
-        val b = global.resolveVar("b")
-        val c = global.resolveVar("c")
+        val a = solver.getVariable("a")
+        val b = solver.getVariable("b")
+        val c = solver.getVariable("c")
         assertEquals(true, b!!.vectorQuantity.value is BDD.Leaf, "b not leaf")
         assertEquals(true, c!!.vectorQuantity.value is BDD.Leaf, "c not leaf")
         assertEquals(builder.True, b.vectorQuantity.bdd(), "b")
@@ -597,7 +589,7 @@ class DDBasedDiscreteSolverTests {
             inv c { b } 
         """)
         solver.propagate()
-        assertEquals("Contradiction", (global.resolveVar("c")!!.valueStr))
+        assertEquals("Contradiction", (solver.getVariable("c")!!.valueStr))
         //println(status.errors.toString())
     }
 
@@ -609,12 +601,12 @@ class DDBasedDiscreteSolverTests {
             inv c; 
             inv d { (a and c) or (not(b) and not(a)) }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         solver.propagate()
-        val a = global.resolveVar("a")
-        val b = global.resolveVar("b")
-        val c = global.resolveVar("c")
-        val d = global.resolveVar("d")
+        val a = solver.getVariable("a")
+        val b = solver.getVariable("b")
+        val c = solver.getVariable("c")
+        val d = solver.getVariable("d")
         assertEquals(false, a!!.bdd() is BDD.Leaf)
         assertEquals(true, d!!.bdd() is BDD.Leaf)
         //assertEquals() TODO: Test for don't-care.size == 1
@@ -635,20 +627,20 @@ class DDBasedDiscreteSolverTests {
                 arbitraryConstraint1 and arbitraryConstraint2 or arbitraryConstraint3 
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         // println("reactToUserChangesTest before initialization")
         initialize()
         // println("reactToUserChangesTest before 1. propagation")
         solver.propagate()
-        val constraint = global.resolveVar("constr")
-        val arbitraryConstraint3 = global.resolveVar("arbitraryConstraint3")
+        val constraint = solver.getVariable("constr")
+        val arbitraryConstraint3 = solver.getVariable("arbitraryConstraint3")
         //1. One related constraint should be introduced: aC1 and aC2 evaluate to false => aC3 has to be true
         //FIXME: comment back in! assertEquals(1, (this as AgilaServiceImpl).dSolver.lastIntroducedProperty)
         //assertEquals(builder.True, arbitraryConstraint3!!.quantity.value)
         //println(constraint.toString())
         //println(arbitraryConstraint3!!.quantity.toString())
         //2. Now change quantity/value of the arbitrary constraints and see how it impacts introduced related properties, properties and conditions
-        arbitraryConstraint3!!.feature.expression = "false"
+        arbitraryConstraint3!!.expression = "false"
         arbitraryConstraint3.compileExpression()
         // println("reactToUserChangesTest before 2. propagation")
         solver.propagate()
@@ -656,7 +648,7 @@ class DDBasedDiscreteSolverTests {
         assertEquals("Contradiction", constraint!!.vectorQuantity.bdd().toString())
         //TODO hier weiter!
         //TODO: Now set satisfiable arbitrary constraints again
-        arbitraryConstraint3.feature.expression = ""
+        arbitraryConstraint3.expression = ""
         arbitraryConstraint3.compileExpression()
         arbitraryConstraint3.vectorQuantity.values = mutableListOf(builder.Bool)
         // println("reactToUserChangesTest before 3. propagation")
@@ -693,7 +685,7 @@ class DDBasedDiscreteSolverTests {
                 feature enumFake: ScalarValues::Real = if c1 ? 1.0 else if c2 ? 2.0 else if c3? 3.0 else if c4? 4.0 else 7.0; 
             """.trimIndent())
             solver.propagate()
-            val enum = global.resolveVar("enumFake")!!
+            val enum = solver.getVariable("enumFake")!!
 
             //println("=== CONDS ===")
             //builder.conds.indexes.forEach { println(it) }
@@ -708,8 +700,8 @@ class DDBasedDiscreteSolverTests {
                 feature enumFake: ScalarValues::Real = oneOf(1.0, 2.0, 3.0, 4.0, 7.0); 
             """.trimIndent())
             solver.propagate()
-            assertTrue(status.issues.isEmpty(), status.issues.toString())
-            val enum = global.resolveVar("enumFake")!!
+            assertNoIssues()
+            val enum = solver.getVariable("enumFake")!!
 
             //println("=== CONDS ===")
             //builder.conds.indexes.forEach { println(it) }
@@ -726,11 +718,11 @@ class DDBasedDiscreteSolverTests {
             """.trimIndent())
             solver.propagate()
             //builder.conds.x.forEach { println(it) }
-            val enum = global.resolveVar("selection")
-            val constr = global.resolveVar("selectorConstraint")
+            val enum = solver.getVariable("selection")
+            val constr = solver.getVariable("selectorConstraint")
 
             //assertEquals(builder.False, builder.conds.x[4])
-            assertTrue(global.resolveVar("selection")!!.vectorQuantity.value.asAadd() in Range(6.99 .. 7.01) )
+            assertTrue(solver.getVariable("selection")!!.vectorQuantity.value.asAadd() in Range(6.99 .. 7.01) )
         }
     }
 
@@ -744,7 +736,7 @@ class DDBasedDiscreteSolverTests {
             """.trimIndent())
             solver.propagate()
 
-            val enum = global.resolveVar("selection")!!
+            val enum = solver.getVariable("selection")!!
 
             //assertEquals(builder.False, builder.conds.x[7])
             //assertEquals(builder.False, builder.conds.x[8])
@@ -769,10 +761,10 @@ class DDBasedDiscreteSolverTests {
                 inv enumConstraint { (selection1 + selection2) >= 6.0 }
             """.trimIndent())
             solver.propagate()
-            assertTrue(status.issues.isEmpty(), status.issues.toString())
+            assertNoIssues()
 
-            val enum1 = global.resolveVar("selection1")!!
-            val enum2 = global.resolveVar("selection2")!!
+            val enum1 = solver.getVariable("selection1")!!
+            val enum2 = solver.getVariable("selection2")!!
             //assertEquals(builder.False, builder.conds.x[3])
             //assertEquals(builder.False, builder.conds.x[4])
             //assertEquals(builder.False, builder.conds.x[5])
@@ -791,14 +783,14 @@ class DDBasedDiscreteSolverTests {
                 feature enum1: ScalarValues::Real = oneOf(1.0, 3.0, 5.0);
                 feature enum2: ScalarValues::Real = oneOf(1.0, 4.0, 6.0);
                 feature enumResult: ScalarValues::Real = enum1 + enum2;
-                //feature enumConstraint: ScalarValues::Boolean = enumResult >= 5.0 {:>> spec = "true";}
-                feature enumConstraint: ScalarValues::Boolean = (enum1 + enum2) >= 5.0 {:>> spec = "true";}
+                //feature enumConstraint: ScalarValues::Boolean = enumResult >= 5.0 {:>> range = "true";}
+                feature enumConstraint: ScalarValues::Boolean = (enum1 + enum2) >= 5.0 {:>> range = "true";}
             """.trimIndent())
             solver.propagate()
-            val enum1 = global.resolveVar("enum1")!!
-            val enum2 = global.resolveVar("enum2")!!
-            val result = global.resolveVar("enumResult")!!
-            val constraint = global.resolveVar("enumConstraint")!!
+            val enum1 = solver.getVariable("enum1")!!
+            val enum2 = solver.getVariable("enum2")!!
+            val result = solver.getVariable("enumResult")!!
+            val constraint = solver.getVariable("enumConstraint")!!
         }
     }
 
@@ -814,17 +806,17 @@ class DDBasedDiscreteSolverTests {
             feature prop2T : ScalarValues::Boolean(true) = prop1T or true;
             feature prop2F : ScalarValues::Boolean(false) = prop1F and false;
         """.trimIndent())
-        assertEquals(0, status.issues.size, status.issues.toString())
+        assertNoIssues()
         solver.propagate()
-        assertEquals(0, status.issues.size, status.issues.toString())
+        assertNoIssues()
 
-        val c = global.resolveVar("contradiction")!!
-        val p1 = global.resolveVar("prop1")!!
-        val p1f = global.resolveVar("prop1T")!!
-        val p1t = global.resolveVar("prop1F")!!
-        val p2 = global.resolveVar("prop2")!!
-        val p2f = global.resolveVar("prop2T")!!
-        val p2t = global.resolveVar("prop2F")!!
+        val c = solver.getVariable("contradiction")!!
+        val p1 = solver.getVariable("prop1")!!
+        val p1f = solver.getVariable("prop1T")!!
+        val p1t = solver.getVariable("prop1F")!!
+        val p2 = solver.getVariable("prop2")!!
+        val p2f = solver.getVariable("prop2T")!!
+        val p2t = solver.getVariable("prop2F")!!
 
         assertEquals("Contradiction", c.vectorQuantity.value.toString())
         assertEquals("Contradiction", p1.vectorQuantity.value.toString())
@@ -847,15 +839,15 @@ class DDBasedDiscreteSolverTests {
             feature contradiction : ScalarValues::Boolean(true) = false;
 
         """.trimIndent())
-        assertEquals(0, status.issues.size, status.issues.toString())
+        assertNoIssues()
         solver.propagate()
-        assertEquals(0, status.issues.size, status.issues.toString())
+        assertNoIssues()
 
-        val c = global.resolveVar("contradiction")!!
-        val x = global.resolveVar("x")!!
-        val y = global.resolveVar("y")!!
-        val z = global.resolveVar("z")!!
-        val a = global.resolveVar("a")!!
+        val c = solver.getVariable("contradiction")!!
+        val x = solver.getVariable("x")!!
+        val y = solver.getVariable("y")!!
+        val z = solver.getVariable("z")!!
+        val a = solver.getVariable("a")!!
 
         assertEquals("Contradiction", c.vectorQuantity.value.toString())
         assertEquals("Contradiction", a.vectorQuantity.value.toString())
@@ -876,7 +868,7 @@ class DDBasedDiscreteSolverTests {
 
         for(i in 1 .. n)
         {
-            val v = global.resolveVar("x$i")!!.vectorQuantity.value
+            val v = solver.getVariable("x$i")!!.vectorQuantity.value
 
             if(i % 2 == 1)
                 assertEquals(v, builder.True)
@@ -896,7 +888,7 @@ class DDBasedDiscreteSolverTests {
         assertEquals(0, status.issues.size)
 
         for(i in 1 .. n) {
-            val v = global.resolveVar("x$i")!!.vectorQuantity.value
+            val v = solver.getVariable("x$i")!!.vectorQuantity.value
 
             assertEquals("Infeasible", v.toString())
         }
@@ -910,7 +902,7 @@ class DDBasedDiscreteSolverTests {
         assertEquals(0, status.issues.size)
 
         for(i in 1 .. n) {
-            val v = global.resolveVar("x$i")!!.vectorQuantity.value
+            val v = solver.getVariable("x$i")!!.vectorQuantity.value
             assertEquals("Unknown", v.toString())
         }
 
@@ -918,7 +910,7 @@ class DDBasedDiscreteSolverTests {
         solver.propagate()
 
         for(i in 1 .. n) {
-            val v = global.resolveVar("x$i")!!.vectorQuantity.value
+            val v = solver.getVariable("x$i")!!.vectorQuantity.value
             assertEquals(if(i % 2 == 1) v.builder.True else v.builder.False, v)
         }
     }

@@ -1,9 +1,9 @@
 package sysmlv2specificationtests.modelstests
 
+import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Test
-import kotlin.test.assertTrue
 
 
 class PartsTest {
@@ -37,6 +37,6 @@ class PartsTest {
                     }     
                 }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 }

@@ -1,28 +1,20 @@
 package com.github.tukcps.sysmd.cspsolver
 
 import com.github.tukcps.sysmd.compiler.KerML
-import com.github.tukcps.sysmd.compiler.parser.kerml.Expression
+import com.github.tukcps.sysmd.compiler.parser.kerml.legacy.Expression
 import com.github.tukcps.sysmd.cspsolver.Variable.BaseType
 import com.github.tukcps.sysmd.exceptions.ExpressionError
-import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.exceptions.SemanticError
+import com.github.tukcps.sysmd.exceptions.SolverError
 import com.github.tukcps.sysmd.exceptions.SysMDError
 import com.github.tukcps.sysmd.model.expression.AstRoot
-import com.github.tukcps.sysmd.model.expression.Invariant
 import com.github.tukcps.sysmd.model.expression.functions.AstByImplements
 import com.github.tukcps.sysmd.model.expression.functions.AstByParts
 import com.github.tukcps.sysmd.model.expression.functions.AstBySpecializations
-import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Membership
-import com.github.tukcps.sysmd.model.kerml.Type
-import com.github.tukcps.sysmd.model.kerml.UnresolvedFeature
-import com.github.tukcps.sysmd.model.kerml.implementation.DataTypeImplementation
-import com.github.tukcps.sysmd.quantities.Quantity
-import com.github.tukcps.sysmd.quantities.UnitDomainError
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import io.github.tukcps.aadd.AADD
 import io.github.tukcps.aadd.BDD
-import io.github.tukcps.aadd.DDBuilder
 import io.github.tukcps.aadd.IDD
 import io.github.tukcps.aadd.StrDD
 import io.github.tukcps.aadd.values.IntegerRange
@@ -30,61 +22,63 @@ import io.github.tukcps.aadd.values.NumberRange
 import io.github.tukcps.aadd.values.Range
 import io.github.tukcps.aadd.values.XBool
 import java.util.*
-import kotlin.collections.contains
+import java.util.Locale.getDefault
 
 
 /**
  * A variable in the system of inequations / constraints
  * @param membership the membership that links the feature and its element
+ * @param solver the solver that uses the variable
+ * @param path the path in the model to the variable
+ * @param baseType the base type, i.e., Bool, Real, Int, String.
+ * @param satisfyAll whether the constraint system shall be satisfiable for each of the variables
+ * @param unitSpec for Quantity, the expected unit
+ * @param valueSpecs a vector with constraints
+ * @param domain the domain of the unit
+ * @param expression a dependency as arithmetic/boolean expression
  */
 @Suppress("UNCHECKED_CAST")
 open class VariableImplementation (
-    override var membership: Membership,
-    override var builder: DDBuilder,
-    override val baseType: BaseType = BaseType.Unknown,
+    private var membership: Membership,
+    override val solver: Solver,
+    override val path: String,
+    override val baseType: BaseType,
+    override val satisfyAll: Boolean = false,
+    private val valueSpecs: List<String> = listOf(),
+    override val unitSpec: String = "",
+    override val domain: String? = null,
+    override var expression: String? = null
 ): Variable {
-
+    val builder get() = solver.model.builder
     override var updated: Boolean = true
     override var hasBeenChanged: Boolean = true
 
-    override val name: String?
-        get() {
-            if (membership.owningNamespace?.qualifiedName == null) return membership.memberName
-            return membership.owningNamespace?.qualifiedName + "::" + (membership.memberName?:membership.memberShortName)
-        }
-
-    override val feature: Feature
-         = membership.memberElement as Feature
-
-    // The elementId is used to link the variable with an element
-    override val elementId: UUID?
-         = membership.elementId
-
-    // A list in which the elements of the (Array) Variable may lie.
-    override var valueSpecs: MutableList<Any?> = mutableListOf()
-
-    /**
-     * The constraints on the unit, given as a owned feature 'unit'.
-     * As it is an expression-string, we have to remove the quotation marks.
-     */
-    override val unitSpec: String =
-    // override val unitSpec: String =
-        feature.features().firstOrNull { it.name == "unit"}?.expression?.trim('"', ' ')?:""
-
     /** access methods for the valueSpec field; returns different types */
-    override val rangeSpecs: MutableList<Range>
-        get() = if(valueSpecs.isNotEmpty() && valueSpecs[0]!=null) valueSpecs as MutableList<Range> else mutableListOf(Range.Reals)
+    override var rangeSpecs: MutableList<Range> = mutableListOf()
+    override var boolSpecs: MutableList<XBool> = mutableListOf()
+    override var intSpecs: MutableList<IntegerRange> = mutableListOf()
+    override val stringSpecs: MutableList<String> = mutableListOf()
 
-    override val boolSpecs: MutableList<XBool>
-        get() {
-            if (valueSpecs.firstOrNull() is XBool)
-                return if(valueSpecs.firstOrNull() !=null) valueSpecs as MutableList<XBool> else mutableListOf(XBool.X)
-            else
-                throw SysMDError(message = "Invalid bool spec", element = feature)
+    init {
+        when (baseType) {
+            BaseType.Real -> if (valueSpecs.isEmpty()) rangeSpecs = mutableListOf(Range.Reals) else
+                valueSpecs.forEach { rangeSpecs.add(if (it.isNotBlank()) Range(it) else Range.Reals) }
+
+            BaseType.Int  -> if(valueSpecs.isEmpty()) intSpecs = mutableListOf(IntegerRange.Integers) else
+                valueSpecs.forEach { intSpecs.add(if (it.isNotBlank()) IntegerRange(it.trim('[', ']', ' ')) else IntegerRange.Integers) }
+
+            BaseType.Bool -> if(valueSpecs.isEmpty()) boolSpecs = mutableListOf(XBool.X)
+                else valueSpecs.forEach {
+                    when (it.trim().lowercase(getDefault())) {
+                        "true"  -> boolSpecs.add(XBool.True)
+                        "false" -> boolSpecs.add(XBool.False)
+                        else    -> boolSpecs.add(XBool.X)
+                    }
+                }
+            BaseType.String -> {}
+            BaseType.Unknown -> throw SysMDError("Unknown variable type: $baseType")
         }
-
-    override val intSpecs: MutableList<IntegerRange>
-        get() = if(valueSpecs.isNotEmpty() && valueSpecs[0]!=null) valueSpecs as MutableList<IntegerRange> else mutableListOf(IntegerRange.Integers)
+    }
 
     /** A getter for a string representation of the value, with field for serialization. */
     override var valueStr: String = ""
@@ -114,105 +108,45 @@ open class VariableImplementation (
      */
     override var ast: AstRoot? = null
 
-
     /**
      * This method initializes the transient fields based on the specified value and unit
      */
     override fun initVectorQuantity(): Variable {
         when (baseType) {
             BaseType.Real -> {
-                if (feature.typeConstraint.isNotEmpty()) {
-                    valueSpecs = if (feature.typeConstraint[0] == "Real" || feature.typeConstraint.isEmpty()) {
-                        mutableListOf(Range.Reals)
-                    } else {
-                        val ranges = mutableListOf<Any?>()
-                        feature.typeConstraint.forEach {
-                            if (it.isNotBlank())
-                                ranges.add(Range(it))
-                            else
-                                ranges.add(Range.Reals)
-                        }
-                        ranges
-                    }
-                }
                 val values = mutableListOf<AADD>()
-                rangeSpecs.forEach{values.add(builder.real(it,elementId.toString()))}
-                //Test, if there is a domain (in namespace SI) defined in the definition of the
-
-
-                if(feature.type.firstOrNull()==null)
-                    throw UnitDomainError("No domain or domain not from ISQ, Quantities, Ranges or ScalarValues defined for attribute " + feature.name)
-                var unitDomain = feature.type.firstOrNull { it.owner?.declaredName == "ISQ" || it.owner?.declaredName == "Quantities"
-                        || it.owner?.declaredName == "Ranges"  || it.owner?.declaredName == "ScalarValues"}?.qualifiedName  ?: feature.type.first().qualifiedName!!
-                unitDomain = unitDomain.replace("ISQ::","").replace("Quantity::","")
-                    .replace("Ranges::","").replace("ScalarValues::","")
-                if(!unitDomain.contains("Vector") && values.size>1)
-                    throw UnitDomainError("Vectors only allowed with type a type extended from Quantities::VectorQuantityValue")
-                vectorQuantity = VectorQuantity(values, unitSpec, unitDomain)
-
+                rangeSpecs.forEach{values.add(builder.real(it,path)) }
+                val unitDomain = unitSpec // TODO!!!
+                vectorQuantity = VectorQuantity(values, unitSpec, domain?:"")
             }
             BaseType.Int -> {
-                if (feature.typeConstraint.isNotEmpty()) {
-                    val ranges = mutableListOf<Any?>()
-                    feature.typeConstraint.forEach {
-                        ranges.add(IntegerRange(it.trim('[', ']', ' ')))
-                    }
-                    valueSpecs = ranges
-                }
                 val values = mutableListOf<IDD>()
-                intSpecs.forEach{ values.add(builder.integer(it)) }
+                intSpecs.forEach { values.add(builder.integer(it)) }
                 vectorQuantity = VectorQuantity(values)
             }
             BaseType.Bool -> {
                 val values = mutableListOf<BDD>()
-                val ranges = mutableListOf<Any?>()
-                if(feature.typeConstraint.isEmpty()){
-                    ranges.add(XBool.X)
-                    values.add(builder.variable(elementId.toString(), elementId.toString()))
+                boolSpecs.forEach {
+                    values.add(
+                        when (it) {
+                            XBool.True -> builder.True
+                            XBool.False -> builder.False
+                            else -> builder.variable(path, path)
+                        }
+                    )
                 }
-                if (feature is Invariant) {
-                    if ((feature as Invariant).isNegated)
-                        feature.typeConstraint = mutableListOf("False")
-                    else
-                        feature.typeConstraint = mutableListOf("True")
-                }
-                feature.typeConstraint.forEach {
-                    when (it.trim()) {
-                        "True", "true" -> {
-                            ranges.add(XBool.True)
-                            values.add(builder.True)
-                        }
-
-                        "False", "false" -> {
-                            ranges.add(XBool.False)
-                            values.add(builder.False)
-                        }
-
-                        "null", "X", "Unknown" -> {
-                            ranges.add(XBool.X)
-                            values.add(builder.variable(elementId.toString(), elementId.toString()))
-                        }
-
-                        else ->  // throw Error("Forbidden boolSpec value in ValueFeature $id: $valueSpec")
-                        {
-                            ranges.add(XBool.X)
-                            values.add(builder.variable(elementId.toString(), elementId.toString()))
-                        }
-                    }
-                }
-                valueSpecs = ranges
                 vectorQuantity = VectorQuantity(values)
             }
             BaseType.String -> {
                 val values = mutableListOf<StrDD>()
                 if(valueSpecs.isEmpty())
                     values.add(builder.Strings)
-                valueSpecs.forEach{ values.add(builder.string(it as String)) }
+                valueSpecs.forEach{ values.add(builder.string(it)) }
                 vectorQuantity = VectorQuantity(values)
             }
             else -> {
-                feature.model!!.status.warn( Issue.Kind.WARN_UNRESOLVED_TYPE, "no type found for ${membership.memberName}; assuming Real", element = feature)
-                vectorQuantity = Quantity(builder.Reals, unitSpec)
+                throw SysMDError( "no type found for ${path}; assuming Real")
+                // vectorQuantity = Quantity(builder.Reals, unitSpec)
             }
         }
         stable = false
@@ -228,10 +162,10 @@ open class VariableImplementation (
         stable = false
         if (str == null) return this
         when(str.trim().lowercase(Locale.US)) {
-            "true"          -> valueSpecs = mutableListOf(XBool.True)
-            "false"         -> valueSpecs = mutableListOf(XBool.False)
-            "x", "unknown"  -> valueSpecs = mutableListOf(XBool.X)
-            "nab"           -> valueSpecs = mutableListOf(XBool.NaB)
+            "true"          -> boolSpecs = mutableListOf(XBool.True)
+            "false"         -> boolSpecs = mutableListOf(XBool.False)
+            "x", "unknown"  -> boolSpecs = mutableListOf(XBool.X)
+            "nab"           -> boolSpecs = mutableListOf(XBool.NaB)
             ""              -> { /* no update */ }
             else -> throw ExpressionError("boolean constraint must be true, false or x/unknown.")
         }
@@ -251,7 +185,7 @@ open class VariableImplementation (
 
         if (lb > ub)
             throw ExpressionError("in range subtype constraint, lower bound must be less or equal upper bound.")
-        valueSpecs = mutableListOf(Range(lb, ub))
+        rangeSpecs = mutableListOf(Range(lb, ub))
         return this
     }
 
@@ -261,7 +195,7 @@ open class VariableImplementation (
         if (lb == null || ub == null) return this
         if (lb > ub)
             throw ExpressionError("in range subtype constraint, lower bound must be less or equal upper bound.")
-        valueSpecs = mutableListOf(Range(lb, ub))
+        rangeSpecs = mutableListOf(Range(lb, ub))
         return this
     }
 
@@ -270,7 +204,7 @@ open class VariableImplementation (
         updated = true
         if (init.min > init.max)
             throw ExpressionError("in range subtype constraint, lower bound must be less or equal upper bound.")
-        valueSpecs = mutableListOf(Range(init.min, init.max))
+        rangeSpecs = mutableListOf(Range(init.min, init.max))
         return this
     }
 
@@ -280,7 +214,7 @@ open class VariableImplementation (
         updated = true
         if (init.min > init.max)
             throw ExpressionError("in integer range subtype constraint, lower bound must be less or equal upper bound.")
-        valueSpecs = mutableListOf(IntegerRange(init.min, init.max))
+        intSpecs = mutableListOf(IntegerRange(init.min, init.max))
         return this
     }
 
@@ -290,24 +224,24 @@ open class VariableImplementation (
      */
     override fun aadd(): AADD {
         if (vectorQuantity.values[0] is AADD) return vectorQuantity.valuesIn(unitSpec)[0] as AADD
-        else throw SysMDError("Expression value cannot be cast to AADD", element = feature)
+        else throw SolverError("Expression value cannot be cast to AADD", path = path)
     }
 
     override fun bdd(): BDD {
         if (vectorQuantity.values[0] is BDD) return vectorQuantity.values[0] as BDD
         else
-            throw SysMDError("Expression value cannot be cast to BDD", element = feature)
+            throw SolverError("Expression value cannot be cast to BDD", path = path)
     }
 
     override fun idd(): IDD {
         if (vectorQuantity.values[0] is IDD) return vectorQuantity.values[0] as IDD
-        else throw SysMDError("Expression value cannot be cast to IDD", element = feature)
+        else throw SolverError("Expression value cannot be cast to IDD", path = path)
     }
 
 
     /** Creates a compact string, skipping fields not relevant, incl. doc */
     override fun toString(): String =
-        "Variable { feature=${feature.qualifiedName}, type=$baseType, unitSpec=$unitSpec, valueSpecs=$valueSpecs, value = $vectorQuantity }"
+        "Variable { path=${path}, type=$baseType, unitSpec=$unitSpec, valueSpecs=$valueSpecs, value = $vectorQuantity }"
 
     /**
      * Returns min value of position index of VectorQuantity
@@ -316,7 +250,7 @@ open class VariableImplementation (
         when (vectorQuantity.values.getOrNull(index)) {
             is AADD -> (vectorQuantity.valuesIn(unitSpec)[index] as AADD).getRange().min
             is IDD -> (vectorQuantity.valuesIn(unitSpec)[index] as IDD).getRange().min
-            else -> throw SemanticError(".min can only be applied on properties of type Integer or Real", element=feature)
+            else -> throw SolverError(".min can only be applied on properties of type Integer or Real", path=path)
         } as T
 
     /**
@@ -326,7 +260,7 @@ open class VariableImplementation (
         when (vectorQuantity.values.getOrNull(index)) {
             is AADD -> (vectorQuantity.valuesIn(unitSpec)[index] as AADD).getRange().max
             is IDD -> (vectorQuantity.valuesIn(unitSpec)[index] as IDD).getRange().max
-            else -> throw InternalError(".max can only be applied on properties of type Integer or Real")
+            else -> throw SolverError(".max can only be applied on properties of type Integer or Real", path=path)
         } as T
 
 
@@ -336,26 +270,13 @@ open class VariableImplementation (
      */
     override fun compileExpression() {
         try {
-            val parserSysMD = KerML(feature.model!!)
-                .also { it.input = feature.expression?:"" }
+            val parserSysMD = KerML(solver.model).also { it.input = expression?:"" }
 
-            // The parsing itself, can throw exceptions that are caught optionally below.
-            if (feature.model?.repo?.scalarType == null)
-                feature.model?.status?.error("Could not resolve ScalarValues::ScalarValue -- add usage of ScalarValues", element = feature, kind = Issue.Kind.ERROR_UNRESOLVED_NAME)
-            feature.type.filterIsInstance<UnresolvedFeature>().forEach {
-                feature.model?.status?.error("Could not resolve Type '${it.relativeName}' of feature ${feature.qualifiedName}", element = feature, kind = Issue.Kind.ERROR_UNRESOLVED_NAME)
-            }
-            if (!feature.specializes(feature.model?.repo?.scalarType))
-                feature.model?.status?.error("Expected subtype of ScalarValues::ScalarValue", element = feature)
-
-            if (feature.expression?.isNotBlank() == true) {
+            if (expression?.isNotBlank() == true) {
                 // set the scope to the element to which the property belongs.
-                feature.owner
-                    ?: throw SemanticError("No owner of ${feature.qualifiedName}; initialize identifications before using services.")
-                parserSysMD.semantics.namespace = feature.owningNamespace!!
-                parserSysMD.semantics.expression = feature
+                parserSysMD.semantics.namespace = membership.owningNamespace!!
 
-                ast = AstRoot(feature.model!!, feature, parserSysMD.Expression())
+                ast = AstRoot(solver.model, this, parserSysMD.Expression())
                 // Initialize internal AST nodes, starting from leaves
                 ast?.runDepthFirst { initialize() }
                 when (baseType) {
@@ -372,10 +293,11 @@ open class VariableImplementation (
             }
         } catch (exception: Exception) {
             ast = null
-            membership.model?.status?.error(
-                 "In expression '${feature.expression}' of ${feature.qualifiedName}: ${exception.message}",
-                element = membership,
-                cause = exception)
+            solver.model.status.error(
+                message = "In variable '${expression}' of ${path}: ${exception.message}",
+                path = path,
+                cause = exception
+            )
         }
     }
 
@@ -398,7 +320,7 @@ open class VariableImplementation (
                     leaveNames.add(it.qualifiedName!!)
             }
             if (membership.memberName in leaveNames || membership.memberShortName in leaveNames)
-                throw SemanticError("Cyclic Dependency in '$name' ")
+                throw SolverError("Cyclic Dependency in '$path' ", path = path)
         }
     }
 

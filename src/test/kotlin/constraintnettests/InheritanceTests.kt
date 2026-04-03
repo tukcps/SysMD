@@ -53,10 +53,8 @@ class InheritanceTests {
      * and become visible by the same name in the respective element.
      */
     @Test
-    fun inheritFeatureTest() = testSession {
-        loadKerML(
-            """ 
-            package ScalarValues { datatype Natural :> Base::Anything; }
+    fun inheritFeatureTest() = testSession("ScalarValues") {
+        loadKerML(""" 
             type t1 :> Base::Anything {
                 feature f [2]: ScalarValues::Natural; 
             }

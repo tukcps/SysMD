@@ -18,8 +18,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.github.tukcps.sysmd.generated.resources.Res
-import com.github.tukcps.sysmd.generated.resources.SysMD_Icon
+import com.github.tukcps.sysmd.loadPainter
 import com.github.tukcps.sysmd.rest.RESTRepository
 import com.github.tukcps.sysmd.ui.composables.SysMDButton
 import com.github.tukcps.sysmd.ui.dialogs.NewCommitDialog
@@ -27,7 +26,6 @@ import com.github.tukcps.sysmd.ui.dialogs.NoProjectSelectedDialog
 import com.github.tukcps.sysmd.ui.styles.AppTheme
 import com.github.tukcps.sysmd.ui.viewmodel.SysMDViewModel
 import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.painterResource
 
 
 /**
@@ -59,7 +57,7 @@ fun MenuLine(sysMDViewModel: SysMDViewModel) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Image(
                     modifier = Modifier.padding(top = 3.dp).align(Alignment.Bottom),
-                    painter = painterResource(Res.drawable.SysMD_Icon),
+                    painter = loadPainter("/drawable/SysMD-Icon.png"),
                     contentDescription = "SysMD Notebook"
                 )
 

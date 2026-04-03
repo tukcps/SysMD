@@ -1,7 +1,13 @@
 [versions]
-kotlin = "2.2.21"
-compose-plugin = "1.9.1"
+kotlin = "2.3.20"
+compose-plugin = "1.10.3"
+compose = "1.10.3"
 
 [plugins]
 jetbrainsCompose = { id = "org.jetbrains.compose", version.ref = "compose-plugin" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+
+[libraries]
+compose-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "compose" }
+compose-ui-test = { module = "org.jetbrains.compose.ui:ui-test", version.ref = "compose" }
+compose-ui-test-junit4 = { module = "org.jetbrains.compose.ui:ui-test-junit4", version.ref = "compose" }

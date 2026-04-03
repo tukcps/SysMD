@@ -1,9 +1,9 @@
 package compiler.kerml.examples
 
+import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
-import kotlin.test.assertTrue
 
 class AnnotationsTests {
 
@@ -21,7 +21,7 @@ class AnnotationsTests {
             comment Comment1 about A, B
                 /* This is the comment body text. */
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -38,6 +38,6 @@ class AnnotationsTests {
                 /* This is also a comment about N. */
             }
         """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 }

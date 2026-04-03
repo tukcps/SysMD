@@ -1,14 +1,14 @@
 package com.github.tukcps.sysmd.cspsolver.normalizer
 
-import io.github.tukcps.aadd.BDD
-import io.github.tukcps.aadd.values.XBool
+import com.github.tukcps.sysmd.compiler.scanner.Token
+import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.model.expression.AstLeaf
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.model.expression.functions.AstNot
-import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.compiler.scanner.Token
 import com.github.tukcps.sysmd.services.session.Session
+import io.github.tukcps.aadd.BDD
+import io.github.tukcps.aadd.values.XBool
 
 /**
  * Class to normalize constraints, i.e., for each combination of variables at maximum one constraint exists.
@@ -62,18 +62,17 @@ class CNNormalizer {
         // add the properties that need no normalization
         var simpleProp : SimpleProperty<XBool>
         for(prop in originalProperties) {
-             simpleProp = SimpleProperty(name = prop.membership.path(), expression = prop.feature.expression?:"", dd = prop.bdd(), simpleAst = prop.ast?.let {
+             simpleProp = SimpleProperty(name = prop.path, expression = prop.expression?:"", dd = prop.bdd(), simpleAst = prop.ast?.let {
                  SimpleAstRoot(it.dependency)
-             }, valueSpecs = mutableListOf(prop.valueSpecs[0]))
+             }, valueSpecs = mutableListOf(prop.boolSpecs[0]))
             normalizedProperties.add(simpleProp)
         }
-
 
         val notNegatedProps = normalizedProperties as ArrayList
         val props = arrayListOf<SimpleProperty<XBool>>()//normalizedProperties.properties as ArrayList
 
-        notNegatedProps.forEach {//for (prop in notNegatedProps) {
-            if (it.boolSpec.firstOrNull()?.toString() == "False") {
+        notNegatedProps.forEach {
+            if (it.boolSpec.firstOrNull() == XBool.False) {
                 val negated = negate(it, model)
 
                 props.remove(it)
@@ -99,7 +98,7 @@ class CNNormalizer {
         for(prop in originalProperties) {
 
             // prop defines a variable
-            if (variableIndexes.containsKey(prop.elementId.toString())) {
+            if (variableIndexes.containsKey(prop.path)) {
                 properties.add(prop)
                 continue
             }
@@ -117,9 +116,7 @@ class CNNormalizer {
                     properties.add(prop)
                 }
             }
-
         }
-
         return properties
     }
 
@@ -260,7 +257,6 @@ class CNNormalizer {
         val negatedAST = AstNot(model, arrayListOf(originalAST!!.originalAst))
         negatedAST.initialize()
         val negatedExpression = "not(${property.expression})"
-
 
         return SimpleProperty(
             name = property.name,

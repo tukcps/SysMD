@@ -59,7 +59,7 @@ class FeatureTests {
             abstract feature person : Person; // Default subsets Base::things.
             feature child subsets person;
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -77,7 +77,7 @@ class FeatureTests {
             // Unclear whether part of model is missing or what redefines means hare  
             feature redefines children[0];
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -97,7 +97,7 @@ class FeatureTests {
             typing f typed by B;
             typing g : A;
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -120,7 +120,7 @@ class FeatureTests {
             specialization Sub subset parent subsets person;
             specialization subset mother subsets parent;
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -142,7 +142,7 @@ class FeatureTests {
             
             redefinition LegalRecord::guardian redefines parent;
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -160,7 +160,7 @@ class FeatureTests {
                 feature age[1] : ScalarValues::Integer;
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -181,7 +181,7 @@ class FeatureTests {
                 member feature g featured by A;
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -198,7 +198,7 @@ class FeatureTests {
             
             feature u subsets s;
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
 }

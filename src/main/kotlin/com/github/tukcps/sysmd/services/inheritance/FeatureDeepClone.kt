@@ -1,5 +1,6 @@
 package com.github.tukcps.sysmd.services.inheritance
 
+import com.github.tukcps.sysmd.model.expression.Expression
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Multiplicity
 import com.github.tukcps.sysmd.model.kerml.Namespace
@@ -18,11 +19,12 @@ fun Feature.deepCloneWithInheritedFeature(addTo: Namespace): Feature {
 
     val createdKlon = model!!.addOwnedMember(klon, addTo)
 
-    if (klon == createdKlon) {
+    if(klon == createdKlon) {
         ownedElement.forEach {
             when (it) {
+                is Expression if klon is Expression -> {} // expressions already perform deep clone by default
                 is Multiplicity -> model?.addOwnedMember(it.clone(), createdKlon)
-                is Feature if (!it.isDerived) -> model?.addOwnedMember(it.deepCloneWithInheritedFeature(createdKlon), createdKlon)
+                is Feature if (!it.isDerived) -> it.deepCloneWithInheritedFeature(createdKlon)
                 is Specialization -> model?.addOwnedRelationship(it.clone(), createdKlon)
             }
         }

@@ -81,16 +81,6 @@ object Indexer {
     }
 
 
-    /** Takes a new SysMD text, analyzes it and returns the root Element
-     * @param text A String that represents the SysMD code
-     * @return The root Element of the built KerML tree
-     */
-    private suspend fun Session.textToElements(text : String) : Element{
-        reset()
-        delay(2000)
-        return global
-    }
-
     /**Updates the global indexes by comparing and old Index to a new Index.
      * New entries will be added to the global index while deleted entries will be removed.
      */

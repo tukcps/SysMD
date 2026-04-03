@@ -20,8 +20,9 @@ import java.util.*
  *
  *      StateUsage = OccurrenceUsagePrefix 'state'
  *          ActionUsageDeclaration StateUsageBody
- *          StateUsageBody : StateUsage =
- *          ';'
+ *
+ *      StateUsageBody =
+ *            ';'
  *          | ( isParallel ?= 'parallel' )?
  *          '{' StateBodyItem* '}'
  *

@@ -152,11 +152,15 @@ fun KerML.ValuePart() {
  */
 fun KerML.OwnedExpression() {
     val iBeforeExpression = token.indices.first
-    val feature = semantics.element<Feature>()
-    semantics.expression = feature
+    val el = semantics.element<Namespace>()
+    // semantics.expression = feature.path()
     Expression().also {
-        feature.indices = iBeforeExpression..consumedToken.indices.last
-        feature.expression = input.subSequence(feature.indices!!).toString().trim()
+        if(el is Feature)
+        {
+            el.indices = iBeforeExpression..consumedToken.indices.last
+            el.expression = input.subSequence(el.indices!!).toString().trim()
+        }
+        model.addOwnedMember(it, el)
     }
 }
 
@@ -203,7 +207,7 @@ fun KerML.PrefixMetadataMember() {
 
  */
 fun KerML.MetadataFeature() = MetadataFeatureActions(semantics, ::MetadataFeatureImplementation).parse {
-    METADATA.consume()
+    setOf( METADATA, ATSIGN ).consume()
     MetadataFeatureDeclaration()
     optional(start = ABOUT) {
         ABOUT.consume()
@@ -259,7 +263,7 @@ fun KerML.MetadataBody() {
 fun KerML.MetadataBodyElement() {
     alternatives {
         nonFeatureElementStart starts { NonFeatureElement() }
-        METADATA starts { MetadataFeature() }
+        setOf(METADATA, ATSIGN) starts { MetadataFeature() }
         ALIAS starts { AliasMember() }
         IMPORT starts { Import() }
         others { MetadataBodyFeatureMember() }
@@ -300,6 +304,7 @@ fun KerML.MetadataBodyFeature() = FeatureActions<Feature>(semantics, ::FeatureIm
  */
 fun KerML.Invariant() = InvariantActions(semantics, ::InvariantImplementation).parse {
     INV.consume()
+    // FIXME: this is the wrong syntax (value comes first + has a full FeatureDeclaration; see 8.2.5.7.4)
     Identification().also { semantics.create(it) }
     alternatives {
         TRUE then  { semantics.element<Invariant>().isNegated = false }

@@ -142,7 +142,7 @@ fun Session.initProductParts(
             if (variable != null) {
                 leaf.upQuantity = variable.vectorQuantity
                 leaf.downQuantity = variable.vectorQuantity
-                leaf.qualifiedName = variable.feature.qualifiedName
+                leaf.qualifiedName = variable.path
                 if (leaf.upQuantity.values[0] is IDD) isRealProduct = false
             } else if (transitive && elementIterator !is Variable) { // Transitive: search property in parts ...
                 val elementRef = elementIterator.type.firstOrNull()

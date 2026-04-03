@@ -3,19 +3,14 @@
 package com.github.tukcps.sysmd.cspsolver
 
 import com.fasterxml.jackson.annotation.JsonIgnore
+import com.github.tukcps.sysmd.model.expression.AstRoot
+import com.github.tukcps.sysmd.quantities.VectorQuantity
 import io.github.tukcps.aadd.AADD
 import io.github.tukcps.aadd.BDD
 import io.github.tukcps.aadd.IDD
 import io.github.tukcps.aadd.values.IntegerRange
 import io.github.tukcps.aadd.values.Range
 import io.github.tukcps.aadd.values.XBool
-import com.github.tukcps.sysmd.model.expression.AstRoot
-import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.kerml.Membership
-import com.github.tukcps.sysmd.model.util.size
-import com.github.tukcps.sysmd.quantities.VectorQuantity
-import io.github.tukcps.aadd.DDBuilder
-import java.util.*
 
 
 /**
@@ -28,31 +23,23 @@ import java.util.*
 interface Variable: ConstraintPropagation {
     enum class BaseType {Bool, Int, String, Real, Unknown}
 
-    var membership: Membership
-    val builder: DDBuilder
+    val solver: Solver
 
-    val feature: Feature
-    val elementId: UUID?
-    val name: String?
+    val path: String
 
     val baseType: BaseType
+    val satisfyAll: Boolean
+    val domain: String?
+    var expression: String?
 
     /** Holds either an IntegerRange, a Range, or an XBool, depending on the type. */
-    var valueSpecs:  MutableList<Any?>
     val unitSpec:   String       // Specified unit as string
 
     /** access methods for the valueSpec field; returns different types */
-    val rangeSpecs: MutableList<Range>
-        get() = if(valueStr.size()>0) valueSpecs as MutableList<Range> else mutableListOf(Range.Reals)
-
-    val boolSpecs: MutableList<XBool>
-        get() = if(valueStr.size()>0) valueSpecs as MutableList<XBool> else mutableListOf(XBool.X)
-
-    val intSpecs: MutableList<IntegerRange>
-        get() = if(valueStr.size()>0) valueSpecs as MutableList<IntegerRange> else mutableListOf(IntegerRange.Integers)
-
+    var rangeSpecs: MutableList<Range>
+    var boolSpecs: MutableList<XBool>
+    var intSpecs: MutableList<IntegerRange>
     val stringSpecs: MutableList<String>
-        get() = if(valueStr.size()>0) valueSpecs as MutableList<String> else mutableListOf("")
 
     /** A getter for a string representation of the value, with field for serialization. */
     @get:JsonIgnore

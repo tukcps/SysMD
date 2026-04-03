@@ -82,7 +82,7 @@ internal class AstCharacterizedResult (
             if(importedResults != null){
                 for(result in importedResults!!) {
                     //Check if this result contains the correct Module and Attribute names that we are looking for
-                    if(result.attributeQualifiedName == (this.root as AstRoot).variable.name){
+                    if(result.attributeQualifiedName == (this.root as AstRoot).variable.path){
 
                         //Check if the Units of the upQuantity and the one from the JSON are equal
                         // IF YES: Overwrite the [-INF,+INF] range of the json_Quantity with the min max values from the JSON File

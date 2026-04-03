@@ -1,18 +1,21 @@
 package com.github.tukcps.sysmd.quantities
 
+import com.github.tukcps.sysmd.cspsolver.Variable
+import com.github.tukcps.sysmd.exceptions.SemanticError
+import com.github.tukcps.sysmd.quantities.baseUnits.ThermodynamicTemperature
 import io.github.tukcps.aadd.*
 import io.github.tukcps.aadd.functions.*
 import io.github.tukcps.aadd.values.IntegerRange
 import io.github.tukcps.aadd.values.Range
 import io.github.tukcps.aadd.values.XBool
-import com.github.tukcps.sysmd.cspsolver.Variable
-import com.github.tukcps.sysmd.exceptions.SemanticError
-import com.github.tukcps.sysmd.quantities.baseUnits.ThermodynamicTemperature
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneOffset.UTC
 import java.time.format.DateTimeFormatter
-import kotlin.math.*
+import kotlin.math.abs
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.pow
 
 /**
  * A quantity that consists of a value that is represented by a DD<*> instance, and
@@ -44,7 +47,6 @@ open class VectorQuantity : Cloneable {
     constructor(values: List<DD<*>>) {
         if (values.isEmpty())
             throw DDError(msg = "Empty values for VectorQuantity is not supported")
-        val type = values[0]::class
         when(values[0]) {
             is Integer -> values.forEach { if (it !is Integer) throw DDError("Different value types in vector are not supported") }
             is Real    -> values.forEach { if (it !is Real)    throw DDError("Different value types in vector are not supported") }

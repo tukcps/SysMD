@@ -1,0 +1,7 @@
+- Christoph Grimm (RPTU)
+- Sebastian Post (RPTU)
+- Axel Ratzke (RPTU)
+- Theogene Uribumeneshi (RPTU, NXP) 
+- Moritz Schuler (RPTU)
+- Moritz Herzog (RPTU)
+- Nicolas Theobald (RPTU)

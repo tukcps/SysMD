@@ -83,7 +83,7 @@ class MetafeatureTest {
             }
             @m { x = "test"; }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val m = global.resolve("m")?.member<Metaclass>()
         assertNotNull(m)
         val d = global.getOwnedElementsOfType<MetadataFeature>().first()

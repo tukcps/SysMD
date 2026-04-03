@@ -11,11 +11,10 @@ class ReferenceUsageImplementation(
 ): ReferenceUsage, FeatureImplementation(
     declaredName =declaredName,
     declaredShortName =declaredShortName,
-    isComposite =false,
     elementType =elementType
 ){
     override fun clone(): ReferenceUsage = ReferenceUsageImplementation(
             declaredName = declaredName,
             declaredShortName = declaredShortName,
-        ).also { klon -> klon.updateFrom(this) }
+        ).also { updateFrom(this) }
 }

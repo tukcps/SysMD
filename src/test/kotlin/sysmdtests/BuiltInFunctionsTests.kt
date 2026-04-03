@@ -34,6 +34,9 @@ class BuiltInFunctionsTests {
             feature b: ScalarValues::Boolean = owns(Global, a);
         """)
         solver.propagate()
+        // owns ist hier Funktionsaufruf und Global ein parameter, der kein Feature ist. 
+        // Wird versucht zu Feature zu Casten (Feature-Expression) --> Exception.
+        // (Gibt es etwas gleichartiges in Standard? Wo wir ownership feststellen können?)
         assertNoIssues()
         val b = global.resolveVar("b")!!
         assertEquals(builder.True, b.vectorQuantity.value)

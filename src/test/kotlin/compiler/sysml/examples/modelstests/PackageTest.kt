@@ -1,10 +1,9 @@
 package sysmlv2specificationtests.modelstests
 
+import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
-import kotlin.test.Ignore
 import kotlin.test.Test
-import kotlin.test.assertTrue
 
 
 class PackageTest {
@@ -13,16 +12,16 @@ class PackageTest {
     fun testPackage() = testSession("States", "Requirements", "Interfaces", "Allocations", "Connections",
         "Attributes", "Ports", "Parts", "Items", "Occurrences", initialize = false) {
         loadSysMLv2("""
-                package 'Package Example' {
-                    public import ISQ::TorqueValue;
-                    private import ScalarValues::*;
-                     
-                    private part def Automobile;
-                    
-                    public alias Car for Automobile;	                         
-                    alias Torque for ISQ::TorqueValue;
-                }
+            package 'Package Example' {
+                public import ISQ::TorqueValue;
+                private import ScalarValues::*;
+                 
+                private part def Automobile;
+                
+                public alias Car for Automobile;	                         
+                alias Torque for ISQ::TorqueValue;
+            }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 }

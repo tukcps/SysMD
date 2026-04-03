@@ -1,21 +1,25 @@
 package quantitytests
 
+import com.github.tukcps.sysmd.cspsolver.Solver
+import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.cspsolver.VariableImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.MembershipImplementation
 import com.github.tukcps.sysmd.quantities.*
 import com.github.tukcps.sysmd.quantities.Unit
+import com.github.tukcps.sysmd.quantities.baseUnits.Duration
 import com.github.tukcps.sysmd.quantities.baseUnits.Length
 import com.github.tukcps.sysmd.quantities.baseUnits.Mass
-import com.github.tukcps.sysmd.quantities.baseUnits.Duration
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolveVar
+import com.github.tukcps.sysmd.services.session.SessionImplementation
 import io.github.tukcps.aadd.AADD
 import io.github.tukcps.aadd.DDBuilder
 import io.github.tukcps.aadd.IDD
 import io.github.tukcps.aadd.values.IntegerRange
 import io.github.tukcps.aadd.values.Range
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -449,7 +453,7 @@ class UnitTests {
 
     @Test
     fun currencyTest() {
-        val q1 = Quantity(ddDummy1, Unit("€"))
+        val q1 = Quantity(ddDummy1, Unit("EUR"))
         assertEquals(1.0, q1.getMinAsDouble(), 0.00001)
     }
 
@@ -1055,8 +1059,14 @@ class UnitTests {
 
     @Test
     fun intersectTest() {
-        val builder = DDBuilder()
-        val p = VariableImplementation(MembershipImplementation(memberElement = FeatureImplementation()), builder) // m
+        val model = SessionImplementation(libraries = mutableListOf())
+        val solver = Solver(model)
+        val p = VariableImplementation(
+            MembershipImplementation(memberElement = FeatureImplementation()),
+            baseType = Variable.BaseType.Real,
+            solver = solver,
+            path = "p",
+        ) // m
         p.vectorQuantity = Quantity(aaddDummy100, "cm")
         val upQuantity = Quantity(aaddDummy5, "m")
         assertEquals(-1.0, p.vectorQuantity.intersect(upQuantity).value.asAadd().getRange().min, 0.000001)
@@ -1065,8 +1075,14 @@ class UnitTests {
 
     @Test
     fun intersectTestInt() {
-        val builder = DDBuilder()
-        val p = VariableImplementation(MembershipImplementation(memberElement = FeatureImplementation()), builder) // 1
+        val model = SessionImplementation(libraries = mutableListOf())
+        val solver = Solver(model)
+        val p = VariableImplementation(
+            MembershipImplementation(memberElement = FeatureImplementation()),
+            solver=solver,
+            path = "p",
+            baseType = Variable.BaseType.Real
+            ) // 1
         p.vectorQuantity = Quantity(iddDummy1)
         val upQuantity = Quantity(iddDummy5)
         assertEquals(-1, p.vectorQuantity.intersect(upQuantity).value.asIdd().getRange().min)
@@ -1075,9 +1091,13 @@ class UnitTests {
 
     @Test
     fun constraintTest() {
-        val builder = DDBuilder()
-        val p = VariableImplementation(MembershipImplementation(memberElement = FeatureImplementation()), builder) // m
-        p.valueSpecs = mutableListOf(Range("-0.5..2"))
+        val model = SessionImplementation(libraries = mutableListOf())
+        val solver = Solver(model)
+        val p = VariableImplementation(
+            MembershipImplementation(memberElement = FeatureImplementation()),
+            solver = solver, path = "p", baseType = Variable.BaseType.Real
+            ) // m
+        p.rangeSpec(Range("-0.5..2"))
         p.vectorQuantity = Quantity(aaddDummy100, "cm")
         assertEquals(
             -0.5,
@@ -1093,10 +1113,13 @@ class UnitTests {
 
     @Test
     fun constraintTestInt() {
-        val builder = DDBuilder()
-        val p = VariableImplementation(MembershipImplementation(memberElement = FeatureImplementation()), builder) // 1
+        val model = SessionImplementation(libraries = mutableListOf())
+        val solver = Solver(model)
+        val p = VariableImplementation(
+            MembershipImplementation(memberElement = FeatureImplementation()),
+            solver=solver, path = "p", baseType = Variable.BaseType.Real) // 1
         p.vectorQuantity = Quantity(iddDummy1)
-        p.valueSpecs = mutableListOf(IntegerRange("0..2"))
+        p.intSpec(IntegerRange("0..2"))
         assertEquals(0, p.vectorQuantity.constrain(p.intSpecs).value.asIdd().getRange().min)
         assertEquals(1, p.vectorQuantity.constrain(p.intSpecs).value.asIdd().getRange().max)
     }

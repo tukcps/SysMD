@@ -1,8 +1,11 @@
 package models.expression
 
-import com.github.tukcps.sysmd.model.expression.*
-import com.github.tukcps.sysmd.model.expression.implementation.*
-import com.github.tukcps.sysmd.model.kerml.Feature.FeatureDirectionKind.IN
+import com.github.tukcps.sysmd.model.expression.Expression
+import com.github.tukcps.sysmd.model.expression.implementation.FeatureReferenceExpressionImplementation
+import com.github.tukcps.sysmd.model.expression.implementation.LiteralBooleanImplementation
+import com.github.tukcps.sysmd.model.expression.implementation.LiteralIntegerImplementation
+import com.github.tukcps.sysmd.model.expression.implementation.OperatorExpressionImplementation
+import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import io.github.tukcps.aadd.IDD
@@ -25,8 +28,6 @@ class OperatorExpressionsTests {
             val orExpression = OperatorExpressionImplementation(
                 declaredName = null,
                 declaredShortName = null,
-                direction = IN,
-                isEnd = false,
                 typeConstraint = mutableListOf("ScalarValues::Boolean"),
                 "false or true",
                 elementType = "OperatorExpression"
@@ -54,8 +55,6 @@ class OperatorExpressionsTests {
             val falseLiteral = LiteralBooleanImplementation(
                 declaredName = null,
                 declaredShortName = null,
-                direction = IN,
-                isEnd = false,
                 typeConstraint = mutableListOf("ScalarValues::Boolean"),
                 "false",
                 elementType = "LiteralBoolean"
@@ -66,8 +65,6 @@ class OperatorExpressionsTests {
             val trueLiteral = LiteralBooleanImplementation(
                 declaredName = null,
                 declaredShortName = null,
-                direction = IN,
-                isEnd = false,
                 typeConstraint = mutableListOf("ScalarValues::Boolean"),
                 "true",
                 elementType = "LiteralBoolean"
@@ -79,8 +76,6 @@ class OperatorExpressionsTests {
             val operatorExpr = OperatorExpressionImplementation(
                 declaredName = null,
                 declaredShortName = null,
-                direction = IN, //or inout?
-                isEnd = false,
                 typeConstraint = mutableListOf("ScalarValues::Boolean"),
                 expression = "falseLiteral and trueLiteral",
                 elementType = "OperatorExpression"
@@ -97,8 +92,6 @@ class OperatorExpressionsTests {
         val oneIntLiteral = LiteralIntegerImplementation(
             declaredName = null,
             declaredShortName = null,
-            direction = IN,
-            isEnd = false,
             typeConstraint = mutableListOf("ScalarValues::Integer"),
             "1",
             elementType = "LiteralInteger"
@@ -124,6 +117,8 @@ class OperatorExpressionsTests {
 	@Test
 	fun additionResolutionTest()  = testSession("DataFunctions") {
 		val tt = twoPlusTwo()
+		tt.initType()
+		assertNoIssues()
 		val f = assertNotNull(tt.function)
 		assertEquals("IntegerFunctions::+", f.qualifiedName)
 		assertFalse(f.isAbstract)
@@ -132,6 +127,8 @@ class OperatorExpressionsTests {
 	@Test
 	fun evalTest() = testSession("DataFunctions") {
 		val tt = twoPlusTwo()
+		tt.initType()
+		assertNoIssues()
 		tt.initialize()
 		tt.evalUp()
 		tt.evalDown()
@@ -163,10 +160,10 @@ class OperatorExpressionsTests {
         )
 
         // test that precedence is properly parenthesized
-        assertEquals("2 + 3", sum.toAstString())
-        assertEquals("(2 + 3) * 4", right.toAstString())
-        assertEquals("1 * (2 + 3)", left.toAstString())
-        assertEquals("1 * (2 + 3) * 4", both.toAstString())
+        assertEquals("2 + 3", sum.astString)
+        assertEquals("(2 + 3) * 4", right.astString)
+        assertEquals("1 * (2 + 3)", left.astString)
+        assertEquals("1 * (2 + 3) * 4", both.astString)
     }
 
     @Test
@@ -186,35 +183,51 @@ class OperatorExpressionsTests {
         )
         assertNoIssues()
 
-        assertEquals("2 - 3", inner.toAstString())
-        assertEquals("1 - (2 - 3)", rightAssociating.toAstString())
-        assertEquals("2 - 3 - 4", leftAssociating.toAstString())
+        assertEquals("2 - 3", inner.astString)
+        assertEquals("1 - (2 - 3)", rightAssociating.astString)
+        assertEquals("2 - 3 - 4", leftAssociating.astString)
     }
 
 	@Test
 	fun printTest3() = testSession("DataFunctions") {
 		val expr = operatorExpression("-", operatorExpression("if",
-			operatorExpression("not", featureReferenceExpression("a")),
+			operatorExpression("not", featureReferenceExpression("a", false)),
 				operatorExpression("+",
 					operatorExpression("*",
 						literalExpression(7),
-						featureReferenceExpression("b")
+						featureReferenceExpression("b", false)
 					),
 				),
 				literalExpression(8),
 			))
 
-		assertEquals("-(if not a ? +(7 * b) else 8)", expr.toAstString())
+		assertEquals("-(if not a ? +(7 * b) else 8)", expr.astString)
 	}
 
-    @Test @Disabled
+	@Test
+	fun printTest4() = testSession("DataFunctions") {
+		val left = operatorExpression("^",
+			operatorExpression("^", literalExpression(1), literalExpression(2)),
+			literalExpression(3),
+		)
+		val right = operatorExpression("^",
+			literalExpression(1),
+			operatorExpression("^", literalExpression(2), literalExpression(3)),
+		)
+
+		assertEquals("1^2^3", right.astString)
+		assertEquals("(1^2)^3", left.astString)
+	}
+
+    @Test
     fun bigSum() = testSession("DataFunctions") {
         var total : Expression = literalExpression(1)
+		val n = 10
 
-        for(i in 2..10)
+        for(i in 2..n)
             total = operatorExpression("+", total, literalExpression(i))
 
-        TODO()
+		assertEquals((1..n).joinToString(" + "), total.astString)
     }
 
 	fun assertQuantityEquals(want : Long, q : VectorQuantity)
@@ -290,8 +303,8 @@ class OperatorExpressionsTests {
 		// 5x + 7y = 2  (x,y in Z)
 		val five = literalExpression(5)
 		val x = FeatureReferenceExpressionImplementation("&x", "&x").apply {
-			identifier = "x"
 			model = this@testSession
+			referent = global.resolve("x")!!.member()!!
 		}
 		val seven = literalExpression(7)
 		val y = /*FeatureReferenceExpressionImplementation("&y", "&y").apply {
@@ -356,7 +369,7 @@ class OperatorExpressionsTests {
 		expr.evalDownRec()
 
 		assertEquals(VectorQuantity(builder.integer(-42)), expr.upQuantity)
-		println(expr.toAstString())
+		println(expr.astString)
 	}
 
 	@Test

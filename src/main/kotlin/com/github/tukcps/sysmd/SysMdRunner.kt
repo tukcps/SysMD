@@ -12,8 +12,6 @@ import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import com.github.tukcps.sysmd.exports.Exporter
 import com.github.tukcps.sysmd.exports.UcbDataPack
-import com.github.tukcps.sysmd.generated.resources.Res
-import com.github.tukcps.sysmd.generated.resources.SysMD_Icon
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.sysml.StateUsage
 import com.github.tukcps.sysmd.rest.RESTRepository
@@ -30,7 +28,6 @@ import com.github.tukcps.sysmd.ui.styles.*
 import com.github.tukcps.sysmd.ui.viewmodel.SysMDViewModel
 import com.github.tukcps.sysmd.ui.viewmodel.importSettings
 import com.github.tukcps.sysmd.ui.viewmodel.loadSettings
-import org.jetbrains.compose.resources.painterResource
 import org.springframework.boot.CommandLineRunner
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.system.ApplicationHome
@@ -151,7 +148,7 @@ open class SysMdRunner: CommandLineRunner {
                                 height = 768.dp,
                                 position = WindowPosition(alignment = Alignment.Center),
                             ),
-                            icon = painterResource(Res.drawable.SysMD_Icon)
+                            icon = loadPainter("/drawable/SysMD-Icon.png")
                         ) {
                             MenuBar(sysMdViewModel)
                             MainView(sysMdViewModel)

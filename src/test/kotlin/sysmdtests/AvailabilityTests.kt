@@ -83,7 +83,7 @@ class AvailabilityTests {
             }
         """)
         solver.propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val tc1 = global.resolve("t::c1")!!.member<Type>()!!
         assertEquals(builder.True, estimateFeature(tc1, "Availability").bdd())
     }
@@ -102,7 +102,7 @@ class AvailabilityTests {
                 feature Availability: ScalarValues::Boolean = if T>2040.0 ? true else false; 
             }
             """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         solver.propagate()
         val tc1 = global.resolve("c1")!!.member<Type>()!!
         global.resolve("c2") !!.member<Namespace>()
@@ -112,7 +112,7 @@ class AvailabilityTests {
         var tc1Availability = global.resolveVar("c1::Availability")?.bdd()
         assertEquals(XBool.False, tc1Availability as XBool)
         loadKerML("feature T: ScalarValues::Real(2050); ")
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         tc1Availability = global.resolveVar("c1::Availability")?.bdd()
         assertEquals(True, tc1Availability as XBool)
         assertEquals(2050.0, global.resolveVar("T")!!.min(), 0.01)
@@ -125,6 +125,6 @@ class AvailabilityTests {
                 feature a: ScalarValues::Real = ITE(Context::timeOfProcurement > 2030.0, 10.0, 20.0); 
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 }

@@ -173,6 +173,8 @@ abstract class ParserProductionRules(
                         if (consume1 == true) {
                             nextToken(); } else token = t1
                         match1?.let { it() }
+                    } catch(le : LexicalError) {
+                        error(le.message)
                     } catch (_: Exception) {
                         error("error in production after $t1")
                     }

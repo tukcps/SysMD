@@ -15,5 +15,4 @@ data class SimpleAstRoot (
     fun toExpressionString(): String {
         return dependency.toExpressionString()
     }
-
 }

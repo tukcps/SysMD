@@ -1,20 +1,66 @@
 package models.expression
 
 import com.github.tukcps.sysmd.model.expression.implementation.*
-import com.github.tukcps.sysmd.model.kerml.Feature
+import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.model.kerml.Function
 import com.github.tukcps.sysmd.model.util.firstName
 import com.github.tukcps.sysmd.quantities.VectorQuantity
-import util.assertNoIssues
+import org.junit.jupiter.api.assertAll
+import util.*
 import util.mockup.loadKerML
-import util.testSession
 import kotlin.test.*
 
 class DataFunctionTests
 {
+	private fun Function.acceptsArity(n : Int) : Boolean
+	{
+		var n = n.toLong()
+
+		result.let { r -> parameter.filter { it !== r } }.map { it.multiplicityRange }.forEach {
+			when {
+				n in it -> n = 0
+				n > it.max -> n -= it.max
+				else -> return false
+			}
+		}
+
+		return true
+	}
+
+	@Test @Ignore // TODO: istype, hastype, @, @@, as, meta, !=, ===, !==, and, or, implies, ??, all
+	fun testStdlibComplete() = testSession("DataFunctions") {
+		assertNoIssues()
+		val ops = UnaryOperatorInformation.bySymbol.entries + BinaryOperatorInformation.bySymbol.entries +
+				TernaryOperatorInformation.bySymbol.entries + CallLikeOperatorInformation.bySymbol.entries
+
+		assertAll(ops.map { (op,info) ->
+			{
+				val name = "${info.namespace}::$op"
+				val f = global.resolve(name)?.memberElement
+				assertIs<Function>(f, "Could not resolve $name")
+
+				val arity = when(info)
+				{
+					is BinaryOperatorInformation -> 2
+					is TernaryOperatorInformation -> 3
+					is UnaryOperatorInformation -> 1
+					is CallLikeOperatorInformation -> 2
+				}
+
+				assertSame(assertNotNull(f.result), f.parameter.last(),
+					"$name has improper result parameter")
+				assertTrue(f.acceptsArity(arity), "$name cannot be invoked with $arity operands")
+			}
+		})
+	}
+
 	@Test
 	fun operatorResolutionTest() = testSession("DataFunctions") {
 		assertNoIssues()
 		val expr = twoPlusTwo()
+		expr.initType()
+		assertNoIssues()
+
 		val f = expr.function
 
 		assertNotNull(f)
@@ -56,9 +102,12 @@ class DataFunctionTests
 		for(i in 1..3)
 			addOwnedMember(literalExpression("call2_arg$i", i.toLong()), call2)
 
-		assertEquals("f(1, 2, 3, 4, 5)", call1.toAstString())
-		assertEquals("f(1, 2, 3)", call2.toAstString())
+		assertEquals("f(1, 2, 3, 4, 5)", call1.astString)
+		assertEquals("f(1, 2, 3)", call2.astString)
 
+		call1.initType()
+		call2.initType()
+		assertNoIssues()
 		val f = assertNotNull(call1.functionName)
 		assertEquals(f, assertNotNull(call2.functionName))
 
@@ -95,8 +144,12 @@ class DataFunctionTests
 		}
 		addOwnedMember(literalExpression("call2_arg", 4711L), callI)
 
-		assertEquals("f(\"foobar\")", callS.toAstString())
-		assertEquals("f(4711)", callI.toAstString())
+		assertEquals("f(\"foobar\")", callS.astString)
+		assertEquals("f(4711)", callI.astString)
+
+		callS.initType()
+		callI.initType()
+		assertNoIssues()
 
 		val f = assertNotNull(callS.functionName)
 		assertEquals(f, assertNotNull(callI.functionName))
@@ -144,7 +197,8 @@ class DataFunctionTests
 			assertEquals("11", ls.value)
 		}
 
-		call.function // this triggers import generation
+		call.initType()
+		assertNoIssues()
 
 		// ensure context of function expansion is present
 		assertNotNull(call.resolve("p")).also {
@@ -174,7 +228,7 @@ class DataFunctionTests
 		loadKerML("""
 			private import ScalarValues::*;
 			feature x : Boolean;
-		""".trimIndent())
+		""")
 		assertNoIssues()
 
 		val x = featureReferenceExpression("x")

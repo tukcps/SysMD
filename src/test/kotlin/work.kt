@@ -1,9 +1,14 @@
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tukcps.sysmd.model.kerml.Anything
+import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Membership
+import com.github.tukcps.sysmd.model.kerml.implementation.ElementImplementation
+import com.github.tukcps.sysmd.model.kerml.implementation.MembershipImplementation
+import com.github.tukcps.sysmd.services.check.checkLibraryElementIds
+import com.github.tukcps.sysmd.services.check.checkOwnership
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.session.loadLibrary
+import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Ignore
@@ -16,8 +21,6 @@ import kotlin.test.assertTrue
  * considered generally useful.
  */
 class WorkInProgress {
-    val  objectMapper = ObjectMapper()
-    //  objectMapper.writeValue(new File("target/car.json"), car);
 
     @Test fun work() = testSession {
         loadKerML("""
@@ -60,22 +63,54 @@ class WorkInProgress {
         initialize(5)
         val end = System.currentTimeMillis()
         val duration = end - start
-        reset()
+        // reset
         val start2 = System.currentTimeMillis()
         loadLibrary("Base.md")
         loadLibrary("ScalarValues.md")
         loadLibrary("Occurrences.md")
         loadLibrary("Links.md")
         loadLibrary("KerML.md")
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val end2 = System.currentTimeMillis()
         initialize(5)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val end3 = System.currentTimeMillis()
         val duration2 = end2 - start2
         val duration3 = end3 - end2
         println("loading libraries from resources: $duration")
         println("loading libraries from cache    : $duration2")
         println("only initialization             : $duration3")
+    }
+
+    @Test
+    fun ownershipIssue() = testSession {
+        loadKerML("""
+            feature foo;
+            feature bar;
+        """.trimIndent())
+        checkOwnership()
+        assertNoIssues()
+
+        val data = export().map { it.payloadElementSnapshot!! }
+
+        testSession {
+            import(data)
+            checkOwnership()
+            assertNoIssues()
+
+            val foo = global.resolve("foo")!!.member<Feature>()!!
+            val bar = global.resolve("bar")!!.member<Feature>()!!
+
+            addOwnedRelationship(MembershipImplementation(
+                membershipOwningNamespace = foo,
+                memberElement = bar
+            ).apply(ElementImplementation::generateUUID))
+            checkOwnership()
+            assertNoIssues()
+
+            import(data)
+            checkOwnership()
+            assertNoIssues()
+        }
     }
 }

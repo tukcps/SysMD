@@ -3,8 +3,8 @@
 package com.github.tukcps.sysmd.compiler.parser.sysmlv2
 
 import com.github.tukcps.sysmd.compiler.SysMLv2
-import com.github.tukcps.sysmd.compiler.parser.kerml.Expression
 import com.github.tukcps.sysmd.compiler.parser.kerml.MemberPrefix
+import com.github.tukcps.sysmd.compiler.parser.kerml.OwnedExpression
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
 import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.CalculationDefinitionActions
@@ -101,7 +101,7 @@ fun SysMLv2.CalculationbodyItemStarts(): Boolean = actionBodyItemStarts() || (to
 fun SysMLv2.ResultExpressionMember() {
     val owner = semantics.element<Namespace>()
     val iBeforeExpression = token.indices.first
-    Expression().also {
+    OwnedExpression().also {
         if (owner is Feature) {
             owner.indices = iBeforeExpression..consumedToken.indices.last
             owner.expression = input.subSequence(owner.indices!!).toString().trim()

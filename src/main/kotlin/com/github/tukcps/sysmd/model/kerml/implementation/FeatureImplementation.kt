@@ -11,23 +11,26 @@ import io.github.tukcps.aadd.values.IntegerRange
 open class FeatureImplementation(
     declaredName: SimpleName? = null,
     declaredShortName: String? = null,
-    final override var direction: Feature.FeatureDirectionKind = Feature.FeatureDirectionKind.IN,
-    final override var isEnd: Boolean = false,
-    final override var isComposite: Boolean = true,
-    final override var isPortion: Boolean = false,
-    final override var isSufficient: Boolean = false,
-    final override var isUnique: Boolean = false,
-    final override var isOrdered: Boolean = false,
-    final override var isDerived: Boolean = false,
-    override var isReadOnly: Boolean = false,
     elementType: String = "Feature",
     override var typeConstraint: MutableList<String> = mutableListOf(),
     override var expression: String? = null,
+    override var isDefaultValue: Boolean = false,
+    override var isInitialValue: Boolean = false,
 ): Feature, TypeImplementation(
     declaredName = declaredName,
     declaredShortName = declaredShortName,
     elementType = elementType
 ){
+    final override var direction: Feature.FeatureDirectionKind = Feature.FeatureDirectionKind.IN
+    final override var isEnd: Boolean = false
+    final override var isComposite: Boolean = true
+    final override var isPortion: Boolean = false
+    final override var isSufficient: Boolean = false
+    final override var isUnique: Boolean = false
+    final override var isOrdered: Boolean = false
+    final override var isDerived: Boolean = false
+    override var isReadOnly: Boolean = false
+
     override val type: List<Type>
         get() = generalization
 
@@ -44,7 +47,7 @@ open class FeatureImplementation(
     /** Getter and setter for the specified multiplicity. */
     override var multiplicityRange: IntegerRange
         get() = IntegerRange(multiplicity()?.typeConstraint?.firstOrNull()?:"1..1")
-        set(value) { multiplicity()?.variable?.valueSpecs = mutableListOf(value)}
+        set(value) { multiplicity()?.variable?.intSpecs = mutableListOf(value)}
 
     override val name: String?
         get() = declaredName?: referencedFeature?.name
@@ -53,21 +56,24 @@ open class FeatureImplementation(
         val klon = FeatureImplementation(
             declaredName = declaredName,
             declaredShortName = declaredShortName,
-            isEnd = isEnd,
-            direction = direction,
-            isComposite =isComposite,
-            isPortion = isPortion,
-            isSufficient = isSufficient,
-            isUnique = isUnique,
-            isOrdered = isOrdered,
-            isDerived = isDerived,
         ).also { klon ->
             klon.model = model
             klon.updated = updated
             klon.typeConstraint = typeConstraint.toMutableList()
             klon.expression = expression
+            klon.isDefaultValue = isDefaultValue
+            klon.isInitialValue = isInitialValue
             klon.isAbstract = isAbstract
             klon.isSufficient = isSufficient
+            klon.isDerived = isDerived
+            klon.isReadOnly = isReadOnly
+            klon.isOrdered = isOrdered
+            klon.isUnique = isUnique
+            klon.isSufficient = isSufficient
+            klon.isPortion = isPortion
+            klon.isComposite = isComposite
+            klon.direction = direction
+            klon.isEnd = isEnd
             // klon.updateFrom(this)
             // super.updateFrom causes failing tests with Connections for unclear reason.
             // reason lies in isLibraryElement or isStandard?
@@ -85,6 +91,8 @@ open class FeatureImplementation(
             expression = template.expression
             typeConstraint = template.typeConstraint.toMutableList()
             expression = template.expression
+            isDefaultValue = template.isDefaultValue
+            isInitialValue = template.isInitialValue
             isAbstract = template.isAbstract
             direction = template.direction
             isEnd = template.isEnd
@@ -134,7 +142,14 @@ fun Feature.toTextualRepresentation(): String {
         sysml += "($typeConstraint)"
     }
 
-    if (expression?.isNotBlank() == true) sysml += " = $expression"
+    if (expression?.isNotBlank() == true) {
+        when {
+            isDefaultValue && isInitialValue -> sysml += " default := $expression"
+            isDefaultValue -> sysml += " default $expression"
+            isInitialValue -> sysml += " := $expression"
+            else -> sysml += " = $expression"
+        }
+    }
 
     sysml +=";"
     return sysml

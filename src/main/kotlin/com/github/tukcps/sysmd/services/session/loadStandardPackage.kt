@@ -86,28 +86,31 @@ val Arrangements = hashMapOf(
     "Links"         to listOf("Base", "ScalarValues", "Links"),
     "Occurrences"   to listOf("Base", "ScalarValues", "Links", "Occurrences"),
     "Objects"       to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects"),
+    "Performances"  to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Performances"),
     "Ranges"        to listOf("Base", "ScalarValues", "Ranges", "ISQ", "Quantities"),
-    "ISQ"            to listOf("Base", "ScalarValues", "Ranges", "ISQ", "Quantities"),
+    "ISQ"           to listOf("Base", "ScalarValues", "Ranges", "ISQ", "Quantities"),
     "Ports"         to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Ports"),
     "Items"         to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Items"),
     "Parts"         to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Items", "Parts"),
-    "Calculations"  to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Items", "Calculations"),
+    "Calculations"  to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Items", "Actions", "Calculations"),
     "Connections"   to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Connections"),
+    "Interfaces"    to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Connections", "Interfaces"),
     "Attributes"    to listOf("Base", "ScalarValues", "Links", "Occurrences", "Attributes"),
     "Allocations"   to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Connections", "Allocations"),
     "Math"          to listOf("Base", "ScalarValues", "ISQ", "Ranges", "Math", "Quantities"),
     "Constraints"   to listOf("Base", "ScalarValues", "ISQ", "Ranges", "Constraints", "Quantities"),
     "Requirements"  to listOf("Base", "ScalarValues", "Constraints", "Requirements"),
     "Actions"       to listOf("Base", "ScalarValues", "Links", "Occurrences", "Actions"),
+    "States"        to listOf("Base", "ScalarValues", "Links", "Occurrences", "Actions", "States"),
     "Context"       to listOf("Base", "ScalarValues", "Context"),
     "KerML"         to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Ranges", "KerML"),
     "KerMLLibraries" to listOf("Base", "ScalarValues", "Ranges", "Objects", "Links", "Occurrences", "Performances", "Ranges", "ISQ", "Quantities"),
     "SysMLLibraries" to listOf("Base", "ScalarValues", "Ranges", "Objects", "Links", "Occurrences", "Performances", "Items", "Ranges",
-        "Ports", "Parts", "Calculations", "Constraints", "Requirements", "Interfaces", "Actions", "States", "Connections", "Signals", "ISQ", "Quantities"),
+        "Ports", "Parts",  "Actions", "Calculations", "Constraints", "Requirements", "Interfaces", "States", "Connections", "Signals", "ISQ", "Quantities"),
     "ISO26262"      to listOf("Base", "ScalarValues", "Ranges", "Objects", "Links", "Occurrences", "ISO26262", "Quantities"),
     "Signals"       to listOf("Base", "ScalarValues", "Links", "Occurrences", "Signals"),
     "SysMD"         to listOf("Base", "ScalarValues", "SysMD"),
-	"DataFunctions" to listOf("Base", "ScalarValues", "DataFunctions"), // FIXME: +BaseFunctions
+    "DataFunctions" to listOf("Base", "ScalarValues", "DataFunctions"), // FIXME: +BaseFunctions
 )
 
 /**
@@ -128,8 +131,11 @@ fun Session.loadLibrary(library: String) {
 
 	if(library == "DataFunctions")
 	{
-		fun initArithmetic(pkg : Package)
+		fun initArithmetic(pkg : Package?)
 		{
+			if(pkg === null)
+				return
+
 			for(func in pkg.ownedElement.filterIsInstance<FunctionImplementation>())
 			{
 				func.builtin = when(func.name) {
@@ -151,21 +157,22 @@ fun Session.loadLibrary(library: String) {
 
 		// TODO: unary operators
 		// FIXME: there are more undefined functions in these packages
-		initArithmetic(global.getOwned<Package>("IntegerFunctions")!!)
-		initArithmetic(global.getOwned<Package>("RealFunctions")!!)
-		initArithmetic(global.getOwned<Package>("RationalFunctions")!!)
-		initArithmetic(global.getOwned<Package>("NaturalFunctions")!!)
+		initArithmetic(global.getOwned<Package>("IntegerFunctions"))
+		initArithmetic(global.getOwned<Package>("RealFunctions"))
+		initArithmetic(global.getOwned<Package>("RationalFunctions"))
+		initArithmetic(global.getOwned<Package>("NaturalFunctions"))
 
-
-		for(func in global.getOwned<Package>("BooleanFunctions")!!.ownedElement.filterIsInstance<FunctionImplementation>())
-		{
-			func.builtin = when(func.name) {
-				"not" -> BuiltinFunctions.NOT
-				"&" -> BuiltinFunctions.AND
-				"|" -> BuiltinFunctions.OR
-				"==" -> BuiltinFunctions.EE
-				else -> continue
-			}.f
+		global.getOwned<Package>("BooleanFunctions")?.let { bf ->
+			for(func in bf.ownedElement.filterIsInstance<FunctionImplementation>())
+			{
+				func.builtin = when(func.name) {
+					"not" -> BuiltinFunctions.NOT
+					"&" -> BuiltinFunctions.AND
+					"|" -> BuiltinFunctions.OR
+					"==" -> BuiltinFunctions.EE
+					else -> continue
+				}.f
+			}
 		}
 
 		global.resolve("")

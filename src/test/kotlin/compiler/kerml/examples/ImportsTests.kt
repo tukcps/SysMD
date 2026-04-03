@@ -53,7 +53,7 @@ class ImportsTests {
                 private import N4::*;
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -89,7 +89,7 @@ class ImportsTests {
                 // (Note that N8 itself is not imported.)
             }
         """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**

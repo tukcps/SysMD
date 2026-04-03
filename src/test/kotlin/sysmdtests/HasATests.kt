@@ -36,7 +36,7 @@ class HasATests {
         loadKerML(input = """
             private import ScalarValues; 
             type x :> Base::Anything {
-                feature a: ISQ::VoltageValue (1.0 .. 3.0) [V] = 3000.0 mV; 
+                feature a: ISQ::ElectricPotentialDifferenceValue (1.0 .. 3.0) [V] = 3000.0 mV; 
                 feature b: ISQ::ElectricCurrentValue (2.0 .. 4.0) [A]; 
             }        
         """)
@@ -47,7 +47,7 @@ class HasATests {
     /**
      * Syntactic variants should be parsed correctly.
      */
-    @Test fun hasARangeTest() = testSession("ScalarValues") {
+    @Test fun hasARangeTest() = testSession("Occurrences") {
         loadSysMD("""
             Global hasA package hasARange. 
             hasARange hasA class Reifen.
@@ -63,6 +63,7 @@ class HasATests {
                 feature karosserie: Karosserie; 
                 feature x: ScalarValues::Real = Motor::power.
         """)
+        assertNoIssues()
         assertEquals(4, global.resolve("hasARange::Auto")?.memberElement?.getOwnedElementsOfType<Feature>()?.size)
         assertEquals(1, global.resolve("hasARange::Auto")?.member<Namespace>()?.getOwned<Feature>("motoren")?.multiplicityRange?.min )
         assertEquals(2, global.resolve("hasARange::Auto")?.member<Namespace>()?.getOwned<Feature>("motoren")?.multiplicityRange?.max )
@@ -86,6 +87,7 @@ class HasATests {
                    feature x: a [1 .. 3]; 
                }
             """)
+        assertNoIssues()
         val b1 = global.resolve("b::x")?.member<Feature>()
         assertEquals(IntegerRange(1, 3), b1?.multiplicityRange, "Multiplicity must be 1..3")
 

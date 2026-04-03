@@ -1,6 +1,7 @@
 package sysmdtests
 
 import com.github.tukcps.sysmd.services.resolve.resolveVar
+import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
@@ -39,15 +40,15 @@ class FailedTests {
     @Test fun unitsWithOperations()  = testSession("ISQ") {
         loadKerML("""
             package unitsWithOperation {
-                 feature testV: ISQ::VoltageValue = 5.0 [V];
+                 feature testV: ISQ::ElectricPotentialDifferenceValue = 5.0 [V];
                  feature testVSquare: Quantities::ScalarQuantityValue [V^2] = 49.0 [V^2]; 
-                 feature test4: ISQ::VoltageValue = sqrt(testVSquare); 
-                //Property test5: ISQ::Voltage = exp(testV)
-                //Property test6: ISQ::Voltage = power2(testV)
+                 feature test4: ISQ::ElectricPotentialDifferenceValue = sqrt(testVSquare); 
+                //Property test5: ISQ::ElectricPotentialDifferenceValue = exp(testV)
+                //Property test6: ISQ::ElectricPotentialDifferenceValue = power2(testV)
             }
             """
         )
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     @Test
@@ -62,7 +63,7 @@ class FailedTests {
             }
             """)
         solver.propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
 
@@ -77,7 +78,7 @@ class FailedTests {
             }
         """)
         // p::i::p is wrongly identified in initialization --> resolveName issue?
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         solver.propagate()
         // println("p="+global.resolveName<Expression>("p::i::p"))
         assertEquals(1001.0, global.resolveVar("p::i::p")!!.vectorQuantity.getMaxAsDouble(), 0.00001)
@@ -95,13 +96,13 @@ class FailedTests {
             feature p2: ISQ::LengthValue = 1.0 km; 
             feature p3: ISQ::LengthValue = p + p2;
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         solver.propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         // println(status.errors)
         // println(resolveName<Expression>("p::a::p3"))
         assertEquals(1001.0, global.resolveVar("p3")!!.vectorQuantity.getMinAsDouble(), 0.001)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         // Also check unit of down !!! it is not m.
     }
 
@@ -121,9 +122,9 @@ class FailedTests {
                 }
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         solver.propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         assertEquals(1001.0, global.resolveVar("p::a::p3")!!.vectorQuantity.getMinAsDouble(), 0.001)
     }
 
@@ -151,7 +152,7 @@ class FailedTests {
         assertEquals(2.0, p.min, 0.00001)
         assertEquals(3.0, p2.min, 0.00001)
         assertEquals("False", p3.toString())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
 
@@ -169,9 +170,9 @@ class FailedTests {
         """)
         assertEquals(9.9*1.9, global.resolveVar("V")!!.min(), 0.00001)
         assertEquals(10.1*2.1, global.resolveVar("V")!!.max(), 0.00001)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         solver.propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         // println("V = " + global.resolveName<Expression>("V") + " ")
         assertEquals(9.9*1.9, global.resolveVar("V")!!.min(), 0.00001)
         assertEquals(21.21, global.resolveVar("V")!!.max(), 0.00001)
@@ -184,7 +185,7 @@ class FailedTests {
             feature b: Ranges::RealInRange {:>> range = "3..5";}
             feature sum: Ranges::RealInRange = a+b {:>> range = "9..10";}""")
         solver.propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         assertEquals(9.0, global.resolveVar("sum")!!.aadd().min, 0.00001)
         assertEquals(10.0, global.resolveVar("sum")!!.aadd().max, 0.000001)
         assertEquals(4.0, global.resolveVar("a")!!.aadd().getRange().min,0.0001)
@@ -226,7 +227,7 @@ class FailedTests {
         solver.propagate()
         assertEquals(60.0, global.resolveVar("MAC_notb")!!.aadd().getRange().min, 0.00001)
         assertEquals(60.0, global.resolveVar("MAC_notb")!!.aadd().getRange().max, 0.00001)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 }
 

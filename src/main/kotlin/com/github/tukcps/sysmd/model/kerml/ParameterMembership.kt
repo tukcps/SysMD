@@ -9,6 +9,12 @@ interface ParameterMembership : FeatureMembership, OwningMembership
 {
 	// standard uses Step and Behavior, but we flatten those into Expression/Function
 
+	/**
+	 * (non-standard; reordering ownedElement is non-trivial due to path-based UUIDs)
+	 * The parameter index for positional arguments only.
+	 * -1 used as placeholder for named arguments.
+	 * Set to correct values after typing pass.
+	 */
 	var parameterIndex : Int
 
 	/** Either this or `owningBehavior` must be non-null */

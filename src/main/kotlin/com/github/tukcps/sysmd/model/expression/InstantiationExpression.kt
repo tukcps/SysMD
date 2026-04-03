@@ -8,4 +8,6 @@ interface InstantiationExpression: Expression, Type {
 
     /** Name of the invoked function */
     var functionName : QualifiedName?
+
+    override fun clone(): InstantiationExpression
 }

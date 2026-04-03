@@ -58,10 +58,10 @@ standard library package ISQ {
     datatype ElectricChargeValue :> Quantities::ScalarQuantityValue { :>> unit = "A s";}
     datatype ElectricFieldStrengthValue :> Quantities::ScalarQuantityValue { :>> unit = "N/C"; }
     datatype ElectricPotentialValue :> Quantities::ScalarQuantityValue { :>> unit = "V"; }
+    datatype ElectricPotentialDifferenceValue :> Quantities::ScalarQuantityValue { :>> unit = "V"; }
     datatype InductanceValue :> Quantities::ScalarQuantityValue { :>> unit = "H"; }
     datatype ResistanceValue :> Quantities::ScalarQuantityValue { :>> unit = "Ω"; }
     datatype TimeValue :> Quantities::ScalarQuantityValue { :>> unit = "s"; }
-    datatype VoltageValue :> Quantities::ScalarQuantityValue { :>> unit = "V"; }
 
 
     // VectorQuantityValues

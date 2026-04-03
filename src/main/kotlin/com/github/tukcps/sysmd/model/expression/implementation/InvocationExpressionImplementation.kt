@@ -8,16 +8,12 @@ import com.github.tukcps.sysmd.model.util.SimpleName
 open class InvocationExpressionImplementation(
     declaredName: SimpleName? = null,
     declaredShortName: SimpleName? = null,
-    direction: Feature.FeatureDirectionKind = Feature.FeatureDirectionKind.INOUT,
-    isEnd: Boolean = false,
     typeConstraint: MutableList<String> = mutableListOf(),
     expression: String? = null,
     elementType: String = "InvocationExpression"
 ) : InvocationExpression, InstantiationExpressionImplementation(
     declaredName = declaredName,
     declaredShortName = declaredShortName,
-    direction = direction,
-    isEnd = isEnd,
     typeConstraint = typeConstraint,
     expression = expression,
     elementType = elementType
@@ -34,5 +30,24 @@ open class InvocationExpressionImplementation(
             p.toAstString(b, 0)
         }
         b.append(")")
+    }
+
+    override fun modelLevelEvaluable(visited: Set<Feature>): Boolean {
+        if(this in visited)
+            return false
+
+        val ext = visited + this
+
+        return argument.all { it.modelLevelEvaluable(ext) } && (function?.isModelLevelEvaluable ?: false)
+    }
+
+    override fun clone() = InvocationExpressionImplementation(
+        declaredName= declaredName,
+        declaredShortName = declaredShortName,
+        typeConstraint = typeConstraint,
+        expression = expression,
+        elementType = elementType,
+    ).also {
+        it.updateFrom(this)
     }
 }

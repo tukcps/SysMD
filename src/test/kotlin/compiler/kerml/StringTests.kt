@@ -1,11 +1,11 @@
 package compiler.kerml
 
 import com.github.tukcps.sysmd.model.kerml.Feature
+import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class StringTests {
 
@@ -16,7 +16,7 @@ class StringTests {
     fun stringSyntax() = testSession("ScalarValues") {
         loadKerML("""feature label1: ScalarValues::String = "string value1";""")
         solver.propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val label1 = global.resolve("label1")?.member<Feature>()
         assertEquals( "\"string value1\"", label1?.expression)
     }

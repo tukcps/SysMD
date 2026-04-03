@@ -1,9 +1,9 @@
 package compiler.sysml.examples
 
+import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Test
-import kotlin.test.assertTrue
 
 class RequirementTests {
 
@@ -19,8 +19,8 @@ class RequirementTests {
         requirement def RequirementDef1 {
             /* members */
         }
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        """)
+        assertNoIssues()
     }
 
     /**
@@ -39,7 +39,7 @@ class RequirementTests {
             require constraint { a > b }
         }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -55,8 +55,8 @@ class RequirementTests {
         requirement def <R1> RequirementDef1 {
             subject s1 : Subject1;
         }
-        """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        """)
+        assertNoIssues()
     }
 
     /**
@@ -75,6 +75,6 @@ class RequirementTests {
             satisfy requirement1;
         }
         """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 }

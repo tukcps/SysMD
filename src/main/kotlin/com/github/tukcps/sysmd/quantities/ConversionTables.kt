@@ -52,9 +52,9 @@ object ConversionTables {
         "Bit" to StorageCapacity.Bit,
         "K" to ThermodynamicTemperature.Kelvin,
         "?" to EmptyUnit.Empty,
-        "€" to AmountOfMoney.Euro,
-        "$" to AmountOfMoney.Dollar,
-        "£" to AmountOfMoney.Pound,
+        "EUR" to AmountOfMoney.Euro,
+        "USD" to AmountOfMoney.Dollar,
+        "GBP" to AmountOfMoney.Pound,
 
         // Units in use with SI System
         "l" to Volume.Liter,
@@ -102,7 +102,7 @@ object ConversionTables {
         "C" to ElectricCharge.Coulomb,
         "Ah" to ElectricCharge.AmpereHours,
         "As" to ElectricCharge.AmpereSecond,
-        "V" to Voltage.Volt,
+        "V" to ElectricPotentialDifferenceValue.Volt,
         "F" to Capacitance.Farad,
         "Ω" to Resistance.Ohm,
         "Ohm" to Resistance.Ohm,

@@ -13,6 +13,7 @@ import com.github.tukcps.sysmd.model.kerml.implementation.PackageImplementation
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.session.SessionImplementation
 import io.github.tukcps.aadd.values.IntegerRange
+import util.assertNoIssues
 import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -103,6 +104,6 @@ class ActionsContextTests {
         val multiplicity = feature.getOwnedElementOfType<Multiplicity>()
         assertNotNull(multiplicity)
         assertEquals("2 .. 3", multiplicity.typeConstraint.firstOrNull())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 }

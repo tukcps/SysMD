@@ -24,7 +24,7 @@ internal class AstSum(
         if (parameters.size!=1)
             throw SemanticError("Sum function expected exactly one parameter, got: ${parameters.size}")
         upQuantity = when (value.upQuantity.values[0]) {
-            is AADD -> VectorQuantity(mutableListOf(model.builder.Reals), "?")
+            is AADD -> VectorQuantity(mutableListOf(model.builder.Reals), value.upQuantity.unit, value.upQuantity.unitSpec)
             is IDD -> VectorQuantity(mutableListOf(model.builder.Integers))
             else -> throw SemanticError("Sum must have a Real or Integer parameter")
         }

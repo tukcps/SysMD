@@ -1,9 +1,9 @@
 package compiler.kerml
 
+import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
-import kotlin.test.assertTrue
 
 class InteractionTests {
     @Test
@@ -13,6 +13,6 @@ class InteractionTests {
             interaction i; 
         """
         )
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 }

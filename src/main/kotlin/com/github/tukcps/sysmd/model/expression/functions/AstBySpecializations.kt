@@ -3,6 +3,7 @@ package com.github.tukcps.sysmd.model.expression.functions
 import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.exceptions.SemanticError
+import com.github.tukcps.sysmd.exceptions.SolverError
 import com.github.tukcps.sysmd.model.expression.AstLeaf
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.model.kerml.Namespace
@@ -71,7 +72,7 @@ class AstBySpecializations(model: Session, namespace: Namespace, args: ArrayList
             Variable.BaseType.Bool -> Quantity(model.builder.Bool)
             Variable.BaseType.Int -> Quantity(model.builder.Integers)
             Variable.BaseType.Real -> Quantity(model.builder.Reals, "?")
-            else -> throw SemanticError("Undefined type in function bySubclasses: '${variable?.name}'", variable?.feature)
+            else -> throw SolverError("Undefined type in function bySubclasses: '${variable?.path}'", path = variable?.path!!)
         }
         downQuantity = upQuantity.clone()
     }

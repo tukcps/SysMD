@@ -90,17 +90,14 @@ The following gives some indications on what is supported:
 Note that automata and states might compile, but the constraint propagation mechanism does not use the respective parts properly. 
 Also, KerML is implemented with support for features, classes, packages, expressions, etc. -- but with some restrictions for expressions.  
 
-# Release notes (only major versions)
-
-- SysMD 4.0+ implements parts of the platform-specific REST API of SysML v2 (projects endpoint, but not versioning). 
-  It permits access to the local projects and elements. 
-  For this purpose, SysMD 4.0 includes Spring Boot for the REST API.
-
 # Acknowledgements 
 
 SysMD was developed and is maintained by
 - University of Kaiserslautern-Landau
 - HOOD Group
+
+The solver very much profits from the AADD library for computation with ranges:
+- https://github.com/tukcps/Multiplatform-AADD
 
 The work was partially supported by EC and German BMBF within the research projects 
 - Arrowhead Tools (EC & BMBF)

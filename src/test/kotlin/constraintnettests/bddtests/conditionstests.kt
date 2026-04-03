@@ -1,7 +1,5 @@
 package constraintnettests.bddtests
 
-import com.github.tukcps.sysmd.model.kerml.Feature
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import util.assertNoIssues
@@ -16,11 +14,11 @@ class ConditionsTests {
     @Test
     fun conditionCreatedTest() = testSession("ScalarValues") {
         loadKerML("""
-                feature x: ScalarValues::Boolean;
+            feature x: ScalarValues::Boolean;
          """)
-        assertEquals(0, status.issues.size, status.issues.toString())
-        val x = global.resolve("x")!!.member<Feature>()!!
-        val indexX = builder.conds.indexes[x.variable!!.elementId.toString()]
+        assertNoIssues()
+        val x = solver.getVariable("x")!!
+        val indexX = builder.conds.indexes[x.path]
         assertNotNull(indexX)
     }
 
@@ -34,10 +32,10 @@ class ConditionsTests {
             feature y: ScalarValues::Boolean = not(x);
         """)
         assertNoIssues()
-        val x = global.resolve("x")
-        val y = global.resolve("y")
-        val indexX = builder.conds.indexes[x?.elementId.toString()]
-        val indexY = builder.conds.indexes[y?.elementId.toString()]
+        val x = solver.getVariable("x")
+        val y = solver.getVariable("y")
+        val indexX = builder.conds.indexes[x?.path]
+        val indexY = builder.conds.indexes[y?.path]
         assertNotNull(indexX)
         assertNotNull(indexY)
     }

@@ -46,7 +46,7 @@ class LibrariesTest {
             abstract datatype DataValue specializes Base::Anything;
             feature dataValues: DataValue;
         }""")
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
@@ -58,7 +58,7 @@ class LibrariesTest {
         assertNotNull(global.resolve("Base::DataValue"))
         checkLibraryElementIds()
         checkOwnership()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
@@ -73,7 +73,7 @@ class LibrariesTest {
         solver.propagate()
         checkLibraryElementIds()
         checkOwnership()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
@@ -85,7 +85,7 @@ class LibrariesTest {
         solver.propagate()
         checkLibraryElementIds()
         checkOwnership()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
 
@@ -101,13 +101,13 @@ class LibrariesTest {
         assertEquals(Generators.nameBasedGenerator().generate("KerML::Kernel::DataType"), dataType.elementId)
         checkConsistency(repo.elements.values, checkForNoTransients = false)
         checkOwnership()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
 
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
     fun linksTest() = testSession("Links") {
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         assertNotNull(global.resolve("Links::Link"))
         assertNotNull(global.resolve("Links::BinaryLink"))
         initialize()
@@ -118,7 +118,7 @@ class LibrariesTest {
 
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
     fun occurrencesTest() = testSession("Occurrences") {
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         assertNotNull(global.resolve("Occurrences::Occurrence"))
         checkOwnership()
         checkLibraryElementIds()
@@ -137,17 +137,6 @@ class LibrariesTest {
         assertNoIssues()
     }
 
-    @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
-    fun resetTest() = testSession {
-        loadLibrary("Base")
-        reset()
-        loadLibrary("Base")
-        checkConsistency(repo.elements.values, checkForNoTransients = false)
-        checkOwnership()
-        checkLibraryElementIds()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-    }
-
     /**
      * The following kind of recursion is allowed in SysML v2,
      * but not yet implemented in SysMD. We ignore it so far.
@@ -161,9 +150,9 @@ class LibrariesTest {
                 }
             }
             """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         checkLibraryElementIds()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
@@ -176,9 +165,9 @@ class LibrariesTest {
                     }
                 }
             """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         checkLibraryElementIds()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
@@ -188,7 +177,7 @@ class LibrariesTest {
                 class Element;
                 class Function :> Element;
                 class Component :> Element {
-                    feature Availability: Ranges::BooleanInSpec = bySpecializations(Availability) {:>> spec="true";}
+                    feature Availability: Ranges::BooleanInSpec = bySpecializations(Availability) {:>> range="true";}
                     feature SecurityOfSupply: Ranges::RealInRange {:>> range="0.0 .. 1.0";}
                 } 
                 class System :> Component; 
@@ -220,7 +209,7 @@ class LibrariesTest {
             """)
         val links = global.resolve("ISO26262::implements")
         assertNotNull(links)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
@@ -249,7 +238,7 @@ class LibrariesTest {
                     */ 
                 }
             """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -734,15 +723,15 @@ class LibrariesTest {
                 }
             """)
         // initialize(4)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         checkLibraryElementIds()
     }
 
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
     fun loadLibraryKerMLtest2() = testSession  {
         loadLibrary("KerML")
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         checkLibraryElementIds()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 }

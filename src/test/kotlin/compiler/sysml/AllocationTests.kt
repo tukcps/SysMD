@@ -39,7 +39,7 @@ class AllocationTests {
             part b;
             allocate a to b; 
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val c = global.getOwnedElementOfType<AllocationUsage>()
         assertTrue(c != null)
         assertEquals(1, c.from.size)
@@ -69,7 +69,7 @@ class AllocationTests {
             part d; 
             allocation c allocate (a, b, d); 
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val c: AllocationUsage? = global.resolve("c")?.member()
         assertNotNull(c)
         assertEquals(3, c.to.size)
@@ -83,7 +83,7 @@ class AllocationTests {
             allocation def C; 
             allocation c : C allocate a to b;  
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val c: AllocationDefinition? = global.resolve("C")?.member()
         assertNotNull(c)
         val ci: AllocationUsage? = global.resolve("c")?.member()
@@ -99,7 +99,7 @@ class AllocationTests {
             allocation def C :> C1; 
             allocation c : C allocate a to b;  
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val c: AllocationDefinition? = global.resolve("C")?.member()
         assertNotNull(c)
         val ci: AllocationUsage? = global.resolve("c")?.member()

@@ -29,7 +29,7 @@ class UpdateNotificationsTests {
         // Just collect the "updates" without calling the method propagate.
         get().filterIsInstance<Feature>().forEach {
             if (it.variable?.updated == true)
-                status.updatedValues[it.elementId!!] = it.variable?.vectorQuantity.toString()
+                status.updatedValues[it.variable!!.path] = it.variable?.vectorQuantity.toString()
         }
         status.updatedValues.clear()
         solver.propagate() // No additional updates.

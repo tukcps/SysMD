@@ -1,14 +1,36 @@
 package com.github.tukcps.sysmd.model.kerml
 
+import com.github.tukcps.sysmd.exceptions.Issue.Kind.ERROR_TYPE_WRONG
 import com.github.tukcps.sysmd.model.kerml.implementation.*
 import com.github.tukcps.sysmd.model.util.QualifiedName
+import com.github.tukcps.sysmd.services.session.Session
 import java.util.*
 
-interface Unresolved {
+sealed interface Unresolved {
     var relativeName: QualifiedName?
     var id: UUID?
     var input: CharSequence?
     var indices: IntRange?
+}
+
+/** Checks that a resolved element's type matches an unresolved Element.
+ * Reports an error if this is not the case.
+ * @param containing Optional element to report the error at
+ * @return Whether the types were correct
+ */
+internal fun Session.checkType(unresolved : Unresolved, resolved : Element, containing : Element? = null) : Boolean
+= when(unresolved) {
+    is UnresolvedElement -> true // are relationships valid here?
+    is UnresolvedFeature -> resolved is Feature
+    is UnresolvedMembership -> resolved is Membership
+    is UnresolvedNamespace -> resolved is Namespace
+    is UnresolvedType -> resolved is Type
+}.also {
+    if(!it)
+    {
+        val kind = unresolved.elementType.removePrefix("Unresolved ").lowercase()
+        status.error("Expecting a kind of $kind", kind = ERROR_TYPE_WRONG, element = containing ?: unresolved)
+    }
 }
 
 class UnresolvedElement(

@@ -14,7 +14,10 @@ class RedefinitionImplementation(
 ) {
     override var redefinedFeature: Feature
         get() = subsettedFeature
-        set(value) { target = mutableListOf(value) }
+        set(value) {
+            target = mutableListOf(value)
+            general = value
+        }
 
     override var redefiningFeature: Feature
         get() = source.first() as Feature

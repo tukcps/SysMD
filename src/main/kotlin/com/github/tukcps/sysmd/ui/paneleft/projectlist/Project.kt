@@ -152,7 +152,11 @@ fun Project(
                     } else {
                         Icon(
                             modifier = Modifier.size(40.dp),
-                            imageVector = Icons.Default.Description,
+                            imageVector = if (projectViewModel.isExpanded.value)
+                                Icons.Default.FolderOpen
+                            else
+                                Icons.Default.Folder,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             contentDescription = null,
                         )
                     }

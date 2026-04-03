@@ -23,7 +23,7 @@ class ActionTests {
         loadSysMLv2("""
             action def ActionDef1;
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val actionDef1 = global.resolve("ActionDef1")?.memberElement
         assertTrue(actionDef1 is ActionDefinition)
     }
@@ -41,7 +41,7 @@ class ActionTests {
             action def ActionDef1;
             action action1 : ActionDef1;
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
 
         //val actionDef1 = global.resolve<ActionDefinition>("ActionDef1")
         //assertNotNull(actionDef1)
@@ -74,7 +74,7 @@ class ActionTests {
                 out param2 : ItemDef2;
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
 
         val itemDef1 = global.resolve("ItemDef1")?.memberElement as ItemDefinition
         assertNotNull(itemDef1)
@@ -150,7 +150,7 @@ class ActionTests {
             
         }
         """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
 }

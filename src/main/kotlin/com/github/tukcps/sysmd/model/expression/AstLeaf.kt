@@ -38,7 +38,7 @@ class AstLeaf private constructor (
      * Requires specific variant of resolve once there are no clones.
      */
     private fun resolveToPath(): String =
-        namespace.resolveVar(qualifiedName!!)?.name
+        namespace.resolveVar(qualifiedName!!)?.path
             ?: throw ElementNotFoundException(namespace, "Could not resolve name '$qualifiedName'")
 
     val variable: Variable?
@@ -116,7 +116,7 @@ class AstLeaf private constructor (
      */
     constructor(model: Session, variable: Variable)
             : this(model, null, null) {
-        this.qualifiedName = variable.name
+        this.qualifiedName = variable.path
     }
 
 
@@ -139,7 +139,7 @@ class AstLeaf private constructor (
         }
 
         if (variable != null) {
-            if (isReal) {
+            if (variable?.baseType == Variable.BaseType.Real) {
                 // TODO: check is only hot fix ... (?)
                 if (! (downQuantity.value.asAadd().maxIsInf && downQuantity.value.asAadd().minIsInf) ) {
                     variable!!.vectorQuantity = downQuantity.constrain(
@@ -148,23 +148,27 @@ class AstLeaf private constructor (
                         variable!!.unitSpec
                     )
                 }
-                if (variable!!.feature.isSufficient) {
+                if (variable!!.satisfyAll) {
                     if (variable!!.rangeSpecs.size != downQuantity.values.size && variable!!.rangeSpecs.size != 1)
                         throw VectorDimensionError("Vector size of ${downQuantity.values.size} does not match Constraint size of ${variable!!.rangeSpecs.size}")
                     if (variable!!.rangeSpecs.size == downQuantity.values.size)
                         if (variable!!.rangeSpecs.indices.any { variable!!.rangeSpecs[it] !in (downQuantity.values[it] as AADD).getRange() })
-                            model.status.warn(Issue.Kind.WARN_INCONSISTENCY,"Cannot be satisfied for all values.", element =  variable?.feature)
+                            model.status.warn(Issue.Kind.WARN_INCONSISTENCY,"Cannot be satisfied for all values.", path =  variable!!.path)
                 }
                 variable!!.checkEvent()
             }
-            if (isInt) {
+            if (variable?.baseType == Variable.BaseType.Int) {
                 variable!!.vectorQuantity = downQuantity.constrain(variable!!.vectorQuantity).clone()
-                if (variable!!.feature.isSufficient) {
-                    if (variable!!.intSpecs.size != downQuantity.values.size && variable!!.rangeSpecs.size != 1)
-                        throw VectorDimensionError("Vector size of ${downQuantity.values.size} does not match Constraint size of ${variable!!.rangeSpecs.size}")
+                if (variable!!.satisfyAll) {
+                    if (variable!!.intSpecs.size != downQuantity.values.size && variable!!.intSpecs.size != 1)
+                        throw VectorDimensionError("Vector size of ${downQuantity.values.size} does not match Constraint size of ${variable!!.intSpecs.size}")
                     if (variable!!.intSpecs.size == downQuantity.values.size)
                         if (variable!!.intSpecs.indices.any { variable!!.intSpecs[it] !in (downQuantity.values[it] as IDD).getRange() })
-                            model.status.warn(Issue.Kind.WARN_INCONSISTENCY,"Cannot be satisfied for all values.", element =  variable?.feature)
+                            model.status.warn(
+                                kind = Issue.Kind.WARN_INCONSISTENCY,
+                                message = "Cannot be satisfied for all values.",
+                                path = variable?.path
+                            )
                 }
                 variable!!.checkEvent()
             }

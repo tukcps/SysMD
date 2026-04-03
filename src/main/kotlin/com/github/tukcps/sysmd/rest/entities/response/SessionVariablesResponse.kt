@@ -1,15 +1,15 @@
 package com.github.tukcps.sysmd.rest.entities.response
 
 import com.github.tukcps.sysmd.cspsolver.Variable
-import java.util.UUID
-
 
 data class VariableResponse(
-    var elementId: UUID?,
     var qualifiedName: String?,
     var value: String,
 ) {
-    constructor(variable: Variable): this(variable.feature.elementId, variable.feature.qualifiedName, variable.valueStr)
+    constructor(variable: Variable): this(
+        variable.path,
+        variable.valueStr
+    )
 }
 
 data class VariablesResponse(

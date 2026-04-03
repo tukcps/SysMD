@@ -4,7 +4,6 @@ import com.github.tukcps.sysmd.compiler.KerML
 import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.exceptions.SysMDException
 import com.github.tukcps.sysmd.model.kerml.Element
-import java.util.*
 
 /**
  * In this class, we save the status of the current analysis.
@@ -30,7 +29,7 @@ class SessionStatus {
     /**
      * Map of updated values; the element id is the key, and string (updated result).
      */
-    val updatedValues: HashMap<UUID, String> = hashMapOf()
+    val updatedValues: HashMap<String, String> = hashMapOf()
 
     /**
      * List of all created element's path
@@ -60,7 +59,7 @@ class SessionStatus {
                 message = message,
                 input = compiler?.input?:element?.input,
                 token = compiler?.token,
-                elementPath = compiler?.semantics?.ownerName()?:element?.path(),
+                path = compiler?.semantics?.ownerName()?:element?.path(),
                 cause = cause
             )
         )
@@ -72,14 +71,14 @@ class SessionStatus {
      * @param compiler The compiler in which complementary context information is searched.
      * @param element The session in which complementary context information is searched.
      */
-    fun inconsistency(message: String, compiler: KerML? = null, element: Element? = null, kind: Issue.Kind = Issue.Kind.WARN_INCONSISTENCY) {
+    fun inconsistency(message: String, compiler: KerML? = null, element: Element? = null, path: String?=null, kind: Issue.Kind = Issue.Kind.WARN_INCONSISTENCY) {
         issues.add(
             Issue(
                 kind = kind,
                 message = message,
                 input = compiler?.input?:element?.input,
                 token = compiler?.token,
-                elementPath = compiler?.semantics?.ownerName()?:element?.path(),
+                path = path?:compiler?.semantics?.ownerName()?:element?.path(),
             )
         )
     }
@@ -91,7 +90,12 @@ class SessionStatus {
      * @param compiler The compiler in which complementary context information is searched.
      * @param element The session in which complementary context information is searched.
      */
-    fun warn(kind: Issue.Kind = Issue.Kind.WARN, message: String, compiler: KerML? = null, element: Element? = null, cause: Throwable? = null) {
+    fun warn(
+        kind: Issue.Kind = Issue.Kind.WARN,
+        message: String, compiler: KerML? = null,
+        path: String? = null,
+        element: Element? = null,
+        cause: Throwable? = null) {
         issues.add(
             Issue(
                 kind = kind,
@@ -99,7 +103,7 @@ class SessionStatus {
                 input = compiler?.input?:element?.input?:element?.owner?.input,
                 indices = element?.indices?:element?.owner?.indices,
                 token = compiler?.token,
-                elementPath = element?.path(),
+                path = path?:element?.path(),
                 cause = cause
             )
         )
@@ -111,7 +115,7 @@ class SessionStatus {
      * @param compiler The compiler in which complementary context information is searched.
      * @param element The session in which complementary context information is searched.
      */
-    fun error(message: String, compiler: KerML? = null, element: Element? = null, kind: Issue.Kind=Issue.Kind.ERROR, cause: Throwable? = null) {
+    fun error(message: String, compiler: KerML? = null, element: Element? = null, path: String? = null, kind: Issue.Kind=Issue.Kind.ERROR, cause: Throwable? = null) {
 
         val issue = Issue(
             kind = kind,
@@ -119,7 +123,7 @@ class SessionStatus {
             input = compiler?.input?:element?.input?:(cause as? SysMDException)?.input?:(cause as? SysMDException)?.element?.input,
             indices = element?.indices,
             token = compiler?.token,
-            elementPath = compiler?.semantics?.ownerName()?:element?.path(),
+            path = path?:compiler?.semantics?.ownerName()?:element?.path(),
             cause = cause
         )
         issues.add(issue)
@@ -139,7 +143,7 @@ class SessionStatus {
                 input = compiler?.input?:element?.input?:(cause as? SysMDException)?.input?:(cause as? SysMDException)?.element?.input,
                 indices = element?.indices,
                 token = compiler?.token,
-                elementPath = compiler?.semantics?.ownerName()?:element?.path(),
+                path = compiler?.semantics?.ownerName()?:element?.path(),
                 cause = cause?:SysMDException(message)
             )
         )

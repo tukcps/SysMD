@@ -2,11 +2,11 @@ package constraintnettests
 
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.resolve.resolveVar
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Test
+import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class DiscreteContinuousTests {
 
@@ -27,7 +27,7 @@ class DiscreteContinuousTests {
                     }
                 }
             """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         solver.propagate()
 
         assertEquals(VectorQuantity(builder.real(1.0..2.0), "km"),

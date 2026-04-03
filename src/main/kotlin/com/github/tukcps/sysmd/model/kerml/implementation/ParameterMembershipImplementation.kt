@@ -7,7 +7,7 @@ open class ParameterMembershipImplementation(
 	owningType: Type = UnresolvedFeature(),
 	elementType: String = "ParameterMembership",
 	override val parameterDirection : Feature.FeatureDirectionKind = Feature.FeatureDirectionKind.IN,
-	override var parameterIndex : Int = -1
+	override var parameterIndex : Int = -1,
 ) : ParameterMembership, FeatureMembershipImplementation(
 	ownedMemberFeature = ownedMemberParameter,
 	owningType = owningType,
@@ -19,7 +19,16 @@ open class ParameterMembershipImplementation(
 		owningType = membershipOwningNamespace as Feature,
 		elementType = elementType,
 		parameterDirection = parameterDirection
-	)
+	).also {
+		it.updateFrom(this)
+	}
+
+	override fun updateFrom(template: Element) {
+		super.updateFrom(template)
+
+		if(template is ParameterMembership)
+			this.parameterIndex = template.parameterIndex
+	}
 
 	override fun toString() = "[ParameterMembership] ${membershipOwningNamespace.escapedName()} owns ${memberElement.escapedName()}"
 }

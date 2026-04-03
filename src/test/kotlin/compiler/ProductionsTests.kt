@@ -5,7 +5,7 @@ import com.github.tukcps.sysmd.compiler.SysMD
 import com.github.tukcps.sysmd.compiler.SysMLv2
 import com.github.tukcps.sysmd.compiler.parser.kerml.Identification
 import com.github.tukcps.sysmd.compiler.parser.kerml.NamespaceBodyElement
-import com.github.tukcps.sysmd.compiler.parser.kerml.Unit
+import com.github.tukcps.sysmd.compiler.parser.kerml.legacy.Unit
 import com.github.tukcps.sysmd.compiler.parser.sysmd.ElementList
 import com.github.tukcps.sysmd.compiler.parser.sysmlv2.RequirementDefinition
 import com.github.tukcps.sysmd.compiler.parser.sysmlv2.RequirementUsage
@@ -15,6 +15,7 @@ import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.EOF
 import com.github.tukcps.sysmd.services.session.SessionImplementation
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import util.assertNoIssues
 import kotlin.test.assertTrue
 
 
@@ -110,7 +111,7 @@ class ProductionsTests {
     fun parseClassDefinition(): Unit = kerMLParser().run {
         input = "class a :> Any;"
         NamespaceBodyElement()
-        assertEquals(0, model.status.issues.size, model.status.issues.toString())
+        model.assertNoIssues()
     }
 
     @Test
@@ -118,7 +119,7 @@ class ProductionsTests {
         input = "package p;"
         NamespaceBodyElement()
         consume(EOF)
-        assertEquals(0, model.status.issues.size, model.status.issues.toString())
+        model.assertNoIssues()
     }
 
     @Test
@@ -134,9 +135,9 @@ class ProductionsTests {
             }
         """.trimIndent()
         NamespaceBodyElement()
-        assertTrue( model.status.issues.isEmpty(), model.status.issues.toString())
+        model.assertNoIssues()
         NamespaceBodyElement()
-        assertTrue( model.status.issues.isEmpty(), model.status.issues.toString())
+        model.assertNoIssues()
     }
 
 
@@ -151,7 +152,7 @@ class ProductionsTests {
         """.trimIndent()
         Triple()
         Triple()
-        assertTrue(model.status.issues.isEmpty(), model.status.issues.toString())
+        model.assertNoIssues()
     }
 
     @Test
@@ -178,7 +179,7 @@ class ProductionsTests {
                 class Component :> Base::Anything.
         """.trimIndent()
         parse()
-        assertEquals(0, model.status.issues.size, model.status.issues.toString())
+        model.assertNoIssues()
     }
 
 
@@ -222,7 +223,7 @@ class ProductionsTests {
                 class y.     
         """
         parse()
-        assertEquals(0, model.status.issues.size, model.status.issues.toString())
+        model.assertNoIssues()
     }
 
 
@@ -268,7 +269,7 @@ class ProductionsTests {
         NamespaceBodyElement()
         NamespaceBodyElement()
         EOF.consume()
-        assertTrue(model.status.issues.isEmpty())
+        model.assertNoIssues()
     }
 
     @Test
@@ -279,7 +280,7 @@ class ProductionsTests {
         """
         NamespaceBodyElement()
         NamespaceBodyElement()
-        assertTrue(model.status.issues.isEmpty())
+        model.assertNoIssues()
     }
 
     @Test  // ISSUE! sign is not considered properly
@@ -292,13 +293,13 @@ class ProductionsTests {
         feature e: Real = [1.0 .. 3.0] m;
         """
         NamespaceBodyElement()
-        assertTrue(model.status.issues.isEmpty() )
+        model.assertNoIssues()
         NamespaceBodyElement()
         model.status.reset()
         NamespaceBodyElement()
         NamespaceBodyElement()
         NamespaceBodyElement()
-        assertTrue(model.status.issues.isEmpty())
+        model.assertNoIssues()
     }
 
     @Test
@@ -312,7 +313,7 @@ class ProductionsTests {
             }
         """
         RequirementUsage()
-        assertTrue(model.status.issues.isEmpty(), model.status.issues.toString())
+        model.assertNoIssues()
     }
 
 
@@ -326,6 +327,6 @@ class ProductionsTests {
             }
         """.trimIndent()
         RequirementDefinition()
-        assertTrue(model.status.issues.isEmpty())
+        model.assertNoIssues()
     }
 }

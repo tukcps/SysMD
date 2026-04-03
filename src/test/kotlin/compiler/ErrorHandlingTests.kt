@@ -1,5 +1,6 @@
 package compiler
 
+import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.cspsolver.VariableImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.MembershipImplementation
@@ -19,12 +20,20 @@ class ErrorHandlingTests {
     @Test
     fun errorMessageDependencyStringTest() = testSession("ScalarValues")  {
         var p = FeatureImplementation(declaredName = "XXX")
-        p.expression = "asdf+asdf" // nonsense
+        p.expression = "asdf +++ asdf" // nonsense
         p = addOwnedMember(p, global)
         addOwnedRelationship(SpecializationImplementation(p, anything), p)
-        solver.addVariable(p.path(), VariableImplementation(MembershipImplementation(memberElement = p), this.builder))
+        solver.addVariable(p.path(),
+            VariableImplementation(
+                MembershipImplementation(memberElement = p),
+                solver=solver,
+                baseType = Variable.BaseType.Real,
+                path = p.path(),
+                expression = p.expression,
+            )
+        )
         solver.getVariable("XXX")!!.compileExpression()
-        assertIssue("Expected subtype")
+        assertIssue("rror in production")
     }
 
     /**

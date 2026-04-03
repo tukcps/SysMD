@@ -105,7 +105,7 @@ class ClassTests {
         assertTrue(status.issues.isNotEmpty(), status.issues.toString())
     }
 
-    @Test fun testOrderOfIsAIsIrrelevant() = testSession("Base") {
+    @Test fun testOrderIsIrrelevant() = testSession("ScalarValues") {
         loadKerML("""
             package Occurrences { classifier Occurrence; }
             class A :> B; 

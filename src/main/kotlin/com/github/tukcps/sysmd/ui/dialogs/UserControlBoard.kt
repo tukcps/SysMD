@@ -26,11 +26,9 @@ import com.github.tukcps.sysmd.exports.systemCElements.Channel
 import com.github.tukcps.sysmd.exports.systemCElements.ChannelType
 import com.github.tukcps.sysmd.exports.systemCElements.Module
 import com.github.tukcps.sysmd.exports.systemCElements.ModuleType
-import com.github.tukcps.sysmd.generated.resources.Res
-import com.github.tukcps.sysmd.generated.resources.SysMD_Icon
+import com.github.tukcps.sysmd.loadPainter
 import com.github.tukcps.sysmd.ui.styles.AppTheme
 import com.github.tukcps.sysmd.ui.viewmodel.settingsViewModel
-import org.jetbrains.compose.resources.painterResource
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -65,7 +63,7 @@ fun UserControlBoard(ucbData: UcbDataPack, sysCExporter: Exporter, openDialog: M
         state = rememberDialogState(position = WindowPosition(Alignment.Center), size = DpSize(1280.dp, 800.dp)),
         title = "User Control Board",
         resizable = true,
-        icon = painterResource(Res.drawable.SysMD_Icon)
+        icon = loadPainter("/drawable/SysMD-Icon.png")
     ) {
         Box(
             modifier = Modifier.background(AppTheme.colors.backgroundLight)

@@ -4,8 +4,7 @@ package com.github.tukcps.sysmd.model.expression
 import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.cspsolver.Variable.BaseType
 import com.github.tukcps.sysmd.exceptions.Issue
-import com.github.tukcps.sysmd.exceptions.SemanticError
-import com.github.tukcps.sysmd.model.kerml.Feature
+import com.github.tukcps.sysmd.exceptions.SolverError
 import com.github.tukcps.sysmd.quantities.VectorDimensionError
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
@@ -21,17 +20,14 @@ typealias DDInternal=DD.Internal<*>
  * This AST node holds information for the constraint propagation.
  * It holds the root of the AST for a given property that has to be computed.
  * @param model the overall data model as dependency injected via constructor parameter.
- * @param feature the feature - variable that is computed by the AST
+ * @param variable the variable that is computed by the AST
  * @param dependency the AST that describes the dependency of the property from other properties.
  */
 class AstRoot(
     model: Session,
-    val feature: Feature,
+    val variable: Variable,
     val dependency: AstNode
 ) : AstNode(model) {
-
-    val variable: Variable
-        get() = feature.variable!!
 
     // Leaves of the AST with this as a root
     internal var leaves: Collection<AstLeaf> = ArrayList()
@@ -47,7 +43,7 @@ class AstRoot(
         leaves = dependency.getLeaves()
         variable.ast = this
         if(variable.baseType == BaseType.Real && variable.vectorQuantity.unit.clone().toSI() != upQuantity.unit.clone().toSI())
-            model.status.inconsistency(element = variable.feature, message = "Unit of ${variable.feature.escapedName()} (${variable.vectorQuantity.unit}) does not match the unit of the dependency (${upQuantity.unit})")
+            model.status.inconsistency(path = variable.path, message = "Unit of ${variable.path} (${variable.vectorQuantity.unit}) does not match the unit of the dependency (${upQuantity.unit})")
         variable.vectorQuantity.values = upQuantity.values
         variable.vectorQuantity.unit = upQuantity.unit
     }
@@ -59,7 +55,7 @@ class AstRoot(
     override fun evalUp() {
         when {
             this.dependency.isReal -> {
-                if (variable.baseType == BaseType.Real && !variable.feature.isSufficient) {
+                if (variable.baseType == BaseType.Real && !variable.satisfyAll) {
                     val quantityWithTransformedUnit = dependency.upQuantity.clone()
                     upQuantity = VectorQuantity(
                         quantityWithTransformedUnit.values,
@@ -67,11 +63,11 @@ class AstRoot(
                         variable.vectorQuantity.unitSpec
                     )
                     variable.vectorQuantity = upQuantity.constrain(variable.vectorQuantity, variable.rangeSpecs, variable.unitSpec)
-                    if(variable.intSpecs.size!=dependency.upQuantity.values.size && variable.intSpecs.size!=1)
+                    if(variable.rangeSpecs.size!=dependency.upQuantity.values.size && variable.rangeSpecs.size!=1)
                         throw VectorDimensionError("Vector size of ${dependency.upQuantity.values.size} does not match constraint size of ${variable.rangeSpecs.size}")
                     if (variable.vectorQuantity.values.any { it == model.builder.Empty })
-                        model.status.inconsistency(element = variable.feature, message = "dependency of ${variable.feature.escapedName()} is not satisfiable")
-                } else if (variable.baseType == BaseType.Real && variable.feature.isSufficient) {
+                        model.status.inconsistency(path = variable.path, message = "dependency of ${variable.path} is not satisfiable")
+                } else if (variable.baseType == BaseType.Real && variable.satisfyAll) {
                     // Convert the rangeSpecs to a VectorQuantity
                     val values = mutableListOf<AADD>()
                     variable.rangeSpecs.forEach{values.add(model.builder.real(it))}
@@ -81,9 +77,9 @@ class AstRoot(
                         throw VectorDimensionError("Vector size of ${dependency.upQuantity.values.size} does not match constraint size of ${variable.rangeSpecs.size}")
                     if(variable.rangeSpecs.size == dependency.upQuantity.values.size)
                         if (variable.rangeSpecs.indices.any{variable.rangeSpecs[it] !in (dependency.upQuantity.values[it] as AADD).getRange()})
-                            model.status.warn(Issue.Kind.WARN_INCONSISTENCY,"Dependency for ${variable.feature.escapedName()} cannot be satisfied for all values of range.", element = variable.feature)
+                            model.status.warn(Issue.Kind.WARN_INCONSISTENCY,"Dependency for ${variable.path} cannot be satisfied for all values of range.", path = variable.path)
                 } else
-                    throw SemanticError("${variable.name}: expect expression of type Real", variable.feature)
+                    throw SolverError("${variable.path}: expect expression of type Real", variable.path)
             }
 
             this.dependency.isBool -> {
@@ -92,21 +88,21 @@ class AstRoot(
             }
 
             this.dependency.isInt -> {
-                if (variable.baseType == BaseType.Int && ! variable.feature.isSufficient) {
+                if (variable.baseType == BaseType.Int && ! variable.satisfyAll) {
                     upQuantity = dependency.upQuantity
                     variable.vectorQuantity = upQuantity.constrain(variable.intSpecs).constrain(variable.vectorQuantity)
-                } else if (variable.baseType == BaseType.Int && variable.feature.isSufficient) {
+                } else if (variable.baseType == BaseType.Int && variable.satisfyAll) {
                     upQuantity = dependency.upQuantity
                     val values = mutableListOf<IDD>()
                     variable.intSpecs.forEach { values.add(model.builder.integer(it)) }
                     variable.vectorQuantity = VectorQuantity(values)
-                    if(variable.rangeSpecs.size!=dependency.upQuantity.values.size && variable.rangeSpecs.size != 1)
-                        throw VectorDimensionError("Vector size of ${dependency.upQuantity.values.size} does not match Constraint size of ${variable.rangeSpecs.size}")
-                    if(variable.rangeSpecs.size == dependency.upQuantity.values.size)
-                        if (variable.rangeSpecs.indices.any{variable.intSpecs[it] !in (dependency.upQuantity.values[it] as IDD).getRange()})
-                            model.status.warn( Issue.Kind.WARN_INCONSISTENCY,"Dependency for ${variable.name} cannot be satisfied for all values of range.", element = variable.feature)
+                    if(variable.intSpecs.size!=dependency.upQuantity.values.size && variable.intSpecs.size != 1)
+                        throw VectorDimensionError("Vector size of ${dependency.upQuantity.values.size} does not match Constraint size of ${variable.intSpecs.size}")
+                    if(variable.intSpecs.size == dependency.upQuantity.values.size)
+                        if (variable.intSpecs.indices.any{variable.intSpecs[it] !in (dependency.upQuantity.values[it] as IDD).getRange()})
+                            model.status.warn( Issue.Kind.WARN_INCONSISTENCY,"Dependency for ${variable.path} cannot be satisfied for all values of range.", path = variable.path)
                 } else
-                    throw SemanticError("${variable.feature.qualifiedName}: expect expression of type Integer", variable.feature)
+                    throw SolverError("${variable.path}: expect expression of type Integer", path = variable.path)
             }
             this.dependency.isString -> {
                 upQuantity = dependency.upQuantity.constrainString(variable.stringSpecs)
@@ -123,7 +119,6 @@ class AstRoot(
         // not needed for ISQ:: where predefined domain is defined in library!
         evalUp()
     }
-
 
     override fun evalDown() {
         when {
@@ -219,7 +214,6 @@ class AstRoot(
 
                 return path
             }
-            else -> throw Exception("Must not be reached.")
         }
     }
 
@@ -269,6 +263,6 @@ class AstRoot(
 
     /** Clone method, creates deep copy */
     override fun clone(): AstRoot =
-        AstRoot(model, feature, dependency.clone())
+        AstRoot(model, variable, dependency.clone())
 
 }

@@ -4,18 +4,18 @@ import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import io.github.tukcps.aadd.values.IntegerRange
 import org.junit.jupiter.api.Assertions
+import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 
 class AttributeTests {
     @Test
     fun testSimpleAttribute() = testSession("ScalarValues") {
         loadSysMLv2("attribute <aa> a;")
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val a = global.resolve("a")?.member<Feature>()
         val aa = global.resolve("aa")?.member<Feature>()
         assertNotNull(a)
@@ -29,7 +29,7 @@ class AttributeTests {
         loadSysMLv2("""
             attribute <aa> a: ScalarValues::Real; 
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val a = global.resolve("a")?.member<Feature>()
         assertNotNull(a)
         assertEquals("a", a.declaredName)
@@ -43,7 +43,7 @@ class AttributeTests {
         loadSysMLv2("""
             attribute <aa> a: ScalarValues::Real [1 .. 3]; 
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val a = global.resolve("a")?.member<Feature>()
         assertNotNull(a)
         assertEquals("a", a.declaredName)
@@ -58,7 +58,7 @@ class AttributeTests {
             attribute x: ISQ::SpeedValue = 10.0 [m/s];
         """)
         solver.propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val x = global.resolve("x")?.member<Feature>()
         assertNotNull(x)
         val unit= x.variable?.vectorQuantity?.unit

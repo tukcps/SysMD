@@ -1,7 +1,8 @@
-package importtests
+package exports
 
 import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.services.resolve.resolveVar
+import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
 import java.io.File
@@ -63,10 +64,10 @@ class ImportTest {
             }
             """)
         solver.propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         assertEquals(28.5, global.resolveVar("test::myAmplifier::gain")!!.aadd().min,0.00001)
         assertEquals(28.5,global.resolveVar("test::myAmplifier::gain")!!.aadd().max,0.00001)
-        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+        assertNoIssues()
     }
 
     @Test
@@ -272,11 +273,12 @@ class ImportTest {
             attribute b: ISQ::LengthValue = [10.0 .. 20.0] m;
             attribute gain: ScalarValues::Real = characterizedResult(max(a,b),"${Paths.get("").toAbsolutePath()}/src/test/resources/importResultsTestDir/testFile.json"); 
         """)
+        assertNoIssues()
         solver.propagate()
 
         assertEquals(28.5, global.resolveVar("gain")!!.min(),0.00001)
         assertEquals(28.5,global.resolveVar("gain")!!.max(),0.00001)
-        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+        assertNoIssues()
     }
 
     private fun writeJson(attrFQN: Any, resultUnit: String, resultValue: Double) {

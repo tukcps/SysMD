@@ -126,7 +126,7 @@ class AggregationFunctionTest {
             }
         """)
         solver.propagate()
-        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+        assertNoIssues()
         assertEquals(0.32, global.resolveVar("l::c3::p3")!!.min(), 0.0001)
         assertEquals(0.32, global.resolveVar("l::c3::p3")!!.max(), 0.0001)
         assertEquals(0.32, global.resolveVar("l::c3::p4")!!.min(), 0.0001)
@@ -450,7 +450,7 @@ class AggregationFunctionTest {
                  }
         """)
         solver.propagate()
-        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+        assertNoIssues()
         assertEquals(0, global.resolveVar("l::c3::a::p")!!.vectorQuantity.value.asIdd().min)
         assertEquals(5, global.resolveVar("l::c3::a::p")!!.vectorQuantity.value.asIdd().max)
     }
@@ -474,7 +474,7 @@ class AggregationFunctionTest {
             }
         """)
         solver.propagate()
-        assertEquals(0, status.issues.size, "Error messages: ${status.issues}")
+        assertNoIssues()
         assertEquals(2.1, global.resolveVar("l::c3::p3")!!.min(), 0.0001)
         assertEquals(2.1, global.resolveVar("l::c3::p3")!!.max(), 0.0001)
         assertEquals(2.1, global.resolveVar("l::c3::p4")!!.min(), 0.0001)
@@ -733,7 +733,7 @@ class AggregationFunctionTest {
                  }
         """)
         solver.propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         assertEquals(0.06,
             global.resolveVar("l::c1::securityOfSupply")!!.min(), 0.0001)
         assertEquals(0.08,

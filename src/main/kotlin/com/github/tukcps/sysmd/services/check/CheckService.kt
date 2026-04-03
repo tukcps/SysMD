@@ -138,11 +138,13 @@ fun Session.checkOwnership() {
     get().forEach {  element ->
         if (element == global) return@forEach
         if (element is Relationship && element !is Namespace && element !is Dependency) {
-            if (element !in element.owningRelatedElement.ownedRelationship)
-                status.fatal("Inconsistent ownership: ${element.path()} owns ${element.owningRelatedElement.path()}" , element = element)
+            val owner = element.owningRelatedElement
+            if (element !in owner.ownedRelationship)
+                status.fatal("Inconsistent ownership: ${element.path()} (${element.elementId}) owned by ${owner.path()} (${owner.elementId}) but missing from ownedRelationship" , element = element)
         } else {
-            if (element !in element.owningNamespace?.ownedElement!!)
-                status.fatal("Inconsistent ownership detected", element = element)
+            val owner = element.owningNamespace!!
+            if (element !in owner.ownedElement)
+                status.fatal("Inconsistent ownership: ${element.path()} (${element.elementId}) owned by ${owner.path()} (${owner.elementId}}) but missing from ownedElements", element = element)
         }
     }
 }
@@ -158,8 +160,14 @@ internal fun Session.checkLibraryElementIds() {
         {
             val path = element.path()
             val uuid5 = Generators.nameBasedGenerator().generate(path)
-            if (element.elementId != uuid5)
-                status.warn(Issue.Kind.WARN,"Library element with path $path for ${element.elementType} ${element.escapedName()} does not have correct UUID5", element = element)
+            if (element.elementId != uuid5) {
+                val name = if (element is Membership) element.memberName else element.escapedName()
+                status.warn(
+                    Issue.Kind.WARN,
+                    "Library element with path $path for ${element.elementType} ${name} does not have UUID5 $uuid5, but instead ${element.elementId}",
+                    element = element
+                )
+            }
         }
     }
 }

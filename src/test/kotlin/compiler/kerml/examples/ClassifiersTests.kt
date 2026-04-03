@@ -41,7 +41,7 @@ class ClassifiersTests {
                 subclassifier C specializes A;
                 subclassifier C specializes B;
             """.trimIndent())
-            assertTrue(status.issues.isEmpty(), status.issues.toString())
+            assertNoIssues()
         }
 
     /**
@@ -58,7 +58,7 @@ class ClassifiersTests {
                 classifier B;
                 classifier C specializes A, B;
             """)
-            assertTrue(status.issues.isEmpty(), status.issues.toString())
+            assertNoIssues()
         }
 
 }

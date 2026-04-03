@@ -1,5 +1,6 @@
 package compiler.kerml.examples
 
+import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
@@ -27,7 +28,7 @@ class DependencyTest {
             dependency 'Service Layer'
                 to 'Data Layer', 'External Interface Layer';
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -48,6 +49,6 @@ class DependencyTest {
                 * not its name. */
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 }

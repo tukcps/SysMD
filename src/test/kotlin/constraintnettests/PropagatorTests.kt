@@ -1,13 +1,12 @@
 package constraintnettests
 
-import com.github.tukcps.sysmd.services.resolve.resolveVar
 import io.github.tukcps.aadd.BDD
 import io.github.tukcps.aadd.functions.numInternalNodes
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Test
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class PropagatorTests {
 
@@ -22,7 +21,7 @@ class PropagatorTests {
             feature z: ScalarValues::Boolean(true) ;
         """)
         solver.propagate()
-        assertEquals(0, status.issues.size, status.issues.toString())
+        assertNoIssues()
     }
 
     //Test if all don't cares are found
@@ -37,24 +36,23 @@ class PropagatorTests {
         """)
         assertNoIssues()
         solver.propagate()
-        assertEquals(0, status.issues.size, status.issues.toString())
-        assertEquals(1, global.resolveVar("a")!!.vectorQuantity.value.numInternalNodes())
+        assertNoIssues()
+        assertEquals(1, solver.getVariable("a")!!.vectorQuantity.value.numInternalNodes())
     }
 
     @Test
     fun propagationByPropagatorsUnitClausesTest() = testSession("ScalarValues") {
-        loadKerML(input = """
-                    feature a: ScalarValues::Boolean;
-                    feature b: ScalarValues::Boolean;
-                    feature c: ScalarValues::Boolean;
-                    feature d: ScalarValues::Boolean;
-                    feature f: ScalarValues::Boolean;
-                    feature g: ScalarValues::Boolean(true) = (a or b or c or d) and f; 
-                """
-        ).run {
+        loadKerML("""
+            feature a: ScalarValues::Boolean;
+            feature b: ScalarValues::Boolean;
+            feature c: ScalarValues::Boolean;
+            feature d: ScalarValues::Boolean;
+            feature f: ScalarValues::Boolean;
+            feature g: ScalarValues::Boolean(true) = (a or b or c or d) and f; 
+        """).run {
             solver.propagate()
             assertNoIssues()
-            assertEquals(true, global.resolveVar("f")!!.vectorQuantity.value is BDD.Leaf)
+            assertEquals(true, solver.getVariable("f")!!.vectorQuantity.value is BDD.Leaf)
         }
     }
 

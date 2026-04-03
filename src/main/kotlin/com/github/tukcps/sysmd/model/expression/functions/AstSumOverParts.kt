@@ -134,8 +134,8 @@ fun Session.initSumOverComposition(element: Namespace, propertyAST: AstNode, tra
             if (variable != null) {
                 leaf.upQuantity = variable.vectorQuantity
                 leaf.downQuantity = variable.vectorQuantity
-                leaf.qualifiedName = variable.name
-                leaf.resolvedName = variable.name
+                leaf.qualifiedName = variable.path
+                leaf.resolvedName = variable.path
                 if (leaf.upQuantity.values[0] is IDD) isRealSum = false
                 astNodeUsed = true
             } else if (transitive ) { // Transitive: search property in parts (not for ValueFeatures)

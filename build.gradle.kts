@@ -1,5 +1,4 @@
 import org.gradle.internal.os.OperatingSystem
-import org.jetbrains.compose.ExperimentalComposeLibrary
 
 /*
  * Gradle build file for SysMD Notebook.
@@ -14,8 +13,8 @@ import org.jetbrains.compose.ExperimentalComposeLibrary
  * - also set the value standalone according to your setup
  */
 group   = "com.github.tukcps"
-version = "4.1.6"               // must be number.number.number
-val aaddVersion = "0.1.11"
+version = "4.2.0"               // must be number.number.number
+val aaddVersion = "0.1.15"
 val sysmlapiVersion = "3.9.12"
 val useMavenAADD = true
 val useMavenSysMLAPI = true
@@ -33,9 +32,9 @@ plugins {
     // Plugin that checks for updates of dependencies
     id("com.github.ben-manes.versions") version "0.53.0"
     id("idea")
-    kotlin("jvm") version "2.2.21"
-    kotlin("plugin.serialization") version "2.2.21"
-    id("org.springframework.boot") version "4.0.0"
+    kotlin("jvm") version "2.3.20"
+    kotlin("plugin.serialization") version "2.3.20"
+    id("org.springframework.boot") version "4.0.5"
     id("io.spring.dependency-management") version "1.1.7"
     alias(libs.plugins.jetbrainsCompose) apply true
     alias(libs.plugins.compose.compiler) apply true
@@ -64,7 +63,7 @@ dependencies {
         println("  *** using AADD from project clone in ./aadd               ***")
         implementation(project(":aadd"))
     } else {
-        println("  *** using AADD v$aaddVersion from Maven repository           ***")
+        println("  *** using AADD v$aaddVersion from Maven repository            ***")
         implementation("io.github.tukcps:aadd:$aaddVersion")
         implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0")
     }
@@ -77,19 +76,19 @@ dependencies {
         implementation("io.github.tukcps:sysmlapi:$sysmlapiVersion")
     }
 
-    implementation(compose.components.resources)
+    implementation(libs.compose.resources)
 
     // For UUID version 5 (name-based)
     implementation("com.fasterxml.uuid:java-uuid-generator:5.1.0")
 
-    implementation("org.jetbrains.compose.material3:material3-desktop:1.8.2")
+    implementation("org.jetbrains.compose.material3:material3-desktop:1.9.0")
 
     // These are necessary for the annotations in the models.
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.hibernate.validator:hibernate-validator:9.0.1.Final")
 
     // Open API / Swagger
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.2")
 
     // Needed for annotations for Spring Boot in package rest
     implementation("com.fasterxml.jackson.core:jackson-databind")
@@ -97,15 +96,15 @@ dependencies {
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
 
     // Parsing markdown to AST
-    implementation("org.commonmark:commonmark:0.26.0")
-    implementation("org.commonmark:commonmark-ext-gfm-tables:0.26.0")
-    implementation("org.commonmark:commonmark-ext-image-attributes:0.26.0")
-    implementation("org.commonmark:commonmark-ext-yaml-front-matter:0.26.0")
-    implementation("org.commonmark:commonmark-ext-gfm-strikethrough:0.26.0")
-    implementation("org.commonmark:commonmark-ext-ins:0.26.0")
+    implementation("org.commonmark:commonmark:0.28.0")
+    implementation("org.commonmark:commonmark-ext-gfm-tables:0.28.0")
+    implementation("org.commonmark:commonmark-ext-image-attributes:0.28.0")
+    implementation("org.commonmark:commonmark-ext-yaml-front-matter:0.28.0")
+    implementation("org.commonmark:commonmark-ext-gfm-strikethrough:0.28.0")
+    implementation("org.commonmark:commonmark-ext-ins:0.28.0")
 
     // Some more icons ...
-    implementation(compose.components.resources)
+    implementation(libs.compose.resources)
     implementation("org.jetbrains.compose.material:material-icons-extended:1.7.3")
 
     // Rendering of LaTeX in MD
@@ -118,26 +117,17 @@ dependencies {
     implementation("org.apache.xmlgraphics:batik-codec:1.19")
 
     // Use the Kotlin JUnit integration.
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:2.2.20")
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:2.3.20")
 
     // compose ui tests
     testImplementation(kotlin("test"))
-    testImplementation("org.springframework.boot:spring-boot-starter-test:3.5.4") {
+    testImplementation("org.springframework.boot:spring-boot-starter-test:4.0.5") {
         exclude(group = "org.mockito", module = "mockito-core")
     }
 
-    @OptIn(ExperimentalComposeLibrary::class)
-    testImplementation(compose.uiTest)
-    testImplementation(compose.desktop.uiTestJUnit4)
+    testImplementation(libs.compose.ui.test)
+    testImplementation(libs.compose.ui.test.junit4)
 }
-
-/**
- * Prevents compose desktop to be twice in jar (via spring boot and direct)
- */
-tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-}
-
 
 // Don't use the regular jar as the project is a spring boot project.
 tasks.named<Jar>("jar") {

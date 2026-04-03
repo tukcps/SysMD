@@ -118,25 +118,6 @@ class SessionTests {
         assertNoIssues()
     }
 
-    /**
-     * reset of a session creates new repo, new libraries, that are of similar size as before.
-     */
-    @Test
-    fun resetTest() = testSession("ScalarValues") {
-        val size = repo.elements.size // Before
-        @Suppress("UNCHECKED_CAST")
-        val elements = repo.elements.clone() as HashMap<*, Element>
-        reset()
-        loadLibrary("ScalarValues")
-        val elements2 = repo.elements
-        val diff = mutableListOf<Element>()
-        val diff2 = mutableListOf<Element>()
-        elements2.forEach { if (it.key !in elements.keys) diff.add(it.value) }
-        elements.forEach { if (it.key !in elements2.keys) diff2.add(it.value) }
-        val libs = global.ownedElement
-        assertTrue(2 <= libs.size)
-        assertEquals(size, repo.elements.size)
-    }
 
     @Test
     fun loadKerMLBasic() = testSession {
@@ -183,7 +164,7 @@ class SessionTests {
             namespace test; 
         """)
         initialize()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val test: Namespace? = global.resolve("test")?.member()
         assertNotNull(test)
     }
@@ -194,7 +175,7 @@ class SessionTests {
             part test; 
         """)
         initialize()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val test: PartUsage? = global.resolve("test")?.member()
         assertNotNull(test)
     }

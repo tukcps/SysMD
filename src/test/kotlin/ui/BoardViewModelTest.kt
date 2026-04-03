@@ -38,7 +38,7 @@ class BoardViewModelTest {
                     ;     
                 }
            }
-        """.trimIndent())
+        """)
         initialize()
         // solver.propagate()
         assertTrue(status.issues.isNotEmpty())

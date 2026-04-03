@@ -290,8 +290,12 @@ open class Scanner(
 
             '=' -> {
                 nextNextToken = if (nextChar() == '=') {
-                    nextChar()
-                    buildToken(EE)
+                    if(nextChar() == '=')
+                    {
+                        nextChar()
+                        buildToken(EEE)
+                    } else
+                        buildToken(EE)
                 } else
                     buildToken(EQ)
             }
@@ -319,11 +323,31 @@ open class Scanner(
             }
             '!' -> {
                 nextNextToken = if (nextChar() == '=') {
-                    nextChar()
-                    buildToken(NEQ)
+                    if(nextChar() == '=')
+                    {
+                        nextChar()
+                        buildToken(NEE)
+                    } else
+                        buildToken(NEQ)
                 } else
                     buildToken(NOT)
             }
+
+            '@' -> {
+                nextNextToken = if (nextChar() == '@') {
+                    nextChar()
+                    buildToken(ATAT)
+                } else
+                    buildToken(ATSIGN)
+            }
+            '?' -> {
+                nextNextToken = if (nextChar() == '?') {
+                    nextChar()
+                    buildToken(QQ)
+                } else
+                    buildToken(QUESTION)
+            }
+
             0.toChar() -> nextNextToken = buildToken(EOF)
 
             else -> {

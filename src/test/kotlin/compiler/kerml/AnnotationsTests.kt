@@ -44,7 +44,7 @@ class AnnotationsTests {
             namespace x; 
             comment test about x /* comment on something */ 
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val comment = global.getOwnedElementOfType<AnnotatingElement>()
         assertTrue(comment is Comment)
         assertEquals("comment on something", comment.body)
@@ -61,7 +61,7 @@ class AnnotationsTests {
             namespace y; 
             comment test about x, y /* comment on something */
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val comment = global.getOwnedElementOfType<AnnotatingElement>()
         assertTrue(comment is Comment)
         assertEquals("comment on something", comment.body)
@@ -91,7 +91,7 @@ class AnnotationsTests {
         loadKerML("""
             rep test language some /* code on something */ 
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val rep = global.getOwnedElementOfType<AnnotatingElement>()
         assertTrue(rep is TextualRepresentation)
         assertEquals("code on something", rep.body)
@@ -117,7 +117,7 @@ class AnnotationsTests {
         loadKerML("""
             rep test language ltl /* ltl expressions */ 
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val rep = global.getOwnedElementOfType<AnnotatingElement>()
         assertTrue(rep is TextualRepresentation)
         assertEquals("ltl", rep.language)

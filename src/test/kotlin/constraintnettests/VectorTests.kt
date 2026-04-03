@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import util.assertNoIssues
 import util.mockup.loadKerML
+import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.assertTrue
 
@@ -122,7 +123,7 @@ class VectorTests {
 
     @Test fun vectorMinusTestReal() = testSession("ISQ", "Ranges") {
         loadKerML("""
-                feature a: ISQ::CartesianVelocity3dVector {:>> range = "0..1,1..2,3..4";} 
+                feature a: ISQ::CartesianVelocity3dVector  = (0.0..1.0,1.0..2.0,3.0..4.0) [m/s]; 
                 feature b: ISQ::CartesianVelocity3dVector {:>> range = "0..1,1..3,-2..2";} 
                 feature c: ISQ::CartesianVelocity3dVector = a - b;
             """)
@@ -169,6 +170,31 @@ class VectorTests {
         assertEquals(36.0, c.max(1), 0.000001)
         assertEquals(-40.0, c.min(2), 0.000001)
         assertEquals(60.0, c.max(2), 0.000001)
+    }
+
+
+    @Test
+    fun vectorTestInheritanceMixedDefintions() = testSession("ISQ","Parts") {
+        loadSysMLv2("""
+            private import ISQ::*;
+           part def InstallationSpace {
+                attribute positionOfSpace: CartesianPosition3dVector {:>> range = "-1.5..6.0, -1.25..1.25, -0.5..4.0";} 
+            }
+            part def FrontSpace :> InstallationSpace{
+                attribute positionOfSpace: CartesianPosition3dVector = (-0.9, 0.0, 0.2) [m];
+            }
+            part def Location {
+                part space : InstallationSpace;
+                attribute relativePosition : CartesianPosition3dVector {:>> range= "0.0..4.0, -1.25..1.25, -0.5..4.0";}
+                attribute position: CartesianPosition3dVector = space::positionOfSpace + relativePosition;
+            }
+            part def TopViewLeftLoc :> Location {
+                :>> relativePosition = (0.4, -1.0, 0.3) m;
+                part space : FrontSpace;
+            }
+            """)
+        solver.propagate()
+        assertNoIssues()
     }
 
     @Test fun vectorSum() = testSession("ISQ", "Ranges") {
@@ -234,19 +260,19 @@ class VectorTests {
         """)
         solver.propagate()
         assertNoIssues()
-        val b = global.resolveVar("b")!!
+        val b = solver.getVariable("b")!!
         assertEquals(5.0, b.min(), 0.000001)
         assertEquals(10.0, b.max(), 0.000001)
     }
 
     @Test fun vectorSumRealEvalDown() = testSession("Ranges") {
-        loadKerML("""  
-                feature a: ISQ::CartesianElectricFieldStrength3dVector { :>> range = "6..6, 1..100, 10..10"; }
-                feature b: ISQ::ElectricFieldStrengthValue = sum(a) {:>> range = "20..20";}
-            """)
+        loadKerML("""
+            feature a: ISQ::CartesianElectricFieldStrength3dVector { :>> range = "6..6, 1..100, 10..10"; }
+            feature b: ISQ::ElectricFieldStrengthValue = sum(a) {:>> range = "20..20";}
+        """)
         solver.propagate()
         assertNoIssues()
-        val a = global.resolveVar("a")!!
+        val a = solver.getVariable("a")!!
         assertEquals(6.0, a.min(), 0.000001)
         assertEquals(6.0, a.max(), 0.000001)
         assertEquals(4.0, a.min(1), 0.000001)
@@ -257,12 +283,12 @@ class VectorTests {
 
     @Test fun vectorSumRealEvalDown2() = testSession("Ranges") {
         loadKerML("""  
-                feature a: ISQ::CartesianElectricFieldStrength3dVector {:>> range = "5..10,1..100,20..30";}
-                feature b: ISQ::ElectricFieldStrengthValue = sum(a) {:>> range = "60..80";}
-            """)
+            feature a: ISQ::CartesianElectricFieldStrength3dVector {:>> range = "5..10,1..100,20..30";}
+            feature b: ISQ::ElectricFieldStrengthValue = sum(a) {:>> range = "60..80";}
+        """)
         solver.propagate()
         assertNoIssues()
-        val a = global.resolveVar("a")!!
+        val a = solver.getVariable("a")!!
         assertEquals(5.0, a.min(), 0.000001)
         assertEquals(10.0, a.max(), 0.000001)
         assertEquals(20.0, a.min(1), 0.000001)
@@ -650,6 +676,7 @@ class VectorTests {
                 feature b: Ranges::IntegerInRange {:>> range = "4..5,-2..-1,3..10";}
                 feature c: ScalarValues::Integer  = a cross b;
             """)
+        assertNoIssues()
         solver.propagate()
         assertNoIssues()
         val c = global.resolveVar("c")!!

@@ -18,7 +18,7 @@ library package SysMD {
  }
 
 // Example
-metadata a: SysMD::ProjectInformation {
+metadata a: SysMD::Project {
     title = "test";
     maintainer = "Christoph Grimm";
     license = "Apache 2.0";

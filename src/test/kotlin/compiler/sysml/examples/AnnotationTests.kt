@@ -1,5 +1,6 @@
 package compiler.sysml.examples
 
+import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Test
@@ -18,7 +19,7 @@ class AnnotationTests {
         comment Comment1
         /*This is a comment.*/
         """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     @Test
@@ -26,7 +27,7 @@ class AnnotationTests {
         loadSysMLv2("""
         /*This is a comment.*/
         """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     @Test
@@ -39,7 +40,7 @@ class AnnotationTests {
             /* The annotated element
              * is attribute1. */
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     @Test
@@ -48,7 +49,7 @@ class AnnotationTests {
         doc Document1
         /*This is documentation.*/
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     @Test
@@ -60,7 +61,7 @@ class AnnotationTests {
             comment about part1::attribute1
             /* The annotated element * is attribute1. */
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
 }

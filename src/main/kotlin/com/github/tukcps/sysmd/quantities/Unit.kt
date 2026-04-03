@@ -6,6 +6,7 @@ import java.io.StreamTokenizer
 import java.io.StringReader
 import kotlin.math.abs
 import kotlin.math.log
+import kotlin.math.min
 
 class Unit : Cloneable {
     var unitSet = mutableSetOf<UnitOfMeasurement>()
@@ -94,7 +95,7 @@ class Unit : Cloneable {
                 unitStr = toString() // Set unitStr to string representation of unit, which is not in SI
                 return
             }
-            else -> throw UnknownUnitError("Problem in Unit string in unit ${str}")
+            else -> throw UnknownUnitError("Problem in Unit string in unit $str")
         }
         while (token == StreamTokenizer.TT_WORD) {
             val resultUnit = splitBaseExponent(strTok.sval)
@@ -131,7 +132,7 @@ class Unit : Cloneable {
      */
     private fun isolatePrefix(str: String): UnitOfMeasurement {
         // loop over all possible prefix lengths (0,1 and 2)
-        for (i in (0..2)){ //i: prefix length
+        for (i in (0..min(2, str.length-1))){ //i: prefix length
             val tempPref = str.substring(0, i)
             val tempBase = str.substring(i)
             if (ConversionTables.prefixes.containsKey(tempPref) && ConversionTables.unitsMap.containsKey(tempBase)) {

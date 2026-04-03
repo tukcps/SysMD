@@ -1,5 +1,6 @@
 package kermltests
 
+import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
@@ -17,7 +18,7 @@ class FunctionTests {
             }
         """)
         solver.propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val f = global.resolve("f")?.memberElement
         val a = global.resolve("f::a")?.memberElement
         assertNotNull(f)
@@ -29,7 +30,7 @@ class FunctionTests {
         loadKerML("""
             feature x: ScalarValues::Real;
             feature f: ScalarValues::Real = undefined(x); 
-        """.trimIndent())
+        """)
         assertTrue(status.issues.isNotEmpty(), "An unknown function should be reported as error.")
     }
 }

@@ -18,8 +18,13 @@ open class SubsettingImplementation(
     elementType = elementType
 ) {
     override var subsettedFeature: Feature
-        get() = if (general is Feature) general as Feature else
-            TODO()
+        get() = when (val gen = general) {
+            is Feature -> gen
+            else -> {
+                target.firstOrNull() as? Feature
+                    ?: throw IllegalStateException("SubsettingImplementation.subsettedFeature: general is not a Feature but ${gen.javaClass.simpleName ?: "null"}")
+            }
+        }
         set(value) { general = value }
 
     override var subsettingFeature: Feature

@@ -1,12 +1,11 @@
 package compiler
 
 import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.services.resolve.resolveVar
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
-import kotlin.test.assertTrue
 
 /**
  * Checks that the dependency string is correctly cut out of the SysMD string.
@@ -24,15 +23,15 @@ class DependencyStringTest {
             feature x3: Real = 1.0 + 2.0;
             feature z: Real = 1.0 + 2.0;
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
-        val x = global.resolveVar("x") !!
-        assertEquals("1.0 + 2.0", x.feature.expression)
-        val x2 = global.resolveVar("x2") !!
-        assertEquals("1.0 + 2.0", x2.feature.expression)
-        val x3 = global.resolveVar("x3") !!
-        assertEquals("1.0 + 2.0", x3.feature.expression)
-        val z = global.resolveVar("z") !!
-        assertEquals("1.0 + 2.0", z.feature.expression)
+        assertNoIssues()
+        val x = solver.getVariable("x") !!
+        assertEquals("1.0 + 2.0", x.expression)
+        val x2 = solver.getVariable("x2") !!
+        assertEquals("1.0 + 2.0", x2.expression)
+        val x3 = solver.getVariable("x3") !!
+        assertEquals("1.0 + 2.0", x3.expression)
+        val z = solver.getVariable("z") !!
+        assertEquals("1.0 + 2.0", z.expression)
     }
 
     /**
@@ -46,14 +45,14 @@ class DependencyStringTest {
             feature x3: ScalarValues::Boolean = true
               ;
             feature z: ScalarValues::Boolean = true""")
-        val x = global.resolveVar("x") !!
-        assertEquals("true", x.feature.expression)
-        val x2 = global.resolveVar("x2") !!
-        assertEquals("true", x2.feature.expression)
-        val x3 = global.resolveVar("x3") !!
-        assertEquals("true", x3.feature.expression)
-        val z = global.resolveVar("z") !!
-        assertEquals("true", z.feature.expression)
+        val x = solver.getVariable("x") !!
+        assertEquals("true", x.expression)
+        val x2 = solver.getVariable("x2") !!
+        assertEquals("true", x2.expression)
+        val x3 = solver.getVariable("x3") !!
+        assertEquals("true", x3.expression)
+        val z = solver.getVariable("z") !!
+        assertEquals("true", z.expression)
     }
 
 
@@ -68,14 +67,14 @@ class DependencyStringTest {
             feature x3: ScalarValues::Integer = 1 + 2
               ;
             feature z: ScalarValues::Integer = 1 + 2;""")
-        val x = global.resolveVar("x") !!
-        assertEquals("1 + 2", x.feature.expression)
-        val x2 = global.resolveVar("x2") !!
-        assertEquals("1 + 2", x2.feature.expression)
-        val x3 = global.resolveVar("x3") !!
-        assertEquals("1 + 2", x3.feature.expression)
-        val z = global.resolveVar("z") !!
-        assertEquals("1 + 2", z.feature.expression)
+        val x = solver.getVariable("x") !!
+        assertEquals("1 + 2", x.expression)
+        val x2 = solver.getVariable("x2") !!
+        assertEquals("1 + 2", x2.expression)
+        val x3 = solver.getVariable("x3") !!
+        assertEquals("1 + 2", x3.expression)
+        val z = solver.getVariable("z") !!
+        assertEquals("1 + 2", z.expression)
     }
 
     /**

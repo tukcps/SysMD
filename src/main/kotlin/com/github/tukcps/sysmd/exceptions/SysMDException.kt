@@ -19,6 +19,7 @@ open class SysMDException(
     var token: Token? = null,
     var kind: Issue.Kind = Issue.Kind.ERROR,
     var element: Element? = null,
+    var path: String? = null,
     override val cause: Throwable? = null,
 ): Exception(message, cause) {
 

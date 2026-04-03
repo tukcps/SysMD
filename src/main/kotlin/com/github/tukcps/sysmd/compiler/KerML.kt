@@ -2,8 +2,8 @@
 
 package com.github.tukcps.sysmd.compiler
 
-import com.github.tukcps.sysmd.compiler.parser.kerml.ConstInt
-import com.github.tukcps.sysmd.compiler.parser.kerml.ConstReal
+import com.github.tukcps.sysmd.compiler.parser.kerml.legacy.ConstInt
+import com.github.tukcps.sysmd.compiler.parser.kerml.legacy.ConstReal
 import com.github.tukcps.sysmd.compiler.parser.kerml.NamespaceBodyElement
 import com.github.tukcps.sysmd.compiler.parser.kerml.QualifiedName
 import com.github.tukcps.sysmd.compiler.parser.util.ParserProductionRules
@@ -13,11 +13,7 @@ import com.github.tukcps.sysmd.compiler.semantics.ActionsContext
 import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.exceptions.SyntaxError
 import com.github.tukcps.sysmd.exceptions.SysMDException
-import com.github.tukcps.sysmd.model.kerml.UnresolvedElement
-import com.github.tukcps.sysmd.model.kerml.UnresolvedFeature
-import com.github.tukcps.sysmd.model.kerml.UnresolvedFeatureChain
-import com.github.tukcps.sysmd.model.kerml.UnresolvedNamespace
-import com.github.tukcps.sysmd.model.kerml.UnresolvedType
+import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.services.session.Session
@@ -49,6 +45,11 @@ open class KerML(
     val model: Session,                                 // model in which the results will be returned.
     keywords: Map<String, Token.Kind> = Token.kerMLKeywords,
 ) : ParserProductionRules(keywords = keywords) {
+    /** If true, don't resolve any qualified names and produce `RawNameExpression` instead.
+     * Hack to support some legacy syntax.
+     */
+    var unresolvedNamesMode = false
+        private set
 
     var semantics = ActionsContext(model, compiler = this)
 
@@ -186,7 +187,7 @@ open class KerML(
     }
 
     internal fun handleSyntaxError(message: String) {
-        model.status.error(message, this, semantics.namespace, Issue.Kind.ERROR_SYNTACTICAL)
+        model.status.error(message, this, semantics.namespace, kind=Issue.Kind.ERROR_SYNTACTICAL)
         // Skip input until we get the next DOT (=end of triple) or RCURBRACE or EOF.
         var nested = 0
         while (
@@ -248,4 +249,13 @@ open class KerML(
             it.input = input
             it.indices = indices
         }
+
+    /** Executes a production in which names should not be resolved.
+     * Only toggles `unresolvedNamedMode` flag, the used production rule has to respect that setting.
+     */
+    fun<R> withUnresolvedNames(condition : Boolean = true, body : KerML.() -> R) : R
+    = if(!condition || this.unresolvedNamesMode) body() else {
+        this.unresolvedNamesMode = true
+        try { body() } finally { this.unresolvedNamesMode = false }
+    }
 }

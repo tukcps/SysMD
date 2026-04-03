@@ -7,4 +7,6 @@ package com.github.tukcps.sysmd.model.expression
  */
 interface Invariant: BooleanExpression {
     var isNegated: Boolean
+
+    override fun clone(): Invariant
 }

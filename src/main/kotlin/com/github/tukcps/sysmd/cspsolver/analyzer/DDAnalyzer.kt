@@ -64,8 +64,8 @@ open class DDAnalyzer(override val model: Session): StructuralAnalyzerIF {
                 }
                 false
             }
-            Variable.BaseType.String -> throw Exception("${variable.feature.escapedName()}: StrDD not supported")
-            else -> throw Exception("${variable.feature.escapedName()} of unknown data type")
+            Variable.BaseType.String -> throw Exception("${variable.path}: StrDD not supported")
+            else -> throw Exception("${variable.path} of unknown data type")
         }
     }
 
@@ -98,8 +98,8 @@ open class DDAnalyzer(override val model: Session): StructuralAnalyzerIF {
                 }
                 result
             }
-            is StrDD -> throw Exception("${variable.feature.escapedName()}: StrDD not supported")
-            else -> throw Exception("${variable.feature.escapedName()} of unknown data type")
+            is StrDD -> throw Exception("${variable.path}: StrDD not supported")
+            else -> throw Exception("${variable.path} of unknown data type")
         }
     }
 
@@ -132,8 +132,8 @@ open class DDAnalyzer(override val model: Session): StructuralAnalyzerIF {
                 }
                 result
             }
-            is StrDD -> throw Exception("${variable.feature.escapedName()}: StrDD not supported")
-            else -> throw Exception("${variable.feature.escapedName()} of unknown data type")
+            is StrDD -> throw Exception("${variable.path}: StrDD not supported")
+            else -> throw Exception("${variable.path} of unknown data type")
         }
     }
 
@@ -243,7 +243,7 @@ open class DDAnalyzer(override val model: Session): StructuralAnalyzerIF {
             is StrDD -> {
                 //TODO!
             }
-            else -> throw Exception("${updatedProperty.feature.escapedName()} of unknown data type")
+            else -> throw Exception("${updatedProperty.path} of unknown data type")
         }
     }
 
@@ -343,7 +343,7 @@ open class DDAnalyzer(override val model: Session): StructuralAnalyzerIF {
             is StrDD -> {
                 //TODO!
             }
-            else -> throw Exception("${updatedProperty.feature.escapedName()} of unknown data type")
+            else -> throw Exception("${updatedProperty.path} of unknown data type")
         }
     }
 

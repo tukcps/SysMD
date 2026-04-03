@@ -85,16 +85,16 @@ class LibrariesUUIDTests {
 
     /** Check that UUID5 are generated for the fully qualified names in standard library packages */
     @Test
-    fun uuid5isGeneratedTest2() = testSession("Base") {
+    fun uuid5isGeneratedTest2() = testSession {
         loadKerML("""
-                standard library package ScalarValues { datatype Natural; } // For multiplicity
+                package ScalarValues { datatype Natural :> ScalarValue; datatype ScalarValue :> Base::Anything; }
                 standard library package x {
                     feature f1;
                     feature f2 subsets f1;
                 }; 
             """)
         initialize()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val x = global.resolve("x")?.memberElement
         assertNotNull(x)
         assertTrue(x.isLibraryElement)
@@ -114,7 +114,7 @@ class LibrariesUUIDTests {
     fun loadScalarValuesTest2() = testSession("ScalarValues") {
         checkOwnership()
         checkLibraryElementIds()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
 
@@ -124,7 +124,7 @@ class LibrariesUUIDTests {
         assertNotNull(links)
         checkOwnership()
         checkLibraryElementIds()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     @Test
@@ -141,7 +141,7 @@ class LibrariesUUIDTests {
         val occurrence = global.resolve("Occurrences::Occurrence")?.memberElement
         assertNotNull(occurrence)
         assertNotNull(global.resolve("ISQ")).memberElement
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     @Test
@@ -159,7 +159,7 @@ class LibrariesUUIDTests {
         checkLibraryElementIds()
         val bl = global.resolve("Links::BinaryLink")?.memberElement
         assertNotNull(bl)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
 
@@ -169,11 +169,11 @@ class LibrariesUUIDTests {
      */
     @Test
     fun basicSessionTest() = testSession("KerML") {
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         assertTrue(5 <= global.getOwnedElementsOfType<Element>().size)
         checkLibraryElementIds()
         checkOwnership()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
 

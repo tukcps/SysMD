@@ -25,7 +25,7 @@ class NamespacesTests {
                 namespace N3; // This is a nested namespace.
             }
         """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -42,7 +42,7 @@ class NamespacesTests {
                 feature f : C; // public by default
             }
         """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -62,7 +62,7 @@ class NamespacesTests {
                 private alias D for B;
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**

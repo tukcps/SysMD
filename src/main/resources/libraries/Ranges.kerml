@@ -54,7 +54,7 @@ standard library package Ranges {
     datatype AllIntegerInRange :> ScalarValues::Integer, AllInRange; 
     datatype AllRealInRange :> ScalarValues::Real, AllInRange; 
     datatype BooleanInSpec :> ScalarValues::Boolean {
-        feature spec: ScalarValues::String; // Not final, should be in another file
+        feature range: ScalarValues::String; // Not final, should be in another file
     }
     datatype QuantityInRange :> RealInRange {
         feature unit: ScalarValues::String;

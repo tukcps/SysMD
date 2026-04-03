@@ -64,7 +64,7 @@ class RedefinitionTests {
         assertEquals(4L, af.multiplicityRange.max  )
         assertTrue(repo.realType in af.generalization)
 
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val bf = global.resolve("b::f")?.memberElement as Feature
         assertNotNull(bf)
         assertEquals(2L, bf.multiplicityRange.min )
@@ -109,7 +109,7 @@ class RedefinitionTests {
             }
         """)
 
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val bf = global.resolve("b::f")?.memberElement as Feature
 
         assertNotNull(bf)

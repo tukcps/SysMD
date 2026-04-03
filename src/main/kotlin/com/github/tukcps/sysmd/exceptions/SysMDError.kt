@@ -20,8 +20,9 @@ open class SysMDError(
     token: Token? = null,
     kind: Issue.Kind = Issue.Kind.ERROR,
     element: Element? = null,
+    path: String? = null,
     cause: Throwable? = null,
-) : SysMDException(message, input, token, kind, element, cause)
+) : SysMDException(message, input, token, kind, element, path, cause)
 
 
 /**
@@ -66,6 +67,30 @@ open class SemanticError(message: String, element: Element? = null, cause: Throw
         """.trimIndent()
     }
 }
+
+/**
+ * This Exception is thrown for all errors during initialized and propagate phases.
+ * It just creates an error message.
+ */
+open class SolverError(message: String, path: String, cause: Throwable? = null) :
+    SysMDError(
+        message,
+        cause = cause,
+        path = path,
+    ){
+    init {
+        if (cause is SysMDException && cause.element != null) {
+            this.element = cause.element
+            this.input = cause.input
+        }
+    }
+    companion object {
+        val explanation = """
+            This error has been caused during parsing the semantic analysis of the model. 
+        """.trimIndent()
+    }
+}
+
 
 
 /**

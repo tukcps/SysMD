@@ -2,6 +2,7 @@ package com.github.tukcps.sysmd.services
 
 import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.exceptions.SysMDException
+import com.github.tukcps.sysmd.model.expression.Expression
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.ReferenceSubsettingImplementation
 import com.github.tukcps.sysmd.model.util.QualifiedName
@@ -41,6 +42,12 @@ private fun Session.giveUUID5(){
     }
 }
 
+private fun Session.solveExpressionTypes() {
+    get().filterIsInstance<Expression>().forEach {
+        it.initType()
+    }
+}
+
 
 /**
  * For Connectors, the end features are references to the source and target.
@@ -71,6 +78,8 @@ fun Session.initialize(level: Int = 100) {
             if (level > 0) { // Ownership and Type definitions
                 resolveAllNames()
                 fillCache()
+                solveExpressionTypes()
+
                 get().asSequence().filterIsInstance<Type>().forEach { type -> type.checkForCycles() }
                 get().asSequence().filterIsInstance<Specialization>().forEach { it.general.subtypes.add(it.specific) }
             }
@@ -113,67 +122,60 @@ fun Session.initialize(level: Int = 100) {
     }
 }
 
-
 /**
  * No guarantee that name references can be resolved.
  * Ensures that at least an initial number of elements is initialized.
  * No tests are made; they can only be done later.
  */
-internal fun Session.resolveAllNames() {
-
-    fun relationsWithUnresolvedReferences() =
-        get().asSequence().filterIsInstance<Relationship>()
-        .filter { rel -> rel !is Redefinition && (rel.source.any { it is Unresolved } || rel.target.any { it is Unresolved }) }
-        .toSet()
-
+internal fun Session.resolveAllNames()
+{
     /**
-     * Replaces an unresolved element by a element from the model.
-     * The element of the model is resolved from a given namespace with a given qualified name.
+     * Replaces all unresolved elements in a list with elements from the model.
+     * Elements are resolved by their relativeNames within the given namespace.
      * @param namespace - the namespace where name resolution starts.
      * @param elements - a mutable list of elements in which unresolved elements are replaced by model elements.
+     * @return Whether any change was made to the list
      */
-    fun resolveQualifiedName(namespace: Namespace, elements: MutableList<Element>) {
-        for (index in elements.indices) {
-            if (elements[index] is Unresolved) {
-                if ((elements[index] as Unresolved).relativeName == null)
-                    status.warn(Issue.Kind.ERROR_UNRESOLVED_NAME, "Unresolved element with no name", element = namespace)
-                else {
-                    val unresolved = elements[index] as Unresolved
-                    // Try resolving all unresolved names except redefinitions that are done later
-                    val resolved = namespace.resolve(unresolved.relativeName!!)
-                    if (resolved != null)
-                        when (unresolved) {
-                            is Feature if (resolved.memberElement !is Feature)
-                                -> status.error("Expecting a kind of feature", kind = Issue.Kind.ERROR_TYPE_WRONG, element = namespace)
+    fun resolveQualifiedName(namespace : Namespace, elements: MutableList<Element>) : Boolean
+    {
+        val iter = elements.listIterator()
+        var delta = false
 
-                            is Type if (resolved.memberElement !is Type)
-                                -> status.error("Expecting a kind of type", kind = Issue.Kind.ERROR_TYPE_WRONG, element = namespace)
-
-                            is Namespace if (resolved.memberElement !is Namespace)
-                                -> status.error("Expecting a kind of namespace", kind = Issue.Kind.ERROR_TYPE_WRONG, element = namespace)
-
-                            else -> if (unresolved is Membership)
-                                elements[index] = resolved
-                            else
-                                elements[index] = resolved.memberElement
-                        }
-                }
+        while(iter.hasNext())
+        {
+            val unresolved = iter.next()
+            if(unresolved !is Unresolved)
+                continue
+            val relativeName = unresolved.relativeName ?: run {
+                status.warn(Issue.Kind.ERROR_UNRESOLVED_NAME, "Unresolved element with no name", element = namespace)
+                iter.remove()
+                delta = true
+                continue
             }
+            // preserve reference to non-existent element to raise error later
+            val resolved = namespace.resolve(relativeName) ?: continue
+            val target = if(unresolved is UnresolvedMembership) resolved else resolved.memberElement
+
+            if(checkType(unresolved, target, namespace))
+            {
+                iter.set(target)
+                delta = true
+            } // should we remove invalid references?
         }
+
+        return delta
     }
 
-    var relationshipsWithUnresolvedReferences = relationsWithUnresolvedReferences().filter { it !is Redefinition }.toSet()
-    var progress = true
+    do {
+        var delta = false
 
-    while (progress) {
-        relationshipsWithUnresolvedReferences.forEach {
-            resolveQualifiedName(it.owningNamespace!!, it.source)
-            resolveQualifiedName(it.owningNamespace!!, it.target)
+        get().asSequence().filterIsInstance<Relationship>().filter { it !is Redefinition }.forEach {
+            val ns = it.owningNamespace!!
+            val s = resolveQualifiedName(ns, it.source)
+            val t = resolveQualifiedName(ns, it.target)
+            delta = delta || s || t
         }
-        val new = relationsWithUnresolvedReferences()
-        progress = (relationshipsWithUnresolvedReferences.size - new.size) > 0
-        relationshipsWithUnresolvedReferences = new
-    }
+    } while(delta)
 }
 
 

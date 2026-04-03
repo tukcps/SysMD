@@ -1,7 +1,11 @@
 package com.github.tukcps.sysmd
 
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.toComposeImageBitmap
 import com.github.tukcps.sysmd.services.session.SessionManager
 import com.github.tukcps.sysmd.ui.viewmodel.Settings
+import org.jetbrains.skia.Image
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.boot.builder.SpringApplicationBuilder
@@ -11,7 +15,6 @@ import javax.swing.ImageIcon
 import javax.swing.JFrame
 import javax.swing.JLabel
 import javax.swing.SwingConstants
-
 
 var settings: Settings = Settings()
 val logger: Logger = LoggerFactory.getLogger("SysMD Notebook")
@@ -56,4 +59,17 @@ object SplashScreen {
     fun hide() {
         splashScreen?.isVisible = false
     }
+}
+
+/**
+ * Helper function to access drawable ressource from Spring Boot in a
+ * robust wway
+ */
+fun loadPainter(path: String): Painter {
+    val bytes = object {}.javaClass
+        .getResourceAsStream(path)
+        ?.readBytes()
+        ?: error("Resource not found: $path")
+
+    return BitmapPainter(Image.makeFromEncoded(bytes).toComposeImageBitmap())
 }

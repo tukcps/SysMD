@@ -1,9 +1,21 @@
 package com.github.tukcps.sysmd.services.repositories.local
 
-import com.github.tukcps.sysmd.model.expression.OperatorExpression
+import com.github.tukcps.sysmd.model.expression.*
+import com.github.tukcps.sysmd.model.expression.implementation.*
+import com.github.tukcps.sysmd.model.expression.implementation.FeatureChainExpressionImplementation
+import com.github.tukcps.sysmd.model.expression.implementation.FeatureReferenceExpressionImplementation
+import com.github.tukcps.sysmd.model.expression.implementation.IndexExpressionImplementation
 import com.github.tukcps.sysmd.model.expression.implementation.InvariantImplementation
+import com.github.tukcps.sysmd.model.expression.implementation.InvocationExpressionImplementation
+import com.github.tukcps.sysmd.model.expression.implementation.LiteralBooleanImplementation
+import com.github.tukcps.sysmd.model.expression.implementation.LiteralInfinityImplementation
 import com.github.tukcps.sysmd.model.expression.implementation.LiteralIntegerImplementation
+import com.github.tukcps.sysmd.model.expression.implementation.LiteralRationalImplementation
+import com.github.tukcps.sysmd.model.expression.implementation.LiteralStringImplementation
+import com.github.tukcps.sysmd.model.expression.implementation.MetadataAccessExpressionImplementation
+import com.github.tukcps.sysmd.model.expression.implementation.NullExpressionImplementation
 import com.github.tukcps.sysmd.model.expression.implementation.OperatorExpressionImplementation
+import com.github.tukcps.sysmd.model.expression.implementation.SelectExpressionImplementation
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.*
 import com.github.tukcps.sysmd.model.sysml.implementation.*
@@ -40,8 +52,26 @@ data class ElementData(
     override var importedMemberName: String? = null,
     override var importedNamespace: String? = null,
 
+    // For type = ParameterMembership
+    var parameterIndex : Int = -1,
+
+    // For type = InstantiationExpression
+    var functionName : String? = null, // TODO: add to interface
+
 	// For type = OperatorExpression
-	var operator : String? = null, // TODO: add to interface
+    var operator : String? = null, // TODO: add to interface
+
+    // For type = FeatureReferenceExpression
+    var featureIdentifier : String? = null,
+
+    // For type = FeatureChainExpression
+    var targetFeature : String? = null,
+
+    // for type : LiteralExpression
+    var literalString : String? = null,
+    var literalInteger : Long? = null,
+    var literalRational : Double? = null,
+    var literalBoolean : Boolean? = null,
 
     // For type AnnotationElement, Expression:
     override var language: String? = null,  // language, e.g. SysMD, SysML
@@ -61,6 +91,7 @@ data class ElementData(
     override var isReadOnly: Boolean? = false,
     override var isSufficient: Boolean? = false,
     override var isUnique: Boolean? = false,
+    var isDefaultValue: Boolean? = false,
 
     override var textualRepresentation: MutableList<Identified>? = mutableListOf(),
     override var documentation: Identified? = null,
@@ -79,61 +110,75 @@ data class ElementData(
  */
 fun ElementDAO.toElement(): Element {
     val element = when (type) {
-        "AllocationUsage"   -> AllocationUsageImplementation()
         "AllocationDefinition" -> AllocationDefinitionImplementation()
+        "AllocationUsage"   -> AllocationUsageImplementation()
         "AnnotatingElement" -> AnnotatingElementImplementation(body = body!!)
         "Annotation"        -> AnnotationImplementation()
+        "Association"       -> AssociationImplementation()
         "AttributeDefinition" -> AttributeDefinitionImplementation()
         "AttributeUsage"    -> AttributeUsageImplementation()
-        "Association"       -> AssociationImplementation()
         "Behavior"          -> BehaviorImplementation()
+        "BodyExpression" -> BodyExpressionImplementation()
         "CalculationDefinition" -> CalculationDefinitionImplementation()
-        "Classifier"        -> ClassifierImplementation()
         "Class"             -> ClassImplementation()
+        "Classifier"        -> ClassifierImplementation()
+        "CollectExpression" -> CollectExpressionImplementation()
         "Comment"           -> CommentImplementation(body = body!!)
-        "Connector"         -> ConnectorImplementation()
-        "ConnectionUsage"   -> ConnectionUsageImplementation()
         "ConnectionDefinition" -> ConnectionDefinitionImplementation()
+        "ConnectionUsage"   -> ConnectionUsageImplementation()
+        "Connector"         -> ConnectorImplementation()
         "DataType"          -> DataTypeImplementation()
         "Dependency"        -> DependencyImplementation()
         "Disjoining"        -> DisjoiningImplementation()
         "Documentation"     -> DocumentationImplementation(body = body!!)
         "Element"           -> ElementImplementation()
         "EndFeatureMembership" -> EndFeatureMembershipImplementation()
-        "Feature"           -> FeatureImplementation(direction = enumValueOf<Feature.FeatureDirectionKind>(direction?:"IN"))
+        "Feature"           -> FeatureImplementation()
+        "FeatureChainExpression" -> FeatureChainExpressionImplementation()
+        "FeatureReferenceExpression" -> FeatureReferenceExpressionImplementation()
         "FeatureChaining"   -> FeatureChainingImplementation()
         "FeatureMembership" -> FeatureMembershipImplementation()
         "FeatureTyping"     -> FeatureTypingImplementation()
         "Function"          -> FunctionImplementation()
+        "IndexExpression" -> IndexExpressionImplementation()
         "InterfaceDefinition" -> InterfaceDefinitionImplementation()
         "InterfaceUsage"    -> InterfaceUsageImplementation()
-        "NamespaceImport"   -> NamespaceImportImplementation()
+        "Invariant"         -> InvariantImplementation()
+        "InvocationExpression" -> InvocationExpressionImplementation()
+        "LiteralBoolean" -> LiteralBooleanImplementation()
+        "LiteralInfinity" -> LiteralInfinityImplementation()
+        "LiteralInteger" -> LiteralIntegerImplementation()
+        "LiteralRational" -> LiteralRationalImplementation()
+        "LiteralString" -> LiteralStringImplementation()
         "Membership"        -> MembershipImplementation()
         "MembershipImport"  -> MembershipImportImplementation()
         "Metaclass"         -> MetaclassImplementation()
+        "MetadataAccessExpression" -> MetadataAccessExpressionImplementation()
         "MetadataFeature"   -> MetadataFeatureImplementation()
         "Multiplicity"      -> MultiplicityImplementation()
         "Namespace"         -> NamespaceImplementation()
+        "NamespaceImport"   -> NamespaceImportImplementation()
+        "NullExpression" -> NullExpressionImplementation()
+        "OperatorExpression" -> OperatorExpressionImplementation()
         "OwningMembership"  -> OwningMembershipImplementation()
-        "Specialization"    -> SpecializationImplementation()
-        "Subsetting"        -> SubsettingImplementation()
-        "Type"              -> TypeImplementation()
-        "Invariant"         -> InvariantImplementation()
         "Package"           -> PackageImplementation()
-        "PartUsage"         -> PartUsageImplementation()
+        "ParameterMembership" -> ParameterMembershipImplementation()
         "PartDefinition"    -> PartDefinitionImplementation()
-        "PortUsage"         -> PortUsageImplementation()
+        "PartUsage"         -> PartUsageImplementation()
         "PortDefinition"    -> PortDefinitionImplementation()
+        "PortUsage"         -> PortUsageImplementation()
+        "RawNameExpression" -> RawNameExpressionImplementation()
         "Redefinition"      -> RedefinitionImplementation()
         "ReferenceSubsetting" -> ReferenceSubsettingImplementation()
-        "RequirementUsage"   -> RequirementUsageImplementation()
         "RequirementDefinition" -> RequirementDefinitionImplementation()
-        "Subclassification" -> SubclassificationImplementation()
-        "TextualRepresentation" -> TextualRepresentationImplementation(body = body!!, language = language!!)
-	    "OperatorExpression" -> OperatorExpressionImplementation()
-	    "LiteralInteger" -> LiteralIntegerImplementation()
-        "ParameterMembership" -> ParameterMembershipImplementation()
+        "RequirementUsage"   -> RequirementUsageImplementation()
         "ReturnParameterMembership" -> ReturnParameterMembershipImplementation()
+        "SelectExpression" -> SelectExpressionImplementation()
+        "Specialization"    -> SpecializationImplementation()
+        "Subclassification" -> SubclassificationImplementation()
+        "Subsetting"        -> SubsettingImplementation()
+        "TextualRepresentation" -> TextualRepresentationImplementation(body = body!!, language = language!!)
+        "Type"              -> TypeImplementation()
         else             -> throw Exception("Element with unknown type '$type' in response; must be valid entity type.")
     }
     element.elementId = elementId
@@ -149,10 +194,21 @@ fun ElementDAO.toElement(): Element {
         target?.forEach { element.target.add(UnresolvedElement(id=it.id)) }
     }
 
-	if(element is OperatorExpression) {
-		// TODO: add this to ElementDAO interface
-		element.operator = (this as ElementData).operator
-	}
+    // TODO: add these to ElementDAO interface
+    if(this is ElementData) when(element) {
+        is FeatureChainExpression -> element.targetFeature = targetFeature
+        is OperatorExpression -> element.operator = operator
+        is InstantiationExpression -> element.functionName = functionName
+
+        is LiteralStringImplementation -> element.value = literalString
+        is LiteralBooleanImplementation -> element.value = literalBoolean
+        is LiteralIntegerImplementation -> element.value = literalInteger
+        is LiteralRationalImplementation -> element.value = literalRational
+
+        is RawNameExpressionImplementation -> element.rawName = literalString
+
+        is ParameterMembership -> element.parameterIndex = parameterIndex
+    }
 
     if (element is Feature) {
         if (body != null) {
@@ -163,12 +219,15 @@ fun ElementDAO.toElement(): Element {
                 element.expression = bodydata[2].trim()
             }
         }
+        element.direction = enumValueOf<Feature.FeatureDirectionKind>(direction?:"IN")
         element.isEnd = isEnd == true
         element.isComposite = isComposite == true
         element.isOrdered = isOrdered == true
         element.isDerived = isDerived == true
         element.isUnique = isUnique == true
-        element.isReadOnly = isReadOnly == true
+        if (this is ElementData) {
+            element.isDefaultValue = this.isDefaultValue == true
+        }
     }
     return element
 }
@@ -212,8 +271,24 @@ fun Element.toDAO(): ElementData {
         ownedElement.forEach { dao.owningNamespace = Identified(it.elementId) }
     }
 
+    if(this is InstantiationExpression)
+        dao.functionName = functionName
 	if(this is OperatorExpression)
 		dao.operator = operator
+    if(this is FeatureChainExpression)
+        dao.targetFeature = targetFeature
+    if(this is LiteralString)
+        dao.literalString = value
+    if(this is LiteralBoolean)
+        dao.literalBoolean = value
+    if(this is LiteralInteger)
+        dao.literalInteger = value
+    if(this is LiteralRational)
+        dao.literalRational = value
+    if(this is RawNameExpression)
+        dao.literalString = rawName
+    if(this is ParameterMembership)
+        dao.parameterIndex = parameterIndex
 
     when(this) {
         is Multiplicity -> { dao.body = toBody() }
@@ -226,6 +301,7 @@ fun Element.toDAO(): ElementData {
             dao.isReadOnly = isReadOnly
             dao.isDerived = isDerived
             dao.isUnique = isUnique
+            dao.isDefaultValue = isDefaultValue
         }
         is TextualRepresentation -> { dao.body = body; dao.language = language }
         is AnnotatingElement -> { dao.body = body }
@@ -248,6 +324,7 @@ fun ElementDAO.toElementData() = ElementData(
     importedNamespace = importedNamespace,
     language = language,
     body = body,
+    isDefaultValue = if (this is ElementData) this.isDefaultValue else false,
 //    source = source.map { if ((it != "null")&&(it!=null)) UUID.fromString(it) else null }.toMutableList(),
 //    target = target.map { if ((it != "null")&&(it!=null)) UUID.fromString(it) else null }.toMutableList()
 )

@@ -3,8 +3,8 @@ package com.github.tukcps.sysmd.model.expression.implementation
 import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.model.expression.FeatureReferenceExpression
 import com.github.tukcps.sysmd.model.expression.checkEvent
-import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.util.QualifiedName
+import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.model.kerml.implementation.MembershipImplementation
 import com.github.tukcps.sysmd.model.util.SimpleName
 import com.github.tukcps.sysmd.quantities.VectorDimensionError
 import com.github.tukcps.sysmd.quantities.VectorQuantity
@@ -12,52 +12,48 @@ import io.github.tukcps.aadd.AADD
 import io.github.tukcps.aadd.BDD
 import io.github.tukcps.aadd.IDD
 import io.github.tukcps.aadd.StrDD
-import kotlin.properties.Delegates.observable
 
 class FeatureReferenceExpressionImplementation(
 	declaredName : SimpleName? = null,
 	declaredShortName : SimpleName? = null,
-	direction : Feature.FeatureDirectionKind = Feature.FeatureDirectionKind.INOUT,
-	isEnd : Boolean = false,
 	typeConstraint : MutableList<String> = mutableListOf(),
 	expression : String? = null,
-	elementType : String = "Expression"
+	elementType : String = "FeatureReferenceExpression"
 ) : FeatureReferenceExpression, ExpressionImplementation(
 	declaredName,
 	declaredShortName,
-	direction,
-	isEnd,
 	typeConstraint,
 	expression,
 	elementType
 )
 {
-	/** Identifier of the referenced feature */
-	override var identifier : QualifiedName? by observable(null) { _, _, _ ->
-		_referent = null
+	/** Setter as shorthand for initialization, won't work right if referent already set */
+	override var referent: Feature?
+		get() = super.referent
+		set(value) {
+			if(value !== null)
+			{
+				assert(referent === null)
+				value.model = this.model
+				model!!.addOwnedRelationship(MembershipImplementation(
+					memberElement = value,
+					membershipOwningNamespace = this
+				))
+			}
+		}
+
+	override fun visibleMemberships(
+		excluded: Set<Namespace>,
+		isRecursive: Boolean,
+		includeAll: Boolean,
+		filter: Membership.() -> Boolean
+	): List<Membership> {
+		// the membership containing referent. Prevents an Unresolved referent from being resolved if included.
+		val exclude = ownedMembership.firstOrNull { it !is ParameterMembership }
+		return super.visibleMemberships(excluded, isRecursive, includeAll) { this !== exclude && filter() }
 	}
 
-	/** Backing field for `referent` (implicit backing field cannot be mutable) */
-	private var _referent : Feature? = null
-
-	// FIXME: Is variable more fitting for our implementation?
-	/** The feature being referenced. `null` if unset or not ready to resolve.  */
-	override val referent : Feature? get() {
-		_referent?.let { return it }
-		val identifier = this.identifier ?:
-				return null
-
-		// TODO: AstLeaf has a reference to a namespace
-		val feature =  (owningNamespace ?: model?.global)?.resolve(identifier)?.member<Feature>()
-				?: throw IllegalStateException("Name '$identifier' doesn't reference any feature")
-
-		_referent = feature
-
-		return feature
-	}
-
-	override val type get() =
-		referent?.type ?: emptyList()
+	override fun learnType() : List<Type> = referent?.type ?: emptyList() // FIXME: Should report error here?
 
 	override fun initialize()
 	{
@@ -89,8 +85,7 @@ class FeatureReferenceExpressionImplementation(
 					)
 				}
 
-				if (v.feature.isSufficient)
-				{
+				if (v.satisfyAll) {
 					if(v.rangeSpecs.size != downQuantity.values.size && v.rangeSpecs.size != 1)
 					{
 						throw VectorDimensionError("Vector size of ${downQuantity.values.size} does not match " +
@@ -102,7 +97,7 @@ class FeatureReferenceExpressionImplementation(
 						})
 					{
 						model!!.status.warn(Issue.Kind.WARN_INCONSISTENCY,
-							"Cannot be satisfied for all values.", element =  variable?.feature)
+							"Cannot be satisfied for all values.", path = variable?.path)
 					}
 				}
 
@@ -111,8 +106,7 @@ class FeatureReferenceExpressionImplementation(
 			is IDD -> {
 				v.vectorQuantity = downQuantity.constrain(v.vectorQuantity)//.clone()
 
-				if(v.feature.isSufficient)
-				{
+				if(v.satisfyAll) {
 					if(v.intSpecs.size != downQuantity.values.size && v.rangeSpecs.size != 1)
 					{
 						throw VectorDimensionError("Vector size of ${downQuantity.values.size} does not match " +
@@ -124,7 +118,7 @@ class FeatureReferenceExpressionImplementation(
 						})
 					{
 						model!!.status.warn(Issue.Kind.WARN_INCONSISTENCY,
-							"Cannot be satisfied for all values.", element =  variable?.feature)
+							"Cannot be satisfied for all values.", path =  variable?.path)
 					}
 				}
 
@@ -141,7 +135,25 @@ class FeatureReferenceExpressionImplementation(
 
 	override fun toAstString(b : StringBuilder, precedence : Int)
 	{
-		b.append(identifier)
+		b.append(localIdentifier(referent))
+	}
+
+	override fun clone() = FeatureReferenceExpressionImplementation(
+		declaredName= declaredName,
+		declaredShortName = declaredShortName,
+		typeConstraint = typeConstraint,
+		expression = expression,
+		elementType = elementType,
+	).also {
+		it.updateFrom(this)
+	}
+
+	override fun updateFrom(template : Element)
+	{
+		super.updateFrom(template)
+
+		if(template is FeatureReferenceExpression && referent === null)
+			this.referent = template.referent
 	}
 
 	// TODO

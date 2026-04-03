@@ -1,10 +1,10 @@
 package compiler.kerml.examples
 
+import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Ignore
 import kotlin.test.Test
-import kotlin.test.assertTrue
 
 class TypeTests {
 
@@ -18,7 +18,7 @@ class TypeTests {
         loadKerML("""
             type A specializes Base::Anything;
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -33,7 +33,7 @@ class TypeTests {
             type A1 specializes A;
             type A2 specializes A;
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -47,7 +47,7 @@ class TypeTests {
             // This Type has exactly one instance.
             type Singleton[1] specializes Base::Anything;
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -64,7 +64,7 @@ class TypeTests {
             type C specializes A, B;
             type f :> Base::things;
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -86,7 +86,7 @@ class TypeTests {
                 // f and g, but not h.
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -102,7 +102,7 @@ class TypeTests {
             
             conjugation c1 conjugate Conjugate1 conjugates Original;
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -118,7 +118,7 @@ class TypeTests {
             
             disjoining Disj disjoint A from B;
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -136,7 +136,7 @@ class TypeTests {
                 feature age[1] : ScalarValues::Integer;
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -157,7 +157,7 @@ class TypeTests {
                 member feature g featured by A;
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
 }

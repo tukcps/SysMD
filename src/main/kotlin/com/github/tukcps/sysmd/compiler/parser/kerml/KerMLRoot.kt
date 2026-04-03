@@ -95,7 +95,7 @@ fun KerML.OwnedAnnotation() =
         REGULAR_COMMENT starts { Comment() }
         DOC starts { Documentation() }
         REP starts { TextualRepresentation() }
-        METADATA starts { MetadataFeature() }
+        setOf(METADATA, ATSIGN) starts { MetadataFeature() }
     }
 
 
@@ -352,13 +352,13 @@ fun KerML.FeatureElement() {
 /**
  *      AnnotatingElement = Comment | Documentation | TextualRepresentation | MetadataFeature
  */
-val annotatingElementStart = setOf(COMMENT, REGULAR_COMMENT, DOC, REP, METADATA, LANGUAGE)
+val annotatingElementStart = setOf(COMMENT, REGULAR_COMMENT, DOC, REP, METADATA, ATSIGN, LANGUAGE)
 fun KerML.AnnotatingElement() {
     alternatives {
         COMMENT or REGULAR_COMMENT  starts { Comment() }
         DOC                         starts { Documentation() }
         LANGUAGE or REP             starts { TextualRepresentation()}
-        METADATA                    starts { MetadataFeature() }
+        setOf(METADATA, ATSIGN)     starts { MetadataFeature() }
     }
 }
 

@@ -4,19 +4,20 @@ import com.github.tukcps.sysmd.compiler.semantics.ActionsContext
 import com.github.tukcps.sysmd.compiler.semantics.kerml.ConditionalExpressionActions
 import com.github.tukcps.sysmd.model.expression.AstLeaf
 import com.github.tukcps.sysmd.model.expression.AstNode
-import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.services.session.Session
+import java.util.*
+import java.util.UUID.randomUUID
 
 /**
  * Builds an Expression tree that selects one of the arguments.
  */
 fun buildOneOfAst(
     model: Session,
-    expression: Feature,
     args: ArrayList<AstNode>,
     semantics: ActionsContext
 ): AstNode  {
+    val id: UUID = randomUUID()
     var s1 = args.first()
     var decVarCounter = 1
     args.forEach { s2 ->
@@ -25,8 +26,8 @@ fun buildOneOfAst(
                 model,
                 Quantity(
                     model.builder.variable(
-                        "${expression.elementId}::EnumDecision-$decVarCounter",
-                        expression.elementId.toString(),
+                        "${id}::EnumDecision-$decVarCounter",
+                        id.toString(),
                         true
                     )
                 )

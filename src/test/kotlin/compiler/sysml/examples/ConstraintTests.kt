@@ -1,10 +1,10 @@
 package compiler.sysml.examples
 
+import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Ignore
 import kotlin.test.Test
-import kotlin.test.assertTrue
 
 class ConstraintTests {
 
@@ -23,7 +23,7 @@ class ConstraintTests {
                 a == b
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -46,6 +46,6 @@ class ConstraintTests {
                 a = b;
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 }

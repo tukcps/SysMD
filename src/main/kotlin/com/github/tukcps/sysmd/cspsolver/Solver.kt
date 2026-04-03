@@ -1,11 +1,10 @@
 package com.github.tukcps.sysmd.cspsolver
 
-import com.github.tukcps.sysmd.cspsolver.Variable.BaseType
-import com.github.tukcps.sysmd.cspsolver.Variable.BaseType.Unknown
+import com.github.tukcps.sysmd.cspsolver.Variable.*
+import com.github.tukcps.sysmd.cspsolver.Variable.BaseType.*
 import com.github.tukcps.sysmd.exceptions.Issue
-import com.github.tukcps.sysmd.model.expression.checkEvent
+import com.github.tukcps.sysmd.model.expression.*
 import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.session.Session
 import java.util.*
@@ -35,20 +34,12 @@ class Solver(
         schedule.clear()
     }
 
-    @Deprecated("Use memberQualifiedName() as key")
-    fun addVariable(membership: Membership, variable: Variable) {
-        if (variables[membership.memberElement.path()] != null)
-            variables[membership.memberElement.path()]!!.add(variable)
-        else
-            variables[membership.memberElement.path()] = arrayListOf(variable)
-    }
-
     /**
      * Adds a Variable to the hash-map of all variables.
      * @param path The qualified name of path of the respective feature, used as key
      * @param variable instance of the variable
      */
-    fun addVariable(path: QualifiedName, variable: Variable) {
+    fun addVariable(path: String, variable: Variable) {
         if (variables[path] != null)
             variables[path]!!.add(variable)
         else
@@ -72,11 +63,6 @@ class Solver(
      * Gets a variable by its id. The id is equal to the element id if there is an associated feature.
      */
     fun getVariable(id: UUID, index: Int = 0) = variables[(model[id] as? Membership)?.memberElement?.path()]?.get(index)
-
-    @Deprecated("Use memberQualifiedName() as key")
-    fun getVariable(membership: Membership, index: Int = 0) = variables[membership.memberElement.path()]?.get(index)
-
-
     fun getVariables(path: String) = variables[path]
 
     /**
@@ -107,17 +93,32 @@ class Solver(
             val feature = membership.memberElement as Feature
             val baseType = feature.toBaseType()
             val name = feature.path()
+            val owner = feature.owner
 
-            if (feature.referencedFeature == null)
-            if (baseType != Unknown) {
+            if (feature.referencedFeature === null &&
+                !(feature is Expression && owner is Expression) && // skip non-root expressions
+                membership.owningNamespace !is FeatureReferenceExpression && // skip duplicating referenced features
+                baseType != Unknown
+            ) {
                 if (feature.owner is Type && (feature.owner as Type).specializes(model.repo.inRangeType)) {
                     /* no Variable, handled by constraints of variables */
                 } else
-                    addVariable(name, VariableImplementation(membership, model.builder, baseType))
+                    addVariable(name,
+                        VariableImplementation(
+                            membership,
+                            solver = model.solver,
+                            path = feature.path(),
+                            baseType = feature.toBaseType(),
+                            satisfyAll = feature.isSufficient,
+                            unitSpec = feature.getUnit()?:"",
+                            valueSpecs = feature.getRange()?:mutableListOf(""),
+                            expression = feature.expression
+                        )
+                    )
             }
         }
 
-        val sortedVars = variables.values.sortedBy { it.first().membership.memberElement.path().hashCode() }
+        val sortedVars = variables.values.sortedBy { it.first().path }
 
         // Then, we set up a list of computed and not-yet-computed properties.
         val computed = mutableSetOf<Variable>()
@@ -137,7 +138,7 @@ class Solver(
                 if (it.ast != null) {   // For not constants, literals, ...
                     //test if there is a dependency in notComputed
                     val dependentProperties = it.ast?.getDependencyStrings()!!
-                    val notComputedElements = notComputed.map { it.membership.path()+"::"+(it.membership.memberName?:it.membership.memberShortName) }
+                    val notComputedElements = notComputed.map { it.path }
                     if (!dependentProperties.any { it in notComputedElements }) {
                         computed += it
                         notComputed -= it
@@ -183,36 +184,39 @@ class Solver(
         }
 
         // Fix for Vectors? Remove if possible
-        model.get().filterIsInstance<Membership>().filter { it.memberElement is Feature }.forEach { membership ->
-            val feature = membership.memberElement as Feature
-            // if(feature.type[0].ref is AttributeDefinitionImplementation)
-            if (feature.expression != null && feature.expression!!.isNotEmpty()) { //for nested attributes, there can be a feature of another type with an expression, which needs to be calculated
-
-                val referencingVars = getFeatures(feature.expression!!, feature.owningNamespace!!)
-                referencingVars.forEach { referencingVar ->
-                    if (referencingVar != null) {
-                        feature.owner!!.ownedElement.find { it == feature }
-                        feature.ownedElement.filter { it is Feature }.forEach { ownedFeature ->
-                            referencingVar.ownedElement.filter { it is Feature }
-                                .forEach { referencingFeature ->
-                                    if (ownedFeature.escapedName() == referencingFeature.escapedName()) {
-                                        if ((ownedFeature as Feature).variable != null)
-                                            if (feature.path() in ownedFeature.variable!!.name!!) { //test if the previous feature is already replaced
-                                                setVariable(ownedFeature.path(), (referencingFeature as Feature).variable!! )
-                                            } else {
-                                                addVariable(ownedFeature.path(), (referencingFeature as Feature).variable !!)
-                                            }
-                                    }
-                                }
-                        }
-                    }
-                }
-            }
-            if (!discreteSolver.isInitialized())
+	    model.get().filterIsInstance<Membership>().filter { it.memberElement is Feature }.forEach { membership ->
+		    val feature = membership.memberElement as Feature
+		    // if(feature.type[0].ref is AttributeDefinitionImplementation)
+		    if(feature.expression != null && feature.expression!!.isNotEmpty())
+		    { //for nested attributes, there can be a feature of another type with an expression, which needs to be calculated
+			    getFeatures(feature.expression!!, feature.owningNamespace!!).filterNotNull().forEach { referencingVar ->
+				    feature.owner!!.ownedElement.find { it == feature }
+				    feature.ownedElement.filterIsInstance<Feature>().forEach { ownedFeature ->
+					    referencingVar.ownedElement.filterIsInstance<Feature>().forEach { referencingFeature ->
+						    if(ownedFeature.escapedName() == referencingFeature.escapedName())
+						    {
+							    ownedFeature.variable?.let { ownedVar ->
+									referencingFeature.variable?.let { rv -> // can this ever be null?
+										if(feature.path() in ownedVar.path) // ownedVar? not rv?
+										{ //test if the previous feature is already replaced
+											setVariable(ownedFeature.path(), rv)
+										}
+										else
+										{
+											addVariable(ownedFeature.path(), rv)
+										}
+									}
+							    }
+						    }
+					    }
+				    }
+			    }
+		    }
+	    }
+	    if (!discreteSolver.isInitialized())
                 discreteSolver.initialize(model)
             discreteSolver.update(schedule)
-        }
-    }
+	}
 
     /**
      * Maps an expression string to a list of features.
@@ -234,12 +238,13 @@ class Solver(
     }
 
 
+    enum class PROPAGATE_DIRECTION { UP, DOWN, BOTH }
     /**
      * Most simple constraint propagation; just until Jack is finished.
      * Requires calling initialize if ast is not yet initialized, e.g., if it comes from database or REST.
      * Or as a benchmark to demonstrate the benefit of his method.
      */
-    fun propagate() {
+    fun propagate(direction: PROPAGATE_DIRECTION = PROPAGATE_DIRECTION.BOTH) {
         try {
             if (schedule.isEmpty())
                 model.initialize()
@@ -265,8 +270,10 @@ class Solver(
                         if ( variable.baseType != BaseType.String ) {
                             modelIsStable = modelIsStable and variable.stable
                             if (variable.ast != null) {
-                                variable.ast!!.evalUpRec()
-                                variable.ast!!.evalDownRec()
+                                if (direction == PROPAGATE_DIRECTION.UP || direction == PROPAGATE_DIRECTION.BOTH)
+                                    variable.ast!!.evalUpRec()
+                                if (direction == PROPAGATE_DIRECTION.DOWN || direction == PROPAGATE_DIRECTION.BOTH)
+                                    variable.ast!!.evalDownRec()
                                 variable.checkEvent()     // Sets property.stable to false,
                                 // if changed in an iteration step, and property.updated iff changed in a 'propagate' call
                                 if ( variable.baseType == BaseType.Bool && variable.updated ) {
@@ -278,7 +285,7 @@ class Solver(
                         }
                     } catch (e: Exception) {
                         variable.stable = true
-                        model.status.error( e.message ?: "(issue in constraint propagation)", element = variable.membership, cause = e)
+                        model.status.error( e.message ?: "(issue in constraint propagation)", path = variable.path, cause = e)
                     }
                 }
                 discreteSolver.advanceState()
@@ -295,73 +302,10 @@ class Solver(
             // Copy updated entries into the status map, check consistency.
             schedule.forEach {
                 if (it.updated)
-                    model.status.updatedValues[it.elementId!!] = it.valueStr
+                    model.status.updatedValues[it.path] = it.valueStr
             }
         } catch (error: Exception) {
             model.status.error("During propagation: ${error.message}", cause = error)
         }
     }
-}
-
-
-fun Type.toBaseType(): BaseType = when {
-    this.specializes(this.model!!.repo.integerType) -> BaseType.Int
-    this.specializes(this.model!!.repo.booleanType) -> BaseType.Bool
-    this.specializes(this.model!!.repo.realType) -> BaseType.Real
-    this.specializes(this.model!!.repo.stringType) -> BaseType.String
-    else -> Unknown
-}
-
-
-data class VariableData(
-    val name: String,
-    val type: BaseType,
-    val unit: String?=null,
-    val value: String?=null
-)
-
-fun Element.getUnit(): String? {
-    if ( (this is Feature) && this.specializes(this.model!!.repo.quantity)) {
-        val unit = resolveLocal("unit")?.member<Feature>()?.expression?.trim('"', ' ')?:""
-        return unit
-    }
-    return null
-}
-
-fun Element.getRange(): String? {
-    if ( (this is Feature) && this.specializes(this.model!!.repo.range)) {
-        val range = resolveLocal("range")?.member<Feature>()?.expression?.trim('"', ' ')?:""
-        return range
-    }
-    return null
-}
-
-
-fun getVariableInfo(namespace: QualifiedName, membership: Membership): List<VariableData> {
-    val element = membership.memberElement
-    val elementName = (if (namespace.isNotEmpty()) "$namespace::" else "") + element.escapedName()
-    val result = mutableListOf<VariableData>()
-
-    if (element.owner is Type && (element.owner as Type).specializes(element.model!!.repo.inRangeType))
-        return result
-
-    if (element is Feature && element.specializes(element.model!!.repo.scalarType)) {
-        result.add(VariableData(elementName, element.toBaseType(), element.getUnit(), element.getRange() ))
-    }
-
-    if (element is Namespace) {
-        element.ownedMembership.forEach {
-            val vars = getVariableInfo(elementName, it)
-            result.addAll(vars)
-        }
-    }
-    return result
-}
-
-fun getVariableInfo(model: Session): List<VariableData> {
-    val result = mutableListOf<VariableData>()
-    model.global.ownedMembership.forEach {
-        result.addAll(getVariableInfo("", it))
-    }
-    return result
 }

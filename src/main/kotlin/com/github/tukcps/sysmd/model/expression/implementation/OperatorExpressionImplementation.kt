@@ -6,19 +6,15 @@ import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.Function
 import com.github.tukcps.sysmd.model.util.*
 
-class OperatorExpressionImplementation(
+open class OperatorExpressionImplementation(
 	declaredName: SimpleName? = null,
 	declaredShortName: SimpleName? = null,
-	direction: Feature.FeatureDirectionKind = Feature.FeatureDirectionKind.INOUT,
-	isEnd: Boolean = false,
 	typeConstraint: MutableList<String> = mutableListOf(),
 	expression: String? = null,
 	elementType: String = "OperatorExpression"
 ) : OperatorExpression, InvocationExpressionImplementation(
 	declaredName = declaredName,
 	declaredShortName = declaredShortName,
-	direction = direction,
-	isEnd = isEnd,
 	typeConstraint = typeConstraint,
 	expression = expression,
 	elementType = elementType
@@ -32,15 +28,23 @@ class OperatorExpressionImplementation(
 	override fun clone() = OperatorExpressionImplementation(
 		declaredName= declaredName,
 		declaredShortName = declaredShortName,
-		direction = direction,
-		isEnd = isEnd,
 		typeConstraint = typeConstraint,
 		expression = expression,
 		elementType = elementType,
-	).also(::postClone).also {
-		it.operator = operator
-		it.operatorPrecedence = operatorPrecedence
-		it.operatorAst = operatorAst
+	).also {
+		it.updateFrom(this)
+	}
+
+	override fun updateFrom(template : Element)
+	{
+		super.updateFrom(template)
+
+		if(template is OperatorExpressionImplementation)
+		{
+			operator = template.operator
+			operatorPrecedence = template.operatorPrecedence
+			operatorAst = template.operatorAst
+		}
 	}
 
 	//InstantiatedType = Resolution of its operator
@@ -59,6 +63,7 @@ class OperatorExpressionImplementation(
 		val tern = TernaryOperatorInformation[operator]
 		val bin = BinaryOperatorInformation[operator]
 		val un = UnaryOperatorInformation[operator]
+		val cl = CallLikeOperatorInformation[operator]
 
 		when(argument.size)
 		{
@@ -82,15 +87,29 @@ class OperatorExpressionImplementation(
 				if(pars)
 					b.append('(')
 
-				argument[0].toAstString(b, bin.precedence)
-				b.append(' ')
+				val (la,ra) = when {
+					bin.abelian -> Pair(0,0)
+					bin.rightAssociative -> Pair(1,0)
+					else -> Pair(0,1)
+				}
+
+				argument[0].toAstString(b, bin.precedence + la)
+				if(bin.leftSpace)
+					b.append(' ')
 				b.append(operator)
-				b.append(' ')
-				// assume non-commutative operators are left-associative
-				argument[1].toAstString(b, bin.precedence + if(bin.abelian) 0 else 1)
+				if(bin.rightSpace)
+					b.append(' ')
+				argument[1].toAstString(b, bin.precedence + ra)
 
 				if(pars)
 					b.append(')')
+			}
+			2 if cl !== null -> {
+				operator!!
+				argument[0].toAstString(b, 0)
+				b.append(cl.left)
+				argument[1].toAstString(b, -10) // unpack sequences
+				b.append(cl.right)
 			}
 			1 if un !== null -> {
 				operator!!

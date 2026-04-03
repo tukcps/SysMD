@@ -24,7 +24,7 @@ class EvalUpEvalDownTests {
             feature x: ScalarValues::Real; 
             feature y: Ranges::RealInRange = x { :>> range = "1.0 .. 2.0";}"""
         )
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         solver.propagate()
         // now, both x and y must be 1..2
         assertEquals(1.0, global.resolveVar("y")!!.min(), 0.00001)

@@ -1,4 +1,4 @@
-package exportstests
+package exports
 
 import com.github.tukcps.sysmd.exports.Exporter
 import org.junit.jupiter.api.Assertions

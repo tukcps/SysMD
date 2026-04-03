@@ -75,7 +75,7 @@ class AssertAndConstraintsTests {
             assert constraint ASIL { ASIlFromReliability == ASILCalculated }
         """)
         solver.propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val test2 = global.resolveVar("ASILCalculated")
         assertEquals(1, test2!!.vectorQuantity.value.asIdd().min)
         val testr = global.resolveVar("ASIlFromReliability")
@@ -91,7 +91,7 @@ class AssertAndConstraintsTests {
             attribute ASILCalculated: ScalarValues::Integer(1) = ASIlFromReliability;
         """)
         solver.propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val test2 = global.resolveVar("ASILCalculated")
         assertEquals(1, test2!!.vectorQuantity.value.asIdd().min)
         val testr = global.resolveVar("ASIlFromReliability")
@@ -107,7 +107,7 @@ class AssertAndConstraintsTests {
             assert constraint ASIL { ASIlFromReliability == ASILCalculated }
         """)
         solver.propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val test2 = global.resolveVar("ASILCalculated")
         assertEquals(1, test2!!.vectorQuantity.value.asIdd().min)
         val testr = global.resolveVar("ASIlFromReliability")

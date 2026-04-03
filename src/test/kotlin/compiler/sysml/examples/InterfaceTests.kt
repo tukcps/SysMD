@@ -1,9 +1,9 @@
 package compiler.sysml.examples
 
+import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Test
-import kotlin.test.assertTrue
 
 class InterfaceTests {
 
@@ -18,7 +18,7 @@ class InterfaceTests {
         loadSysMLv2("""
             interface def C1; 
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -38,7 +38,7 @@ class InterfaceTests {
                 end port2 : Port2;
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
 }

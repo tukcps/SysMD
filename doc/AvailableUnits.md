@@ -18,14 +18,14 @@ For Quantities without a domain, the following types from the **Quantities** pac
 | **AmountOfMoneyValue**       | Euro                     |       €       |
 |                              | USD                      |       $       |
 |                              | Pound                    |       £       |
-| **AreaValueValue**           | Square Meter             |      m^2      |
+| **AreaValue**                | Square Meter             |      m^2      |
 |                              | Acre                     |      ac       |
 | **BitRateValue**             | Bits per Second          |  bps or b/s   |
 | **MassDensityValue**         | Kilogram per Cubic Meter |    kg/m^3     |
 | **DimensionOneValue**        | Percent                  |       %       |
 |                              | Decibel                  |      dB       |
 |                              | Degree                   |   ° or deg    |
-|                              | Radiant                  |      rad      |
+|                              | Radian                   |      rad      |
 |                              | Pi                       | Pi or pi or π |
 | **LengthValue**              | Meter                    |       m       |
 |                              | Inch                     |     inch      |

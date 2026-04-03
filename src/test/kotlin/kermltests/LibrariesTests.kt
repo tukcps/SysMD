@@ -1,11 +1,11 @@
 package kermltests
 
 import com.github.tukcps.sysmd.model.kerml.Association
+import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 
 class LibrariesTests {
 
@@ -16,20 +16,20 @@ class LibrariesTests {
 
     @Test
     fun baseTest() = testSession {
-        loadKerML("package ScalarValues { datatype Natural :> Base::Anything; }")
+        loadKerML("package ScalarValues { datatype Natural :> ScalarValue; datatype ScalarValue :> Base::Anything; }")
         loadKerML(base)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     @Test
     fun scalarValuesTest() = testSession {
-        loadKerML("package ScalarValues { datatype Natural :> Base::Anything; }")
+        loadKerML("package ScalarValues { datatype Natural :> ScalarValue; datatype ScalarValue :> Base::Anything; }")
         loadKerML(base)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
 
         val scalarValues = javaClass.getResourceAsStream("/libraries/ScalarValues.kerml")?.bufferedReader().use { it?.readText() }
         loadKerML(scalarValues!!)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -37,13 +37,13 @@ class LibrariesTests {
      */
     @Test
     fun linksTest() = testSession {
-        loadKerML("package ScalarValues { datatype Natural :> Base::Anything; }")
+        loadKerML("package ScalarValues { datatype Natural :> ScalarValue; datatype ScalarValue :> Base::Anything; }")
         loadKerML(base)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
 
         val scalarValues = javaClass.getResourceAsStream("/libraries/ScalarValues.kerml")!!.bufferedReader().use { it.readText() }
         loadKerML(scalarValues)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
 
         val links = javaClass.getResourceAsStream("/libraries/Links.kerml")!!.bufferedReader().use { it.readText() }
         loadKerML(links)
@@ -51,7 +51,7 @@ class LibrariesTests {
         val binaryLink = global.resolve("Links::BinaryLink")?.memberElement as Association?
         assertNotNull(link)
         assertNotNull(binaryLink)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -63,22 +63,21 @@ class LibrariesTests {
         val binaryLink = global.resolve("Links::BinaryLink")?.memberElement as Association?
         assertNotNull(link)
         assertNotNull(binaryLink)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     @Test
-    fun rangesTest() = testSession {
-        loadKerML("package ScalarValues { datatype Natural :> Base::Anything; }")
+    fun rangesTest() = testSession("ScalarValues") {
         loadKerML(base)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
 
         val scalarValues = javaClass.getResourceAsStream("/libraries/ScalarValues.kerml")!!.bufferedReader().use { it.readText() }
         loadKerML(scalarValues)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
 
         val ranges = javaClass.getResourceAsStream("/libraries/Ranges.kerml")!!.bufferedReader().use { it.readText() }
         settings.initialize=false
         loadKerML(ranges)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 }

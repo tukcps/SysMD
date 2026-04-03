@@ -1,5 +1,6 @@
 package compiler.kerml.examples
 
+import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
@@ -24,7 +25,7 @@ class AssociationsTests {
                     end y[1..*];
                 }
             """)
-            assertTrue(status.issues.isEmpty(), status.issues.toString())
+            assertNoIssues()
         }
 
     /**
@@ -48,6 +49,6 @@ class AssociationsTests {
                     end y1[0..*] redefines y;
                 }
             """)
-            assertTrue(status.issues.isEmpty(), status.issues.toString())
+            assertNoIssues()
         }
 }

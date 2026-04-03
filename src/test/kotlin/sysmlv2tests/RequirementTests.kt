@@ -26,7 +26,7 @@ class RequirementTests {
             }
         """)
         solver.propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val ass = global.resolveVar("test::ass")
         assertEquals(builder.NaB, ass!!.vectorQuantity.value)
     }
@@ -44,7 +44,7 @@ class RequirementTests {
             }
         """)
         solver.propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val ass = global.resolveVar("test::ass")
         assertEquals(builder.True, ass!!.vectorQuantity.value)
     }
@@ -62,7 +62,7 @@ class RequirementTests {
             }
         """)
         solver.propagate()
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
         val r = global.resolveVar("test::r")
         assertEquals(builder.True, r!!.bool())
         assertEquals( BaseType.Bool,r.baseType )
@@ -104,6 +104,9 @@ class RequirementTests {
         assertNoIssues()
         val test = global.resolve("test")?.member<Feature>()
         assertNotNull(test)
+        val f = global.resolve("test::f::a")
+        assertNotNull(f)
+
         val testR = global.resolve("test::r")?.member<Feature>()
         assertNotNull(testR)
         val testRVar = global.resolveVar("test::r")

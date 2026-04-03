@@ -1,5 +1,6 @@
 package compiler.kerml.examples
 
+import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
@@ -21,6 +22,6 @@ class DatatypeTests {
                 feature value : ScalarValues::Real;
             }
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 }

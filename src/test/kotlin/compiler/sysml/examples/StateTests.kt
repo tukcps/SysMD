@@ -20,7 +20,7 @@ class StateTests {
         loadSysMLv2("""
             state def StateDef1;
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -51,7 +51,7 @@ class StateTests {
         state def StateDef1;
         state state1 : StateDef1;
         """)
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
 
@@ -111,7 +111,7 @@ class StateTests {
             exhibit state1;
         }
         """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 
     /**
@@ -130,6 +130,6 @@ class StateTests {
             exhibit state state1 : State1;
         }
         """.trimIndent())
-        assertTrue(status.issues.isEmpty(), status.issues.toString())
+        assertNoIssues()
     }
 }

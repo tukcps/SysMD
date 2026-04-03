@@ -133,11 +133,22 @@ fun SysMLv2.StateBodyItem() {
         nonBehaviorBodyItemStart() -> NonBehaviorBodyItem()
         behaviorUsageElementStart.starts() -> BehaviorUsageElement()
         TRANSITION.starts()        -> TransitionUsage()
-        ENTRY.starts()             -> EntryActionMember()
+        ENTRY.starts()             -> { EntryActionMember(); noOrMore(THEN) { EntryTransitionMember() } }
         DO.starts()                -> DoActionMember()
         EXIT.starts()              -> ExitActionMember()
-        else -> throwSyntaxError("Expected a valid state body item.")
+        else -> throwSyntaxError("At ${token}: Expected a valid state body item.")
     }
+}
+
+
+/**
+ *      EntryTransitionMember = MemberPrefix
+ *          ( GuardedTargetSuccession | 'then' TargetSuccession ) ';'
+ */
+fun SysMLv2.EntryTransitionMember() {
+    // THEN.consume()
+    TargetSuccession()
+    SEMICOLON.consume()
 }
 
 
