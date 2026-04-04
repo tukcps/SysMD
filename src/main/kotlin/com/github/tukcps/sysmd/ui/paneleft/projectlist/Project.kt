@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import com.github.tukcps.sysmd.logger
+import com.github.tukcps.sysmd.ui.dialogs.ChangeProjectIconDialog
 import com.github.tukcps.sysmd.ui.dialogs.ProjectDetailDialog
 import com.github.tukcps.sysmd.ui.dialogs.SaveDialog
 import org.jetbrains.compose.resources.ExperimentalResourceApi
@@ -94,6 +95,24 @@ fun Project(
         DeleteProjectDialog(
             showDialog = showDeleteProjectDialog,
             onDelete = { projectListViewModel.deleteProject(projectViewModel) }
+        )
+    }
+
+    if (projectViewModel.showChangeIconDialog.value) {
+        val hasIcon = remember(projectViewModel.project) {
+            projectViewModel.project
+                ?.directory
+                ?.resolve("Files")
+                ?.resolve("icon.png")
+                ?.toFile()
+                ?.exists() == true
+        }
+
+        ChangeProjectIconDialog(
+            showDialog =projectViewModel.showChangeIconDialog,
+            hasExistingIcon = hasIcon,
+            onIconSelected = { bytes, name -> projectViewModel.updateProjectIcon(bytes, name) },
+            onIconRemoved  = { projectViewModel.removeProjectIcon() }
         )
     }
 
@@ -258,6 +277,15 @@ fun Project(
                                 showContextMenu.value = false
                             }
                         )
+
+                        ContextMenuItemWithIcon(
+                            text = "Change Project Icon",
+                            icon = Icons.Default.Image,
+                            onClick = {
+                                projectViewModel.showChangeIconDialog.value = true
+                                showContextMenu.value = false
+                            }
+                        )
                         ContextMenuItemWithIcon(
                             text = "Add File",
                             icon = Icons.Default.Add,
@@ -284,6 +312,7 @@ fun Project(
                                 }
                             }
                         )
+
                     }
                 }
             }

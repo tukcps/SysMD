@@ -105,11 +105,10 @@ class SessionController {
      * - `GET /session/index`
      * - Gets a list of all files in a session's project
      */
-
     @ResponseStatus(HttpStatus.OK)
     @Operation(
-        summary = "Gets all model files in the index of a project.",
-        description = """Gets for a session of a project first the index of the .meta file and
+        summary = "Gets all model files in the index of a model interchange project.",
+        description = """Gets for a session of a project of the first the index of the .meta file and
             for each indexed file, the content in the response.""")
     @GetMapping(path = ["/session/index"], produces = [MediaType.APPLICATION_JSON_VALUE])
     fun getIndexedFiles(
@@ -135,7 +134,7 @@ class SessionController {
      * to which the compiler will analyze, from 0 (nothing) to 7 (constraint propagation).
      */
     @ResponseStatus(HttpStatus.OK)
-    @Operation(summary = "Compiles the code and adds generated elements to the model in the session.")
+    @Operation(summary = "Compiles the code in the payload and adds generated elements to the model in the session.")
     @PutMapping(path = ["/session/code"], produces = [MediaType.APPLICATION_JSON_VALUE])
     fun compileCode(
         @RequestBody request: CodeRequest,
@@ -205,7 +204,7 @@ class SessionController {
      * `GET /session/files`
      */
     @ResponseStatus(HttpStatus.OK)
-    @Operation(summary = "Gets all document file names.")
+    @Operation(summary = "Gets all document file names, including non-sysml files like pictures etc.")
     @GetMapping(path = ["/session/cells"], produces = [MediaType.APPLICATION_JSON_VALUE])
     fun getAllCells(
         @RequestHeader(value = "SessionId", required = true) sessionId: UUID,
@@ -317,7 +316,7 @@ class SessionController {
      * - `GET /session/elements`
      */
     @ResponseStatus(HttpStatus.OK)
-    @Operation(summary = "Gets all variables of a solver run.")
+    @Operation(summary = "Gets all variables of a solver run with computed values.")
     @GetMapping(path = ["/session/variables"], produces = [MediaType.APPLICATION_JSON_VALUE])
     fun getAllVariables(
         @RequestHeader(value = "SessionId", required = true) sessionId: UUID,
@@ -337,15 +336,15 @@ class SessionController {
 
 
     /**
-     * **Get all elements in the session**
+     * **Get all specializations in the session**
      * - `GET /session/elements/$id/subtypes`
      */
     @ResponseStatus(HttpStatus.OK)
-    @Operation(summary = "Gets all variables of a solver run.")
+    @Operation(summary = "Gets all specializations of a type.")
     @GetMapping(path = ["/session/elements/{elementId}/subtypes"], produces = [MediaType.APPLICATION_JSON_VALUE])
     fun getSubtypes(
         @RequestHeader(value = "SessionId", required = true) sessionId: UUID,
-        @Parameter(description = "elementId of an element of kind type", required = true) @PathVariable elementId: UUID
+        @Parameter(description = "elementId of an element of kind Type", required = true) @PathVariable elementId: UUID
     ): ResponseEntity<ArrayList<ElementResponse>>  {
         try {
             val session = SessionManager.getSession(sessionId)

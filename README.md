@@ -78,6 +78,11 @@ To create a platform-specific installer, use the gradle target  ```sysMDPackage`
 ./gradlew sysMDPackage
 ```
 
+# Access via REST
+SysMD notebook can also be used via REST in a headless mode. 
+Check the swagger API documentation after start under the local URL
+http://localhost:8081/swagger-ui/index.html#/
+
 # Supported and unsupported parts of KerML and SysML v2
 
 SysMD Notebook is a work in progress and does not (yet) support the full range of KerML and SysML v2.
@@ -90,11 +95,21 @@ The following gives some indications on what is supported:
 Note that automata and states might compile, but the constraint propagation mechanism does not use the respective parts properly. 
 Also, KerML is implemented with support for features, classes, packages, expressions, etc. -- but with some restrictions for expressions.  
 
+
 # Acknowledgements 
 
 SysMD was developed and is maintained by
-- University of Kaiserslautern-Landau
+- University of Kaiserslautern-Landau, Chair of Cyber-Physical Systems 
+  - Christoph Grimm (RPTU)
+  - Sebastian Post (RPTU)
+  - Axel Ratzke (RPTU)
+  - Carna Zivkovic (NXP)
+  - Theogene Uribumeneshi (RPTU, NXP)
+  - Moritz Schuler (RPTU)
+  - Moritz Herzog (RPTU)
+  - Nicolas Theobald (RPTU)
 - HOOD Group
+  - Markus Eberhard
 
 The solver very much profits from the AADD library for computation with ranges:
 - https://github.com/tukcps/Multiplatform-AADD

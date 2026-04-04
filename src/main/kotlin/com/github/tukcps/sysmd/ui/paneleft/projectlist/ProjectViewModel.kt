@@ -36,6 +36,7 @@ data class ProjectViewModel(
     private val websiteState: MutableState<URI?> = mutableStateOf(null)
 
     val showSaveDialog: MutableState<Boolean> = mutableStateOf(false)
+    val showChangeIconDialog = mutableStateOf(false)
 
     var name: String by nameState
     var description: String by descriptionState
@@ -229,5 +230,46 @@ data class ProjectViewModel(
         val tab =  tabsViewModel.editorTabs.indexOfFirst { it.file?.name == filename }
         tabsViewModel.removeFile.value = tab
         tabsViewModel.removeFileDialog.value = true
+    }
+
+    /**
+     * Writes [fileBytes] as icon.png into the project's Files directory,
+     * replacing any existing icon.
+     */
+    fun updateProjectIcon(fileBytes: ByteArray, originalFileName: String) {
+        try {
+            val filesDir = resolveFilesDir() ?: return
+            val iconFile = filesDir.resolve("icon.png")
+            iconFile.writeBytes(fileBytes)
+            logger.info("Project icon updated: ${iconFile.absolutePath}")
+        } catch (e: Exception) {
+            logger.error("Failed to update project icon", e)
+        }
+    }
+
+    /**
+     * Deletes icon.png from the project's Files directory,
+     * causing the UI to fall back to the default folder icon.
+     */
+    fun removeProjectIcon() {
+        try {
+            val filesDir = resolveFilesDir() ?: return
+            val iconFile = filesDir.resolve("icon.png")
+            if (iconFile.exists()) {
+                iconFile.delete()
+                logger.info("Project icon removed")
+            }
+        } catch (e: Exception) {
+            logger.error("Failed to remove project icon", e)
+        }
+    }
+
+    /** Returns the Files/ subdirectory, creating it if necessary. */
+    private fun resolveFilesDir(): java.io.File? {
+        val projectDir = project?.directory ?: run {
+            logger.warn("resolveFilesDir: no active project")
+            return null
+        }
+        return projectDir.resolve("Files").toFile().also { it.mkdirs() }
     }
 }
