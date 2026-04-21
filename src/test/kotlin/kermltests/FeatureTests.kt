@@ -2,6 +2,7 @@ package kermltests
 
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.getOwned
+import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import io.github.tukcps.aadd.values.IntegerRange
 import org.junit.jupiter.api.Assertions
@@ -317,4 +318,41 @@ class FeatureTests {
         """)
         assertTrue(status.issues.isNotEmpty(), "Syntax error, but parser must not hang")
     }
+
+    /**
+     * Test that isInitial and isDefault flags are set correctly based on assignment operator
+     */
+    @Test
+    fun testIsInitialAndDefaultFlags() = testSession("ISQ", "Ranges") {
+        // Test regular assignment (=)
+        loadKerML("feature a: ISQ::LengthValue = 5.0 m;")
+        val a = global.resolve("a")?.memberElement as Feature
+        assertFalse(a.isDefaultValue, "Regular assignment should not be default")
+        assertFalse(a.isInitialValue, "Regular assignment should not be initial")
+
+        // Test initial assignment (:=)
+        loadKerML("feature b: ISQ::LengthValue := 10.0 m;")
+        val b = global.resolve("b")?.memberElement as Feature
+        assertFalse(b.isDefaultValue, "Initial assignment should not be default")
+        assertTrue(b.isInitialValue, "Initial assignment should be initial")
+
+        // Test default assignment (default)
+        loadKerML("feature c: ISQ::LengthValue default 15.0 m;")
+        val c = global.resolve("c")?.memberElement as Feature
+        assertTrue(c.isDefaultValue, "Default assignment should be default")
+        assertFalse(c.isInitialValue, "Default assignment should not be initial")
+
+        // Test default initial assignment (default :=)
+        loadKerML("feature d: ISQ::LengthValue default := 20.0 m;")
+        val d = global.resolve("d")?.memberElement as Feature
+        assertTrue(d.isDefaultValue, "Default initial assignment should be default")
+        assertTrue(d.isInitialValue, "Default initial assignment should be initial")
+
+        initialize()
+        assertNoIssues()
+    }
+
+
+
+
 }

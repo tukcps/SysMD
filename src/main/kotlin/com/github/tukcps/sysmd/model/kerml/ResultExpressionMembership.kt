@@ -5,7 +5,7 @@ import com.github.tukcps.sysmd.model.expression.Expression
 /** ref. 8.3.4.7.7
  * Relates expressions to their results
  */
-interface ResultExpressionMembership : FeatureMembership, OwningMembership
+interface ResultExpressionMembership : FeatureMembership
 {
 	/** Either this or `owningExpression` must be non-null */
 	var owningFunction : Function?
@@ -26,4 +26,6 @@ interface ResultExpressionMembership : FeatureMembership, OwningMembership
 	var ownedResultExpression : Expression
 		get() = memberElement as Expression
 		set(value) { memberElement = value }
+
+	override fun clone() : ResultExpressionMembership
 }

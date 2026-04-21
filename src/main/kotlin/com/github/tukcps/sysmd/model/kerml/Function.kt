@@ -40,7 +40,9 @@ interface Function: Behavior
 				curArity = 0
 			}
 			else -> {
-				if(! checkVariance(parameter[pIx].type, args[aIx].type, parameter[pIx].direction))
+				val par = parameter[pIx]
+
+				if(! checkVariance(par.type, args[aIx].type, par.direction!!))
 					return false
 
 				++aIx

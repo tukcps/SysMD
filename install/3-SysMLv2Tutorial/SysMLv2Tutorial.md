@@ -41,14 +41,14 @@ SysML offers a solution that permits its exchange among stakeholders with the fo
 # Objectives and contents of the tutorial
 ## Learning objectives 
 ---
-This tutorial introduces the basics of SysMLv2. 
+This tutorial introduces the basics of SysML v2. 
 After reading it you will 
-- understand when and for what to use SysMLv2
+- understand when and for what to use SysML v2
 - be able to 
-    - create models using SysMLv2 textual
+    - create models using SysML v2 textual
     - use SysMD notebook to execute the models
 - know  
-    - how KerML creates a basic framework for SysMLv2
+    - how KerML creates a basic framework for SysML v2
     - the most important structural elements of SysML v2 and KerML
 
 Note that the tutorial  
@@ -59,12 +59,12 @@ Note that the tutorial
 --- 
 ## Parts of the tutorial
 
-The tutorial consists of 4 parts that stepwise introduce you to SysMLv2: 
+The tutorial consists of 4 parts that stepwise introduce you to SysML v2: 
 
 - Introduction (this file!)
-- [The SysMLv2 Ecosystem and Methodology](ecosystem.md)
-- [KerML - the Basis of SysMLv2](kerml.md)
-- [SysMLv2](sysml.md)
+- [The SysML v2 Ecosystem and Methodology](ecosystem.md)
+- [KerML - the Basis of SysML v2](kerml.md)
+- [SysML v2](sysml.md)
 - [API and Model Exchange](api.md)
  
 ## Hands-on Examples with SysMD Notebook 

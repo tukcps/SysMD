@@ -9,7 +9,7 @@ import com.github.tukcps.sysmd.model.util.SimpleName
  * Following KerML Specification, 7.2.2.2.2 Relationships;
  * Represents the SysMD relationship source relation and inherits ElementImplementation
  */
-abstract class  RelationshipImplementation(
+open class RelationshipImplementation(
     declaredName: SimpleName? = null,
     declaredShortName: SimpleName? = null,
     override var owningRelatedElement: Element,
@@ -34,5 +34,16 @@ abstract class  RelationshipImplementation(
           target = template.target.toMutableList()
           source = template.source.toMutableList()
         }
+    }
+
+    override fun clone(): Relationship = RelationshipImplementation(
+        declaredName = declaredName,
+        declaredShortName = declaredShortName,
+        owningRelatedElement = owningRelatedElement,
+        source = source,
+        target = target,
+        isImplied = isImplied,
+    ).also {
+        it.updateFrom(this)
     }
 }

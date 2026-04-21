@@ -77,10 +77,7 @@ interface Namespace: Element {
      */
     fun resolve(qualifiedName: QualifiedName): Membership? {
         val found = findRecursive(qualifiedName, emptySet(), emptySet())
-        return if (found?.memberElement is Feature && (found.memberElement as Feature).referencedFeature != null)
-            (found.memberElement as Feature).referencedFeature?.owningRelationship
-        else
-            found
+        return (found?.memberElement as? Feature)?.referencedFeature?.let { return it.owningRelationship } ?: found
     }
 
     /**

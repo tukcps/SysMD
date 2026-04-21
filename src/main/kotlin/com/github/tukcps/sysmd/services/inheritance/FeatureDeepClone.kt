@@ -25,7 +25,10 @@ fun Feature.deepCloneWithInheritedFeature(addTo: Namespace): Feature {
                 is Expression if klon is Expression -> {} // expressions already perform deep clone by default
                 is Multiplicity -> model?.addOwnedMember(it.clone(), createdKlon)
                 is Feature if (!it.isDerived) -> it.deepCloneWithInheritedFeature(createdKlon)
-                is Specialization -> model?.addOwnedRelationship(it.clone(), createdKlon)
+                is Specialization -> {
+                    val specClone = it.clone()
+                    model?.addOwnedRelationship(specClone, createdKlon)
+                }
             }
         }
     }

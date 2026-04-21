@@ -240,13 +240,13 @@ class AttributeTests {
             attribute quantityDimension: QuantityDimension { :>> quantityPowerFactors = (lengthPF, massPF, timePF);  }
         """)
         solver.propagate()
+        assertNoIssues()
         assertEquals("m",  global.resolveVars("quantityDimension::quantityPowerFactors::unit")[0]!!.vectorQuantity.value.asStrDD().toString())
         assertEquals("kg", global.resolveVars("quantityDimension::quantityPowerFactors::unit")[1]!!.vectorQuantity.value.asStrDD().toString())
         assertEquals("s",  global.resolveVars("quantityDimension::quantityPowerFactors::unit")[2]!!.vectorQuantity.value.asStrDD().toString())
         assertEquals(1, global.resolveVars("quantityDimension::quantityPowerFactors::exponent")[0]!!.idd().max)
         assertEquals(1, global.resolveVars("quantityDimension::quantityPowerFactors::exponent")[1]!!.idd().max)
         assertEquals(-2, global.resolveVars("quantityDimension::quantityPowerFactors::exponent")[2]!!.idd().max)
-        assertNoIssues()
     }
 
     // In ISQ::Mass, there is not the right type stored for unit and range (Base::Anything instead of String

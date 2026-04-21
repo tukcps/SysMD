@@ -119,7 +119,7 @@ abstract class AstNode(val model: Session, val uuid : UUID = UUID.randomUUID()!!
                 is AstLeaf -> {
                     if (qualifiedName != null) {
                         if (this.parent is AstUserDefinedFunction)
-                            setOf("${namespace.owner!!.qualifiedName}::${qualifiedName}")
+                            setOf("${namespace.owner?.qualifiedName ?: ""}::${qualifiedName}")
                         else
                             setOf(qualifiedName as String)
 

@@ -92,6 +92,7 @@ data class ElementData(
     override var isSufficient: Boolean? = false,
     override var isUnique: Boolean? = false,
     var isDefaultValue: Boolean? = false,
+    var isInitialValue: Boolean? = false,
 
     override var textualRepresentation: MutableList<Identified>? = mutableListOf(),
     override var documentation: Identified? = null,
@@ -219,7 +220,7 @@ fun ElementDAO.toElement(): Element {
                 element.expression = bodydata[2].trim()
             }
         }
-        element.direction = enumValueOf<Feature.FeatureDirectionKind>(direction?:"IN")
+        element.direction = direction?.let(::enumValueOf)
         element.isEnd = isEnd == true
         element.isComposite = isComposite == true
         element.isOrdered = isOrdered == true
@@ -227,6 +228,7 @@ fun ElementDAO.toElement(): Element {
         element.isUnique = isUnique == true
         if (this is ElementData) {
             element.isDefaultValue = this.isDefaultValue == true
+            element.isInitialValue = this.isInitialValue == true
         }
     }
     return element
@@ -293,7 +295,7 @@ fun Element.toDAO(): ElementData {
     when(this) {
         is Multiplicity -> { dao.body = toBody() }
         is Feature -> {
-            dao.direction = direction.toString()
+            dao.direction = direction?.toString()
             dao.body = toBody()
             dao.isEnd = isEnd
             dao.isComposite = isComposite
@@ -302,6 +304,7 @@ fun Element.toDAO(): ElementData {
             dao.isDerived = isDerived
             dao.isUnique = isUnique
             dao.isDefaultValue = isDefaultValue
+            dao.isInitialValue = isInitialValue
         }
         is TextualRepresentation -> { dao.body = body; dao.language = language }
         is AnnotatingElement -> { dao.body = body }
@@ -325,6 +328,7 @@ fun ElementDAO.toElementData() = ElementData(
     language = language,
     body = body,
     isDefaultValue = if (this is ElementData) this.isDefaultValue else false,
+    isInitialValue = if (this is ElementData) this.isInitialValue else false,
 //    source = source.map { if ((it != "null")&&(it!=null)) UUID.fromString(it) else null }.toMutableList(),
 //    target = target.map { if ((it != "null")&&(it!=null)) UUID.fromString(it) else null }.toMutableList()
 )

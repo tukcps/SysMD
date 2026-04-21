@@ -32,7 +32,7 @@ Note that these Markdown-Documents with its integrated SysML v2 and KerML models
 > These Markdown files are also available after starting SysMD notebook as Projects. 
 > Then, one can see how the solver computes and constrains values in the rendered documents. 
 
-The compiler translates model cells into the SysMLv2 KerML metamodel. 
+The compiler translates model cells into the SysML v2 abstract representation (KerML metamodel). 
 On this metamodel, the constraint solver checks the consistency of
 
 - values and
@@ -72,7 +72,7 @@ gradlew.bat bootRun
 
 ## Creating installer
 
-To create a platform-specific installer, use the gradle target  ```sysMDPackage```.
+To create a platform-specific installer, use the Gradle target  ```sysMDPackage```.
 
 ```
 ./gradlew sysMDPackage

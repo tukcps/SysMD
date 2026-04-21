@@ -9,14 +9,11 @@ import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.Function
 import com.github.tukcps.sysmd.model.kerml.implementation.*
 import com.github.tukcps.sysmd.services.check.checkConsistency
-import com.github.tukcps.sysmd.services.check.checkLibraryElementIds
-import com.github.tukcps.sysmd.services.check.checkOwnership
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.repositories.local.*
 import io.github.tukcps.aadd.DDBuilder
 import io.github.tukcps.sysmlv2.api.entities.CommitDataObject
 import io.github.tukcps.sysmlv2.api.entities.ElementDAO
-import io.github.tukcps.sysmlv2.api.entities.Identified
 import java.util.*
 import kotlin.reflect.full.isSubclassOf
 
@@ -132,21 +129,23 @@ class SessionImplementation(
      */
     fun <T: Element> addElement(element: T): T {
         element.model = this
-        if (element.elementId == null)
-            status.error("Attempt to add Element without elementId")
-        else {
-            if (element.elementId in repo.elements.keys) {
-                if (get(element.elementId!!)!!::class.isSubclassOf(element::class)) {
-                    repo.elements[element.elementId]!!.updateFrom(element)
-                    status.updatedValues[element.path()] = "updated: '${element.qualifiedName}'"
-                } else
-                    status.error("Attempt to update existing, incompatible element ${element.escapedName()}")
-            }
-            else
-                repo.elements[element.elementId!!] = element
+
+        val id = element.elementId ?: throw IllegalArgumentException("Attempt to add Element without elementId")
+
+        repo.elements[id]?.also { conflict ->
+            if(! conflict::class.isSubclassOf(element::class))
+                throw IllegalArgumentException("Attempt to update existing, incompatible element ${element.qualifiedName}")
+
+            conflict.updateFrom(element)
+            status.updatedValues[element.path()] = "updated: '${element.qualifiedName}'"
+
+            @Suppress("UNCHECKED_CAST")
+            return conflict as T // this cast is checked via reflection
         }
-        @Suppress("UNCHECKED_CAST")
-        return repo.elements[element.elementId] as T
+
+        repo.elements[id] = element
+
+        return element
     }
 
     override fun get(): Collection<Element> = repo.elements.values
@@ -158,24 +157,24 @@ class SessionImplementation(
      * @param element the element to be added; must not be an owned relationship, then use addOwnedRelationship
      * @param namespace the namespace to which the element will be added via a membership
      */
+    @Suppress("UNCHECKED_CAST")
     override fun <T : Element> addOwnedMember(element: T, namespace: Namespace, visibility: Import.VisibilityKind): T {
         require(element is Namespace || element is Annotation || element is Dependency || element !is Relationship)
-
+        check(element !== namespace)
+        check(element !== global)
         element.model = this
+        namespace.model = this
 
-        if (element.name != null || element.shortName != null) {
-            val exists = namespace.getOwned<Element>(element.name?:element.shortName!!)
-            if (exists != null) {
-                if (exists::class.isSubclassOf(element::class)) {
-                    exists.updateFrom(element)
-                    status.updatedValues[exists.path()] = "updated: '${exists.qualifiedName}'"
-                    @Suppress("UNCHECKED_CAST")
-                    return exists as T
-                } else {
-                    status.fatal("Attempt to update existing, incompatible element ${element.escapedName()}")
-                }
+        (element.name ?: element.shortName)?.let { namespace.getOwned<Element>(it) }?.let { existing ->
+            if (existing::class.isSubclassOf(element::class)) {
+                existing.updateFrom(element)
+                status.updatedValues[existing.path()] = "updated: '${existing.qualifiedName}'"
+                return existing as T
+            } else {
+                status.fatal("Attempt to update existing, incompatible element ${element.escapedName()}")
             }
         }
+
         val owningMembership = when (element) {
             is Feature if namespace is Function -> when {
                 // FIXME: Distinguish unnamed out and return parameters
@@ -205,16 +204,14 @@ class SessionImplementation(
 
             else -> OwningMembershipImplementation(membershipOwningNamespace = namespace, memberElement = element)
         }
-
         owningMembership.visibility = visibility
 
-        element.owningRelationship = owningMembership
-        addOwnedRelationship(owningMembership, namespace)
-        if (element.elementId == null) {
-            require(element.model != null)
-            element.generateUUID()
+        return addOwnedRelationship(owningMembership).let {
+            check(it.owningNamespace === namespace || it.memberElement !== element) {
+                "Attempt to change ownership of element"
+            }
+            it.memberElement as T
         }
-        return addElement(element)
     }
 
     /**
@@ -222,16 +219,38 @@ class SessionImplementation(
      * @param owningElement the element to be added; if null, the source of the relationship is used as the owning element
      * @param relationship the relationship to be added as the owned related element
      */
+    @Suppress("UNCHECKED_CAST")
     override fun <T: Relationship> addOwnedRelationship(relationship: T, owningElement: Element?): T {
-
-        val element = owningElement ?: relationship.source.first()
+        val owningElement = owningElement ?: relationship.source.first()
 
         relationship.model = this
-        relationship.owningRelatedElement = element
+        relationship.owningRelatedElement = owningElement
+
+        for(e in (relationship.source + relationship.target))
+        {
+            check(e.model === null || e.model === this)
+            e.model = this
+        }
+
         if (relationship is OwningMembership) {
             relationship.ownedElement.add(relationship.target.first())
+
+            val member = relationship.memberElement
+
+            if(member.owningRelationship !== null)
+                return member.owningRelationship as T
+
+            member.owningRelationship = relationship
+
+            if(member.elementId === null)
+                member.generateUUID()
+
+            addElement(member).also {
+                if(it !== member)
+                    return it.owningRelationship as T
+            }
         }
-        if (element.isLibraryElement)
+        if (owningElement.isLibraryElement)
             relationship.isLibraryElement = true
 
         if (relationship.elementId == null)
@@ -244,16 +263,17 @@ class SessionImplementation(
         if (relationship is Specialization) {
             relationship.model = this
             @Suppress("UNCHECKED_CAST")
-            val foundSpecializations = element.ownedRelationship.filter { it.javaClass == relationship.javaClass } as List<Specialization>
+            val foundSpecializations = owningElement.ownedRelationship.filter { it.javaClass == relationship.javaClass } as List<Specialization>
             foundSpecializations.forEach { found ->
                 @Suppress("UNCHECKED_CAST")
                 if (relationship.general == found.general )  // id is equal after name resolution/loading
                     return found as T
                 if (relationship.general is Unresolved) {
                     val resolved = if (relationship !is Redefinition)
-                            (relationship.owningNamespace?.resolve((relationship.general as Unresolved).relativeName!!) )?.member<Type>()
-                        else
-                            (relationship.owningNamespace as Type).resolve((relationship.general as Unresolved).relativeName!!)?.member<Feature>()
+                        (relationship.owningNamespace?.resolve((relationship.general as Unresolved).relativeName!!) )?.member<Type>()
+                    else
+                        (relationship.owningNamespace as Type).resolve((relationship.general as Unresolved).relativeName!!)?.member<Feature>()
+
                     if ( resolved?.escapedName() == found.general.escapedName() )
                         @Suppress("UNCHECKED_CAST")
                         return found as T
@@ -261,12 +281,14 @@ class SessionImplementation(
             }
         }
 
-        val added = addElement(relationship)
+        addElement(relationship).also {
+            if(it !== relationship)
+                return it
+        }
 
-        if (added == relationship)
-            element.ownedRelationship.add(relationship)
+        owningElement.ownedRelationship.add(relationship)
 
-        return added
+        return relationship
     }
 
     /**

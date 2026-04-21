@@ -29,12 +29,12 @@ After reading the part "KerML," you
 --- 
 # KerML: Basis for SysML and More 
 The SysML v2 ecosystem builds on top of a basic and simple language: 
-KerML, the Kernel Modeling language.
+KerML, the Kernel Modeling Language.
 KerML has several purposes: 
 
 * First, it serves as the so-called _Metamodel_. 
 The Metamodel describes classes that are the means to specify models, and gives basic semantics and constraints.
-* Second, instances of the metamodel classes are used to represent concrete models.
+* Second, instances of the metamodel classes are used to represent concrete models in an abstract way (abstract representation).
 
 KerML is structured in different layers.
 The layers introduce, step by step and building on top of each other, more and more features.

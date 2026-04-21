@@ -30,8 +30,6 @@ fun Session.operatorExpression(op : String, vararg operands : Expression) : Oper
 	it.direction = IN
 	it.model = this
 
-	addOwnedMember(it, global)
-
 	for(op in operands)
 		addOwnedMember(op, it)
 }

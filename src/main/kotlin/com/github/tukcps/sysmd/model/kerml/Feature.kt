@@ -19,7 +19,7 @@ interface Feature: Type {
     val ownedTypeFeaturing: List<FeatureTyping>
 
     enum class FeatureDirectionKind { IN, OUT, INOUT}
-    var direction: FeatureDirectionKind
+    var direction: FeatureDirectionKind?
 
     /**
      * Getter and setter for the specified multiplicity; via

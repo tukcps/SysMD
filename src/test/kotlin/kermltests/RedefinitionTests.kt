@@ -35,9 +35,9 @@ class RedefinitionTests {
         val af: Feature? = global.resolve("a::f")?.member()
 
         assertNotNull(af)
-        assertEquals(1L, af.multiplicityRange.min  )
-        assertEquals(4L, af.multiplicityRange.max  )
-        assertEquals(anything, af.generalization.first() )
+        assertEquals(1L, af.multiplicityRange.min)
+        assertEquals(4L, af.multiplicityRange.max)
+        assertEquals(anything, af.generalization.first())
 
         assertNotNull(bf)
         assertEquals(1L, bf.multiplicityRange.min)
@@ -60,16 +60,16 @@ class RedefinitionTests {
         """)
         val af: Feature? = global.resolve("a::f")?.member()
         assertNotNull(af)
-        assertEquals(1L, af.multiplicityRange.min  )
-        assertEquals(4L, af.multiplicityRange.max  )
+        assertEquals(1L, af.multiplicityRange.min)
+        assertEquals(4L, af.multiplicityRange.max)
         assertTrue(repo.realType in af.generalization)
 
         assertNoIssues()
         val bf = global.resolve("b::f")?.memberElement as Feature
         assertNotNull(bf)
-        assertEquals(2L, bf.multiplicityRange.min )
-        assertEquals(3L, bf.multiplicityRange.max  )
-        assertTrue(repo.realType in bf.generalization )
+        assertEquals(2L, bf.multiplicityRange.min)
+        assertEquals(3L, bf.multiplicityRange.max)
+        assertTrue(repo.realType in bf.generalization)
     }
 
     @Test
@@ -113,15 +113,15 @@ class RedefinitionTests {
         val bf = global.resolve("b::f")?.memberElement as Feature
 
         assertNotNull(bf)
-        assertEquals(2L, bf.ownedElement.filterIsInstance<Multiplicity>().first().variable!!.min()  )
-        assertEquals(3L, bf.ownedElement.filterIsInstance<Multiplicity>().first().variable!!.max()  )
-        assertTrue(repo.realType in bf.typing.map { it.type } )
+        assertEquals(2L, bf.ownedElement.filterIsInstance<Multiplicity>().first().variable!!.min())
+        assertEquals(3L, bf.ownedElement.filterIsInstance<Multiplicity>().first().variable!!.max())
+        assertTrue(repo.realType in bf.typing.map { it.type })
 
         val af = global.resolve("a::f")?.memberElement as Type?
         assertNotNull(af)
-        assertEquals(1L, af.ownedElement.filterIsInstance<Multiplicity>().first().variable!!.min()  )
-        assertEquals(4L, af.ownedElement.filterIsInstance<Multiplicity>().first().variable!!.max()  )
-        assertEquals(anything, af.generalization.first() )
+        assertEquals(1L, af.ownedElement.filterIsInstance<Multiplicity>().first().variable!!.min())
+        assertEquals(4L, af.ownedElement.filterIsInstance<Multiplicity>().first().variable!!.max())
+        assertEquals(anything, af.generalization.first())
     }
 
 
@@ -152,7 +152,7 @@ class RedefinitionTests {
         assertEquals(1L, global.resolveVar("quantityDimension::quantityPowerFactors::exponent")!!.max() )
         assertEquals("m", global.resolveVar("quantityDimension::quantityPowerFactors::unit")!!.vectorQuantity.value.asStrDD().toString())
         assertEquals("m", global.resolveVar("lengthPF::unit")!!.vectorQuantity.value.asStrDD().toString())
-        assertEquals(1L, global.resolveVar("lengthPF::exponent")!!.min() )
+        assertEquals(1L, global.resolveVar("lengthPF::exponent")!!.min())
     }
 
     // The types are not set as expected in addInheritedFeatures (the function should be right but not correctly called for the elements),
@@ -176,4 +176,45 @@ class RedefinitionTests {
         // val new = global.resolveVar("ownsOld::ownedOld::a")!!.ast!!.evalUpRec()
         assertEquals("new", global.resolveVar("ownsOld::ownedOld::a")!!.vectorQuantity.value.asStrDD().toString())
     }
+
+
+    @Test
+    fun nestedRedefinitionTest4()  = testSession("ScalarValues", "ISQ", "Parts") {
+        loadSysMLv2("""
+            private import ISQ::*;
+            part def Precision{
+                attribute value: StorageCapacityValue {:>> range = "1..4"; :>> unit = "B";}
+            }
+            part def Float32 :> Precision{
+                attribute :>> value = 4.0 [B];
+            }
+            part def Float16 :> Precision{
+                attribute :>> value = 2.0 [B];
+            }
+            part def Int8 :> Precision{
+                attribute :>> value = 1.0 [B];
+            }
+            part def NeuralNetworkLayer {
+                part precision: Precision;
+            }
+            part layer5 : NeuralNetworkLayer {
+                :>> precision : Float16;
+            }
+        """)
+        solver.propagate()
+        assertNoIssues()
+
+        // Verify that the redefined values are correctly set (in bits, since 1 B = 8 bits)
+        assertEquals(32.0, global.resolveVar("Float32::value")!!.vectorQuantity.value.asAadd().min, 0.001)
+        assertEquals(32.0, global.resolveVar("Float32::value")!!.vectorQuantity.value.asAadd().max, 0.001)
+        assertEquals(16.0, global.resolveVar("Float16::value")!!.vectorQuantity.value.asAadd().min, 0.001)
+        assertEquals(16.0, global.resolveVar("Float16::value")!!.vectorQuantity.value.asAadd().max, 0.001)
+        assertEquals(8.0, global.resolveVar("Int8::value")!!.vectorQuantity.value.asAadd().min, 0.001)
+        assertEquals(8.0, global.resolveVar("Int8::value")!!.vectorQuantity.value.asAadd().max, 0.001)
+
+    }
+
 }
+
+
+

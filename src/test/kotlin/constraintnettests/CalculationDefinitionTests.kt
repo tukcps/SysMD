@@ -47,7 +47,7 @@ class CalculationDefinitionTests {
         solver.propagate()
         assertEquals(global.resolve("Velocity::v1")!!.member<Feature>()!!.direction, Feature.FeatureDirectionKind.IN)
         assertEquals(global.resolve("Velocity::v2")!!.member<Feature>()!!.direction, Feature.FeatureDirectionKind.IN)
-        assertEquals(global.resolve("Velocity::a")!!.member<Feature>()!!.direction, Feature.FeatureDirectionKind.INOUT)
+        assertEquals(global.resolve("Velocity::a")!!.member<Feature>()!!.direction, null)
         assertEquals(global.resolve("Velocity::result")!!.member<Feature>()!!.direction, Feature.FeatureDirectionKind.OUT)
         assertTrue(10.0 in global.resolveVar("c")!!.range<Double>())
         assertTrue(62.0 in global.resolveVar("c2")!!.vectorQuantity.valuesIn("km/h")[0].asAadd().getRange())

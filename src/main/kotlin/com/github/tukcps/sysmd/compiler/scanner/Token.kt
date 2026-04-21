@@ -100,7 +100,6 @@ data class Token(
         SEMICOLON { override fun toString() = ";" },
         HASHTAG { override fun toString(): String = "#" },
         PERCENT { override fun toString(): String = "%" },
-        EURO { override fun toString(): String = "€" },
         QUESTION { override fun toString(): String = "?" },
         ATSIGN { override fun toString() : String = "@" },
         ATAT { override fun toString() : String = "@@" },
@@ -139,7 +138,6 @@ data class Token(
             ';' to Kind.SEMICOLON,
             '#' to Kind.HASHTAG,
             '%' to Kind.PERCENT,
-            '€' to Kind.EURO,
             '?' to Kind.QUESTION,
             '~' to Kind.NOT,
             '!' to Kind.NOT

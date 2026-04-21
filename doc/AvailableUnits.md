@@ -15,9 +15,9 @@ For Quantities without a domain, the following types from the **Quantities** pac
 # Basic units
 | Domain                       | Unit                     |    Symbol     |
 |:-----------------------------|:-------------------------|:-------------:|
-| **AmountOfMoneyValue**       | Euro                     |       €       |
-|                              | USD                      |       $       |
-|                              | Pound                    |       £       |
+| **AmountOfMoneyValue**       | Euro                     |      EUR      |
+|                              | US Dollar                |      USD      |
+|                              | Pound                    |      GBP      |
 | **AreaValue**                | Square Meter             |      m^2      |
 |                              | Acre                     |      ac       |
 | **BitRateValue**             | Bits per Second          |  bps or b/s   |
@@ -90,21 +90,22 @@ For Quantities without a domain, the following types from the **Quantities** pac
 |                             | Miles per hour            |    mph     |
 
 ## Electricity and magnetism units
-| **Domain**                     | **Unit**           | **Symbol** |
-|--------------------------------|--------------------|:----------:|
-| **CapacitanceValue**           | Farad              |     F      |
-| **ConductanceValue**           | Siemens            |     S      |
-| **ElectricChargeValue**        | Coulomb            |     C      |
-|                                | Ampere hours       |     Ah     |
-|                                | Ampere second      |     As     |
-| **ElectricCurrentValue**       | Ampere             |     A      |
-| **ElectricFieldStrengthValue** | Newton per Coulomb |    N/C     |
-| **ElectricPotentialValue**     | Volt               |     V      |
-| **InductanceValue**            | Henry              |     H      |
-| **MagneticFluxValue**          | Weber              |     Wb     |
-| **MagneticFluxDensityValue**   | Tesla              |     T      |
-| **ResistanceValue**            | Ohm                |  Ohm or Ω  |
-| **PermittivityValue**          | Farad per Second   |    F/s     |
+| **Domain**                           | **Unit**           | **Symbol** |
+|--------------------------------------|--------------------|:----------:|
+| **CapacitanceValue**                 | Farad              |     F      |
+| **ConductanceValue**                 | Siemens            |     S      |
+| **ElectricChargeValue**              | Coulomb            |     C      |
+|                                      | Ampere hours       |     Ah     |
+|                                      | Ampere second      |     As     |
+| **ElectricCurrentValue**             | Ampere             |     A      |
+| **ElectricFieldStrengthValue**       | Newton per Coulomb |    N/C     |
+| **ElectricPotentialValue**           | Volt               |     V      |
+| **ElectricPotentialDifferenceValue** | Volt               |     V      |
+| **InductanceValue**                  | Henry              |     H      |
+| **MagneticFluxValue**                | Weber              |     Wb     |
+| **MagneticFluxDensityValue**         | Tesla              |     T      |
+| **ResistanceValue**                  | Ohm                |  Ohm or Ω  |
+| **PermittivityValue**                | Farad per Second   |    F/s     |
 
 # Photometry units
 

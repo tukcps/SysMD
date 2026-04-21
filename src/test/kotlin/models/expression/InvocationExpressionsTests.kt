@@ -22,7 +22,7 @@ class InvocationExpressionsTests {
 		).also {
 			it.model = this
 			it.functionName = "foo"
-			addOwnedMember(global, it)
+			addOwnedMember(it, global)
 
 			val y = literalExpression(true).apply {
 				declaredName = "y"

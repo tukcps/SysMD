@@ -1,10 +1,6 @@
 package com.github.tukcps.sysmd.model.kerml.implementation
 
-import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.kerml.FeatureMembership
-import com.github.tukcps.sysmd.model.kerml.Type
-import com.github.tukcps.sysmd.model.kerml.UnresolvedFeature
-import com.github.tukcps.sysmd.model.kerml.UnresolvedType
+import com.github.tukcps.sysmd.model.kerml.*
 
 open class FeatureMembershipImplementation(
     ownedMemberFeature: Feature = UnresolvedFeature(),
@@ -14,4 +10,11 @@ open class FeatureMembershipImplementation(
     memberElement = ownedMemberFeature,
     membershipOwningNamespace = owningType,
     elementType = elementType,
-)
+) {
+    override fun clone(): FeatureMembership = FeatureMembershipImplementation(
+        ownedMemberFeature = ownedMemberFeature,
+        owningType = owningType
+    ).also {
+        it.updateFrom(this)
+    }
+}

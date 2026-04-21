@@ -2,7 +2,6 @@
 
 package com.github.tukcps.sysmd.compiler.parser.sysmlv2
 
-import com.github.tukcps.sysmd.compiler.KerML
 import com.github.tukcps.sysmd.compiler.SysMLv2
 import com.github.tukcps.sysmd.compiler.parser.kerml.*
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*

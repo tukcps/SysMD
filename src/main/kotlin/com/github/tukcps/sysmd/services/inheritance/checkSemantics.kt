@@ -15,13 +15,15 @@ fun Type.checkForCycles() {
     generalization.forEach { general ->
         if (general === this) {
             ownedSpecialization.forEach { it.target = mutableListOf(model!!.anything) }
-            model!!.status.error("Type ${general.qualifiedName} of '${qualifiedName} cannot be itself; replaced by Anything.", element = this)
+            if (!isLibraryElement) {
+                model!!.status.error("Type ${general.qualifiedName} of '${qualifiedName} cannot be itself; replaced by Anything.", element = this)
+            }
         }
 
         if (general.isCyclic()) {
-            val cyclic = general
             ownedSpecialization.forEach { it.target = mutableListOf(model!!.anything) }
-            model!!.status.error(message = "Cyclic definition: '$cyclic' cannot be type of '${qualifiedName}'; replacing type with Base::Anything",
+            model!!.status.error(
+                message = "Cyclic definition: '$general' cannot be type of '${qualifiedName}'; replacing type with Base::Anything",
                 element = this,
                 cause = CyclicDependency(),
                 kind = Issue.Kind.ERROR_CYCLIC_DEPENDENCY

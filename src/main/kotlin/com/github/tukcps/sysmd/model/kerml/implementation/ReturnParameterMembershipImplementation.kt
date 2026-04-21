@@ -27,7 +27,8 @@ class ReturnParameterMembershipImplementation(
 
 	override fun clone() =  ReturnParameterMembershipImplementation(
 		ownedMemberParameter = ownedMemberParameter,
-		owningType = membershipOwningNamespace as Type
+		owningType = owningType,
+		parameterIndex = parameterIndex
 	).also {
 		it.updateFrom(this)
 	}

@@ -28,9 +28,9 @@ fun findDuplicatesById(elements1: List<Element>, elements2: List<Element>): Muta
  * @param elements2 second list of elements
  * @return list of elements that are both in elements1 and elements2
  */
-fun findDifferenceById(elements1: Collection<Element>, elements2: Collection<Element>): MutableList<Element> {
+fun findDifferenceById(elements1: Collection<Element>, elements2: Collection<Element>): List<Element> {
 
-    val map = elements1.map { it.elementId to it }.toMap()
+    val map = elements1.associateBy { it.elementId }
 
     val result = mutableListOf<Element>()
     elements2.forEach {

@@ -10,6 +10,7 @@ import com.github.tukcps.sysmd.model.expression.implementation.BinaryOperatorInf
 import com.github.tukcps.sysmd.model.kerml.FeatureTyping
 import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.kerml.UnresolvedElement
+import com.github.tukcps.sysmd.model.kerml.UnresolvedType
 import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.services.check.checkOwnership
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -65,10 +66,12 @@ private fun Expression.typeOperator(op : String, type : Type.() -> Unit)
 private fun Expression.typeOperator(op : String, feature : String, type : String) = typeOperator(op, {
 	featureRef(feature)
 }, {
-	assertEquals(type, qualifiedName)
+	assertIs<UnresolvedType>(this)
+	assertEquals(type, relativeName)
 })
 private fun Expression.typeOperator(op : String, type : String) = typeOperator(op) {
-	assertEquals(type, qualifiedName)
+	assertIs<UnresolvedType>(this)
+	assertEquals(type, relativeName)
 }
 
 
@@ -449,7 +452,8 @@ class SyntaxSamples
 		typeOperator("@", {
 			metadataAccess("designModel")
 		}, {
-			assertEquals("ApprovalAnnotation", qualifiedName)
+			assertIs<UnresolvedType>(this)
+			assertEquals("ApprovalAnnotation", relativeName)
 		})
 	}
 
@@ -463,7 +467,8 @@ class SyntaxSamples
 		typeOperator("as", {
 			metadataAccess("sensors")
 		}, {
-			assertEquals("KerML::Feature", qualifiedName)
+			assertIs<UnresolvedType>(this)
+			assertEquals("KerML::Feature", relativeName)
 		})
 	}
 

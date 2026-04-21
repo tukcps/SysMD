@@ -21,7 +21,7 @@ open class FeatureImplementation(
     declaredShortName = declaredShortName,
     elementType = elementType
 ){
-    final override var direction: Feature.FeatureDirectionKind = Feature.FeatureDirectionKind.IN
+    final override var direction: Feature.FeatureDirectionKind? = null
     final override var isEnd: Boolean = false
     final override var isComposite: Boolean = true
     final override var isPortion: Boolean = false
@@ -112,7 +112,7 @@ open class FeatureImplementation(
         get() = model!!.solver.getVariable(this.path())
 
     override fun toString(): String = super.toString() +
-            (if (model!!.solver.getVariable(path()) != null) " = " +
+            (if (model?.solver?.getVariable(path()) !== null) " = " +
                     try { model!!.solver.getVariable(path())!!.vectorQuantity.toString() }
                     catch (_: Exception) {"(?)"} else "") +
             (if (isEnd) " end" else "") +

@@ -18,4 +18,6 @@ interface ReturnParameterMembership : ParameterMembership
 	var owningExpression : Expression?
 		get() = owningStep as Expression
 		set(value) { owningStep = value }
+
+	override fun clone() : ReturnParameterMembership
 }

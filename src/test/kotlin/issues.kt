@@ -4,6 +4,7 @@ import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.Function
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.SpecializationImplementation
+import com.github.tukcps.sysmd.services.check.checkOwnership
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.session.loadLibrary
@@ -123,7 +124,7 @@ class IssuesAndRegressions {
         loadLibrary("Occurrences")
         initialize()
         assertNoIssues()
-        val first = mutableListOf<Element>().also { it.addAll(get()) }
+        val first = get().toList()
 
         loadLibrary("Base")
         loadLibrary("ScalarValues")
@@ -131,7 +132,7 @@ class IssuesAndRegressions {
         loadLibrary("Occurrences")
         initialize()
         val second = get()
-        assertEquals(0, status.issues.size)
+        assertNoIssues()
 
         val diff = findDifferenceById(first, second)
         assertTrue(diff.isEmpty())

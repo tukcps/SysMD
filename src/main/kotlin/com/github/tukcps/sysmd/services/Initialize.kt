@@ -78,14 +78,16 @@ fun Session.initialize(level: Int = 100) {
             if (level > 0) { // Ownership and Type definitions
                 resolveAllNames()
                 fillCache()
-                solveExpressionTypes()
 
                 get().asSequence().filterIsInstance<Type>().forEach { type -> type.checkForCycles() }
                 get().asSequence().filterIsInstance<Specialization>().forEach { it.general.subtypes.add(it.specific) }
+                
+                solveExpressionTypes()
             }
             if (level > 1) {  // Inheritance and redefinition
                 anything.addInheritedToSubtypes() // Calls 'initialize' of types that will add inherited properties.
                 anything.addInheritedToSubtypes()
+                resolveRedefinitions()
             }
             if (level > 2) { // Feature chains considering inherited features
                 addEndFeatureReferences()
@@ -249,4 +251,71 @@ fun getVarNames(namespace: QualifiedName, membership: Membership): List<String> 
         }
     }
     return result
+}
+
+/**
+ * Resolves names specifically for Redefinition relationships.
+ * This is done after inheritance is established because redefinitions often reference
+ * inherited features.
+ */
+internal fun Session.resolveRedefinitions() {
+    val unresolvedRedefs = get().asSequence().filterIsInstance<Redefinition>()
+        .filter { it.source.any { it is Unresolved } || it.target.any { it is Unresolved } }.toSet()
+
+    fun resolveQualifiedNameForRedefinition(namespace: Namespace, elements: MutableList<Element>, redefinition: Redefinition) {
+        elements.forEachIndexed { index, element ->
+            if (element is Unresolved && element.relativeName != null) {
+                namespace.resolve(element.relativeName!!)?.let { resolved ->
+                    val resolvedElement = if (element is Membership) resolved else resolved.memberElement
+                    
+                    if (resolvedElement === redefinition.redefiningFeature) {
+                        val hasIdenticalExpression = resolvedElement.expression?.trim() ==
+                                                   redefinition.redefiningFeature.expression?.trim()
+                        if (hasIdenticalExpression) elements[index] = resolvedElement
+                        else status.error("Feature cannot redefine itself: ${element.relativeName}", element = redefinition)
+                    } else if (resolvedElement === redefinition.owningRelatedElement) {
+                        // Resolved to the owning element itself — this would create a self-referential cycle.
+                        // This can happen for inherited Redefinition clones where the local namespace contains
+                        // the redefining feature back under the same name.
+                        // Instead, try resolving in the supertypes of the enclosing owner feature's owning namespace.
+                        val enclosingOwner = (redefinition.owningRelatedElement as? Feature)?.owningNamespace as? Type
+                        val altResolved = enclosingOwner?.generalization
+                            ?.filterNot { it is Unresolved }?.firstNotNullOfOrNull { supertype ->
+                                supertype.resolve(element.relativeName!!)?.let { r ->
+                                    val re = if (element is Membership) r else r.memberElement
+                                    if (re !== redefinition.owningRelatedElement) re else null
+                                }
+                            }
+                        if (altResolved != null) elements[index] = altResolved
+                        // else: leave as Unresolved; will be caught later if needed
+                    } else {
+                        elements[index] = resolvedElement
+                    }
+                } ?: status.warn(Issue.Kind.ERROR_UNRESOLVED_NAME, "Unresolved element with no name", element = namespace)
+            }
+        }
+    }
+
+    var current = unresolvedRedefs
+    var progress = true
+    var iterations = 0
+
+    while (progress && iterations < 100) {
+        iterations++
+        current.forEach {
+            val ns = it.owningNamespace ?: return@forEach
+            resolveQualifiedNameForRedefinition(ns, it.source, it)
+            resolveQualifiedNameForRedefinition(ns, it.target, it)
+        }
+        val new = get().asSequence()
+            .filterIsInstance<Redefinition>()
+            .filter { it.source.any { it is Unresolved } || it.target.any { it is Unresolved } }
+            .toSet()
+        progress = (current.size - new.size) > 0
+        current = new
+    }
+    
+    if (iterations >= 100) {
+        status.warn(Issue.Kind.WARN_ITERATIONS_EXCEEDED, "resolveRedefinitions exceeded maximum iterations (100). There may be circular dependencies in redefinitions.")
+    }
 }

@@ -161,7 +161,7 @@ fun KerML.Unit(): String {
                 unit = "1 "
             }
 
-            noOrMore(Token.Kind.NAME_LIT or Token.Kind.EURO) {
+            noOrMore(Token.Kind.NAME_LIT) {
                 consume().also { unit += consumedToken.toString() }
                 optional(Token.Kind.EXP, consume = true) {
                     Token.Kind.INTEGER_LIT.consume().also { unit += "^${consumedToken.number.toInt()}" }

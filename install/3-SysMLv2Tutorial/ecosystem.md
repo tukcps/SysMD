@@ -9,14 +9,14 @@ author: RPTU Kaiserslautern-Landau, Chair of Cyber-Physical Systems
 ---
 **Learning objectives**
 
-In this part, you will learn about for which purpose and how to use SysMLv2.
+In this part, you will learn about for which purpose and how to use SysML v2.
 After reading this section, you will
 
-- know about the features of SysMLv2 tool ecosystems
+- know about the features of SysML v2 tool ecosystems
 
 - understand
-    - when to use SysMLv2 and when not
-    - for which purposes to use SysMLv2 and for which to use other tools or languages
+    - when to use SysML v2 and when not
+    - for which purposes to use SysML v2 and for which to use other tools or languages
 
 
 
@@ -53,11 +53,11 @@ The SysML v2 standard includes
 - SysML v2 textual modeling language, 
 - SysML v2 API, in particular a REST API.
 
-# SysMLv2 in Systems Engineering and Development Process  
+# SysML v2 in Systems Engineering and Development Process  
 
 As mentioned above, SysML v2 is not a domain-specific tool development or for modeling/simulation.
 Its use cases go over the whole development where it provides the "glue" between different domains. 
-A reasonable methodology to use the SysMLv2 ecosystem might be as follows: 
+A reasonable methodology to use the SysML v2 ecosystem might be as follows: 
 
 **Requirements elicitation** Documentation and organization of stakeholder needs. 
 For this purpose, documents in natural language, but as well figures, equations, 
@@ -74,7 +74,7 @@ This in particular includes also specification of use- , analysis- and test case
 **Production** Result of the development process is a cloud database that includes all parts and its variants. 
 This can be used as a bill of materials (BOM) for production, and complementary information can be added to the models.
 
-**Operation** The BOM derived from the SysMLv2 model, together with complementary behavioral models for testing and 
+**Operation** The BOM derived from the SysML v2 model, together with complementary behavioral models for testing and 
 verification can be used as a starting point for a digital twin that links Development and operation. 
  
 # SysML v2 Ecosystem   
@@ -89,7 +89,7 @@ A typical SysML v2 ecosystem might consist of
   - A simple _file/text-based_ backend in which text is persisted. 
     This is suitable during developing models and documentation.
     Version management can then be done with Git which is well suited for text-based 
-    artefacts, i.e., source code.  
+    artifacts, i.e., source code.  
   - A complete _object-oriented versioning_ by a repository, e.g. in the web in which versions of the modeled elements
     are persisted and can be tracked. 
     This is suitable for version management of large projects in which e.g. different tools
@@ -101,25 +101,25 @@ SysMD Notebook is basically a frontend tool for early analysis in systems engine
 - integrated file/text-based persistence of models and documents that can be versioned with Git, and
 - a REST API to an object database for usage of models with object-oriented versioning. 
 
-With such a scenario in mind, the SysMLv2 standard goes beyond the scope of a pure 
+With such a scenario in mind, the SysML v2 standard goes beyond the scope of a pure 
 modeling language! 
-The SysMLv2 standard hence covers the following aspects: 
+The SysML v2 standard hence covers the following aspects: 
 
 **KerML** KerML is the metamodel and a basic modeling language. 
-It provides basic modeling artefacts ("classes"), e.g. Types, Classes, Features, Expressions, 
-and semantic libraries based on these artefacts.
+It provides basic modeling artifacts ("classes"), e.g. Types, Classes, Features, Expressions, 
+and semantic libraries based on these artifacts.
 KerML can be represented by 
 - An abstract representation of instances of the metamodel classes. 
 - KerML Textual representation
 
-**SysMLv2**, a language for Systems modeling with basic constructs based on KerML. 
-SysMLv2 models can be represented by
+**SysML v2**, a language for Systems modeling with basic constructs based on KerML. 
+SysML v2 models can be represented by
 - SysML v2 Diagrams 
 - SysML v2 Textual notation
 
 In the tutorial we focus only on the textual notation. 
 
-**API** The SysMLv2 standard also specifies interfaces for model exchange and versioning: 
+**API** The SysML v2 standard also specifies interfaces for model exchange and versioning: 
 
 - For a cloud-based environment, a REST API and OSLC endpoints are specified. 
 - For file-based use cases, file format for projects is specified. 

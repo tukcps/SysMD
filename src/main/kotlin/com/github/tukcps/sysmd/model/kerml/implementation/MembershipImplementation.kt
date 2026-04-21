@@ -28,4 +28,13 @@ open class MembershipImplementation(
     override var owningRelatedElement: Element
         get() = source.first()
         set(value) { source = mutableListOf(value) }
+
+    override fun clone(): Membership = MembershipImplementation(
+        declaredName = declaredName,
+        declaredShortName = declaredShortName,
+        membershipOwningNamespace = membershipOwningNamespace,
+        memberElement = memberElement
+    ).also {
+        it.updateFrom(this)
+    }
 }

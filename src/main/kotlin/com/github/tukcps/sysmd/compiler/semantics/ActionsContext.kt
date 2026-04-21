@@ -200,7 +200,6 @@ open class ActionsContext(
 
     /**
      * Adds a ReferenceSubsetting relationship.
-     * @param owner the referencing feature's owner
      * @param referencedFeature qualified name of the referenced feature
      */
     fun addReferenceSubsetting(referencedFeature: QualifiedName) {
@@ -240,7 +239,6 @@ open class ActionsContext(
 
     /**
      * Adds a Redefinition relationship.
-     * @param owner the redefining feature and owner of the Redefinition
      * @param redefinedFeature
      */
     fun addRedefinition(redefinedFeature: QualifiedName) {
@@ -359,11 +357,11 @@ open class ActionsContext(
     fun setTargetEnd(target: Feature) { setTarget(target) }
 
 
-    fun directionFromPrefixes(): Feature.FeatureDirectionKind = when {
+    fun directionFromPrefixes(): Feature.FeatureDirectionKind? = when {
         Token.Kind.IN in prefixes -> Feature.FeatureDirectionKind.IN
         Token.Kind.OUT in prefixes -> Feature.FeatureDirectionKind.OUT
         Token.Kind.INOUT in prefixes -> Feature.FeatureDirectionKind.INOUT
-        else -> Feature.FeatureDirectionKind.INOUT
+        else -> null
     }
 
     /**

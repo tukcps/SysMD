@@ -443,12 +443,12 @@ class InheritanceTests {
     @Test fun overrideDerivedPropertyTest() = testSession("ISQ", "Ranges") {
         loadKerML("""           
             type Coin :> Base::Anything {
-                feature diameter: ISQ::LengthValue {:>> range = "5..200"; :>> unit default "mm";}
-                feature circumference: ISQ::LengthValue = diameter*3.141 {:>> unit default "mm";} // 15.7 .. 628.2 mm 
+                feature diameter: ISQ::LengthValue {:>> range = "5..200"; :>> unit = "mm";}
+                feature circumference: ISQ::LengthValue = diameter*3.141 {:>> unit = "mm";} // 15.7 .. 628.2 mm 
             }
 
             feature oneEuroCoin : Coin { 
-                feature diameter: ISQ::LengthValue = 23.25 mm { :>> unit default "mm"; } 
+                feature diameter: ISQ::LengthValue = 23.25 mm { :>> unit = "mm"; } 
                 // circumference is inherited. Must be re-evaluated with correct diameter.
                 // Expected behavior:  re-evaluate dependency in new scope, but without changing diameter of Coin. 
             }
@@ -755,7 +755,7 @@ class InheritanceTests {
                 feature x: Ranges::RealInRange = 1.5 {:>> range = "1 .. 2";} 
             }
             type special :> general {
-                feature x: ScalarValues::Real; 
+                feature x: Ranges::RealInRange; 
             }
         """)
         assertNoIssues()

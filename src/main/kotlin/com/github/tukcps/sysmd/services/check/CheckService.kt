@@ -135,8 +135,9 @@ fun Session.checkConsistencyOfBuilders() {
  * - id of 'owner' and owner.ownedElements are consistent
  */
 fun Session.checkOwnership() {
-    get().forEach {  element ->
-        if (element == global) return@forEach
+    val elements = get().toList()
+    elements.forEachIndexed { index, element ->
+        if (element == global) return
         if (element is Relationship && element !is Namespace && element !is Dependency) {
             val owner = element.owningRelatedElement
             if (element !in owner.ownedRelationship)
@@ -146,6 +147,11 @@ fun Session.checkOwnership() {
             if (element !in owner.ownedElement)
                 status.fatal("Inconsistent ownership: ${element.path()} (${element.elementId}) owned by ${owner.path()} (${owner.elementId}}) but missing from ownedElements", element = element)
         }
+        
+        if (index > 1000000) {
+            status.warn(Issue.Kind.WARN_ITERATIONS_EXCEEDED, "checkOwnership exceeded safety limit. There may be circular ownership references.")
+            return
+        }
     }
 }
 
@@ -154,10 +160,9 @@ fun Session.checkOwnership() {
  * And that the UUID 5 is generated from the right name.
  */
 internal fun Session.checkLibraryElementIds() {
-    get().forEach { element ->
-        if ( (element.isLibraryElement || element.isStandard )
-            && !element.isTransient)
-        {
+    val elements = get().toList()
+    elements.forEachIndexed { index, element ->
+        if ((element.isLibraryElement || element.isStandard) && !element.isTransient) {
             val path = element.path()
             val uuid5 = Generators.nameBasedGenerator().generate(path)
             if (element.elementId != uuid5) {
@@ -168,6 +173,11 @@ internal fun Session.checkLibraryElementIds() {
                     element = element
                 )
             }
+        }
+        
+        if (index > 1000000) {
+            status.warn(Issue.Kind.WARN_ITERATIONS_EXCEEDED, "checkLibraryElementIds exceeded safety limit. There may be circular references.")
+            return
         }
     }
 }

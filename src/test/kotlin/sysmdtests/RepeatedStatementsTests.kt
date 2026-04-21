@@ -1,5 +1,6 @@
 package sysmdtests
 
+import util.assertNoIssues
 import util.mockup.loadKerML
 import kotlin.test.*
 import util.testSession
@@ -18,7 +19,7 @@ class RepeatedStatementsTests {
                 class A; 
                 class A; 
         """)
-        assertEquals(0, status.issues.size, status.issues.toString())
+        assertNoIssues()
     }
 
     @Test
@@ -26,7 +27,7 @@ class RepeatedStatementsTests {
         settings.catchExceptions=false
         loadKerML("class A;")
         loadKerML("class A;")
-        assertEquals(0, status.issues.size, status.issues.toString())
+        assertNoIssues()
     }
 
     @Test
@@ -36,6 +37,6 @@ class RepeatedStatementsTests {
                 feature A; 
                 feature A; 
         """)
-        assertEquals(0, status.issues.size, status.issues.toString())
+        assertNoIssues()
     }
 }

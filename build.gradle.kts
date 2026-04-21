@@ -13,7 +13,7 @@ import org.gradle.internal.os.OperatingSystem
  * - also set the value standalone according to your setup
  */
 group   = "com.github.tukcps"
-version = "4.2.0"               // must be number.number.number
+version = "4.2.1"               // must be number.number.number
 val aaddVersion = "0.1.15"
 val sysmlapiVersion = "3.9.12"
 val useMavenAADD = true
@@ -81,14 +81,15 @@ dependencies {
     // For UUID version 5 (name-based)
     implementation("com.fasterxml.uuid:java-uuid-generator:5.1.0")
 
-    implementation("org.jetbrains.compose.material3:material3-desktop:1.9.0")
+
+    implementation("org.jetbrains.compose.material3:material3-desktop:1.9.0-beta03")
 
     // These are necessary for the annotations in the models.
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.hibernate.validator:hibernate-validator:9.0.1.Final")
 
     // Open API / Swagger
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.2")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
 
     // Needed for annotations for Spring Boot in package rest
     implementation("com.fasterxml.jackson.core:jackson-databind")

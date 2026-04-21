@@ -9,7 +9,7 @@ author: RPTU Kaiserslautern-Landau, Chair of Cyber-Physical Systems
 
 **Learning objectives** 
 
-The SysMLv2 part of the tutorial introduces the SysMLv2 textual representation. 
+The SysML v2 part of the tutorial introduces the SysML v2 textual representation. 
 After working through it, the reader
 
 - understands the difference between definition and usage
@@ -22,7 +22,7 @@ After working through it, the reader
 --- 
 # Background 
 
-The SysMLv2 language has two representations 
+The SysML v2 language has two representations 
 - a _graphical notation_, known as "diagrams"
 - a _textual representation_
 
@@ -30,7 +30,7 @@ In this tutorial, we focus on the textual representation.
 
 ## Relation to KerML 
 
-SysMLv2 is a language for modeling systems that builds on top of KerML. 
+SysML v2 is a language for modeling systems that builds on top of KerML. 
 From KerML, it uses 
 - elements from the abstract representation,
 - classes from the KerML libraries, 
@@ -53,23 +53,23 @@ A _usage_  uses the keyword for the kind of element as in the definition, withou
 ![Files/usage-definition.png](Files/usage-definition.png)
 
 
-
 # Data and Calculation 
 
-In SysMLv2, attributes model data. 
+In SysML v2, attributes model data. 
 Attributes must be typed by a data type, e.g., ScalarValues::Real. 
 They can be declared by the keyword ```attribute``` followed by a name and/or short name, 
 a specialization by a data type, and optionally a binding to an expression that defines its value 
 (e.g. ```= 1.0 + 3.0```)
 
 SysMD uses the expression to compute the value of the attribute. 
+
 ## Attribute
 
 An attribute definition creates a kind of _Class_ (AttributeDefinition, defined by the SysML library) that is type by a datatype. 
 The type can be from the pre-defined datatypes Real, Integer, Boolean, or as well a user-defined data type. 
 Attributes may also consist of (own) other attributes. 
 
-An attribute definition can be used in attribute usages where one can redefine it's values. 
+An attribute definition can be used in attribute usages where one can redefine its values. 
 An example is given below: 
 
  ```attribute Identification ":>" Type ";" ```
@@ -111,7 +111,7 @@ attribute b: Real;
 attribute c: Real = a+b; 
 assert { c == 3.0 }
 ```
-SysMD Notebook's solver also computes values that cannote be computed in a direct way.
+SysMD Notebook's solver also computes values that cannot be computed in a direct way.
 An example is given below. 
 We use assert to bind _d_ to the value true.
 
@@ -166,15 +166,27 @@ part definition and part usage.
 
 ## Items
 
-t.b.d.
+Items are structural elements representing entities like water, fuel, or data.
+They are used to model for example signals, inputs or outputs of systems. 
+An item is typed by the KerML class Occurrences::Occurrence.
+
+```SysML::tutorial::sysml::items
+item def Fuel; 
+item def Diesel :> Fuel; 
+
+part dieselCar {
+    item fuel: Diesel; 
+}
+```
 
 ## Parts 
 
 A part definition introduces a new subclass of ```Parts::Part```. 
-A part can own features, e.g., other parts or attributes. 
+Unlike an item, a part is a structural element of a thing and 
+can own features, e.g., other parts, items, or attributes. 
 
 Part usages are a kind of Feature.
-They are defined as Feature typed by the SysMLv2 library class ```Parts::Part```.   
+They are defined as Feature typed by the SysML v2 library class ```Parts::Part```.   
 ```Part``` is typed by the class KerML::Items::Item
 and a subset of the features KerML::Items::items.
 

@@ -16,7 +16,7 @@ open class ParameterMembershipImplementation(
 
 	override fun clone() = ParameterMembershipImplementation(
 		ownedMemberParameter = ownedMemberParameter,
-		owningType = membershipOwningNamespace as Feature,
+		owningType = owningType,
 		elementType = elementType,
 		parameterDirection = parameterDirection
 	).also {
@@ -30,5 +30,5 @@ open class ParameterMembershipImplementation(
 			this.parameterIndex = template.parameterIndex
 	}
 
-	override fun toString() = "[ParameterMembership] ${membershipOwningNamespace.escapedName()} owns ${memberElement.escapedName()}"
+	override fun toString() = "[$elementType] ${membershipOwningNamespace.escapedName()} owns ${memberElement.escapedName()}"
 }

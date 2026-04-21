@@ -77,12 +77,10 @@ fun dependencyStringToMinMax(dependency: String) : Pair<Double,Double>{
 /**
  * Translates a FeatureDirectionKind to a PortType as it is used inside a Port Object.
  */
-val translateToPortType : (Feature.FeatureDirectionKind) -> PortType = {
-    when (it){
-        Feature.FeatureDirectionKind.IN ->   PortType.TARGET
-        Feature.FeatureDirectionKind.OUT ->  PortType.SOURCE
-        Feature.FeatureDirectionKind.INOUT ->  PortType.BIDIRECTIONAL
-    }
+fun translateToPortType(it : Feature.FeatureDirectionKind?) : PortType = when (it){
+    Feature.FeatureDirectionKind.IN, null -> PortType.TARGET
+    Feature.FeatureDirectionKind.OUT      -> PortType.SOURCE
+    Feature.FeatureDirectionKind.INOUT    -> PortType.BIDIRECTIONAL
 }
 
 /**

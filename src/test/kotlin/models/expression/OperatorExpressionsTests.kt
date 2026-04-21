@@ -138,29 +138,28 @@ class OperatorExpressionsTests {
 
     @Test
     fun printTest() = testSession("DataFunctions") {
-
-        val sum = operatorExpression("+", "addition",
+		fun sum() = operatorExpression("+", "addition",
             literalExpression(2),
             literalExpression(3)
         )
         val right = operatorExpression("*", "right-mul",
-            sum,
+            sum(),
             literalExpression(4)
         )
         val left = operatorExpression("*", "left-mul",
             literalExpression(1),
-            sum
+            sum()
         )
         val both = operatorExpression("*", "mul#1",
             literalExpression(1),
             operatorExpression("*", "mul#2",
-                sum,
+                sum(),
                 literalExpression(4),
             )
         )
 
         // test that precedence is properly parenthesized
-        assertEquals("2 + 3", sum.astString)
+        assertEquals("2 + 3", sum().astString)
         assertEquals("(2 + 3) * 4", right.astString)
         assertEquals("1 * (2 + 3)", left.astString)
         assertEquals("1 * (2 + 3) * 4", both.astString)
@@ -169,21 +168,21 @@ class OperatorExpressionsTests {
     @Test
     fun printTest2() = testSession("DataFunctions") {
         // test that non-commutative operators are properly parenthesized
-        val inner = operatorExpression("-", "inner",
+		fun inner() = operatorExpression("-", "inner",
             literalExpression(2),
             literalExpression(3),
         )
         val rightAssociating = operatorExpression("-", "right-assoc",
             literalExpression(1),
-            inner
+            inner()
         )
         val leftAssociating = operatorExpression("-", "left-assoc",
-            inner,
+            inner(),
             literalExpression(4)
         )
         assertNoIssues()
 
-        assertEquals("2 - 3", inner.astString)
+        assertEquals("2 - 3", inner().astString)
         assertEquals("1 - (2 - 3)", rightAssociating.astString)
         assertEquals("2 - 3 - 4", leftAssociating.astString)
     }

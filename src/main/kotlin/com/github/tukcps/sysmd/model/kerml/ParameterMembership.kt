@@ -5,10 +5,8 @@ import com.github.tukcps.sysmd.model.expression.Expression
 /** ref. 8.3.4.6.4
  * Relates a step (expression) or behavior (function) to its parameters (features)
  */
-interface ParameterMembership : FeatureMembership, OwningMembership
+interface ParameterMembership : FeatureMembership
 {
-	// standard uses Step and Behavior, but we flatten those into Expression/Function
-
 	/**
 	 * (non-standard; reordering ownedElement is non-trivial due to path-based UUIDs)
 	 * The parameter index for positional arguments only.
@@ -19,29 +17,31 @@ interface ParameterMembership : FeatureMembership, OwningMembership
 
 	/** Either this or `owningBehavior` must be non-null */
 	var owningStep : Step?
-		get() = membershipOwningNamespace as? Expression
+		get() = owningType as? Expression
 		set(value) {
 			if(value !== null)
-				membershipOwningNamespace = value
+				owningType = value
 		}
 
 	/** Either this or `owningStep` must be non-null */
 	var owningBehavior : Behavior?
-		get() = membershipOwningNamespace as? Function
+		get() = owningType as? Function
 		set(value) {
 			if(value !== null)
-				membershipOwningNamespace = value
+				owningType = value
 		}
 
 	/** The feature that is identified as a parameter by this ParameterMembership */
 	var ownedMemberParameter : Feature
-		get() = memberElement as Feature
+		get() = ownedMemberFeature
 		set(value) {
 			if(value.direction != parameterDirection)
 				throw IllegalArgumentException("ParameterMembership direction (${parameterDirection}) must match " +
 						"direction of the owned member parameter (${value.direction})")
-			memberElement = value
+			ownedMemberFeature = value
 		}
 
 	val parameterDirection : Feature.FeatureDirectionKind
+
+	override fun clone() : ParameterMembership
 }

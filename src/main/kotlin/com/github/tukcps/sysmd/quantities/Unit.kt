@@ -61,7 +61,6 @@ class Unit : Cloneable {
         strTok.wordChars('%'.code, '%'.code)
         strTok.wordChars('°'.code, '°'.code)
         strTok.wordChars('?'.code, '?'.code)
-        strTok.wordChars('€'.code, '€'.code)
 
         //Define Whitespaces for separation of words
         strTok.whitespaceChars(' '.code, ' '.code)

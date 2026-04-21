@@ -124,9 +124,11 @@ We use two arithmetic values, ```a, b``` and a Boolean condition ```c``` that sh
     }
 ```
 _Exercise:_ In place of ```>``` try the relations ```<, ==```. Instead of assert try ```constraint``` .
+
 #### Units
 
-Even more, the concrete values of a property or the multiplicity of a feature can be constrained by dependencies; then, SysMD notebook computes the possible values while considering all constraints.
+Even more, the concrete values of a property or the multiplicity of a feature can be constrained by dependencies; 
+then, SysMD notebook computes the possible values while considering all constraints.
 The library SI of SysMD supports
 
 - SI units with prefixes,

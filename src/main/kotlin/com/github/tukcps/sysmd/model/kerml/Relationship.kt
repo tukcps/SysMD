@@ -45,4 +45,6 @@ interface Relationship: Element {
         "$from " +
         source.joinToString(", ") { it.escapedName()?:"[${it.elementType}]" }  + " $to " +
         target.joinToString(", ") { it.escapedName()?:"(no name)" }
+
+    override fun clone(): Relationship
 }

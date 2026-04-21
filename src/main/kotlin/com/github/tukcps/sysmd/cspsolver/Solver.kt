@@ -128,6 +128,11 @@ class Solver(
             v.forEach { it.initVectorQuantity() }
         }
 
+        // Compile all expressions first so that ASTs and their dependency strings are available
+        // for the topological sort below. This is necessary so that aggregation functions like
+        // sumOverParts can report their actual (fully-qualified) dependencies.
+        sortedVars.forEach { v -> v.forEach { it.compileExpression() } }
+
         // Order the properties by their dependencies into the repo.schedule.
         // This schedule is used for initialization of the properties.
         var iterations = 0
@@ -168,9 +173,9 @@ class Solver(
                 schedule += it
             }
 
-        // Initialize internal AST nodes, starting from leaves upwards.
+        // Re-initialize AST nodes in dependency order so that aggregation functions
+        // (e.g. sumOverParts) see correctly computed values from their dependencies.
         schedule.forEach { variable ->
-            variable.compileExpression()
             variable.checkForCyclicDependency()
             variable.ast?.runDepthFirst { initialize() }
         }

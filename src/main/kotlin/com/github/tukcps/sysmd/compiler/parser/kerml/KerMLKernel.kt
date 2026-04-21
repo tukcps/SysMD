@@ -129,15 +129,25 @@ fun KerML.Connector() = ConnectorActions<Connector>(semantics, ::ConnectorImplem
  *          OwnedExpression
  */
 fun KerML.ValuePart() {
+    val feature = semantics.element<Feature>()
     when(token.kind) {
-        EQ ->       EQ.consume()
-        DPEQ ->     DPEQ.consume()
+        EQ ->       {
+            EQ.consume()
+            feature.isInitialValue = false
+            feature.isDefaultValue = false
+        }
+        DPEQ ->     {
+            DPEQ.consume()
+            feature.isInitialValue = true
+            feature.isDefaultValue = false
+        }
         DEFAULT ->  {
             DEFAULT.consume()
-            when(token.kind) {
-                EQ -> EQ.consume()
-                DPEQ -> DPEQ.consume()
-                else ->  {}
+            feature.isDefaultValue = true
+            feature.isInitialValue = when(token.kind) {
+                DPEQ -> { DPEQ.consume(); true }
+                EQ -> { EQ.consume(); false }
+                else -> false
             }
         }
         else -> { }

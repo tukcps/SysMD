@@ -59,8 +59,9 @@ internal class AstUserDefinedFunction(
         functionInputs = mutableMapOf()
         astToInputConnection = mutableMapOf()
         inputParamPositions = mutableMapOf()
-        val expectedFunctionInputs =
-            function.getOwnedElementsOfType<Feature>().filter { it.direction == Feature.FeatureDirectionKind.IN }
+        val features = function.getOwnedElementsOfType<Feature>()
+
+        val expectedFunctionInputs = features.filter { it.direction == Feature.FeatureDirectionKind.IN }
         if (expectedFunctionInputs.size != parameters.size)
             throw SemanticError("Function $name expects ${expectedFunctionInputs.size} parameters, but ${parameters.size} parameters given", this.function)
         parameters.indices.forEach {
@@ -75,14 +76,14 @@ internal class AstUserDefinedFunction(
             inputParamPositions[expectedFunctionInputs[it].escapedName()!!] = it
         }
         // Get expression for the calculation of the result
-        val resultExpressions =
-            function.getOwnedElementsOfType<Feature>().filter { it.direction == Feature.FeatureDirectionKind.OUT }
+        val resultExpressions = features.filter { it.direction == Feature.FeatureDirectionKind.OUT }
         if (resultExpressions.size != 1)
             throw SemanticError("Exactly one return parameter for function $name expected, but there are ${resultExpressions.size}")
+        if(features.any { it.direction == Feature.FeatureDirectionKind.INOUT })
+            throw SemanticError("inout parameters for function $name not supported yet")
         val resultExpression = resultExpressions[0]
         //if there is more than one calculationStep, these are also needed
-        functionCalculations = function.getOwnedElementsOfType<Feature>()
-            .filter { it.direction == Feature.FeatureDirectionKind.INOUT }
+        functionCalculations = features.filter { it.direction === null }
         functionCalculations.forEach {
             it.variable!!.compileExpression()
         }
@@ -112,7 +113,7 @@ internal class AstUserDefinedFunction(
                     val leaf = AstLeaf(model, parameter)
                     // val leaf = AstLeaf(parameter.)
                     astToInputConnection[node.qualifiedName!!] = leaf
-                    return leaf
+                    leaf
                 } else if (node.qualifiedName in functionCalculations.map { it.escapedName() }) { //is used in another expression
                     functionCalculations.find { it.escapedName() == node.qualifiedName }?.variable?.ast?.let { buildAst(it) } ?:
                         throw InternalError("(Internal) AST is missing.")

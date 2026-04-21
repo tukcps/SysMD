@@ -43,7 +43,7 @@ class BodyExpressionImplementation(
 		for(arg in arguments)
 		{
 			b.append(' ')
-			b.append(arg.direction.name.lowercase())
+			b.append(arg.direction?.name?.lowercase() ?: "null") // shouldn't be null
 			b.append(' ')
 			b.append(arg.name)
 			b.append(" : ")

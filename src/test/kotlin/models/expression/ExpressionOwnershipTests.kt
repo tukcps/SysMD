@@ -16,7 +16,7 @@ class ExpressionOwnershipTests
 
 		// println(tt.ownedRelationship)
 
-		assertEquals(global, tt.owningNamespace)
+		assertNull(tt.owningNamespace)
 
 		assertEquals(2, tt.argument.size)
 		val (l,r) = tt.argument

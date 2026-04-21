@@ -82,7 +82,13 @@ interface Session {
      * @return the created element with the id field set.
      * Note that it is not necessarily the same as the element passed as argument.
      */
-    fun <T: Element> addOwnedMember(element: T, namespace: Namespace, visibility: Import.VisibilityKind= Import.VisibilityKind.Public): T
+    fun <T: Element> addOwnedMember(element: T, namespace: Namespace, visibility: Import.VisibilityKind = Import.VisibilityKind.Public): T
+    /**
+     * Adds a relationship to the model.
+     * Properly updates ownership when given an OwningMembership.
+     * @param owningElement The element that owns the relationship. Defaults to the relationship's source.
+     * @return The created relationship. Not necessarily the same relationship that was passed as argument.
+     */
     fun <T: Relationship> addOwnedRelationship(relationship: T, owningElement: Element?=null): T
 
     /**

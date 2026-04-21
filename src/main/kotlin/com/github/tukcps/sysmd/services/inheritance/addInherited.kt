@@ -4,16 +4,36 @@ import com.github.tukcps.sysmd.compiler.semantics.Identification
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureTypingImplementation
 
+
 /**
- * For a type, iterates overall subtypes, and adds clones of the own owned features to it.
- * Then, recursively the same for all subtypes.
- * @param calls used to recognize loops
+ * Topologically iterates over all types in the model, ensuring supertypes are evaluated
+ * before subtypes, and re-evaluating when new cloned features are added.
+ * @param calls kept for backwards compatibility but unused
  */
-fun Type.addInheritedToSubtypes(calls: Int = 0) {
-    addInheritedFeaturesFromGeneral()
-    subtypes.forEach { subtype ->
-        subtype.addInheritedToSubtypes(calls + 1)
+fun Type.addInheritedToSubtypes(@Suppress("unused") calls: Int = 0) {
+    val session = this.model ?: return
+    val processed = mutableSetOf<Type>()
+
+    fun process(type: Type) {
+        if (type in processed) return
+
+        if (type.qualifiedName?.let {
+            it.contains("annotatedElement") || it.contains("AnnotatingElement") ||
+            it.contains("Annotation") || it.contains("Comment") ||
+            it.contains("MetadataFeature")
+        } == true) {
+            processed.add(type)
+            return
+        }
+
+        type.generalization.forEach { supertype ->
+            if (supertype !is Unresolved) process(supertype)
+        }
+        type.addInheritedFeaturesFromGeneral()
+        processed.add(type)
     }
+
+    session.get().filterIsInstance<Type>().forEach { process(it) }
 }
 
 /**
@@ -35,14 +55,11 @@ private fun Type.addInheritedFeaturesFromGeneral() {
     val redefinitions = getOwnedElementsOfType<Feature>().filter { it.redefining != null }
     val redefined = getOwnedElementsOfType<Feature>().filter { it.redefining != null }.map { it.redefining!! }
     val redefinedNames = redefined.map { it.escapedName() }
-    val toBeCloned    = mutableListOf<Feature>()
 
     // For each supertype, determine the features that are not re-defined; they are cloned.
-    generalization.forEach { supertype ->
-        val features = supertype.visibleMemberships().filter { it.memberElement is Feature }.map { it.memberElement as Feature }
-        features.forEach { feature ->
-            if (feature.escapedName() !in redefinedNames)
-                toBeCloned.add(feature)
+    val toBeCloned = generalization.flatMap { supertype ->
+        supertype.visibleMemberships().map { it.memberElement }.filterIsInstance<Feature>().filter {
+            it.escapedName() !in redefinedNames
         }
     }
 
@@ -50,12 +67,32 @@ private fun Type.addInheritedFeaturesFromGeneral() {
     redefinitions.forEach { feature ->
         // If redefining feature is unresolve, resolve it first
         if(feature.redefining is Unresolved) {
-            var found: Membership? = null
-            generalization.forEach { supertype ->
-                found = supertype.resolve((feature.redefining as Unresolved).relativeName!!)
+            generalization.mapNotNull { supertype ->
+                supertype.resolve((feature.redefining as Unresolved).relativeName!!)
+            }.lastOrNull {
+                it.memberElement !== feature && it.memberElement.owner !== this
+            }?.let {
+                val redefined = it.memberElement as Feature
+                if (redefined !== feature) {
+                    feature.ownedRelationship.filterIsInstance<Redefinition>().firstOrNull()?.redefinedFeature = redefined
+                }
             }
-            if (found != null) {
-                feature.ownedRelationship.filterIsInstance<Redefinition>().firstOrNull()?.redefinedFeature = found.memberElement as Feature
+        }
+
+        val redefiningExpr = feature.redefining?.expression
+        val isBySpecializations = redefiningExpr?.trimStart()?.startsWith("bySpecializations(") == true
+
+        val hasIdenticalExpression = when {
+            redefiningExpr?.isNotBlank() == true && feature.expression?.isNotBlank() == true -> {
+                redefiningExpr.trim() == feature.expression?.trim()
+            }
+            redefiningExpr?.isBlank() != false && feature.expression?.isBlank() != false -> true
+            else -> false
+        }
+
+        if (redefiningExpr?.isNotBlank() == true && feature.redefining?.isDefaultValue == false && !isBySpecializations && !hasIdenticalExpression) {
+            if (feature.expression?.isNotBlank() == true) {
+                model?.status?.error("Cannot override a non-default feature value. Redefined: ${feature.redefining?.qualifiedName} ('${feature.redefining?.expression}'), Feature: ${feature.qualifiedName} ('${feature.expression}')", element = feature)
             }
         }
 
@@ -84,11 +121,11 @@ private fun Type.addInheritedFeaturesFromGeneral() {
 
         // ... ValueDomain ... with unit and range
         if (feature.redefining?.resolveLocal("range") != null && feature.resolveLocal("range") == null) {
-            model?.addOwnedMember(feature.redefining!!.resolveLocal("range")!!.memberElement, feature)
+            (feature.redefining!!.resolveLocal("range")!!.memberElement as? Feature)?.deepCloneWithInheritedFeature(feature)
         }
 
         if (feature.redefining?.resolveLocal("unit") != null && feature.resolveLocal("unit") != null) {
-            model?.addOwnedMember(feature.redefining!!.resolveLocal("unit")!!.memberElement, feature)
+            (feature.redefining!!.resolveLocal("unit")!!.memberElement as? Feature)?.deepCloneWithInheritedFeature(feature)
         }
 
         // add prefixes, constraints
@@ -111,11 +148,6 @@ private fun Type.addInheritedFeaturesFromGeneral() {
         }
     }
 
-    // get all features of general type if that is already resolved
-    val supertypeFeatures: MutableList<Feature> = mutableListOf()
-    generalization.forEach { general ->
-        supertypeFeatures += general.visibleMemberships().mapNotNull { if (it is Feature) it.memberElement as Feature else null }
-    }
     val existingFeatures = getOwnedElementsOfType<Feature>().associateBy { Identification(it) }
 
     // For Supertype-Features that are not re-defined, create a clone
@@ -125,11 +157,32 @@ private fun Type.addInheritedFeaturesFromGeneral() {
         if (this.owner in superTypeFeature.allSupertypes(true))
             return
 
+        val existingFeature = existingFeatures[Identification(superTypeFeature)]
+
         // If feature with same identification does not exist, add a clone from general
-        val existingWithSameName = existingFeatures[Identification(superTypeFeature)]
-        if(existingWithSameName == null) {
+        if(existingFeature === null) {
             // Simple inheritance  -- we just clone it
             superTypeFeature.deepCloneWithInheritedFeature(this)
+        } else {
+            if (existingFeature.multiplicity() == null && superTypeFeature.multiplicity() != null) {
+                model?.addOwnedMember(superTypeFeature.multiplicity()!!.clone(), existingFeature)
+            }
+
+            if (existingFeature.type.isEmpty() && superTypeFeature.type.isNotEmpty()) {
+                superTypeFeature.type.forEach { type ->
+                    val typing = FeatureTypingImplementation(
+                        typedFeature = existingFeature,
+                        type = type
+                    ).also { it.isImplied }
+                    model!!.addOwnedRelationship(typing, existingFeature)
+                }
+            }
+
+            val superRange = superTypeFeature.resolveLocal("range")
+            val existingRange = existingFeature.resolveLocal("range")
+            if (superRange != null && existingRange == null && existingFeature.expression == null) {
+                (superRange.memberElement as? Feature)?.deepCloneWithInheritedFeature(existingFeature)
+            }
         }
     }
 }

@@ -15,13 +15,13 @@ import java.util.*
 class Repository {
 
     /** The in-memory representation uses hash-maps for efficient search. */
-    val elements: HashMap<UUID, Element> = hashMapOf()
+    val elements: LinkedHashMap<UUID, Element> = LinkedHashMap()
 
     /** Map that permits finding incoming relationships of an element */
-    val targetOfRelationship: HashMap<Element, MutableSet<Relationship>> = hashMapOf()
+    val targetOfRelationship: LinkedHashMap<Element, MutableSet<Relationship>> = LinkedHashMap()
 
     /** Map that permits finding outgoing relationships of an element */
-    val sourceOfRelationship: HashMap<Element, MutableSet<Relationship>> = hashMapOf()
+    val sourceOfRelationship: LinkedHashMap<Element, MutableSet<Relationship>> = LinkedHashMap()
 
     /** Caches of important types */
     var scalarType: Type? = null

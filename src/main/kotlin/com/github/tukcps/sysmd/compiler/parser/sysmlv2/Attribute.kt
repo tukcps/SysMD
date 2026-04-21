@@ -7,7 +7,6 @@ import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.ATTRIBUTE
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.DEF
 import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.AttributeDefinitionActions
 import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.AttributeUsageActions
-import com.github.tukcps.sysmd.model.sysml.AttributeDefinition
 import com.github.tukcps.sysmd.model.sysml.implementation.AttributeDefinitionImplementation
 
 /**

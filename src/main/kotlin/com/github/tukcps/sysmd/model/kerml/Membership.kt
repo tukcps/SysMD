@@ -33,4 +33,6 @@ interface Membership: Relationship {
 
     @Deprecated("use memberElement.path()", replaceWith = ReplaceWith("memberElement.path()"))
     fun memberQualifiedName() = memberElement.path()
+
+    override fun clone(): Membership
 }

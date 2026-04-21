@@ -4,6 +4,7 @@ import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import util.assertNoIssues
 import util.mockup.loadKerML
+import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Ignore
 import kotlin.test.Test
@@ -1392,5 +1393,164 @@ class AggregationFunctionTest {
         assertEquals(0.29, global.resolveVar("Realizability::value")!!.max(), 0.00001)
         assertEquals(0.29, global.resolveVar("Realizability::value2")!!.min(), 0.00001)
         assertEquals(0.29, global.resolveVar("Realizability::value2")!!.max(), 0.00001)
+    }
+
+    @Test
+    fun issueRedefinesTestCompleteWireModel() = testSession("ISQ", "Parts") {
+        loadSysMLv2("""
+            private import ISQ::*;
+            private import ScalarValues::*;
+            private import Quantities::*;
+            private import Ranges::*;
+            part def DomainArchitectureRealization  {
+                attribute totalLengthValue: LengthValue = sumOverParts(pathLength);
+                attribute totalWeight: MassValue = sumOverParts(wireType::specificWeight * pathLength);
+                attribute totalCosts:  AmountOfMoneyValue = sumOverParts(wireType::costsPerMeter * pathLength);
+                
+                part wireFrontCameraDomain : Network::Wire {
+                    part source: Sensors::frontCamera;
+                    part target: CU::cameraController;
+                    part sourceLocation : LocationsAndSpaces::frontCameraLoc;
+                    part targetLocation : LocationsAndSpaces::cameraControllerLoc;
+                    part wireType : Network::Ethernet;
+                }
+                part wireLidarDomain : Network::Wire {
+                    part source: Sensors::lidar;
+                    part target: CU::radarAndLidarController;
+                    part sourceLocation : LocationsAndSpaces::lidarLoc;
+                    part targetLocation : LocationsAndSpaces::radarAndLidarControllerLoc;
+                    part wireType : Network::Ethernet;
+                }
+                part wireLongRangeRadarDomain : Network::Wire {
+                    part source: Sensors::longRangeRadar;
+                    part target: CU::radarAndLidarController;
+                    part sourceLocation : LocationsAndSpaces::longRangeRadarLoc;
+                    part targetLocation : LocationsAndSpaces::radarAndLidarControllerLoc;
+                    part wireType : Network::CANFD;
+                }
+            }
+            
+            package Hardware {
+                part def Hardware_Base;
+            }
+            
+            
+            package LocationsAndSpaces {
+                
+                part def InstallationSpace {
+                    attribute positionOfSpace: CartesianPosition3dVector {:>> range = "-1.5..6.0, -1.25..1.25, -0.5..4.0";} 
+                    attribute temperatureRange: ThermodynamicTemperatureValue {:>> unit ="°C"; :>> range="-40 .. 150";} 
+                    attribute vibrations: SpeedValue {:>> unit ="mm/s"; :>> range="0 .. 100";}
+                    attribute humidity: MassDensityValue {:>> unit ="kg/m^3"; :>> range="0..100000";} 
+                    attribute EMI: ElectricPotentialDifferenceValue {:>> unit ="mV"; :>> range="0..100";}
+                }
+            
+                part def Location {
+                    part space : InstallationSpace;
+                    attribute relativePosition : CartesianPosition3dVector {:>> range= "0.0..4.0, -1.25..1.25, -0.5..4.0";}
+                    attribute position: CartesianPosition3dVector = space::positionOfSpace + relativePosition;
+                }
+                
+                part def FrontSpace :> InstallationSpace{
+                    attribute positionOfSpace: CartesianPosition3dVector = (-0.9, 0.0, 0.2) [m];
+                }
+                part def CabinSpace :> InstallationSpace{
+                    attribute positionOfSpace: CartesianPosition3dVector  = (0.0, 0.0, 0.2) [m];
+                }
+                
+                part frontCameraLoc: Location {
+                    :>> relativePosition = (0.5, 0.0, 0.8) m;
+                    part space : CabinSpace;
+                }
+                part lidarLoc: Location {
+                    :>> relativePosition = (0.0, 0.3, 0.0) m;
+                    part space : FrontSpace;
+                }
+                part longRangeRadarLoc: Location {
+                    :>> relativePosition = (0.0, 0.6, 0.0) m;
+                    part space : FrontSpace;
+                }
+                part cameraControllerLoc: Location {
+                    :>> relativePosition = (1.0, 0.5, -0.2) m;
+                    part space : CabinSpace;
+                }
+                part radarAndLidarControllerLoc: Location {
+                    :>> relativePosition = (0.0, 0.3, -0.2) m;
+                    part space : CabinSpace;
+                }
+            }
+            
+            package Sensors {
+            
+                part def Sensor :> Hardware::Hardware_Base {
+                    attribute measuredQuantityType: String;
+                    attribute dataLoad: StorageCapacityValue {:>> unit ="kB"; :>> range="0..100";} 
+                }
+            
+                part def Camera :> Sensor;
+                part def Radar :> Sensor;
+                
+                part frontCamera: Camera;
+                part lidar: Sensor;
+                part longRangeRadar: Radar;
+            }
+            
+            package CU {
+            
+                part def ControlUnit :> Hardware::Hardware_Base {
+                    attribute severity: DimensionOneValue = 3.0 [1];
+                    attribute exposure: DimensionOneValue = 4.0 [1];
+                    attribute controllability: DimensionOneValue = 3.0 [1];
+                    
+                    attribute fclk: FrequencyValue {:>> unit= "MHz"; :>> range= "0.1 .. 10000";} 
+                    attribute ipc:  IntegerInRange {:>> range default= "1..10000";}
+                    attribute opsPerInstruction: IntegerInRange {:>> range = "1..10000";}
+                    attribute FLOPS: FrequencyValue =  fclk * ToReal(opsPerInstruction) * ToReal(ipc) ;
+                }
+            
+                part cameraController: ControlUnit;
+                part radarAndLidarController: ControlUnit;
+            }
+            
+            package Network {
+                
+                part def WireType {
+                    attribute specificWeight: ScalarQuantityValue {:>> unit ="g/m"; :>> range default ="1..100";}
+                    attribute costsPerMeter: ScalarQuantityValue {:>> unit ="EUR/m"; :>> range default ="0.0..1.0";}
+                    attribute transmissionRate: BitRateValue {:>> unit ="Mbit/s"; :>> range default = "0.0001 .. 10000.0";}
+                    attribute dataPerFrame: StorageCapacityValue {:>> unit ="B"; :>> range  default ="0..10000";}
+                    attribute overheadPerFrame: StorageCapacityValue {:>> unit ="B"; :>> range default ="0..1000";}
+                    attribute arbitration: String;
+                }
+            
+                part def Ethernet :> WireType {
+                    attribute specificWeight: ScalarQuantityValue {:>> unit ="g/m"; :>> range default ="3..40";}
+                    attribute costsPerMeter: ScalarQuantityValue {:>> unit ="EUR/m"; :>> range default ="0.02..0.3";} 
+                    attribute transmissionRate: BitRateValue {:>> unit ="Mbit/s"; :>> range default ="0.1..10000";}
+                    attribute dataPerFrame: StorageCapacityValue {:>> unit ="B"; :>> range default ="46..1500";}
+                    attribute overheadPerFrame: StorageCapacityValue {:>> unit ="B"; :>> range default ="30..30";} 
+                }
+            
+                part def CANFD :> WireType {
+                    attribute specificWeight: ScalarQuantityValue {:>> unit ="g/m"; :>> range="25..25";}
+                    attribute transmissionRate: BitRateValue {:>> unit ="kB/s"; :>> range="80.0";}
+                    attribute costsPerMeter: ScalarQuantityValue {:>> unit ="EUR/m"; :>> range="0.7";}
+                    attribute dataPerFrame: StorageCapacityValue {:>> unit ="B"; :>> range="1..64";}
+                    attribute overheadPerFrame: StorageCapacityValue {:>> unit ="B"; :>> range="61..87";}
+                }
+            
+                part def Wire {
+                    part source: Hardware::Hardware_Base;
+                    part target: Hardware::Hardware_Base;
+                    part sourceLocation : LocationsAndSpaces::Location;
+                    part targetLocation : LocationsAndSpaces::Location;
+                    attribute pathLength: LengthValue = cityBlockDistance(sourceLocation::position, targetLocation::position) * 1.4;
+                    attribute resistance: ResistanceValue {:>> unit = "Ohm";}
+                }
+            }
+        """
+        )
+        solver.propagate()
+        assertNoIssues()
     }
 }

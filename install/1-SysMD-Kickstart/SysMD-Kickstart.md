@@ -28,7 +28,7 @@ The figure below gives an overview of the SysMD Notebook User Interface (UI).
 SysMD Notebook consists of 
 - The left pane in which **projects** are selected and edited. 
 - The main window, in which the **files** of a project are edited; they are each displayed as a sequence of **cells**.
-- Each cell can be of different kind; depending of the kind, a renderer or editor is chosen. 
+- Each cell can be of different kind; depending on the kind, a renderer or editor is chosen. 
 - In the right pane, **issues** and **errors** are listed. 
 
 ## Projects
@@ -84,7 +84,7 @@ In the project folder are
 - a file `.meta.json` that holds an index of all files that belong to a project. 
 - additional files if added. 
 
-- Note that deleting a file will not remove it form the computer, it will only be removed from the index. 
+- Note that deleting a file will not remove it from the computer, it will only be removed from the index. 
 
 ### Adding and renaming files
 In SysMD Notebook, all files of a project are opened and shown as tabs in the main window.

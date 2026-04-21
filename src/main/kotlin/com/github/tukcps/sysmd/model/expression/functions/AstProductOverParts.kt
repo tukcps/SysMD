@@ -112,6 +112,13 @@ internal class AstProductOverParts(
     }
 
     override fun getDependentPropertyStrings(): Set<String> {
+        // If generatedAst is already built (after initialize()), use the resolved fully-qualified
+        // leaf paths so the topological sort in Solver.initVariables() can detect the real
+        // dependencies instead of the bare property name that getSubclassDependencyStrings() returns.
+        val fromGeneratedAst = generatedAst?.getLeaves()
+            ?.mapNotNull { it.resolvedName }
+            ?.toSet()
+        if (!fromGeneratedAst.isNullOrEmpty()) return fromGeneratedAst
         return getSubclassDependencyStrings(namespace, propertyAst.first())
     }
 
