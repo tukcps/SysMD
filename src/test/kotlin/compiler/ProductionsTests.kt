@@ -7,9 +7,9 @@ import com.github.tukcps.sysmd.compiler.parser.kerml.Identification
 import com.github.tukcps.sysmd.compiler.parser.kerml.NamespaceBodyElement
 import com.github.tukcps.sysmd.compiler.parser.kerml.legacy.Unit
 import com.github.tukcps.sysmd.compiler.parser.sysmd.ElementList
+import com.github.tukcps.sysmd.compiler.parser.sysmd.Triple
 import com.github.tukcps.sysmd.compiler.parser.sysmlv2.RequirementDefinition
 import com.github.tukcps.sysmd.compiler.parser.sysmlv2.RequirementUsage
-import com.github.tukcps.sysmd.compiler.parser.sysmd.Triple
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.COMMA
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.EOF
 import com.github.tukcps.sysmd.services.session.SessionImplementation
@@ -41,19 +41,19 @@ class ProductionsTests {
     }
 
     /**
-     * The identification statement following SysMLv2 textual is tested here.
+     * The identification statement following SysML v2 textual is tested here.
      */
     @Test fun identificationTest()  = kerMLParser().run {
         input = """
                 name
-                < idname > 'name in quotes' 
+                < idName > 'name in quotes' 
                 < 'id in quotes' > 
                 """.trimIndent()
         var identification = Identification()
         assertEquals("name", identification.name)
         identification=Identification()
         assertEquals("name in quotes", identification.name)
-        assertEquals("idname", identification.shortName)
+        assertEquals("idName", identification.shortName)
         identification=Identification()
         assertEquals("id in quotes", identification.shortName)
     }

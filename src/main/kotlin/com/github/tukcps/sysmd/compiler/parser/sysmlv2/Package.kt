@@ -76,6 +76,7 @@ fun SysMLv2.PackageBodyElement() {
  *          | MetadataDefinition | ExtendedDefinition
  */
 fun SysMLv2.DefinitionElement() {
+    OccurrenceDefinitionPrefix()
     when (token.kind) {
         PACKAGE                     -> Package()
         LIBRARY                     -> Package()
@@ -90,7 +91,7 @@ fun SysMLv2.DefinitionElement() {
         PART if DEF.isNext()        -> PartDefinition()
         CONNECTION if DEF.isNext()  -> ConnectionDefinition()
         ALLOCATION if DEF.isNext()  -> AllocationDefinition()
-        FLOW                        -> Unsupported("Flows are not yet supported")
+        FLOW if DEF.isNext()        -> FlowDefinition()
         INTERFACE if DEF.isNext()   -> InterfaceDefinition()
         PORT if DEF.isNext()        -> PortDefinition()
         ACTION if DEF.isNext()      -> ActionDefinition()
@@ -98,6 +99,7 @@ fun SysMLv2.DefinitionElement() {
         STATE if DEF.isNext()       -> StateDefinition()
         CONSTRAINT if DEF.isNext()  -> ConstraintDefinition()
         REQUIREMENT if DEF.isNext() -> RequirementDefinition()
+        VERIFICATION if DEF.isNext() -> VerificationCaseDefinition()
         VIEW if DEF.isNext()        -> Unsupported("Views are not yet supported")
         VIEWPOINT if DEF.isNext()   -> Unsupported("Viewpoints are not yet supported")
         METADATA if DEF.isNext()    -> MetadataDefinition()
@@ -105,7 +107,7 @@ fun SysMLv2.DefinitionElement() {
     }
 }
 fun SysMLv2.definitionElementStarts() = (nextToken.kind == DEF ) or match(INDIVIDUAL, OCCURRENCE, DEF) or
-    (token.kind in setOf(PACKAGE, LIBRARY, DEPENDENCY)) or ( token.kind in annotatingElementStart)
+    (token.kind in setOf(PACKAGE, LIBRARY, DEPENDENCY)) or ( token.kind in annotatingElementStart) or OccurrenceDefinitionPrefixStarts()
 
 
 /**
@@ -119,15 +121,17 @@ fun SysMLv2.NonOccurrenceUsageElement() {
     UsagePrefix()
     when {
         // DefaultReferenceUsage implemented by ReferenceUsage
-        referenceUsageStarts() -> ReferenceUsage()
-        ATTRIBUTE.starts()     -> AttributeUsage()
-        enumerationUsageStarts()-> EnumerationUsage()
-        else                   -> handleSyntaxError("Invalid non-occurrence usage")
+        referenceUsageStarts()          -> ReferenceUsage()
+        ATTRIBUTE.starts()              -> AttributeUsage()
+        enumerationUsageStarts()        -> EnumerationUsage()
+        BindingConnectorAsUsageStarts() -> BindingConnectorAsUsage()
+        else                            -> handleSyntaxError("Invalid non-occurrence usage element")
     }
 }
 
 fun SysMLv2.nonOccurrenceUsageStarts() = (token.kind in (mutableSetOf(ATTRIBUTE) + usagePrefixStart) )
         || referenceUsageStarts()
+        || BindingConnectorAsUsageStarts()
 
 /**
  *      BehaviorUsageElement = ActionUsage | CalculationUsage | StateUsage
@@ -146,17 +150,18 @@ fun SysMLv2.BehaviorUsageElement() {
         CONCERN     -> Unsupported("Concern usage not yet supported")
         CASE        -> Unsupported("Case usage not yet supported")
         ANALYSIS    -> Unsupported("Analysis case usage not yet supported")
-        VERIFICATION-> Unsupported("Verification case usage not yet supported")
+        VERIFICATION-> VerificationCaseUsage()
         VIEWPOINT   -> Unsupported("Viewpoint not yet supported")
         PERFORM     -> PerformActionUsage()
         ASSERT if match(ASSERT, SATISFY) -> SatisfyRequirementUsage()
-        ASSERT if match(ASSERT, NOT,SATISFY) -> SatisfyRequirementUsage()
+        ASSERT if match(ASSERT, NOT, SATISFY) -> SatisfyRequirementUsage()
         SATISFY, NOT -> SatisfyRequirementUsage()
         ASSERT      -> AssertConstraintUsage()
         else        -> handleSyntaxError("Unknown behavior usage element")
     }
 }
 val behaviorUsageElementStart = setOf(ACTION, CALC, STATE, CONSTRAINT, CONCERN, CASE, ANALYSIS, VERIFICATION, VIEWPOINT, REQUIREMENT, PERFORM, ASSERT, SATISFY, ASSUME, NOT)
+fun SysMLv2.behaviorUsageElementStarts() = token.kind in behaviorUsageElementStart
 
 /**
  *      StructureUsageElement = OccurrenceUsage | IndividualUsage | PortionUsage
@@ -181,26 +186,29 @@ fun SysMLv2.StructureUsageElement() {
         in connectionUsageStart -> ConnectionUsage()
         INTERFACE   -> InterfaceUsage()
         in allocationUsageStart -> AllocationUsage()
-        FLOW        -> FlowConnectionUsage()
+        FLOW        -> FlowUsage()
         SUCCESSION  -> Unsupported("Succession flow not supported")
         MESSAGE     -> Unsupported("Messages not supported")
         else        -> handleSyntaxError("Unknown structure usage element")
     }
 }
-val structureUsageElementStart = setOf(
-    OCCURRENCE, INDIVIDUAL, TIMESLICE, SNAPSHOT, EVENT, ITEM, PART, PORT, INTERFACE, FLOW, SUCCESSION, MESSAGE)+allocationUsageStart+connectionUsageStart
+fun SysMLv2.structureUsageElementStarts(): Boolean = (token.kind in setOf(
+    OCCURRENCE, INDIVIDUAL, TIMESLICE, SNAPSHOT, EVENT, ITEM, PART, VIEW, RENDERING, PORT, INTERFACE, FLOW, SUCCESSION, MESSAGE) +
+        allocationUsageStart + connectionUsageStart) ||
+        (token.kind in FEATURE_PREFIX_START && nextToken.kind in setOf( OCCURRENCE, INDIVIDUAL, TIMESLICE, SNAPSHOT, EVENT, ITEM, PART, VIEW, RENDERING, PORT, INTERFACE, FLOW, SUCCESSION, MESSAGE) +
+                allocationUsageStart + connectionUsageStart)
 
 /**
  *      OccurrenceUsageElement = StructureUsageElement | BehaviorUsageElement
  */
 fun SysMLv2.OccurrenceUsageElement() {
-    when(token.kind) {
-        in structureUsageElementStart -> { StructureUsageElement() }
-        in behaviorUsageElementStart  -> { BehaviorUsageElement() }
+    when {
+        structureUsageElementStarts() -> { StructureUsageElement() }
+        behaviorUsageElementStart.starts()  -> { BehaviorUsageElement() }
         else -> handleSyntaxError("Unknown occurrence usage element")
     }
 }
-val occurrenceUsageStart = structureUsageElementStart + behaviorUsageElementStart
+fun SysMLv2.occurrenceUsageStarts() = structureUsageElementStarts() || token.kind in behaviorUsageElementStart
 
 /**
  *      UsageElement = NonOccurrenceUsageElement | OccurrenceUsageElement
@@ -208,13 +216,13 @@ val occurrenceUsageStart = structureUsageElementStart + behaviorUsageElementStar
 fun SysMLv2.UsageElement() {
     UsagePrefix()
     when {
-        nonOccurrenceUsageStarts()      -> { NonOccurrenceUsageElement() }
-        occurrenceUsageStart.starts()   -> { OccurrenceUsageElement() }
+        nonOccurrenceUsageStarts() -> { NonOccurrenceUsageElement() }
+        occurrenceUsageStarts()    -> { OccurrenceUsageElement() }
         else -> { throwSyntaxError("Unknown usage element") }
     }
 }
 fun SysMLv2.usageElementStarts() = nonOccurrenceUsageStarts() ||
-        occurrenceUsageStart.starts() || usagePrefixStart.starts()
+        occurrenceUsageStarts() || usagePrefixStart.starts()
 
 /**
  *      VariantUsageElement = VariantReference | ReferenceUsage | AttributeUsage
@@ -226,4 +234,13 @@ fun SysMLv2.usageElementStarts() = nonOccurrenceUsageStarts() ||
  */
 fun SysMLv2.VariantUsageElement() {
     Unsupported()
+}
+
+
+/**
+ *      DefaultReferenceUsage : ReferenceUsage = RefPrefix Usage
+ */
+fun SysMLv2.DefaultReferenceUsage() {
+    RefPrefix()
+    Usage()
 }

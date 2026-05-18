@@ -41,7 +41,7 @@ fun SysMLv2.StateDefinition() = TypeActions<Type>(semantics, ::ClassImplementati
     STATE.consume()
     DEF.consume()
     DefinitionDeclaration()
-    DefinitionBody()
+    StateDefBody()
 }
 
 

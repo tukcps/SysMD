@@ -5,7 +5,6 @@ import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Ignore
 import kotlin.test.Test
-import kotlin.test.assertTrue
 
 class StateTests {
 

@@ -15,12 +15,12 @@ import com.github.tukcps.sysmd.model.sysml.implementation.ConnectionUsageImpleme
 /**
  * 8.2.2.13.4 Messages and Flow Connections
  *
- *      FlowConnectionDefinition : OccurrenceDefinitionPrefix 'flow' 'def' Definition
+ *      FlowDefinition : OccurrenceDefinitionPrefix 'flow' 'def' Definition
  */
-fun SysMLv2.FlowConnectionDefinition() {
+fun SysMLv2.FlowDefinition() {
     FLOW.consume()
     DEF.consume()
-    // Definition()
+    Definition()
 }
 
 /**
@@ -61,26 +61,31 @@ fun SysMLv2.MessageDeclaration() {
  * MessageEventMember : ParameterMembership = MessageEvent
  *
  * MessageEvent : EventOccurrenceUsage = ownedRelationship += OwnedReferenceSubsetting
- *
- *      FlowConnectionUsage = OccurrenceUsagePrefix 'flow' FlowConnectionDeclaration DefinitionBody
  */
-fun SysMLv2.FlowConnectionUsage() = ConnectionUsageActions<ConnectionUsage>(semantics, ::ConnectionUsageImplementation, "Connections::Connection").parse {
+
+/**
+ *      FlowUsage = OccurrenceUsagePrefix 'flow' FlowDeclaration DefinitionBody
+ */
+fun SysMLv2.FlowUsage() = ConnectionUsageActions<ConnectionUsage>(semantics, ::ConnectionUsageImplementation, "Connections::Connection").parse {
     FLOW.consume()
-    FlowConnectionDeclaration()
+    FlowDeclaration()
     DefinitionBody()
 }
 
 /**
  *      SuccessionFlowConnectionUsage = OccurrenceUsagePrefix 'succession' 'flow' FlowConnectionDeclaration DefinitionBody
+ */
+
+/**
  *      FlowConnectionDeclaration : FlowConnectionUsage = UsageDeclaration ValuePart?
  *          ( 'of' ownedRelationship += FlowPayloadFeatureMember )?
  *          ( 'from' ownedRelationship += FlowEndMember 'to' ownedRelationship += FlowEndMember )?
  *          | ownedRelationship += FlowEndMember 'to' ownedRelationship += FlowEndMember
  */
-fun SysMLv2.FlowConnectionDeclaration() {
+fun SysMLv2.FlowDeclaration() {
 
     when {
-        token.kind in setOf(NAME_LIT, LCBRACE) && nextToken.kind !in setOf(DPDP, DOT) -> {
+        token.kind in setOf(NAME_LIT, LCBRACE, OF, FROM) + valuePartStart && nextToken.kind !in setOf(DPDP, DOT) -> {
             UsageDeclaration()
             valuePartStart.optional {
                 ValuePart()

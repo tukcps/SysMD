@@ -4,7 +4,6 @@ import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.Function
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.SpecializationImplementation
-import com.github.tukcps.sysmd.services.check.checkOwnership
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.session.loadLibrary
@@ -885,13 +884,11 @@ class IssuesAndRegressions {
 
     @Test @Ignore //TODO: Problem in Parser: After or only Product possible, but EE is not in Product
     fun booleanExpression() = testSession {
-        loadSysMLv2(
-            input = """
+        loadSysMLv2(input = """
             attribute c: ScalarValues::Integer = 1;
             attribute b: ScalarValues::Integer = 2;
             attribute a: ScalarValues::Boolean = c == 0 or b == 0.
-            """.trimIndent()
-        )
+        """)
         solver.propagate()
         assertNoIssues()
     }
@@ -901,8 +898,7 @@ class IssuesAndRegressions {
      */
     @Test @Ignore
     fun iddTimesLoopIssue267() = testSession("ScalarValues") {
-        loadKerML(
-            input = """
+        loadKerML("""
             package safety {
                 function calcASIL{
                     in feature severity : Ranges::IntegerInRange {:>> range = "0..3";}
@@ -917,8 +913,7 @@ class IssuesAndRegressions {
                 feature C: ScalarValues::Integer = 2;
                 feature ASIL: ScalarValues::Integer = calcASIL(S,E,C).
             }
-            """.trimIndent(), catchExceptions = true
-        )
+        """)
         solver.propagate()
         assertNoIssues()
     }

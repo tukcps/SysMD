@@ -217,6 +217,10 @@ open class ActionsContext(
      * @param referencedFeature the referencing feature that can also be unresolved
      */
     fun addReferenceSubsetting(referencedFeature: Feature) {
+        if (element<Namespace>() !is Feature) {
+            model.status.info("Warning: could not add reference-subsetting to ${referencedFeature.qualifiedName}")
+            return
+        }
         val owner = element<Feature>()
         val reference = ReferenceSubsettingImplementation(
             referencingFeature = owner, referencedFeature = referencedFeature

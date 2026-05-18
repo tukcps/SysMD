@@ -96,9 +96,9 @@ private fun Type.addInheritedFeaturesFromGeneral() {
             }
         }
 
-        // Clone the features from redefined class, except multiplicity and ValueDomain
+        // Clone the features from redefined class, except multiplicity and ValueDomain (range, unit)
         // Clone stops cloning if in the model a feature already exists.
-        feature.redefining!!.features().filter { it !is Multiplicity }.forEach {
+        feature.redefining!!.features().filter { it !is Multiplicity && it.name != "range" && it.name != "unit" }.forEach {
             it.deepCloneWithInheritedFeature(feature)
         }
 
@@ -124,7 +124,7 @@ private fun Type.addInheritedFeaturesFromGeneral() {
             (feature.redefining!!.resolveLocal("range")!!.memberElement as? Feature)?.deepCloneWithInheritedFeature(feature)
         }
 
-        if (feature.redefining?.resolveLocal("unit") != null && feature.resolveLocal("unit") != null) {
+        if (feature.redefining?.resolveLocal("unit") != null && feature.resolveLocal("unit") == null) {
             (feature.redefining!!.resolveLocal("unit")!!.memberElement as? Feature)?.deepCloneWithInheritedFeature(feature)
         }
 

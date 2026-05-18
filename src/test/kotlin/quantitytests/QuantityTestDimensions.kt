@@ -519,6 +519,20 @@ class QuantityTestDimensions {
     }
 
     @Test
+    fun flopsFrequencyTest() = testSession("ISQ") {
+        loadKerML("""
+            feature operations: ISQ::DimensionOneValue = 1000.0 {:>> unit = "FLOPs";}
+            feature time: ISQ::DurationValue = 1.0 [s];
+            feature flops: ISQ::FrequencyValue = operations/time {:>> unit = "FLOPS";}
+            """)
+        solver.propagate()
+        assertNoIssues()
+        assertEquals(1000.0, global.resolveVar("flops")!!.min(), 0.0001)
+        assertEquals("1 / s", global.resolveVar("flops")!!.vectorQuantity.unit.toString())
+        assertEquals("Frequency", global.resolveVar("flops")!!.vectorQuantity.getDomain())
+    }
+
+    @Test
     fun illuminanceTest() = testSession("ISQ") {
         loadKerML(
             """
@@ -813,6 +827,19 @@ class QuantityTestDimensions {
         assertEquals("DimensionOne", global.resolveVar("E")!!.vectorQuantity.getDomain())
         assertEquals("DimensionOne", global.resolveVar("E2")!!.vectorQuantity.getDomain())
         assertEquals("DimensionOne", global.resolveVar("f")!!.vectorQuantity.getDomain())
+    }
+
+    @Test
+    fun flopsTest() = testSession("ISQ") {
+        loadKerML("""
+            feature operations: ScalarValues::Real = 1000.0;
+            feature flops: Quantities::ScalarQuantityValue = operations {:>> unit = "FLOPs";}
+            """)
+        solver.propagate()
+        assertNoIssues()
+        assertEquals(1000.0, global.resolveVar("flops")!!.min(), 0.0001)
+        assertEquals("1", global.resolveVar("flops")!!.vectorQuantity.unit.toString())
+        assertEquals("DimensionOne", global.resolveVar("flops")!!.vectorQuantity.getDomain())
     }
 
     @Test

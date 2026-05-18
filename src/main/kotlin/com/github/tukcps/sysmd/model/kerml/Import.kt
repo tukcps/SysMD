@@ -25,7 +25,7 @@ interface Import: Relationship {
     var visibility: VisibilityKind
 
     // Whether to recursively import Memberships from visible, owned sub-Namespaces.
-    var isRecursive: Boolean              // False by default in SysMLv2
+    var isRecursive: Boolean              // False by default in SysML v2
     var isImportAll: Boolean
 
     val importOwningNamespace: Namespace?

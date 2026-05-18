@@ -90,7 +90,6 @@ class ImportTests {
         assertNoIssues()
         val imp = global.ownedImport.firstOrNull()
         assertEquals(1, global.importedMemberships().size)
-        val g = global.visibleMemberships()
         assertEquals(3, global.visibleMemberships().size) // Including membership of Anything!
         assertEquals(false, imp?.isRecursive)
         assertEquals(false, imp?.isImportAll)

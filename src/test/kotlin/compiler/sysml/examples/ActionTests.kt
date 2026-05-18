@@ -149,7 +149,7 @@ class ActionTests {
             }
             
         }
-        """.trimIndent())
+        """)
         assertNoIssues()
     }
 

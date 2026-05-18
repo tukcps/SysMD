@@ -13,48 +13,49 @@ For Quantities without a domain, the following types from the **Quantities** pac
 - '3DVectorQuantityValue'
 
 # Basic units
-| Domain                       | Unit                     |    Symbol     |
-|:-----------------------------|:-------------------------|:-------------:|
-| **AmountOfMoneyValue**       | Euro                     |      EUR      |
-|                              | US Dollar                |      USD      |
-|                              | Pound                    |      GBP      |
-| **AreaValue**                | Square Meter             |      m^2      |
-|                              | Acre                     |      ac       |
-| **BitRateValue**             | Bits per Second          |  bps or b/s   |
-| **MassDensityValue**         | Kilogram per Cubic Meter |    kg/m^3     |
-| **DimensionOneValue**        | Percent                  |       %       |
-|                              | Decibel                  |      dB       |
-|                              | Degree                   |   ° or deg    |
-|                              | Radian                   |      rad      |
-|                              | Pi                       | Pi or pi or π |
-| **LengthValue**              | Meter                    |       m       |
-|                              | Inch                     |     inch      |
-|                              | Feet                     |      ft       |
-|                              | Yard                     |      yd       |
-|                              | Mile                     |      mi       |
-|                              | Nautical mile            |      nmi      |
-| **MassValue**                | Kilogram                 |      kg       |
-|                              | Tonne (metric ton)       |       t       |
-|                              | Short Ton                |      tn       |
-|                              | Grain                    |      gr       |
-|                              | Carat                    |      ct       |
-|                              | Ounce                    |      oz       |
-|                              | Pound                    |      lb       |
-| **MassFlowValue**            | Kilogram per Second      |     kg/s      |
-| **SolidAngularMeasureValue** | Steradian                |      sr       |
-| **StorageCapacityValue**     | Bit                      |  bit or Bit   |
-|                              | Byte                     |   B or Byte   |
-| **DurationValue**            | Second                   |       s       |
-|                              | Minute                   |      min      |
-|                              | Hour                     |       h       |
-|                              | Day                      |       d       |
-|                              | Year (= 365 days)        | a or yr or y  |
-| **VolumeValue**              | Cubic Meter              |      m^3      |
-|                              | Litre                    |       l       |
-|                              | Pint                     |      pt       |
-|                              | Quart                    |      qt       |
-|                              | Gallon                   |      gal      |
-|                              | Barrel                   |      bbl      |
+| Domain                       | Unit                      |    Symbol     |
+|:-----------------------------|:--------------------------|:-------------:|
+| **AmountOfMoneyValue**       | Euro                      |      EUR      |
+|                              | US Dollar                 |      USD      |
+|                              | Pound                     |      GBP      |
+| **AreaValue**                | Square Meter              |      m^2      |
+|                              | Acre                      |      ac       |
+| **BitRateValue**             | Bits per Second           |  bps or b/s   |
+| **MassDensityValue**         | Kilogram per Cubic Meter  |    kg/m^3     |
+| **DimensionOneValue**        | Percent                   |       %       |
+|                              | Decibel                   |      dB       |
+|                              | Degree                    |   ° or deg    |
+|                              | Radian                    |      rad      |
+|                              | Pi                        | Pi or pi or π |
+|                              | Floating point operations |     FLOPs     |
+| **LengthValue**              | Meter                     |       m       |
+|                              | Inch                      |     inch      |
+|                              | Feet                      |      ft       |
+|                              | Yard                      |      yd       |
+|                              | Mile                      |      mi       |
+|                              | Nautical mile             |      nmi      |
+| **MassValue**                | Kilogram                  |      kg       |
+|                              | Tonne (metric ton)        |       t       |
+|                              | Short Ton                 |      tn       |
+|                              | Grain                     |      gr       |
+|                              | Carat                     |      ct       |
+|                              | Ounce                     |      oz       |
+|                              | Pound                     |      lb       |
+| **MassFlowValue**            | Kilogram per Second       |     kg/s      |
+| **SolidAngularMeasureValue** | Steradian                 |      sr       |
+| **StorageCapacityValue**     | Bit                       |  bit or Bit   |
+|                              | Byte                      |   B or Byte   |
+| **DurationValue**            | Second                    |       s       |
+|                              | Minute                    |      min      |
+|                              | Hour                      |       h       |
+|                              | Day                       |       d       |
+|                              | Year (= 365 days)         | a or yr or y  |
+| **VolumeValue**              | Cubic Meter               |      m^3      |
+|                              | Litre                     |       l       |
+|                              | Pint                      |      pt       |
+|                              | Quart                     |      qt       |
+|                              | Gallon                    |      gal      |
+|                              | Barrel                    |      bbl      |
 
 # Atomic units
 
@@ -76,6 +77,7 @@ For Quantities without a domain, the following types from the **Quantities** pac
 | **EnergyDensityValue**      | Joule per cubic Meter     |   J/m^3    |
 | **ForceValue**              | Newton                    |     N      |
 | **FrequencyValue**          | Hertz                     |     Hz     |
+|                             | Floating point operations per second | FLOPS |
 | **KinematicViscosityValue** | Stokes                    |     St     |
 | **MomentOfForceValue**      | Newton Meter              |     Nm     |
 | **MomentOfInertiaValue**    | Kilogram Meter squared    |   kg*m^2   |

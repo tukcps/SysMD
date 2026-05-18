@@ -2,10 +2,10 @@
 
 package com.github.tukcps.sysmd.compiler
 
-import com.github.tukcps.sysmd.compiler.parser.kerml.legacy.ConstInt
-import com.github.tukcps.sysmd.compiler.parser.kerml.legacy.ConstReal
 import com.github.tukcps.sysmd.compiler.parser.kerml.NamespaceBodyElement
 import com.github.tukcps.sysmd.compiler.parser.kerml.QualifiedName
+import com.github.tukcps.sysmd.compiler.parser.kerml.legacy.ConstInt
+import com.github.tukcps.sysmd.compiler.parser.kerml.legacy.ConstReal
 import com.github.tukcps.sysmd.compiler.parser.util.ParserProductionRules
 import com.github.tukcps.sysmd.compiler.scanner.Token
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
@@ -22,7 +22,7 @@ import io.github.tukcps.aadd.IDD
 
 
 /**
- * This class provides a parser for the language SysMLv2 and SysMD.
+ * This class provides a parser for the language SysML v2 and SysMD.
  * The parser uses the recursive descent method.
  * It inherits some infrastructure from KParser, in particular DSL functions
  * for modeling production rules (lambda parameters for functions), with the help of current and lookahead

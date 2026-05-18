@@ -3,13 +3,12 @@ package compiler.sysml.examples.modelstests
 import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
-import kotlin.test.Ignore
 import kotlin.test.Test
 
 
 class ActionTest {
 
-    @Test @Ignore
+    @Test // @Ignore
     fun testAction() = testSession("States", "Interfaces", "Connections",
         "Attributes", "Parts", "Items", "Occurrences") {
         loadSysMLv2("""
@@ -38,10 +37,8 @@ class ActionTest {
                         action shoot : Shoot {
                             in item; 
                             out item picture = takePicture::picture;
-                        }
-                        
+                        }   
                     }
-                    
                 }           
         """)
         assertNoIssues()

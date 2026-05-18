@@ -2,7 +2,7 @@
 # This is the Gradle build system for JVM applications
 # https://gradle.org/
 # https://github.com/gradle/gradle
-image: gradle:8.12.0-jdk21
+image: gradle:8.14.0-jdk21
 
 stages:
   - build

@@ -74,7 +74,7 @@ class RequirementTests {
         part part1 : Part1 {
             satisfy requirement1;
         }
-        """.trimIndent())
+        """)
         assertNoIssues()
     }
 }

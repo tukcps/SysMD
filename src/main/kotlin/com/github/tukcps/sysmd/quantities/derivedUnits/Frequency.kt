@@ -14,6 +14,7 @@ open class Frequency(name: String, symbol: String, prefix: Prefix, convFac: Doub
      * generate UnitObjects and add them to the UnitList
      */
     object Hertz : Frequency("hertz", "Hz", NoPrefix, 1.0)
+    object FLOPS : Frequency("floating point operations per second", "FLOPS", NoPrefix, 1.0)
 
     override fun copy(): Frequency {
         return Frequency(name, symbol, prefix, convFac, exponent, isLogarithmic)

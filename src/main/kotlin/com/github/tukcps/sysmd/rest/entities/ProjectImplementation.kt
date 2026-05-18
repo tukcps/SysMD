@@ -6,7 +6,6 @@ import io.github.tukcps.sysmlv2.api.entities.Commit
 import io.github.tukcps.sysmlv2.api.entities.Project
 import io.github.tukcps.sysmlv2.api.entities.responseModels.ProjectResponse
 import java.time.OffsetDateTime
-import java.time.ZonedDateTime
 import java.util.*
 
 class ProjectImplementation(

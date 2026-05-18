@@ -92,6 +92,7 @@ object ConversionTables {
         //Derived units of SI System
         "sr" to SolidAngularMeasure.Steradian,
         "Hz" to Frequency.Hertz,
+        "FLOPS" to Frequency.FLOPS,
         "N" to Force.Newton,
         "Pa" to Pressure.Pascal,
         "bar" to Pressure.Bar,
@@ -116,6 +117,7 @@ object ConversionTables {
         "Gy" to AbsorbedDose.Gray,
         "Sv" to DoseEquivalent.Sievert,
         "dB" to DimensionOne.Decibel,
+        "FLOPs" to DimensionOne.FLOPs,
         "St" to KinematicViscosity.Stokes,
         "sb" to Luminance.Stilb,
         "%" to DimensionOne.Percent,

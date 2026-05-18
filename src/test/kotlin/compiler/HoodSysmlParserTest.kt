@@ -2,7 +2,6 @@ package compiler
 
 import com.github.tukcps.sysmd.compiler.HoodSysmlParser
 import com.github.tukcps.sysmd.model.kerml.Element
-import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Package
 import com.github.tukcps.sysmd.model.kerml.getOwnedElementsOfType
 import com.github.tukcps.sysmd.model.sysml.PartUsage

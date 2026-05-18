@@ -18,6 +18,7 @@ open class DimensionOne(name: String, symbol: String, prefix: Prefix, convFac: D
     object Degree : DimensionOne("degree","°",NoPrefix,2*kotlin.math.PI/360)
     object Percent : DimensionOne("percent", "%", NoPrefix, 0.01)
     object Decibel : DimensionOne("decibel", "dB", NoPrefix, 1.0, isLogarithmic = true)
+    object FLOPs : DimensionOne("floating point operations", "FLOPs", NoPrefix, 1.0)
 
     override fun copy(): DimensionOne {
         return DimensionOne(name, symbol, prefix, convFac, isLogarithmic)

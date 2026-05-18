@@ -17,10 +17,10 @@ import org.springframework.context.annotation.Configuration
  * @author Khushnood Adil Rafique, Christoph Grimm
  */
 @Configuration
-open class OpenAPIConfig {
+class OpenAPIConfig {
     // The tags seem to be considered only partially. No idea, why some work, others not.
     @Bean
-    open fun sysMDOpenAPI(): OpenAPI {
+    fun sysMDOpenAPI(): OpenAPI {
         return OpenAPI().components(Components())
             .info(
                 Info().title("SysMD REST API")

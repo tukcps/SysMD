@@ -66,7 +66,7 @@ fun SysMLv2.CalculationBody() {
     alternatives {
         SEMICOLON then { }
         LCURBRACE then {
-            noOrMore({ CalculationbodyItemStarts() } ) {
+            noOrMore({ CalculationBodyItemStarts() } ) {
                 CalculationBodyItem()
             }
             optional ({token.kind != RCURBRACE}) {
@@ -93,7 +93,7 @@ fun SysMLv2.CalculationBodyItem() {
         else -> handleSyntaxError("Expected Calculation body item, but read '$token'")
     }
 }
-fun SysMLv2.CalculationbodyItemStarts(): Boolean = actionBodyItemStarts() || (token.kind == RETURN)
+fun SysMLv2.CalculationBodyItemStarts(): Boolean = actionBodyItemStarts() || (token.kind == RETURN)
 
 /**
  *      ResultExpressionMember = MemberPrefix?  OwnedExpression

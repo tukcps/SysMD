@@ -115,11 +115,11 @@ fun KerML.OwnedRelatedElement() {
  *     MemberPrefix :- ( 'public' | "private" | "protected" ) "abstract"?
  */
 fun KerML.MemberPrefix() {
-    alternatives {
-        PUBLIC    starts { PUBLIC.consume();    semantics.visibility = Import.VisibilityKind.Public }
-        PRIVATE   starts { PRIVATE.consume();   semantics.visibility = Import.VisibilityKind.Private }
-        PROTECTED starts { PROTECTED.consume(); semantics.visibility = Import.VisibilityKind.Protected }
-        others           {  }
+    when(token.kind) {
+        PUBLIC    -> { PUBLIC.consume();    semantics.visibility = Import.VisibilityKind.Public }
+        PRIVATE   -> { PRIVATE.consume();   semantics.visibility = Import.VisibilityKind.Private }
+        PROTECTED -> { PROTECTED.consume(); semantics.visibility = Import.VisibilityKind.Protected }
+        else      -> {  }
     }
     ABSTRACT.optional    { semantics.prefixes.add(ABSTRACT) }
     // INDIVIDUAL.optional  { semantics.prefixes.add(INDIVIDUAL) }

@@ -132,6 +132,7 @@ internal class AstProductOverParts(
  * Function that generates an AST for a Product over a composition.
  * The function considers all owned elements and searches in these elements for propertyName.
  * Then, it builds an AST that computes the Product.
+ * The tree is built as a balanced binary tree directly during construction.
  */
 fun Session.initProductParts(
     element: Namespace,
@@ -139,8 +140,9 @@ fun Session.initProductParts(
     transitive: Boolean,
     isReal: Boolean = true
 ): AstNode {
-    var ast: AstNode? = null
+    val operands = mutableListOf<AstNode>()
     var isRealProduct = isReal //indicates if the property is a real or an int
+    
     for (elementIterator in element.getOwnedElementsOfType<Feature>().filterNot { it is Variable || it.variable is Variable }) {
         var newAstNode: AstNode = propertyAST.clone()
         for (leaf in newAstNode.getLeaves().filter { it.qualifiedName != null }) {
@@ -169,26 +171,25 @@ fun Session.initProductParts(
                 ) else null //convert int node to real
             else
                 multiplicityLeaf // is int
-            ast = if (ast == null) {
-                if (multiplicityConverted != null) AstPower(
-                    this,
-                    arrayListOf(newAstNode, multiplicityConverted)
-                ) else newAstNode
-            } else {
-                if (multiplicityConverted != null) com.github.tukcps.sysmd.model.expression.AstBinOp(
-                    AstPower(
-                        this,
-                        arrayListOf(newAstNode, multiplicityConverted)
-                    ), TIMES, ast
-                )
-                else com.github.tukcps.sysmd.model.expression.AstBinOp(newAstNode, TIMES, ast)
-            }
+            
+            val operand = if (multiplicityConverted != null)
+                AstPower(this, arrayListOf(newAstNode, multiplicityConverted))
+            else
+                newAstNode
+            
+            operands.add(operand)
         }
     }
-    return ast ?: if (isRealProduct)
-        AstLeaf(this, Quantity(builder.real(1.0), "?"))
-    else
-        AstLeaf(this, Quantity(builder.integer(1)))
+    
+    // Build balanced binary tree from collected operands
+    if (operands.isEmpty()) {
+        return if (isRealProduct)
+            AstLeaf(this, Quantity(builder.real(1.0), "?"))
+        else
+            AstLeaf(this, Quantity(builder.integer(1)))
+    }
+    
+    return buildBalancedTree(operands, TIMES)
 }
 
 fun getSubclassDependencyStrings(element: Namespace, propertyAST: AstNode): Set<String> {

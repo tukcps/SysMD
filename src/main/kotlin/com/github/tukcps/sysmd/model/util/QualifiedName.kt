@@ -35,14 +35,6 @@ fun QualifiedName.unqualifiedName() : SimpleName {
     return asArray.last()
 }
 
-
-/**
- * Returns true if the name has '::' in it; then it is a qualified name.
- * @return true if it is a qualified name
- */
-fun QualifiedName.isSimpleName() : Boolean =
-    this.split("::").size == 1
-
 /** returns the starting name of a qualified name, e.g. 'a' for 'a::b' */
 fun QualifiedName.firstName() : QualifiedName =
     QualifiedName(split("::")[0])
@@ -50,5 +42,3 @@ fun QualifiedName.firstName() : QualifiedName =
 fun QualifiedName.size(): Int =
     this.split("::").size
 
-fun QualifiedName.hasNoName(): Boolean =
-    this.split("::").isEmpty()

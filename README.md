@@ -1,20 +1,24 @@
 ![SysMD](doc/pics/SysMD-logo.png)
+
 # SysMD Notebook
 
-This is SysMD Notebook for SysML v2. 
+SysMD Notebook is an environment for working with SysML v2 and KerML.
+It supports the creation of documentation in Markdown, requirements, specifications, and system models.
 
-SysMD Notebook supports the creation of requirements and specification documents and models,
-where
+Key features include:
 
-- _Document cells_ are linked with a model in a Notebook-like way with document and code cells, and
-- _Model cells_ can be executed, i.e., by computing values and checking consistency.
-- Documents and models can be exchanged as Markdown documents via, e.g., Email. This allows the inclusion of many stakeholders that are not expert in systems engineering.
+- **Document cells** that are linked to a model in a notebook-style interface, combining documentation and executable content.
+- **Model cells** that can be executed to compute values and check consistency.
+- A unified notebook UI where document and model cells are seamlessly integrated.
+- The ability to exchange content as Markdown documents (e.g., via email), enabling collaboration with stakeholders who are not experts in systems engineering.
 
-Furthermore, SysMD Notebook's requirements are _executable_. 
-With executable requirements and specification documents, we mean that 
-an integrated constraint solver checks the consistency of SysML v2 models and computes missing values.
-Excel in early system analysis does a similar job; 
-SysMD does it a bit more sophisticated and integrated with SysML v2.
+A key differentiator of SysMD is that models—such as requirements, constraints, and calculations—are **executable**.
+By “executable models,” we mean that an integrated constraint solver can:
+- verify the consistency of SysML v2 models, and
+- automatically compute missing values.
+
+This is conceptually similar to how Excel supports early system analysis, but SysMD provides a more advanced approach (comparable to SAT/SMT solving) that is fully integrated with SysML v2.
+
 SysMD Notebook's UI looks as follows:
 
 ![SysMD](doc/pics/SysMD-Screenshot.png)

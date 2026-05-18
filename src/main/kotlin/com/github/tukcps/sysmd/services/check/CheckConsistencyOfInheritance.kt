@@ -42,14 +42,33 @@ fun Session.checkConsistencyOfInheritance(element: Type) {
 									superClassRangeObj.max + abs(superClassRangeObj.max * 0.000001)
 								)
 								val superClassRange = Quantity(extendedRangeSuperclass, superclassFeature.unitConstraint ?: "").getRange()
-								if(ownedRange !in superClassRange && ownedRange != Range.Reals) {
+								
+								// Check range compatibility with unit conversion
+								// Quantity handles unit conversion internally - values are always in SI units
+								val ownedQuantity = Quantity(builder.real(Range(ownedRangeSpec)), feature.unitConstraint ?: "")
+								val superQuantity = Quantity(builder.real(Range(superClassRangeSpec)), superclassFeature.unitConstraint ?: "")
+								
+								// Get the ranges (Quantity handles unit conversion internally)
+								val ownedRangeFromQuantity = ownedQuantity.getRange()
+								val superRangeFromQuantity = superQuantity.getRange()
+								
+								// Compare the ranges directly (both are in SI units now)
+								if (ownedRangeFromQuantity !in superRangeFromQuantity && ownedRangeFromQuantity != Range.Reals) {
 									val rangesAreEffectivelyIdentical =
-										abs(ownedRange.min - superClassRange.min) < 0.001 &&
-										abs(ownedRange.max - superClassRange.max) < 0.001
+										abs(ownedRangeFromQuantity.min - superRangeFromQuantity.min) < 0.001 &&
+										abs(ownedRangeFromQuantity.max - superRangeFromQuantity.max) < 0.001
 
 									if (!rangesAreEffectivelyIdentical) {
+										val featureUnit = feature.unitConstraint ?: ""
+										val superUnit = superclassFeature.unitConstraint ?: ""
+										val unitInfo = if (featureUnit.isNotEmpty() || superUnit.isNotEmpty()) {
+											" (unit: ${featureUnit.ifEmpty { superUnit }})"
+										} else {
+											""
+										}
+										
 										status.inconsistency(
-											"value ${feature.typeConstraint} of specialization must be refinement of general ${superclassFeature.escapedName()} with value ${superclassFeature.typeConstraint}",
+											"value ${feature.typeConstraint}$unitInfo of specialization must be refinement of general ${superclassFeature.escapedName()} with value ${superclassFeature.typeConstraint}${if (superUnit.isNotEmpty()) " (unit: $superUnit)" else ""}",
 											element = feature
 										)
 									}

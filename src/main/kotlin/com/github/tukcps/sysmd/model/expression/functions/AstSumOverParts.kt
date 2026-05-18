@@ -129,10 +129,12 @@ internal class AstSumOverParts(
  * Function that generates an AST for a Sum over a composition.
  * The function considers all owned elements and searches in these elements for propertyName.
  * Then, it builds an AST that computes the sum.
+ * The tree is built as a balanced binary tree directly during construction.
  */
 fun Session.initSumOverComposition(element: Namespace, propertyAST: AstNode, transitive: Boolean, isReal: Boolean = true): AstNode {
-    var ast: AstNode? = null
+    val operands = mutableListOf<AstNode>()
     var isRealSum = isReal //indicates if the property is a real or an int
+    
     for (elementIterator in element.visibleMemberships().mapNotNull { it.member<Feature>() }.filterNot { it.specializes(repo.scalarType) }) {
         var newAstNode: AstNode = propertyAST.clone()
         var astNodeUsed = false
@@ -167,24 +169,23 @@ fun Session.initSumOverComposition(element: Namespace, propertyAST: AstNode, tra
                 ) else null //convert int node to real
             else
                 multiplicityLeaf // is int
-            ast = if (ast == null) {
-                if (multiplicityConverted != null) AstBinOp(
-                    newAstNode,
-                    TIMES,
-                    multiplicityConverted
-                ) else newAstNode
-            } else {
-                if (multiplicityConverted != null) AstBinOp(
-                    AstBinOp(newAstNode, TIMES, multiplicityConverted),
-                    PLUS,
-                    ast
-                )
-                else AstBinOp(newAstNode, PLUS, ast)
-            }
+            
+            val operand = if (multiplicityConverted != null) 
+                AstBinOp(newAstNode, TIMES, multiplicityConverted)
+            else 
+                newAstNode
+            
+            operands.add(operand)
         }
     }
-    return ast ?: if (isRealSum)
-        AstLeaf(this, Quantity(builder.real(0.0), "?"))
-    else
-        AstLeaf(this, Quantity(builder.integer(0)))
+    
+    // Build balanced binary tree from collected operands
+    if (operands.isEmpty()) {
+        return if (isRealSum)
+            AstLeaf(this, Quantity(builder.real(0.0), "?"))
+        else
+            AstLeaf(this, Quantity(builder.integer(0)))
+    }
+    
+    return buildBalancedTree(operands, PLUS)
 }

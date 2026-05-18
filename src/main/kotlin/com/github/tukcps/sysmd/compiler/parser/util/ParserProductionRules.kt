@@ -253,18 +253,6 @@ abstract class ParserProductionRules(
         } while ( (start != null && token.kind == start) || !stop())
     }
 
-    /**
-     * (production)+
-     * Guided by token required at start resp. at the end (a lambda with boolean results).
-     * @param stop token that stops production
-     * @param production a production implementation as lambda
-     */
-    inline fun oneOrMoreUntil(stop: Token.Kind, production: () -> Unit ) {
-        do {
-            production()
-        } while ( token.kind != stop)
-    }
-
 
     /**
      * (production)+
@@ -285,7 +273,7 @@ abstract class ParserProductionRules(
      *  Guided by a token after which the production follows, or/or a token after which it does not follow.
      *  where
      *      @param start is a token kind which must be the current token before the production
-     *      @param not is a token kind after which the production cannot follow
+     *      @param stop is a token kind after which the production cannot follow
      *      @param consume the first token (start) is consumed
      *      @param production the production rule
      */

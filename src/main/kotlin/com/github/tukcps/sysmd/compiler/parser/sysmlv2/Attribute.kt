@@ -22,7 +22,6 @@ fun SysMLv2.AttributeDefinition() = AttributeDefinitionActions(this.semantics, :
 }
 
 
-
 /**
  *      AttributeUsage = UsagePrefix 'attribute' Usage
  */

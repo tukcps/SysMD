@@ -60,6 +60,7 @@ fun SysMLv2.ActionBodyItem() {
     MemberPrefix()
     when {
         nonBehaviorBodyItemStart() -> NonBehaviorBodyItem()
+
         match(FIRST, NAME_LIT, DPDP) or match(FIRST, NAME_LIT, LCURBRACE) -> {
             InitialNodeMember()
             noOrMore(THEN) {
@@ -67,11 +68,11 @@ fun SysMLv2.ActionBodyItem() {
             }
         }
 
-        match(FIRST, NAME_LIT, DOT) or match(FIRST, NAME_LIT, IF) or match(SUCCESSION) ->
-            GuardedSuccession()
+        match(FIRST, NAME_LIT, DOT) or match(FIRST, NAME_LIT, IF) or match(SUCCESSION)
+                                     -> GuardedSuccession()
 
-        behaviorUsageElementStart.starts() -> BehaviorUsageElement()
-        actionNodeStart.starts() -> ActionNode()
+        behaviorUsageElementStarts() -> BehaviorUsageElement()
+        actionNodeStart.starts()     -> ActionNode()
         else -> throwSyntaxError("Unknown action body item ${token.kind}")
     }
 }
@@ -98,13 +99,20 @@ fun SysMLv2.NonBehaviorBodyItem() {
         IMPORT.starts()             -> { Import() }
         ALIAS.starts()              -> { AliasMember() }
         definitionElementStarts()   -> { DefinitionElement() }
+        structureUsageElementStarts() or THEN.starts()  -> {
+            THEN.optional { SourceSuccessionMember() }
+            StructureUsageElement() 
+        }
         nonOccurrenceUsageStarts()  -> { NonOccurrenceUsageElement() }
+
         // TODO
     }
 }
 fun SysMLv2.nonBehaviorBodyItemStart() = IMPORT.starts() || ALIAS.starts()
         || nonOccurrenceUsageStarts()
         || definitionElementStarts()
+        || structureUsageElementStarts()
+        || THEN.starts()
 
 
 /**

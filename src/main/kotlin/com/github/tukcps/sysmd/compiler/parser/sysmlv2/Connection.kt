@@ -92,3 +92,23 @@ fun SysMLv2.NaryConnectorPart() {
     RBRACE.consume()
 }
 val naryConnectorPartStart = setOf(LBRACE)
+
+
+/**
+ *      BindingConnectorAsUsage =
+ *          UsagePrefix ( 'binding' UsageDeclaration )?
+ *          'bind' ownedRelationship += ConnectorEndMember
+ *          '=' ownedRelationship += ConnectorEndMember
+ *          UsageBody
+ */
+fun SysMLv2.BindingConnectorAsUsage() {
+    // UsagePrefix()
+    BINDING.optional { UsageDeclaration() }
+    BIND.consume()
+    ConnectorEndMember()
+    EQ.consume()
+    ConnectorEndMember()
+    UsageBody()
+}
+fun SysMLv2.BindingConnectorAsUsageStarts(): Boolean =
+    BIND.starts() || BINDING.starts()

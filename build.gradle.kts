@@ -13,7 +13,7 @@ import org.gradle.internal.os.OperatingSystem
  * - also set the value standalone according to your setup
  */
 group   = "com.github.tukcps"
-version = "4.2.1"               // must be number.number.number
+version = "4.2.2"               // must be number.number.number
 val aaddVersion = "0.1.15"
 val sysmlapiVersion = "3.9.12"
 val useMavenAADD = true
@@ -34,11 +34,12 @@ plugins {
     id("idea")
     kotlin("jvm") version "2.3.20"
     kotlin("plugin.serialization") version "2.3.20"
-    id("org.springframework.boot") version "4.0.5"
+    id("org.springframework.boot") version "4.0.6"
     id("io.spring.dependency-management") version "1.1.7"
     alias(libs.plugins.jetbrainsCompose) apply true
     alias(libs.plugins.compose.compiler) apply true
     id("maven-publish")
+    kotlin("plugin.spring") version "2.3.21"
 }
 
 // Repositories where to search
@@ -76,8 +77,6 @@ dependencies {
         implementation("io.github.tukcps:sysmlapi:$sysmlapiVersion")
     }
 
-    implementation(libs.compose.resources)
-
     // For UUID version 5 (name-based)
     implementation("com.fasterxml.uuid:java-uuid-generator:5.1.0")
 
@@ -96,7 +95,7 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
 
-    // Parsing markdown to AST
+    // Parsing Markdown to AST
     implementation("org.commonmark:commonmark:0.28.0")
     implementation("org.commonmark:commonmark-ext-gfm-tables:0.28.0")
     implementation("org.commonmark:commonmark-ext-image-attributes:0.28.0")
@@ -128,6 +127,7 @@ dependencies {
 
     testImplementation(libs.compose.ui.test)
     testImplementation(libs.compose.ui.test.junit4)
+    implementation(kotlin("stdlib"))
 }
 
 // Don't use the regular jar as the project is a spring boot project.
@@ -156,6 +156,7 @@ tasks.test {
  * If it does not work, make bootJar explicit first and ensure that the folder 'libraries' is empty before.
  */
 tasks.register<Exec>("sysMDPackage") {
+    description = "Creates the SysMD installer"
     dependsOn("bootJar")
 
     val os = OperatingSystem.current()

@@ -175,14 +175,36 @@ fun SysMLv2.RequirementBody() {
  *              | StakeholderMember
  */
 fun SysMLv2.RequirementBodyItem() {
-    alternatives {
-        SUBJECT starts { SubjectUsage() }
-        REQUIRE or ASSUME starts { RequirementConstraintMember() }
-        FRAME starts { Unsupported() }
-        ACTOR starts { Unsupported() }
-        STAKEHOLDER starts { Unsupported() }
-        others { DefinitionBodyItem() }
+    when(token.kind) {
+        SUBJECT         -> { SubjectUsage() }
+        REQUIRE, ASSUME -> { RequirementConstraintMember() }
+        FRAME           -> { Unsupported() }
+        VERIFY          -> { RequirementVerificationMember() }
+        ACTOR           -> { Unsupported() }
+        STAKEHOLDER     -> { Unsupported() }
+        else            -> { DefinitionBodyItem() }
     }
+}
+
+/**
+ *      RequirementVerificationMember : RequirementVerificationMembership =
+ *          MemberPrefix 'verify' { kind = 'requirement' }
+ *          ownedRelatedElement += RequirementVerificationUsage
+ */
+fun SysMLv2.RequirementVerificationMember() {
+    VERIFY.consume()
+    RequirementVerificationUsage()
+}
+
+/**
+ *      RequirementVerificationUsage : RequirementUsage =
+ *          ownedRelationship += OwnedReferenceSubsetting FeatureSpecialization* RequirementBody
+ *          | ( UsageExtensionKeyword* 'requirement' | UsageExtensionKeyword+ )
+ *             ConstraintUsageDeclaration RequirementBody
+ */
+fun SysMLv2.RequirementVerificationUsage() {
+    OwnedReferenceSubsetting()
+    RequirementBody()
 }
 
 /**

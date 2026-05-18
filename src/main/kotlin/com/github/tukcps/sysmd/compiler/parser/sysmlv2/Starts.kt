@@ -14,6 +14,6 @@ val usagePrefixStart = basicUsagePrefixStart
 
 
 fun SysMLv2.usageDeclarationStarts() = setOf(LCBRACE, TYPED_BY, REFERENCES, REDEFINES).starts()
-        || (token.kind == NAME_LIT && nextToken.kind in setOf(TYPED_BY, REDEFINES, REFERENCES, SPECIALIZES, DPGT, SEMICOLON))
+        || (token.kind == NAME_LIT && nextToken.kind in setOf(TYPED_BY, REDEFINES, REFERENCES, SPECIALIZES, DPGT, SEMICOLON, FIRST))
 
 fun SysMLv2.referenceUsageStarts() = usageStarts() // + refPrefixStart + REF

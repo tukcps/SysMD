@@ -18,8 +18,7 @@ class EnumerationTests {
     @Test
     fun testEnumerationDefinition() = testSession {
         loadSysMLv2("""
-        enum def EnumerationDef1;
-
+            enum def EnumerationDef1;
         """)
         assertNoIssues()
     }
@@ -38,7 +37,7 @@ class EnumerationTests {
             enum enum1;
             enum enum2;
         }
-        """.trimIndent())
+        """)
         assertNoIssues()
     }
 }

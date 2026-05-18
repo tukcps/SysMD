@@ -7,7 +7,6 @@ import com.github.tukcps.sysmd.model.sysml.PartUsage
 import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -189,9 +188,9 @@ class ConnectionTests {
      * Refer to Section: 7.13 Connections
      * Language Specification Document: https://www.omg.org/spec/SysML/2.0/Beta2/Language/PDF
      */
-    @Ignore
+
     @Test
-    fun testBindingConnection() = testSession("Connections", "Parts", "Items") {
+    fun testBindingConnection() = testSession("Connections", "Parts") {
         loadSysMLv2("""
             part def Part1;
             part def Part2;

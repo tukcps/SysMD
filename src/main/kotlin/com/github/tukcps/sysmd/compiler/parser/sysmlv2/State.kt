@@ -6,7 +6,6 @@ import com.github.tukcps.sysmd.compiler.SysMLv2
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
 import com.github.tukcps.sysmd.exceptions.throwSyntaxError
-import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.sysml.StateUsage
 import com.github.tukcps.sysmd.model.sysml.implementation.StateUsageImplementation
 
@@ -19,17 +18,14 @@ import com.github.tukcps.sysmd.model.sysml.implementation.StateUsageImplementati
  *          | StateAssignmentActionUsage
  */
 fun SysMLv2.StateActionUsage() {
-    alternatives {
-        SEMICOLON then { }  // EmptyActionUsage
-        statePerformActionUsageStart starts { StatePerformActionUsage() }
-        others {
-            alternatives {
-                ACCEPT then {
-
-                }
-                SEND then {
-
-                }
+    when(token.kind) {
+        SEMICOLON                       -> { SEMICOLON.consume() }  // EmptyActionUsage
+        in statePerformActionUsageStart -> { StatePerformActionUsage() }
+        else                            -> {
+            when(token.kind) {
+                ACCEPT  -> { ACCEPT.consume() }
+                SEND    -> { SEND.consume() }
+                else    -> {}
             }
         }
     }
@@ -104,11 +100,11 @@ fun SysMLv2.ExitActionMember() {
  *          ';'
  *          | ('parallel')? '{' StateBodyItem* '}'
  */
-fun SysMLv2.StateDefBody(owner: Namespace){
+fun SysMLv2.StateDefBody(){
     when {
         SEMICOLON.then() -> {}
-        // PARALLEL.then() -> {}
-        LCURBRACE.starts() -> {
+        LCURBRACE.starts() || PARALLEL.starts() -> {
+            PARALLEL.optional()
             LCURBRACE.consume()
             noOrMore(end = {token.kind == RCURBRACE}) {
                 StateBodyItem()
@@ -131,13 +127,40 @@ fun SysMLv2.StateDefBody(owner: Namespace){
 fun SysMLv2.StateBodyItem() {
     when {
         nonBehaviorBodyItemStart() -> NonBehaviorBodyItem()
-        behaviorUsageElementStart.starts() -> BehaviorUsageElement()
+        behaviorUsageElementStart.starts() -> {
+            THEN.optional { SourceSuccessionMember() }
+            BehaviorUsageElement()
+            // TargetTransitionUsageMember()
+        }
         TRANSITION.starts()        -> TransitionUsage()
         ENTRY.starts()             -> { EntryActionMember(); noOrMore(THEN) { EntryTransitionMember() } }
         DO.starts()                -> DoActionMember()
         EXIT.starts()              -> ExitActionMember()
         else -> throwSyntaxError("At ${token}: Expected a valid state body item.")
     }
+}
+
+/**
+ *      TargetTransitionUsage : TransitionUsage = ownedRelationship += EmptyParameterMember
+ *      ( 'transition'
+ *              ( ownedRelationship += EmptyParameterMember
+ *              ownedRelationship += TriggerActionMember )?
+ *              ( ownedRelationship += GuardExpressionMember )?
+ *              ( ownedRelationship += EffectBehaviorMember )?
+ *          | ownedRelationship += EmptyParameterMember
+ *              ownedRelationship += TriggerActionMember
+ *              ( ownedRelationship += GuardExpressionMember )?
+ *              ( ownedRelationship += EffectBehaviorMember )?
+ *          | ownedRelationship += GuardExpressionMember
+ *              ( ownedRelationship += EffectBehaviorMember )?
+ *      )?
+ *      'then' ownedRelationship += TransitionSuccessionMember
+ *      ActionBody
+ */
+fun SysMLv2.TargetTransitionUsageMember() {
+    THEN.consume()
+    TransitionSuccessionMember()
+    ActionBody()
 }
 
 

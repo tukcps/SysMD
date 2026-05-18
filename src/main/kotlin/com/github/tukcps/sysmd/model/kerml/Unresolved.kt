@@ -6,6 +6,13 @@ import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.services.session.Session
 import java.util.*
 
+/**
+ * A reference that is still unresolved, as sealed interface for type safety.
+ * @property relativeName the qualified name that should resolve to the respective element.
+ * @property id a UUID that should resolve to the respective element.
+ * @property input the input stream
+ * @property indices indices in the input stream with the relative Name
+ */
 sealed interface Unresolved {
     var relativeName: QualifiedName?
     var id: UUID?
@@ -33,6 +40,9 @@ internal fun Session.checkType(unresolved : Unresolved, resolved : Element, cont
     }
 }
 
+/**
+ * Unresolved Element in general.
+ */
 class UnresolvedElement(
     override var relativeName: QualifiedName? = null,
     override var id: UUID? = null
@@ -41,6 +51,9 @@ class UnresolvedElement(
     override fun escapedName(): String? = relativeName
 }
 
+/**
+ * Unresolved Membership; must resolve to membership.
+ */
 class UnresolvedMembership(
     override var relativeName: QualifiedName? = null,
     override var id: UUID? = null
@@ -49,6 +62,9 @@ class UnresolvedMembership(
     override fun escapedName(): String? = relativeName
 }
 
+/**
+ * Unresolved Type; must resolve to type.
+ */
 class UnresolvedType(
     override var relativeName: QualifiedName? = null,
     override var id: UUID? = null
@@ -57,6 +73,9 @@ class UnresolvedType(
     override fun escapedName(): String? = relativeName
 }
 
+/**
+ * Unresolved Feature; must resolve to a Feature
+ */
 open class UnresolvedFeature(
     override var relativeName: QualifiedName? = null,
     override var id: UUID? = null,
@@ -66,6 +85,9 @@ open class UnresolvedFeature(
     override fun escapedName(): String? = relativeName
 }
 
+/**
+ * Unresolved Feature Chain.
+ */
 class UnresolvedFeatureChain(
     relativeName: QualifiedName? = null,
     id: UUID? = null,
@@ -74,6 +96,9 @@ class UnresolvedFeatureChain(
     override fun escapedName(): String? = relativeName
 }
 
+/**
+ * Unresolved Namespace; must resolve to Namespace.
+ */
 class UnresolvedNamespace(
     override var relativeName: QualifiedName? = null,
     override var id: UUID? = null,

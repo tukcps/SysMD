@@ -66,7 +66,7 @@ class ProjectData(
                 logger.error("Inconsistency of .meta.json file index: File $it does not exist")
             }
         }
-        return files
+        return files.sortedBy { it.name }
     }
 
     /**

@@ -23,7 +23,7 @@ The project is structured in the following directories
 - gradle : in particular the version catalog `libs.versions.toml`.
 - install : files that will be copied by SysMD Notebook into its start folder when started.
 - src : the source code 
-- build.gradle.kts (main build file for gradle)
+- build.gradle.kts (main build file for Gradle)
 - settings.gradle.kts 
 
 ### Source packages 

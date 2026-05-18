@@ -4,7 +4,6 @@ import com.github.tukcps.sysmd.model.sysml.PartDefinition
 import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -93,8 +92,7 @@ class DefinitionTests {
      * Refer to Section: 7.6 - Part Definitions and Usages
      * Language Specification Document: https://www.omg.org/spec/SysML/2.0/Beta2/Language/PDF
      */
-    @Ignore
-    @Test
+     @Test
     fun testVariationNameCompartment() = testSession("Parts") {
         loadSysMLv2("""
             variation part def PartDef1;

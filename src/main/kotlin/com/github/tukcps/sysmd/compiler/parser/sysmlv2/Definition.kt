@@ -23,14 +23,16 @@ internal fun SysMLv2.Definition() {
  *      DefinitionBody = ';' | '{' DefinitionBodyItem* '}'
  */
 internal fun SysMLv2.DefinitionBody() {
-    alternatives {
-        LCURBRACE then {
+    when(token.kind) {
+        LCURBRACE -> {
+            LCURBRACE.consume()
             noOrMore(end = { token.kind == RCURBRACE }) {
                 DefinitionBodyItem()
             }
             RCURBRACE.consume()
         }
-        SEMICOLON then { }
+        SEMICOLON -> { SEMICOLON.consume() }
+        else -> { throwSyntaxError("Error while processing definition body") }
     }
 }
 
@@ -52,7 +54,7 @@ internal fun SysMLv2.DefinitionBodyItem() {
         definitionElementStarts()           -> { DefinitionElement() }
         nonOccurrenceUsageStarts()          -> { NonOccurrenceUsageElement() }
         THEN.starts()                       -> { SourceSuccessionMember(); OccurrenceUsageElement()}
-        occurrenceUsageStart.starts()       -> { OccurrenceUsageElement() }
+        occurrenceUsageStarts()             -> { OccurrenceUsageElement() }
         ALIAS.starts()                      -> { AliasMember()}
         IMPORT.starts()                     -> { Import() }
         else                                -> { throwSyntaxError("Error while processing definition body item") }
@@ -64,6 +66,17 @@ fun SysMLv2.DefinitionDeclaration() {
     Identification().also { semantics.create(it) }
     optional(start = SPECIALIZES or DPGT) {
         SubclassificationPart()
+    }
+}
+
+/**
+ *      BasicDefinitionPrefix = isAbstract ?= 'abstract' | isVariation ?= 'variation'
+ */
+fun SysMLv2.BasicDefinitionPrefix() {
+    when (token.kind) {
+        ABSTRACT -> ABSTRACT.consume()
+        VARIATION -> VARIATION.consume()
+        else -> {}
     }
 }
 

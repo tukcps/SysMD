@@ -27,10 +27,18 @@ fun SysMLv2.ConstraintDefinition() = CalculationDefinitionActions(semantics,
     CalculationBody()
 }
 
-/** Just checks the prefixes already parsed for compliance */
+/**
+ *      OccurrenceDefinitionPrefix : OccurrenceDefinition =
+ *          BasicDefinitionPrefix?
+ *          ( isIndividual ?= 'individual'
+ *            ownedRelationship += EmptyMultiplicityMember
+ *          )?
+ *          DefinitionExtensionKeyword*
+ */
 fun SysMLv2.OccurrenceDefinitionPrefix() {
-    // TODO
+    BasicDefinitionPrefix()
 }
+fun SysMLv2.OccurrenceDefinitionPrefixStarts() = token.kind in setOf(ABSTRACT, VARIATION)
 
 /**
  * ConstraintUsageDeclaration = UsageDeclaration ValuePart?

@@ -7,9 +7,7 @@ import com.github.tukcps.sysmd.compiler.parser.kerml.*
 import com.github.tukcps.sysmd.compiler.parser.util.Unsupported
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
-import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 
 

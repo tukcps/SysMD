@@ -2,7 +2,6 @@ package com.github.tukcps.sysmd.model.expression.functions
 
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.PLUS
 import com.github.tukcps.sysmd.exceptions.SemanticError
-import com.github.tukcps.sysmd.model.expression.AstBinOp
 import com.github.tukcps.sysmd.model.expression.AstLeaf
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.model.kerml.Feature
@@ -121,6 +120,7 @@ internal class AstSumOverSubclasses(
  * Function that generates an AST for a Sum over a composition.
  * The function considers all owned elements and searches in these elements for propertyName.
  * Then, it builds an AST that computes the sum.
+ * The tree is built as a balanced binary tree directly during construction.
  */
 fun Session.initAstSumSubclasses(
     type: Type,
@@ -128,8 +128,9 @@ fun Session.initAstSumSubclasses(
     transitive: Boolean,
     isReal: Boolean = true
 ): AstNode {
-    var ast: AstNode? = null
+    val operands = mutableListOf<AstNode>()
     var isRealSum = isReal //indicates if the property is a real or an int
+    
     for (subtype in type.subtypes) {
         //iterate through all leafs of the propertyAST (which do not include only a number) to find the value for the properties.
         var newAstNode: AstNode = propertyAST.clone()
@@ -152,10 +153,16 @@ fun Session.initAstSumSubclasses(
                 break // no further look in subclasses because transitive search is not enabled
         }
         if (newAstNode.toString() != propertyAST.toString())
-            ast = if (ast == null) newAstNode else AstBinOp(newAstNode, PLUS, ast)
+            operands.add(newAstNode)
     }
-    return ast ?: if (isRealSum)
-        AstLeaf(this, Quantity(builder.real(0.0), "?"))
-    else
-        AstLeaf(this, Quantity(builder.integer(0)))
+    
+    // Build balanced binary tree from collected operands
+    if (operands.isEmpty()) {
+        return if (isRealSum)
+            AstLeaf(this, Quantity(builder.real(0.0), "?"))
+        else
+            AstLeaf(this, Quantity(builder.integer(0)))
+    }
+    
+    return buildBalancedTree(operands, PLUS)
 }

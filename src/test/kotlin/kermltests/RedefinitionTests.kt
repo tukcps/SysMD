@@ -214,6 +214,130 @@ class RedefinitionTests {
 
     }
 
+    @Test
+    fun redefinitionRangeOverrideTest() = testSession("ScalarValues", "ISQ") {
+        loadSysMLv2("""
+            attribute def Weight {
+                attribute value: ISQ::MassValue {:>> range = "1..100"; :>> unit = "kg";}
+            }
+            
+            attribute specificWeight: Weight {
+                attribute :>> value {:>> range = "3..40"; :>> unit = "kg";}
+            }
+        """)
+        solver.propagate()
+        assertNoIssues()
+        
+        // Verify that the redefined range is used, not the superclass range
+        val specificWeightValue = global.resolveVar("specificWeight::value")
+        assertNotNull(specificWeightValue)
+        // The redefined range should be 3..40, not 1..100
+        assertEquals(3.0, specificWeightValue.min(), 0.001)
+        assertEquals(40.0, specificWeightValue.max(), 0.001)
+    }
+
+    @Test
+    fun redefinitionUnitAndValueInInheritedPartTest() = testSession("ScalarValues", "ISQ", "Parts") {
+        loadSysMLv2("""
+            private import ISQ::*;
+            
+            part def TemperatureSensor {
+                attribute temperature: ISQ::ThermodynamicTemperatureValue {
+                    :>> range = "0..100";
+                    :>> unit = "°C";
+                }
+            }
+            
+            part def NarrowRangeSensor :> TemperatureSensor {
+                attribute :>> temperature {
+                    :>> range = "20..80";
+                    :>> unit = "°C";
+                }
+            }
+            
+            part def KelvinSensor :> TemperatureSensor {
+                attribute :>> temperature {
+                    :>> range = "293..353";
+                    :>> unit = "K";
+                }
+            }
+        """)
+        solver.propagate()
+        assertNoIssues()
+        
+        // Verify base part definition
+        val baseTemp = global.resolveVar("TemperatureSensor::temperature")
+        assertNotNull(baseTemp)
+        assertEquals(0.0, baseTemp.min(), 0.001)
+        assertEquals(100.0, baseTemp.max(), 0.001)
+        
+        // Verify narrow range sensor redefinition (same unit, refined range)
+        val narrowRangeTemp = global.resolveVar("NarrowRangeSensor::temperature")
+        assertNotNull(narrowRangeTemp)
+        assertEquals(20.0, narrowRangeTemp.min(), 0.001)
+        assertEquals(80.0, narrowRangeTemp.max(), 0.001)
+        
+        // Verify kelvin sensor redefinition (different unit, corresponding range)
+        val kelvinTemp = global.resolveVar("KelvinSensor::temperature")
+        assertNotNull(kelvinTemp)
+        assertEquals(293.0, kelvinTemp.min(), 0.001)
+        assertEquals(353.0, kelvinTemp.max(), 0.001)
+    }
+
+    @Test
+    fun redefinitionInvalidRangeSameUnitTest() = testSession("ScalarValues", "ISQ", "Parts") {
+        loadSysMLv2("""
+            private import ISQ::*;
+            
+            part def TemperatureSensor {
+                attribute temperature: ISQ::ThermodynamicTemperatureValue {
+                    :>> range = "0..100";
+                    :>> unit = "°C";
+                }
+            }
+            
+            part def InvalidSensor :> TemperatureSensor {
+                attribute :>> temperature {
+                    :>> range = "-50..150";  // Invalid: not a refinement of 0..100
+                    :>> unit = "°C";
+                }
+            }
+        """)
+        solver.propagate()
+        // Should have inconsistency error - range is not a refinement
+        assertTrue(status.issues.isNotEmpty());
+        // Verify it's specifically a range refinement error
+        assertTrue(status.issues.any { it.message.contains("must be refinement") })
+    }
+
+    @Test
+    fun redefinitionInvalidRangeDifferentUnitTest() = testSession("ScalarValues", "ISQ", "Parts") {
+        loadSysMLv2("""
+            private import ISQ::*;
+            
+            part def TemperatureSensor {
+                attribute temperature: ISQ::ThermodynamicTemperatureValue {
+                    :>> range = "0..100";
+                    :>> unit = "°C";
+                }
+            }
+            
+            part def InvalidKelvinSensor :> TemperatureSensor {
+                attribute :>> temperature {
+                    :>> range = "200..400";  // Invalid: 200K=-73°C, 400K=127°C, not within 0..100°C
+                    :>> unit = "K";
+                }
+            }
+        """)
+        solver.propagate()
+        // Should have inconsistency error - converted range is not a refinement
+        assertTrue(status.issues.isNotEmpty())
+        // Verify it's specifically a range refinement error
+        assertTrue(status.issues.any { it.message.contains("must be refinement") })
+    }
+
+
+
 }
 
 

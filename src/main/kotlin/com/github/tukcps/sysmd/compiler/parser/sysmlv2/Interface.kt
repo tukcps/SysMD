@@ -68,7 +68,7 @@ internal fun SysMLv2.InterfaceBodyItem() {
         definitionElementStarts()       -> DefinitionElement()
         tokenIs(VARIANT)            -> VariantUsageElement()
         referenceUsageStarts()          -> ReferenceUsage()
-        interfaceOccurrenceUsageStart() -> InterfaceOccurrenceUsageMember()
+        interfaceOccurrenceUsageStarts() -> InterfaceOccurrenceUsageMember()
         tokenIs(ATTRIBUTE)          -> AttributeUsage()
         tokenIs(ENUM)               -> EnumerationUsage()
         tokenIs(ALIAS)              -> AliasMember()
@@ -85,10 +85,10 @@ internal fun SysMLv2.InterfaceBodyItem() {
  *      DefaultInterfaceEnd = (FeatureDirection)? ( 'abstract' | 'variation')? 'end' Usage
  */
 internal fun SysMLv2.InterfaceOccurrenceUsageMember() {
-    when (token.kind) {
-        in structureUsageElementStart -> StructureUsageElement()
-        in behaviorUsageElementStart -> BehaviorUsageElement()
-        in setOf(IN, INOUT, OUT, ABSTRACT, VARIATION, END) -> {
+    when {
+        structureUsageElementStarts() -> StructureUsageElement()
+        behaviorUsageElementStarts() -> BehaviorUsageElement()
+        token.kind in setOf(IN, INOUT, OUT, ABSTRACT, VARIATION, END) -> {
             IN.optional()
             OUT.optional()
             INOUT.optional()
@@ -103,8 +103,7 @@ internal fun SysMLv2.InterfaceOccurrenceUsageMember() {
         else -> {}
     }
 }
-fun SysMLv2.interfaceOccurrenceUsageStart() = token.kind in structureUsageElementStart + behaviorUsageElementStart
-
+fun SysMLv2.interfaceOccurrenceUsageStarts() = structureUsageElementStarts() || behaviorUsageElementStarts()
 
 
 /**
