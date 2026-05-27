@@ -3,6 +3,7 @@
 package com.github.tukcps.sysmd.compiler.parser.sysmlv2
 
 import com.github.tukcps.sysmd.compiler.SysMLv2
+import com.github.tukcps.sysmd.compiler.parser.kerml.*
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
 import com.github.tukcps.sysmd.exceptions.throwSyntaxError
@@ -127,7 +128,7 @@ fun SysMLv2.StateDefBody(){
 fun SysMLv2.StateBodyItem() {
     when {
         nonBehaviorBodyItemStart() -> NonBehaviorBodyItem()
-        behaviorUsageElementStart.starts() -> {
+        behaviorUsageElementStarts() || THEN.starts() -> {
             THEN.optional { SourceSuccessionMember() }
             BehaviorUsageElement()
             // TargetTransitionUsageMember()
@@ -193,4 +194,29 @@ fun SysMLv2.StateUsageBody() {
             RCURBRACE.consume()
         }
     }
+}
+
+/**
+ *      ExhibitStateUsage = OccurrenceUsagePrefix 'exhibit'
+ *          ( OwnedReferenceSubsetting FeatureSpecializationPart? | 'state' UsageDeclaration )
+ *          ValuePart? StateUsageBody
+ */
+fun SysMLv2.ExhibitStateUsage() {
+    EXHIBIT.consume()
+    when (token.kind) {
+        STATE -> {
+            STATE.consume()
+            UsageDeclaration()
+        }
+        else -> {
+            OwnedReferenceSubsetting()
+            optional(featureSpecializationPartStart) {
+                FeatureSpecializationPart()
+            }
+        }
+    }
+    optional(valuePartStart) {
+        ValuePart()
+    }
+    StateUsageBody()
 }

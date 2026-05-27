@@ -121,6 +121,6 @@ fun SysMLv2.ReferenceUsage() = FeatureActions<Feature>(semantics, ::FeatureImple
 /**
  *      VariantReference = OwnedReferenceSubsetting FeatureSpecialization* UsageBody
  */
-fun SysMLv2.VariableUsage() {
+fun SysMLv2.VariantReference() {
     TODO()
 }

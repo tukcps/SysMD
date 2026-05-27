@@ -3,8 +3,8 @@ package com.github.tukcps.sysmd.services.repositories.local
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import io.github.tukcps.sysmlv2.api.entities.CommitDataObject
 import io.github.tukcps.sysmlv2.api.entities.Project
 import io.github.tukcps.sysmlv2.api.entities.ProjectUsage
@@ -66,7 +66,8 @@ class ProjectData(
                 logger.error("Inconsistency of .meta.json file index: File $it does not exist")
             }
         }
-        return files.sortedBy { it.name }
+        return files // .sortedBy { it.name }
+        // should be sorted aas in index! if specific order is needed, edit .index.json.
     }
 
     /**
@@ -137,11 +138,11 @@ Write your model and documentation here.
         try {
             if (directory != null) {
                 Files.createDirectories(directory!!)
-                val objectMapper = ObjectMapper().apply {
-                    registerModule(KotlinModule.Builder().build())
-                    registerModule(JavaTimeModule())
-                    disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-                }.writerWithDefaultPrettyPrinter()
+                val objectMapper = ObjectMapper()
+                    .registerKotlinModule()
+                    .registerModule(JavaTimeModule())
+                    .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                    .writerWithDefaultPrettyPrinter()
 
                 val projectJson = directory!!.resolve(".project.json")
                 val jsonForProject = objectMapper.writeValueAsString(
@@ -196,7 +197,9 @@ Write your model and documentation here.
             }
         }
         private val objectMapper: ObjectMapper = jacksonObjectMapper()
-            .registerModule( JavaTimeModule() )
+            .registerKotlinModule()
+            .registerModule(JavaTimeModule())
+            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
 
         private val logger = LogManager.getLogger(ProjectData::class.java)!!
     }

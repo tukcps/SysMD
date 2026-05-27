@@ -2,7 +2,6 @@ package com.github.tukcps.sysmd.model.sysml.implementation
 
 import com.github.tukcps.sysmd.model.sysml.ActionUsage
 import com.github.tukcps.sysmd.model.util.SimpleName
-import java.util.*
 
 open class ActionUsageImplementation(
     declaredName: SimpleName? = null,

@@ -42,6 +42,6 @@ class VerificationTests {
                 evaluateData.verdict
             }
         """)
-        assertNoIssues { !it.message.contains("resolved") && !it.message.contains("Warning") }
+        assertNoIssues { !it.message.contains("resolved") && !it.message.contains("Info") }
     }
 }

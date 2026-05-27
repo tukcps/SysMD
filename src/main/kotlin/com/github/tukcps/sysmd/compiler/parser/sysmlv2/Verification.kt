@@ -4,7 +4,9 @@ import com.github.tukcps.sysmd.compiler.SysMLv2
 import com.github.tukcps.sysmd.compiler.parser.kerml.MemberPrefix
 import com.github.tukcps.sysmd.compiler.parser.util.Unsupported
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
+import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.VerificationCaseActions
 import com.github.tukcps.sysmd.exceptions.throwSyntaxError
+import com.github.tukcps.sysmd.model.sysml.implementation.VerificationCaseUsageImplementation
 
 
 /**
@@ -22,7 +24,7 @@ fun SysMLv2.VerificationCaseDefinition() {
  *      VerificationCaseUsage = OccurrenceUsagePrefix 'verification'
  *              ConstraintUsageDeclaration CaseBody
  */
-fun SysMLv2.VerificationCaseUsage() {
+fun SysMLv2.VerificationCaseUsage() = VerificationCaseActions(context = semantics, creator = ::VerificationCaseUsageImplementation).parse {
     VERIFICATION.consume()
     ConstraintUsageDeclaration()
     CaseBody()
@@ -41,7 +43,7 @@ fun SysMLv2.CaseBody() {
         LCURBRACE.starts() -> {
             LCURBRACE.consume()
             noOrMore( end ={ ! CaseBodyItemStarts() } ) {  CaseBodyItem() }
-            ResultExpressionMember()
+            optional( matchingCondition = { token.kind != RCURBRACE} ) { ResultExpressionMember()}
             RCURBRACE.consume()
         }
     }

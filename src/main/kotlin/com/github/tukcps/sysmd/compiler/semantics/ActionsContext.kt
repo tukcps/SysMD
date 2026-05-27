@@ -218,7 +218,7 @@ open class ActionsContext(
      */
     fun addReferenceSubsetting(referencedFeature: Feature) {
         if (element<Namespace>() !is Feature) {
-            model.status.info("Warning: could not add reference-subsetting to ${referencedFeature.qualifiedName}")
+            model.status.info("Info: could not add reference-subsetting to ${referencedFeature.qualifiedName}")
             return
         }
         val owner = element<Feature>()

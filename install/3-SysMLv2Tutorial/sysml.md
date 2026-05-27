@@ -283,14 +283,15 @@ part clock {
 interface clockSignal connect cpu.clk to clock.clk;   
 ```
 
-# Constraints and Requirements 
+# Requirements, Constraints and Verification 
 
 A requirement begins with the keyword ```requirement```.
 In the body of the statement, there are
 - a subject with a name that references an element 
+- optionally, a textual documentation
 - predicates that shall hold for the subject. 
 
-## Requirements 
+## Requirements and Constraints
 
 A requirement definition allows users to create a class of requirement 
 with a specific infrastructure that is inherited to each usage of 
@@ -310,26 +311,53 @@ Also, attributes and calculations can be defined and used.
 An example is given below. 
 
 ```SysML::tutorial::sysml::requirements
+
+// Type of things for which we formulate a requirement
 part Box {
     attribute w: ISQ::LengthValue; 
     attribute h: ISQ::LengthValue; 
     attribute l: ISQ::LengthValue;   
 }
 
+// Requirement, mostly human-readable documentation. 
 requirement def volumeRequirement {
+    doc /* 
+      The box (typed by Boy) shall have minimum volume.
+      The volume dependes on with w, height h, length l. 
+    */
     subject box references Box; 
     attribute volume: ISQ::VolumeValue = box::w*box::h*box::l; 
 }    
 
+// Instance for which we check the requirement
 part p: Box {
     :>> w = 100.0 cm; 
     :>> h = 10.0 cm; 
     :>> l = 10.0 cm;     
 } 
-  
+
+// Concrete requirement with a constraint   
 requirement volumeRequirementUsage : volumeRequirement  {
     subject box references p; 
+    doc /* We constrain the requirement to a concrete lower bound. */ 
     require constraint r { volume >= 100.0 [cm^3] }
+}
+```
+
+## Verification of Requirements and Constraints
+
+For Requirements and Constraints, one should give also a description how to verify them.
+This can be done with the ```verification``` statement.
+It links the documentation of a requirement and can give additional information on how to 
+verify it. 
+
+```SysML::tutorial::sysml::requirements
+verification verificationOfVolume {
+    subject references p: volumeRequirementUsage; 
+    objective testVolume {
+        doc /* Human-language description of test */ 
+        verify volumeRequirementUsage; 
+    }
 }
 ```
 

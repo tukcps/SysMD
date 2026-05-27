@@ -2,11 +2,9 @@ package compiler.sysml.examples
 
 import com.github.tukcps.sysmd.model.sysml.OccurrenceDefinition
 import com.github.tukcps.sysmd.model.sysml.OccurrenceUsage
-import org.junit.jupiter.api.Disabled
 import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertNotNull
 
@@ -89,7 +87,6 @@ class OccurrenceTests {
      * Refer to Section: 7.9 Occurrences
      * Language Specification Document: https://www.omg.org/spec/SysML/2.0/Beta2/Language/PDF
      */
-    @Ignore
     @Test
     fun testTimeslice() = testSession("Occurrences") {
         loadSysMLv2("""
@@ -105,7 +102,6 @@ class OccurrenceTests {
      * Refer to Section: 7.9 Occurrences
      * Language Specification Document: https://www.omg.org/spec/SysML/2.0/Beta2/Language/PDF
      */
-    @Disabled
     @Test
     fun testSnapshot() = testSession("Occurrences") {
         loadSysMLv2("""

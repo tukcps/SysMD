@@ -23,7 +23,8 @@ fun EditorTabs(tabsViewModel: TabsViewModel) {
     val titles = tabsViewModel.editorTabs.map { it.tabTitle }.toList()
     if (titles.isNotEmpty()) {
         Tabs(
-            titles, tabsViewModel.selectedIndex,
+            titles,
+            tabsViewModel.selectedIndex,
             onSelection = { tabsViewModel.selectedIndex.value = it; },
             onClose = { tabsViewModel.removeFile.value = it; tabsViewModel.removeFileDialog.value = true },
             onAdd = tabsViewModel::addNewFile,

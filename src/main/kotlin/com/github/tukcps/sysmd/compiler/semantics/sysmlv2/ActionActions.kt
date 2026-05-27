@@ -24,7 +24,7 @@ class ActionDefinitionActions<T: Class>(
     isImplicit = specializes,
 )
 
-class ActionUsageActions<T: ActionUsage>(
+open class ActionUsageActions<T: ActionUsage>(
     context: ActionsContext,
     creator: (SimpleName?, SimpleName?) -> T,
     defaultType: QualifiedName = "Occurrences::Occurrence",

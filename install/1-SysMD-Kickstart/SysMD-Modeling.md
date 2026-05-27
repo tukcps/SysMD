@@ -366,7 +366,7 @@ possible variants. In our example, variants or possible solutions would be:
 
 Of course, this is only possible if the Liskov principle holds.
 To support this, SysMD's semantics of inheritance for ranges and constraint propagation
-strictly follow this principle.
+strictly follow this principle, considering co-variance and/or contra-variance (not in this brief intro).
 When we define a specialized type, it inherits everything from the general type such that it is fulfilled.
 Note that this does not mean that subclasses must be similar to its superclasses.
 Subclasses can have additional features, but not limitations.
@@ -406,12 +406,12 @@ The below example demonstrates this behavior.
 ```SysML::kickstart
     package inheritanceExample {
         part def Coin {
-            attribute diameter: ISQ::LengthValue= oneOf(5.0 ..200.0 [mm]) { :>> unit = "mm"; }
+            attribute diameter: ISQ::LengthValue default oneOf(5.0 ..200.0 [mm]) { :>> unit = "mm"; }
             attribute circumference: ISQ::LengthValue = diameter*3.141 { :>> unit = "mm"; } // 15.7 .. 628.2 mm 
         }
         
         part oneEuroCoin : Coin { 
-            attribute diameter: ISQ::LengthValue = 23.25 [mm]; 
+            :>> diameter = 23.25 [mm]; 
             // circumference is inherited. Must be re-evaluated with correct diameter.
             // Expected behavior:  re-evaluate dependency in new scope, but without changing diameter of Coin. 
         }

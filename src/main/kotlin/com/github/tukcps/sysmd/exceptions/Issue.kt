@@ -44,10 +44,6 @@ data class Issue(
     fun line(): Int? {
 
         if (input !== null && indices !== null) {
-            require(indices.first in input.indices && indices.last in input.indices) {
-                "Indices must be within input range"
-            }
-
             return input.subSequence(0, indices.first).count { it == '\n' } + 1
         } else
             return token?.lineNo

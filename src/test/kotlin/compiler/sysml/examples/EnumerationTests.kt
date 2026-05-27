@@ -28,6 +28,7 @@ class EnumerationTests {
      * It ensures that enumerations can have individual values (enums) and be defined inside a compartment.
      * Refer to Section: 7.8 - Enumerations
      * Language Specification Document: https://www.omg.org/spec/SysML/2.0/Beta2/Language/PDF
+     * Take care: LGPL copyright
      */
     @Ignore
     @Test

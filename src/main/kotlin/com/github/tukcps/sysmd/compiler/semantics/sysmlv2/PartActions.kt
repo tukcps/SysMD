@@ -10,7 +10,7 @@ import com.github.tukcps.sysmd.model.sysml.implementation.PartUsageImplementatio
 
 
 class PartDefinitionActions(
-    context: ActionsContext,
+    context: ActionsContext
 ): TypeActions<PartDefinitionImplementation>(
     context,
     creator = ::PartDefinitionImplementation,

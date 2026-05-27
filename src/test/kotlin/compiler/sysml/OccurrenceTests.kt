@@ -1,4 +1,4 @@
-package sysmlv2tests
+package compiler.sysml
 
 import util.assertNoIssues
 import util.mockup.loadSysMLv2
@@ -7,7 +7,7 @@ import kotlin.test.Test
 
 class OccurrenceTests {
     @Test
-    fun testOccurrene1() = testSession("Occurrences"){
+    fun testOccurrence1() = testSession("Occurrences"){
         loadSysMLv2("""
             occurrence p;
         """)
@@ -15,7 +15,7 @@ class OccurrenceTests {
     }
 
     @Test
-    fun testOccurrene2() = testSession("Occurrences"){
+    fun testOccurrence2() = testSession("Occurrences"){
         loadSysMLv2("""
             event occurrence p;
         """)

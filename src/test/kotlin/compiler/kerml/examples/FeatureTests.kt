@@ -1,12 +1,11 @@
 package compiler.kerml.examples
 
-import util.mockup.loadKerML
 import org.junit.jupiter.api.Disabled
 import util.assertNoIssues
+import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Ignore
 import kotlin.test.Test
-import kotlin.test.assertTrue
 
 class FeatureTests {
 

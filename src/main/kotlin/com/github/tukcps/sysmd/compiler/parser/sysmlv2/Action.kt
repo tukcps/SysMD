@@ -59,20 +59,26 @@ fun SysMLv2.ActionBody() {
 fun SysMLv2.ActionBodyItem() {
     MemberPrefix()
     when {
-        nonBehaviorBodyItemStart() -> NonBehaviorBodyItem()
+        nonBehaviorBodyItemStart()  -> NonBehaviorBodyItem()
 
-        match(FIRST, NAME_LIT, DPDP) or match(FIRST, NAME_LIT, LCURBRACE) -> {
+        initialNodeMemberStarts()   -> {
             InitialNodeMember()
-            noOrMore(THEN) {
-                ActionTargetSuccessionMember()
+            noOrMore(THEN) { ActionTargetSuccessionMember() }
+        }
+
+        THEN.starts()               -> {
+            SourceSuccessionMember()
+            when {  // ActionBehaviorMember
+                behaviorUsageElementStarts()-> BehaviorUsageElement()
+                actionNodeStarts() -> ActionNode()
             }
         }
 
         match(FIRST, NAME_LIT, DOT) or match(FIRST, NAME_LIT, IF) or match(SUCCESSION)
-                                     -> GuardedSuccession()
+                                    -> GuardedSuccession()
 
         behaviorUsageElementStarts() -> BehaviorUsageElement()
-        actionNodeStart.starts()     -> ActionNode()
+        actionNodeStarts()           -> ActionNode()
         else -> throwSyntaxError("Unknown action body item ${token.kind}")
     }
 }
@@ -80,7 +86,7 @@ fun SysMLv2.ActionBodyItem() {
 fun SysMLv2.actionBodyItemStarts() =
     nonBehaviorBodyItemStart() || (token.kind == FIRST) ||
             behaviorUsageElementStart.starts() ||
-            actionNodeStart.starts()
+            actionNodeStarts()
 
 /**
  * ActionTargetSuccessionMember = MemberPrefix ActionTargetSuccession
@@ -99,8 +105,9 @@ fun SysMLv2.NonBehaviorBodyItem() {
         IMPORT.starts()             -> { Import() }
         ALIAS.starts()              -> { AliasMember() }
         definitionElementStarts()   -> { DefinitionElement() }
+        // Variant missing
         structureUsageElementStarts() or THEN.starts()  -> {
-            THEN.optional { SourceSuccessionMember() }
+            if (THEN.starts()) { SourceSuccessionMember() }
             StructureUsageElement() 
         }
         nonOccurrenceUsageStarts()  -> { NonOccurrenceUsageElement() }
@@ -112,7 +119,7 @@ fun SysMLv2.nonBehaviorBodyItemStart() = IMPORT.starts() || ALIAS.starts()
         || nonOccurrenceUsageStarts()
         || definitionElementStarts()
         || structureUsageElementStarts()
-        || THEN.starts()
+        || (THEN.starts() && !ASSIGN.isNext() && !NAME_LIT.isNext())
 
 
 /**
@@ -131,6 +138,7 @@ fun SysMLv2.InitialNodeMember() {
     }
     RelationshipBody()
 }
+fun SysMLv2.initialNodeMemberStarts() = match(FIRST, NAME_LIT, DPDP) or match(FIRST, NAME_LIT, LCURBRACE)
 
 
 /**
@@ -197,14 +205,15 @@ val performActionUsageDeclarationStart = setOf(NAME_LIT, ACTION)
 fun SysMLv2.ActionNode() {
     alternatives {
         controlNodeStart starts { ControlNode() }
+        ASSIGN           starts { AssignmentNode() }
         SEND             starts { Unsupported() }
         ACCEPT           starts { Unsupported() }
         IF               starts { IfNode() }
-        //
+        WHILE or LOOP    starts { WhileLoopNode() }
         FOR              starts { Unsupported() }
     }
 }
-val actionNodeStart get() = controlNodeStart
+fun SysMLv2.actionNodeStarts() = token.kind in controlNodeStart + setOf(WHILE, LOOP, SEND, ACCEPT, IF, FOR, ASSIGN)
 
 /**
  *      IfNode = ActionNodePrefix
@@ -240,6 +249,7 @@ fun SysMLv2.ActionBodyParameter() = FeatureActions<Feature>(semantics, ::Feature
     }
     RCURBRACE.consume()
 }
+
 
 /**
  * 8.2.2.16.3 Control Nodes
@@ -300,3 +310,62 @@ fun SysMLv2.AcceptParameterPart() {
         Unsupported("via not yet supported")
     }
 }
+
+
+/**
+ *      WhileLoopNode : WhileLoopActionUsage =
+ *          ActionNodePrefix
+ *          ( 'while' ownedRelationship += ExpressionParameterMember
+ *          | 'loop' ownedRelationship += EmptyParameterMember
+ *          )
+ *          ownedRelationship += ActionBodyParameterMember
+ *          ( 'until' ownedRelationship += ExpressionParameterMember ';' )?
+ */
+fun SysMLv2.WhileLoopNode() {
+    when(token.kind) {
+        WHILE   -> { WHILE.consume(); Expression() }
+        LOOP    -> { LOOP.consume() }
+        else    -> { throwSyntaxError("While loop node: ${token.kind}, expect 'while' or 'loop'") }
+    }
+    ActionBodyParameter()
+    optional(UNTIL, consume = true) { Expression(); SEMICOLON.consume() }
+}
+
+/**
+ *      8.2.2.17.5 Assignment Action Usages
+ *          AssignmentNode : AssignmentActionUsage =
+ *              OccurrenceUsagePrefix
+ *              AssignmentNodeDeclaration ActionBody
+ */
+fun SysMLv2.AssignmentNode() {
+    AssignmentNodeDeclaration()
+    ActionBody()
+}
+
+/**
+ *      AssignmentNodeDeclaration: ActionUsage =
+ *          ( ActionNodeUsageDeclaration )? 'assign'
+ *          ownedRelationship += AssignmentTargetMember
+ *          ownedRelationship += FeatureChainMember ':='
+ *          ownedRelationship += NodeParameterMember
+ */
+fun SysMLv2.AssignmentNodeDeclaration() {
+    ASSIGN.consume()
+    NAME_LIT.consume()
+    DPEQ.consume()
+    Expression()
+}
+
+/**
+ * AssignmentTargetMember : ParameterMembership =
+ * ownedRelatedElement += AssignmentTargetParameter
+ * AssignmentTargetParameter : ReferenceUsage =
+ * ( ownedRelationship += AssignmentTargetBinding '.' )?
+ * AssignmentTargetBinding : FeatureValue =
+ * ownedRelatedElement += NonFeatureChainPrimaryExpression
+ * FeatureChainMember : Membership =
+ * memberElement = [QualifiedName]
+ * | OwnedFeatureChainMember
+ * OwnedFeatureChainMember : OwningMembership =
+ * ownedRelatedElement += OwnedFeatureChain
+ */

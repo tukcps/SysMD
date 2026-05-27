@@ -153,26 +153,29 @@ fun SysMLv2.BehaviorUsageElement() {
         VERIFICATION-> VerificationCaseUsage()
         VIEWPOINT   -> Unsupported("Viewpoint not yet supported")
         PERFORM     -> PerformActionUsage()
+        EXHIBIT     -> ExhibitStateUsage()
         ASSERT if match(ASSERT, SATISFY) -> SatisfyRequirementUsage()
         ASSERT if match(ASSERT, NOT, SATISFY) -> SatisfyRequirementUsage()
         SATISFY, NOT -> SatisfyRequirementUsage()
         ASSERT      -> AssertConstraintUsage()
-        else        -> handleSyntaxError("Unknown behavior usage element")
+        else        -> handleSyntaxError("Unknown behavior usage element near '$token'")
     }
 }
-val behaviorUsageElementStart = setOf(ACTION, CALC, STATE, CONSTRAINT, CONCERN, CASE, ANALYSIS, VERIFICATION, VIEWPOINT, REQUIREMENT, PERFORM, ASSERT, SATISFY, ASSUME, NOT)
+val behaviorUsageElementStart = setOf(ACTION, CALC, STATE, CONSTRAINT, CONCERN, CASE, ANALYSIS, VERIFICATION, VIEWPOINT, REQUIREMENT, PERFORM, ASSERT, SATISFY, ASSUME, NOT, EXHIBIT)
 fun SysMLv2.behaviorUsageElementStarts() = token.kind in behaviorUsageElementStart
 
 /**
  *      StructureUsageElement = OccurrenceUsage | IndividualUsage | PortionUsage
  *          | EventOccurrenceUsage | ItemUsage | PartUsage | ViewUsage | RenderingUsage
  *          | PortUsage | ConnectionUsage | InterfaceUsage | AllocationUsage
- *          | Message | FlowConnectionUsage | SuccessionFlowConnectionUsage
+ *          | Message | FlowConnectionUsage | SuccessionFlowUsage
  */
 fun SysMLv2.StructureUsageElement() {
     FeaturePrefix()
     when(token.kind) {
         OCCURRENCE  -> OccurrenceUsage()
+        SNAPSHOT if NAME_LIT.isNext() -> {SNAPSHOT.consume(); OccurrenceUsage()}  // Missing in Metamodel, only in informal description
+        TIMESLICE if NAME_LIT.isNext() -> {TIMESLICE.consume(); OccurrenceUsage()} // Missing in Metamodel, only in informal description
         INDIVIDUAL if SNAPSHOT.isNext() ->  PortionUsage()
         INDIVIDUAL if TIMESLICE.isNext() -> PortionUsage()
         INDIVIDUAL  -> IndividualUsage()
@@ -187,9 +190,9 @@ fun SysMLv2.StructureUsageElement() {
         INTERFACE   -> InterfaceUsage()
         in allocationUsageStart -> AllocationUsage()
         FLOW        -> FlowUsage()
-        SUCCESSION  -> Unsupported("Succession flow not supported")
+        SUCCESSION  -> Unsupported("Succession flow usage not supported")
         MESSAGE     -> Unsupported("Messages not supported")
-        else        -> handleSyntaxError("Unknown structure usage element")
+        else        -> handleSyntaxError("Unknown structure usage element at '${token}'")
     }
 }
 fun SysMLv2.structureUsageElementStarts(): Boolean = (token.kind in setOf(
@@ -204,7 +207,7 @@ fun SysMLv2.structureUsageElementStarts(): Boolean = (token.kind in setOf(
 fun SysMLv2.OccurrenceUsageElement() {
     when {
         structureUsageElementStarts() -> { StructureUsageElement() }
-        behaviorUsageElementStart.starts()  -> { BehaviorUsageElement() }
+        behaviorUsageElementStarts()  -> { BehaviorUsageElement() }
         else -> handleSyntaxError("Unknown occurrence usage element")
     }
 }

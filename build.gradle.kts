@@ -13,7 +13,7 @@ import org.gradle.internal.os.OperatingSystem
  * - also set the value standalone according to your setup
  */
 group   = "com.github.tukcps"
-version = "4.2.2"               // must be number.number.number
+version = "4.2.3"               // must be number.number.number
 val aaddVersion = "0.1.15"
 val sysmlapiVersion = "3.9.12"
 val useMavenAADD = true

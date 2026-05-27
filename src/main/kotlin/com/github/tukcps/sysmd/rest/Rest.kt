@@ -7,6 +7,7 @@ import com.github.tukcps.sysmd.settings
 import org.springframework.http.*
 import org.springframework.web.client.RestClientException
 import org.springframework.web.client.RestTemplate
+import org.springframework.web.client.exchange
 
 
 object Rest {
@@ -20,7 +21,10 @@ object Rest {
      */
     private val restTemplate: RestTemplate = RestTemplate()
 
-    private fun generateURI(endpoint: String, queryParameters : Map<String, String>? = null): String {
+    /**
+     * Generates URI from a Map with multiple
+     */
+    fun generateURI(endpoint: String, queryParameters : Map<String, String>? = null): String {
         // if no query parameters are given, return plain endpoint URI
         var queryParameterString = ""
         if (queryParameters != null) {
@@ -39,20 +43,38 @@ object Rest {
 
     private fun generateHttpHeaders(withAuthToken: Boolean = true, sessionId: String?, branchId:String?=null): HttpHeaders {
         // set headers to accept and provide JSON data. also include the bearer auth token
-        val headers = HttpHeaders()
-        headers.contentType = MediaType.APPLICATION_JSON
-        headers.accept = mutableListOf(MediaType.APPLICATION_JSON)
-        if (withAuthToken)
-            headers.setBearerAuth(auth)
-        if (!sessionId.isNullOrEmpty()) {
-            headers.set("SessionId", sessionId)
+        return HttpHeaders().apply {
+            contentType = MediaType.APPLICATION_JSON
+            accept = mutableListOf(MediaType.APPLICATION_JSON)
+            if (withAuthToken)
+                setBearerAuth(auth)
+            if (!sessionId.isNullOrEmpty()) {
+                set("SessionId", sessionId)
+            }
+            if (branchId != null) {
+                set("branchId", branchId)
+            }
         }
-        if (branchId != null) {
-            headers.set("branchId", branchId)
-        }
-        return headers
     }
 
+    private fun generateHttpHeadersText(withAuthToken: Boolean = true, sessionId: String?): HttpHeaders {
+        return HttpHeaders().apply {
+            // Set headers to provide plain text data, but still accept JSON/anything in return
+            contentType = MediaType.TEXT_PLAIN
+            accept = mutableListOf(MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN)
+
+            if (withAuthToken) {
+                setBearerAuth(auth)
+            }
+            if (!sessionId.isNullOrEmpty()) {
+                set("SessionId", sessionId)
+            }
+        }
+    }
+
+    /**
+     * Generate request with JSON payload.
+     */
     @JvmOverloads
     fun requestToEndpoint(endpoint: String, payload: String?, method: HttpMethod, queryParameters : Map<String, String>? = null, withAuthToken: Boolean = true, sessionId: String?, branchId: String? = null): ResponseEntity<String> {
         //generate the default header information: ContentType and accepted response are JSON. Bearer auth token is optional
@@ -61,7 +83,22 @@ object Rest {
         // formulate the request with the default header and given payload
         val request = HttpEntity(payload, headers)
         return try {
-            restTemplate.exchange(generateURI(endpoint, queryParameters), method, request, String::class.java)
+            restTemplate.exchange<String>(generateURI(endpoint, queryParameters), method, request)
+        } catch (error: RestClientException) {
+            ResponseEntity("Unknown error in request: ${error.message}", HttpStatus.BAD_GATEWAY)
+        }
+    }
+
+    /**
+     * Generate request with plain text payload.
+     */
+    fun requestToEndpointText(endpoint: String, payload: String, method: HttpMethod, withAuthToken: Boolean = true, sessionId: String?): ResponseEntity<String> {
+        val headers = generateHttpHeadersText(withAuthToken, sessionId = sessionId)
+
+        // formulate the request with the default header and given payload
+        val request = HttpEntity(payload, headers)
+        return try {
+            restTemplate.exchange<String>(generateURI(endpoint), method, request)
         } catch (error: RestClientException) {
             ResponseEntity("Unknown error in request: ${error.message}", HttpStatus.BAD_GATEWAY)
         }
@@ -81,6 +118,10 @@ object Rest {
 
     fun post(endpoint: String, payload: String?, sessionId: String?, branchId: String? = null): ResponseEntity<String> {
         return this.post(endpoint, payload, null, sessionId, branchId)
+    }
+
+    fun postText(endpoint: String, text: String, sessionId: String?): ResponseEntity<String> {
+        return this.requestToEndpointText(endpoint, text, HttpMethod.POST, true, sessionId)
     }
 
     fun put(endpoint: String, payload: String, queryParameters : Map<String, String>? = null, sessionId: String?): ResponseEntity<String> {

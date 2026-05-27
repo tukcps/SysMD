@@ -646,9 +646,9 @@ class IssuesAndRegressions {
     }
 
     //Tests for Issue #243
-    @Test @Ignore
+    @Test // @Ignore
     fun issue243indexExplosionBiggerModelTest() = testSession("ScalarValues") {
-        loadKerML(
+        loadSysMLv2(
             input = """
             attribute x1: ScalarValues::Real(1.0..3.0);
             attribute y1: ScalarValues::Real(1.0..3.0);
@@ -681,7 +681,6 @@ class IssuesAndRegressions {
         global.resolveVar("x4")!!
         global.resolveVar("y4")!!
         val r4 = global.resolveVar("r4")!!
-
 
         println(r1.vectorQuantity.bdd().toIteString())
         println("r1 depth: ${r1.vectorQuantity.bdd().height()}")
@@ -721,17 +720,15 @@ class IssuesAndRegressions {
         println("r1 bdd: ${r1.vectorQuantity.bdd().toIteString()}")
     }
 
-    @Test @Ignore
+    @Test // @Ignore
     fun issue243indexExplosionDuplicateComparisonTest() = testSession("ScalarValues") {
-        loadKerML(
-            input = """
+        loadSysMLv2(input = """
             attribute x1: ScalarValues::Real(1.0..3.0);
             attribute y1: ScalarValues::Real(1.0..3.0);
             attribute r1: ScalarValues::Boolean = x1 <= y1;
             attribute r2: ScalarValues::Boolean = x1 <= y1;
-            //attribute r3: ScalarValues::Boolean = r1 and r2;
-            """
-        )
+            attribute r3: ScalarValues::Boolean = r1 and r2;
+        """)
         assertNoIssues()
         solver.propagate()
         assertNoIssues()
@@ -795,8 +792,7 @@ class IssuesAndRegressions {
 
     @Test @Ignore
     fun issue243indexExplosionSmallModelAADDTest() = testSession {
-        loadKerML(
-            input = """
+        loadSysMLv2(input = """
             attribute x1: ScalarValues::Real(1.0..3.0);
             attribute y1: ScalarValues::Real(1.0..3.0);
             //attribute z1: ScalarValues::Real(2.0..6.0) = x1 + y1;
@@ -1028,11 +1024,11 @@ class IssuesAndRegressions {
 
 
     @Test
-    @Ignore
     fun issueExpression() = testSession("ScalarValues", "ISQ", "Ranges") {
         loadSysMLv2("""
             private import ScalarValues::*;
-            attribute constraint FLOPS: Real = 5/5.0 ;
+            // Bug fixed in Test: 1) attribute constraint = type?, 2) constraint must evaluate to a boolean. 
+            assert constraint FLOPS: Real = 5.0 == 5.0 ;
         """)
         solver.propagate()
         assertNoIssues()

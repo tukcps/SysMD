@@ -1,5 +1,8 @@
+@file:Suppress("JvmTaintAnalysis")
+
 package api
 
+import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.github.tukcps.sysmd.SysMdRunner
 import com.github.tukcps.sysmd.model.sysml.AttributeUsage
@@ -39,7 +42,10 @@ import kotlin.test.assertTrue
 @DirtiesContext
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
 class RestAPISessionServiceTest {
-    private var jsonMapper = jacksonObjectMapper()
+    private var jsonMapper = jacksonObjectMapper().configure(
+        DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
+        false
+    )
 
     init {
         settings.rest.port = "8081"
@@ -89,7 +95,8 @@ class RestAPISessionServiceTest {
     fun startSessionTest() {
         projectService.createProject("startSessionTest")
         val projects = projectService.getProjects()
-        val response = Rest.post("/session", projects.first().name, null)
+        val response = Rest.postText("/session", projects.first().name?:"", null)
+        assertEquals(HttpStatus.CREATED.value(), response.statusCode.value())
     }
 
     @Test
@@ -176,6 +183,7 @@ class RestAPISessionServiceTest {
         assertEquals(HttpStatus.OK.value(), response.statusCode.value())
         val variables = jsonMapper.readValue(response.body, VariablesResponse::class.java)
         assertTrue(variables.variables.isNotEmpty())
+        assertTrue(variables.variables.any { it.qualifiedName=="x" && it.value == "2.0" && it.unit == "1"})
     }
 
     @Test fun getSubtypesTest() = testSession("ScalarValues") {

@@ -4,7 +4,8 @@ package com.github.tukcps.sysmd.compiler.parser.sysmlv2
 import com.github.tukcps.sysmd.compiler.SysMLv2
 import com.github.tukcps.sysmd.compiler.parser.kerml.FeatureSpecializationPart
 import com.github.tukcps.sysmd.compiler.parser.kerml.OwnedReferenceSubsetting
-import com.github.tukcps.sysmd.compiler.parser.util.Unsupported
+import com.github.tukcps.sysmd.compiler.parser.kerml.ValuePart
+import com.github.tukcps.sysmd.compiler.parser.kerml.valuePartStart
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
 import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.AssertActions
@@ -45,9 +46,7 @@ fun SysMLv2.OccurrenceDefinitionPrefixStarts() = token.kind in setOf(ABSTRACT, V
  */
 fun SysMLv2.ConstraintUsageDeclaration() {
     UsageDeclaration()
-    optional(EQ) {
-        Unsupported("Production rule for Value Part in ConstraintUsageDeclaration not yet implemented.")
-    }
+    optional(valuePartStart) { ValuePart() }
 }
 
 

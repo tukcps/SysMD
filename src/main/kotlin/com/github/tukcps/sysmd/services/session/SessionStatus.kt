@@ -121,7 +121,7 @@ class SessionStatus {
             kind = kind,
             message = message,
             input = compiler?.input?:element?.input?:(cause as? SysMDException)?.input?:(cause as? SysMDException)?.element?.input,
-            indices = element?.indices,
+            indices = compiler?.token?.indices?:element?.indices,
             token = compiler?.token,
             path = path?:compiler?.semantics?.ownerName()?:element?.path(),
             cause = cause

@@ -6,7 +6,6 @@ import com.github.tukcps.sysmd.services.estimateFeature
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import io.github.tukcps.aadd.values.XBool
 import io.github.tukcps.aadd.values.XBool.Companion.True
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.parallel.ResourceAccessMode.READ_WRITE
 import org.junit.jupiter.api.parallel.ResourceLock
 import org.junit.jupiter.api.parallel.Resources.SYSTEM_PROPERTIES
@@ -16,7 +15,6 @@ import util.testSession
 import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 
 class AvailabilityTests {
@@ -25,23 +23,22 @@ class AvailabilityTests {
      * We model the availability of a component at a given time with the ITE function.
      * T is a Real-valued property that is part of a class Context.
      */
-    @Test @Ignore
-    fun computeAvailabilitySimple() = testSession("ISO26262") {
+    @Test
+    fun computeAvailabilitySimple() = testSession("Occurrences") {
         loadKerML("""
             package t {
-                class Context :> ISO26262::Element {
-                    expression T: ScalarValues::Real; 
+                class Context  {
+                    feature T: ScalarValues::Real; 
                 }
-                class c1 isA Component {
-                    import t::Context::*; 
-                    expression Availability: ScalarValues::Boolean = ITE(T>2035.0, true, false); 
+                class c1 :> Context {
+                    feature Availability: ScalarValues::Boolean = ITE(T>2035.0, true, false); 
                 }
             }
         """)
         assertNoIssues()
         solver.propagate()
-        // println(global.resolveName<Namespace>(qualifiedName = "t::c1") !!.resolveName<Expression>("Availability")!!.bdd().toIteString())
-        assertEquals(3, global.resolveVar("t::c1::Availability")!!.bdd().height())
+        val availability =  global.resolveVar("t::c1::Availability")
+        assertEquals(availability!!.bool(), XBool.X)
     }
 
     /**
@@ -69,7 +66,7 @@ class AvailabilityTests {
     }
 
 
-    @Test @Ignore
+    @Test
     fun computeAvailabilityDerivedFrom2() = testSession("ISO26262") {
         loadKerML(""" 
             package t {
@@ -88,7 +85,7 @@ class AvailabilityTests {
         assertEquals(builder.True, estimateFeature(tc1, "Availability").bdd())
     }
 
-    @Test  @Disabled
+    @Test
     fun computeAvailabilityDerivedWithSubclasses() = testSession("Occurrences", "Ranges") {
         loadKerML(""" 
             feature T: Ranges::RealInRange {:>> range="1000 .. 3000";}

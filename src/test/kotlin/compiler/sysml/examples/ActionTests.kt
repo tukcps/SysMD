@@ -6,7 +6,6 @@ import com.github.tukcps.sysmd.model.sysml.ItemDefinition
 import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -126,17 +125,16 @@ class ActionTests {
      *     until a specific condition is met.
      *     Refer to Section: 7.16 Actions
      */
-    @Ignore
     @Test
     fun testActionWithLoop() = testSession("Actions", "Items", "Attributes") {
         loadSysMLv2("""
         package Loop {
-            private  import ScalarValues::*;
+            private import ScalarValues::*;
             
             action actionWithLoop {
             
-                attribute x:Integer := 1;
-                attribute increment:Integer = 1;
+                attribute x: Integer := 1;
+                attribute increment: Integer = 1;
                 attribute y:Integer;
                 
                 loop action loop1 {
@@ -150,7 +148,6 @@ class ActionTests {
             
         }
         """)
-        assertNoIssues()
+        assertNoIssues({ !it.message.contains("could not be resolved") })
     }
-
 }

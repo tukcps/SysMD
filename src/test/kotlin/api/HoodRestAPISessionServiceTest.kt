@@ -7,7 +7,6 @@ import com.github.tukcps.sysmd.SysMdRunner
 import com.github.tukcps.sysmd.rest.Rest
 import com.github.tukcps.sysmd.rest.entities.requests.IndexEntry
 import com.github.tukcps.sysmd.rest.entities.requests.SessionIndexRequest
-import com.github.tukcps.sysmd.services.session.SessionManager.projectService
 import com.github.tukcps.sysmd.settings
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -15,7 +14,6 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.test.annotation.DirtiesContext
-import util.mockup.MockupSysMDProjectService
 import kotlin.test.Ignore
 import kotlin.test.assertEquals
 

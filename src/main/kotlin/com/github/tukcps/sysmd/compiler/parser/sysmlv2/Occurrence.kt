@@ -64,7 +64,7 @@ fun SysMLv2.OccurrenceUsagePrefix() {
  *      OccurrenceUsage = OccurrenceUsagePrefix 'occurrence' Usage
  */
 fun SysMLv2.OccurrenceUsage() = OccurrenceUsageActions(semantics).parse {
-    OCCURRENCE.consume()
+    OCCURRENCE.optional() // Optional in informal description, not optional in metamodel (Bug in Spec?)
     Usage()
 }
 

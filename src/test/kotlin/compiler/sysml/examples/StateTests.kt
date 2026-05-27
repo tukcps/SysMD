@@ -3,7 +3,6 @@ package compiler.sysml.examples
 import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
-import kotlin.test.Ignore
 import kotlin.test.Test
 
 class StateTests {
@@ -99,17 +98,16 @@ class StateTests {
      * Refer to Section: 7.17 States
      * Language Specification Document: https://www.omg.org/spec/SysML/2.0/Beta2/Language/PDF
      */
-    @Ignore
     @Test
     fun testExhibit() = testSession("States", "Actions", "Parts") {
         loadSysMLv2("""
-        part def Part1;
-        state def State1;
-        state state1 : State1;
-        part part1 : Part1 {
-            exhibit state1;
-        }
-        """.trimIndent())
+            part def Part1;
+            state def State1;
+            state state1 : State1;
+            part part1 : Part1 {
+                exhibit state1;
+            }
+        """)
         assertNoIssues()
     }
 
@@ -119,16 +117,15 @@ class StateTests {
      * Refer to Section: 7.17 States
      * Language Specification Document: https://www.omg.org/spec/SysML/2.0/Beta2/Language/PDF
      */
-    @Ignore
     @Test
     fun testExhibitState() = testSession("States", "Actions", "Parts") {
         loadSysMLv2("""
-        part def Part1;
-        state def State1;
-        part part1 : Part1 {
-            exhibit state state1 : State1;
-        }
-        """.trimIndent())
+            part def Part1;
+            state def State1;
+            part part1 : Part1 {
+                exhibit state state1 : State1;
+            }
+        """)
         assertNoIssues()
     }
 }

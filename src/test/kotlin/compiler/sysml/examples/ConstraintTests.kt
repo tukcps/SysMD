@@ -41,7 +41,7 @@ class ConstraintTests {
             }
             
             constraint constraint1 : Constraint1 {
-                // a = b; ---> BUG: is a redefinition 
+                // a = b; ---> BUG in SysML v2 tutorial: is a redefinition 
                 ::> a = b;
             }
         """)

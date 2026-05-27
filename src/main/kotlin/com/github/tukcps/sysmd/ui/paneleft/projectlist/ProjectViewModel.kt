@@ -120,6 +120,7 @@ data class ProjectViewModel(
             // Start a new session with the project
             sessionState.value = SessionManager.startSession(project!!)
 
+            val index = project!!.getIndex()
             // Open the tabs, but don't compile
             project!!.getIndex().forEach { file ->
                 sessionState.value.loadSysMDFromFile(file, compile = false, 0)

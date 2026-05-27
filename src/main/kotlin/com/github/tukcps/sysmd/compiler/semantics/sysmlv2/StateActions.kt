@@ -9,7 +9,7 @@ import com.github.tukcps.sysmd.model.sysml.implementation.StateUsageImplementati
 import com.github.tukcps.sysmd.model.sysml.implementation.TransitionUsageImplementation
 
 
-class StateUsageActions(context: ActionsContext): FeatureActions<StateUsage>(
+open class StateUsageActions(context: ActionsContext ): FeatureActions<StateUsage>(
     context = context,
     creator = ::StateUsageImplementation,
     defaultType = "States::StateAction"

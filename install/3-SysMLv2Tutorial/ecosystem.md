@@ -12,13 +12,10 @@ author: RPTU Kaiserslautern-Landau, Chair of Cyber-Physical Systems
 In this part, you will learn about for which purpose and how to use SysML v2.
 After reading this section, you will
 
-- know about the features of SysML v2 tool ecosystems
 
-- understand
-    - when to use SysML v2 and when not
-    - for which purposes to use SysML v2 and for which to use other tools or languages
-
-
+- understand what SysML v2 is, and when to use SysML v2 and when not,
+- have an overview of the development process and how SysML v2 can be applied within it,
+- know about the features of SysML v2 tool ecosystems. 
 
 ---
 # What is SysML? And SysML "v2?" 
@@ -28,7 +25,7 @@ The standard is developed and provided by the Object Management Group (OMG).
 SysML allows us to model and exchange
 - Requirements
 - Specification
-- Use cases
+- Verification and Use cases
 - Test cases
 
 SysML provides a rather *general language* for arbitrary domains, including software, 
@@ -59,15 +56,58 @@ As mentioned above, SysML v2 is not a domain-specific tool development or for mo
 Its use cases go over the whole development where it provides the "glue" between different domains. 
 A reasonable methodology to use the SysML v2 ecosystem might be as follows: 
 
-**Requirements elicitation** Documentation and organization of stakeholder needs. 
+## Requirements elicitation
+The requirements elicitation documents and organizes needs of stakeholder.
+They are often not modeling experts. 
 For this purpose, documents in natural language, but as well figures, equations, 
-and more are used. 
+and more are used. These usually end up in human-readable text. 
+Furthermore, methods for the verification of a requirement should be given. 
+In SysMD Notebook, this can be either a 
+- Documentation cell in SysMD Notebook, or a 
+- Requirement of a SysML v2 model, in which a ```requirement``` statement has a ```doc``` statement includes the human-readable text. 
+- Verification method is given in a SysML v2 model, in which a ```verification``` statement has a ```doc``` statement that includes the human-readable description of a test.
+An introduction with examples is given in the SysML v2 part of the tutorial. 
+Furthermore, use- and analysis- cases can be given (not yet included). 
 
-**System specification** Specification and analysis the intended implementation resp. its functionality, 
-and linking functions with requirements and test specifications. 
-This in particular includes also specification of use- , analysis- and test cases.  
+## System specification
+System-specification creates machine-readable models -- e.g., concrete constraints, etc. --  from the human-readable requirements. 
+This is, where typical Model-Based Systems Engineering (MBSE) approaches begin. 
+In SysML v2, the ```requirement``` and ```verification``` statements can be enriched with modeling concrete 
+dependencies and constraints.
 
-**Development** Development of components that implement functions and that are tested based on the specification. 
+A key aspect of modern MBSE is now to *link* requirements, specification and constraints with the design that is created 
+within the following development process. 
+In the best case -- supported by SysMD notebook -- a contiuous verification and validation of requirement, constraints, and
+the design artifacts is done. 
+
+## Design  
+The design process creates concrete components that satisfy the specification and requirements. 
+This is typically done by (at least) two steps that are linked again with suitable relationships: 
+- Functional view in which the functions are modeled and broken down to sub-functions, using parts and items of SysML v2. 
+- Physical (or: technical) view in which the physical elements that realize the functions are modeled. 
+
+Furthermore, one can add a geometrical view. 
+
+## Use cases of SysML v2 models
+
+The benefit of MBSE modeling effort lies in its use cases.
+The model created throughout the requirements elicitation, specification ,and the design process an the be used 
+in the following tasks: 
+
+**Documentation** by diagrams that enable many stakeholders to quickly understand relationships
+of a model. However, often this is considered as not worth the effort of creating models. 
+
+**Analysis of relationships** by tracing changes and updating 
+requirements, constraint, often allowing a detailed change-impact analysis, by 
+following links from a component that does not satisfy its constraints.
+Unfortunately, most tools do not automatically solve all expressions and dependencies 
+and focus on creating and propagating "check-marks". 
+
+**Continuous verification and validation** by checking whether specified constraints 
+can be satisfied by the existing design. 
+This includes also the bidirectional evaluation of constraints to functions and parts, and
+vice versa. 
+SysMD Notebook is able to automate this task via its solver.
 
 **Safety and hazard assessment** Analysis of faults and its impacts.
 
@@ -75,7 +115,10 @@ This in particular includes also specification of use- , analysis- and test case
 This can be used as a bill of materials (BOM) for production, and complementary information can be added to the models.
 
 **Operation** The BOM derived from the SysML v2 model, together with complementary behavioral models for testing and 
-verification can be used as a starting point for a digital twin that links Development and operation. 
+verification can be used as a starting point for a *digital twin* that links 
+- development, where basically types and features of things are modeled, and  
+- operation, where unique, single individuals (SysML v2: ```individual```) 
+are linked with models and individual-related data. 
  
 # SysML v2 Ecosystem   
 A typical SysML v2 ecosystem might consist of
