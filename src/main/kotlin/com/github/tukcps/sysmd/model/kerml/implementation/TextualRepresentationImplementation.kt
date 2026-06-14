@@ -39,6 +39,7 @@ class TextualRepresentationImplementation(
             "SysMD" -> SysMD(model!!).parse(this.body, language.dropFirstName())
             "KerML" -> KerML(model!!).parse(this.body, language.dropFirstName())
             "SysML" -> SysMLv2(model!!).parse(this.body, language.dropFirstName())
+            else    -> model?.status?.error("Unexpected language: $language")
         }
     }
 

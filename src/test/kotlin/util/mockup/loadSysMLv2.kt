@@ -3,6 +3,7 @@ package util.mockup
 import com.github.tukcps.sysmd.compiler.SysMLv2
 import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.exceptions.SysMDError
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.session.Session
 
@@ -11,11 +12,14 @@ import com.github.tukcps.sysmd.services.session.Session
  * NOTE: Rather useful for test purposes and only used there.
  * @param input A SysMD language sting; pure SysMD without interwoven MD.
  */
-fun Session.loadSysMLv2(input: String){
+fun Session.loadSysMLv2(
+    input: String,
+    runlevel: Runlevel = settings.runlevel,
+){
     SysMLv2(model = this).parse(input)
     try {
-        if (settings.initialize) initialize(5)
-    }  catch (exception: SysMDError) {
+        initialize(runlevel)
+    } catch(exception: SysMDError) {
         status.error(message = "During initialization: ${exception.message}", kind = Issue.Kind.ERROR_SEMANTIC, cause = exception)
     }
 }

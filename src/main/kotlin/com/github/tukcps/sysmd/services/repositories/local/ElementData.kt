@@ -1,21 +1,8 @@
 package com.github.tukcps.sysmd.services.repositories.local
 
+import com.github.tukcps.sysmd.logger
 import com.github.tukcps.sysmd.model.expression.*
 import com.github.tukcps.sysmd.model.expression.implementation.*
-import com.github.tukcps.sysmd.model.expression.implementation.FeatureChainExpressionImplementation
-import com.github.tukcps.sysmd.model.expression.implementation.FeatureReferenceExpressionImplementation
-import com.github.tukcps.sysmd.model.expression.implementation.IndexExpressionImplementation
-import com.github.tukcps.sysmd.model.expression.implementation.InvariantImplementation
-import com.github.tukcps.sysmd.model.expression.implementation.InvocationExpressionImplementation
-import com.github.tukcps.sysmd.model.expression.implementation.LiteralBooleanImplementation
-import com.github.tukcps.sysmd.model.expression.implementation.LiteralInfinityImplementation
-import com.github.tukcps.sysmd.model.expression.implementation.LiteralIntegerImplementation
-import com.github.tukcps.sysmd.model.expression.implementation.LiteralRationalImplementation
-import com.github.tukcps.sysmd.model.expression.implementation.LiteralStringImplementation
-import com.github.tukcps.sysmd.model.expression.implementation.MetadataAccessExpressionImplementation
-import com.github.tukcps.sysmd.model.expression.implementation.NullExpressionImplementation
-import com.github.tukcps.sysmd.model.expression.implementation.OperatorExpressionImplementation
-import com.github.tukcps.sysmd.model.expression.implementation.SelectExpressionImplementation
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.*
 import com.github.tukcps.sysmd.model.sysml.implementation.*
@@ -180,7 +167,11 @@ fun ElementDAO.toElement(): Element {
         "Subsetting"        -> SubsettingImplementation()
         "TextualRepresentation" -> TextualRepresentationImplementation(body = body!!, language = language!!)
         "Type"              -> TypeImplementation()
-        else             -> throw Exception("Element with unknown type '$type' in response; must be valid entity type.")
+        "VerificationCaseUsage" -> VerificationCaseUsageImplementation()
+        else             -> {
+            logger.error("Element with unknown type '$type' in Element DAO; must be valid entity type.")
+            throw Exception("Element with unknown type '$type' in Element DAO; must be valid entity type.")
+        }
     }
     element.elementId = elementId
     element.declaredName = declaredName

@@ -3,17 +3,22 @@ package services
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.*
 import com.github.tukcps.sysmd.model.sysml.PartUsage
+import com.github.tukcps.sysmd.rest.entities.ProjectImplementation
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.check.checkOwnership
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.repositories.local.ElementData
-import com.github.tukcps.sysmd.services.session.SessionImplementation
-import com.github.tukcps.sysmd.services.session.getAllOfClass
+import com.github.tukcps.sysmd.services.repositories.local.ProjectData
+import com.github.tukcps.sysmd.services.session.implementation.ProjectSessionImplementation
+import com.github.tukcps.sysmd.services.session.implementation.SessionImplementation
+import com.github.tukcps.sysmd.services.session.implementation.getAllOfClass
 import com.github.tukcps.sysmd.services.session.loadLibrary
 import com.github.tukcps.sysmd.services.session.loadProject
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.mockup.loadSysMLv2
 import util.testSession
+import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -64,9 +69,9 @@ class SessionTests {
     fun addOwnedRelationshipDoesNotAddDuplicateSpecialization() = testSession {
         val type = addOwnedMember(TypeImplementation("t"), global)
         addOwnedRelationship(SpecializationImplementation(), type)
-        initialize()
+        initialize(Runlevel.MODEL)
         addOwnedRelationship(SpecializationImplementation(), type)
-        initialize()
+        initialize(Runlevel.MODEL)
         assertEquals(1, type.ownedRelationship.size)
         assertNoIssues()
     }
@@ -80,16 +85,17 @@ class SessionTests {
         loadKerML("""
             type t :> Base::Anything { feature f; } 
             type t2 :> t { :>> f; }
-        """)
+        """, Runlevel.MODEL)
         assertNoIssues()
-        val t2 = global.resolve("t2")?.member<Type>()!!
+        val t2 = global.resolve("t2")?.member<Type>()
+        assertNotNull(t2)
         val tf = global.resolve("t::f")?.member<Feature>()!!
         val t2f = global.resolve("t2::f")?.member<Feature>()!!
         assertEquals(2,t2f.ownedRelationship.size)
         assertTrue(tf !== t2f)
         // Try to make a duplicate
         addOwnedRelationship(RedefinitionImplementation(t2f, tf), t2f)
-        initialize()
+        initialize(Runlevel.MODEL)
         assertEquals(2,t2f.ownedRelationship.size)
         assertNoIssues()
     }
@@ -103,17 +109,19 @@ class SessionTests {
         loadKerML("""
             type t :> Base::Anything { feature f; } 
             type t2 :> t { :>> f; }
-        """)
+        """, Runlevel.MODEL)
         assertNoIssues()
         val t: Type? = global.resolve("t")?.member()
+        assertNotNull(t)
         val t2: Type? = global.resolve("t2")?.member()
+        assertNotNull(t2)
         val tf: Feature? = global.resolve("t::f")!!.member()
         val t2f: Feature = global.resolve("t2::f")!!.member()!!
-        assertEquals(2,t2f.ownedRelationship.size)
+        assertEquals(2, t2f.ownedRelationship.size)
         assertTrue(tf !== t2f)
         // Try to make a duplicate
         addOwnedRelationship(RedefinitionImplementation(t2f, UnresolvedFeature("f")), t2f)
-        initialize()
+        initialize(Runlevel.MODEL)
         assertEquals(2,t2f.ownedRelationship.size)
         assertNoIssues()
     }
@@ -135,7 +143,7 @@ class SessionTests {
         val s = SessionImplementation(libraries = mutableListOf())
         val inp = ex.map {
             it.payloadElementSnapshot?:
-            ElementData(java.util.UUID.randomUUID(), "null")
+            ElementData(UUID.randomUUID(), "null")
         }
         s.import(inp)
         assertTrue(status.issues.isEmpty(), status.issues.toString() )
@@ -152,7 +160,8 @@ class SessionTests {
 
     @Test
     fun loadProject() {
-        val session = SessionImplementation(libraries = mutableListOf())
+        val project = ProjectData(ProjectImplementation(defaultBranchId = UUID.randomUUID()))
+        val session = ProjectSessionImplementation(project, libraries = mutableListOf(), Runlevel.NONE)
         session.loadProject("Base")
         assertEquals(1, session.global.ownedRelationship.size)
         assertTrue(session.status.issues.isEmpty())
@@ -163,7 +172,7 @@ class SessionTests {
         loadKerML("""
             namespace test; 
         """)
-        initialize()
+        initialize(Runlevel.MODEL)
         assertNoIssues()
         val test: Namespace? = global.resolve("test")?.member()
         assertNotNull(test)
@@ -174,7 +183,7 @@ class SessionTests {
         loadSysMLv2("""
             part test; 
         """)
-        initialize()
+        initialize(Runlevel.MODEL)
         assertNoIssues()
         val test: PartUsage? = global.resolve("test")?.member()
         assertNotNull(test)
@@ -189,7 +198,7 @@ class SessionTests {
                 license : ScalarValues::String     = "license";
                 files : ScalarValues::String[1..*] = ("file1", "file2");
             }
-        """)
+        """, Runlevel.VARIABLES)
         assertNoIssues()
         val p: MetadataFeature? = global.resolve("p")?.member()
         assertNotNull(p)
@@ -279,7 +288,7 @@ class SessionTests {
         addOwnedRelationship(a, global)
         b.elementId = a.elementId
         val aa = addOwnedRelationship(b, global)
-        initialize(1)
+        initialize(Runlevel.NAMES_RESOLVED)
         assertEquals(a, aa)
     }
 
@@ -296,7 +305,7 @@ class SessionTests {
             feature b;
             connector c from a to b; 
         """)
-        initialize()
+        initialize(Runlevel.MODEL)
         val elements2 = get()
         assertEquals(elements.size, elements2.size)
     }

@@ -3,11 +3,11 @@ package compiler
 import com.github.tukcps.sysmd.compiler.importMD
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
-import com.github.tukcps.sysmd.model.kerml.implementation.AnnotatingElementImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.NamespaceImplementation
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.initialize
 import util.assertNoIssues
-import util.testSession
+import util.testProjectSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -24,7 +24,7 @@ class ImportMDTests {
     /**
      * MD titles with the same text shall be allowed.
      */
-    @Test fun importMD_equal_headings_allowed() = testSession {
+    @Test fun importMD_equal_headings_allowed() = testProjectSession {
         val input = """
             # H1
             asdf asdf
@@ -38,13 +38,13 @@ class ImportMDTests {
         """.trimIndent()
         val fileAnnotation = addOwnedMember(NamespaceImplementation(declaredName="test"), global)
         importMD(input, fileAnnotation)
-        initialize()
+        initialize(Runlevel.NAMES_RESOLVED)
         assertNoIssues()
         assertEquals(4, fileAnnotation.ownedElement.size)
         assertTrue( (fileAnnotation.ownedElement.last() as TextualRepresentation).body.contains("text"))
     }
 
-    @Test fun importMarkdown() = testSession {
+    @Test fun importMarkdown() = testProjectSession {
         val input = """
             # H1
             
@@ -59,14 +59,14 @@ class ImportMDTests {
             Some text 
             
         """.trimIndent()
-        val fileAnnotation = addOwnedMember(AnnotatingElementImplementation(declaredName="test"), global)
         importMD(input, global)
-        initialize()
-        assertEquals(15, get().size)
+        assertEquals(5, global.ownedElement.size)
+        initialize(Runlevel.NAMES_RESOLVED)
+        assertEquals(13, get().size)
     }
 
 
-    @Test fun importMdWithEmptyDocumentationAfterCode() = testSession {
+    @Test fun importMdWithEmptyDocumentationAfterCode() = testProjectSession {
         val input = """
             # H1
             ## H2 
@@ -84,7 +84,7 @@ class ImportMDTests {
     /**
      * The language shall be passed including parameters.
      */
-    @Test fun importMdWithLanguageAndNamespace() = testSession {
+    @Test fun importMdWithLanguageAndNamespace() = testProjectSession {
         val input = """
             # H1
             ## H2 
@@ -103,7 +103,7 @@ class ImportMDTests {
         assertEquals((fileAnnotation.ownedElement.last() as TextualRepresentation).getOwnerPrefix(), "A::B")
     }
 
-    @Test fun importMdWithNoTrailingTicks() = testSession {
+    @Test fun importMdWithNoTrailingTicks() = testProjectSession {
         val input = """
             # H1
             ## H2 
@@ -117,7 +117,7 @@ class ImportMDTests {
     }
 
 
-    @Test fun importMdMergesTitleAndBody() = testSession {
+    @Test fun importMdMergesTitleAndBody() = testProjectSession {
         val input = """
             # H1
             asdf1
@@ -130,7 +130,7 @@ class ImportMDTests {
         assertEquals(11, get().size)
     }
 
-    @Test fun importMdAndCompile() = testSession {
+    @Test fun importMdAndCompile() = testProjectSession {
         val input = """
             # H1
             ## H2 
@@ -149,12 +149,12 @@ class ImportMDTests {
                 it.compile()
             }
         }
-        initialize()
+        initialize(Runlevel.NAMES_RESOLVED)
         val test = global.resolve("Test")?.memberElement
         assertNotNull(test)
     }
 
-    @Test fun importMdWithYamlHeader2() = testSession {
+    @Test fun importMdWithYamlHeader2() = testProjectSession {
         val input = """
             --- 
             title: Test of Yaml Header

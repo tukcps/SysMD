@@ -1,6 +1,6 @@
 package sysmdtests
 
-import com.github.tukcps.sysmd.services.resolve.resolveVar
+import com.github.tukcps.sysmd.services.Runlevel
 import io.github.tukcps.aadd.values.XBool.Companion.False
 import io.github.tukcps.aadd.values.XBool.Companion.True
 import util.mockup.loadKerML
@@ -15,8 +15,8 @@ class OperationsTests {
     fun notTest1() = testSession("ScalarValues") {
         loadKerML("""
             feature a: ScalarValues::Boolean = not true; 
-        """)
-        val a = global.resolveVar("a")
+        """, Runlevel.VARIABLES)
+        val a = solver.getVariable("a")
         assertEquals(False, a?.bool())
     }
 
@@ -24,8 +24,8 @@ class OperationsTests {
     fun notTest2() = testSession("ScalarValues") {
         loadKerML("""
             feature a: ScalarValues::Boolean = not false or false; 
-        """)
-        val a = global.resolveVar("a")
+        """, Runlevel.VARIABLES)
+        val a = solver.getVariable("a")
         assertTrue(a?.ast?.dependency is com.github.tukcps.sysmd.model.expression.AstBinOp)
         assertEquals(True, a.bool())
     }
@@ -34,8 +34,8 @@ class OperationsTests {
     fun minusTest1() = testSession("ScalarValues") {
         loadKerML("""
             feature a: ScalarValues::Real = - 1.0 -- 1.0; 
-        """)
-        val a = global.resolveVar("a")
+        """, Runlevel.VARIABLES)
+        val a = solver.getVariable("a")
         assertEquals(0.0, a!!.max(), 0.00000001)
     }
 }

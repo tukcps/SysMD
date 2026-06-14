@@ -164,7 +164,7 @@ fun resetAll() {
     loadSettings()
 }
 
-fun resetAgenda() {
+fun resetBoard() {
     settings.agendaExpertMode = false
     exportSettings()
     loadSettings()

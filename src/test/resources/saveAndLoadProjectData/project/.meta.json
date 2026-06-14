@@ -1,11 +1,1 @@
-{
-  "index" : {
-    "a" : "file1.md",
-    "b" : "file2.kerml"
-  },
-  "created" : "2020-01-01T00:00:00Z",
-  "metamodel" : null,
-  "includesDerived" : null,
-  "includesImplied" : null,
-  "checkSum" : null
-}
+{"index":{"a":"file1.md","b":"file2.kerml"},"created":"2026-06-08T15:30:00Z"}

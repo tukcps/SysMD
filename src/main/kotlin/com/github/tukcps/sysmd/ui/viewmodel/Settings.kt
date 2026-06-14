@@ -11,9 +11,13 @@ import com.github.tukcps.sysmd.logger
 import com.github.tukcps.sysmd.settings
 import com.github.tukcps.sysmd.ui.styles.AppTheme
 import com.github.tukcps.sysmd.ui.styles.Fonts
-import java.io.File
-import java.io.IOException
-import java.io.InputStream
+import kotlinx.io.IOException
+import kotlinx.io.buffered
+import kotlinx.io.files.Path
+import kotlinx.io.files.SystemFileSystem
+import kotlinx.io.readString
+import kotlinx.io.writeString
+
 
 // Defines Icon Style to use to be the same in the whole GUI
 var MyIcons = Icons.Filled
@@ -26,16 +30,6 @@ class Settings {
     //description is unused otherwise
     @Suppress("unused")
     var colorStyle: String = "system"
-    private val description: String =
-        //"TextSize: NORMAL SMALL LARGE " +
-        "fontWeight: value in range(1,1000)---400 is Normal 700 is Bold " +
-                "fontFamily: choose between Monospace, Cursive, SansSerif, Serif and Default " +
-                "currentOs: for Win 11 you have to manually set this property!!" +
-                "lineHeightMultiplier: depends on your screen resolution and maybe on OS -- 1.5f works for me on 1920x1080 and 3.0f on 2736x1824"
-
-    //enum class TextSize { NORMAL, SMALL, LARGE }
-    // Set user home as start - otherwise, users end up in mostly empty directory that cannot be left ...
-    // User can then set it to less restricted directory.
     var dataFolder: String = System.getProperty("user.home") + "/SysMD"
     var imagesToCache = 20
 
@@ -60,7 +54,6 @@ class Settings {
      * In package rest.
      */
      class RestSettings {
-        var confirm = false
         var filename = ""
         var baseURI  = "localhost"
         var entryURI = "/agila-server"
@@ -81,10 +74,10 @@ fun importSettings() {
     val sysMDFolder = System.getProperty("user.home") + "/SysMD"
     val json: String?
     try {
-        val inputStream: InputStream = File("${sysMDFolder}/settings.json").inputStream()
-        json = inputStream.bufferedReader().use { it.readText() }
+        val input = SystemFileSystem.source(Path("${sysMDFolder}/settings.json"))
+        json = input.buffered().use { it.readString() }
         settings = mapper.readValue(json, Settings::class.java)
-    } catch (e: IOException) {
+    } catch (_: IOException) {
         logger.info("Couldn't find settings '${sysMDFolder}/settings.json', using defaults and create new settings file.")
         exportSettings()
     }
@@ -95,13 +88,13 @@ fun exportSettings() {
     val sysMDFolder = System.getProperty("user.home") + "/SysMD"
     val data = mapper.writeValueAsString(settings)
     try {
-        val settings = File("${sysMDFolder}/settings.json")
-        if (!settings.exists()) {
+        val path = Path("${sysMDFolder}/settings.json")
+        if (! SystemFileSystem.exists(path)) {
             logger.info("No settings.json file in $sysMDFolder; creating a new")
-            settings.createNewFile()
+            SystemFileSystem.sink(path).use {  }
         }
-        settings.writeText(data)
-    } catch (e: Exception) {
+        SystemFileSystem.sink(path).buffered().use { it.writeString(data) }
+    } catch (_: Exception) {
         logger.error("Error exporting settings")
     }
 }

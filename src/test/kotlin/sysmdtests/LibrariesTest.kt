@@ -2,6 +2,7 @@ package sysmdtests
 
 import com.fasterxml.uuid.Generators
 import com.github.tukcps.sysmd.model.kerml.Metaclass
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.check.checkConsistency
 import com.github.tukcps.sysmd.services.check.checkLibraryElementIds
 import com.github.tukcps.sysmd.services.check.checkOwnership
@@ -38,7 +39,7 @@ class LibrariesTest {
     }
 
     @Test
-    fun baseLibraryOK() = testSession(initialize = false) {
+    fun baseLibraryOK() = testSession(runlevel = Runlevel.NONE) {
         loadKerML("""
             standard library package Base { 
             // Base::Anything is built-in
@@ -69,7 +70,6 @@ class LibrariesTest {
         assertNotNull(global.resolve("ScalarValues::Natural"))
         assertNotNull(global.resolve("ScalarValues::Real"))
         assertNotNull(global.resolve("ScalarValues::Integer"))
-        initialize()
         solver.propagate()
         checkLibraryElementIds()
         checkOwnership()
@@ -81,7 +81,6 @@ class LibrariesTest {
         assertNotNull(global.resolve("ScalarValues::Natural"))
         assertNotNull(global.resolve("ScalarValues::Real"))
         assertNotNull(global.resolve("ScalarValues::Integer"))
-        initialize()
         solver.propagate()
         checkLibraryElementIds()
         checkOwnership()
@@ -110,7 +109,7 @@ class LibrariesTest {
         assertNoIssues()
         assertNotNull(global.resolve("Links::Link"))
         assertNotNull(global.resolve("Links::BinaryLink"))
-        initialize()
+        initialize(Runlevel.MODEL)
         checkLibraryElementIds()
         checkOwnership()
         assertNoIssues()
@@ -128,7 +127,7 @@ class LibrariesTest {
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
     fun objectsTest() = testSession {
         loadLibrary("Objects")
-        initialize()
+        initialize(Runlevel.MODEL)
         assertNotNull(global.resolve("Objects::Object"))
         assertTrue(status.issues.isEmpty(),  status.issues.toString())
         checkConsistency(repo.elements.values, checkForNoTransients = false)
@@ -245,7 +244,7 @@ class LibrariesTest {
      * Not yet supported: redefinition of two or more features.
      */
     @Test
-    fun loadKerMLLibraryTest() = testSession("Objects", initialize = false) {
+    fun loadKerMLLibraryTest() = testSession("Objects", runlevel = Runlevel.NONE) {
         loadKerML("""
                 standard library package KerML {
                     doc 

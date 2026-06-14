@@ -19,14 +19,14 @@ import androidx.compose.ui.unit.dp
 import com.github.tukcps.sysmd.ui.composables.SysMDTooltipArea
 import com.github.tukcps.sysmd.ui.styles.AppTheme
 import com.github.tukcps.sysmd.ui.viewmodel.MyIcons
-import com.github.tukcps.sysmd.ui.viewmodel.TextualRepresentationViewModel
+import com.github.tukcps.sysmd.ui.viewmodel.CellViewModel
 
 /**
  * Composable that shows a list of information texts if activated
  * @param model View model of textual representation cell with information to be shown
  */
 @Composable
-fun AnnotationsView(model: TextualRepresentationViewModel) {
+fun AnnotationsView(model: CellViewModel) {
     Row {
         val showInfo: MutableState<Boolean> = remember { mutableStateOf(true) }
 

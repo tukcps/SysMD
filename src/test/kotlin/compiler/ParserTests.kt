@@ -6,7 +6,8 @@ import com.github.tukcps.sysmd.model.kerml.Class
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Function
 import com.github.tukcps.sysmd.model.kerml.Package
-import com.github.tukcps.sysmd.services.session.SessionImplementation
+import com.github.tukcps.sysmd.services.Runlevel
+import com.github.tukcps.sysmd.services.session.implementation.SessionImplementation
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.assertTimeoutPreemptively
@@ -31,15 +32,15 @@ class ParserTests {
 
     /** Short name is given in <> */
     @Test
-    fun shortNameTest12() = testSession(initialize = false) {
-        loadKerML("""class < abc >; """)
+    fun shortNameTest12() = testSession {
+        loadKerML("""class < abc >; """, Runlevel.NAMES_RESOLVED)
         assertNoIssues()
     }
 
     /** Short name is given in <> */
     @Test
-    fun shortNameTest21() = testSession(initialize = false) {
-        loadKerML("class < shortName > longName;")
+    fun shortNameTest21() = testSession {
+        loadKerML("class < shortName > longName;", Runlevel.NAMES_RESOLVED)
         val abc = global.ownedElement.firstOrNull { it is Class }
         assertEquals("shortName", abc!!.shortName)
         assertEquals("longName", abc.name)

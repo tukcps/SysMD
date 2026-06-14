@@ -1,6 +1,10 @@
 package com.github.tukcps.sysmd.compiler
 
-import java.io.File
+import kotlinx.io.buffered
+import kotlinx.io.files.Path
+import kotlinx.io.files.SystemFileSystem
+import kotlinx.io.readLine
+
 
 /**
  * Gets the YAML information from the header of a SysMD file
@@ -10,7 +14,7 @@ import java.io.File
  * key: value ...
  * ---
  */
-fun getYaml(lines: Sequence<String>): HashMap<String, String>? {
+fun getYaml(lines: List<String>): HashMap<String, String>? {
     val map = hashMapOf<String, String>()
     var inYaml = false
     var noOfLimiters = 0
@@ -30,9 +34,11 @@ fun getYaml(lines: Sequence<String>): HashMap<String, String>? {
     return null
 }
 
-fun getYaml(f: File): HashMap<String, String>? {
-    val lines = f.bufferedReader().lineSequence()
+fun getYaml(f: Path): HashMap<String, String>? {
+    val lines = SystemFileSystem.source(f).buffered().use { source ->
+        generateSequence { source.readLine() }.toList()
+    }
     return getYaml(lines)
 }
 
-fun getYaml(string: String): HashMap<String, String>? = getYaml(string.lineSequence())
+fun getYaml(string: String): HashMap<String, String>? = getYaml(string.lineSequence().toList())

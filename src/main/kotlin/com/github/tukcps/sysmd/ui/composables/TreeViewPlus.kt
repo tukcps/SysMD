@@ -29,10 +29,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
-import com.github.tukcps.sysmd.model.kerml.Element
-import com.github.tukcps.sysmd.model.sysml.StateUsage
+import com.github.tukcps.sysmd.services.repositories.local.ElementData
 import com.github.tukcps.sysmd.ui.styles.AppTheme
-import com.github.tukcps.sysmd.ui.viewmodel.*
+import com.github.tukcps.sysmd.ui.viewmodel.HasATree
+import com.github.tukcps.sysmd.ui.viewmodel.IsATree
 
 data class MenuState(
     val menuClicked: MutableState<Boolean>,
@@ -59,8 +59,8 @@ val menuState = MenuState(
 )
 
 
-var elementToSystemC: MutableState<Element>? = null
-var selectedElement: MutableState<Element>? = null
+var elementToSystemC: MutableState<ElementData?>? = null
+var selectedElement: MutableState<ElementData?>? = null
 
 /**
  * The hierarchical overall TreeView.
@@ -83,7 +83,7 @@ fun TreeViewPlus(
                     ) {
                         items(model.value.items.size) {
                             if (filter(model.value.items[it] ))
-                                TreeItemView(fontSize, lineHeight, model.value, it)
+                                TreeItem(fontSize, lineHeight, model.value, it)
                         }
                     }
                 }
@@ -94,11 +94,10 @@ fun TreeViewPlus(
 /**
  * A single line in the tree view.
  * It is clickable, and if selected opens a new editor tab.
- * The last icon "+" allows creating a new file.
  */
-@OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class) //TODO rewrite pointerMoveFilter to be stable
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
-private fun TreeItemView(
+private fun TreeItem(
     fontSize: TextUnit,
     height: Dp,
     model: TreeViewModel,
@@ -128,38 +127,26 @@ private fun TreeItemView(
             Contextmenu(model)
         }
 
-        // Icon left of the line.
-        try { model.items[index] }
-        catch (_: java.lang.IndexOutOfBoundsException) { null }?.let {
+        // Icon left of the line, with indent depending on level
+        model.items.getOrNull(index)?.let {
             TreeItemIcon(
-                Modifier.align(Alignment.CenterVertically).padding(
-                    start = 24.dp * try { model.items[index].level } catch (e: IndexOutOfBoundsException) {
-                        e.printStackTrace()
-                        1
-                    }
-                ),
+                Modifier
+                    .align(Alignment.CenterVertically)
+                    .padding(start = 24.dp * (model.items.getOrNull(index)?.level ?: 1)),
                 it,
             )
         }
 
         // Text right of icon.
         Text(
-            text = try {
-                model.items[index].name
-            } catch (_: java.lang.IndexOutOfBoundsException) {
-                "NOT LOADED"
-            },
+            text = model.items.getOrNull(index)?.name?:"(?)",
             color = if (active.value) LocalContentColor.current.copy(alpha = 0.60f) else LocalContentColor.current,
             modifier = Modifier
                 .align(Alignment.CenterVertically)
                 .clipToBounds()
                 .onPointerEvent(PointerEventType.Move) {}
-                .onPointerEvent(PointerEventType.Enter) {
-                    active.value = true
-                }
-                .onPointerEvent(PointerEventType.Exit) {
-                    active.value = false
-                },
+                .onPointerEvent(PointerEventType.Enter) { active.value = true }
+                .onPointerEvent(PointerEventType.Exit) { active.value = false },
             softWrap = true,
             fontSize = fontSize,
             overflow = TextOverflow.Ellipsis,
@@ -180,7 +167,7 @@ fun Contextmenu(model: TreeViewModel) {
             is HasATree -> {
                 selectedElement =
                     mutableStateOf((model.items[model.selectedItem.value].item.node as HasATree).element)
-                if (selectedElement?.value is StateUsage) {
+                if (selectedElement?.value?.type == "StateUsage") {
                     DropdownMenuItem(
                         { Text("Render diagram") },
                         { menuState.renderClicked.value = true }
@@ -193,6 +180,7 @@ fun Contextmenu(model: TreeViewModel) {
                         elementToSystemC = mutableStateOf((model.items[model.selectedItem.value].item.node as HasATree).element) }
                 )
             }
+
 
             is IsATree -> {
                 DropdownMenuItem(

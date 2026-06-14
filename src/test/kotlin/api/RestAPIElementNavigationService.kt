@@ -14,7 +14,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.test.annotation.DirtiesContext
 import util.mockup.MockupSysMDProjectService
 import util.mockup.loadKerML
-import util.testSession
+import util.testProjectSession
 import java.util.*
 import kotlin.test.assertEquals
 
@@ -43,10 +43,10 @@ class RestAPIElementNavigationService {
      * returns all elements from the current session with session id == project id
      */
     @Test
-    fun getElementsTest1() = testSession("Base") {
+    fun getElementsTest1() = testProjectSession("Base") {
 
         // request to create a new project
-        val response = Rest.get("/projects/${project!!.id}/commits/${UUID.randomUUID()}/elements", null)
+        val response = Rest.get("/projects/${project.id}/commits/${UUID.randomUUID()}/elements", null)
 
         // Response: OK and ID.
         assertEquals(HttpStatus.OK.value(), response.statusCode.value())
@@ -56,8 +56,8 @@ class RestAPIElementNavigationService {
 
 
     @Test
-    fun getRootElementsTest() = testSession("Base") {
-        val response = Rest.get("/projects/${project!!.id}/commits/${UUID.randomUUID()}/roots", null)
+    fun getRootElementsTest() = testProjectSession("Base") {
+        val response = Rest.get("/projects/${project.id}/commits/${UUID.randomUUID()}/roots", null)
         assertEquals(HttpStatus.OK.value(), response.statusCode.value())
         val elements = jsonMapper.readValue(response.body, ElementResponseList()::class.java)
         assertEquals(1, elements.size)
@@ -65,10 +65,10 @@ class RestAPIElementNavigationService {
     }
 
     @Test
-    fun getElementByIdTest() = testSession("Base") {
+    fun getElementByIdTest() = testProjectSession("Base") {
         loadKerML("package test; ")
         val id = global.resolve("test")!!.memberElement.elementId
-        val response = Rest.get("/projects/${project!!.id}/commits/${UUID.randomUUID()}/elements/$id", null)
+        val response = Rest.get("/projects/${project.id}/commits/${UUID.randomUUID()}/elements/$id", null)
         assertEquals(HttpStatus.OK.value(), response.statusCode.value())
         val element = jsonMapper.readValue(response.body, ElementResponse::class.java)
         assertEquals(id, element.elementId)

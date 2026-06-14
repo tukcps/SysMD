@@ -3,32 +3,26 @@ package com.github.tukcps.sysmd.ui
 
 import androidx.compose.runtime.Composable
 import com.github.tukcps.sysmd.ui.composables.Tabs
-import com.github.tukcps.sysmd.ui.dialogs.DeleteFileDialog
-import com.github.tukcps.sysmd.ui.viewmodel.TabsViewModel
+import com.github.tukcps.sysmd.ui.viewmodel.EditorTabsViewModel
 
 
 /**
- * Shows a row of file-names on top of the SysMD2 window (=tabs).
+ * Shows a row of file-names on top of the SysMD window (=tabs).
  * The file-names are the editor tabs in the EditorTabsModel.
  * The concrete rendering of each name is done in EditorTabView.
  */
 @Composable
-fun EditorTabs(tabsViewModel: TabsViewModel) {
-
-    // on close, set openDialog
-    if (tabsViewModel.removeFileDialog.value) {
-        DeleteFileDialog(tabsViewModel.removeFileDialog, tabsViewModel::removeFile)
-    }
-
-    val titles = tabsViewModel.editorTabs.map { it.tabTitle }.toList()
+fun EditorTabs(
+    editorTabsViewModel: EditorTabsViewModel
+) {
+    val titles = editorTabsViewModel.editorTabs.map { it.nameState }.toList()
     if (titles.isNotEmpty()) {
         Tabs(
             titles,
-            tabsViewModel.selectedIndex,
-            onSelection = { tabsViewModel.selectedIndex.value = it; },
-            onClose = { tabsViewModel.removeFile.value = it; tabsViewModel.removeFileDialog.value = true },
-            onAdd = tabsViewModel::addNewFile,
-            onRename = tabsViewModel::rename
+            editorTabsViewModel.selectedIndex,
+            onSelection = { editorTabsViewModel.selectedIndex.value = it; },
+            onHide = { editorTabsViewModel.selectedCellList?.close?.let { it() } },
+            onShow = editorTabsViewModel::onShowTab,
         )
     } else
         EditorEmptyView()

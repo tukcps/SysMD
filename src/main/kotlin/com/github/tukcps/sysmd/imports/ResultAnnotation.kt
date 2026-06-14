@@ -1,9 +1,9 @@
 package com.github.tukcps.sysmd.imports
 
-import com.github.tukcps.sysmd.ui.viewmodel.TextualRepresentationViewModel
+import com.github.tukcps.sysmd.ui.viewmodel.CellViewModel
 
 class ResultAnnotation(
-    val cell: TextualRepresentationViewModel,
+    val cell: CellViewModel,
     val lineNumber: Int,
     val newMinValue: Double,
     val newMaxValue: Double,

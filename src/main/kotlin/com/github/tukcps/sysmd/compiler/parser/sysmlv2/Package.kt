@@ -106,8 +106,11 @@ fun SysMLv2.DefinitionElement() {
         else                        -> handleSyntaxError("Invalid definition")
     }
 }
-fun SysMLv2.definitionElementStarts() = (nextToken.kind == DEF ) or match(INDIVIDUAL, OCCURRENCE, DEF) or
-    (token.kind in setOf(PACKAGE, LIBRARY, DEPENDENCY)) or ( token.kind in annotatingElementStart) or OccurrenceDefinitionPrefixStarts()
+fun SysMLv2.definitionElementStarts() = (nextToken.kind == DEF ) or
+        match(INDIVIDUAL, OCCURRENCE, DEF) or
+        (token.kind in setOf(PACKAGE, LIBRARY, DEPENDENCY)) or
+        (token.kind in annotatingElementStart) or
+        OccurrenceDefinitionPrefixStarts()
 
 
 /**

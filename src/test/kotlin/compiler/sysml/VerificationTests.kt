@@ -4,6 +4,7 @@ import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Test
+import kotlin.test.assertNotNull
 
 class VerificationTests {
 
@@ -28,5 +29,7 @@ class VerificationTests {
             }   
         """)
         assertNoIssues()
+        val verification = global.resolve("testVolume")
+        assertNotNull(verification)
     }
 }

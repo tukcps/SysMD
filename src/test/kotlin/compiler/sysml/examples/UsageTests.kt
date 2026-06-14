@@ -1,11 +1,13 @@
 package compiler.sysml.examples
 
-import util.mockup.loadSysMLv2
 import com.github.tukcps.sysmd.model.sysml.PartDefinition
 import com.github.tukcps.sysmd.model.sysml.PartUsage
 import util.assertNoIssues
+import util.mockup.loadSysMLv2
 import util.testSession
-import kotlin.test.*
+import kotlin.test.Test
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class UsageTests {
 
@@ -102,7 +104,6 @@ class UsageTests {
      * It verifies that parts can be defined as variations using the `variation` keyword.
      * Refer to Section: 7.11.2 - Part Definitions and Usages - in Language Specification Document: https://www.omg.org/spec/SysML/2.0/Beta2/Language/PDF
      */
-    @Ignore
     @Test
     fun testVariationNameCompartment() = testSession("Parts") {
         loadSysMLv2("""

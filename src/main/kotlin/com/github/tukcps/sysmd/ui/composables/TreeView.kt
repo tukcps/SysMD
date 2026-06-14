@@ -15,6 +15,7 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.github.tukcps.sysmd.services.repositories.local.ElementData
 import com.github.tukcps.sysmd.ui.styles.AppTheme
 
 
@@ -33,8 +34,8 @@ internal fun TreeItemIcon(modifier: Modifier, model: TreeViewModel.Item) = Box(m
                 Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = LocalContentColor.current
             )
         }
-        is TreeViewModel.ItemType.Item -> when (type.name) {
-            "md" -> Icon(Icons.Default.Edit, "Markdown file", tint = AppTheme.colors.iconGreen)
+        is TreeViewModel.ItemType.Item -> when ( (model.element as ElementData).type) {
+            "TextualRepresentation" -> Icon(Icons.Default.Edit, "Markdown file", tint = AppTheme.colors.iconGreen)
             else -> Icon(Icons.Default.Calculate, contentDescription = null, tint = AppTheme.colors.backgroundDark)
         }
     }

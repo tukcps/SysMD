@@ -1,7 +1,7 @@
 {
   "name" : "SysMD Kickstart",
   "version" : "4.0",
-  "description" : "A quick guide into the specific use of SysMD notebook",
+  "description" : "A quick guide into the specific use of SysMD notebook, focussing on the UI and the Constraint Solver.",
   "license" : "Apache 2.0",
   "maintainer" : ["TU Kaiserslautern, Chair of Cyber-Physical Systems"],
   "website" : null,

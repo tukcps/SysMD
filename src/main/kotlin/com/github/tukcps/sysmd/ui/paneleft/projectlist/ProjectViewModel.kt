@@ -2,57 +2,73 @@ package com.github.tukcps.sysmd.ui.paneleft.projectlist
 
 import androidx.compose.runtime.*
 import com.github.tukcps.sysmd.logger
+import com.github.tukcps.sysmd.services.Runlevel
+import com.github.tukcps.sysmd.services.repositories.local.ElementData
+import com.github.tukcps.sysmd.services.repositories.local.Language
 import com.github.tukcps.sysmd.services.repositories.local.ProjectData
-import com.github.tukcps.sysmd.services.session.Session
-import com.github.tukcps.sysmd.services.session.SessionManager
-import com.github.tukcps.sysmd.services.session.loadSysMDFromFile
-import com.github.tukcps.sysmd.ui.syntaxhighlighting.Indexer
+import com.github.tukcps.sysmd.services.session.SessionManager.sessionService
 import com.github.tukcps.sysmd.ui.syntaxhighlighting.indexerScope
-import com.github.tukcps.sysmd.ui.viewmodel.TabsViewModel
+import com.github.tukcps.sysmd.ui.viewmodel.EditorTabsViewModel
 import io.github.tukcps.sysmlv2.interchange.InterchangeProject
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
+import kotlinx.io.files.Path
+import kotlinx.io.files.SystemFileSystem
 import java.awt.Desktop
+import java.io.File
 import java.net.URI
-import java.nio.file.Path
-import kotlin.io.path.absolutePathString
-import kotlin.io.path.exists
+import java.util.*
+import kotlin.math.min
+import kotlin.uuid.Uuid
+
 
 /**
  * A project view model that holds all relevant information of a project.
+ * @param sessionIdState id of the session in which we work.
+ * @param editorTabsViewModel View model of the tabs list.
+ * @param project Data record of the project from the session.
+ * @param selectedProjectState Currently active project state.
+ * @param reset Lambda to be called for reset of session and UI. .
+ * @param refreshTrees Lambda to be called for refreshing the UI.
  */
 data class ProjectViewModel(
-    val sessionState: MutableState<Session>,
-    val tabsViewModel: TabsViewModel,
-    val reset: () -> Unit,
+    val sessionIdState: MutableState<Uuid>,
+    val editorTabsViewModel: () -> EditorTabsViewModel,
     var project: ProjectData?,
-    val activeProject: MutableState<ProjectViewModel?>,
+    val selectedProjectState: MutableState<ProjectViewModel?>,
+    val reset: () -> Unit,
+    val refreshTrees: () -> Unit,
 ) {
-    val isExpanded: MutableState<Boolean> = mutableStateOf(this == activeProject.value)
+    val fileData: FileData = FileData()
+    var isChangedState = mutableStateOf(false)
+
+    var fileToDelete: MutableState<String?> = mutableStateOf(null)
+    val isExpanded = mutableStateOf(this == selectedProjectState.value)
+    val showDeleteFileDialog = mutableStateOf(false)
     private val nameState: MutableState<String> = mutableStateOf(project?.name ?: "")
     private val descriptionState: MutableState<String> = mutableStateOf(project?.description ?: "")
-    private val filesState = mutableStateListOf<String>()
-    private val maintainerState = mutableStateListOf<String>()
-    private val websiteState: MutableState<URI?> = mutableStateOf(null)
 
-    val showSaveDialog: MutableState<Boolean> = mutableStateOf(false)
+
+    /** State of all filenames that are displayed in Project and possibly Tabs */
+    val filesState = mutableStateListOf<String>()
+    val maintainerState = mutableStateListOf<String>()
+    val websiteState: MutableState<URI?> = mutableStateOf(null)
+
+    /** Controls the dialog for deleting a file */
+    val showSaveProjectDialog: MutableState<Boolean> = mutableStateOf(false)
     val showChangeIconDialog = mutableStateOf(false)
 
     var name: String by nameState
     var description: String by descriptionState
     private var website: URI? by websiteState
-    var directory: Path
-        get() = project?.directory!!
-        set(value) {
-            project?.directory = value
-        }
 
     init {
-        if (project != null) updateProject(project!!)
+        // Get view model's state from project information from repository data
+        if (project != null)
+            updateProject(project!!)
     }
 
     /**
-     * updates this view model from a project data record
+     * Updates the view model from a project data record
      */
     fun updateProject(project: ProjectData) {
         this.project = project
@@ -63,108 +79,153 @@ data class ProjectViewModel(
             maintainerState.add(it)
         }
         filesState.clear()
-        (project.getIndex()).forEach { file ->
+        (project.getIndexedFiles()).forEach { file ->
             filesState.add(file.name)
         }
         this.website = (project.project as InterchangeProject).website
     }
 
     /**
-     * Updates the view model and its data record.
+     * Updates the view model and its data record from a projectViewModel used in crate/update dialog.
      * @param projectViewModel provides the data that will only be copied.
      */
     fun updateProject(projectViewModel: ProjectViewModel) {
-        this.name = projectViewModel.name
-        this.description = projectViewModel.description
-        this.project?.name = projectViewModel.name
-        this.project?.description = projectViewModel.description
-        this.project?.clearIndex()
-        projectViewModel.filesState.forEach { file ->
-            this.project?.addIndex(file, file)
-        }
+        name = projectViewModel.name
+        description = projectViewModel.description
+        project?.name = projectViewModel.name
+        project?.description = projectViewModel.description
+        website = (projectViewModel.project?.project as InterchangeProject).website
+        isChangedState.value = true
         // this.maintainer = (projectViewModel.project?.project as InterchangeProject).maintainer?:mutableListOf()
-        this.website = (projectViewModel.project?.project as InterchangeProject).website
-        project?.saveToInterchangeFiles()
     }
 
     /**
      * Checks whether one or more files have been changed and are not yet saved.
      * @return true if there are unsaved changes
      */
-    fun unsavedChangesExist(): Boolean {
-        // First, close all open tabs from the open project.
-        // This also checks that changes are saved ...
-        tabsViewModel.editorTabs.forEach {
-            if (it.elementEdited.value) {
-                return true
-            }
-        }
-        return false
-    }
+    fun unsavedChangesExistInFiles(): Boolean =
+        editorTabsViewModel().editorTabs.any { it.elementEdited.value }
+
+    fun unsavedChangesExist(): Boolean =
+        unsavedChangesExistInFiles() || isChangedState.value
 
     /**
-     * Opens a project in the main area.
+     * Reads the project's data record for editing.
      * Before that, the method closes the open project and starts a new session.
      */
-    fun openProject() {
+    fun createProjectSession() {
         if (project != null) {
-            val closeCalls = tabsViewModel.editorTabs.map { it.close }
-            closeCalls.forEach {
-                if (it != null) {
-                    it()
-                }
-            }
+            // Close all tabs that are open from other project
+            val closeCalls = editorTabsViewModel().editorTabs.map { it.close }
+            closeCalls.forEach { it?.invoke() }
 
-            activeProject.value = this
+            // Cleanup old maps
+            fileData.cellData.clear()
+            filesState.clear()
+
+            // Initialize states to be sure
+            selectedProjectState.value = this
+            isExpanded.value = true
+            isChangedState.value = false
 
             // Start a new session with the project
-            sessionState.value = SessionManager.startSession(project!!)
+            sessionIdState.value = sessionService.createSession(project!!).id
+            loadProjectFromRepository()
 
-            val index = project!!.getIndex()
-            // Open the tabs, but don't compile
-            project!!.getIndex().forEach { file ->
-                sessionState.value.loadSysMDFromFile(file, compile = false, 0)
-                tabsViewModel.open(file, false)
+            fileData.cellData.forEach { (name, _) ->
+                filesState.add(name)
+                editorTabsViewModel().showTab(name)
             }
-            tabsViewModel.selectedIndex.value = 0
 
-            //Start Coroutine to initialize the Indexes
-            // indexerScope.cancel()
-            // indexerScope.launch { Indexer.initializeIndexes(tabsViewModel) }
+            editorTabsViewModel().selectedIndex.value = 0
         }
     }
 
     /**
-     * Opens a file of a project in the main area.
-     * Before that, the method closes the open project if a file is from another project and starts a new session otherwise keeps the session.
+     * Closes a project session: closes tabs, clears data, initializes states to be sure.
      */
-    fun openProjectFile(filename: String, selectedProjectViewModel: ProjectViewModel) {
+    fun closeProjectSession() {
 
-        // Find the requested file in the project index
-        val foundFile = project!!.getIndex().find { file ->
-            file.name == filename || file.path.endsWith(filename)
+        // Close all tabs that are open from other project
+        val closeCalls = editorTabsViewModel().editorTabs.map { it.close }
+        closeCalls.forEach { it?.invoke() }
+
+        // Cleanup old maps
+        fileData.cellData.clear()
+        filesState.clear()
+
+        // Mark it as inactive, not changed
+        isChangedState.value = false
+        selectedProjectState.value = null
+        isExpanded.value = false
+    }
+
+    /**
+     * Reads, for each file in .meta.json each file and brings the data into
+     * the fileData which acts as local buffer between optionally using it for a tab,
+     * and optionally saving it back to the repository.
+     */
+    fun loadProjectFromRepository() {
+        // Open the files in the index, into the model and in tabs, but don't compile
+        val cells = sessionService.getCells(sessionIdState.value)
+        cells?.let { fileData.cellData = cells }
+    }
+
+    /**
+     * Saves all files back to the repository.
+     */
+    fun saveProjectToRepository() {
+        project?.name = nameState.value
+        project?.description = descriptionState.value
+        (project?.project as? InterchangeProject)?.website = websiteState.value
+        getChangesFromEditor()
+        project?.meta?.index?.clear()
+        project?.meta?.index = fileData.cellData.map { (file, _) -> file to file }.toMap(LinkedHashMap())
+        project?.meta?.let { sessionService.putMeta(sessionIdState.value, project!!.meta!!) }
+        fileData.cellData.forEach { (file, cells) -> saveFileToRepository(file, cells) }
+        isChangedState.value = false
+    }
+
+    /**
+     * Updates the file data of the project with all changes from the editor's view model.
+     */
+    fun getChangesFromEditor() {
+        editorTabsViewModel().editorTabs.forEach { cellList ->
+            fileData.cellData[cellList.nameState.value] = cellList.cells .map { cell ->
+                ElementData(
+                    UUID.randomUUID(),
+                    type = "TextualRepresentation",
+                    language = Language.languageWithNamespace(cell.language.value, cell.namespace.value),
+                    body = cell.body.text
+                )
+            }
         }
+    }
+
+    /**
+     * Saves a file/tab with given name back to the repository.
+     */
+    fun saveFileToRepository(name: String, cells: List<ElementData>) {
+        // Put file to repo
+        sessionService.putCells(sessionIdState.value, name, cells)
+    }
+
+    /**
+     * Shows a tab (with a file) of a project in the main area.
+     */
+    fun showTab(name: String) {
+        val foundFile = fileData.cellData[name]
 
         if (foundFile != null) {
-            // Load the file into the current session (without compiling)
-            sessionState.value.loadSysMDFromFile(foundFile, compile = false, 0)
-
-            // Open the file in the tab view
-            tabsViewModel.open(foundFile, false)
-
-            // Select the opened tab
-            tabsViewModel.selectedIndex.value = tabsViewModel.editorTabs.indexOfFirst {
-                it.file == foundFile
-            }.takeIf { it >= 0 } ?: 0
+            // Open the file in the tab view, or select it.
+            editorTabsViewModel().showTab(name)
         } else {
-            logger.error("File '$filename' not found in project index.")
+            logger.error("File '$name' not found in project index.")
         }
 
-        // Restart the indexer for this project
+        // Restart the indexer for this tab
         indexerScope.cancel()
-        indexerScope.launch {
-            Indexer.initializeIndexes(tabsViewModel)
-        }
+        // indexerScope.launch { Indexer.initializeIndexes(editorTabsViewModel()) }
     }
 
     /**
@@ -174,24 +235,22 @@ data class ProjectViewModel(
 
         try {
             val os = System.getProperty("os.name").lowercase()
-            val folder = project?.directory
+            val folder = if (project != null) project!!.directory else null
+            if (folder == null) return
 
-            if (folder?.exists()?:false) {
+            if ( SystemFileSystem.metadataOrNull(folder)?.isDirectory == true) {
                 when {
-                    os.contains("win") -> {
-                        // Windows
-                        Runtime.getRuntime().exec(arrayOf("explorer, \"${folder.absolutePathString()}\""))
+                    os.contains("win") -> { // Windows
+                        Runtime.getRuntime().exec(arrayOf("explorer, \"${folder}\""))
                     }
 
-                    os.contains("mac") -> {
-                        // macOS
-                        Runtime.getRuntime().exec(arrayOf("open", folder.absolutePathString()))
+                    os.contains("mac") -> { // macOS
+                        Runtime.getRuntime().exec(arrayOf("open", folder.toString()))
                     }
 
-                    else -> {
-                        // Linux or other Unix-like systems
+                    else -> { // Linux or other Unix-like systems
                         // Try xdg-open (default file manager)
-                        Runtime.getRuntime().exec(arrayOf("xdg-open", folder.absolutePathString()))
+                        Runtime.getRuntime().exec(arrayOf("xdg-open", folder.toString()))
                     }
                 }
             }
@@ -199,7 +258,7 @@ data class ProjectViewModel(
             logger.error(e.message)
             try {
                 // Fallback using Desktop API
-                Desktop.getDesktop().open(project?.directory?.toFile())
+                Desktop.getDesktop().open(File(project?.directory?.toString()?:""))
             } catch (ex: Exception) {
                 ex.printStackTrace()
             }
@@ -211,7 +270,19 @@ data class ProjectViewModel(
      */
     fun renameFileInProject(newName: String, index: Int): Boolean {
         if (newName.isNotBlank()) {
-            tabsViewModel.rename(index, newName)
+            val oldName: String = filesState[index]
+            filesState.removeAt(index)
+            filesState.add(index, newName)
+
+            fileData.cellData = LinkedHashMap(fileData.cellData.mapKeys { (key, _) -> if (key == oldName) newName else key })
+
+            project?.meta?.index?.clear()
+            project?.meta?.index = fileData.cellData.map { (file, _) -> file to file }.toMap(LinkedHashMap())
+
+            editorTabsViewModel().updateTabTitle(index, newName)
+            editorTabsViewModel().selectedIndex.value = -1
+            editorTabsViewModel().selectedIndex.value = min(index, editorTabsViewModel().editorTabs.size-1)
+            isChangedState.value = true
             return true
         }
         return false
@@ -220,31 +291,76 @@ data class ProjectViewModel(
     /**
      * Creates new file in a project
      */
-    fun createNewFileInProject() {
-        tabsViewModel.addNewFile()
+    fun createFileInProject() {
+        val fileName = "File-${filesState.lastIndex+2}.md"
+        val path = project?.directory?.let { Path(it, fileName) }
+
+        // Update the filesState (list of files in Viewmodel)
+        filesState.add(fileName)
+
+        // Add some cells
+        fileData.cellData[fileName] = mutableListOf(
+            ElementData(
+                elementId = UUID.randomUUID(),
+                type = "TextualRepresentation",
+                body = """
+            ---
+            title: New file "$fileName"
+            subtitle:  -- Subtitle -- 
+            author: Author's names 
+            ---
+            """.trimIndent(),
+                language = "YAML"
+            ),
+            ElementData(
+                elementId = UUID.randomUUID(),
+                type = "TextualRepresentation",
+                body = """
+                - The file is (unless you use the Web-UI) in the folder `$path`. 
+                - You can **rename** or **delete** the file via the left pane in the respective project. 
+                - Write your model and documentation here 
+                    - Edit a cell by double-clicking on it or left of it, 
+                    - Add a cells by clicking on the space between or below cells, or on the "+" left of it.
+                    - Choose kind and syntax of a cell you edit by choosing "Language" on top of the cell. 
+                """.trimIndent(),
+                language = "Markdown"
+            )
+        )
+
+        // Open Tab with file from session
+        path?.let { editorTabsViewModel().showTab(fileName) }
+
+        // Set active model to newly created one
+        editorTabsViewModel().selectedIndex.value = editorTabsViewModel().editorTabs.size-1
+        isChangedState.value = true
     }
 
     /**
      * Delete File of a project
      */
-    fun deleteProjectFile(filename: String) {
-        val tab =  tabsViewModel.editorTabs.indexOfFirst { it.file?.name == filename }
-        tabsViewModel.removeFile.value = tab
-        tabsViewModel.removeFileDialog.value = true
+    fun deleteFileFromProject() {
+        // Close tab if open
+        val close = editorTabsViewModel().editorTabs.find { it.nameState.value == fileToDelete.value}
+        close?.let { editorTabsViewModel().hideTab(it) }
+
+        // delete file from index
+        filesState.removeIf { it == fileToDelete.value }
+
+        // delete in Session
+        fileData.cellData.remove(fileToDelete.value)
+        isChangedState.value = true
     }
 
     /**
      * Writes [fileBytes] as icon.png into the project's Files directory,
      * replacing any existing icon.
      */
-    fun updateProjectIcon(fileBytes: ByteArray, originalFileName: String) {
+    fun updateProjectIcon(fileBytes: ByteArray) {
         try {
-            val filesDir = resolveFilesDir() ?: return
-            val iconFile = filesDir.resolve("icon.png")
-            iconFile.writeBytes(fileBytes)
-            logger.info("Project icon updated: ${iconFile.absolutePath}")
+            sessionService.putFile(sessionIdState.value, "icon.png", fileBytes)
+            logger.info("Updated Project $name's icon")
         } catch (e: Exception) {
-            logger.error("Failed to update project icon", e)
+            logger.error("Failed to update Project $name's icon", e)
         }
     }
 
@@ -252,25 +368,41 @@ data class ProjectViewModel(
      * Deletes icon.png from the project's Files directory,
      * causing the UI to fall back to the default folder icon.
      */
-    fun removeProjectIcon() {
+    fun deleteProjectIcon() {
         try {
-            val filesDir = resolveFilesDir() ?: return
-            val iconFile = filesDir.resolve("icon.png")
-            if (iconFile.exists()) {
-                iconFile.delete()
-                logger.info("Project icon removed")
-            }
+            sessionService.deleteFile(sessionIdState.value, "icon.png")
+            logger.info("Deleted project $name's icon")
         } catch (e: Exception) {
-            logger.error("Failed to remove project icon", e)
+            logger.error("Failed to delete project $name's icon", e)
         }
     }
 
-    /** Returns the Files/ subdirectory, creating it if necessary. */
-    private fun resolveFilesDir(): java.io.File? {
-        val projectDir = project?.directory ?: run {
-            logger.warn("resolveFilesDir: no active project")
-            return null
+    /**
+     * Compiles all compilable cells in the project via the session API.
+     * @param runLevel To what extent do the compile run, e.g., NONE (compile), MODEL (builds model), ALL (solver)
+     */
+    fun compile(runLevel: Runlevel) {
+        // First, compile all files of the project, no analysis (would report errors)
+        fileData.cellData.values.forEach { cellData ->
+            cellData.forEach { cell ->
+                val language = Language.toLanguage(cell.language?:"")
+                if (language?.isCompilable() == true) {
+                    val namespace = Language.toNamespace(cell.language ?: "")
+                    val body = cell.body ?: return@forEach
+                    sessionService.updateModel(sessionIdState.value, body, language = language, namespace = namespace, Runlevel.NONE)
+                }
+            }
         }
-        return projectDir.resolve("Files").toFile().also { it.mkdirs() }
+        // Finally, do analysis as requested by runlevel
+        sessionService.updateModel(sessionIdState.value, "", language = Language.SYS_ML, namespace = null, runlevel = runLevel)
+        // Update the variable to display in shown tabs
+        editorTabsViewModel().editorTabs.forEach { tab ->
+            tab.cells.forEach { cell ->
+                cell.collectVariablesToDisplay() }
+        }
+        // Enforce update of UI, as session's elements are not states in UI.
+        refreshTrees()
     }
+
+    override fun toString() = "ProjectViewModel(name='$name')"
 }

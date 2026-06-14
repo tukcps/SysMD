@@ -1,24 +1,23 @@
 package com.github.tukcps.sysmd.rest.controller
 
 import com.github.tukcps.sysmd.configuration.OpenAPIConfig
-import com.github.tukcps.sysmd.cspsolver.Variable
-import com.github.tukcps.sysmd.model.kerml.Type
-import com.github.tukcps.sysmd.model.kerml.implementation.TextualRepresentationImplementation
 import com.github.tukcps.sysmd.rest.entities.requests.CodeRequest
-import com.github.tukcps.sysmd.rest.entities.requests.SessionIndexRequest
+import com.github.tukcps.sysmd.rest.entities.requests.ProjectMetaRequest
 import com.github.tukcps.sysmd.rest.entities.response.*
-import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.repositories.local.ProjectData
-import com.github.tukcps.sysmd.services.repositories.local.toDAO
-import com.github.tukcps.sysmd.services.session.SessionManager
+import com.github.tukcps.sysmd.services.Runlevel
+import com.github.tukcps.sysmd.services.repositories.local.Language
 import com.github.tukcps.sysmd.services.session.SessionManager.projectService
-import com.github.tukcps.sysmd.services.session.SessionManager.startSession
-import com.github.tukcps.sysmd.services.session.loadSysMDFromFile
+import com.github.tukcps.sysmd.services.session.SessionManager.sessionService
+import com.github.tukcps.sysmd.ui.readText
+import com.github.tukcps.sysmd.ui.toUriString
+import com.github.tukcps.sysmd.ui.writeText
 import io.github.tukcps.sysmlv2.api.entities.responseModels.ElementResponse
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
+import kotlinx.io.files.Path
+import kotlinx.io.files.SystemFileSystem
 import org.apache.logging.log4j.LogManager
 import org.springframework.core.io.Resource
 import org.springframework.core.io.UrlResource
@@ -32,26 +31,49 @@ import java.net.MalformedURLException
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.util.*
-import kotlin.io.path.writeText
+import kotlin.uuid.Uuid
+import kotlin.uuid.toJavaUuid
+import kotlin.uuid.toKotlinUuid
+import kotlin.io.path.Path as KotlinPath
 
 
 /**
  * Implements the endpoints for the session service
  *
- * POST /session (Project ID -> Session ID)
- * GET /session ( -> All sessions)
- * DELETE /session/ID ( = reset)
- * POST /session/ID/files/ (file in PNG format)
- * GET /session/ID/files/ (file in PNG format)
- * GET /session/ID/index (returns all source files (filename, text) )
- * PUT /session/ID/index (save all source files (filename, text) )
- * (?) POST /session/ID/cells/(cells)  -> reset, reply with Tabs + Cells (?)
- * (?) GET /session/ID/cells/(cells)   -> reset, reply with Tabs + Cells (?)
- * POST /session/ID/sysml -> Session Status ; Compiles SysML v2 source code
- * POST /session/ID/kerml -> Session Status; Compiles KerML source code
- * POST /session/ID/sysmd -> Session Status; Compiles SysMD source code
- * POST /session/ID/commit/(cells)   -> Saves/commits the session
+ * - `GET /session`
+ *    + Returns a list of all session-id
+ *
+ * - `POST /session`
+ *    + Creates a new session for a project with given ID
+ *
+ * - `DELETE /session/ID`
+ *    + kills a session
+ *
+ * - `POST /session/ID/files/`
+ *    + Bitmap -> Boolean
+ *
+ * - `GET /session/ID/project/ID/icon`
+ *    + ProjectId -> Bitmap
+ *
+ * - `GET /session/ID/files/`
+ *    + filename -> Bitmap
+ *
+ * - `GET /session/ID/meta`
+ *    + returns meta-info including all source file names (filename, text)
+ *
+ * - `PUT /session/ID/meta`
+ *    + save meta-info including all source files (filename, text)
+ *
+ * - `GET /session/ID/cells/(cells)`
+ *    + returns list of all cells
+ *
+ * - `POST /session/ID/model/(coderequest)`
+ *    + code -> Session Status ; Compiles source code
+ *
+ * - `POST /session/ID/commit/(cells)`
+ *    + Saves/commits the session to version control
  */
+
 @Tag(name = OpenAPIConfig.SESSION_RESOURCE)
 @RestController
 class SessionController {
@@ -63,10 +85,10 @@ class SessionController {
      */
     @CrossOrigin
     @ResponseStatus(HttpStatus.OK)
-    @Operation(summary = "Gets all sessions.")
+    @Operation(summary = "Gets all sessions (id and project in response).")
     @GetMapping(path = ["/session"], produces = [MediaType.APPLICATION_JSON_VALUE])
     fun getAllSessions(): ResponseEntity<List<SessionResponse>> {
-        val sessions = SessionManager.getAllSessions().map { SessionResponse(it.id, it.project?.name?:"") }
+        val sessions = sessionService.getAllSessions().map { SessionResponse(it.id.toJavaUuid(), it.project.name?:"") }
         val response = ResponseEntity(sessions, HttpStatus.OK)
         return response
     }
@@ -86,18 +108,15 @@ class SessionController {
                 "The id of the created session is returned in the response."
     )
     @PostMapping(path = ["/session"], produces = [MediaType.TEXT_PLAIN_VALUE])
-    fun loadProjectDataToSession(
+    fun createSession(
         @RequestBody @Valid projectName: String
     ): ResponseEntity<String> {
-        val project = projectService.getProjects().find { it.name == projectName }
-        val session = startSession(project as ProjectData)
-        // Open the tabs --> needed? Maybe not.
-        project.getIndex().forEach { file ->
-            session.loadSysMDFromFile(file, compile = true, initialize = 1)
-        }
-        val response = ResponseEntity(session.id.toString(), HttpStatus.CREATED)
+        val project = projectService.getProjects().find { it.name == projectName } ?:
+            return ResponseEntity.notFound().build()
+
+        val session = project.let {  sessionService.createSession(project) }
         logger.info("Accessed endpoint POST /session")
-        return response
+        return ResponseEntity(session.id.toString(), HttpStatus.CREATED)
     }
 
     /**
@@ -105,76 +124,89 @@ class SessionController {
      * - `GET /session/index`
      * - Gets a list of all files in a session's project
      */
+    @CrossOrigin(allowedHeaders = ["SessionId"])
     @ResponseStatus(HttpStatus.OK)
     @Operation(
         summary = "Gets all model files in the index of a model interchange project.",
         description = """Gets for a session of a project of the first the index of the .meta file and
             for each indexed file, the content in the response.""")
-    @GetMapping(path = ["/session/index"], produces = [MediaType.APPLICATION_JSON_VALUE])
-    fun getIndexedFiles(
+    @GetMapping(path = ["/session/meta"], produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun getMeta(
         @RequestHeader(value = "SessionId", required = true) sessionId: UUID,
-    ): ResponseEntity<SessionIndexResponse> {
-        val session = SessionManager.getSession(sessionId)
+    ): ResponseEntity<ProjectMetaResponse> {
+        val session = sessionService.getSession(sessionId.toKotlinUuid())
         val project = session?.project
-        val index = project?.getIndex()
-        val responseContent = SessionIndexResponse()
-        index?.forEach {
-            file -> responseContent.files += IndexEntry(file.name, file.readText())
+        val index = project?.getIndexedFiles()
+        if (project == null) return ResponseEntity.notFound().build()
+        val responseContent = ProjectMetaResponse(
+            project.id,
+            project.name!!,
+            project.description
+        )
+        index?.forEach { file ->
+            responseContent.index += IndexEntry(file.name, file.readText())
         }
         val response = ResponseEntity(responseContent, HttpStatus.OK)
         return response
     }
 
     /**
-     * **Compile a piece of code**
-     * - `PUT /session/code`
-     * - Compiles the code given in the path variable and runs the compiler.
-     * - The code is _not_ saved, only compiled.
+     * **Compile a list of cells, each given by a element data model of a textual representation.**
+     * - `PUT /session/ID/model/(cells)`
+     *    + Compiles the code given in the path variable and runs the compiler.
+     *    + The code is _not_ saved, only compiled.
      * @param request A CodeRequest entity that consists of the code and the level
      * to which the compiler will analyze, from 0 (nothing) to 7 (constraint propagation).
      */
     @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "Compiles the code in the payload and adds generated elements to the model in the session.")
-    @PutMapping(path = ["/session/code"], produces = [MediaType.APPLICATION_JSON_VALUE])
-    fun compileCode(
+    @PutMapping(path = ["/session/model"], produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun updateModel(
         @RequestBody request: CodeRequest,
         @RequestHeader(value = "SessionId", required = true) sessionId: UUID
     ): ResponseEntity<SessionStatusResponse> {
-        val session = SessionManager.getSession(sessionId)
-
-        TextualRepresentationImplementation(language = request.language, body = request.code).also { it.model = session }
-            .compile()
-
-        session!!.initialize(request.level)
-        if (request.level > 6) { session.solver.propagate() }
-
-        return ResponseEntity(SessionStatusResponse(session.status), HttpStatus.OK)
+        val session = sessionService.getSession(sessionId.toKotlinUuid()) ?: return ResponseEntity.notFound().build()
+        try {
+            sessionService.updateModel(sessionId.toKotlinUuid(),
+                request.body,
+                Language.language[request.language] ?: Language.MARKDOWN,
+                request.namespace,
+                Runlevel.toRunlevel(request.runlevel) ?: Runlevel.NAMES_RESOLVED
+            )
+            return ResponseEntity(SessionStatusResponse(session.status), HttpStatus.OK)
+        } catch(_: Exception) {
+            return ResponseEntity(SessionStatusResponse(session.status), HttpStatus.INTERNAL_SERVER_ERROR)
+        }
     }
 
 
     /**
-     * **Saving a session** ...
-     * - `PUT /session/index`
-     * - Puts all model files into the project-directory of the session and updates the index of a project.
+     * **Saving meta-information of a session/project** ...
+     * - `PUT /session/meta`
+     *    + Transfers meta-information and project-information.
      */
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Puts all model files into a project. Old index and files are overwritten.")
-    @PutMapping(path = ["/session/index"], produces = [MediaType.APPLICATION_JSON_VALUE])
-    fun putIndexedFiles(
+    @PutMapping(path = ["/session/meta"], produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun putMeta(
         @RequestHeader(value = "SessionId", required = true) sessionId: UUID,
-        @RequestBody sessionIndexRequest: SessionIndexRequest
-    ): ResponseEntity<SessionIndexResponse> {
-        val session = SessionManager.getSession(sessionId)
-        val project = session?.project
-        project!!.clearIndex()
-        val responseContent = SessionIndexResponse()
-        sessionIndexRequest.files.forEach { file ->
+        @RequestBody projectMetaRequest: ProjectMetaRequest
+    ): ResponseEntity<ProjectMetaResponse> {
+        val session = sessionService.getSession(sessionId.toKotlinUuid())
+            ?: return ResponseEntity.notFound().build()
+        val project = session.project
+        project.clearIndex()
+        val responseContent = ProjectMetaResponse(
+            project.id,
+            project.name!!,
+            project.description
+        )
+        projectMetaRequest.index.forEach { file ->
             project.addIndex(file.filename, file.filename)
-            val fileToWrite = project.directory?.resolve(file.filename)
+            val fileToWrite = project.directory?.let { Path(it, file.filename) }
             fileToWrite?.writeText(file.content)
         }
-        val response = ResponseEntity(responseContent, HttpStatus.CREATED)
-        return response
+        return ResponseEntity(responseContent, HttpStatus.CREATED)
     }
 
 
@@ -190,28 +222,28 @@ class SessionController {
     fun getAllFiles(
         @RequestHeader(value = "SessionId", required = true) sessionId: UUID,
     ): ResponseEntity<List<String>> {
-        val session = SessionManager.getSession(sessionId)
-        val project = session?.project
-        val files = project?.directory?.resolve("Files")?.toFile()?.listFiles()?.map { it.name }?: emptyList()
-        val response = ResponseEntity(files, HttpStatus.OK)
-        return response
+        val children = sessionService.getFiles(sessionId.toKotlinUuid())
+        return if (children != null)
+            ResponseEntity(children, HttpStatus.OK)
+        else
+            ResponseEntity(HttpStatus.NOT_FOUND)
     }
 
     /**
      * **Get a list of a project's cells
      * -  i.e., pictures in a project.**
      *
-     * `GET /session/files`
+     * `GET /session/cells`
      */
     @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "Gets all document file names, including non-sysml files like pictures etc.")
     @GetMapping(path = ["/session/cells"], produces = [MediaType.APPLICATION_JSON_VALUE])
     fun getAllCells(
-        @RequestHeader(value = "SessionId", required = true) sessionId: UUID,
+        @RequestHeader(value = "SessionId", required = true) sessionId: Uuid,
     ): ResponseEntity<MutableMap<String, List<ElementResponse>>> {
-        val session = SessionManager.getSession(sessionId)
+        val session = sessionService.getSession(sessionId)
         val project = session?.project
-        val cellIndex = project?.getCellIndex()
+        val cellIndex = project?.getCells()
         val responseContent = mutableMapOf<String, List<ElementResponse>>()
         cellIndex?.forEach { (key, value) ->
             val elementsResponses = mutableListOf<ElementResponse>()
@@ -231,16 +263,17 @@ class SessionController {
     @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "Gets a document file, typically a picture in .png format, by its name.")
     @GetMapping(path = ["/session/files/{name}"], produces = [MediaType.APPLICATION_JSON_VALUE])
-    fun getFileByProjectAndName(
+    fun getFileByName(
         @RequestHeader(value = "SessionId", required = true) sessionId: UUID,
         @Parameter(description = "Name of the file.", required = true) @PathVariable name: String,
-    ): ResponseEntity<Resource>  {
+    ): ResponseEntity<Resource> {
         try {
-            val session = SessionManager.getSession(sessionId)
-            val imagePath = session?.project?.directory?.resolve("Files")?.resolve(name)
-            val resource: Resource = UrlResource(imagePath!!.toUri())
+            val session = sessionService.getSession(sessionId.toKotlinUuid())
+                ?: return ResponseEntity.notFound().build()
+            val imagePath = session.project.directory?.let { Path(it, "Files", name) }
+            val resource: Resource? = imagePath?.toUriString()?.let { UrlResource(it) }
 
-            return if (resource.exists() && resource.isReadable) {
+            return if (resource?.exists() == true && resource.isReadable) {
                 ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_TYPE, "image/png")
                     .body(resource)
@@ -264,17 +297,17 @@ class SessionController {
         @Parameter(description = "File to be uploaded.", required = true) @RequestParam("file") file: MultipartFile
     ): ResponseEntity<Map<String, String>> {
         try {
-            val session = SessionManager.getSession(sessionId)
-            val filesDirectory = session?.project?.directory?.resolve("Files")
+            val session = sessionService.getSession(sessionId.toKotlinUuid())
+            val filesDirectory = session?.project?.directory?.let { Path(it, "Files") }
 
             // Create directory if it doesn't exist
-            if (filesDirectory == null || !Files.exists(filesDirectory)) {
-                Files.createDirectories(filesDirectory!!)
+            if (filesDirectory == null || !SystemFileSystem.exists(filesDirectory)) {
+                SystemFileSystem.createDirectories(filesDirectory!!)
             }
 
             // Use original filename or fallback
             val filename = file.originalFilename ?: "default_file.png"
-            val targetPath = filesDirectory.resolve(filename)
+            val targetPath = KotlinPath(Path(filesDirectory.name, filename).toString())
             // Copy the file content
             Files.copy(file.inputStream, targetPath, StandardCopyOption.REPLACE_EXISTING)
 
@@ -298,22 +331,20 @@ class SessionController {
         @RequestHeader(value = "SessionId", required = true) sessionId: UUID,
     ): ResponseEntity<ArrayList<ElementResponse>>  {
         try {
-            val session = SessionManager.getSession(sessionId)
-
-            val response =  if (session != null) {
-                ResponseEntity.ok().body(session.get().map { ElementResponse(it.toDAO()) }.toCollection(ArrayList()))
+            val elements = sessionService.getAllElements(sessionId.toKotlinUuid())?.map { ElementResponse(it) }
+            return if (elements != null) {
+                ResponseEntity.ok().body(elements.toCollection(ArrayList()))
             } else {
                 ResponseEntity.status(HttpStatus.NOT_FOUND).body(arrayListOf())
             }
-            return response
         } catch (_: MalformedURLException) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
         }
     }
 
     /**
-     * **Get all elements in the session**
-     * - `GET /session/elements`
+     * **Get all variables of the solver in the session**
+     * - `GET /session/variables`
      */
     @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "Gets all variables of a solver run with computed values.")
@@ -322,12 +353,12 @@ class SessionController {
         @RequestHeader(value = "SessionId", required = true) sessionId: UUID,
     ): ResponseEntity<VariablesResponse>  {
         return try {
-            val session = SessionManager.getSession(sessionId)
+            val response = sessionService.getVariables(sessionId.toKotlinUuid()) ?.let { VariablesResponse(it) }
 
-            if (session != null) {
-                ResponseEntity.ok().body(VariablesResponse(session.solver.getVariables()))
+            if (response != null) {
+                ResponseEntity.ok().body(response)
             } else {
-                ResponseEntity.status(HttpStatus.NOT_FOUND).body(VariablesResponse(emptyList<Variable>()))
+                ResponseEntity.status(HttpStatus.NOT_FOUND).body(VariablesResponse(emptyList<VariableResponse>()))
             }
         } catch (_: MalformedURLException) {
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
@@ -347,18 +378,32 @@ class SessionController {
         @Parameter(description = "elementId of an element of kind Type", required = true) @PathVariable elementId: UUID
     ): ResponseEntity<ArrayList<ElementResponse>>  {
         try {
-            val session = SessionManager.getSession(sessionId)
-            if (session != null) {
-                val type = session[elementId]
-                if (type is Type)
-                return ResponseEntity.ok().body(type.subtypes.map { ElementResponse(it.toDAO()) }.toCollection(ArrayList()))
-            }
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(arrayListOf())
+            val result = sessionService.getSubtypes(sessionId.toKotlinUuid(), elementId.toKotlinUuid())
+                ?.map { ElementResponse(it) }
+            return if (result != null) ResponseEntity.ok().body(result.toCollection(ArrayList()))
+            else ResponseEntity.status(HttpStatus.NOT_FOUND).body(arrayListOf())
         } catch (_: MalformedURLException) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
         }
     }
 
+    @ResponseStatus(HttpStatus.OK)
+    @Operation(summary = "Gets all owned elements of an element.")
+    @GetMapping(path = ["/session/elements/{elementId}/ownedelements"], produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun getOwnedElements(
+        @RequestHeader(value = "SessionId", required = true) sessionId: Uuid,
+        @Parameter(description = "elementId of an element of kind Type", required = true) @PathVariable elementId: Uuid
+    ): ResponseEntity<ArrayList<ElementResponse>>  {
+        return try {
+            val owned = sessionService.getOwnedElements(sessionId, elementId)
+            return if (owned != null)
+                ResponseEntity.ok().body(owned.map { ElementResponse(it) }.toCollection(ArrayList()))
+            else
+                ResponseEntity.status(HttpStatus.NOT_FOUND).body(arrayListOf())
+        } catch (_: MalformedURLException) {
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
+        }
+    }
 
     /**
      * Global/static constants

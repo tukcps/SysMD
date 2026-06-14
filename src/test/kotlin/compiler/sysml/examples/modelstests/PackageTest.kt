@@ -1,5 +1,6 @@
-package sysmlv2specificationtests.modelstests
+package compiler.sysml.examples.modelstests
 
+import com.github.tukcps.sysmd.services.Runlevel
 import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
@@ -10,7 +11,7 @@ class PackageTest {
 
     @Test
     fun testPackage() = testSession("States", "Requirements", "Interfaces", "Allocations", "Connections",
-        "Attributes", "Ports", "Parts", "Items", "Occurrences", initialize = false) {
+        "Attributes", "Ports", "Parts", "Items", "Occurrences", runlevel = Runlevel.NONE,) {
         loadSysMLv2("""
             package 'Package Example' {
                 public import ISQ::TorqueValue;

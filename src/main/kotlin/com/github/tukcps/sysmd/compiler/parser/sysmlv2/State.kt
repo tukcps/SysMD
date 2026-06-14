@@ -131,12 +131,16 @@ fun SysMLv2.StateBodyItem() {
         behaviorUsageElementStarts() || THEN.starts() -> {
             THEN.optional { SourceSuccessionMember() }
             BehaviorUsageElement()
-            // TargetTransitionUsageMember()
+            noOrMore(THEN) { TargetTransitionUsageMember() }
         }
         TRANSITION.starts()        -> TransitionUsage()
         ENTRY.starts()             -> { EntryActionMember(); noOrMore(THEN) { EntryTransitionMember() } }
         DO.starts()                -> DoActionMember()
         EXIT.starts()              -> ExitActionMember()
+
+        // Fix only for short form, not clean
+        ACCEPT.starts()            -> { TriggerActionMember(); THEN.consume();  NAME_LIT.consume(); SEMICOLON.consume() }
+
         else -> throwSyntaxError("At ${token}: Expected a valid state body item.")
     }
 }

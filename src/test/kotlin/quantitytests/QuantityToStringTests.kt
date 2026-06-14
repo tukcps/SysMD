@@ -2,7 +2,6 @@ package quantitytests
 
 import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.quantities.Representer
-import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import io.github.tukcps.aadd.DDBuilder
 import util.assertIssue
@@ -11,7 +10,6 @@ import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 
 /**
@@ -135,7 +133,6 @@ class QuantityToStringTests {
                     feature c: ISQ::DurationValue(10.0 .. 10.0) [s];
                     feature result: ISQ::ForceValue = a*b/(c*c);"""
         )
-        initialize()
         solver.propagate()
         assertNoIssues()
         assertEquals("0.04..10000 N", global.resolveVar("result")!!.vectorQuantity.toString())
@@ -165,7 +162,6 @@ class QuantityToStringTests {
                     feature d: Quantities::ScalarQuantityValue(10.0 .. 10.0) [A^2].
                     feature result: ISQ::ResistanceValue = a*b/(c*d)."""
         )
-        initialize()
         solver.propagate()
         assertEquals("1e-3 Ω", global.resolveVar("result")!!.vectorQuantity.toString())
         assertNoIssues()
@@ -180,7 +176,6 @@ class QuantityToStringTests {
                     feature d: Quantities::ScalarQuantityValue(1.0 .. 1.0) [kg^1].
                     feature result: ISQ::ConductanceValue = a*b/(c*d)."""
         )
-        initialize()
         solver.propagate()
         assertEquals("1000000 S", global.resolveVar("result")!!.vectorQuantity.toString())
         assertNoIssues()
@@ -193,7 +188,6 @@ class QuantityToStringTests {
                     feature b: Quantities::ScalarQuantityValue(1000.0 .. 1000.0) [A].
                     feature result: ISQ::ElectricChargeValue = a*b."""
         )
-        initialize()
         solver.propagate()
         assertNoIssues()
         assertEquals("1e9 A s", global.resolveVar("result")!!.vectorQuantity.toString())
@@ -209,7 +203,6 @@ class QuantityToStringTests {
                     feature d: Quantities::ScalarQuantityValue(1.0 .. 1.0) [A^1].
                     feature result: ISQ::ElectricPotentialDifferenceValue = a*b/(c*d)."""
         )
-        initialize()
         solver.propagate()
         assertEquals("4e12..9e12 V", global.resolveVar("result")!!.vectorQuantity.toString())
         assertNoIssues()
@@ -224,7 +217,6 @@ class QuantityToStringTests {
                     feature d: Quantities::ScalarQuantityValue(1.0 .. 1.0) [A^2].
                     feature result: ISQ::InductanceValue = a*b/(c*d)."""
         )
-        initialize()
         solver.propagate()
         assertEquals("0.002..0.006 H", global.resolveVar("result")!!.vectorQuantity.toString())
         assertNoIssues()
@@ -239,7 +231,6 @@ class QuantityToStringTests {
                     feature d: Quantities::ScalarQuantityValue(1.0 .. 1.0) [A].
                     feature result: ISQ::MagneticFluxValue = a*b/(c*d)."""
         )
-        initialize()
         solver.propagate()
         assertEquals("2000..6000 Wb", global.resolveVar("result")!!.vectorQuantity.toString())
         assertNoIssues()
@@ -254,7 +245,6 @@ class QuantityToStringTests {
                     feature d: ISQ::ElectricCurrentValue(100000.0 .. 100000.0) [A].
                     feature result: ISQ::MagneticFluxDensityValue = b/(c*d)."""
         )
-        initialize()
         solver.propagate()
         assertEquals("1e-9 T", global.resolveVar("result")!!.vectorQuantity.toString())
         assertNoIssues()

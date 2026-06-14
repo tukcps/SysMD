@@ -1,13 +1,15 @@
 package models.expression
 
 import com.github.tukcps.sysmd.model.expression.implementation.*
-import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Function
 import com.github.tukcps.sysmd.model.util.firstName
 import com.github.tukcps.sysmd.quantities.VectorQuantity
+import com.github.tukcps.sysmd.services.Runlevel
 import org.junit.jupiter.api.assertAll
-import util.*
+import util.assertNoIssues
 import util.mockup.loadKerML
+import util.testSession
 import kotlin.test.*
 
 class DataFunctionTests
@@ -228,7 +230,7 @@ class DataFunctionTests
 		loadKerML("""
 			private import ScalarValues::*;
 			feature x : Boolean;
-		""")
+		""", Runlevel.VARIABLES)
 		assertNoIssues()
 
 		val x = featureReferenceExpression("x")

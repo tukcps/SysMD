@@ -1,5 +1,6 @@
 package constraintnettests
 
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import io.github.tukcps.aadd.values.Range
 import util.assertNoIssues
@@ -21,9 +22,9 @@ class MultiplePropertiesPropagation {
         loadKerML("""
             feature a: Ranges::RealInRange {:>> range = "1.3 .. 1.3";}
             feature b: ScalarValues::Real = a;
-        """)
+        """, Runlevel.VARIABLES)
         assertNoIssues()
-        global.resolveVar("b")!!.updated = false
+        solver.getVariable("b")!!.updated = false
         // 1st call of evalUp is done instantly after compiler run; might be 2.
         // assertEquals(false, resolveName<Expression>("b").stable)
         solver.propagate()
@@ -39,12 +40,12 @@ class MultiplePropertiesPropagation {
         loadKerML("""
             feature x: Ranges::RealInRange {:>> range = "1 .. 10";}
             feature y: Ranges::RealInRange = x {:>> range = "1 .. 100";}
-            feature z: Ranges::RealInRange = y;""")
+            feature z: Ranges::RealInRange = y;
+        """, Runlevel.ALL)
         // y should be 1 .. 10 via y = x.
-        solver.propagate()
         assertNoIssues()
-        val y = global.resolveVar("y")
-        assertEquals(10.0, global.resolveVar("y")!!.max(), 0.000001)
+        val y = solver.getVariable("y")
+        assertEquals(10.0, y!!.max(), 0.000001)
     }
 
     /**

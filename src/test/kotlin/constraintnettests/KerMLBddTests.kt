@@ -1,6 +1,6 @@
 package constraintnettests
 
-import com.github.tukcps.sysmd.services.initialize
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.letVar
 import io.github.tukcps.aadd.BDD
 import util.assertNoIssues
@@ -19,16 +19,15 @@ class KerMLBddTests {
      */
     @Test
     fun bddVariableCreatedTest() = testSession("ScalarValues") {
-        loadKerML("feature x: ScalarValues::Boolean;")
+        loadKerML("feature x: ScalarValues::Boolean;", Runlevel.VARIABLES)
         assertEquals(1, solver.getVariable("x")!!.bdd().height())
-        loadKerML("feature a: ScalarValues::Boolean = x;")
+        loadKerML("feature a: ScalarValues::Boolean = x;", Runlevel.VARIABLES)
         assertTrue((solver.getVariable("a")!!.bdd().height() == 1))
-        loadKerML("feature b: ScalarValues::Boolean = not(a);")
+        loadKerML("feature b: ScalarValues::Boolean = not(a);", Runlevel.VARIABLES)
         assertEquals(1, solver.getVariable("x")!!.bdd().height())
         assertTrue((solver.getVariable("a")!!.bdd().height() == 1))
-        initialize()
         val aAndB = solver.getVariable("a")!!.bdd() and solver.getVariable("b")!!.bdd()
-        initialize()
+        runlevel = Runlevel.VARIANCE_CHECKED
         assertEquals(
             builder.False,
             solver.getVariable("a")!!.bdd() and solver.getVariable("b")!!.bdd()
@@ -41,7 +40,7 @@ class KerMLBddTests {
      */
     @Test
     fun bddVariableCreatedTestWithSubtype() = testSession("ScalarValues") {
-        loadKerML("feature x: ScalarValues::Boolean(true);")
+        loadKerML("feature x: ScalarValues::Boolean(true);", Runlevel.ALL)
         val x = solver.getVariable("x")!!.bdd().evaluate()
         assertSame(builder.True, x)
         // ToDo: we must check that after considering known value x can be reduced to True.

@@ -1,5 +1,6 @@
 package sysmdtests
 
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import util.assertNoIssues
 import util.mockup.loadKerML
@@ -167,15 +168,15 @@ class FailedTests {
             feature R: Ranges::RealInRange {:>> range = "1.9 .. 2.1";} 
             feature V: ScalarValues::Real = I * R; 
             feature P: ScalarValues::Real = I * V; 
-        """)
-        assertEquals(9.9*1.9, global.resolveVar("V")!!.min(), 0.00001)
-        assertEquals(10.1*2.1, global.resolveVar("V")!!.max(), 0.00001)
+        """, Runlevel.ALL)
+        assertEquals(9.9*1.9, solver.getVariable("V")!!.min(), 0.00001)
+        assertEquals(10.1*2.1, solver.getVariable("V")!!.max(), 0.00001)
         assertNoIssues()
         solver.propagate()
         assertNoIssues()
         // println("V = " + global.resolveName<Expression>("V") + " ")
-        assertEquals(9.9*1.9, global.resolveVar("V")!!.min(), 0.00001)
-        assertEquals(21.21, global.resolveVar("V")!!.max(), 0.00001)
+        assertEquals(9.9*1.9, solver.getVariable("V")!!.min(), 0.00001)
+        assertEquals(21.21, solver.getVariable("V")!!.max(), 0.00001)
     }
 
 
@@ -183,15 +184,15 @@ class FailedTests {
         loadKerML("""
             feature a: ScalarValues::Real; 
             feature b: Ranges::RealInRange {:>> range = "3..5";}
-            feature sum: Ranges::RealInRange = a+b {:>> range = "9..10";}""")
-        solver.propagate()
+            feature sum: Ranges::RealInRange = a+b {:>> range = "9..10";}
+        """, Runlevel.ALL)
         assertNoIssues()
-        assertEquals(9.0, global.resolveVar("sum")!!.aadd().min, 0.00001)
-        assertEquals(10.0, global.resolveVar("sum")!!.aadd().max, 0.000001)
-        assertEquals(4.0, global.resolveVar("a")!!.aadd().getRange().min,0.0001)
-        assertEquals(7.0, global.resolveVar("a")!!.aadd().getRange().max,0.0001)
-        assertEquals(3.0, global.resolveVar("b")!!.aadd().getRange().min,0.0001)
-        assertEquals(5.0, global.resolveVar("b")!!.aadd().getRange().max,0.0001)
+        assertEquals(9.0, solver.getVariable("sum")!!.aadd().min, 0.00001)
+        assertEquals(10.0, solver.getVariable("sum")!!.aadd().max, 0.000001)
+        assertEquals(4.0, solver.getVariable("a")!!.aadd().getRange().min,0.0001)
+        assertEquals(7.0, solver.getVariable("a")!!.aadd().getRange().max,0.0001)
+        assertEquals(3.0, solver.getVariable("b")!!.aadd().getRange().min,0.0001)
+        assertEquals(5.0, solver.getVariable("b")!!.aadd().getRange().max,0.0001)
     }
 
     /**
@@ -206,12 +207,12 @@ class FailedTests {
            """)
         solver.propagate()
         // println(status.errors)
-        assertEquals(9, global.resolveVar("sum")!!.idd().getRange().min)
-        assertEquals(10, global.resolveVar("sum")!!.idd().getRange().max)
-        assertEquals(4, global.resolveVar("a")!!.idd().getRange().min)
-        assertEquals(7, global.resolveVar("a")!!.idd().getRange().max)
-        assertEquals(3, global.resolveVar("b")!!.idd().getRange().min)
-        assertEquals(5, global.resolveVar("b")!!.idd().getRange().max)
+        assertEquals(9, solver.getVariable("sum")!!.idd().getRange().min)
+        assertEquals(10, solver.getVariable("sum")!!.idd().getRange().max)
+        assertEquals(4, solver.getVariable("a")!!.idd().getRange().min)
+        assertEquals(7, solver.getVariable("a")!!.idd().getRange().max)
+        assertEquals(3, solver.getVariable("b")!!.idd().getRange().min)
+        assertEquals(5, solver.getVariable("b")!!.idd().getRange().max)
     }
 
     /**
@@ -223,10 +224,9 @@ class FailedTests {
             feature i: ScalarValues::Real;
             feature s: ScalarValues::Real = 10.0;
             feature MAC_notb: ScalarValues::Real = sum_i( 0.0, 3.0, s*i );
-        """)
-        solver.propagate()
-        assertEquals(60.0, global.resolveVar("MAC_notb")!!.aadd().getRange().min, 0.00001)
-        assertEquals(60.0, global.resolveVar("MAC_notb")!!.aadd().getRange().max, 0.00001)
+        """, Runlevel.ALL)
+        assertEquals(60.0, solver.getVariable("MAC_notb")!!.aadd().getRange().min, 0.00001)
+        assertEquals(60.0, solver.getVariable("MAC_notb")!!.aadd().getRange().max, 0.00001)
         assertNoIssues()
     }
 }

@@ -1,10 +1,16 @@
 package com.github.tukcps.sysmd.cspsolver
 
-import com.github.tukcps.sysmd.cspsolver.Variable.*
-import com.github.tukcps.sysmd.cspsolver.Variable.BaseType.*
+import com.github.tukcps.sysmd.cspsolver.Variable.BaseType
+import com.github.tukcps.sysmd.cspsolver.Variable.BaseType.Unknown
 import com.github.tukcps.sysmd.exceptions.Issue
-import com.github.tukcps.sysmd.model.expression.*
-import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.model.expression.Expression
+import com.github.tukcps.sysmd.model.expression.FeatureReferenceExpression
+import com.github.tukcps.sysmd.model.expression.checkEvent
+import com.github.tukcps.sysmd.model.kerml.Feature
+import com.github.tukcps.sysmd.model.kerml.Membership
+import com.github.tukcps.sysmd.model.kerml.Namespace
+import com.github.tukcps.sysmd.model.kerml.Type
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.session.Session
 import java.util.*
@@ -27,7 +33,7 @@ class Solver(
     private val variables: HashMap<String, ArrayList<Variable>> = HashMap()
 
     /** List that stores the features that are part of constraint propagation */
-    val schedule: MutableList<Variable> = mutableListOf()
+    private val schedule: MutableList<Variable> = mutableListOf()
 
     fun reset() {
         variables.clear()
@@ -243,21 +249,21 @@ class Solver(
     }
 
 
-    enum class PROPAGATE_DIRECTION { UP, DOWN, BOTH }
     /**
-     * Most simple constraint propagation; just until Jack is finished.
+     * Enum for controlling the direction of the propagation.
+     */
+    enum class PropagateDirection { UP, DOWN, BOTH }
+    /**
+     * Simple constraint propagation.
      * Requires calling initialize if ast is not yet initialized, e.g., if it comes from database or REST.
      * Or as a benchmark to demonstrate the benefit of his method.
      */
-    fun propagate(direction: PROPAGATE_DIRECTION = PROPAGATE_DIRECTION.BOTH) {
+    fun propagate(direction: PropagateDirection = PropagateDirection.BOTH) {
         try {
             if (schedule.isEmpty())
-                model.initialize()
+                model.initialize(Runlevel.VARIANCE_CHECKED)
             if (discreteSolver.isInitialized())
                 discreteSolver.initialize(model)
-            // We use the inv { ... } syntax from standard SysMLv2 / KerML hence this is no longer needed:
-            // else
-            //    dSolver.processRequirements(get().filterIsInstance<Expression>().filter { it.type?.str?.contains("Requirement") == true })
 
             var modelIsStable: Boolean
             schedule.forEach {
@@ -275,9 +281,9 @@ class Solver(
                         if ( variable.baseType != BaseType.String ) {
                             modelIsStable = modelIsStable and variable.stable
                             if (variable.ast != null) {
-                                if (direction == PROPAGATE_DIRECTION.UP || direction == PROPAGATE_DIRECTION.BOTH)
+                                if (direction == PropagateDirection.UP || direction == PropagateDirection.BOTH)
                                     variable.ast!!.evalUpRec()
-                                if (direction == PROPAGATE_DIRECTION.DOWN || direction == PROPAGATE_DIRECTION.BOTH)
+                                if (direction == PropagateDirection.DOWN || direction == PropagateDirection.BOTH)
                                     variable.ast!!.evalDownRec()
                                 variable.checkEvent()     // Sets property.stable to false,
                                 // if changed in an iteration step, and property.updated iff changed in a 'propagate' call

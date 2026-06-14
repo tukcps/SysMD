@@ -13,7 +13,7 @@ import org.gradle.internal.os.OperatingSystem
  * - also set the value standalone according to your setup
  */
 group   = "com.github.tukcps"
-version = "4.2.3"               // must be number.number.number
+version = "4.2.4"               // must be number.number.number
 val aaddVersion = "0.1.15"
 val sysmlapiVersion = "3.9.12"
 val useMavenAADD = true
@@ -22,7 +22,7 @@ val useMavenSysMLAPI = true
 if (JavaVersion.current() < JavaVersion.VERSION_21) {
     throw GradleException("The build must be run with JVM 21 or newer.")
 } else {
-    val versionFile = file("src/main/resources/version")
+    val versionFile = file("src/main/composeResources/files/version.txt")
     versionFile.createNewFile()
     versionFile.writeText("$version")
 }
@@ -32,8 +32,8 @@ plugins {
     // Plugin that checks for updates of dependencies
     id("com.github.ben-manes.versions") version "0.53.0"
     id("idea")
-    kotlin("jvm") version "2.3.20"
-    kotlin("plugin.serialization") version "2.3.20"
+    kotlin("jvm") version "2.4.0"
+    kotlin("plugin.serialization") version "2.4.0"
     id("org.springframework.boot") version "4.0.6"
     id("io.spring.dependency-management") version "1.1.7"
     alias(libs.plugins.jetbrainsCompose) apply true
@@ -77,9 +77,20 @@ dependencies {
         implementation("io.github.tukcps:sysmlapi:$sysmlapiVersion")
     }
 
+    // Logging via log4j and KMP kotlin-logging
+    configurations.all { exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging") }
+    implementation("org.springframework.boot:spring-boot-starter-log4j2")
+    implementation("io.github.oshai:kotlin-logging:8.0.4")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
+    implementation("io.ktor:ktor-utils:3.5.0")
+    implementation("io.ktor:ktor-http:3.5.0")
+
     // For UUID version 5 (name-based)
     implementation("com.fasterxml.uuid:java-uuid-generator:5.1.0")
 
+    // I/O for KMP
+    implementation("org.jetbrains.kotlinx:kotlinx-io-core:0.9.0")
 
     implementation("org.jetbrains.compose.material3:material3-desktop:1.9.0-beta03")
 

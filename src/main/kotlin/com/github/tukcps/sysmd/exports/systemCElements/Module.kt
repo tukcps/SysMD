@@ -128,7 +128,7 @@ class Module(
             out.println("\npublic:")
 
             /**CONSTANTS**/
-            if (this.constants.size > 0) {
+            if (this.constants.isNotEmpty()) {
                 out.print("\n\t//\t### Constants ###")
             }
             this.constants.forEach { constant ->
@@ -136,7 +136,7 @@ class Module(
             }
 
             /**UN-PARAMETRIZED VARIABLES**/
-            if (this.variablesNoValues.size > 0) {
+            if (this.variablesNoValues.isNotEmpty()) {
                 out.print("\n\n\t//Variables with values NOT defined in SysMD ###")
 
                 this.variablesNoValues.forEach { variableNoValue ->
@@ -146,7 +146,7 @@ class Module(
 
 
             /**PARAMETRIZED VARIABLES**/
-            if (this.variables.size > 0) {
+            if (this.variables.isNotEmpty()) {
                 out.print("\n\n\t//Variables with values defined in SysMD ###")
 
                 this.variables.forEach { variable ->
@@ -156,7 +156,7 @@ class Module(
 
 
            //Print ports
-            if ((this.inputPorts.size > 0) or (this.outputPorts.size > 0)) {
+            if ((this.inputPorts.isNotEmpty()) or (this.outputPorts.isNotEmpty())) {
                 out.println("\n\n\t//\t### Ports ###")
 
                 /**INPUT PORTS**/
@@ -197,7 +197,7 @@ class Module(
                             out.println("\tTLM_${port.associatedChannels.first().channelName}_Target ${port.portName};")
                         } else {
                             if (port.isBoundToHierarchicalChannel == true) { //Binds to a hierarchical channel
-                                //TODO Handle inout for Hierachical channels
+                                //TODO Handle inout for Hierarchical channels
                                 out.println("\tsc_port<sc_signal_in_if<${port.dataType.toCPPDataType()}> > ${port.portName};")
                             } else { // Is a normal input port binding to a simple signal
                                 out.println("\tsca_tdf::sca_inout<${port.dataType.toCPPDataType()}> ${port.portName};")
@@ -209,7 +209,7 @@ class Module(
 
 
             /**SUB-MODULES**/
-            if (this.subModules.size > 0) {
+            if (this.subModules.isNotEmpty()) {
                 out.println("\n\n\t//\t### Modules ###")
 
                 this.subModules.forEach { subMod ->
@@ -243,7 +243,7 @@ class Module(
 
 
             //Print channels
-            if (this.channels.size > 0) {
+            if (this.channels.isNotEmpty()) {
                 out.println("\n\t//\t### Channels  ###")
 
                 this.channels.forEach { channel ->
@@ -331,7 +331,7 @@ class Module(
             }
 
 
-            //Intializer List: Print Ports
+            //Initializer List: Print Ports
             //Inherited Ports are not initialized as this is done in the constructor of the SuperClass
             this.inputPorts.forEach { port ->
                 if(!port.isInherited  || port.createdFromExpression) out.print(colon.invoke() + "${port.portName}(\"${port.portName}\")")
@@ -357,7 +357,7 @@ class Module(
             }
 
             //Print initialization of variables whose value (in fact it's their range) is known
-            if (this.variables.size > 0) {
+            if (this.variables.isNotEmpty()) {
                 out.print("\n")
             }
             this.variables.forEach { variable ->
@@ -365,7 +365,7 @@ class Module(
             }
 
             //Connect ports of channels that belong to this module
-            if (this.channels.size > 0) {
+            if (this.channels.isNotEmpty()) {
                 out.println("\n\t//\t### Connect ports and channels ###")
 
                 this.channels.forEach { ch ->

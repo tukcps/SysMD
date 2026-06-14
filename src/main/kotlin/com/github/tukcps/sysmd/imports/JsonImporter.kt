@@ -4,13 +4,16 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
-import java.io.File
+import kotlinx.io.buffered
+import kotlinx.io.files.Path
+import kotlinx.io.files.SystemFileSystem
+import kotlinx.io.readString
 
 
 object JsonImporter {
 
     /**
-     * Imports a Json file and extracts the:
+     * Imports a JSON file and extracts the:
      * - Modules
      *      -> their attributes
      *      -> and the corresponding old and new values
@@ -24,7 +27,8 @@ object JsonImporter {
             mapper.registerKotlinModule()
             mapper.registerModule(JavaTimeModule())
 
-            val jsonString: String = File(filePath).readText(Charsets.UTF_8)
+            val path = Path(filePath)
+            val jsonString: String = SystemFileSystem.source(path).buffered().use { source -> source.readString() }
             val jsonTextList: List<Result> = mapper.readValue<List<Result>>(jsonString)
 
             val importedResults = mutableListOf<Result>()

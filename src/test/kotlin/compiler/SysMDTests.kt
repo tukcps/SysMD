@@ -1,8 +1,8 @@
 package compiler
 
 import com.github.tukcps.sysmd.model.kerml.Feature
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.check.getUnresolvedElements
-import com.github.tukcps.sysmd.services.initialize
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -29,14 +29,13 @@ class SysMDTests {
 
     /** Check syntax for declaration of a value feature */
     @Test
-    fun parseValueTest() = testSession("ScalarValues") {
+    fun parseValueTest() = testSession("ScalarValues", runlevel = Runlevel.ALL) {
         loadSysMD("""
             Global hasA package hello.
             hello hasA package car. 
             hello::car hasA 
                 feature p: ScalarValues::Real.
         """)
-        initialize()
         assertNoIssues()
         assertNotNull(global.resolve("hello::car::p"))
         assertEquals(2, solver.getVariables().size)
@@ -53,7 +52,7 @@ class SysMDTests {
     }
 
     @Test
-    fun importsSyntaxTest() = testSession(initialize = false) {
+    fun importsSyntaxTest() = testSession(runlevel = Runlevel.NONE) {
         loadSysMD("""
             Global hasA private import space.
         """)
@@ -65,7 +64,7 @@ class SysMDTests {
      * Lexical comments are just ignored.
      */
     @Test
-    fun commentTest() = testSession(initialize = false) {
+    fun commentTest() = testSession(runlevel = Runlevel.NONE) {
         loadSysMD("""Global hasA feature x: Base::Anything. // comment""")
         assertNoIssues()
         assertTrue(global.ownedElement.find { it.name == "x"} is Feature)
@@ -76,7 +75,7 @@ class SysMDTests {
      * Check the syntax of if - else statement in expressions.
      */
     @Test
-    fun ifElseTestSysMlV2() = testSession("ScalarValues") {
+    fun ifElseTestSysMlV2() = testSession("ScalarValues", runlevel = Runlevel.ALL) {
         loadSysMD("""
                 Global hasA feature x: ScalarValues::Boolean.
                 Global hasA feature y: ScalarValues::Boolean = false or if x? true else false.

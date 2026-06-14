@@ -1,5 +1,6 @@
 package constraintnettests.bddtests
 
+import com.github.tukcps.sysmd.services.Runlevel
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import util.assertNoIssues
@@ -15,7 +16,7 @@ class ConditionsTests {
     fun conditionCreatedTest() = testSession("ScalarValues") {
         loadKerML("""
             feature x: ScalarValues::Boolean;
-         """)
+         """, Runlevel.ALL)
         assertNoIssues()
         val x = solver.getVariable("x")!!
         val indexX = builder.conds.indexes[x.path]
@@ -30,7 +31,7 @@ class ConditionsTests {
         loadKerML("""                
             feature x: ScalarValues::Boolean;
             feature y: ScalarValues::Boolean = not(x);
-        """)
+        """, Runlevel.ALL)
         assertNoIssues()
         val x = solver.getVariable("x")
         val y = solver.getVariable("y")

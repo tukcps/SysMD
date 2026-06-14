@@ -1,9 +1,6 @@
 package services
 
-import com.github.tukcps.sysmd.model.kerml.Specialization
 import com.github.tukcps.sysmd.services.check.checkConsistencyOfBuilders
-import com.github.tukcps.sysmd.services.check.checkOwnership
-import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.session.SessionManager.projectService
 import com.github.tukcps.sysmd.services.session.loadLibrary
 import com.github.tukcps.sysmd.services.session.loadProject
@@ -12,7 +9,7 @@ import org.junit.jupiter.api.parallel.Isolated
 import org.junit.jupiter.api.parallel.ResourceAccessMode.READ_WRITE
 import org.junit.jupiter.api.parallel.ResourceLock
 import org.junit.jupiter.api.parallel.Resources.SYSTEM_PROPERTIES
-import util.assertNoIssues
+import util.testProjectSession
 import util.testSession
 import kotlin.test.*
 
@@ -32,9 +29,9 @@ class ProjectUsageDataTests {
 
 
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
-    fun projectDataScalarValuesTest() = testSession("ScalarValues") {
-        assertEquals("testSession", project?.name)
-        assertNotNull(project?.description)
+    fun projectDataScalarValuesTest() = testProjectSession("ScalarValues") {
+        assertEquals("testSession", project.name)
+        assertNotNull(project.description)
     }
 
     /**
@@ -42,9 +39,9 @@ class ProjectUsageDataTests {
      * i.e., ISO26262 uses ScalarValues
      */
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
-    fun projectDataISO26262Test() = testSession("ISO26262") {
+    fun projectDataISO26262Test() = testProjectSession("ISO26262") {
         assertTrue(6 <= projectService.getProjects().size)
-        assertNotNull(project?.description)
+        assertNotNull(project.description)
     }
 
     /**
@@ -52,9 +49,9 @@ class ProjectUsageDataTests {
      * i.e., ISO26262 uses ScalarValues
      */
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
-    fun projectData3Test() = testSession("Signals") {
+    fun projectData3Test() = testProjectSession("Signals") {
         assertTrue(6 <=  projectService.getProjects().size)
-        assertNotNull(project?.description)
+        assertNotNull(project.description)
     }
 
     /**
@@ -72,7 +69,7 @@ class ProjectUsageDataTests {
         assertNotNull(bool)
         assertNotNull(builder)
 
-        // LoadProject creates Imports duplicates
+        // LoadLibrary must not create Imports duplicates?
         loadLibrary("ScalarValues")
         assertEquals(numElements, get().size)
         loadLibrary("ScalarValues")
@@ -88,7 +85,7 @@ class ProjectUsageDataTests {
     }
 
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
-    fun repeatedLoadingTest() = testSession {
+    fun repeatedLoadingTest() = testProjectSession {
         loadProject("Math")
         assertNotNull(global.resolve("Math"))
         val noElements = get().size

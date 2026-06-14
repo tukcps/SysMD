@@ -3,7 +3,6 @@ package compiler.sysml.examples.modelstests
 import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
-import kotlin.test.Ignore
 import kotlin.test.Test
 
 
@@ -13,7 +12,7 @@ class StateTest {
      * LGPL License, share and treat accordingly.
      * Test fails as unclear how to map it to grammar (bug in grammar?)
      */
-    @Test @Ignore
+    @Test
     fun testStates() = testSession("States") {
         loadSysMLv2("""
                 package 'State Example' {

@@ -58,7 +58,6 @@ class ConstraintNetConvergence {
     @Test @Timeout(value = 1, unit = TimeUnit.SECONDS)
     fun convergenceTest2() = assertTimeoutPreemptively(Duration.ofMillis(1000)) {
         testSession("ScalarValues") {
-            settings.catchExceptions = false
             loadKerML("""
                     feature r:       ScalarValues::Real = 100.0; 
                     feature mass:    ScalarValues::Real = density * volume;

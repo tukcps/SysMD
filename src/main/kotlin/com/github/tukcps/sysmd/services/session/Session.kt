@@ -2,11 +2,12 @@ package com.github.tukcps.sysmd.services.session
 
 import com.github.tukcps.sysmd.cspsolver.Solver
 import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.services.repositories.local.ProjectData
+import com.github.tukcps.sysmd.services.Runlevel
 import io.github.tukcps.aadd.DDBuilder
 import io.github.tukcps.sysmlv2.api.entities.CommitDataObject
 import io.github.tukcps.sysmlv2.api.entities.ElementDAO
 import java.util.*
+import kotlin.uuid.Uuid
 
 
 /**
@@ -20,15 +21,7 @@ interface Session {
     /**
      * Each session has a unique id in the session manager.
      */
-    val id: UUID
-
-    /**
-     * A session from the user's perspective is combined with a modeling project.
-     * Then, the project references to a project with its associated data.
-     * However, a session can also be used independently.
-     * Then, a project can be null.
-     */
-    var project: ProjectData?
+    val id: Uuid
 
     /**
      * The libraries loaded; can also be a Scenario that implies multiple libraries,
@@ -54,6 +47,7 @@ interface Session {
     /** The variables and the solver */
     var solver: Solver
     val builder: DDBuilder
+    var runlevel: Runlevel
 
     /**
      * Adds new elements to the session.
@@ -73,6 +67,7 @@ interface Session {
 
     /** Gets an element by its id */
     operator fun get(elementId: UUID): Element?
+    operator fun get(elementId: Uuid): Element?
 
     /**
      * Creates a new element in the model.
@@ -90,29 +85,4 @@ interface Session {
      * @return The created relationship. Not necessarily the same relationship that was passed as argument.
      */
     fun <T: Relationship> addOwnedRelationship(relationship: T, owningElement: Element?=null): T
-
-    /**
-     * Deletes all owned relationships that satisfy a condition
-     * @param owner the element that owns the relationships to be deleted.
-     * @param condition a lambda expression; if it is satisfied, an owned relationship will be deleted
-     */
-    fun deleteOwnedRelationship(owner: Element, condition: (relationship: Relationship) -> Boolean)
-
-    /**
-     * Loads the usages into the model
-     */
-    fun loadUsages()
-
-    /**
-     * Deletes an element by reference. It also removes the relationship in the according
-     * parent element, and also all owned elements.
-     * @param element the element to be deleted.
-     */
-    fun delete(element: Element): Element?
-
-    /**
-     * Ends a session without saving it.
-     */
-    fun endSession()
-
 }

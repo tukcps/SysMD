@@ -1,7 +1,6 @@
 package com.github.tukcps.sysmd.services.session
 
 import com.github.tukcps.sysmd.compiler.importMD
-import io.github.tukcps.sysmlv2.interchange.InterchangeProject
 
 
 /**
@@ -10,9 +9,9 @@ import io.github.tukcps.sysmlv2.interchange.InterchangeProject
  * For this purpose, it uses the element navigation service implemented
  * independent of whether the project is in a file on a web project.
  */
-fun Session.loadCellsOnly() {
+fun ProjectSession.loadCellsOnly() {
 
-    val elements = SessionManager.elementNavigationService.getElements(project!!, null)
+    val elements = SessionManager.elementNavigationService.getElements(project, null)
 
     val documents = elements.filter {
         it.type == "AnnotatingElement" && it.owner?.id == null

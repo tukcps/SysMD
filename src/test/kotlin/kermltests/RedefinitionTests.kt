@@ -3,7 +3,9 @@ package kermltests
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Multiplicity
 import com.github.tukcps.sysmd.model.kerml.Type
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.resolve.resolveVar
+import util.assertIssue
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.mockup.loadSysMLv2
@@ -28,7 +30,7 @@ class RedefinitionTests {
             type b :> a {
                 :>> f: ScalarValues::Real; 
             }
-        """)
+        """, Runlevel.MODEL)
         assertNoIssues()
 
         val bf: Feature? = global.resolve("b::f")?.member()
@@ -57,7 +59,7 @@ class RedefinitionTests {
             type b :> a {
                 :>> f [2..3];   // Must be of type Real 
             }
-        """)
+        """, Runlevel.MODEL)
         val af: Feature? = global.resolve("a::f")?.member()
         assertNotNull(af)
         assertEquals(1L, af.multiplicityRange.min)
@@ -107,7 +109,7 @@ class RedefinitionTests {
             type b :> a {
                 :>> f: ScalarValues::Real[2..3]; 
             }
-        """)
+        """, Runlevel.VARIABLES)
 
         assertNoIssues()
         val bf = global.resolve("b::f")?.memberElement as Feature
@@ -146,8 +148,7 @@ class RedefinitionTests {
             feature quantityDimension: QuantityDimension { 
                 :>> quantityPowerFactors = lengthPF; 
             }
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
         assertEquals(1L, global.resolveVar("quantityDimension::quantityPowerFactors::exponent")!!.max() )
         assertEquals("m", global.resolveVar("quantityDimension::quantityPowerFactors::unit")!!.vectorQuantity.value.asStrDD().toString())
@@ -302,12 +303,9 @@ class RedefinitionTests {
                     :>> unit = "°C";
                 }
             }
-        """)
-        solver.propagate()
+        """, Runlevel.VARIANCE_CHECKED)
         // Should have inconsistency error - range is not a refinement
-        assertTrue(status.issues.isNotEmpty());
-        // Verify it's specifically a range refinement error
-        assertTrue(status.issues.any { it.message.contains("must be refinement") })
+        assertIssue("must be refinement")
     }
 
     @Test
@@ -328,16 +326,11 @@ class RedefinitionTests {
                     :>> unit = "K";
                 }
             }
-        """)
-        solver.propagate()
+        """, Runlevel.VARIANCE_CHECKED)
         // Should have inconsistency error - converted range is not a refinement
-        assertTrue(status.issues.isNotEmpty())
         // Verify it's specifically a range refinement error
-        assertTrue(status.issues.any { it.message.contains("must be refinement") })
+        assertIssue("must be refinement")
     }
-
-
-
 }
 
 

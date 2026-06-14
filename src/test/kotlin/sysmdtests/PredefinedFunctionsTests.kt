@@ -2,8 +2,7 @@ package sysmdtests
 
 import com.github.tukcps.sysmd.model.kerml.Association
 import com.github.tukcps.sysmd.model.kerml.Connector
-import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.resolve.resolveVar
+import com.github.tukcps.sysmd.services.Runlevel
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
@@ -32,10 +31,10 @@ class PredefinedFunctionsTests {
         """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(ln(5.0), global.resolveVar("test1")!!.min(), 0.00001)
-        assertEquals(sqrt(5.0), global.resolveVar("test2")!!.min(), 0.00001)
-        assertEquals(exp(5.0), global.resolveVar("test3")!!.min(), 0.00001)
-        assertEquals(32.0, global.resolveVar("test4")!!.min(), 0.00001)
+        assertEquals(ln(5.0), solver.getVariable("test1")!!.min(), 0.00001)
+        assertEquals(sqrt(5.0), solver.getVariable("test2")!!.min(), 0.00001)
+        assertEquals(exp(5.0), solver.getVariable("test3")!!.min(), 0.00001)
+        assertEquals(32.0, solver.getVariable("test4")!!.min(), 0.00001)
     }
 
     @Test
@@ -45,7 +44,7 @@ class PredefinedFunctionsTests {
             """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(3.0, global.resolveVar("p")!!.min(), 0.001)
+        assertEquals(3.0, solver.getVariable("p")!!.min(), 0.001)
     }
 
 
@@ -58,7 +57,7 @@ class PredefinedFunctionsTests {
                 """)
         solver.propagate()
         assertNoIssues()
-        val p = global.resolveVar("p")
+        val p = solver.getVariable("p")
         assertTrue(15.0 in p?.vectorQuantity?.aadd()?.getRange()!!)
         assertTrue(p.min<Double>() > 14.9)
         assertTrue(p.vectorQuantity.getMaxAsDouble() < 15.1)
@@ -72,7 +71,7 @@ class PredefinedFunctionsTests {
         """)
         solver.propagate()
         assertNoIssues()
-        val p = global.resolveVar("p")
+        val p = solver.getVariable("p")
         assertTrue(20.0 in p?.vectorQuantity?.aadd()?.getRange()!!)
         assertTrue(p.min<Double>() > 19.9)
         assertTrue(p.vectorQuantity.getMaxAsDouble() < 20.1)
@@ -86,7 +85,7 @@ class PredefinedFunctionsTests {
                 """)
         solver.propagate()
         assertNoIssues()
-        val p = global.resolveVar("p")
+        val p = solver.getVariable("p")
         assertTrue(10.0 in p?.vectorQuantity?.aadd()?.getRange()!!)
         assertTrue(p.min<Double>() > 9.9)
         assertTrue(p.vectorQuantity.getMaxAsDouble() < 10.1)
@@ -100,7 +99,7 @@ class PredefinedFunctionsTests {
                 """)
         solver.propagate()
         assertNoIssues()
-        val t = global.resolveVar("T")
+        val t = solver.getVariable("T")
         assertTrue(2005.0 in t?.vectorQuantity?.aadd()?.getRange()!!)
         assertTrue(t.min<Double>() > 2004.9)
         assertTrue(t.vectorQuantity.getMaxAsDouble() < 2005.1)
@@ -114,7 +113,7 @@ class PredefinedFunctionsTests {
                 """)
         solver.propagate()
         assertNoIssues()
-        val p = global.resolveVar("p")
+        val p = solver.getVariable("p")
         assertEquals(p!!.min(), 10.0, 0.000001)
         assertEquals(p.vectorQuantity.getMaxAsDouble(), 10.0, 0.000001)
     }
@@ -127,7 +126,7 @@ class PredefinedFunctionsTests {
                 """)
         solver.propagate()
         assertNoIssues()
-        val p = global.resolveVar("p")
+        val p = solver.getVariable("p")
         assertEquals(p!!.min(), 15.0, 0.000001)
         assertEquals(p.vectorQuantity.getMaxAsDouble(), 15.0, 0.000001)
     }
@@ -141,7 +140,7 @@ class PredefinedFunctionsTests {
                 """)
         solver.propagate()
         assertNoIssues()
-        val p = global.resolveVar("p")
+        val p = solver.getVariable("p")
         assertEquals(p!!.min(), 15.0, 0.000001)
         assertEquals(p.vectorQuantity.getMaxAsDouble(), 15.0, 0.000001)
     }
@@ -155,7 +154,7 @@ class PredefinedFunctionsTests {
                 """)
         solver.propagate()
         assertNoIssues()
-        val p = global.resolveVar("p")
+        val p = solver.getVariable("p")
         assertEquals(p!!.min(), 20.0, 0.000001)
         assertEquals(p.vectorQuantity.getMaxAsDouble(), 20.0, 0.000001)
     }
@@ -169,7 +168,7 @@ class PredefinedFunctionsTests {
                 """)
         solver.propagate()
         assertNoIssues()
-        val p = global.resolveVar("p")
+        val p = solver.getVariable("p")
         assertEquals(p!!.min(), 20.0, 0.000001)
         assertEquals(p.vectorQuantity.getMaxAsDouble(), 20.0, 0.000001)
     }
@@ -183,7 +182,7 @@ class PredefinedFunctionsTests {
                 """)
         solver.propagate()
         assertNoIssues()
-        val p = global.resolveVar("p")
+        val p = solver.getVariable("p")
         assertEquals(p!!.min(), 20.0, 0.000001)
         assertEquals(p.vectorQuantity.getMaxAsDouble(), 20.0, 0.000001)
     }
@@ -197,7 +196,7 @@ class PredefinedFunctionsTests {
                 """)
         solver.propagate()
         assertNoIssues()
-        val p = global.resolveVar("p")
+        val p = solver.getVariable("p")
         assertEquals(p!!.min(), 10.0, 0.000001)
         assertEquals(p.vectorQuantity.getMaxAsDouble(), 10.0, 0.000001)
     }
@@ -211,7 +210,7 @@ class PredefinedFunctionsTests {
                 """)
         solver.propagate()
         assertNoIssues()
-        val p = global.resolveVar("p")
+        val p = solver.getVariable("p")
         assertEquals(p!!.min(), 10.0, 0.000001)
         assertEquals(p.vectorQuantity.getMaxAsDouble(), 10.0, 0.000001)
     }
@@ -224,7 +223,7 @@ class PredefinedFunctionsTests {
                 """)
         solver.propagate()
         assertNoIssues()
-        val p = global.resolveVar("T")
+        val p = solver.getVariable("T")
         assertEquals(p!!.min(), 2005.0, 0.000001)
         assertEquals(p.vectorQuantity.getMaxAsDouble(), Double.MAX_VALUE, 0.000001)
     }
@@ -237,7 +236,7 @@ class PredefinedFunctionsTests {
                 """)
         solver.propagate()
         assertNoIssues()
-        val p = global.resolveVar("T")
+        val p = solver.getVariable("T")
         assertEquals(p!!.min(), 2005.0, 0.000001)
         assertEquals(p.vectorQuantity.getMaxAsDouble(), 2015.0, 0.000001)
     }
@@ -248,12 +247,12 @@ class PredefinedFunctionsTests {
      */
     @Test
     fun testFloorFxnA() {
-        testSession("ScalarValues", "Ranges") {
+        testSession("ScalarValues", "Ranges", runlevel = Runlevel.VARIANCE_CHECKED) {
             loadKerML("feature p: Ranges::RealInRange {:>> range = \"1.0 .. 1.0\";}") // padding, 0 = NOT enabled, 1 = enabled
             loadKerML("feature C_wb_s_floor_arg: Ranges::RealInRange {:>> range = \"2.75 .. 2.75\";}")
             loadKerML("feature a_pb: ScalarValues::Real = p * floor(C_wb_s_floor_arg);")
-            assertEquals(2.0, global.resolveVar( "a_pb")!!.vectorQuantity.value.asAadd().getRange().min, tol)
-            assertEquals(2.0, global.resolveVar("a_pb")!!.vectorQuantity.value.asAadd().getRange().max, tol)
+            assertEquals(2.0, solver.getVariable( "a_pb")!!.min(), tol)
+            assertEquals(2.0, solver.getVariable("a_pb")!!.max(), tol)
         }
     }
 
@@ -261,21 +260,21 @@ class PredefinedFunctionsTests {
      * Test of Floor.
      */
     @Test
-    fun testFloorFxnB() = testSession("ScalarValues", "Ranges") {
+    fun testFloorFxnB() = testSession("ScalarValues", "Ranges", runlevel = Runlevel.VARIANCE_CHECKED) {
             loadKerML("feature C_wb_s_floor_arg: Ranges::RealInRange {:>> range = \"2.75 .. 2.75\";}")
             loadKerML("feature a_pb: ScalarValues::Real = floor(C_wb_s_floor_arg);")
-            assertEquals(2.0, global.resolveVar("a_pb")!!.vectorQuantity.value.asAadd().getRange().min, tol)
-            assertEquals(2.0, global.resolveVar("a_pb")!!.vectorQuantity.value.asAadd().getRange().max, tol)
+            assertEquals(2.0, solver.getVariable("a_pb")!!.min(), tol)
+            assertEquals(2.0, solver.getVariable("a_pb")!!.max(), tol)
     }
 
     /**
      * Test of Floor.
      */
     @Test
-    fun testFloorFxnC() = testSession("ScalarValues", "Ranges") {
+    fun testFloorFxnC() = testSession("ScalarValues", "Ranges", runlevel = Runlevel.VARIANCE_CHECKED) {
         loadKerML("feature C_wb_s_floor_arg: Ranges::RealInRange {:>> range = \"2.75 .. 2.75\";} feature a_pb: ScalarValues::Real = floor(C_wb_s_floor_arg) - 1.0.")
-        assertEquals(1.0, global.resolveVar("a_pb")!!.vectorQuantity.value.asAadd().getRange().min, 0.001)
-        assertEquals(1.0, global.resolveVar("a_pb")!!.vectorQuantity.value.asAadd().getRange().max, 0.001)
+        assertEquals(1.0, solver.getVariable("a_pb")!!.min(), 0.001)
+        assertEquals(1.0, solver.getVariable("a_pb")!!.max(), 0.001)
     }
 
 
@@ -284,11 +283,11 @@ class PredefinedFunctionsTests {
      */
     @Test
     fun testFloorFxnD() {
-        testSession("ScalarValues", "Ranges") {
+        testSession("ScalarValues", "Ranges", runlevel = Runlevel.VARIANCE_CHECKED) {
             loadKerML("feature C_wb_s_floor_arg: Ranges::RealInRange {:>> range = \"2.75 .. 2.75\";}")
             loadKerML("feature a_pb: ScalarValues::Real = 3.0 - floor(C_wb_s_floor_arg);")
-            assertEquals(1.0, global.resolveVar("a_pb")!!.vectorQuantity.value.asAadd().getRange().min, tol)
-            assertEquals(1.0, global.resolveVar("a_pb")!!.vectorQuantity.value.asAadd().getRange().max, tol)
+            assertEquals(1.0, solver.getVariable("a_pb")!!.min(), tol)
+            assertEquals(1.0, solver.getVariable("a_pb")!!.max(), tol)
         }
     }
 
@@ -298,13 +297,13 @@ class PredefinedFunctionsTests {
      * 9x^4 - y^4 + 2 y^2 = 1
      */
     @Test
-    fun testAgainstRumpEquation7() = testSession("ScalarValues", "Ranges") {
+    fun testAgainstRumpEquation7() = testSession("ScalarValues", "Ranges", runlevel = Runlevel.VARIANCE_CHECKED) {
         loadKerML("""
             feature x: Ranges::RealInRange {:>> range = "2910.99 .. 2911.001";}
             feature y: Ranges::RealInRange {:>> range = "5041.999 .. 5042.001";}
             feature z: ScalarValues::Real = 9.0 * x^4.0 - y^4.0 + 2.0 * y^2.0
             """)
-        val z = global.resolveVar("z")!!.vectorQuantity.value.asAadd()
+        val z = solver.getVariable("z")!!.vectorQuantity.value.asAadd()
         assertTrue(1.0 in z)
         // assertEquals(-1.7976931348623157E308, resolveName<Expression>(global, "z")!!.quantity.value.asAadd().getRange().min, tol)
         // assertEquals(1.7976931348623157E308, resolveName<Expression>(global, "z")!!.quantity.value.asAadd().getRange().max, tol)
@@ -317,7 +316,7 @@ class PredefinedFunctionsTests {
                 """)
         solver.propagate()
         assertNoIssues()
-        val t = global.resolveVar("DataRate")
+        val t = solver.getVariable("DataRate")
         assertEquals(28.889564952844047, t!!.vectorQuantity.valuesIn("MB/s")[0].asAadd().getRange().min, tol)
         assertEquals(426.69303316094675, t.vectorQuantity.valuesIn("MB/s")[0].asAadd().getRange().max, tol)
     }
@@ -331,7 +330,7 @@ class PredefinedFunctionsTests {
         """)
         solver.propagate()
         assertNoIssues()
-        val p = global.resolveVar("p")
+        val p = solver.getVariable("p")
         assertTrue(10.0 in p?.vectorQuantity?.aadd()?.getRange()!!)
         assertTrue(p.min<Double>() > 9.9)
         assertTrue(p.vectorQuantity.getMaxAsDouble() < 10.1)
@@ -345,7 +344,7 @@ class PredefinedFunctionsTests {
         """)
         solver.propagate()
         assertNoIssues()
-        val p = global.resolveVar("p")
+        val p = solver.getVariable("p")
         assertTrue(10.0 in p?.vectorQuantity?.aadd()?.getRange()!!)
         assertTrue(p.min<Double>() > 9.9)
         assertTrue(p.vectorQuantity.getMaxAsDouble() < 10.1)
@@ -359,7 +358,7 @@ class PredefinedFunctionsTests {
         """)
         solver.propagate()
         assertNoIssues()
-        val p = global.resolveVar("p")
+        val p = solver.getVariable("p")
         assertTrue(20.0 in p?.vectorQuantity?.aadd()?.getRange()!!)
         assertTrue(p.min<Double>() > 19.9)
         assertTrue(p.vectorQuantity.getMaxAsDouble() < 20.1)
@@ -373,7 +372,7 @@ class PredefinedFunctionsTests {
         """)
         solver.propagate()
         assertNoIssues()
-        val p = global.resolveVar("p")
+        val p = solver.getVariable("p")
         assertTrue(20.0 in p?.vectorQuantity?.aadd()?.getRange()!!)
         assertTrue(p.min<Double>() > 19.9)
         assertTrue(p.vectorQuantity.getMaxAsDouble() < 20.1)
@@ -387,7 +386,7 @@ class PredefinedFunctionsTests {
         """)
         solver.propagate()
         assertNoIssues()
-        val p = global.resolveVar("p")
+        val p = solver.getVariable("p")
         assertTrue(0.0 in p?.vectorQuantity?.aadd()?.getRange()!!)
         assertTrue(p.min<Double>() > -0.1)
         assertTrue(p.vectorQuantity.getMaxAsDouble() < 0.1)
@@ -399,10 +398,9 @@ class PredefinedFunctionsTests {
             feature T: ScalarValues::Integer = 2020;
             feature p: ScalarValues::Integer = stepInterpolation(T, 2000, 10, 2010, 20, 2020, 0);
         """)
-        initialize()
         solver.propagate()
         assertNoIssues()
-        val p = global.resolveVar("p")
+        val p = solver.getVariable("p")
         assertEquals(0L, p?.min())
         assertEquals(0L, p?.max())
     }
@@ -413,10 +411,9 @@ class PredefinedFunctionsTests {
             feature T: ScalarValues::Integer = 1990;
             feature p: ScalarValues::Integer = stepInterpolation(T, 1980, 10, 2010, 20, 2020, 0);
         """)
-        initialize()
         solver.propagate()
         assertNoIssues()
-        val p = global.resolveVar("p")
+        val p = solver.getVariable("p")
         assertEquals(10L, p?.min())
         assertEquals(10L, p?.max())
     }
@@ -429,7 +426,7 @@ class PredefinedFunctionsTests {
         """)
         solver.propagate()
         assertNoIssues()
-        val p = global.resolveVar("p")
+        val p = solver.getVariable("p")
         assertEquals(10L, p?.min())
         assertEquals(10L, p?.max())
     }
@@ -442,7 +439,7 @@ class PredefinedFunctionsTests {
         """)
         solver.propagate()
         assertNoIssues()
-        val p = global.resolveVar("p")
+        val p = solver.getVariable("p")
         assertEquals(10L, p?.min())
         assertEquals(10L, p?.max())
     }
@@ -455,7 +452,7 @@ class PredefinedFunctionsTests {
         """)
         solver.propagate()
         assertNoIssues()
-        val p = global.resolveVar("p")
+        val p = solver.getVariable("p")
         assertEquals(20L, p?.min())
         assertEquals(20L, p?.max())
     }
@@ -468,7 +465,7 @@ class PredefinedFunctionsTests {
         """)
         solver.propagate()
         assertNoIssues()
-        val p = global.resolveVar("p")
+        val p = solver.getVariable("p")
         assertEquals(20L, p?.min())
         assertEquals(20L, p?.max())
     }
@@ -480,7 +477,7 @@ class PredefinedFunctionsTests {
             feature r: ScalarValues::Real = ToReal(i).
             """)
         solver.propagate()
-        val r = global.resolveVar("r")!!
+        val r = solver.getVariable("r")!!
         assertNoIssues()
         assertEquals(2.0, r.min(), 0.00001)
         assertEquals(3.0, r.vectorQuantity.getMaxAsDouble(), 0.00001)
@@ -494,9 +491,9 @@ class PredefinedFunctionsTests {
             feature r: Integer = ToInteger(i); 
             """)
         solver.propagate()
-        val i = global.resolveVar("i")
+        val i = solver.getVariable("i")
         assertNotNull(i)
-        val r = global.resolveVar("r")!!
+        val r = solver.getVariable("r")!!
         assertNoIssues()
         assertEquals(2, r.vectorQuantity.value.asIdd().min)
         assertEquals(3, r.vectorQuantity.value.asIdd().max)
@@ -525,7 +522,7 @@ class PredefinedFunctionsTests {
         assertNotNull(impl)
         val r = global.resolve("r")?.member<Connector>()
         assertNotNull(r)
-        val fx = global.resolveVar("f::x")!!
+        val fx = solver.getVariable("f::x")!!
         assertEquals(1.0, fx.min(), 0.0001)
         assertEquals(0, status.issues.size, status.issues.toString())
     }

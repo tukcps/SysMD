@@ -5,28 +5,31 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Text
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.tukcps.sysmd.compiler.getYaml
-import com.github.tukcps.sysmd.ui.viewmodel.TabsViewModel
-import kotlin.io.path.exists
-
+import com.github.tukcps.sysmd.services.session.SessionManager.sessionService
+import com.github.tukcps.sysmd.ui.viewmodel.EditorTabsViewModel
+import org.jetbrains.skia.Image as SkiaImage
 
 /**
  * Renders the title page of a project or file.
- * @param tabsViewModel the Tab's view model .
+ * @param editorTabsViewModel the Tab's view model .
  * @param body the body of the notebook cell; it must be in Frontmatter YAML Markdown syntax.
  */
 @Composable
 fun Frontmatter(
-    tabsViewModel: TabsViewModel,
+    editorTabsViewModel: EditorTabsViewModel,
     body: MutableState<TextFieldValue>
 ) {
 
@@ -66,14 +69,18 @@ fun Frontmatter(
             )
         }
 
-        if (yaml?.get("title") != null) {
+        if (yaml?.get("logo") != null) {
             Spacer(Modifier.height(20.dp))
-            if (tabsViewModel.sessionState.value.project?.directory?.resolve("Files")?.resolve("icon.png")?.exists() == true)
+            val image = sessionService.getFile(editorTabsViewModel.sessionIdState.value, yaml?.get("logo")!!)
+            val bitmap: ImageBitmap? = if (image != null && image.size>10) {
+                SkiaImage.makeFromEncoded(image).toComposeImageBitmap() } else null
+            if (bitmap != null)
                 Image(
-                    bitmap = loadFullImage(tabsViewModel = tabsViewModel, "Files/icon.png").image, contentDescription = "icon",
+                    bitmap = bitmap,
                     modifier = Modifier.align(Alignment.CenterHorizontally),
-                    contentScale = ContentScale.Fit
+                    contentDescription = null,
                 )
+            Spacer(Modifier.height(12.dp))
         }
 
         if (yaml?.get("author") != null) {

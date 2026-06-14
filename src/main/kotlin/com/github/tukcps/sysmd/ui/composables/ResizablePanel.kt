@@ -60,11 +60,11 @@ enum class ResizablePanelSide {
 }
 
 /**
- * A composable that displays a composable as a resizable panel.
+ * A composable that displays a composable as a resizable pane.
  * It can be minimized or maximized via an arrow icon.
  */
 @Composable
-internal fun ResizablePanel(
+internal fun ResizablePane(
     agendaIsEmpty: MutableState<Boolean>,
     panelPosition: ResizablePanelSide = ResizablePanelSide.LEFT_SIDE,
     modifier: Modifier,

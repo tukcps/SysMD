@@ -1,5 +1,6 @@
 package kermltests
 
+import com.github.tukcps.sysmd.services.Runlevel
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
@@ -30,7 +31,7 @@ class FunctionTests {
         loadKerML("""
             feature x: ScalarValues::Real;
             feature f: ScalarValues::Real = undefined(x); 
-        """)
+        """, Runlevel.VARIABLES)
         assertTrue(status.issues.isNotEmpty(), "An unknown function should be reported as error.")
     }
 }

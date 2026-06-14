@@ -2,6 +2,7 @@
 
 package constraintnettests.bddtests
 
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.defScalarVar
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.letVar
@@ -28,17 +29,15 @@ internal class OperationTests /*: DDBuilderIF by Global.context */{
         // Do never use builder.BOOL to get a Boolean variable. It is just used as placeholder
         // for a boolean unknown as a RESULT or INPUT!!!
 
-        loadKerML("feature r1: ScalarValues::Boolean = a;")
-        initialize()
+        loadKerML("feature r1: ScalarValues::Boolean = a;", Runlevel.VARIABLES)
         // println(resolveName<ValueFeature>("a"))        // it is "if a true, else false"
         assertEquals(global.resolveVar("r1")!!.ast!!.bdd.height(), 1)
 
-        loadKerML("feature b: ScalarValues::Boolean = true;")
-        loadKerML("feature r2: ScalarValues::Boolean = a and b;") //
+        loadKerML("feature b: ScalarValues::Boolean = true;", Runlevel.VARIABLES)
+        loadKerML("feature r2: ScalarValues::Boolean = a and b;", Runlevel.VARIABLES) //
         assertEquals(1, global.resolveVar("r2")!!.ast!!.bdd.height())
 
         val a = letVar("a", builder.True)
-        initialize()
         solver.propagate()
 
         val r2 = global.resolveVar("r2")!!
@@ -66,7 +65,7 @@ internal class OperationTests /*: DDBuilderIF by Global.context */{
             // check result
             // AADD only follow the correct path, not both paths.
             // Check that operations yield correct results.
-            initialize()
+            initialize(Runlevel.ALL)
             defScalarVar("a", "X", "", "ScalarValues::Boolean")
             defScalarVar("b", "true", "", "ScalarValues::Boolean")
             // derVar("c", NaB) //Not sure if intended to use. Will use later on if correct
@@ -82,7 +81,6 @@ internal class OperationTests /*: DDBuilderIF by Global.context */{
             assertEquals(r1, global.resolveVar("x")!!.vectorQuantity)
 
             letVar("a", builder.False)
-            initialize()
             solver.propagate()
             val r2 = global.resolveVar("r1")!!.vectorQuantity.value
             val y = global.resolveVar("y")!!.vectorQuantity.value
@@ -90,7 +88,6 @@ internal class OperationTests /*: DDBuilderIF by Global.context */{
             assertEquals(r2.asAadd().max, y.asAadd().max, 0.00001)
 
             letVar("a", builder.boolean("a"))
-            initialize()
             solver.propagate()
             val r3 = global.resolveVar("r1")!!.vectorQuantity.value
             assertEquals(0.0, r3.asAadd().min,  0.00001)
@@ -100,13 +97,15 @@ internal class OperationTests /*: DDBuilderIF by Global.context */{
     @Test
     fun setVariableTestWithComplexBDD() = testSession("ScalarValues") {
             // The following is equivalent:
-            loadKerML("feature a: ScalarValues::Boolean;")
-            loadKerML("feature b: ScalarValues::Boolean;")
-            loadKerML("feature c: ScalarValues::Boolean;")
-            loadKerML("feature y: ScalarValues::Boolean = (a and c) or (not(b) and not(a));")
+            loadKerML("feature a: ScalarValues::Boolean;", Runlevel.NONE)
+            loadKerML("feature b: ScalarValues::Boolean;", Runlevel.NONE)
+            loadKerML("feature c: ScalarValues::Boolean;", Runlevel.NONE)
+            loadKerML("feature y: ScalarValues::Boolean = (a and c) or (not(b) and not(a));", Runlevel.VARIABLES)
             assertNoIssues()
-            assertEquals(XBool.X, global.resolveVar("a")!!.boolSpecs[0])
-            assertEquals(2, global.resolveVar("y")!!.vectorQuantity.value.height())
+            val a = global.resolveVar("a")
+            val y = global.resolveVar("y")
+            assertEquals(XBool.X, a?.boolSpecs[0])
+            assertEquals(2, y?.vectorQuantity?.value?.height())
             // 1) a auf True setzen
             // 2) impact auf y checken
             // 3) b auf False setzen (oder auch True)
@@ -120,7 +119,8 @@ internal class OperationTests /*: DDBuilderIF by Global.context */{
             feature a: ScalarValues::Boolean;
             feature b: ScalarValues::Boolean;
             feature c: ScalarValues::Boolean;
-            feature y: ScalarValues::Boolean = (a and c) or (not(b) and not(a));""")
+            feature y: ScalarValues::Boolean = (a and c) or (not(b) and not(a));
+        """, Runlevel.VARIABLES)
         assertNoIssues()
         val a = global.resolveVar("a")!!
         val b = global.resolveVar("b")!!
@@ -148,7 +148,7 @@ internal class OperationTests /*: DDBuilderIF by Global.context */{
             feature a: ScalarValues::Boolean(true);
             feature b: ScalarValues::Boolean(false);
             feature d: ScalarValues::Boolean;
-        """)
+        """, Runlevel.ALL)
         assertNoIssues()
         assertEquals(null, global.resolveVar("a")!!.ast)
         assertEquals(null, global.resolveVar( "b")!!.ast)

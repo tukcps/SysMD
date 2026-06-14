@@ -2,6 +2,7 @@ package kermltests
 
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.getOwned
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import io.github.tukcps.aadd.values.IntegerRange
@@ -115,9 +116,9 @@ class FeatureTests {
     fun testValueFeatureType() = testSession("ScalarValues") {
         loadKerML("""
             feature f: ScalarValues::Real;
-        """)
+        """, Runlevel.VARIABLES)
         assertNoIssues()
-        val f = global.resolveVar("f")
+        val f = solver.getVariable("f")
         assertEquals( builder.Reals, f?.vectorQuantity?.value)
     }
 
@@ -125,9 +126,9 @@ class FeatureTests {
     fun testValueFeature1() = testSession("ScalarValues") {
         loadKerML("""
             feature f: ScalarValues::Real = 1.0;
-        """)
+        """, Runlevel.VARIABLES)
         assertNoIssues()
-        val f = global.resolveVar("f")
+        val f = solver.getVariable("f")
         assertEquals(1.0 , f?.max())
     }
 
@@ -136,10 +137,11 @@ class FeatureTests {
         loadKerML("""
             feature f: ScalarValues::Real = 1.0;
             feature g: ScalarValues::Real = f+1.0;
-        """)
+        """, Runlevel.VARIABLES)
         assertNoIssues()
         val g: Feature? = global.resolve("g")?.member()
-        assertEquals(2.0 , g?.variable?.max()!!, 0.000001)
+        assertNotNull(g)
+        assertEquals(2.0, solver.getVariable("g")?.max()!!, 0.000001)
     }
 
 
@@ -164,9 +166,9 @@ class FeatureTests {
                 :>> range = "1..2000"; 
                 :>> unit  = "mm"; 
             }
-        """)
+        """, Runlevel.VARIABLES)
         assertNoIssues()
-        val f = global.resolveVar("f")
+        val f = solver.getVariable("f")
         assertEquals(1000.0 , f!!.max(), 0.000001)
         assertEquals("m", f.vectorQuantity.unit.toString())
     }
@@ -175,8 +177,8 @@ class FeatureTests {
     @Test
     fun testFeatureWithConstraintsOfProfile() = testSession("ScalarValues") {
         loadKerML("""
-                feature f: ScalarValues::Integer[2 .. 4] (1 .. 2) [m] = 1; 
-            """)
+            feature f: ScalarValues::Integer[2 .. 4] (1 .. 2) [m] = 1; 
+        """, Runlevel.MODEL)
         val f: Feature? = global.resolve("f")?.member()
         assertNotNull(f)
         assertNoIssues()
@@ -189,8 +191,8 @@ class FeatureTests {
     @Test
     fun testFeatureWithConstraintsOfProfilePropagate() = testSession("ScalarValues") {
         loadKerML("""
-                feature f: ScalarValues::Integer(0 .. 2) = 1; 
-            """)
+            feature f: ScalarValues::Integer(0 .. 2) = 1; 
+        """, Runlevel.VARIABLES)
         val f: Feature? = global.resolve("f")?.member()
         assertNoIssues()
         assertNotNull(f)
@@ -212,7 +214,7 @@ class FeatureTests {
             type c2 :> c {
                 feature f2 redefines c::f [1];
             }
-        """)
+        """, Runlevel.MODEL)
         assertNoIssues()
         val c: Type? = global.resolve("c")?.member()
         val c2: Type? = global.resolve("c2")?.member()
@@ -254,7 +256,7 @@ class FeatureTests {
             }
             type c2 :> c {
                 // f inherited --> should be redefined
-                feature redefines f [2]; // c::f not inherited, instead replaced by redef. 
+                feature redefines f [2]; // c::f not inherited, instead replaced by redefinition. 
             }
         """)
         assertNoIssues()
@@ -279,7 +281,7 @@ class FeatureTests {
         loadKerML("""
             feature referencedFeature; 
             feature referencingFeature references referencedFeature; 
-        """.trimIndent())
+        """, Runlevel.MODEL)
         val f2 = global.getOwned<Feature>("referencingFeature")
         val reference = f2!!.getOwnedElementsOfType<ReferenceSubsetting>()
         assertTrue(reference.isNotEmpty())
@@ -299,7 +301,7 @@ class FeatureTests {
                 datatype Integer :> Real;
                 datatype Natural :> Integer; 
             }	
-        """)
+        """, Runlevel.VARIABLES)
         assertNoIssues()
         val integerRange: Feature? = global.resolve("ScalarValues::Integer::range")?.member()
         assertNotNull(integerRange)
@@ -312,7 +314,7 @@ class FeatureTests {
      * Was issue: parser stuck; might become preferred syntax?
      */
     @Test
-    fun typeWithConstraintTest() = testSession("Base", initialize = false) {
+    fun typeWithConstraintTest() = testSession("Base", runlevel = Runlevel.NONE) {
         loadKerML("""
             feature f : ScalarValues::Real(1.0 .. 2.0 [km]);
         """)
@@ -348,11 +350,7 @@ class FeatureTests {
         assertTrue(d.isDefaultValue, "Default initial assignment should be default")
         assertTrue(d.isInitialValue, "Default initial assignment should be initial")
 
-        initialize()
+        initialize(Runlevel.MODEL)
         assertNoIssues()
     }
-
-
-
-
 }

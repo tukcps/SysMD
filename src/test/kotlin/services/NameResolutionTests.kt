@@ -2,6 +2,7 @@ package services
 
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.*
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import util.assertNoIssues
@@ -124,7 +125,7 @@ class NameResolutionTests {
         addOwnedRelationship(SpecializationImplementation(name, anything), name)
         val name2 = addOwnedMember(TypeImplementation(declaredName="name2"), name)  // class in name package/element
         addOwnedRelationship(SpecializationImplementation(name2, anything), name2)
-        initialize()
+        initialize(Runlevel.MODEL)
         assertEquals(sizeBefore+1, global.getOwnedElementsOfType<Type>().size)
         assertEquals(1, name.getOwnedElementsOfType<Type>().size)
         assertEquals(1, name2.ownedElement.size)
@@ -147,7 +148,7 @@ class NameResolutionTests {
         val obj = addOwnedMember(PackageImplementation(declaredName = "testID"), global) // new class or package in global.
         addOwnedMember(ElementImplementation(declaredName = "name2"), obj)   // creation of a test2 element in test package/element
         addOwnedMember(ElementImplementation(declaredName = "test"), global)
-        initialize()
+        initialize(Runlevel.MODEL)
         val foundInGlobal = global.resolve("testID")?.memberElement
         val found = obj.resolve("testID")?.memberElement
         assertEquals("testID", found!!.declaredName) // test by user defined ID
@@ -221,7 +222,7 @@ class NameResolutionTests {
         addOwnedRelationship(NamespaceImportImplementation(importingNamespace = global, importedNamespace = name), global)
         addOwnedMember(ElementImplementation(declaredName="name2"),  name)   // class in class name.
 
-        initialize()
+        initialize(Runlevel.MODEL)
 
         assertEquals("name2", name.resolve("name2")!!.memberElement.declaredName)
         assertEquals("name2", global.resolve("name2")!!.memberElement.declaredName)
@@ -238,7 +239,7 @@ class NameResolutionTests {
         addOwnedRelationship(NamespaceImportImplementation(importingNamespace = global, importedNamespace = name), global)
         val feat = addOwnedMember(FeatureImplementation(declaredName="name2"), name)            // class in name package/element
         addOwnedRelationship(SpecializationImplementation(feat, anything), feat)
-        initialize()
+        initialize(Runlevel.MODEL)
         assertEquals("name2", name.resolve("name2")!!.member<Feature>()?.declaredName)
         assertEquals("name2", global.resolve("name2")!!.member<Feature>()?.declaredName)
     }

@@ -5,8 +5,6 @@ import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.github.tukcps.sysmd.SysMdRunner
 import com.github.tukcps.sysmd.rest.Rest
-import com.github.tukcps.sysmd.rest.entities.requests.IndexEntry
-import com.github.tukcps.sysmd.rest.entities.requests.SessionIndexRequest
 import com.github.tukcps.sysmd.settings
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -60,15 +58,6 @@ class HoodRestAPISessionServiceTest {
         val response = Rest.post(endpoint = "/session", payload = projectName, sessionId = null)
         assertCreated(response)
         return response.body!!
-    }
-
-    private fun createIndexViaRest(sessionId: String, filename : String, content: String): ProjectResponse {
-        val indexEntry = IndexEntry(filename, content = content)
-        val request = SessionIndexRequest(mutableListOf(indexEntry))
-
-        val response = Rest.post(endpoint = "/session/index", payload = toJson(request), sessionId = sessionId)
-        assertCreated(response)
-        return fromJson(response.body!!)
     }
 
     private fun assertCreated(response: ResponseEntity<String>) {

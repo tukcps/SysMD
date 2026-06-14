@@ -17,7 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.input.key.*
+import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.isPrimaryPressed
 import androidx.compose.ui.input.pointer.isSecondaryPressed
@@ -43,19 +43,20 @@ fun isValidFilename(filename: String): Boolean {
  * @param tabs a list of strings that are the titles of the tabs.
  * @param selectedIndex the index of the selected tab
  * @param onSelection a callback that will be called on selection of a tab
- * @param onClose a callback that will be called on closing a tab
- * @param onAdd a callback that will be called on adding a tab
+ * @param onHide a callback that will be called on closing a tab
+ * @param onShow a callback that will be called on adding a tab
  */
 @Composable
 fun Tabs(
     tabs: List<MutableState<String>>,
     selectedIndex: MutableState<Int>,
     onSelection: (Int) -> Unit = { selectedIndex.value = it; },
-    onClose: ((Int) -> Unit)? = null,
-    onAdd: (() -> Unit)? = null,
-    onRename: ((Int, String) -> Unit)? = null,
+    onHide: ((Int) -> Unit)? = null,
+    onShow: (() -> Unit)? = null
 ) {
     val primaryColor = MaterialTheme.colorScheme.primary
+
+    /** Triggers the animation on closing a tab */
     val closed: MutableState<Boolean> = mutableStateOf(false)
     val editNameIndex = remember { mutableStateOf<Int?>(null) }
 
@@ -121,11 +122,7 @@ fun Tabs(
                                                     val buffer = selectedIndex.value // Enforce redrawing of the whole tabs list
                                                     selectedIndex.value = 0
                                                     selectedIndex.value = buffer
-                                                    if (isValidFilename(item.value) && keyEvent.key == Key.Enter && keyEvent.type == KeyEventType.KeyUp) {
-                                                        editNameIndex.value = null
-                                                        onRename?.invoke(i, item.value)
-                                                        true
-                                                    } else { false }
+                                                    true
                                                 }
                                             ,
                                             // color = MaterialTheme.colorScheme.onBackground,
@@ -135,7 +132,7 @@ fun Tabs(
                                             ),
                                             value = item.value, onValueChange = { item.value = it }, readOnly = false, singleLine = true
                                         )
-                                    if (onClose != null)
+                                    if (onHide != null)
                                         SysMDTooltipArea(tooltipText = "Close this tab") {
                                             Icon(
                                                 Icons.Default.Close,
@@ -145,7 +142,7 @@ fun Tabs(
                                                     .size(20.dp)
                                                     .padding(2.dp)
                                                     .clickable {
-                                                        onClose(i)
+                                                        onHide(i)
                                                         closed.value = !closed.value
                                                     }
                                             )
@@ -153,7 +150,7 @@ fun Tabs(
                                 }
                             }
                         }
-                        if (onAdd != null) {
+                        if (onShow != null) {
                             Spacer(
                                 modifier = Modifier
                                     .padding(horizontal = 5.dp, vertical = 3.dp)
@@ -170,7 +167,7 @@ fun Tabs(
                                         .size(20.dp)
                                         .padding(1.dp)
                                         .clickable {
-                                            onAdd()
+                                            onShow()
                                             editNameIndex.value = tabs.size
                                         }
                                 )

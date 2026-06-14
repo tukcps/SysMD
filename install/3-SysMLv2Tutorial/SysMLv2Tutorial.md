@@ -1,8 +1,10 @@
 ---
 title: SysML v2 Tutorial
 subtitle: Introduction
-author: RPTU Kaiserslautern, Chair of Cyber-Physical Systems
+author: Christoph Grimm (RPTU Kaiserslautern, Chair of Cyber-Physical Systems)
 ---
+
+[toc]
 
 # SysML v2: Why Why Why? 
 

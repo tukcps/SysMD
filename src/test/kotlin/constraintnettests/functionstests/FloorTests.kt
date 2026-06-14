@@ -1,5 +1,6 @@
 package constraintnettests.functionstests
 
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import org.junit.jupiter.api.Test
 import util.assertNoIssues
@@ -14,8 +15,7 @@ class FloorTests {
         loadKerML("""
           feature a: Ranges::RealInRange {:>> range = "-3.5..-2.5";}
           feature b: ScalarValues::Real = floor(a);
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
         assertEquals(-4.0, global.resolveVar("b")!!.min(), 0.00001)
         assertEquals(-3.0, global.resolveVar("b")!!.max(), 0.00001)
@@ -26,8 +26,7 @@ class FloorTests {
         loadKerML("""
           feature a: Ranges::IntegerInRange {:>> range = "0..0";}
           feature b: ScalarValues::Integer = floor(a);
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
         assertEquals(0L, global.resolveVar("b")!!.min())
         assertEquals(0L, global.resolveVar("b")!!.max())
         assertNoIssues()
@@ -38,8 +37,7 @@ class FloorTests {
         loadKerML("""
           feature a: Ranges::IntegerInRange {:>> range = "2..7";}
           feature b: Ranges::IntegerInRange = floor(a) {:>> range = "3..5";}
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
         assertEquals(3L, global.resolveVar("a")!!.min())
         assertEquals(6L, global.resolveVar("a")!!.max())
         assertNoIssues()
@@ -50,8 +48,7 @@ class FloorTests {
         loadKerML("""
           feature a: Ranges::RealInRange {:>> range = "3.5..6.5";}
           feature b: Ranges::RealInRange = floor(a) {:>> range = "3.0..5.0";}
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
         assertEquals(3.5, global.resolveVar("a")!!.min(), 0.00001)
         assertEquals(6.0, global.resolveVar("a")!!.max(), 0.00001)

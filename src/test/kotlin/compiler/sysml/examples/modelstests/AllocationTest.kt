@@ -1,6 +1,7 @@
 package sysmlv2specificationtests.modelstests
 
 import com.github.tukcps.sysmd.exceptions.Issue
+import com.github.tukcps.sysmd.services.Runlevel
 import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Test
@@ -11,7 +12,7 @@ class AllocationTest {
 
     // hierarchically structured re-definitions not implemented
     @Test
-    fun testAllocation() = testSession( "Allocations", "Parts", initialize = false) {
+    fun testAllocation() = testSession( "Allocations", "Parts", runlevel = Runlevel.NONE) {
         loadSysMLv2("""
                 package AllocationTest {
                     part def Logical {

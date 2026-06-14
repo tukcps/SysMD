@@ -1,9 +1,8 @@
 ---
-logo: Files/logo.png
-description: Tutorial on modeling with SysML v2
 subtitle: SysML v2 Ecosystem and Methodology
-author: RPTU Kaiserslautern-Landau, Chair of Cyber-Physical Systems
+author: Christoph Grimm (RPTU Kaiserslautern-Landau, Chair of Cyber-Physical Systems)
 ---
+
 [toc]
 
 ---

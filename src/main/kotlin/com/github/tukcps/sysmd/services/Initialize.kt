@@ -13,7 +13,9 @@ import com.github.tukcps.sysmd.services.inheritance.checkForCycles
 import com.github.tukcps.sysmd.services.inheritance.checkIsNotTypedByOwner
 import com.github.tukcps.sysmd.services.resolve.resolveFeatureChain
 import com.github.tukcps.sysmd.services.session.Session
-import com.github.tukcps.sysmd.services.session.getAllOfClass
+import com.github.tukcps.sysmd.services.session.implementation.getAllOfClass
+import kotlinx.serialization.Serializable
+import kotlin.math.min
 
 private fun Session.fillCache() {
     // Cache frequently used types for use in semantic checks
@@ -69,58 +71,103 @@ private fun Session.addEndFeatureReferences() {
 }
 
 /**
+ * Enumeration with all possible run-levels of the compiler and the solver.
+ *
+ * On the abstract representation:
+ *  - NONE: Makes nothing.
+ *  - NAMES_RESOLVED: Name resolution is done for Qualified Names; no checks
+ *  - TYPES_INHERITED: Redefinitions are processed
+ *  - FEATURE_CHAINES_RESOLVED: Feature chains are resolved
+ *  - TYPES_CHECKED: Errors are reported on unresolved names, feature chains, etc.
+ *
+ *  By the solver:
+ *  - VARIABLES_CREATED: Variable are identified for constraint propagation.
+ *  - VARIANCE_CHECKED: Types and Co/Contra-Variance are checked.
+ *  - SOLVED: Constraint propagation started and terminated.
+ *  - ALL: Runs everything.
+ */
+@Serializable
+enum class Runlevel {
+    NONE,
+    NAMES_RESOLVED,
+    TYPES_INHERITED,
+    FEATURE_CHAINS_RESOLVED,
+    MODEL,
+    VARIABLES,
+    VARIANCE_CHECKED,
+    SOLVED,
+    ALL;
+
+    companion object {
+        fun toRunlevel(name: String): Runlevel? = entries.find { it.name == name }
+        fun fromOrdinal(index: Int): Runlevel {
+            return entries.getOrElse(index) {
+                if (index >= ALL.ordinal) ALL else NONE
+            }
+        }
+
+        fun minRunlevel(a: Runlevel, b: Runlevel): Runlevel {
+            val min = min(a.ordinal, b.ordinal)
+            return fromOrdinal(min)
+        }
+    }
+}
+
+
+/**
  * Schedules and initialize the properties and the elements.
  * This shall be done before calling propagate().
  */
-fun Session.initialize(level: Int = 100) {
-    if (settings.initialize) {
-        try {
-            if (level > 0) { // Ownership and Type definitions
-                resolveAllNames()
-                fillCache()
+fun Session.initialize(runlevel: Runlevel) {
+    try {
+        if (runlevel >= Runlevel.NAMES_RESOLVED) { // Ownership and Type definitions
+            resolveAllNames()
+            fillCache()
 
-                get().asSequence().filterIsInstance<Type>().forEach { type -> type.checkForCycles() }
-                get().asSequence().filterIsInstance<Specialization>().forEach { it.general.subtypes.add(it.specific) }
-                
-                solveExpressionTypes()
-            }
-            if (level > 1) {  // Inheritance and redefinition
-                anything.addInheritedToSubtypes() // Calls 'initialize' of types that will add inherited properties.
-                anything.addInheritedToSubtypes()
-                resolveRedefinitions()
-            }
-            if (level > 2) { // Feature chains considering inherited features
-                addEndFeatureReferences()
-                resolveAllNames()
-                resolveAllFeatureChains()
-                giveUUID5()
-            }
+            get().asSequence().filterIsInstance<Type>().forEach { type -> type.checkForCycles() }
+            get().asSequence().filterIsInstance<Specialization>().forEach { it.general.subtypes.add(it.specific) }
 
-            if (level > 3)
-                checkNameResolutionSuccessful()
-
-            if (level > 4) {
-                // We do static semantic checks ...
-                getAllOfClass<Type>().asSequence().forEach { type ->
-                    type.checkForCycles()
-                }
-
-                getAllOfClass<Feature>().asSequence().forEach { feature -> feature.checkIsNotTypedByOwner() }
-            }
-
-            if (level > 5)
-                solver.initVariables()
-
-            // Now, we only do checking and reporting of issues to the Agenda.
-            if (level > 7) get().asSequence().filterIsInstance<Type>().forEach {
-                checkConsistencyOfInheritance(it)
-            }
-        } catch (error: Exception) {
-            if (error is SysMDException)
-                status.error(message = error.message, cause = error)
-            else
-                status.error(message = "Semantic analysis failed (${error}) ", cause = SysMDException("Initialization failed", cause = error))
+            solveExpressionTypes()
         }
+        if (runlevel >= Runlevel.TYPES_INHERITED) {  // Inheritance and redefinition
+            anything.addInheritedToSubtypes() // Calls 'initialize' of types that will add inherited properties.
+            anything.addInheritedToSubtypes()
+            resolveRedefinitions()
+        }
+
+        if (runlevel >= Runlevel.FEATURE_CHAINS_RESOLVED) { // Feature chains considering inherited features
+            addEndFeatureReferences()
+            resolveAllNames()
+            resolveAllFeatureChains()
+            giveUUID5()
+        }
+
+        if (runlevel >= Runlevel.MODEL) {
+            checkNameResolutionSuccessful()
+            // We do static semantic checks ...
+            getAllOfClass<Type>().asSequence().forEach { type ->
+                type.checkForCycles()
+            }
+
+            getAllOfClass<Feature>().asSequence().forEach { feature -> feature.checkIsNotTypedByOwner() }
+        }
+
+        if (runlevel >= Runlevel.VARIABLES)
+            solver.initVariables()
+
+        // Now, we only do checking and reporting of issues to the Board.
+        if (runlevel >= Runlevel.VARIANCE_CHECKED) get().asSequence().filterIsInstance<Type>().forEach {
+            checkConsistencyOfInheritance(it)
+        }
+
+        if (runlevel >= Runlevel.SOLVED)
+            solver.propagate()
+
+    } catch (error: Exception) {
+        if (error is SysMDException)
+            status.error(message = error.message, cause = error)
+        else
+            status.error(message = "Semantic analysis failed (${error}) ", cause = SysMDException("Initialization failed", cause = error))
     }
 }
 
@@ -129,8 +176,7 @@ fun Session.initialize(level: Int = 100) {
  * Ensures that at least an initial number of elements is initialized.
  * No tests are made; they can only be done later.
  */
-internal fun Session.resolveAllNames()
-{
+internal fun Session.resolveAllNames() {
     /**
      * Replaces all unresolved elements in a list with elements from the model.
      * Elements are resolved by their relativeNames within the given namespace.
@@ -259,8 +305,11 @@ fun getVarNames(namespace: QualifiedName, membership: Membership): List<String> 
  * inherited features.
  */
 internal fun Session.resolveRedefinitions() {
-    val unresolvedRedefs = get().asSequence().filterIsInstance<Redefinition>()
-        .filter { it.source.any { it is Unresolved } || it.target.any { it is Unresolved } }.toSet()
+    val unresolvedRedefs = get().asSequence()
+        .filterIsInstance<Redefinition>()
+        .filter {
+            it.source.any { source -> source is Unresolved }
+                    || it.target.any { target -> target is Unresolved } }.toSet()
 
     fun resolveQualifiedNameForRedefinition(namespace: Namespace, elements: MutableList<Element>, redefinition: Redefinition) {
         elements.forEachIndexed { index, element ->
@@ -309,7 +358,8 @@ internal fun Session.resolveRedefinitions() {
         }
         val new = get().asSequence()
             .filterIsInstance<Redefinition>()
-            .filter { it.source.any { it is Unresolved } || it.target.any { it is Unresolved } }
+            .filter { it.source.any { source -> source is Unresolved }
+                    || it.target.any { target -> target is Unresolved } }
             .toSet()
         progress = (current.size - new.size) > 0
         current = new

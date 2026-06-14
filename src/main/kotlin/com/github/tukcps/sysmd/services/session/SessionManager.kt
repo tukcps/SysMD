@@ -3,17 +3,22 @@
 
 package com.github.tukcps.sysmd.services.session
 
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.repositories.local.*
+import com.github.tukcps.sysmd.services.session.implementation.ProjectSessionImplementation
+import com.github.tukcps.sysmd.services.session.implementation.SessionServiceImplementation
 import io.github.tukcps.sysmlv2.api.services.ElementNavigationService
 import io.github.tukcps.sysmlv2.api.services.ProjectDataVersioningService
 import io.github.tukcps.sysmlv2.api.services.ProjectUsageService
-import java.util.*
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 /**
  * The session manager keeps a list of all open sessions.
  * Each session allows exclusively editing a commit; no other sessions can be opened with this commit.
  * A session can be persisted or retrieved in a repository (commit).
  */
+@OptIn(ExperimentalUuidApi::class)
 object SessionManager {
 
     /**
@@ -23,60 +28,44 @@ object SessionManager {
     var elementNavigationService: ElementNavigationService = SysMDElementNavigationService
     var projectUsageService: ProjectUsageService = SysMDProjectUsageService
     var projectDataVersioningService: ProjectDataVersioningService = SysMDProjectDataVersioningService
+    var sessionService: SessionService = SessionServiceImplementation()
 
     /**
      * A map with all active sessions; hashmap of UId of commits and sessions working with it.
      */
-    val sessions = hashMapOf<UUID, Session>()
+    private val sessions = hashMapOf<Uuid, ProjectSession>()
 
-    @Suppress("unused")
-    fun getSession(id: UUID) = sessions[id]
+    fun getSession(id: Uuid) = sessions[id]
 
     /**
      * Gets all collections and puts its ids in a collection.
      * @return a collection of all session's ids.
      */
-    fun getAllSessions(): Collection<Session> = sessions.values
+    fun getAllSessions(): Collection<ProjectSession> = sessions.values
 
     /**
      * Starts a session; a session is for exclusive use by a single client.
-     * @return SessionImplementation object
+     * @param id a UUID that is given by the caller; default a random UUID
+     * @return Session with either a random UUID or a UUID given as parameter.
      */
-    fun startSession(id: UUID = UUID.randomUUID()): Session = SessionImplementation(
-        id = id,
-    ).run {
-        sessions[id] = this
-        return this
-    }
-
+    @Deprecated("A session must always be associated with a Project. A simple session can be created by SesssionImplementation()")
+    fun createSession(id: Uuid = Uuid.random()): Session = TODO()
 
     /**
      * Starts a session and links it with a project.
-     * @param project the project that will be run in the session by loadProject
+     * @param project the project that will be run in the session
+     * @param libraries libraries that are to be loaded
+     * @param runlevel whether and how far to compile/run the project
      * @return the crated session
      */
-    fun startSession(project: ProjectData): Session {
-        val session = SessionImplementation(project = project)
+    fun createSession(
+        project: ProjectData,
+        libraries: MutableList<String> = mutableListOf("SysMLLibraries"),
+        runlevel: Runlevel = Runlevel.NAMES_RESOLVED,
+    ): ProjectSession {
+        val session = ProjectSessionImplementation(project = project, libraries = libraries, runlevel = runlevel)
         sessions[session.id] = session
         return session
-    }
-
-    /**
-     * Executes a lambda 'block' in the context of a session.
-     * @param id UUID of the session
-     * @param block lambda that is executed in the context of the session
-     */
-    @Suppress("unused")
-    fun<T> runInSession(id: UUID, block: Session.() -> T): T {
-        val session = sessions[id] ?: throw Exception("No such session")
-        session.run { return block() }
-    }
-
-    /**
-     * runs a lambda in a session; no id, no persistence after the session ends.
-     */
-    inline fun runInSession(toRun: Session.() -> Unit) = SessionImplementation().run {
-        toRun()
     }
 
 
@@ -85,5 +74,5 @@ object SessionManager {
      * if the id was not in the keys.
      * @param id UId of the session.
      */
-    fun kill(id: UUID) = sessions.remove(id)
+    fun kill(id: Uuid) = sessions.remove(id)
 }

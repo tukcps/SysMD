@@ -1,6 +1,7 @@
 package models.expression
 
 import com.github.tukcps.sysmd.model.kerml.Feature
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.repositories.local.toDAO
 import com.github.tukcps.sysmd.services.repositories.local.toElement
 import util.mockup.loadKerML
@@ -18,7 +19,7 @@ class VariableTests {
             feature f: ISQ::LengthValue = 2.0 m {:>> range= "2..3" ;}
             // serialized in body-field: 
             // 2..3 $$ m $$ 1.0 m;
-        """)
+        """, Runlevel.MODEL)
         val f = global.resolve("f")?.memberElement as Feature?
         assertNotNull(f)
         val fdao = f.toDAO()
@@ -35,10 +36,10 @@ class VariableTests {
     @Test
     fun testSerialization2() = testSession("ScalarValues", "Ranges") {
         loadKerML("""
-                feature f: Ranges::RealInRange = 2.0 {:>> range= "2..3";}
-                // serialized in body-field: 
-                // 2..3 $$ $$ 1.0 m;
-            """)
+            feature f: Ranges::RealInRange = 2.0 {:>> range= "2..3";}
+            // serialized in body-field: 
+            // 2..3 $$ $$ 1.0 m;
+        """, Runlevel.MODEL)
         val f = global.resolve("f")?.memberElement as Feature?
         val fdao = f!!.toDAO()
         assertEquals("2..3 ##  ## 2.0", fdao.body?.trim() )

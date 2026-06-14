@@ -1,6 +1,7 @@
 package compiler.kerml
 
 import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.initialize
 import util.assertIssue
 import util.assertNoIssues
@@ -88,7 +89,7 @@ class ClassTests {
             class B :> Base::Anything; 
             class A :> A; 
         """)
-        initialize()
+        initialize(Runlevel.NAMES_RESOLVED)
         assertIssue("cannot be itself")
     }
 

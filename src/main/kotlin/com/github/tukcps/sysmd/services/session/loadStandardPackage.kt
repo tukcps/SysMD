@@ -6,10 +6,12 @@ import com.github.tukcps.sysmd.model.expression.implementation.BuiltinFunctions
 import com.github.tukcps.sysmd.model.kerml.Package
 import com.github.tukcps.sysmd.model.kerml.implementation.FunctionImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.getOwned
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.check.checkLibraryElementIds
 import com.github.tukcps.sysmd.services.check.checkOwnership
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.session.LibraryRepository.loadLibraryFromResources
+import com.github.tukcps.sysmd.services.session.implementation.SessionImplementation
 import io.github.tukcps.sysmlv2.api.entities.ElementDAO
 import java.util.concurrent.ConcurrentHashMap
 
@@ -55,7 +57,7 @@ object LibraryRepository {
                     logger.error("Issue while compiling library '$it': ${session.status.issues.joinToString(", ")}")
                 }
             }
-            session.initialize(4) // resolve and inherit, but no setup of constraint system
+            session.initialize(Runlevel.MODEL) // resolve and inherit, but no setup of constraint system
 
             session.checkOwnership()
             session.checkLibraryElementIds()

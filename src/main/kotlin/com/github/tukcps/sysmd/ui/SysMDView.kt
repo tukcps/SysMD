@@ -20,10 +20,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.github.tukcps.sysmd.ui.paneright.Board
-import com.github.tukcps.sysmd.ui.composables.*
+import com.github.tukcps.sysmd.ui.composables.PaneState
+import com.github.tukcps.sysmd.ui.composables.ResizablePane
+import com.github.tukcps.sysmd.ui.composables.ResizablePanelSide
 import com.github.tukcps.sysmd.ui.dialogs.messageProjectAlreadyExits
-import com.github.tukcps.sysmd.ui.paneleft.NavigationPanel
+import com.github.tukcps.sysmd.ui.paneleft.NavigationPane
+import com.github.tukcps.sysmd.ui.paneright.Board
 import com.github.tukcps.sysmd.ui.styles.AppTheme
 import com.github.tukcps.sysmd.ui.styles.VerticalSplittable
 import com.github.tukcps.sysmd.ui.viewmodel.SysMDViewModel
@@ -48,7 +50,7 @@ data class DisplayState(
  * Animates the size of the given panel, represented by PanelState object
  */
 @Composable
-internal fun panelSizeAnimation(paneState: PaneState): Dp {
+internal fun paneSizeAnimation(paneState: PaneState): Dp {
     val animatedSize = if (paneState.splitter.isResizing) {
         if (paneState.isExpanded) paneState.expandedSize else paneState.collapsedSize
     } else {
@@ -76,25 +78,16 @@ internal fun checkPanelResize(paneState: PaneState, changeSize: Dp) {
  * - A main editor window with tabs for each file.
  */
 @Composable
-fun SysMDView(model: SysMDViewModel) {
-    // var dropDownMenuState by remember { mutableStateOf("Agenda") }
-
-    val sysMDViewModel = remember { model }
-
-    // States of the window and its components.
-    val editorTabsModel = sysMDViewModel.tabsViewModel
-
-    // State of the left resizable panel
+fun SysMDView(
+    sysMDViewModel: SysMDViewModel
+) {
+    // State of the left resizable pane
     val leftPaneState = remember { PaneState(true) }
+    val leftPanelAnimatedSize = paneSizeAnimation(leftPaneState)
 
-    // Animation for the left panel
-    val leftPanelAnimatedSize = panelSizeAnimation(leftPaneState)
-
-    // State of the right resizable panel
+    // State of the right resizable pane
     val rightPaneState = remember { PaneState(false) }
-
-    // Animation for the right panel
-    val rightPaneAnimatedSize = panelSizeAnimation(rightPaneState)
+    val rightPaneAnimatedSize = paneSizeAnimation(rightPaneState)
 
     /**
      * Controls the state of the tab list in the editor
@@ -120,31 +113,31 @@ fun SysMDView(model: SysMDViewModel) {
                         messageProjectAlreadyExits(sysMDViewModel.showDialogProjectAlreadyExits)
 
                     // The navigation panel
-                    ResizablePanel(
-                        sysMDViewModel.agendaIsEmpty,
+                    ResizablePane(
+                        sysMDViewModel.boardIsEmpty,
                         ResizablePanelSide.LEFT_SIDE,
                         Modifier.width(leftPanelAnimatedSize).fillMaxHeight(),
                         leftPaneState
                     ) {
-                        NavigationPanel(sysMDViewModel)
+                        NavigationPane(sysMDViewModel)
                     }
 
                     // The editor tabs (=all open files) and the active editor (active tab).
                     Box(Modifier.fillMaxSize()) {
                         Column(Modifier.fillMaxSize()) {
-                            EditorTabs(editorTabsModel)
+                            EditorTabs(sysMDViewModel.editorTabsViewModel)
                             Box(Modifier.weight(1f).fillMaxSize()) {
-                                if (editorTabsModel.active != null) {
-                                    (editorTabsModel.active!!).scrollState = editorTabListState
-                                    CellList(editorTabsModel.active!!)
+                                if (sysMDViewModel.editorTabsViewModel.selectedCellList != null) {
+                                    (sysMDViewModel.editorTabsViewModel.selectedCellList!!).scrollState = editorTabListState
+                                    CellList(sysMDViewModel.editorTabsViewModel.selectedCellList!!)
                                 }
                             }
                         }
                     }
 
-                    // The panel with the agenda
-                    ResizablePanel(
-                        sysMDViewModel.agendaIsEmpty,
+                    // The pane with the board, right
+                    ResizablePane(
+                        sysMDViewModel.boardIsEmpty,
                         ResizablePanelSide.RIGHT_SIDE,
                         Modifier.width(rightPaneAnimatedSize).fillMaxHeight()
                             .background(MaterialTheme.colorScheme.background),
@@ -160,7 +153,7 @@ fun SysMDView(model: SysMDViewModel) {
                                 Text(" Issue-Board ", fontSize = AppTheme.fontSize)
                             }
                             Row {
-                                Board(sysMDViewModel.agenda, editorTabsModel)
+                                Board(sysMDViewModel.boardViewModel, sysMDViewModel.editorTabsViewModel)
                             }
                         }
                     }

@@ -1,9 +1,8 @@
 package com.github.tukcps.sysmd.services.repositories.local
 
-import com.github.tukcps.sysmd.model.kerml.Membership
 import com.github.tukcps.sysmd.services.session.SessionManager
 import com.github.tukcps.sysmd.services.session.SessionManager.elementNavigationService
-import com.github.tukcps.sysmd.services.session.loadProject
+import com.github.tukcps.sysmd.services.session.SessionManager.sessionService
 import io.github.tukcps.sysmlv2.api.entities.Commit
 import io.github.tukcps.sysmlv2.api.entities.CommitDataObject
 import io.github.tukcps.sysmlv2.api.entities.ElementDAO
@@ -35,10 +34,12 @@ object SysMDElementNavigationService: ElementNavigationService {
      * @param commit ignored and can be null
      */
     override fun getElements(project: Project, commit: Commit?): List<ElementDAO> {
-        var session = SessionManager.getSession(project.id)
+        var session = SessionManager.getAllSessions().firstOrNull { it.project.id == project.id}
         if (session == null) {
-            session = SessionManager.startSession(project.id)
-            session.loadProject(project.name?:"")
+            if (project is ProjectData)
+                session = sessionService.createSession(project)
+            else
+                TODO("Project that is no (file-based) interchange project is not yet implemented")
         }
 
         val elements = session.export().filter {
@@ -65,7 +66,6 @@ object SysMDElementNavigationService: ElementNavigationService {
             .firstOrNull { it.elementId == elementId }
             ?.toElementData()    }
 
-
     /**
      * Gets the members of the root namespace.
      * @param project the project; in SysMD equal to the active session id.
@@ -76,5 +76,4 @@ object SysMDElementNavigationService: ElementNavigationService {
         elementNavigationService.getElements(project, commit).filter {
             it.type == "OwningMembership" && it.source!!.first().id == null
         }
-
 }

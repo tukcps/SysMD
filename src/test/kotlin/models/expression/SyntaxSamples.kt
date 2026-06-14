@@ -12,6 +12,7 @@ import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.kerml.UnresolvedElement
 import com.github.tukcps.sysmd.model.kerml.UnresolvedType
 import com.github.tukcps.sysmd.model.util.QualifiedName
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.check.checkOwnership
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.opentest4j.AssertionFailedError
@@ -197,8 +198,7 @@ private fun Expression.sequence(vararg checkEntry : Expression.() -> Unit)
 /** Syntax samples from 7.4.9 */
 class SyntaxSamples
 {
-	private inline fun parseTest(str : String, leaving : String? = null, body : Expression.() -> Unit) = testSession {
-		settings.initialize = false
+	private inline fun parseTest(str : String, leaving : String? = null, body : Expression.() -> Unit) = testSession(runlevel = Runlevel.NONE,) {
 		val parser = KerML(this)
 		parser.input = str
 		parser.semantics.initOwningNamespaces("")

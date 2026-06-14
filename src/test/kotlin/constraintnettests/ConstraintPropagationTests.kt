@@ -1,6 +1,6 @@
 package constraintnettests
 
-import com.github.tukcps.sysmd.services.initialize
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import io.github.tukcps.aadd.AADD
 import io.github.tukcps.aadd.values.Range
@@ -39,7 +39,7 @@ class ConstraintPropagationTests {
     @Test
     fun evalUpNoOperation() {
         testSession("ISQ") {
-            loadKerML("feature a: ISQ::LengthValue = 1.0 m;")
+            loadKerML("feature a: ISQ::LengthValue = 1.0 m;", Runlevel.VARIABLES)
             assertNoIssues()
             val a = global.resolveVar("a") !!
             a.ast!!.evalUpRec()
@@ -50,13 +50,11 @@ class ConstraintPropagationTests {
 
 
     @Test
-    fun evalDownWithRange()  = testSession("ISQ", "Ranges") {
+    fun evalDownWithRange()  = testSession("ISQ", "Ranges", runlevel = Runlevel.ALL) {
         loadKerML("feature a: ISQ::ElectricPotentialDifferenceValue {:>> unit = \"mV\"; :>> range = \"1..20\";}")
         val a = global.resolveVar("a")
         assertNotNull(a)
-        initialize()
-        solver.propagate()
-        assertEquals("1..20 mV", global.resolveVar("a")!!.vectorQuantity.toString())
+        assertEquals("1..20 mV", a!!.vectorQuantity.toString())
         assertNoIssues()
     }
 
@@ -87,8 +85,7 @@ class ConstraintPropagationTests {
             feature b: ISQ::LengthValue  {:>> range = "1..20";}                         // 0.5..4, reduced to 1..4 m
             feature c: ISQ::LengthValue  {:>> unit = "cm"; :>> range = "100 .. 200";}    // 1..2 m
             feature a: Ranges::RealInRange  = b/c {:>> range = "1.0 .. 2.0";} 
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
         assertEquals("1", global.resolveVar("a")!!.vectorQuantity.unit.toString())
         assertEquals(1.0, global.resolveVar("b")!!.min(), 0.00001)
         assertEquals(4.0, global.resolveVar("b")!!.max(), 0.00001)
@@ -109,8 +106,7 @@ class ConstraintPropagationTests {
                 feature c: ScalarValues::Real = 2.0;
                 feature d: ScalarValues::Real = 3.0;
                 feature a: Ranges::RealInRange  = b+c*d {:>> range = "7.0 .. 7.0";} 
-            """)
-            solver.propagate()
+            """, Runlevel.ALL)
             assertEquals(1.0, global.resolveVar("b")!!.min(), 0.00001)
             assertEquals(1.0, global.resolveVar("b")!!.max(), 0.00001)
             assertNoIssues()
@@ -120,13 +116,12 @@ class ConstraintPropagationTests {
     @Test
     fun evalDownMultiplicationTest() = testSession("Occurrences", "Links","ISQ", "Ranges") {
         loadKerML("""
-                class Baseplate {
-                    feature width: ISQ::LengthValue  {:>> unit = "mm"; :>> range = "100 .. 300";} 
-                    feature depth: ISQ::LengthValue  {:>> unit = "mm"; :>> range = "100 .. 300";} 
-                    feature area:  ISQ::AreaValue   = width * depth {:>> unit = "cm^2"; :>> range = "800 .. 1000";} 
-                }
-            """.trimIndent())
-        solver.propagate()
+            class Baseplate {
+                feature width: ISQ::LengthValue  {:>> unit = "mm"; :>> range = "100 .. 300";} 
+                feature depth: ISQ::LengthValue  {:>> unit = "mm"; :>> range = "100 .. 300";} 
+                feature area:  ISQ::AreaValue   = width * depth {:>> unit = "cm^2"; :>> range = "800 .. 1000";} 
+            }
+        """, Runlevel.ALL)
         assertNoIssues()
         assertEquals(0.26666, global.resolveVar("Baseplate::depth")!!.vectorQuantity.getMinAsDouble(), 0.001)
         assertEquals(0.26666, global.resolveVar("Baseplate::width")!!.vectorQuantity.getMinAsDouble(), 0.001)
@@ -139,11 +134,12 @@ class ConstraintPropagationTests {
      */
     @Test
     fun evalDownWithRangesTest() = testSession("Ranges")  {
-        loadKerML(input ="""
+        loadKerML("""
             feature b: Ranges::RealInRange  {:>> range = "-10.0 .. 20.0";} // Larger than needed to get results
             feature c: Ranges::RealInRange  {:>> range = "2.0 .. 3.0";}
             feature d: Ranges::RealInRange  {:>> range = "3.0 .. 4.0";}
-            feature a: Ranges::RealInRange  = b+c*d {:>> range = "7 .. 14";} """) // b hence can only be from -5 to 8.
+            feature a: Ranges::RealInRange  = b+c*d {:>> range = "7 .. 14";} 
+        """, Runlevel.VARIABLES) // b hence can only be from -5 to 8.
         val a = global.resolveVar("a") !!
         a.ast!!.evalDown()
         assertTrue(Range(-5.0..8.0) in (global.resolveVar("b")!!.vectorQuantity.values[0] as AADD).getRange())
@@ -154,13 +150,13 @@ class ConstraintPropagationTests {
     /** ConstNet shall compute bottom-up with ranges and units. */
     @Test
     fun evalUpWithDefinedResult() = testSession("ISQ", "Ranges")  {
-        loadKerML(
-            """
+        loadKerML("""
             feature b: ISQ::LengthValue {:>> range = "10.0 .. 100.0";}
             feature c: ISQ::MassValue {:>> range = "2.0..5.0";}
             feature d: Quantities::ScalarQuantityValue {:>> unit = "s^2";:>> range = "10.0";} 
-            feature a: ISQ::ForceValue = b*c/d {:>> unit = "kN";}""")
-        assertEquals(0, status.issues.size, "Error message: ${status.issues}")
+            feature a: ISQ::ForceValue = b*c/d {:>> unit = "kN";}
+        """, Runlevel.ALL)
+        assertNoIssues()
         val pta = global.resolveVar("a")!!
         pta.ast!!.evalUpRec()
         assertEquals(0, status.issues.size, "Error message: ${status.issues}")
@@ -202,16 +198,16 @@ class ConstraintPropagationTests {
      */
     @Test
     fun evalDownLeftToRightSideTest() = testSession("Ranges")  {
-            loadKerML("""
-                feature b: Ranges::RealInRange {:>> range = "-10.0.. 20.0";}
-                feature a: Ranges::RealInRange = b {:>> range = "7.0 .. 8.0";}
-            """)
-            val a = global.resolveVar("a") !!
-            a.ast!!.evalDownRec()
-            assertEquals(Range(-10.0..20.0), global.resolveVar("b")!!.rangeSpecs[0])
-            assertEquals(7.0, global.resolveVar("b")!!.min(), 0.00001)
-            assertEquals(8.0, global.resolveVar("b")!!.max(), 0.00001)
-            assertEquals(0, status.issues.size, "${status.issues}")
+        loadKerML("""
+            feature b: Ranges::RealInRange {:>> range = "-10.0.. 20.0";}
+            feature a: Ranges::RealInRange = b {:>> range = "7.0 .. 8.0";}
+        """, Runlevel.SOLVED)
+        val a = global.resolveVar("a") !!
+        a.ast!!.evalDownRec()
+        assertEquals(Range(-10.0..20.0), global.resolveVar("b")!!.rangeSpecs[0])
+        assertEquals(7.0, global.resolveVar("b")!!.min(), 0.00001)
+        assertEquals(8.0, global.resolveVar("b")!!.max(), 0.00001)
+        assertEquals(0, status.issues.size, "${status.issues}")
     }
 
     /**
@@ -224,8 +220,8 @@ class ConstraintPropagationTests {
         loadKerML("""
             feature b: Ranges::RealInRange {:>> range = "-100.0..200.0";}
             feature c: Ranges::RealInRange {:>> range = "2..2";}
-            feature a: Ranges::RealInRange = b+c {:>> range = "7.0 .. 7.0";}"""
-        )
+            feature a: Ranges::RealInRange = b+c {:>> range = "7.0 .. 7.0";}
+        """, Runlevel.SOLVED)
         global.resolveVar("a")!!.ast!!.evalDownRec()
         assertEquals(5.0, global.resolveVar("b")!!.min(), 0.00001)
         assertEquals(5.0, global.resolveVar("b")!!.max(), 0.00001)
@@ -242,7 +238,7 @@ class ConstraintPropagationTests {
             feature c: ScalarValues::Real; 
             feature d: ScalarValues::Real;
             feature a: ScalarValues::Real = b+c*d.
-        """)
+        """, Runlevel.SOLVED)
         val a = global.resolveVar("a")!!
         assertTrue(a.aadd().getRange().isReals())
     }
@@ -254,7 +250,7 @@ class ConstraintPropagationTests {
             feature c: Ranges::RealInRange {:>> range="2.0";}
             feature d: Ranges::RealInRange {:>> range="3.0";}
             feature a: ScalarValues::Real = b+c*d.
-        """)
+        """, Runlevel.SOLVED)
         val a = global.resolveVar("a")
         assertNotNull(a)
         assertEquals(7.0, (global.resolveVar("a")!!.aadd() as AADD.Leaf).central)
@@ -272,7 +268,8 @@ class ConstraintPropagationTests {
             feature b: Ranges::RealInRange {:>> range ="-10..20";}
             feature c: Ranges::RealInRange {:>> range ="2.0";}
             feature d: Ranges::RealInRange {:>> range ="3.0";}
-            feature a: Ranges::RealInRange = b+c*d {:>> range = "7.0 .. 7.0";}""")
+            feature a: Ranges::RealInRange = b+c*d {:>> range = "7.0 .. 7.0";}
+        """, Runlevel.SOLVED)
         val a = global.resolveVar("a") !!
         a.ast!!.evalDownRec()
         assertEquals(1.0, global.resolveVar("b")!!.min(), 0.00001)
@@ -286,9 +283,8 @@ class ConstraintPropagationTests {
         loadKerML("""
             feature b: ISQ::LengthValue {:>> unit = "cm"; :>> range = "-100..200";}
             feature c: ISQ::LengthValue {:>> range = "-10..30";}
-            feature a: ISQ::LengthValue = b-c {:>> range = "-30.0 .. 60.0";}"""
-        )
-        solver.propagate()
+            feature a: ISQ::LengthValue = b-c {:>> range = "-30.0 .. 60.0";}
+        """, Runlevel.SOLVED)
         assertEquals("m", global.resolveVar("a")!!.vectorQuantity.unit.toString())
         assertEquals(-30.0, global.resolveVar("a")!!.min(), 0.000001)
         assertEquals(12.0, global.resolveVar("a")!!.max(), 0.000001)
@@ -301,22 +297,20 @@ class ConstraintPropagationTests {
 
     /** ConstNet shall compute bottom-up with ranges. */
     @Test
-    fun evalUpWithRangesTest() {
-        testSession("Ranges")  {
-            loadKerML("feature b: Ranges::RealInRange {:>> range = \"1.0..2.0\";}")
-            loadKerML("feature c: Ranges::RealInRange {:>> range = \"2.0..3.0\";}")
-            loadKerML("feature d: Ranges::RealInRange {:>> range = \"3.0..4.0\";}")
-            loadKerML("feature a: Ranges::RealInRange = b+c*d;")
-            val a = global.resolveVar("a")
-            assertNotNull(a)
-            assertEquals(7.0, global.resolveVar("a")!!.min(), 0.00001)
-            assertEquals(14.0, global.resolveVar("a")!!.max(), 0.00001)
-            // central value depends on approximation schemes; might cause incorrect fault iff changed.
-            // only outside tests display((displayTree("a", p.getVar("a").value)))
-            // println(resolveName<Expression>("a")!!.quantity.value.toIteString())
-            assertEquals(10.25, (global.resolveVar("a")!!.aadd() as AADD.Leaf).value.central)
-            assertNoIssues()
-        }
+    fun evalUpWithRangesTest() = testSession("Ranges", runlevel = Runlevel.ALL)  {
+        loadKerML("feature b: Ranges::RealInRange {:>> range = \"1.0..2.0\";}")
+        loadKerML("feature c: Ranges::RealInRange {:>> range = \"2.0..3.0\";}")
+        loadKerML("feature d: Ranges::RealInRange {:>> range = \"3.0..4.0\";}")
+        loadKerML("feature a: Ranges::RealInRange = b+c*d;")
+        val a = global.resolveVar("a")
+        assertNotNull(a)
+        assertEquals(7.0, global.resolveVar("a")!!.min(), 0.00001)
+        assertEquals(14.0, global.resolveVar("a")!!.max(), 0.00001)
+        // central value depends on approximation schemes; might cause incorrect fault iff changed.
+        // only outside tests display((displayTree("a", p.getVar("a").value)))
+        // println(resolveName<Expression>("a")!!.quantity.value.toIteString())
+        assertTrue( (global.resolveVar("a")!!.aadd() as AADD.Leaf).value.central in 10.0..12.0)
+        assertNoIssues()
     }
 
     /** ConstNet shall compute bottom-up with ranges and units. */

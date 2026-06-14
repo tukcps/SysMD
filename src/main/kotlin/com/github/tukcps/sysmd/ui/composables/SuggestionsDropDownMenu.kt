@@ -12,7 +12,10 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.surfaceColorAtElevation
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -28,10 +31,10 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import com.github.tukcps.sysmd.compiler.scanner.Scanner
 import com.github.tukcps.sysmd.compiler.scanner.Token
-import com.github.tukcps.sysmd.ui.syntaxhighlighting.globalComponentsIndex
-import com.github.tukcps.sysmd.ui.syntaxhighlighting.globalPackagesIndex
 import com.github.tukcps.sysmd.ui.styles.AppTheme
 import com.github.tukcps.sysmd.ui.styles.Fonts
+import com.github.tukcps.sysmd.ui.syntaxhighlighting.globalComponentsIndex
+import com.github.tukcps.sysmd.ui.syntaxhighlighting.globalPackagesIndex
 
 
 /**

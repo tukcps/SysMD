@@ -1,6 +1,10 @@
 package com.github.tukcps.sysmd.services.repositories.local
 
-import com.github.tukcps.sysmd.ui.viewmodel.TextualRepresentationViewModel.Companion.Language
+import com.github.tukcps.sysmd.services.repositories.local.Language.Companion.toLanguage
+import kotlinx.io.buffered
+import kotlinx.io.files.Path
+import kotlinx.io.files.SystemFileSystem
+import kotlinx.io.readString
 import org.commonmark.Extension
 import org.commonmark.ext.front.matter.YamlFrontMatterBlock
 import org.commonmark.ext.front.matter.YamlFrontMatterExtension
@@ -9,7 +13,6 @@ import org.commonmark.ext.gfm.tables.TablesExtension
 import org.commonmark.node.*
 import org.commonmark.parser.IncludeSourceSpans
 import org.commonmark.parser.Parser
-import java.io.File
 import java.util.*
 
 
@@ -68,8 +71,11 @@ fun getMdSource(node: Node, inputLines: List<String>): String {
  * SysMD-Code or Documentation in Markdown format.
  * @return a list of Cells, each an ElementData object
  */
-fun File.getCells(): List<ElementData> {
-    val input = this.inputStream().bufferedReader().readText()
+fun Path.getCells(): List<ElementData> {
+    val input: String = if (SystemFileSystem.exists(this)) {
+        SystemFileSystem.source(this).buffered().use { it.readString() }
+    } else ""
+
     val inputLines = input.lines()
     val cells = mutableListOf<ElementData>()
 
@@ -124,4 +130,54 @@ fun File.getCells(): List<ElementData> {
         node = node.next
     }
     return cells
+}
+
+/**
+ * Transform a list of textual representations in different languages,
+ * or documentations to a Markdown string.
+ * @param cells list of reps or docs,
+ */
+fun toMarkdownString(cells: List<ElementData>): String {
+    val str = StringBuilder()
+    for (e in cells) {
+        // The lines of the description section.
+        val languageStr = e.language!!
+        if (toLanguage(e.language!!) !in setOf(Language.MARKDOWN, Language.YAML))
+            str.append("```$languageStr\n")
+        str.append(e.body?.trimEnd('\n') + "\n")
+        if (toLanguage(e.language!!) !in setOf(Language.MARKDOWN, Language.YAML))
+            str.append("```\n")
+    }
+    return str.toString()
+}
+
+/**
+ * Transform a list of textual representations in different languages,
+ * or documentations to a Markdown string.
+ * @param cells list of reps or docs,
+ */
+fun toSysML(cells: List<ElementData>): String {
+    TODO()
+}
+
+/** The languages handled in SysMD Notebook. */
+enum class Language {
+    MARKDOWN { override fun toString() = "Markdown" },
+    KerML    { override fun toString() = "KerML" },
+    SYS_MD   { override fun toString() = "SysMD" },
+    SYS_ML   { override fun toString() = "SysML" },
+    YAML     { override fun toString() = "YAML" }
+    ;
+
+    fun isCompilable() = this in setOf(KerML, SYS_MD, SYS_ML)
+
+    companion object {
+        val allLanguages = Language.entries
+        val language: Map<String, Language> = allLanguages.associate { (it.toString() to it) }
+        fun toLanguage(langPath: String): Language? = language[langPath.split("::", limit = 2).firstOrNull()]
+        fun toNamespace(langPath: String): String? = langPath.split("::", limit = 2).getOrNull(1)
+        fun languageWithNamespace(language: Language, namespace: String?): String =
+            if (namespace.isNullOrBlank()) language.toString()
+            else "$language::$namespace"
+    }
 }

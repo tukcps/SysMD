@@ -1,6 +1,7 @@
 package compiler
 
 import com.github.tukcps.sysmd.model.kerml.Feature
+import com.github.tukcps.sysmd.services.Runlevel
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import util.assertNoIssues
@@ -22,7 +23,7 @@ class DependencyStringTest {
             feature x2: Real = 1.0 + 2.0  ;
             feature x3: Real = 1.0 + 2.0;
             feature z: Real = 1.0 + 2.0;
-        """)
+        """, Runlevel.ALL)
         assertNoIssues()
         val x = solver.getVariable("x") !!
         assertEquals("1.0 + 2.0", x.expression)
@@ -44,7 +45,7 @@ class DependencyStringTest {
             feature x2: ScalarValues::Boolean = true  ;
             feature x3: ScalarValues::Boolean = true
               ;
-            feature z: ScalarValues::Boolean = true""")
+            feature z: ScalarValues::Boolean = true""", Runlevel.VARIABLES)
         val x = solver.getVariable("x") !!
         assertEquals("true", x.expression)
         val x2 = solver.getVariable("x2") !!
@@ -66,7 +67,7 @@ class DependencyStringTest {
             feature x2: ScalarValues::Integer = 1 + 2  ;
             feature x3: ScalarValues::Integer = 1 + 2
               ;
-            feature z: ScalarValues::Integer = 1 + 2;""")
+            feature z: ScalarValues::Integer = 1 + 2;""", Runlevel.VARIABLES)
         val x = solver.getVariable("x") !!
         assertEquals("1 + 2", x.expression)
         val x2 = solver.getVariable("x2") !!
@@ -87,7 +88,7 @@ class DependencyStringTest {
                 feature x2: ScalarValues::Integer = 1 + 2  ;
                 feature x3: ScalarValues::Integer = 1 + 2
                 ;
-                feature z: ScalarValues::Integer = 1 + 2""")
+                feature z: ScalarValues::Integer = 1 + 2""", Runlevel.VARIABLES)
         val x = global.resolve("x")?.member<Feature>()!!
         assertEquals("1 + 2", x.expression)
         val x2 = global.resolve("x2")?.member<Feature>()!!

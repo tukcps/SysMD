@@ -6,7 +6,7 @@ import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.services.repositories.local.ElementData
 import com.github.tukcps.sysmd.services.repositories.local.toDAO
 import org.junit.jupiter.api.RepeatedTest
-import util.testSession
+import util.testProjectSession
 import kotlin.test.Ignore
 import kotlin.test.assertEquals
 
@@ -33,7 +33,7 @@ class SerializationTest
     // As of now I assume yes, because otherwise one cannot import anything to the global namespace, or have any reference to it.
     // (maybe this is even forbidden --> to be checked.)
     @RepeatedTest(10) // we want to reach "every" permutation of the list
-	fun exampleExpressionSerialization() = testSession {
+	fun exampleExpressionSerialization() = testProjectSession {
 		val tt = twoPlusTwo()
 		addElement(tt)
 

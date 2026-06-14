@@ -5,18 +5,26 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import com.github.tukcps.sysmd.rest.entities.interchange.Meta
+import com.github.tukcps.sysmd.ui.writeText
 import io.github.tukcps.sysmlv2.api.entities.CommitDataObject
 import io.github.tukcps.sysmlv2.api.entities.Project
 import io.github.tukcps.sysmlv2.api.entities.ProjectUsage
 import io.github.tukcps.sysmlv2.interchange.InterchangeProject
-import io.github.tukcps.sysmlv2.interchange.Meta
 import io.github.tukcps.sysmlv2.interchange.ProjectBase
+import kotlinx.datetime.toJavaInstant
+import kotlinx.datetime.toKotlinInstant
+import kotlinx.io.buffered
+import kotlinx.io.files.Path
+import kotlinx.io.files.SystemFileSystem
+import kotlinx.io.readString
+import kotlinx.io.writeString
+import kotlinx.serialization.json.Json
 import org.apache.logging.log4j.LogManager
-import java.io.File
-import java.nio.file.Files
-import java.nio.file.Path
 import java.time.OffsetDateTime
+import java.time.ZoneOffset
 import java.util.*
+
 
 /**
  * Data record of a project handled in SysMD.
@@ -24,11 +32,15 @@ import java.util.*
  * The project can be either
  * - A project from the web or
  * - A project from a file (interchange project)
+ *
+ * @param project Common data for web- and file-projects
+ * @param directory Path to the interchange project.
+ * @param meta Information from interchange-project, like index.
  */
 class ProjectData(
-    var project : ProjectBase,
-    var directory: Path? = null,
-    private var meta: Meta? = null,
+    var project : ProjectBase,          // Either Interchange- or Web-Record
+    var directory: Path? = null,        // In case of interchange project
+    var meta: Meta? = null,             // In case of interchange project
 ): Project {
 
     override var id: UUID
@@ -40,8 +52,12 @@ class ProjectData(
         set(value) { if (project is Project) (project as Project).name = value else (project as InterchangeProject).name = value?:""}
 
     override var created: OffsetDateTime
-        get() = if ( project is Project ) (project as Project).created else meta?.created?:OffsetDateTime.now()
-        set(value) { if (project is Project) (project as Project).created = value else meta?.created = value }
+        get() = if (project is Project) (project as Project).created
+            else meta?.created?.toJavaInstant()?.atOffset(ZoneOffset.UTC)?:OffsetDateTime.now()
+        set(value) {
+            if (project is Project) (project as Project).created = value
+            else meta?.created = value.toInstant().toKotlinInstant()
+        }
 
     override var alias: Collection<String>
         get() = if (project is Project) (project as Project).alias else listOf()
@@ -54,32 +70,40 @@ class ProjectData(
     var data: MutableList<CommitDataObject> = mutableListOf()
 
     /**
-     * @return a list of files as persisted in .meta.json
+     * @return a list of files as persisted in .meta.json's index as values.
      */
-    fun getIndex(): List<File> {
-        val files: MutableList<File> = mutableListOf()
+    fun getIndexedFiles(): List<Path> {
+        val paths: MutableList<Path> = mutableListOf()
         meta?.index?.values?.forEach {
-            val file = directory?.resolve(it)?.toFile()
-            if (file != null) {
-                files.add(file)
+            val path = Path(directory?:Path(""),it)
+            if (SystemFileSystem.metadataOrNull(path)?.isRegularFile == true) {
+                paths.add(path)
             } else {
                 logger.error("Inconsistency of .meta.json file index: File $it does not exist")
             }
         }
-        return files // .sortedBy { it.name }
-        // should be sorted aas in index! if specific order is needed, edit .index.json.
+        return paths
     }
 
     /**
      * @return a list of cells based on the file index
      */
-    fun getCellIndex(): Map<String, Collection<ElementData>> {
-        val files = getIndex()
-        val result = hashMapOf<String, Collection<ElementData>>()
-        files.forEach { file ->
+    fun getCells(): LinkedHashMap<String, List<ElementData>> {
+        val files = getIndexedFiles()
+        val result = linkedMapOf<String, List<ElementData>>()
+        for (file in files) {
             result[file.name] = file.getCells()
         }
         return result
+    }
+
+    /**
+     * @return a list of cells based on the file index
+     */
+    fun getCells(file: String): List<ElementData>? {
+        val paths = getIndexedFiles()
+        if (file !in paths.map { it.name }) return null
+        return paths.first { it.name == file }.getCells()
     }
 
     /**
@@ -87,41 +111,39 @@ class ProjectData(
      * @param key key of the index entry; in the standard the root namespace in the file.
      * @param fileName name of the file including extension (e.g. '.md', '.kerml', '.sysml'); either existing or it will be created.
      */
-    fun addIndex(key: String, fileName: String): File? {
-        val file = directory?.resolve(fileName)?.toFile() ?: return null
-        if (!file.exists()) {
-            file.createNewFile()
-            file.writeText("""
----
-title: New file
-name:  new
----
-
-Write your model and documentation here. 
-
-            """.trimIndent())
-        }
-
+    @Deprecated("Use function in services")
+    fun addIndex(key: String, fileName: String): Path {
         if (meta == null) {
             meta = Meta(
-                index = hashMapOf(key to fileName),
-                created = created,
+                index = linkedMapOf(key to fileName),
+                created = created.toInstant().toKotlinInstant(),
             )
         }
-        meta?.index?.set(key, file.name)
-        saveToInterchangeFiles()
-        return file
-    }
+        meta?.index?.set(key, fileName)
 
-    /**
-     * Removes a file from the file index
-     */
-    fun removeFromIndex(file: String) {
-        val newIndex = hashMapOf<String, String>()
-        meta?.index?.forEach { (key, value) ->
-            if (value != file) { newIndex[key] = value }
+        val path = directory?.let { Path(it, fileName) }
+        path?.let {
+            if (!SystemFileSystem.exists(it)) {
+                path.writeText("""
+    ---
+    title: New file "$fileName"
+    subtitle:  -- Subtitle -- 
+    author: Author's names 
+    ---
+    
+    - The file is in the folder `$path`. 
+    - You can **rename** or **delete** the file via the left pane in the respective project. 
+    - Write your model and documentation here 
+        - Edit a cell by double-clicking on it or left of it, 
+        - Add a cells by clicking on the space between or below cells, or on the "+" left of it.
+        - Choose kind and syntax of a cell you edit by choosing "Language" on top of the cell. 
+    
+                """.trimIndent())
+            }
         }
-        meta?.index = newIndex
+
+        saveToInterchangeFiles()
+        return Path(directory!!,fileName)
     }
 
     fun clearIndex() = meta?.index?.clear()
@@ -134,43 +156,36 @@ Write your model and documentation here.
      * The directory is given by settings and derived from settings and project name,
      * project attribute 'directory'.
      */
+    @Deprecated("Use service function for setting meta and project data instead")
     fun saveToInterchangeFiles() {
         try {
             if (directory != null) {
-                Files.createDirectories(directory!!)
+                SystemFileSystem.createDirectories(directory!!)
                 val objectMapper = ObjectMapper()
                     .registerKotlinModule()
                     .registerModule(JavaTimeModule())
                     .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
                     .writerWithDefaultPrettyPrinter()
 
-                val projectJson = directory!!.resolve(".project.json")
-                val jsonForProject = objectMapper.writeValueAsString(
-                    InterchangeProject(this.project as InterchangeProject).also {
-                        it.id = this.project.id
-                    }
-                )
-                Files.writeString(projectJson, jsonForProject)
+                val projectJson = Path(directory!!, ".project.json")
+                SystemFileSystem.sink(projectJson).buffered().use { sink ->
+                    val jsonForProject = objectMapper.writeValueAsString(InterchangeProject(this.project as InterchangeProject)
+                        .also { it.id = this.project.id }
+                    )
+                    sink.writeString(jsonForProject)
+                }
 
-                val metaFile = directory!!.resolve(".meta.json")
-                val jsonForMeta = objectMapper.writeValueAsString(this.meta)
-                Files.writeString(metaFile, jsonForMeta)
-
+                val metaFileJson = Path(directory!!, ".meta.json")
+                val jsonForMeta = Json.encodeToString(this.meta)
+                SystemFileSystem.sink(metaFileJson).buffered().use { sink ->
+                    sink.writeString(jsonForMeta)
+                }
                 logger.info("Project '$name' saved to interchange file.")
             } else
                 logger.info("Project '$name' not saved to interchange file.")
         } catch (e: Exception) {
             logger.error(e)
         }
-    }
-
-    fun updateIndexFilename(oldFilename: String, newFilename: String) {
-        meta?.index?.keys?.forEach {
-            if (meta?.index!![it] == oldFilename) {
-                meta?.index!![it] = newFilename
-            }
-        }
-        saveToInterchangeFiles()
     }
 
     companion object {
@@ -180,14 +195,16 @@ Write your model and documentation here.
          */
         fun fromInterchangeFiles(directory: Path): ProjectData? {
             try {
-                val projectFile = directory.resolve(".project.json")?:return null
-                val metaFile = directory.resolve(".meta.json")?:return null
+                val projectFile = Path(directory, ".project.json")
+                val metaFile = Path(directory,".meta.json")
+                if (SystemFileSystem.metadataOrNull(projectFile)?.isRegularFile != true) return null
+                if (SystemFileSystem.metadataOrNull(metaFile)?.isRegularFile != true) return null
 
-                val projectJson = Files.readString(projectFile)
+                val projectJson = SystemFileSystem.source(projectFile).buffered().use { it.readString() }
                 val project =  objectMapper.readValue(projectJson, InterchangeProject("").javaClass)
 
-                val metaJson = Files.readString(metaFile)
-                val meta = objectMapper.readValue(metaJson, Meta::class.java)
+                val metaJson = SystemFileSystem.source(metaFile).buffered().use { it.readString() }
+                val meta = Json.decodeFromString<Meta>(metaJson)
 
                 val projectData = ProjectData(project, directory, meta)
                 return projectData

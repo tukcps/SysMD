@@ -6,6 +6,7 @@ import com.github.tukcps.sysmd.model.kerml.Specialization
 import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.kerml.getOwnedElementOfType
 import com.github.tukcps.sysmd.model.kerml.implementation.*
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.check.checkOwnership
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.session.loadLibrary
@@ -31,7 +32,7 @@ class ExportProjectTests {
         addOwnedRelationship(SpecializationImplementation(classifier, anything), classifier)
         assertNotNull(classifier.getOwnedElementOfType<Specialization>())
         assertNotNull(classifier.getOwnedElementOfType<Specialization>()?.elementId)
-        initialize()
+        initialize(Runlevel.MODEL)
         assertNoIssues()
         val record = export()
         assertNotNull(record)
@@ -64,7 +65,7 @@ class ExportProjectTests {
         testSession {
             import(export)
             checkOwnership()
-            initialize()
+            initialize(Runlevel.MODEL)
             val c = global.resolve("c")?.member<Type>()
             assertNotNull(c)
             assertTrue(c.ownedSpecialization.isNotEmpty())
@@ -82,7 +83,7 @@ class ExportProjectTests {
         val p = addOwnedMember(PackageImplementation(declaredName="p"), global)
         val f = addOwnedMember(FeatureImplementation(declaredName ="f"), p)
         addOwnedMember(MultiplicityImplementation(multiplicity = IntegerRange(1,3).toString()), f)
-        initialize(2)
+        initialize(Runlevel.MODEL)
         assertTrue(status.issues.none { it.kind.ordinal >= Issue.Kind.ERROR.ordinal }, status.issues.toString())
         val record = export()
         assertNotNull(record)
@@ -127,6 +128,10 @@ class ExportProjectTests {
         var export: List<ElementDAO> = emptyList()
         testSession("ScalarValues") {
             assertNoIssues()
+            assertNotNull(repo.booleanType)
+            assertNotNull(repo.integerType)
+            assertNotNull(repo.numberType)
+            assertNotNull(repo.realType)
             export = export().getElements()
         }
         testSession("ScalarValues") {
@@ -144,7 +149,6 @@ class ExportProjectTests {
     @Test
     fun importViaRepositoryCache() {
         testSession("ScalarValues") {
-            initialize()
             solver.propagate()
             get().forEach { element ->
                 assertEquals(builder, element.model?.builder)

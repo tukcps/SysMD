@@ -1,6 +1,7 @@
 package kermltests
 
 import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.check.checkLibraryElementIds
 import com.github.tukcps.sysmd.services.check.checkOwnership
 import com.github.tukcps.sysmd.services.initialize
@@ -22,8 +23,7 @@ class RelationshipsTests {
                 comment a /* a */ 
                 comment b /* b */ 
                 dependency d from a to b;
-            """)
-        initialize()
+            """, runlevel = Runlevel.ALL)
         assertNoIssues()
         val d = global.resolve("d")?.memberElement as Dependency?
         assertNotNull(d)

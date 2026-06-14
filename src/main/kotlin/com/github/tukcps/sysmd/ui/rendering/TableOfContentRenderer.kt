@@ -2,7 +2,6 @@ package com.github.tukcps.sysmd.ui.rendering
 
 import com.github.tukcps.sysmd.ui.viewmodel.InternalRefReference
 import org.commonmark.node.*
-import java.util.*
 
 fun isShortTOCElement(element:Node?): Boolean {
     return if((element is Paragraph)&&(element.firstChild is Text)){
@@ -41,10 +40,6 @@ class TableOfContentsRenderer(headingsModel: InternalRefReference) {
     fun generateTOCAsParagraphElement(): Paragraph {
         val returnValue = Paragraph()
 
-        if(headings.isEmpty()){
-            return returnValue
-        }
-
         for (heading in headings) {
             val textValue = heading.first + heading.second
             if(!textValue.contains("title")) {
@@ -78,5 +73,5 @@ class TableOfContentsRenderer(headingsModel: InternalRefReference) {
         return returnValue
     }
 
-    private var headings: LinkedList<Pair<String, String>> = headingsModel.HeadingsWithNumbering
+    private var headings = headingsModel.HeadingsWithNumbering
 }

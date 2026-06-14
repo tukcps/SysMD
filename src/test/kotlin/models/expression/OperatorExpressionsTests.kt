@@ -5,11 +5,10 @@ import com.github.tukcps.sysmd.model.expression.implementation.FeatureReferenceE
 import com.github.tukcps.sysmd.model.expression.implementation.LiteralBooleanImplementation
 import com.github.tukcps.sysmd.model.expression.implementation.LiteralIntegerImplementation
 import com.github.tukcps.sysmd.model.expression.implementation.OperatorExpressionImplementation
-import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.quantities.VectorQuantity
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import io.github.tukcps.aadd.IDD
-import org.junit.jupiter.api.Disabled
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
@@ -46,7 +45,7 @@ class OperatorExpressionsTests {
                 feature a: ScalarValues::Boolean = false;
                 feature b: ScalarValues::Boolean = true;
                 feature c: ScalarValues::Boolean = a and b;
-            """)
+            """, Runlevel.ALL)
 
             val a = global.resolveVar("a")!!
             val b = global.resolveVar("b")!!
@@ -295,7 +294,7 @@ class OperatorExpressionsTests {
 	fun complexPropagation() = testSession("DataFunctions") {
 		loadKerML("""
 			feature x : ScalarValues::Integer;
-		""".trimIndent())
+		""", Runlevel.VARIANCE_CHECKED)
 
 		assertNoIssues()
 
@@ -355,7 +354,7 @@ class OperatorExpressionsTests {
 		assertExpressionEquals(7, mulR)
 		assertExpressionEquals(2, sum)
 
-		assertQuantityEquals(-1, global.resolveVar("x")!!.vectorQuantity)
+		assertQuantityEquals(-1, solver.getVariable("x")!!.vectorQuantity)
 	}
 
 

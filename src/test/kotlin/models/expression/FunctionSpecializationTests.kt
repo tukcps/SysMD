@@ -2,6 +2,7 @@ package models.expression
 
 import com.github.tukcps.sysmd.compiler.semantics.Identification
 import com.github.tukcps.sysmd.model.kerml.Function
+import com.github.tukcps.sysmd.services.Runlevel
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
@@ -38,7 +39,7 @@ class FunctionSpecializationTests
 			private import ScalarValues::*;
 			abstract function foo { in x : Integer[0..1]; in y : Real[0..2]; return : String[1..3] }			
 			function fooImpl specializes foo { return : String[2]; in y : Real[1..2]; in x : Integer[1]; }
-		""".trimIndent())
+		""", Runlevel.ALL)
 		assertNoIssues()
 		val foo = assertNotNull(global.resolve("foo")).memberElement as Function
 		val fooImpl = assertNotNull(global.resolve("fooImpl")).memberElement as Function

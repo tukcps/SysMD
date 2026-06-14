@@ -6,12 +6,8 @@ import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.LIBRARY
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.STANDARD
 import com.github.tukcps.sysmd.compiler.semantics.ActionsContext
 import com.github.tukcps.sysmd.compiler.semantics.Identification
+import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.Annotation
-import com.github.tukcps.sysmd.model.kerml.Dependency
-import com.github.tukcps.sysmd.model.kerml.Element
-import com.github.tukcps.sysmd.model.kerml.Import
-import com.github.tukcps.sysmd.model.kerml.Namespace
-import com.github.tukcps.sysmd.model.kerml.Relationship
 import com.github.tukcps.sysmd.model.util.SimpleName
 
 
@@ -77,9 +73,7 @@ open class SemanticAction<T: Element>(
 
         context.visibility = null
 
-        context.model.status.createdElements.add(
-            context.ownerName() + "::${created.escapedName()}"
-        )
+        context.model.status.createdElements.add(context.ownerName())
     }
 
     /**

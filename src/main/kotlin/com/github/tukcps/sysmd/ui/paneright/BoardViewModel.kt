@@ -2,23 +2,25 @@ package com.github.tukcps.sysmd.ui.paneright
 
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateListOf
-import com.github.tukcps.sysmd.exceptions.*
+import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.model.util.QualifiedName
-import com.github.tukcps.sysmd.services.session.Session
+import com.github.tukcps.sysmd.services.session.SessionManager
 import com.github.tukcps.sysmd.services.session.SessionStatus
+import kotlin.uuid.Uuid
 
 /**
- * The object Agenda stores and provides access to the agenda storing errors
+ * The class BoardViewModel stores and provides access to the agenda storing errors
  * which occurred on elements defined in SysMD cells
  */
 class BoardViewModel(
-    private val sessionState: MutableState<Session>
+    private val sessionIdState: MutableState<Uuid>
 ) {
     /**
      * The status of the overall model; includes among others a mutable set of infos, errors, etc.
      */
     val status: SessionStatus
-        get() = sessionState.value.status
+        get() = SessionManager.sessionService.getSession(sessionIdState.value)?.status
+            ?: SessionStatus()
 
     /**
      * Stores qualified names of all undefined elements

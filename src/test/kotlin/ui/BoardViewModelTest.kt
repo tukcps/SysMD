@@ -1,11 +1,11 @@
 package ui
 
-import com.github.tukcps.sysmd.rest.RESTRepository
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.session.SessionManager
+import com.github.tukcps.sysmd.services.session.SessionManager.sessionService
 import com.github.tukcps.sysmd.ui.viewmodel.SysMDViewModel
 import util.mockup.loadKerML
-import util.testSession
+import util.testProjectSession
 import kotlin.test.*
 
 class BoardViewModelTest {
@@ -15,13 +15,14 @@ class BoardViewModelTest {
      * representation appear in the agenda
      */
     @Test
-    fun elementsInAgenda() = testSession {
-        val sysMdViewModel = SysMDViewModel(this)
+    fun elementsInBoard() = testProjectSession {
+        val sysMdViewModel = SysMDViewModel()
+        sysMdViewModel.sessionId = this.id
         loadKerML("""
             class A specializes B; 
         """)
         solver.propagate()
-        val agenda = sysMdViewModel.agenda
+        val agenda = sysMdViewModel.boardViewModel
         agenda.update()
 
         assertEquals(1, agenda.size())
@@ -30,7 +31,7 @@ class BoardViewModelTest {
     }
 
     @Test
-    fun partDefSuperclassNotIdentified() = testSession("ScalarValues") {
+    fun partDefSuperclassNotIdentified() = testProjectSession("ScalarValues") {
         loadKerML("""
           package test {
                 import ScalarValues;
@@ -39,7 +40,7 @@ class BoardViewModelTest {
                 }
            }
         """)
-        initialize()
+        initialize(Runlevel.MODEL)
         // solver.propagate()
         assertTrue(status.issues.isNotEmpty())
     }
@@ -48,214 +49,185 @@ class BoardViewModelTest {
      * Check if all errors related with a single element occur in the agenda
      */
     @Test
-    fun multipleErrorOnSingleElement() = testSession {
-        RESTRepository.internalSessionId = id
-        val sysMdViewModel = SysMDViewModel(this)
-
-        loadKerML("""
-            type A :> B; 
-        """)
+    fun multipleErrorOnSingleElement() = testProjectSession {
+        val ui = SysMDViewModel()
+        ui.sessionId = this.id
+        loadKerML("""type A :> B; """)
         solver.propagate()
 
-        val agenda = sysMdViewModel.agenda
-        agenda.update()
+        ui.boardViewModel.update()
 
-        assertEquals(1, agenda.size())
+        assertEquals(1, ui.boardViewModel.size())
         // assertEquals(true, agenda.contains("A"))
 
         status.issues.clear()
-        agenda.clear()
+        ui.boardViewModel.clear()
 
-        loadKerML("""
-            type A :> C; 
-        """)
+        loadKerML("""type A :> C; """)
         solver.propagate()
 
-        agenda.update()
+        ui.boardViewModel.update()
 
-        assertEquals(2, agenda.size())
+        assertEquals(2, ui.boardViewModel.size())
         // assertEquals(true, agenda.contains("A"))
     }
 
     @Test
-    fun statusIsNotNullError() = testSession {
-        val sysMdViewModel = SysMDViewModel(this)
+    fun statusIsNotNullError() = testProjectSession {
+        val ui = SysMDViewModel()
         loadKerML("""
             class A :> B; 
             class B :> A;
         """)
-        val agenda = sysMdViewModel.agenda
-        agenda.update()
-        assertNotNull(agenda.status)
+        ui.boardViewModel.update()
+        assertNotNull(ui.boardViewModel.status)
     }
 
     @Test
-    fun emptyOnNoInput() = testSession {
-        RESTRepository.internalSessionId = id
-        val sysMdViewModel = SysMDViewModel(this)
-        val agenda = sysMdViewModel.agenda
-        assertEquals(0, agenda.size())
-        assertEquals(true, agenda.isEmpty())
-        agenda.update()
-        assertEquals(0, agenda.size())
-        assertEquals(true, agenda.isEmpty())
+    fun emptyOnNoInput() = testProjectSession {
+        val ui = SysMDViewModel()
+        assertEquals(0, ui.boardViewModel.size())
+        assertTrue(ui.boardViewModel.isEmpty())
+        ui.boardViewModel.update()
+        assertEquals(0, ui.boardViewModel.size())
+        assertTrue(ui.boardViewModel.isEmpty())
         loadKerML(
             """
         """.trimIndent()
         )
         solver.propagate()
-        agenda.update()
-        assertEquals(0, agenda.size())
-        assertEquals(true, agenda.isEmpty())
+        ui.boardViewModel.update()
+        assertTrue(ui.boardViewModel.isEmpty())
     }
 
     @Test
-    fun emptyAfterClear() = testSession {
-        RESTRepository.internalSessionId = id
-        val sysMdViewModel = SysMDViewModel(this)
+    fun emptyAfterClear() = testProjectSession {
+        val ui = SysMDViewModel().also { it.sessionId = this.id }
 
         loadKerML("""
             type A :> B; 
             type B :> A; 
-        """)
+        """, Runlevel.MODEL)
 
-        val agenda = sysMdViewModel.agenda
-        agenda.update()
+        ui.boardViewModel.update()
 
-        assertEquals(1, agenda.size())
-        agenda.clear()
-        assertEquals(0, agenda.size())
+        assertEquals(1, ui.boardViewModel.size())
+        ui.boardViewModel.clear()
+        assertEquals(0, ui.boardViewModel.size())
     }
 
     @Test
-    fun getIssues() = testSession("Occurrences") {
-        RESTRepository.internalSessionId = id
-        val sysMdViewModel = SysMDViewModel(this)
+    fun getIssues() = testProjectSession {
+        val ui = SysMDViewModel().also { it.sessionId = this.id }
 
         loadKerML("""
             class A :> B; 
             class C :> D; 
-        """)
-        solver.propagate()
+        """, Runlevel.MODEL)
 
-        val agenda = sysMdViewModel.agenda
-        agenda.update()
+        ui.boardViewModel.update()
 
-        val issues = agenda.issues()
+        val issues = ui.boardViewModel.issues()
 
-        assertEquals(2, agenda.size())
+        assertEquals(2, ui.boardViewModel.size())
         assertEquals("A", issues.find { it.qualifiedName == "A" }!!.qualifiedName)
         assertEquals("C", issues.find { it.qualifiedName == "C" }!!.qualifiedName)
     }
 
     @Test
-    fun errorCorrection() = testSession {
-        RESTRepository.internalSessionId = id
-        val sysMdViewModel = SysMDViewModel(this)
+    fun errorCorrection() = testProjectSession {
+        val ui = SysMDViewModel()
+        ui.sessionId = this.id
 
-        loadKerML("""
-            type A :> B; 
-        """)
-        solver.propagate()
+        loadKerML("""type A :> B; """, Runlevel.MODEL)
 
-        val agenda = sysMdViewModel.agenda
-        agenda.update()
+        ui.boardViewModel.update()
 
-        assertEquals(true, agenda.contains(issue = status.issues.first()))
-        assertEquals(1, agenda.size())
+        assertEquals(true, ui.boardViewModel.contains(issue = status.issues.first()))
+        assertEquals(1, ui.boardViewModel.size())
 
         status.issues.clear()
-        agenda.clear()
+        ui.boardViewModel.clear()
         loadKerML("""
             type B :> Base::Anything; 
         """)
         solver.propagate()
-        agenda.update()
-        assertEquals(true, agenda.isEmpty())
+        ui.boardViewModel.update()
+        assertEquals(true, ui.boardViewModel.isEmpty())
     }
 
     @Test
-    fun size() = testSession {
-        RESTRepository.internalSessionId = id
-        val sysMdViewModel = SysMDViewModel(this)
+    fun size() = testProjectSession {
+        val ui = SysMDViewModel()
+        ui.sessionId = this.id
 
         loadKerML("""
             type C :> D; 
             type A :> B; 
-        """)
-        solver.propagate()
+        """, Runlevel.MODEL)
 
-        val agenda = sysMdViewModel.agenda
-        agenda.update()
+        ui.boardViewModel.update()
 
-        assertEquals(2, agenda.size())
+        assertEquals(2, ui.boardViewModel.size())
 
         status.issues.clear()
-        agenda.clear()
+        ui.boardViewModel.clear()
 
-        loadKerML("""
-            type B :> Base::Anything; 
-        """)
+        loadKerML("""type B :> Base::Anything; """)
         solver.propagate()
-        agenda.update()
-        assertEquals(1, agenda.size())
+        ui.boardViewModel.update()
+        assertEquals(1, ui.boardViewModel.size())
         status.issues.clear()
-        agenda.clear()
+        ui.boardViewModel.clear()
 
         loadKerML("""
             type D :> Base::Anything; 
-        """.trimIndent())
+        """)
         solver.propagate()
 
-        agenda.update()
+        ui.boardViewModel.update()
 
-        assertEquals(true, agenda.isEmpty())
+        assertEquals(true, ui.boardViewModel.isEmpty())
     }
 
 
     @Test
-    fun issue235elementReclassification() {
-        val session = SessionManager.startSession()
-        RESTRepository.internalSessionId = session.id
-        val sysMdViewModel = SysMDViewModel(session)
-
-        session.loadKerML("""
+    fun issue235elementReclassification() = testProjectSession("Occurrences") {
+        val ui = SysMDViewModel()
+        ui.sessionIdState.value = this.id
+        loadKerML("""
             class A :> B; 
             class B; 
             class A :> C; 
-        """)
-        session.solver.propagate()
-        assertEquals(1, session.status.issues.size, session.status.issues.toString())
-        assertTrue(session.status.issues.any { it.message.contains("C") }, "Error message is expected reporting C as undefined")
-        val agenda = sysMdViewModel.agenda
-        agenda.update()
+        """, Runlevel.MODEL)
+        assertEquals(1, status.issues.size, status.issues.toString())
+        assertTrue(status.issues.any { it.message.contains("C") }, "Error message is expected reporting C as undefined")
+        ui.boardViewModel.update()
 
-        //The Agenda must not be empty as the reassignment of "A" to an unknown
+        //The Board must not be empty as the reassignment of "A" to an unknown
         // superclass is recognized as error
-        assertFalse(agenda.isEmpty())
+        assertFalse(ui.boardViewModel.isEmpty())
     }
 
     @Ignore
     @Test
-    fun removeElement() = testSession {
-        RESTRepository.internalSessionId = id
-        val sysMdViewModel = SysMDViewModel(this)
+    fun removeElement() = with(SysMDViewModel()) {
+        val session = sessionService.getSession(sessionId) !!
 
-        loadKerML("""
+        session.loadKerML("""
             type C :> D; 
             type A :> B;
         """)
-        solver.propagate()
+        session.solver.propagate()
 
-        val agenda = sysMdViewModel.agenda
-        agenda.update()
-        assertEquals(2, agenda.size())
-        agenda.removeElement(qualifiedName = "A")
-        assertEquals(1, agenda.size())
+        boardViewModel.update()
+        assertEquals(2, boardViewModel.size())
+        boardViewModel.removeElement(qualifiedName = "A")
+        assertEquals(1, boardViewModel.size())
        // val error = agenda.issues().first()
         // agenda.removeElement(error.qualifiedName, error.textualRepresentation, error.line)
-        assertEquals(0, agenda.size())
-        agenda.update()
-        assertEquals(2, agenda.size())
+        assertEquals(0, boardViewModel.size())
+        boardViewModel.update()
+        assertEquals(2, boardViewModel.size())
     }
 }

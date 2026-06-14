@@ -1,6 +1,7 @@
 package exports
 
 import com.github.tukcps.sysmd.exports.Exporter
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.initialize
 import util.assertNoIssues
 import util.mockup.loadSysMLv2
@@ -198,8 +199,7 @@ class SystemCTemplatesTests {
     }
 
     @Test
-    fun connectionsInMainAndModules() = testSession("ISQ", "Signals", "Parts", "Ports", "Connections") {
-        settings.catchExceptions = true
+    fun connectionsInMainAndModules() = testSession("ISQ", "Signals", "Parts", "Ports", "Connections", runlevel = Runlevel.MODEL) {
         loadSysMLv2("""
             package test {
                 private import ScalarValues::*; 
@@ -227,7 +227,7 @@ class SystemCTemplatesTests {
                 connection wire_x_y : Signals::Signal connect x.x_out to y.y_in; 
             }
         """)
-        assertTrue(status.issues.isEmpty(), "${status.issues}")
+        assertNoIssues()
 
         val testDirectory = File("src/test/resources/toSystemC")
         val exporter = Exporter()
@@ -245,7 +245,6 @@ class SystemCTemplatesTests {
 
     @Test @Ignore //Does not accept changes of ScalarValues
     fun expressionClassificationTest() = testSession("Parts", "Ports", "Requirements") {
-        settings.catchExceptions = true
         loadSysMLv2("""
         package test {
             import ScalarValues::*; 
@@ -307,7 +306,7 @@ class SystemCTemplatesTests {
                 attribute const_Integer_Unit : Integer [m]  = 5;
         }
         """)
-        initialize()
+        initialize(Runlevel.ALL)
         assertNoIssues()
         val testDirectory = File("src/test/resources/toSystemC")
         val exporter = Exporter()
@@ -404,7 +403,7 @@ class SystemCTemplatesTests {
             connection legalWire2: Signal connect test::actualPartC::outp to test::actualPartD::inp;
         }
         """)
-        initialize()
+        initialize(Runlevel.ALL)
         assertNoIssues()
         val testDirectory = File("src/test/resources/toSystemC")
         val exporter = Exporter()

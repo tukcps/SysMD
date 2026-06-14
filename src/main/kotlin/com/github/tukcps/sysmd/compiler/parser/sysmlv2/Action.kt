@@ -203,14 +203,14 @@ val performActionUsageDeclarationStart = setOf(NAME_LIT, ACTION)
  *      ActionNodePrefix = OccurrenceUsagePrefix ActionNodeUsageDeclaration?
  */
 fun SysMLv2.ActionNode() {
-    alternatives {
-        controlNodeStart starts { ControlNode() }
-        ASSIGN           starts { AssignmentNode() }
-        SEND             starts { Unsupported() }
-        ACCEPT           starts { Unsupported() }
-        IF               starts { IfNode() }
-        WHILE or LOOP    starts { WhileLoopNode() }
-        FOR              starts { Unsupported() }
+    when {
+        controlNodeStart.starts()   -> { ControlNode() }
+        ASSIGN.starts()             -> { AssignmentNode() }
+        SEND.starts()               -> { Unsupported() }
+        ACCEPT.starts()             -> { Unsupported() }
+        IF.starts()                 -> { IfNode() }
+        (WHILE or LOOP).starts()    -> { WhileLoopNode() }
+        FOR.starts()                -> { Unsupported() }
     }
 }
 fun SysMLv2.actionNodeStarts() = token.kind in controlNodeStart + setOf(WHILE, LOOP, SEND, ACCEPT, IF, FOR, ASSIGN)

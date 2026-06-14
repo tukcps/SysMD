@@ -22,27 +22,33 @@ fun DeleteProjectDialog(
     showDialog: MutableState<Boolean>,
     onDelete: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = { showDialog.value = false },
-        title = { Text("Delete Project?") },
-        text = { Text("Do you really want to delete the project? (The project can be restored by removing the extension .deleted manually)") },
-        confirmButton = {
-            TextButton(
-                modifier = Modifier.fillMaxWidth(0.49F),
-                border = BorderStroke(1.dp, AppTheme.colors.iconRed),
-                onClick = { showDialog.value = false; onDelete() }
-            ) { Text("Delete") }
-        },
-        dismissButton = {
-            TextButton(
-                modifier = Modifier.fillMaxWidth(0.49F),
-                border = BorderStroke(1.dp, AppTheme.colors.iconGreen),
-                onClick = { showDialog.value = false;  }
-            ) { Text("Cancel") }
-                        },
-        icon = { Icon(Icons.Default.Warning,
-            contentDescription = "Warning",
-            tint = AppTheme.colors.iconRed,
-            modifier = Modifier.size(60.dp))},
-    )
+    if (showDialog.value) {
+        AlertDialog(
+            onDismissRequest = { showDialog.value = false },
+            title = { Text("Delete Project?") },
+            text = { Text("Do you really want to delete the project? (The project can be restored by removing the extension .deleted manually)") },
+            confirmButton = {
+                TextButton(
+                    modifier = Modifier.fillMaxWidth(0.49F),
+                    border = BorderStroke(1.dp, AppTheme.colors.iconRed),
+                    onClick = { showDialog.value = false; onDelete() }
+                ) { Text("Delete") }
+            },
+            dismissButton = {
+                TextButton(
+                    modifier = Modifier.fillMaxWidth(0.49F),
+                    border = BorderStroke(1.dp, AppTheme.colors.iconGreen),
+                    onClick = { showDialog.value = false; }
+                ) { Text("Cancel") }
+            },
+            icon = {
+                Icon(
+                    Icons.Default.Warning,
+                    contentDescription = "Warning",
+                    tint = AppTheme.colors.iconRed,
+                    modifier = Modifier.size(60.dp)
+                )
+            },
+        )
+    }
 }

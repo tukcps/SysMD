@@ -1,16 +1,18 @@
 package com.github.tukcps.sysmd.services.repositories.local
 
 import com.github.tukcps.sysmd.settings
+import com.github.tukcps.sysmd.ui.*
 import io.github.tukcps.sysmlv2.api.entities.Branch
 import io.github.tukcps.sysmlv2.api.entities.Project
 import io.github.tukcps.sysmlv2.api.services.ProjectService
 import io.github.tukcps.sysmlv2.interchange.InterchangeProject
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlinx.io.files.Path
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import java.util.*
-import kotlin.io.path.*
 
 
 /**
@@ -42,17 +44,15 @@ open class SysMDProjectService: ProjectService {
         val project = ProjectData(InterchangeProject(
             name = name?:"",
             description = description),
-            directory = Path(settings.dataFolder).resolve(name!!)
+            directory = name?.let { Path(settings.dataFolder, it) }
         )
 
         projectDataRepository.add(project)
 
         if (project.data.isNotEmpty()) return project
 
-        val projectFolder = Path(settings.dataFolder)
-            .resolve(project.name?:project.id.toString())
-            .createDirectories()
-        val newFile = projectFolder.resolve("${project.name}.md").createFile()
+        val projectFolder = Path(settings.dataFolder, project.name?:project.id.toString())
+        val newFile = Path(projectFolder, "${project.name}.md")
         newFile.writeText("""
             ---
             id: ${project.project.id}
@@ -87,14 +87,14 @@ open class SysMDProjectService: ProjectService {
      * Returns a list with all interchange projects
      */
     override fun getProjects(): List<ProjectData> {
-        if (!Path(settings.dataFolder).isDirectory()) return emptyList<ProjectData>()
-        val projectDirectories = Path(settings.dataFolder).listDirectoryEntries()
-            .filter { it.isDirectory() }
-            .filter { it.resolve(".project.json").exists() }
-            .filter { !it.name.endsWith(".deleted") }
+        if (!Path(settings.dataFolder).isDirectory()) return emptyList()
+        val projectDirectories = Path(settings.dataFolder).listChildNames()
+            .filter { Path(settings.dataFolder, it).isDirectory() }
+            .filter { Path(settings.dataFolder, it, ".project.json").isFile() }
+            .filter { !it.endsWith(".deleted") }
 
         projectDirectories.forEach { projectDirectory ->
-            val project = ProjectData.fromInterchangeFiles(projectDirectory)
+            val project = ProjectData.fromInterchangeFiles(Path(settings.dataFolder, projectDirectory))
             if (project != null) {
                 if (project.id !in projectDataRepository.map { it.id })
                     projectDataRepository.add(project)
@@ -108,7 +108,6 @@ open class SysMDProjectService: ProjectService {
         }
         return projectDataRepository
     }
-
 
     /**
      * Gets a project by its id.
@@ -137,12 +136,14 @@ open class SysMDProjectService: ProjectService {
      */
     override fun deleteProject(projectId: UUID): ProjectData? {
         try {
-            val dateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy.HH.mm.ss")).toString()
+            val dateTime = Clock.System.now().toLocalDateTime(TimeZone.UTC)
+            val dateTimeString = "${dateTime.date}T${dateTime.hour.toString().padStart(2, '0')}_${dateTime.minute.toString().padStart(2, '0')}Z"
             val projectFound = projectDataRepository.firstOrNull { it.id == projectId }
             projectFound?.let {
-                it.directory?.moveTo(Path("${it.directory!!}.${it.name}.$dateTime.deleted"))
+                it.directory?.moveTo(Path("${it.directory!!}.$dateTimeString.deleted"))
             }
             projectDataRepository.remove(projectFound)
+            logger.info("Deleted project '${projectFound?.name}'")
             return projectFound
         } catch (error: Exception) {
             logger.error(error.message)

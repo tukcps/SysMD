@@ -1,6 +1,7 @@
 package constraintnettests
 
 import com.github.tukcps.sysmd.exceptions.Issue
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import util.assertNoIssues
 import util.mockup.loadKerML
@@ -569,7 +570,7 @@ class AggregationFunctionTest {
                     feature p3: ScalarValues::Real = sumOverParts(p);
                     feature p4: ScalarValues::Real = sumOverPartsNotTransitive(p); 
                 }
-        """)
+        """, Runlevel.ALL)
         assertNoIssues()
         assertEquals(3.0, global.resolveVar("c3::p3")!!.min(), 0.0001)
         assertEquals(10.0, global.resolveVar("c3::p3")!!.max(), 0.0001)

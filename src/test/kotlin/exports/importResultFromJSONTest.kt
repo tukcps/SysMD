@@ -1,7 +1,9 @@
 package exports
 
 import com.github.tukcps.sysmd.exceptions.Issue
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.resolve.resolveVar
+import util.assertIssue
 import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
@@ -62,8 +64,7 @@ class ImportTest {
                     attribute gain: Quantities::ScalarQuantityValue(26.0 .. 35.0) [dB] = characterizedResult(productOverParts(gain),"${Paths.get("").toAbsolutePath()}/src/test/resources/importResultsTestDir/testFile.json"); 
                 }
             }
-            """)
-        solver.propagate()
+            """, Runlevel.ALL)
         assertNoIssues()
         assertEquals(28.5, global.resolveVar("test::myAmplifier::gain")!!.aadd().min,0.00001)
         assertEquals(28.5,global.resolveVar("test::myAmplifier::gain")!!.aadd().max,0.00001)
@@ -107,11 +108,9 @@ class ImportTest {
                     attribute gain: ScalarQuantityValue(26.0 .. 35.0) [dB] = characterizedResult(productOverParts(gain),"${Paths.get("").toAbsolutePath()}/src/test/resources/importResultsTestDir/testFile.json"); 
                 }
             }
-        """)
-        assertTrue(status.issues.isEmpty(), "${status.issues}")
-        solver.propagate()
-        assertTrue(global.resolveVar("test::myAmplifier::gain")!!.aadd().isEmpty())
-        assertEquals(1, status.issues.size, "Error messages: ${status.issues}")
+        """, Runlevel.ALL)
+        assertTrue(solver.getVariable("test::myAmplifier::gain")!!.aadd().isEmpty())
+        assertIssue("not satisfiable")
     }
 
     /*************************************************************************
@@ -151,8 +150,7 @@ class ImportTest {
                     attribute gain: ScalarQuantityValue(26.0 .. 35.0) [dB] = characterizedResult(productOverParts(gain),"wrongFileNameThatDoesntWork.json"); 
                 }
             }
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
         assertEquals(1, status.issues.size, "Expected an error message that reports missing file with JSON")
         assertEquals(26.0, global.resolveVar("test::myAmplifier::gain")!!.aadd().min,0.00001)
         assertEquals(35.0,global.resolveVar("test::myAmplifier::gain")!!.aadd().max,0.00001)
@@ -194,8 +192,7 @@ class ImportTest {
                     attribute gain: ScalarQuantityValue(26.0 .. 35.0) [dB] = characterizedResult(productOverParts(gain),"${Paths.get("").toAbsolutePath()}/src/test/resources/importResultsTestDir/testFile.json"); 
                 }
             }
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
         //assertTrue(status.issues.isEmpty(), "${status.issues}")
         assertEquals(26.0, global.resolveVar("test::myAmplifier::gain")!!.aadd().min, 0.00001)
         assertEquals(35.0,global.resolveVar("test::myAmplifier::gain")!!.aadd().max, 0.00001)
@@ -239,8 +236,7 @@ class ImportTest {
                     attribute gain: Quantities::ScalarQuantityValue(26.0 .. 35.0) [dB] = characterizedResult(productOverParts(gain), productOverParts(gain)); 
                 }
             }
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
        // assertTrue(status.issues.isEmpty(), "${status.issues}")
         assertEquals(26.0, global.resolveVar("test::myAmplifier::gain")!!.rangeSpecs[0].min,0.00001)
         assertEquals(35.0,global.resolveVar("test::myAmplifier::gain")!!.rangeSpecs[0].max,0.00001)
@@ -272,9 +268,8 @@ class ImportTest {
             attribute a: ISQ::LengthValue = [5.0 .. 30.0] m;
             attribute b: ISQ::LengthValue = [10.0 .. 20.0] m;
             attribute gain: ScalarValues::Real = characterizedResult(max(a,b),"${Paths.get("").toAbsolutePath()}/src/test/resources/importResultsTestDir/testFile.json"); 
-        """)
+        """, Runlevel.ALL)
         assertNoIssues()
-        solver.propagate()
 
         assertEquals(28.5, global.resolveVar("gain")!!.min(),0.00001)
         assertEquals(28.5,global.resolveVar("gain")!!.max(),0.00001)

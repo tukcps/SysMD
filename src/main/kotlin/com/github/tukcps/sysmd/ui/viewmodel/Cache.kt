@@ -2,7 +2,7 @@ package com.github.tukcps.sysmd.ui.viewmodel
 
 import androidx.compose.ui.graphics.ImageBitmap
 import com.github.tukcps.sysmd.settings
-import java.util.*
+import kotlinx.io.files.Path
 
 /**
  * Cache to store Images, so scrolling will be smooth.
@@ -10,7 +10,7 @@ import java.util.*
  */
 class Cache<K, V>(val size: Int = 50) {
     private val cache = HashMap<K, V>()
-    private var insertionOrder = LinkedList<K>()
+    private var insertionOrder = arrayListOf<K>()
 
     fun put(key: K, value: V): K? {
         var evictedKey: K? = null
@@ -26,9 +26,8 @@ class Cache<K, V>(val size: Int = 50) {
 
     operator fun get(key: K):V? = cache[key]
 
-    override fun toString(): String {
-        return cache.toString()
-    }
+    override fun toString() = cache.toString()
+
 }
 
-val imageCache = Cache<String, ImageBitmap>(settings.imagesToCache)
+val imageCache = Cache<Path, ImageBitmap>(settings.imagesToCache)

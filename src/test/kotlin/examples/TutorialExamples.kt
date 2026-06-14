@@ -2,7 +2,7 @@ package examples
 
 
 import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.services.resolve.resolveVar
+import com.github.tukcps.sysmd.services.Runlevel
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.mockup.loadSysMLv2
@@ -46,10 +46,9 @@ class TutorialExamples {
                    :>> p: ScalarValues::Real = 3.0; 
                }
            }
-        """)
+        """, Runlevel.ALL)
         assertNoIssues()
-        solver.propagate()
-        val p = global.resolveVar("Reason::General::p")!!
+        val p = solver.getVariable("Reason::General::p")!!
         assertEquals(p.vectorQuantity.getMaxAsDouble(), 3.0, 0.000001)
         assertEquals(p.vectorQuantity.getMinAsDouble(), 2.0, 0.000001)
     }
@@ -77,7 +76,7 @@ class TutorialExamples {
         assertNoIssues()
         solver.propagate()
         assertNoIssues()
-        val mass = global.resolveVar("Example::Car::totalMass")!!
+        val mass = solver.getVariable("Example::Car::totalMass")!!
         assertEquals(800.0, mass.vectorQuantity.getMaxAsDouble(), 0.00001)
         assertEquals(50.0, mass.vectorQuantity.getMinAsDouble(), 0.00001)
     }
@@ -86,10 +85,9 @@ class TutorialExamples {
     @Test fun requirementTrueExample() = testSession("Attributes") {
         loadSysMLv2("""
             attribute x: ScalarValues::Boolean(true) = 1.0 < 2.0 + 1.0;
-        """)
+        """, Runlevel.ALL)
         assertNoIssues()
-        solver.propagate()
-        val x = global.resolveVar("x")!!
+        val x = solver.getVariable("x")!!
         assertEquals(builder.True, x.vectorQuantity.value)
     }
 
@@ -104,13 +102,11 @@ class TutorialExamples {
                 feature length:  ISQ::LengthValue {:>> range = "1 .. 1.1";}
                 feature volume:  ISQ::VolumeValue = height * width * length {:>> unit = "l"; :>> range = "1000 .. 2000";}
             }
-        """)
-
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
 
-        val volume = global.resolveVar("partWithVolume::volume")!!
-        val height = global.resolveVar("partWithVolume::height")!!
+        val volume = solver.getVariable("partWithVolume::volume")!!
+        val height = solver.getVariable("partWithVolume::height")!!
         assertEquals(82.6, height.min(), 0.1)
         assertEquals(1210.0, volume.max(), 1.0)
     }
@@ -152,8 +148,8 @@ class TutorialExamples {
         """)
         solver.propagate()
         assertNoIssues()
-        val summerWheel = global.resolveVar("SummerWheel::totalMass") !!
-        val winterWheel = global.resolveVar("WinterWheel::totalMass") !!
+        val summerWheel = solver.getVariable("SummerWheel::totalMass") !!
+        val winterWheel = solver.getVariable("WinterWheel::totalMass") !!
         assertEquals(30.0, summerWheel.min(), 0.0000001)
         assertEquals(40.0, summerWheel.max(), 0.0000001)
         assertEquals(40.0, winterWheel.min(), 0.0000001)

@@ -12,7 +12,7 @@ import java.util.*
  * A class for generating the table of contents and references
  */
 class InternalRefReference (
-    val editorTabModel: TabViewModel?,
+    val editorTabModel: CellListViewModel?,
     onUpdateAction: ()->Unit
 ) {
     fun generateHeadingNumbering() {
@@ -20,7 +20,7 @@ class InternalRefReference (
             return
 
         @Suppress("UNCHECKED_CAST")
-        val headingsCopy = Headings.clone() as LinkedList<Pair<Int,String>>
+        val headingsCopy = Headings.toList().toMutableList()
         headingsCopy.sortBy { it.first }
         val highestHeadingNumber = headingsCopy.last()
         val headingsNumberingArray = IntArray(highestHeadingNumber.first){0}
@@ -62,7 +62,7 @@ class InternalRefReference (
         refReferenceOfElements.clear()
     }
 
-    fun generateRefReferenceOfElements(viewModel: TextualRepresentationViewModel?, document: Node?) {
+    fun generateRefReferenceOfElements(viewModel: CellViewModel?, document: Node?) {
         if (document == null)
             return
 
@@ -87,7 +87,7 @@ class InternalRefReference (
         } while (element != null)
     }
 
-    private fun addIfNotAlreadyThere(viewModel:TextualRepresentationViewModel, value:String){
+    private fun addIfNotAlreadyThere(viewModel:CellViewModel, value:String){
         if (refReferenceOfElements.containsKey(value)) {
             return
         } else {
@@ -109,12 +109,12 @@ class InternalRefReference (
             if(editorTabModel.cells[i]==scrollToElement)
                 index = i
 
-        editorTabModel.selectedIndex.value =index
+        editorTabModel.selectedIndex.value = index
         return index
     }
 
-    private val refReferenceOfElements = hashMapOf<String,TextualRepresentationViewModel>()
+    private val refReferenceOfElements = hashMapOf<String, CellViewModel>()
     internal var OnUpdateAction:()->Unit = onUpdateAction
-    internal val Headings = LinkedList<Pair<Int, String>>()
-    val HeadingsWithNumbering = LinkedList<Pair<String, String>>()
+    internal val Headings = mutableListOf<Pair<Int, String>>()
+    val HeadingsWithNumbering = mutableListOf<Pair<String, String>>()
 }

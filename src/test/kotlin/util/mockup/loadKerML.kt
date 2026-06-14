@@ -2,6 +2,7 @@ package util.mockup
 
 import com.github.tukcps.sysmd.compiler.KerML
 import com.github.tukcps.sysmd.exceptions.SysMDError
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.session.Session
 
@@ -15,12 +16,14 @@ import com.github.tukcps.sysmd.services.session.Session
  */
 fun Session.loadKerML(
     input: String,
+    runlevel: Runlevel = settings.runlevel,
     catchExceptions: Boolean = settings.catchExceptions,
 ){
     settings.catchExceptions = catchExceptions
+    settings.runlevel = runlevel
     KerML(this).parse(input)
     try {
-        if (settings.initialize) initialize()
+       initialize(settings.runlevel)
     }  catch (exception: SysMDError) {
         status.fatal("initialization failed", cause = exception)
         if (!settings.catchExceptions)

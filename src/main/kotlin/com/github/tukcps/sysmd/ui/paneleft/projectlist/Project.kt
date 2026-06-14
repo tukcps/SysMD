@@ -34,12 +34,16 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import com.github.tukcps.sysmd.logger
+import com.github.tukcps.sysmd.services.session.SessionManager.sessionService
 import com.github.tukcps.sysmd.ui.dialogs.ChangeProjectIconDialog
+import com.github.tukcps.sysmd.ui.dialogs.DeleteFileDialog
 import com.github.tukcps.sysmd.ui.dialogs.ProjectDetailDialog
 import com.github.tukcps.sysmd.ui.dialogs.SaveDialog
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.decodeToImageBitmap
 import kotlin.math.abs
+import kotlin.uuid.Uuid
+import kotlin.uuid.toKotlinUuid
 
 /**
  * Renders a single project with collapsible details
@@ -55,6 +59,8 @@ fun Project(
     val showProjectDetailDialog = remember { mutableStateOf(false) }
     val showDeleteProjectDialog = remember { mutableStateOf(false) }
     val showContextMenu = remember { mutableStateOf(false) }
+    val showSaveProjectDialog = remember { mutableStateOf(false) }
+
     val contextMenuOffset = remember { mutableStateOf(IntOffset.Zero) }
 
     val rotationAngle by animateFloatAsState(
@@ -62,59 +68,39 @@ fun Project(
         animationSpec = tween(durationMillis = 300)
     )
 
-    if (projectViewModel.showSaveDialog.value) {
-        SaveDialog(projectViewModel.showSaveDialog,
-            onSave = { projectListViewModel.tabsViewModel.save(); projectViewModel.openProject(); projectViewModel.showSaveDialog.value = false },
-            onDrop = { projectViewModel.openProject();  projectViewModel.showSaveDialog.value = false }
-        )
-    }
+    /** Shows a dialog before deleting a project, and if deleted, resets the (then invalid) session. */
+    SaveDialog(projectViewModel.showSaveProjectDialog,
+        itemName = "Project '${projectViewModel.name}' and/or its files",
+        onSave = { projectViewModel.saveProjectToRepository(); projectViewModel.closeProjectSession() },
+        onDrop = { projectViewModel.closeProjectSession(); projectViewModel.loadProjectFromRepository() },
+    )
 
-    /**
-     * A Save-Dialog that changes the project after save.
-     */
-    val showSaveBeforeChangeDialog = remember { mutableStateOf(false) }
-    if (showSaveBeforeChangeDialog.value) {
-        SaveDialog(showSaveBeforeChangeDialog,
-            onSave = { projectListViewModel.tabsViewModel.save()
-                projectListViewModel.viewModelsOfProjects.value.forEach { project ->
-                    project.isExpanded.value = projectViewModel == projectViewModel.activeProject
-                }
-                projectViewModel.isExpanded.value = true
-                projectListViewModel.openProject(projectViewModel)
-                     },
-            onDrop =  {projectViewModel.openProject()
-                showSaveBeforeChangeDialog.value = false }
-        )
-    }
+    /** Shows dialog on deleting a file */
+    DeleteFileDialog(projectViewModel.showDeleteFileDialog,
+        fileToDelete = projectListViewModel.selectedProjectState.value?.fileToDelete?.value?:"",
+        onDelete = projectViewModel::deleteFileFromProject
+    )
 
-    if (showProjectDetailDialog.value) {
-        ProjectDetailDialog(showDialog = showProjectDetailDialog, projectViewModel = projectViewModel)
-    }
+    /** Shows the Save-Dialog that changes the project after save. */
+    SaveDialog(showSaveProjectDialog,
+        itemName = "Project '${projectViewModel.name} and/or its files",
+        onSave = { projectViewModel.saveProjectToRepository() },
+        onDrop = { projectViewModel.createProjectSession() }
+    )
 
-    if (showDeleteProjectDialog.value) {
-        DeleteProjectDialog(
-            showDialog = showDeleteProjectDialog,
-            onDelete = { projectListViewModel.deleteProject(projectViewModel) }
-        )
-    }
+    /** Shows Dialog with project information. */
+    ProjectDetailDialog(showDialog = showProjectDetailDialog, projectViewModel = projectViewModel)
 
-    if (projectViewModel.showChangeIconDialog.value) {
-        val hasIcon = remember(projectViewModel.project) {
-            projectViewModel.project
-                ?.directory
-                ?.resolve("Files")
-                ?.resolve("icon.png")
-                ?.toFile()
-                ?.exists() == true
-        }
+    /** Alert before deleting the project. */
+    DeleteProjectDialog(showDialog = showDeleteProjectDialog, onDelete = { projectListViewModel.onDeleteProject(projectViewModel) })
 
-        ChangeProjectIconDialog(
-            showDialog =projectViewModel.showChangeIconDialog,
-            hasExistingIcon = hasIcon,
-            onIconSelected = { bytes, name -> projectViewModel.updateProjectIcon(bytes, name) },
-            onIconRemoved  = { projectViewModel.removeProjectIcon() }
-        )
-    }
+    /** Shows dialog for changing the project icon */
+    ChangeProjectIconDialog(showDialog =projectViewModel.showChangeIconDialog,
+        hasExistingIcon = sessionService.getFile(projectViewModel.sessionIdState.value, "icon.png") != null,
+        onIconSelected = { bytes, _ -> projectViewModel.updateProjectIcon(bytes) },
+        onIconRemoved  = { projectViewModel.deleteProjectIcon() }
+    )
+
 
     Box {
         Card(
@@ -138,26 +124,16 @@ fun Project(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable {
-                            if (projectViewModel.unsavedChangesExist()) {
-                                showSaveBeforeChangeDialog.value = true
-                            } else {
-                                projectListViewModel.viewModelsOfProjects.value.forEach { project ->
-                                    project.isExpanded.value = projectViewModel == projectViewModel.activeProject
-                                }
-                                projectViewModel.isExpanded.value = true
-                                projectListViewModel.openProject(projectViewModel)
-                            }
-                        }
+                        .clickable { projectListViewModel.onOpenProject(projectViewModel) }
                         .padding(all = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Start
                 ) {
                     val icon: ImageBitmap? = try {
-                        val file = projectViewModel.project?.directory?.resolve("Files")?.resolve("icon.png")?.toFile()
-                        file?.inputStream()?.readAllBytes()?.decodeToImageBitmap()
+                        sessionService.getIcon(projectViewModel.project?.id?.toKotlinUuid() ?: Uuid.NIL)
+                            ?.decodeToImageBitmap()
                     } catch (e: Exception) {
-                        logger.info("No 'icon.png' in the folder 'Files' of project ${projectViewModel.name}': $e")
+                        logger.info("No 'icon.png' in the folder 'Files' of project '${projectViewModel.name}', using default icon")
                         null
                     }
 
@@ -221,16 +197,14 @@ fun Project(
                             .fillMaxWidth()
                             .padding(start = 49.dp, end = 8.dp, bottom = 8.dp, top = 4.dp)
                     ) {
-                        //Markdown Files
+                        // Markdown Files
                         Column(modifier = Modifier.fillMaxWidth()) {
-                            projectViewModel.project?.getIndex()?.forEachIndexed { index, item ->
-                                if (index in projectViewModel.tabsViewModel.editorTabs.indices)
-                                    FileItem(
-                                        index = index,
-                                        fileName = projectViewModel.tabsViewModel.editorTabs[index].tabTitle,
-                                        projectViewModel = projectViewModel,
-                                        onOpenFile = { projectViewModel.openProjectFile(item.name, projectViewModel) }
-                                    )
+                            projectViewModel.filesState.forEachIndexed { index, item ->
+                                FileItem(
+                                    index = index,
+                                    projectViewModel = projectViewModel,
+                                    onOpenFile = { projectViewModel.showTab(item) }
+                                )
                             }
                         }
                     }
@@ -238,6 +212,7 @@ fun Project(
             }
         }
 
+        // The menu after double- or right-click on the project.
         if (showContextMenu.value) {
             Popup(
                 offset = contextMenuOffset.value,
@@ -251,17 +226,26 @@ fun Project(
                 ) {
                     Column(modifier = Modifier.padding(vertical = 4.dp)) {
                         ContextMenuItemWithIcon(
-                            text = "Open Project",
+                            text = "Open Project Session",
                             icon = Icons.Default.FolderOpen,
                             onClick = {
-                                if (projectViewModel.unsavedChangesExist()) projectViewModel.showSaveDialog.value = true
-                                else projectViewModel.openProject()
+                                if (projectViewModel.unsavedChangesExist()) projectViewModel.showSaveProjectDialog.value = true
+                                else projectViewModel.createProjectSession()
+                                showContextMenu.value = false
+                            }
+                        )
+                        ContextMenuItemWithIcon(
+                            text = "Close Project Session",
+                            icon = Icons.Default.FolderOff,
+                            onClick = {
+                                if (projectViewModel.unsavedChangesExist()) projectViewModel.showSaveProjectDialog.value = true
+                                else projectViewModel.closeProjectSession()
                                 showContextMenu.value = false
                             }
                         )
                         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                         ContextMenuItemWithIcon(
-                            text = "Show Project Details",
+                            text = "Show Project Info",
                             icon = Icons.Default.Info,
                             onClick = {
                                 showProjectDetailDialog.value = true
@@ -277,7 +261,6 @@ fun Project(
                                 showContextMenu.value = false
                             }
                         )
-
                         ContextMenuItemWithIcon(
                             text = "Change Project Icon",
                             icon = Icons.Default.Image,
@@ -290,7 +273,7 @@ fun Project(
                             text = "Add File",
                             icon = Icons.Default.Add,
                             onClick = {
-                                projectViewModel.createNewFileInProject()
+                                projectViewModel.createFileInProject()
                                 showContextMenu.value = false
                             }
                         )
@@ -306,13 +289,10 @@ fun Project(
                             text = "Delete Project",
                             icon = Icons.Default.DeleteOutline,
                             onClick = {
-                                if (projectViewModel != projectViewModel.activeProject.value) {
-                                    showDeleteProjectDialog.value = true
-                                    showContextMenu.value = false
-                                }
+                                showDeleteProjectDialog.value = true
+                                showContextMenu.value = false
                             }
                         )
-
                     }
                 }
             }
@@ -329,13 +309,12 @@ fun Project(
 @Composable
 private fun FileItem(
     index: Int,
-    fileName: MutableState<String>,
     projectViewModel: ProjectViewModel,
     onOpenFile: () -> Unit
 ) {
     var isHovered by remember { mutableStateOf(false) }
     var isEditMode by remember { mutableStateOf(false) }
-    var editedFileName by remember { mutableStateOf(fileName) }
+    var editedFileName by remember { mutableStateOf(projectViewModel.filesState[index.coerceIn(0, projectViewModel.filesState.lastIndex)]) }
     var lastClickTime by remember { mutableStateOf(0L) }
     val showFileContextMenu = remember { mutableStateOf(false) }
     val fileContextMenuOffset = remember { mutableStateOf(IntOffset.Zero) }
@@ -346,10 +325,10 @@ private fun FileItem(
                 .fillMaxWidth()
                 .clickable(enabled = !isEditMode) {
                     val currentTime = System.currentTimeMillis()
-                    if (currentTime - lastClickTime < 500) {
+                    if (currentTime - lastClickTime < 400) {
                         // Double click detected
                         isEditMode = true
-                        editedFileName = fileName
+                        editedFileName = projectViewModel.filesState[index]
                     } else {
                         onOpenFile()
                     }
@@ -382,8 +361,8 @@ private fun FileItem(
             if (isEditMode) {
                 // Edit mode: show text field
                 OutlinedTextField(
-                    value = editedFileName.value,
-                    onValueChange = { editedFileName.value = it },
+                    value = editedFileName,
+                    onValueChange = { editedFileName = it },
                     modifier = Modifier.weight(1f),
                     textStyle = MaterialTheme.typography.bodySmall,
                     singleLine = true,
@@ -392,8 +371,9 @@ private fun FileItem(
                         unfocusedBorderColor = MaterialTheme.colorScheme.outline
                     ),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(onDone =
-                        { projectViewModel.renameFileInProject(editedFileName.value, index); isEditMode = false }
+                    keyboardActions = KeyboardActions(onDone = {
+                            projectViewModel.renameFileInProject(editedFileName, index); isEditMode = false
+                        }
                     )
                 )
 
@@ -401,7 +381,7 @@ private fun FileItem(
 
                 // Confirm button
                 IconButton(
-                    onClick = { projectViewModel.renameFileInProject(editedFileName.value, index); isEditMode = false },
+                    onClick = { projectViewModel.renameFileInProject(editedFileName, index); isEditMode = false },
                     modifier = Modifier.size(24.dp)
                 ) {
                     Icon(
@@ -415,7 +395,7 @@ private fun FileItem(
                 // Cancel button
                 IconButton(
                     onClick = {
-                        editedFileName = fileName
+                        editedFileName = projectViewModel.filesState[index]
                         isEditMode = false
                     },
                     modifier = Modifier.size(24.dp)
@@ -429,17 +409,28 @@ private fun FileItem(
                 }
             } else {
                 // Display only
-                val selected = projectViewModel.tabsViewModel.selectedIndex.value
-                Text(
-                    text = fileName.value,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (isHovered || selected==index)
-                        MaterialTheme.colorScheme.primary
-                    else
-                        MaterialTheme.colorScheme.onSurface.copy(alpha = ContentAlpha.medium),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Row {
+                    val selected = projectViewModel.editorTabsViewModel().selectedCellList?.nameState?.value
+                    val edited = projectViewModel.editorTabsViewModel().editorTabs.getOrNull(index)?.elementEdited?.value
+                    Text(
+                        text = projectViewModel.filesState[index],
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (isHovered || selected == projectViewModel.filesState[index])
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = ContentAlpha.medium),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        modifier = Modifier.padding(start = 4.dp),
+                        text = if (edited == true) "(edited)" else "",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (edited == true) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
         }
 
@@ -469,7 +460,7 @@ private fun FileItem(
                             icon = Icons.Default.Edit,
                             onClick = {
                                 isEditMode = true
-                                editedFileName = fileName
+                                projectViewModel.renameFileInProject(editedFileName, index)
                                 showFileContextMenu.value = false
                             }
                         )
@@ -477,8 +468,8 @@ private fun FileItem(
                             text = "Delete File",
                             icon = Icons.Default.Delete,
                             onClick = {
-                                // TODO: Implement delete functionality
-                                projectViewModel.deleteProjectFile(fileName.value)
+                                projectViewModel.fileToDelete.value = projectViewModel.filesState.getOrNull(index)
+                                projectViewModel.showDeleteFileDialog.value = true
                                 showFileContextMenu.value = false
                             }
                         )

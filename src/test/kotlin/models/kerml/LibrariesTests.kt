@@ -4,6 +4,7 @@ import com.fasterxml.uuid.Generators
 import com.github.tukcps.sysmd.model.kerml.DataType
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Type
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.session.loadLibrary
 import util.assertNoIssues
@@ -34,9 +35,9 @@ class LibrariesTests {
      * Initialization test
      */
     @Test
-    fun initScalarValuesTest() = testSession("ScalarValues", initialize = false) {
-        initialize()
-        assertEquals(0, status.issues.size, status.issues.toString())
+    fun initScalarValuesTest() = testSession("ScalarValues", runlevel = Runlevel.NONE) {
+        initialize(Runlevel.ALL)
+        assertNoIssues()
         val real = global.resolve("ScalarValues::Real")?.memberElement
         assertNotNull(real as? DataType)
     }
@@ -70,7 +71,7 @@ class LibrariesTests {
     @Test
     fun loadLibrary() = testSession {
         loadLibrary("ScalarValues")
-        initialize()
+        initialize(Runlevel.MODEL)
         val real = global.resolve("ScalarValues::Real")?.memberElement
         val sv = global.resolve("ScalarValues")?.memberElement
         assertEquals(5, real?.elementId?.version())

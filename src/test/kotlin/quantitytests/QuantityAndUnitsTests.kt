@@ -10,9 +10,8 @@ import com.github.tukcps.sysmd.quantities.Unit
 import com.github.tukcps.sysmd.quantities.baseUnits.Duration
 import com.github.tukcps.sysmd.quantities.baseUnits.Length
 import com.github.tukcps.sysmd.quantities.baseUnits.Mass
-import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolveVar
-import com.github.tukcps.sysmd.services.session.SessionImplementation
+import com.github.tukcps.sysmd.services.session.implementation.SessionImplementation
 import io.github.tukcps.aadd.AADD
 import io.github.tukcps.aadd.DDBuilder
 import io.github.tukcps.aadd.IDD
@@ -1140,7 +1139,6 @@ class UnitTests {
                 feature test3: ISQ::MassValue ;
                 feature percentage: Quantities::ScalarQuantityValue[%].
             """)
-        initialize()
         solver.propagate()
         assertEquals(0, status.issues.size, status.issues.toString())
     }

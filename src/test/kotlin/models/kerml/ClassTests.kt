@@ -2,6 +2,7 @@ package models.kerml
 
 import com.github.tukcps.sysmd.model.kerml.implementation.ClassImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.SpecializationImplementation
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.initialize
 import util.testSession
 import kotlin.test.Test
@@ -17,7 +18,7 @@ class ClassTests {
         addOwnedRelationship(SpecializationImplementation(b, a))
         val c = addOwnedMember(ClassImplementation(declaredName = "c"), global)
         addOwnedRelationship(SpecializationImplementation(c, b))
-        initialize()
+        initialize(Runlevel.MODEL)
         val aSubtypes = a.subtypes
         assertTrue(b in aSubtypes)
     }

@@ -1,6 +1,7 @@
 package constraintnettests
 
 import com.github.tukcps.sysmd.model.kerml.Feature
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import io.github.tukcps.aadd.values.Range
@@ -25,7 +26,7 @@ class UpdateNotificationsTests {
                 feature p2: Ranges::RealInRange {:>> range = "7.0";}
                 feature p3: ScalarValues::Real = p1+p2;
         """)
-        initialize()
+        initialize(Runlevel.ALL)
         // Just collect the "updates" without calling the method propagate.
         get().filterIsInstance<Feature>().forEach {
             if (it.variable?.updated == true)
@@ -50,7 +51,7 @@ class UpdateNotificationsTests {
             feature p: ScalarValues::Real = 1.0 + Math::pi + Math::e;
             feature x: ScalarValues::Real; 
             feature y: Ranges::RealInRange = x + p {:>> range = "2.0";}
-        """)
+        """, Runlevel.VARIABLES)
 
         assertEquals(true, global.resolveVar("x")?.updated)
         assertEquals(true, global.resolveVar("p")?.updated)

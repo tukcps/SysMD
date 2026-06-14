@@ -2,6 +2,7 @@ package compiler.kerml
 
 import com.github.tukcps.sysmd.model.kerml.Association
 import com.github.tukcps.sysmd.model.kerml.Feature
+import com.github.tukcps.sysmd.services.Runlevel
 import io.github.tukcps.aadd.values.IntegerRange
 import util.assertNoIssues
 import util.mockup.loadKerML
@@ -28,7 +29,7 @@ class AssociationTest {
                 end a: A [1 .. 2] :>> source; 
                 end b: B [3 .. 4] :>> target;
             }
-        """)
+        """, Runlevel.MODEL)
         assertNoIssues()
         val rel = global.resolve("rel")?.member<Association>()
         val a = global.resolve("rel::a")?.member<Feature>()
@@ -73,7 +74,7 @@ class AssociationTest {
 
         loadKerML("""
             assoc a; 
-        """)
+        """, Runlevel.MODEL)
         val a = global.resolve("a")?.member<Association>()
         assertNotNull(a)
         assertNotNull(a.sourceType)

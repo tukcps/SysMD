@@ -13,7 +13,6 @@ author:   University of Kaiserslautern-Landau, Chair of Cyber-Physical Systems
 - It is verified by a unit step and computing the time needed to go from -90% to +90% of the output range
 
 
-
 ```SysML
 package OpAmpExample {
     part def OpAmp {
@@ -26,6 +25,7 @@ package OpAmpExample {
     }
 }
 ```
+
 Application example: 
 ```SysML::OpAmpExample
     part myOpAmp: OpAmp { // the design

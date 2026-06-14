@@ -1,15 +1,16 @@
 package com.github.tukcps.sysmd.ui.rendering
 
-import org.jetbrains.skia.Image
+import com.github.tukcps.sysmd.ui.toUriString
+import kotlinx.io.files.Path
 import org.apache.batik.transcoder.TranscoderInput
 import org.apache.batik.transcoder.TranscoderOutput
 import org.apache.batik.transcoder.image.PNGTranscoder
+import org.jetbrains.skia.Image
 import java.io.ByteArrayOutputStream
-import java.io.File
 
 object SvgRenderer {
-    fun renderSvgToImage(svgFile: File): Image {
-        val input = TranscoderInput(svgFile.toURI().toString())
+    fun renderSvgToImage(svgFile: Path): Image {
+        val input = TranscoderInput(svgFile.toUriString())
         val outputStream = ByteArrayOutputStream()
         val output = TranscoderOutput(outputStream)
 

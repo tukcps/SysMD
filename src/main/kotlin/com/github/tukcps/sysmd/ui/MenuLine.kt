@@ -18,14 +18,18 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.github.tukcps.sysmd.loadPainter
+import com.github.tukcps.sysmd.generated.resources.Res
+import com.github.tukcps.sysmd.generated.resources.sysmd
 import com.github.tukcps.sysmd.rest.RESTRepository
+import com.github.tukcps.sysmd.services.Runlevel
+import com.github.tukcps.sysmd.services.session.SessionManager
 import com.github.tukcps.sysmd.ui.composables.SysMDButton
 import com.github.tukcps.sysmd.ui.dialogs.NewCommitDialog
 import com.github.tukcps.sysmd.ui.dialogs.NoProjectSelectedDialog
 import com.github.tukcps.sysmd.ui.styles.AppTheme
 import com.github.tukcps.sysmd.ui.viewmodel.SysMDViewModel
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.painterResource
 
 
 /**
@@ -40,7 +44,7 @@ val isNoProjectDialogOpen = mutableStateOf(false)
 
 @Suppress("FunctionName") @Composable
 fun MenuLine(sysMDViewModel: SysMDViewModel) {
-    val hasProject = sysMDViewModel.sessionState.value.project != null
+    val hasProject = SessionManager.getSession(sysMDViewModel.sessionIdState.value)?.project != null
 
     Box(
         Modifier
@@ -57,14 +61,14 @@ fun MenuLine(sysMDViewModel: SysMDViewModel) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Image(
                     modifier = Modifier.padding(top = 3.dp).align(Alignment.Bottom),
-                    painter = loadPainter("/drawable/SysMD-Icon.png"),
+                    painter = painterResource(Res.drawable.sysmd),
                     contentDescription = "SysMD Notebook"
                 )
 
                 Spacer(Modifier.width(8.dp))
 
                 Text(
-                    text = "Project: ${sysMDViewModel.sessionState.value.project?.name?:"(no project selected)"}",
+                    text = "Project session: ${sysMDViewModel.projectListViewModel.selectedProjectState.value?.name?:" ./. "} ",
                     modifier = Modifier.padding(3.dp),
                     fontSize = AppTheme.fontSize
                 )
@@ -78,7 +82,7 @@ fun MenuLine(sysMDViewModel: SysMDViewModel) {
                     icon = Icons.Filled.Transform,
                     iconTint = if (hasProject) AppTheme.colors.iconGreen else AppTheme.colors.iconGray,
                     text = "Compile",
-                    tooltipText = if (hasProject) "Compiles textual representation" else "No project selected",
+                    tooltipText = if (hasProject) "Compiles all files in project session" else "No project session",
                     onClick = {
                         if (!hasProject) {
                             isNoProjectDialogOpen.value = true
@@ -88,7 +92,7 @@ fun MenuLine(sysMDViewModel: SysMDViewModel) {
                             sysMDViewModel.reset()
                             if (!inCompile) {
                                 inCompile = true
-                                sysMDViewModel.compile(solve = false)
+                                sysMDViewModel.projectListViewModel.selectedProjectState.value?.compile(Runlevel.MODEL)
                             }
                             inCompile = false
                         }
@@ -101,7 +105,7 @@ fun MenuLine(sysMDViewModel: SysMDViewModel) {
                     icon = Icons.Filled.Calculate,
                     iconTint = if (hasProject) AppTheme.colors.iconGreen else AppTheme.colors.iconGray,
                     text = "Solve",
-                    tooltipText = if (hasProject) "Computes constraint propagation" else "No project selected",
+                    tooltipText = if (hasProject) "Compiles and then computes constraint propagation in all files of project session" else "No project selected",
                     onClick = {
                         if (!hasProject) {
                             isNoProjectDialogOpen.value = true
@@ -111,7 +115,7 @@ fun MenuLine(sysMDViewModel: SysMDViewModel) {
                             sysMDViewModel.reset()
                             if (!inCompile) {
                                 inCompile = true
-                                sysMDViewModel.compile(solve = true)
+                                sysMDViewModel.projectListViewModel.selectedProjectState.value?.compile(Runlevel.ALL)
                             }
                             inCompile = false
                         }
@@ -124,17 +128,13 @@ fun MenuLine(sysMDViewModel: SysMDViewModel) {
                     icon = Icons.Filled.Save,
                     iconTint = if (hasProject) AppTheme.colors.iconGreen else AppTheme.colors.iconGray,
                     text = if(RESTRepository.onlineState.value) "Commit" else "Save",
-                    tooltipText = if (hasProject) "Saves the project in its files." else "No project selected",
+                    tooltipText = if (hasProject) "Saves the project to repository or interchange project files." else "No project selected",
                     onClick = {
                         if (!hasProject) {
                             isNoProjectDialogOpen.value = true
                             return@SysMDButton
                         }
-                        sysMDViewModel.sessionState.value.project?.saveToInterchangeFiles()
-                        sysMDViewModel.tabsViewModel.editorTabs.forEach { editorTabModel ->
-                            editorTabModel.save()
-                            editorTabModel.elementEdited.value = false
-                        }
+                        sysMDViewModel.projectListViewModel.selectedProjectState.value?.saveProjectToRepository()
                     }
                 )
 
@@ -157,13 +157,7 @@ fun MenuLine(sysMDViewModel: SysMDViewModel) {
         }
     }
 
-    if (isCommitDialogOpen.value) {
-        NewCommitDialog(sysMDViewModel)
-    }
+    if (isCommitDialogOpen.value) { NewCommitDialog(sysMDViewModel) }
 
-    if (isNoProjectDialogOpen.value) {
-        NoProjectSelectedDialog(
-            onDismiss = { isNoProjectDialogOpen.value = false }
-        )
-    }
+    NoProjectSelectedDialog(isNoProjectDialogOpen, onDismiss = { isNoProjectDialogOpen.value = false })
 }

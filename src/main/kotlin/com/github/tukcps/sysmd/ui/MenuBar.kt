@@ -16,14 +16,14 @@ import com.github.tukcps.sysmd.ui.viewmodel.SysMDViewModel
  *  ...     ------    Help
  */
 @Composable
-fun FrameWindowScope.MenuBar(model: SysMDViewModel) = MenuBar {
+fun FrameWindowScope.MenuBar(sysMDViewModel: SysMDViewModel) = MenuBar {
     fun showSettingsDialog() {
-        model.showSettingsDialog.value = true
-        model.reconnectionRequired.value = true
+        sysMDViewModel.showSettingsDialog.value = true
+        sysMDViewModel.reconnectionRequired.value = true
     }
 
     fun createProject() {
-        model.showDialogProjectName.value=true
+        sysMDViewModel.showDialogProjectName.value=true
     }
 
     fun deleteProject() {
@@ -31,11 +31,11 @@ fun FrameWindowScope.MenuBar(model: SysMDViewModel) = MenuBar {
     }
 
     fun createBranch() {
-        model.showDialogBranchName.value = true
+        sysMDViewModel.showDialogBranchName.value = true
     }
 
     fun deleteBranch() {
-        model.showDialogBranchDeletion.value = true
+        sysMDViewModel.showDialogBranchDeletion.value = true
     }
 
     fun mergeBranch() {
@@ -61,6 +61,9 @@ fun FrameWindowScope.MenuBar(model: SysMDViewModel) = MenuBar {
 
     Menu("Help") {
         Item("Settings") { showSettingsDialog() }
-        Item("Help") {}
+        Item("Help") {
+            val project = sysMDViewModel.projectListViewModel.projectViewModels.value.find { it.name == "SysMD Kickstart" }
+            project?.let { sysMDViewModel.projectListViewModel.onOpenProject(project) }
+        }
     }
 }

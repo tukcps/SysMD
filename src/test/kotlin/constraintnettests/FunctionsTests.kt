@@ -1,7 +1,7 @@
 package constraintnettests
 
 import com.github.tukcps.sysmd.exceptions.Issue
-import com.github.tukcps.sysmd.services.initialize
+import com.github.tukcps.sysmd.services.Runlevel
 import io.github.tukcps.aadd.IDD
 import util.assertNoIssues
 import util.mockup.loadKerML
@@ -208,7 +208,7 @@ class FunctionsTests {
                 feature d: ScalarValues::Real = toReal(c);  
                 feature e: ScalarValues::Boolean;
                 feature f: ScalarValues::Real = toReal(e);
-        """)
+        """, Runlevel.ALL)
         assertNoIssues()
         val b = solver.getVariable("b")!!
         val d = solver.getVariable("d")!!
@@ -240,8 +240,8 @@ class FunctionsTests {
     fun evalUpWithPow2_real_range() = testSession("Ranges") {
         loadKerML("""
             feature a: Ranges::RealInRange {:>> range = "1.0 .. 5.0";}
-            feature b: ScalarValues::Real = power2(a);"""
-        )
+            feature b: ScalarValues::Real = power2(a);
+        """, Runlevel.ALL)
         val b = solver.getVariable("b")
         assertNotNull(b)
         assertEquals(2.0, solver.getVariable("b")!!.min(), 0.00001)
@@ -256,8 +256,8 @@ class FunctionsTests {
     fun evalUpWithPow2_real_value() = testSession("Ranges") {
         loadKerML("""
             feature a: Ranges::RealInRange = 3.0 {:>> range = "1.0 .. 5.0";}
-            feature b: ScalarValues::Real = power2(a); """
-        )
+            feature b: ScalarValues::Real = power2(a); 
+        """, Runlevel.ALL)
         assertEquals(8.0, solver.getVariable("b")!!.min(), 0.00001)
         assertEquals(8.0, solver.getVariable("b")!!.max(), 0.00001)
         assertEquals("1", solver.getVariable("b")!!.vectorQuantity.unit.toString())
@@ -282,8 +282,8 @@ class FunctionsTests {
     fun evalUpWithPow2_real_negative() = testSession("Ranges") {
         loadKerML("""
             feature a: Ranges::RealInRange {:>> range = "-2.0 .. -1.0";}
-            feature b: ScalarValues::Real = power2(a);"""
-        )
+            feature b: ScalarValues::Real = power2(a);
+        """, Runlevel.ALL)
         assertNoIssues()
         assertEquals(0.25, solver.getVariable("b")!!.aadd().min, 0.0001)
         assertEquals(0.5, solver.getVariable("b")!!.aadd().max, 0.0001)
@@ -295,8 +295,8 @@ class FunctionsTests {
     fun evalUpWithPow2_real_zero() = testSession("Ranges") {
         loadKerML("""
             feature a: Ranges::RealInRange {:>> range = "0.0 .. 0.0";}
-            feature b: ScalarValues::Real = power2(a); """
-        )
+            feature b: ScalarValues::Real = power2(a); 
+        """, Runlevel.ALL)
         assertNoIssues()
         assertEquals(1.0, solver.getVariable("b")!!.aadd().min, 0.0001)
         assertEquals(1.0, solver.getVariable("b")!!.aadd().max, 0.0001)
@@ -310,7 +310,6 @@ class FunctionsTests {
             feature a: Ranges::IntegerInRange {:>> range = "1 .. 5";}
             feature b: ScalarValues::Integer = power2(a); """
         )
-        initialize()
         solver.propagate()
         assertEquals(2, (solver.getVariable("b")!!.idd() as IDD.Leaf).value.min)
         assertEquals(32, (solver.getVariable("b")!!.idd() as IDD.Leaf).value.max)
@@ -516,9 +515,8 @@ class FunctionsTests {
         loadKerML("""
             feature a: Ranges::RealInRange {:>> range = "-10.0 .. -5.0";}
             feature b: ScalarValues::Real = ln(a);
-        """)
+        """, Runlevel.ALL)
         val b = solver.getVariable("b")
-        solver.propagate()
         assertTrue(b!!.vectorQuantity.value.asAadd().isEmpty())
         assertEquals(1, status.issues.size)
     }
@@ -788,12 +786,11 @@ class FunctionsTests {
 
     @Test
     fun evalUpWithPowB_real_value() = testSession("Ranges") {
-        loadKerML(
-           """
+        loadKerML("""
             feature a: Ranges::RealInRange {:>> range = "3.0 .. 3.0";} 
             feature b: Ranges::RealInRange {:>> range = "4.0 .. 4.0";} 
-            feature c: ScalarValues::Real = power(a, b); """
-        )
+            feature c: ScalarValues::Real = power(a, b); 
+        """, Runlevel.ALL)
         val c = solver.getVariable("c") !!
         assertEquals(81.0, c.min(), 0.000001)
         assertEquals(81.0, c.max(), 0.000001)
@@ -908,8 +905,8 @@ class FunctionsTests {
         loadKerML("""
             feature a: ScalarValues::Integer = oneOf(2 .. 3);
             feature b: ScalarValues::Integer = oneOf(3 .. 4);
-            feature c: ScalarValues::Integer = power(a, b); """
-        )
+            feature c: ScalarValues::Integer = power(a, b); 
+        """, Runlevel.ALL)
         val c = solver.getVariable("c") !!
         assertEquals(8, c.idd().getRange().min)
         assertEquals(81, c.idd().getRange().max)
@@ -922,9 +919,8 @@ class FunctionsTests {
     fun evalUpPowerNegativeBase() = testSession("Ranges") {
         loadKerML("""
             feature i: ScalarValues::Real = 1.0;
-            feature a: ScalarValues::Real = pow(-5.0,1.0);"""
-        )
-        solver.propagate()
+            feature a: ScalarValues::Real = pow(-5.0,1.0);
+        """, Runlevel.ALL)
         assertEquals(-5.0, solver.getVariable("a")!!.min(), 0.00001)
         assertNoIssues()
     }
@@ -933,8 +929,8 @@ class FunctionsTests {
     fun evalUpPowerNegativeBase2() = testSession("Ranges") {
         loadKerML("""
             feature i: ScalarValues::Real = 1.0;
-            feature a: ScalarValues::Real = pow(-1.0,2.0);""")
-        solver.propagate()
+            feature a: ScalarValues::Real = pow(-1.0,2.0);
+        """, Runlevel.ALL)
         assertEquals(1.0, solver.getVariable("a")!!.min(), 0.00001)
         assertNoIssues()
     }
@@ -1263,7 +1259,7 @@ class FunctionsTests {
             feature c: Ranges::RealInRange {:>> range = "3..4";}
             feature d: Ranges::RealInRange {:>> range = "4..5";}
             feature e: ScalarValues::Real = max(a, b, c, d);
-        """)
+        """, Runlevel.ALL)
         assertNoIssues()
         val result = solver.getVariable("e")
         assertEquals(4.0, result!!.min(), 0.000001)
@@ -1649,7 +1645,7 @@ class FunctionsTests {
             feature c: Ranges::RealInRange {:>> range = "2..5";}
             feature d: Ranges::RealInRange {:>> range = "3..4";}
             feature e: Ranges::RealInRange = min(a,b,c,d) {:>> range = "4..5";}
-        """)
+        """, Runlevel.VARIABLES)
         val e = solver.getVariable("e")!!
         assertEquals(4.0, e.min(), 0.000001)
         assertEquals(4.0, e.min(), 0.000001)
@@ -1673,15 +1669,13 @@ class FunctionsTests {
 
     @Test @Ignore
     fun minTestMultipleParams3Integer() = testSession("Ranges") {
-        loadKerML(input = """
+        loadKerML("""
             feature a: Ranges::IntegerInRange {:>> range = "0..7";}
             feature b: Ranges::IntegerInRange {:>> range = "1..6";}
             feature c: Ranges::IntegerInRange {:>> range = "2..5";}
             feature d: Ranges::IntegerInRange {:>> range = "3..4";}
             feature e: ScalarValues::Integer = min(a,b,c,d) {:>> range = "4..5";}
-            """.trimIndent(), catchExceptions = true
-        )
-        solver.propagate()
+        """, Runlevel.SOLVED)
         assertNoIssues()
         val result = solver.getVariable("a")
         assertEquals(4, result!!.vectorQuantity.value.asIdd().min)
@@ -1736,9 +1730,7 @@ class FunctionsTests {
         loadKerML(input = """
             feature a: Ranges::IntegerInRange {:>> range = "0..1";}
             feature c: ScalarValues::Integer = min(a);
-            """, catchExceptions = true
-        )
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
         val result = solver.getVariable("c")
         assertEquals(0L, result!!.min())
@@ -1751,9 +1743,7 @@ class FunctionsTests {
         loadKerML(input = """
             feature a: Ranges::IntegerInRange {:>> range = "0..1";}
             feature c: ScalarValues::Integer = max(a);
-            """, catchExceptions = true
-        )
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
         val result = solver.getVariable("c")
         assertEquals(1, result!!.vectorQuantity.value.asIdd().min)
@@ -1782,9 +1772,7 @@ class FunctionsTests {
                 feature cElemen2: c2; 
                 feature a: ScalarValues::Real = byParts(a); 
             }
-        """)
-        assertNoIssues()
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
         val result = solver.getVariable("b::a")
         assertEquals(0.0, result!!.min(), 0.000001)
@@ -1795,11 +1783,9 @@ class FunctionsTests {
     @Test
     fun assertTestStepInterpolationEvalDOwn() = testSession("Calculations", "ISQ", "Parts", "Ranges") {
         loadSysMLv2("""
-        attribute Avail : Quantities::ScalarQuantityValue {:>> unit = "%"; :>> range = "0.0..100.0";} 
-        attribute level: Ranges::IntegerInRange = stepInterpolation(Avail, 0.0, 2, 0.9, 3, 0.95, 4, 1.0, 5) { :>> range = "4..4"; }
-        """
-        )
-        solver.propagate()
+            attribute Avail : Quantities::ScalarQuantityValue {:>> unit = "%"; :>> range = "0.0..100.0";} 
+            attribute level: Ranges::IntegerInRange = stepInterpolation(Avail, 0.0, 2, 0.9, 3, 0.95, 4, 1.0, 5) { :>> range = "4..4"; }
+        """, Runlevel.ALL)
         assertNoIssues()
         val test2 = solver.getVariable("Avail")
         assertEquals(0.95, test2!!.vectorQuantity.value.asAadd().min,0.0001)
@@ -1808,13 +1794,10 @@ class FunctionsTests {
 
     @Test
     fun assertTestStepInterpolationEvalDOwn2() = testSession("Calculations", "ISQ", "Parts", "Ranges") {
-        loadSysMLv2(
-            """
-        attribute reliability: Quantities::ScalarQuantityValue {:>> unit = "%"; :>> range = "0.0..100.0";}
-        attribute ASIlFromReliability: Ranges::IntegerInRange = stepInterpolation(reliability, 0.0, 1, 0.99, 2, 0.995, 3, 0.999, 4) {:>> range = "3..4";} 
-        """
-        )
-        solver.propagate()
+        loadSysMLv2("""
+            attribute reliability: Quantities::ScalarQuantityValue {:>> unit = "%"; :>> range = "0.0..100.0";}
+            attribute ASIlFromReliability: Ranges::IntegerInRange = stepInterpolation(reliability, 0.0, 1, 0.99, 2, 0.995, 3, 0.999, 4) {:>> range = "3..4";} 
+        """, Runlevel.ALL)
         assertNoIssues()
         val test2 = solver.getVariable("reliability")
         assertEquals(0.995, test2!!.vectorQuantity.value.asAadd().min,0.000001)
@@ -1826,15 +1809,14 @@ class FunctionsTests {
     @Test
     fun assertTestStepInterpolationEvalDOwnInteger() = testSession("Calculations", "ISQ", "Parts", "Ranges") {
         loadSysMLv2("""
-        attribute Avail : Ranges::IntegerInRange {:>> range = "0..100";} 
-        attribute level: Ranges::IntegerInRange = stepInterpolation(Avail, 0, 2, 90, 3, 95, 4, 100, 5) { :>> range = "5..5"; }
-        """
-        )
-        solver.propagate()
+            attribute Avail : Ranges::IntegerInRange {:>> range = "0..100";} 
+            attribute level: Ranges::IntegerInRange = stepInterpolation(Avail, 0, 2, 90, 3, 95, 4, 100, 5) { :>> range = "5..5"; }
+        """, Runlevel.ALL)
         assertNoIssues()
         val test2 = solver.getVariable("Avail")
-        assertEquals(100, test2!!.vectorQuantity.value.asIdd().min)
-        assertEquals(100, test2.vectorQuantity.value.asIdd().max)
+        assertNotNull(test2)
+        assertEquals(100L, test2.min() )
+        assertEquals(100L, test2.max() )
     }
 
     @Test
@@ -1853,11 +1835,10 @@ class FunctionsTests {
         attribute exposure: ScalarValues::Integer = 4;
         attribute controllability: Ranges::IntegerInRange {:>> range = "0..3";}
         attribute ASILCalculated: Ranges::IntegerInRange = calcASIL(severity,exposure,controllability) {:>> range = "4..4";}           
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
         val test2 = solver.getVariable("controllability")
-        assertEquals(3, test2!!.vectorQuantity.value.asIdd().min)
+        assertEquals(3L, test2!!.min())
     }
 
     @Test
@@ -1875,8 +1856,7 @@ class FunctionsTests {
             attribute exposure: Ranges::IntegerInRange {:>> range = "3..3"; }
             attribute controllability: Ranges::IntegerInRange {:>> range = "0..3"; }
             attribute ASILCalculated: Ranges::IntegerInRange = calcASIL(severity,exposure,controllability) {:>> range = "0..0";}
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
         val test2 = solver.getVariable("controllability")
         assertNotNull(test2)
@@ -1890,8 +1870,7 @@ class FunctionsTests {
             attribute a: Ranges::IntegerInRange {:>> range = "0..4";}
             attribute ASILFromAvailability: Ranges::IntegerInRange = a {:>> range = "0..4";}
             assert constraint ASIL {ASILFromAvailability == 4}   
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
         val test2 = solver.getVariable("ASILFromAvailability")
         assertEquals(4, test2!!.vectorQuantity.value.asIdd().min)
@@ -1905,8 +1884,7 @@ class FunctionsTests {
             attribute a: Ranges::RealInRange {:>> range = "0.0..4.0";}
             attribute ASILFromAvailability: Ranges::RealInRange = a {:>> range = "0.0..4.0";}
             assert constraint ASIL {ASILFromAvailability == 4.0}   
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
         val test2 = solver.getVariable("ASILFromAvailability")
         assertEquals(4.0, test2!!.vectorQuantity.value.asAadd().min)
@@ -1932,8 +1910,7 @@ class FunctionsTests {
             attribute ASILFromAvailability: Ranges::IntegerInRange = ASIL_from_Avail(availability) {:>> range = "0..4";}
             attribute ASIlFromReliability: Ranges::IntegerInRange = ASIL_from_Reliab(reliability) {:>> range = "0..4";}
             assert constraint ASIL {ASIlFromReliability == ASILFromAvailability}  
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
         val test2 = solver.getVariable("ASILFromAvailability")
         assertEquals(4, test2!!.vectorQuantity.value.asIdd().min)

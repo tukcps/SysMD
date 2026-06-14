@@ -5,14 +5,20 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.github.tukcps.sysmd.compiler.importMD
-import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.session.Session
+import com.github.tukcps.sysmd.services.Runlevel
+import com.github.tukcps.sysmd.services.repositories.local.ElementData
+import com.github.tukcps.sysmd.services.repositories.local.Language
+import com.github.tukcps.sysmd.services.repositories.local.toDAO
 import com.github.tukcps.sysmd.services.session.SessionManager
 import com.github.tukcps.sysmd.services.session.SessionManager.projectService
+import com.github.tukcps.sysmd.services.session.SessionManager.sessionService
 import com.github.tukcps.sysmd.services.session.loadSysMDFromFile
 import com.github.tukcps.sysmd.ui.composables.TreeViewModel
 import com.github.tukcps.sysmd.ui.composables.TreeViewNodeModel
+import com.github.tukcps.sysmd.ui.paneleft.projectlist.ProjectListViewModel
 import com.github.tukcps.sysmd.ui.paneright.BoardViewModel
+import java.util.*
+import kotlin.uuid.Uuid
 
 
 /**
@@ -21,28 +27,34 @@ import com.github.tukcps.sysmd.ui.paneright.BoardViewModel
 fun display(node: TreeViewNodeModel) {
     val element = (node as HasATree).element
     println(element.toString())
-    println(" - indices = ${element.indices}")
-    println(" - token   = ${element.input?.substring(element.indices!!)}")
-}
+ }
 
 
 /**
- * View model for overall application
- * @param sessionParam Session in which the KerML model is edited, computed, ...
+ * View model for overall application.
  */
-class SysMDViewModel(
-    sessionParam: Session
-) {
+class SysMDViewModel {
+    val sessionIdState: MutableState<Uuid> = mutableStateOf(Uuid.NIL)
+
     // The main window with editable files
-    var sessionState = mutableStateOf(sessionParam)
-    var session: Session by sessionState
-    val tabsViewModel = TabsViewModel(sessionState, ::refreshTrees)
-    val agenda = BoardViewModel(sessionState)
-    var agendaIsEmpty = mutableStateOf(agenda.isEmpty())
+    var sessionId by sessionIdState
+
+    val projectListViewModel: ProjectListViewModel by lazy {
+        ProjectListViewModel(sessionIdState, { editorTabsViewModel }, reset = ::reset, refreshTrees = ::refreshTrees,)
+    }
+
+    val editorTabsViewModel: EditorTabsViewModel by lazy {
+        EditorTabsViewModel({ projectListViewModel }, ::refreshTrees)
+    }
+
+    val boardViewModel = BoardViewModel(sessionIdState)
+    var boardIsEmpty = mutableStateOf(boardViewModel.isEmpty())
 
     // The selectable tree views
-    val composition = mutableStateOf(TreeViewModel(HasATree(mutableStateOf(session.global)), null, null, ::display, false))
-    val inheritance = mutableStateOf(TreeViewModel(IsATree(mutableStateOf(session.anything)), null, null, ::display, false))
+    val composition = mutableStateOf(TreeViewModel(
+        HasATree(sessionIdState, mutableStateOf(sessionService.getSession(sessionId)?.global?.toDAO()?: ElementData(elementId = UUID.randomUUID(), type="Package"))), null, null, ::display, false))
+    val inheritance = mutableStateOf(TreeViewModel(
+        IsATree(sessionIdState, mutableStateOf(sessionService.getSession(sessionId)?.anything?.toDAO()?: ElementData(elementId = UUID.randomUUID(), type="Package"))), null, null, ::display, false))
 
     val showSettingsDialog: MutableState<Boolean> = mutableStateOf(false)
     val reconnectionRequired:MutableState<Boolean> = mutableStateOf(false)
@@ -60,22 +72,22 @@ class SysMDViewModel(
      */
     fun reset() {
         // clean repo, brute force ...
-        val project = session.project
+        val project = sessionService.getSession(sessionIdState.value)?.project
         projectService.reset()
 
         // start a new session.
-        session.endSession()
+        SessionManager.kill(sessionId)
 
         if (project != null) {
             // Re-start project
-            session = SessionManager.startSession(project = project)
-            session.project!!.getIndex().forEach { file ->
-                session.loadSysMDFromFile(file, compile = false, 0)
+            sessionId = SessionManager.createSession(project = project).id
+            sessionService.getSession(sessionId)?.project?.getIndexedFiles()?.forEach { file ->
+                sessionService.getSession(sessionId)?.loadSysMDFromFile(file, compile = false, runlevel = Runlevel.NAMES_RESOLVED)
             }
         }
         // reset the UI
-        agenda.clear()
-        tabsViewModel.reset()
+        boardViewModel.clear()
+        editorTabsViewModel.reset()
         refreshTrees()
     }
 
@@ -84,35 +96,35 @@ class SysMDViewModel(
      * This function should be called after each change in the KerML model of a session.
      */
     fun refreshTrees() {
-        composition.value = TreeViewModel(HasATree(mutableStateOf(session.global)), null, null, ::display, false)
-        inheritance.value = TreeViewModel(IsATree(mutableStateOf(session.anything)), sort = false)
-        agenda.clear()
-        agenda.update()
-        agendaIsEmpty.value = agenda.isEmpty()
+        composition.value = TreeViewModel(HasATree(sessionIdState, mutableStateOf(sessionService.getSession(sessionId)?.global?.toDAO())), null, null, ::display, false)
+        inheritance.value = TreeViewModel(IsATree(sessionIdState, mutableStateOf(sessionService.getSession(sessionId)?.anything?.toDAO())), sort = false)
+        boardViewModel.clear()
+        boardViewModel.update()
+        boardIsEmpty.value = boardViewModel.isEmpty()
     }
 
     /**
      * Compiles all tabs.
      */
     fun compile(solve: Boolean = true) {
-        agenda.clear()
-        session.status.reset()
-        tabsViewModel.editorTabs.forEach {
+        boardViewModel.clear()
+        sessionService.getSession(sessionId)?.status?.reset()
+        editorTabsViewModel.editorTabs.forEach {
             it.cells.forEach { cell ->
-                if (cell.language.value == TextualRepresentationViewModel.Companion.Language.YAML) {
-                    session.importMD(cell.body.text, null)
+                if (cell.language.value == Language.YAML) {
+                    sessionService.getSession(sessionId)?.importMD(cell.body.text, null)
                 }
             }
         }
-        session.loadUsages()
-        tabsViewModel.editorTabs.forEach { tab ->
+        sessionService.getSession(sessionId)?.loadUsages()
+        editorTabsViewModel.editorTabs.forEach { tab ->
             tab.cells.forEach { cell ->
                 cell.compile(propagate = false)
             }
         }
-        session.initialize()
-        if (solve) session.solver.propagate()
-        tabsViewModel.editorTabs.forEach { tab ->
+        if (solve)
+            sessionService.getSession(sessionId)?.solver?.propagate()
+        editorTabsViewModel.editorTabs.forEach { tab ->
             tab.cells.forEach { cell ->
                 cell.collectVariablesToDisplay() }
         }

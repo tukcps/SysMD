@@ -1,11 +1,29 @@
 
-# SysML v2 textual and SysMD extensions
-## Creating a model
-### Header 
+---
+subtitle:     Building and Checking Models with SysMD Notebook
+author:       Christoph Grimm (RPTU Kaiserslautern-Landau, Chair of Cyber-Physical Systems)
+---
 
-t.b.d.
+[toc]
 
-### Packages
+In this section, we explain how to set up a model.
+A reader should have some knowledge of SysML v2 textual and maybe KerML.
+If not, one might have a look at the SysML v2 tutorial project.
+
+# Creating a model
+
+In order to create and evaluate a model, one first must have a suitable project -- like this one. 
+In a project, the model is created in cells (see previous section/tab!).
+
+## Header 
+
+To create models, we need cells in a language that is compilable.
+SysMD supports: 
+- KerML (except user-defined keywords)
+- SysML v2 (80% language support, use cases, views missing)
+- SysMD (for interactive modification of a compiled model)
+
+## Packages
 It is a good practice to avoid a hierarchically flat model.
 Structure a projects into different packages.
 For the kickstart we put everything in the package ```kickstart```.
@@ -17,7 +35,9 @@ package kickstart;
 
 Run this statement and check in the tree view left under _hasA_ what has been added:
 Initially, there are only the KerML standard libraries.
-### Import of namespaces
+
+## Import of namespaces
+
 Other namespaces can be imported to simplify the notations.
 For example, the standard package ```ScalarValues``` introduces standard data types like:
 
@@ -43,15 +63,16 @@ of adding model elements to packages.
 This allows us to mix modeling and description in different cells
 and permits to stepwise explain and introduce an element.
 
-## Constraint propagation 
+# Constraint propagation 
 
 One of the main features of SysMD Notebook is that it propagates constraints and checks the
 consistency of values and units.
 
-### Ranges
-For execution in the sense of constraint propagation, we use the profile ```Ranges```.
+## Ranges
+
+For execution in the sense of constraint propagation, we have defined a library ```Ranges```.
 It provides additional means to add constraints to numbers; the constraints can be added by
-- inheriting from InRange or, not in standard SysML v2, by adding _(min, max)_ after a type:
+- inheriting from InRange or, in standard SysML v2, by adding _(min, max)_ after a type:
 ```Markdown
 library package Ranges {
     // Abstract concept of a Range from which a Real is chosen
@@ -70,7 +91,8 @@ library package Ranges {
 - _AllInRange_ specifies that the constraint system shall be satisfied for all values in the range _min .. max_.
 
 Below, we give some simple examples.
-#### Example 1: Real values and its dependencies
+
+### Example 1: Real values and its dependencies
 Below, we give an example for SysML v2 textual code.
 Note that all values are constraint to some ranges in different units.
 Also note that there are dependencies between all the values:
@@ -96,7 +118,8 @@ Note that we can also use SysML v2's capabilities to create a more sophisticated
 the volume -- but for being brief, we just directly add some constraints to the volume in a direct way. 
 
 _Exercise:_ Try different values, units.
-#### Example 2: Boolean values and its dependencies
+
+### Example 2: Boolean values and its dependencies
 
 Boolean values can be instantiated via the class ```Boolean``` that is declared
 in the package ```ScalarValues```.
@@ -111,7 +134,7 @@ This package is imported by default, so we don't have to import it.
 
 Again, _a_ and _b_ might be some features anywhere in a model, and _a and b_ might be part of a SysML v2 _requirement_. 
 
-#### Example 3: Hybrid (mixed Boolean/arithmetic) dependencies
+### Example 3: Hybrid (mixed Boolean/arithmetic) dependencies
 
 Let's mix Boolean and arithmetic dependencies.
 This time, we give dependencies that are not satisfiable.
@@ -125,7 +148,7 @@ We use two arithmetic values, ```a, b``` and a Boolean condition ```c``` that sh
 ```
 _Exercise:_ In place of ```>``` try the relations ```<, ==```. Instead of assert try ```constraint``` .
 
-#### Units
+## Units
 
 Even more, the concrete values of a property or the multiplicity of a feature can be constrained by dependencies; 
 then, SysMD notebook computes the possible values while considering all constraints.
@@ -159,13 +182,14 @@ attribute time: TimeValue = 1.0 a {:>> unit="a";}
 attribute dateResult: TimeValue = date + time;
 ```
 
-### Vectors
+## Vectors
+
 There is also the possibility to use vectors instead of scalar values.
 They can be used with the same operations as normal values in addition to some special
 operations like the angle or cross-product.
 Below is an example for defining vectors:
 
-```SysML::kickstart::vecors
+```SysML::kickstart::vectors
 attribute a: CartesianPosition3dVector = (0.5, 1.5, 2.5) m;
 attribute b: CartesianPosition3dVector = (0.5, 1.5, 0.5) m; 
 attribute c: CartesianPosition3dVector = a + b { :>> range="-5.0..2.0, -1.0..4.0, 2.0..4.0"; }
@@ -209,9 +233,10 @@ In expressions, the following functions can be used:
 
 *Additional functions are available that permit computing over collections of values.*
 
-#### Functions over collections of values
+### Functions over collections of values
 
 SysMD also has pre-defined functions that query values and calculate aggregations over the collection.
+While they can be built with standard aggregation function, these functions allow users the concise analysis of system performances.
 Examples are the functions
 
 - ```sumOverParts(lambda-expr)```
@@ -229,7 +254,8 @@ The function is transitive; it will recursively search aggregate the executions 
 If this should not be done, the function _sumOverPartsNotTransitive_ can be used.
 This function only looks in directly owned parts.
 Instead of the sum, the product can be also calculated with the function _productOverParts_.
-#### Functions over specializations
+
+### Functions over specializations
 
 For some classes, its properties might be clear;
 e.g., for bicycles we can guess its mass, or for cars as well.
@@ -239,7 +265,8 @@ SysMD can help by the function ```bySpecific```.
 However, note that the function ```bySpecific``` does not add constraints; it just computes the
 possible mass by the consistent values of its specific subtypes.
 And this intention is shown in the textual model by having no specific constraint besides the fact that it is some Real-valued quantity.
-## Classification and Featuring
+
+### Classification and Featuring
 
 Modeling a domain mostly uses two relationships:
 
@@ -273,7 +300,8 @@ Generally, each feature is listed with:
 - Name (i.e. ```wheels```), followed by a double point,
 - Amount (multiplicity), that is a range of Integers like (i.e. [4..4]),
 - Class, that is what class describes the feature (i.e. “CarParts::Wheels”).
-### Classification
+
+## Classification
 
 For modeling a domain, we typically start with a taxonomy that classifies and explains the kind of things in a domain.
 For example, if we model Vehicles, we can classify different kinds of vehicles.
@@ -323,7 +351,8 @@ Boolean properties. They may also have a physical unit. Then, we specify:
 - Name (i.e., mass)
 - The specified type and range (i.e., Real (100 .. 100)
 - The required unit  (i.e, [kg])
-## User defined Calculations
+
+# User defined Calculations
 
 There is also a possibility to define user defined functions with any number of input variables .
 These functions can be defined once and used multiple times.
@@ -344,7 +373,7 @@ attribute f: MassValue         = 800.0 [kg];
 attribute energy2: EnergyValue = calcEnergy(e,f); 
 ```
 
-## Inheritance
+# Inheritance
 
 As of now, we skipped one important thing: inheritance.
 Inheritance allows us to reduce the modeling effort,

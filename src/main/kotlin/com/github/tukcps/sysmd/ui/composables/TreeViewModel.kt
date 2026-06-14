@@ -21,14 +21,13 @@ interface TreeViewNodeModel {
     val name: String
     fun children(): List<TreeViewNodeModel>
     fun icon(): ImageVector
-    fun element(): Any
+    fun element(): Any?
 }
 
 
 /**
- * Filesystem tree from which the function open describes the action on selection of a file.
- * @param root specifies the start of the file tree. It must implement the interface
- * TreeViewNodeModel.
+ * Tree view model for maintaining states of a tree view.
+ * @param root specifies the start of the tree. It must implement the interface TreeViewNodeModel.
  * @param onOpen the action for selection of a file (via click on a file)
  * @param onCreate the action for the creation of a file (via + icon right of folder)
  */
@@ -48,9 +47,10 @@ class TreeViewModel(
     // The last selected item that will be highlighted.
     var selectedItem = mutableStateOf(-1)
 
+    // An line in the tree view that can have children, and refers to some element
     inner class Item(val item: ExpandableItem) {
         val name: String get() = item.node.name
-        val element: Any get() = item.node.element()
+        val element: Any? get() = item.node.element()
         val level: Int get() = item.level
         val node: ExpandableItem = item
 
@@ -71,9 +71,11 @@ class TreeViewModel(
                 selectedItem.value = index
             }
         }
+
         fun select(index: Int){
             selectedItem.value = index
         }
+
         fun display(index: Int){
             onDisplay?.let { it(item.node) }
             selectedItem.value = index

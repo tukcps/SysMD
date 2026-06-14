@@ -3,9 +3,7 @@ package util.mockup
 import com.github.tukcps.sysmd.services.repositories.local.ProjectData
 import com.github.tukcps.sysmd.services.repositories.local.SysMDProjectService
 import io.github.tukcps.sysmlv2.api.entities.Branch
-import io.github.tukcps.sysmlv2.api.entities.Project
 import io.github.tukcps.sysmlv2.interchange.InterchangeProject
-import org.apache.logging.log4j.LogManager
 import java.util.*
 
 /**
@@ -30,7 +28,14 @@ class MockupSysMDProjectService: SysMDProjectService() {
      * @return A list of all projects
      */
     override fun getProjects(): List<ProjectData> = projectDataRepository
-    fun setProjects(projects: List<ProjectData>) { projectDataRepository.clear(); projectDataRepository.addAll(projects) }
+
+    /**
+     * Specific for the test mockup ... allows us to set projects to test-projects.
+     */
+    fun setProjects(projects: List<ProjectData>) {
+        projectDataRepository.clear()
+        projectDataRepository.addAll(projects)
+    }
 
     /**
      * Deletes a project only from internal structures
@@ -41,6 +46,4 @@ class MockupSysMDProjectService: SysMDProjectService() {
         projectDataRepository.remove(project)
         return project
     }
-
-    private val logger = LogManager.getLogger(SysMDProjectService::class.java)
 }

@@ -12,7 +12,6 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -20,30 +19,29 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.github.tukcps.sysmd.services.session.Session
 import com.github.tukcps.sysmd.settings
 import com.github.tukcps.sysmd.ui.composables.InputField
 import com.github.tukcps.sysmd.ui.composables.SysMDTooltipArea
 import com.github.tukcps.sysmd.ui.helper.fitMaxWidth
-import com.github.tukcps.sysmd.ui.viewmodel.TabsViewModel
-import java.io.File
+import com.github.tukcps.sysmd.ui.viewmodel.EditorTabsViewModel
+import kotlinx.io.files.Path
+import kotlinx.io.files.SystemFileSystem
 
 
 /**
  * Shows a list of projects
- * @param tabsViewModel the model of all tabs
+ * @param editorTabsViewModel the model of all tabs
  * @param reset method callback for reset
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProjectList(
-    sessionState: MutableState<Session>,
-    tabsViewModel: TabsViewModel, // -->
+    editorTabsViewModel: EditorTabsViewModel,
     projectListViewModel: ProjectListViewModel,
     reset: () -> Unit
 ) {
     // Where the projects are saved
-    val dataFolder           = remember { mutableStateOf(settings.dataFolder) }
+    val dataFolder = remember { mutableStateOf(settings.dataFolder) }
 
     if (projectListViewModel.showNewProjectDialog.value)
         UpdateProjectDialog(projectListViewModel)
@@ -87,13 +85,13 @@ fun ProjectList(
                             value = dataFolder.value,
                             onValueChange = { dataFolder.value = it },
                             singleLine = true,
-                            check = { File(dataFolder.value).isDirectory }
+                            check = {  SystemFileSystem.metadataOrNull(Path(dataFolder.value))?.isDirectory == true }
                         )
                         Column(Modifier.requiredWidth(40.dp)) {
                             Icon(
                                 modifier = Modifier.padding(all = 4.dp).height(16.dp).clickable {
                                     settings.dataFolder = dataFolder.value
-                                    projectListViewModel.getProjects()
+                                    projectListViewModel.getProjectsFromRepository()
                                 },
                                 imageVector = Icons.Default.Refresh,
                                 contentDescription = null,
@@ -123,7 +121,7 @@ fun ProjectList(
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             LazyColumn {
-                items(projectListViewModel.viewModelsOfProjects.value) { project ->
+                items(projectListViewModel.projectViewModels.value) { project ->
                     Project(project, projectListViewModel)
                 }
             }

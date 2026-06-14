@@ -1,5 +1,6 @@
 package quantitytests
 
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import util.assertIssue
 import util.assertNoIssues
@@ -28,7 +29,7 @@ class ISQTests {
     fun basicTestDefinitionWrong() = testSession("ISQ")  {
         loadKerML("""
             feature x: ISQ::LengthValue = 10.0 [V]; 
-        """)
+        """, Runlevel.VARIABLES)
         assertIssue("Unit")
     }
 
@@ -36,7 +37,7 @@ class ISQTests {
     fun derivedUnitTest() = testSession("ISQ")  {
         loadKerML("""
             feature x: ISQ::VolumeValue = 1000.0 [cm^3]; 
-        """)
+        """, Runlevel.VARIABLES)
         assertNoIssues()
         val x = global.resolveVar("x")
         assertNotNull(x)
@@ -52,9 +53,9 @@ class ISQTests {
             class VW :> Car { 
                 :>> power: ISQ::PowerValue(20..100) [kW]; 
             }
-        """)
+        """, Runlevel.VARIABLES)
         assertNoIssues()
-        val vw = global.resolveVar("VW::power")
+        val vw = solver.getVariable("VW::power")
         assertNotNull(vw)
         assertEquals(20.0, vw.min(), 0.000001)
     }

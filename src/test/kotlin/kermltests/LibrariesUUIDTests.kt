@@ -2,6 +2,7 @@ package kermltests
 
 import com.fasterxml.uuid.Generators
 import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.check.checkLibraryElementIds
 import com.github.tukcps.sysmd.services.check.checkOwnership
 import com.github.tukcps.sysmd.services.initialize
@@ -93,7 +94,7 @@ class LibrariesUUIDTests {
                     feature f2 subsets f1;
                 }; 
             """)
-        initialize()
+        initialize(Runlevel.MODEL)
         assertNoIssues()
         val x = global.resolve("x")?.memberElement
         assertNotNull(x)

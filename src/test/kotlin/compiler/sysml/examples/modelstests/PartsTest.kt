@@ -1,5 +1,6 @@
-package sysmlv2specificationtests.modelstests
+package compiler.sysml.examples.modelstests
 
+import com.github.tukcps.sysmd.services.Runlevel
 import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
@@ -8,7 +9,7 @@ import kotlin.test.Test
 
 class PartsTest {
     @Test
-    fun testParts() = testSession("Parts", initialize = false) {
+    fun testParts() = testSession("Parts", runlevel = Runlevel.NONE) {
         loadSysMLv2("""
                 package 'Parts Example-2' {
                     

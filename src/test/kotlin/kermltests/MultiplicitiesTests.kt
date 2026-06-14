@@ -7,6 +7,7 @@ import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
 import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.initialize
 import io.github.tukcps.aadd.values.IntegerRange
 import util.mockup.loadKerML
@@ -30,7 +31,7 @@ class MultiplicitiesTests {
             context.create(Identification(name="f"))
             context.addMultiplicity(IntegerRange(1,2))
         }
-        initialize()
+        initialize(Runlevel.ALL)
         val multiplicity = feature.multiplicity()
         assertTrue(multiplicity!!.variable is Variable, "After initialization a variable must be created for multiplicity")
         assertEquals(IntegerRange(1,2), multiplicity.variable!!.vectorQuantity.value.asIdd().getRange())
@@ -43,7 +44,7 @@ class MultiplicitiesTests {
         """)
         val f = global.resolve("f")!!.memberElement as Feature
         val multiplicity = f.multiplicity()
-        initialize()
+        initialize(Runlevel.ALL)
         assertTrue(multiplicity!!.variable is Variable, "After initialization a variable must be created for multiplicity")
         assertEquals(IntegerRange(1,2), multiplicity.variable!!.vectorQuantity.value.asIdd().getRange())
     }

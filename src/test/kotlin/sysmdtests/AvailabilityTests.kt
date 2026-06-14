@@ -2,6 +2,7 @@ package sysmdtests
 
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.Type
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.estimateFeature
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import io.github.tukcps.aadd.values.XBool
@@ -98,21 +99,20 @@ class AvailabilityTests {
             class c3 :> c1 {
                 feature Availability: ScalarValues::Boolean = if T>2040.0 ? true else false; 
             }
-            """)
+            """, Runlevel.ALL)
         assertNoIssues()
-        solver.propagate()
         val tc1 = global.resolve("c1")!!.member<Type>()!!
         global.resolve("c2") !!.member<Namespace>()
         assertEquals(XBool.X, tc1.resolveVar("Availability")?.vectorQuantity?.value as XBool)
         loadKerML("feature T: ScalarValues::Real(2020); ")
-        assertEquals(2020.0 ,global.resolveVar("T")!!.min(), 0.01)
-        var tc1Availability = global.resolveVar("c1::Availability")?.bdd()
+        assertEquals(2020.0 ,solver.getVariable("T")!!.min(), 0.01)
+        var tc1Availability = solver.getVariable("c1::Availability")?.bdd()
         assertEquals(XBool.False, tc1Availability as XBool)
         loadKerML("feature T: ScalarValues::Real(2050); ")
         assertNoIssues()
-        tc1Availability = global.resolveVar("c1::Availability")?.bdd()
+        tc1Availability = solver.getVariable("c1::Availability")?.bdd()
         assertEquals(True, tc1Availability as XBool)
-        assertEquals(2050.0, global.resolveVar("T")!!.min(), 0.01)
+        assertEquals(2050.0, solver.getVariable("T")!!.min(), 0.01)
     }
 
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE) @Ignore

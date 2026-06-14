@@ -16,14 +16,14 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import com.github.tukcps.sysmd.ui.viewmodel.TabsViewModel
+import com.github.tukcps.sysmd.ui.viewmodel.EditorTabsViewModel
 
 
 /**
  * Top Composable defining the agenda GUI
  */
 @Composable
-fun Board(boardViewModel: BoardViewModel, tabsViewModel: TabsViewModel) {
+fun Board(boardViewModel: BoardViewModel, editorTabsViewModel: EditorTabsViewModel) {
     val style = SpanStyle(
         color = MaterialTheme.colorScheme.onSurface,
         fontSize = MaterialTheme.typography.bodyMedium.fontSize
@@ -53,7 +53,7 @@ fun Board(boardViewModel: BoardViewModel, tabsViewModel: TabsViewModel) {
         ) {
             LazyColumn {
                 items(boardViewModel.issues().sortedByDescending { it.issue?.kind?.ordinal }) { item: IssueViewModel ->
-                    Issue(issueViewModel = item, editorTabsModel = tabsViewModel)
+                    Issue(issueViewModel = item, editorTabsModel = editorTabsViewModel)
                     Spacer(modifier = Modifier.height(8.dp))
                 }
             }

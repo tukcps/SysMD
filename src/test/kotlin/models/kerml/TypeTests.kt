@@ -3,6 +3,7 @@ package models.kerml
 import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.kerml.implementation.SpecializationImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.TypeImplementation
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.initialize
 import util.assertNoIssues
 import util.mockup.loadKerML
@@ -21,7 +22,7 @@ class TypeTests {
         addOwnedRelationship(SpecializationImplementation(b, a), b)
         val c = addOwnedMember(TypeImplementation(declaredName="c"), global)
         addOwnedRelationship(SpecializationImplementation(c, b), c)
-        initialize()
+        initialize(Runlevel.MODEL)
         assertEquals(true, c.specializes(b))
         assertEquals(false, a.specializes(b))
     }
@@ -33,7 +34,7 @@ class TypeTests {
         addOwnedRelationship(SpecializationImplementation(b, a), b)
         val c = addOwnedMember(TypeImplementation(declaredName="c"), global)
         addOwnedRelationship(SpecializationImplementation(c, b), c)
-        initialize()
+        initialize(Runlevel.MODEL)
         assertEquals(false, b.specializes(c))
         assertEquals(true, b.specializes(a))
     }
@@ -45,7 +46,7 @@ class TypeTests {
         addOwnedRelationship(SpecializationImplementation(b, a), b)
         val c = addOwnedMember(TypeImplementation(declaredName="c"), global)
         addOwnedRelationship(SpecializationImplementation(c, b), c)
-        initialize()
+        initialize(Runlevel.MODEL)
         val aSubtype = a.subtypes
         assertEquals("b", aSubtype.first().declaredName)
     }

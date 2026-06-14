@@ -4,7 +4,7 @@ import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Membership
 import com.github.tukcps.sysmd.model.kerml.implementation.ElementImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.MembershipImplementation
-import com.github.tukcps.sysmd.services.check.checkLibraryElementIds
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.check.checkOwnership
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.session.loadLibrary
@@ -60,7 +60,7 @@ class WorkInProgress {
         loadLibrary("Occurrences")
         loadLibrary("Links")
         loadLibrary("KerML")
-        initialize(5)
+        initialize(Runlevel.MODEL)
         val end = System.currentTimeMillis()
         val duration = end - start
         // reset
@@ -72,7 +72,7 @@ class WorkInProgress {
         loadLibrary("KerML.md")
         assertNoIssues()
         val end2 = System.currentTimeMillis()
-        initialize(5)
+        initialize(Runlevel.MODEL)
         assertNoIssues()
         val end3 = System.currentTimeMillis()
         val duration2 = end2 - start2

@@ -1,6 +1,6 @@
 ---
 subtitle: SysML v2 Textual Representation
-author: RPTU Kaiserslautern-Landau, Chair of Cyber-Physical Systems
+author: Christoph Grimm (RPTU Kaiserslautern-Landau, Chair of Cyber-Physical Systems)
 ---
 
 [toc]

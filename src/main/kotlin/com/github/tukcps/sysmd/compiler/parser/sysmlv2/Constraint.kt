@@ -39,7 +39,8 @@ fun SysMLv2.ConstraintDefinition() = CalculationDefinitionActions(semantics,
 fun SysMLv2.OccurrenceDefinitionPrefix() {
     BasicDefinitionPrefix()
 }
-fun SysMLv2.OccurrenceDefinitionPrefixStarts() = token.kind in setOf(ABSTRACT, VARIATION)
+fun SysMLv2.OccurrenceDefinitionPrefixStarts() =
+    token.kind in setOf(ABSTRACT, VARIATION) && (nextToken.kind == DEF || nextNextToken.kind == DEF)
 
 /**
  * ConstraintUsageDeclaration = UsageDeclaration ValuePart?

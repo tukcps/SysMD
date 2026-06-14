@@ -1,14 +1,13 @@
 package services
 
+import com.github.tukcps.sysmd.rest.entities.interchange.Meta
 import com.github.tukcps.sysmd.services.repositories.local.ProjectData
 import com.github.tukcps.sysmd.services.repositories.local.getCells
 import io.github.tukcps.sysmlv2.interchange.InterchangeProject
-import io.github.tukcps.sysmlv2.interchange.Meta
-import util.testSession
-import java.nio.file.Path
-import java.nio.file.Paths
-import java.time.OffsetDateTime
-import java.time.ZoneOffset
+import kotlinx.datetime.Instant
+import kotlinx.io.files.Path
+import kotlinx.io.files.SystemFileSystem
+import util.testProjectSession
 import kotlin.io.path.toPath
 import kotlin.io.path.writeText
 import kotlin.test.Test
@@ -22,20 +21,19 @@ class ProjectDataTest {
     fun saveAndLoadProjectData() {
 
         // Save
-        val testResourcesDir: Path = Paths.get("src/test/resources/saveAndLoadProjectData/project")
+        val testResourcesDir = Path("src/test/resources/saveAndLoadProjectData/project")
         val project = ProjectData(
-            project = InterchangeProject(
-                name = "name",
-                description = "description"),
-            directory = testResourcesDir,
-            meta = Meta(
-                index = hashMapOf("a" to "file1.md", "b" to "file2.kerml"), created =
-                    OffsetDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC))
+            project = InterchangeProject(name = "name", description = "description"),
+            directory = testResourcesDir
+        )
+        project.meta = Meta(
+            index = linkedMapOf("a" to "file1.md", "b" to "file2.kerml"),
+            created = Instant.parse("2026-06-08T15:30:00Z")
         )
         project.saveToInterchangeFiles()
 
         // Load
-        assertTrue(testResourcesDir.toFile().exists())
+        assertTrue( SystemFileSystem.exists(testResourcesDir))
         val project2 = ProjectData.fromInterchangeFiles(testResourcesDir)
         assertNotNull(project2)
         assertEquals(project2.name, "name")
@@ -44,8 +42,8 @@ class ProjectDataTest {
 
     @Test
     fun getCellsTest() {
-        val testResourcesDir: Path = Paths.get("src/test/resources/saveAndLoadProjectData/project")
-        val file = testResourcesDir.resolve("file1.md").toFile()
+        val testResourcesDir = Path("src/test/resources/saveAndLoadProjectData/project")
+        val file = Path(testResourcesDir, "file1.md")
         val cells = file.getCells()
         assertNotNull(cells)
         assertEquals(5, cells.size)
@@ -90,8 +88,8 @@ class ProjectDataTest {
             """.trimIndent()
         )
 
-        testSession(testDirectory = "saveAndLoadProjectData/project") {
-            val cells = project!!.getCellIndex()
+        testProjectSession(testDirectory = "saveAndLoadProjectData/project") {
+            val cells = project.getCells()
             assertNotNull(cells)
             assertEquals(5, cells["file1.md"]?.size)
             assertEquals("YAML", cells["file1.md"]?.first()?.language)

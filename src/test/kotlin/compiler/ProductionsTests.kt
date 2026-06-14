@@ -12,7 +12,7 @@ import com.github.tukcps.sysmd.compiler.parser.sysmlv2.RequirementDefinition
 import com.github.tukcps.sysmd.compiler.parser.sysmlv2.RequirementUsage
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.COMMA
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.EOF
-import com.github.tukcps.sysmd.services.session.SessionImplementation
+import com.github.tukcps.sysmd.services.session.implementation.SessionImplementation
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import util.assertNoIssues

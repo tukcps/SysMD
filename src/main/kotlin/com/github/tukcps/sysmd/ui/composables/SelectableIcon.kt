@@ -1,8 +1,12 @@
 package com.github.tukcps.sysmd.ui.composables
 
 import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.*
-import androidx.compose.material.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.material.Icon
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,8 +43,8 @@ fun SelectableIcon(
             .onPointerEvent(PointerEventType.Enter) { active.value = true }
             .onPointerEvent(PointerEventType.Exit) { active.value = false },
         delayMillis = 400, // in milliseconds
-        // offset = DpOffset((-16).dp, 0.dp), // too
-        // use required size to enforce fitting size
+        // offset = DpOffset((-16).dp, 0.dp),
+        // to use required size to enforce fitting size
         //offset the Icon to be fully shown in front of the line number
         tooltipPlacement = TooltipPlacement.CursorPoint(
             offset = DpOffset(0.dp, 16.dp)

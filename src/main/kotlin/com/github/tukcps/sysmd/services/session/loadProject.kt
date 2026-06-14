@@ -1,7 +1,7 @@
 package com.github.tukcps.sysmd.services.session
 
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.repositories.local.ProjectData
 import io.github.tukcps.sysmlv2.api.entities.ElementDAO
 
 /**
@@ -10,25 +10,17 @@ import io.github.tukcps.sysmlv2.api.entities.ElementDAO
  * the local files.
  * The method imports *all* elements into the session.
  * @param projectName Name of the project that will be imported.
- * @param initialize whether to also call initialize.
- * @param setProject whether to set the project metadata based on YAML cell
+ * @param maxRunlevel Max runlevel for which initialize is done.
  */
-fun Session.loadProject(
+fun ProjectSession.loadProject(
     projectName: String,
-    initialize: Boolean = true,
-    setProject: Boolean = true
+    maxRunlevel: Runlevel = Runlevel.NAMES_RESOLVED,
 ) {
 
     val loaded = SessionManager.projectService.getProjects().firstOrNull { it.name == projectName }?: return
 
     val elementData: Collection<ElementDAO> =
         loaded.data.filter { it.payloadElementSnapshot != null }.mapNotNull { it.payloadElementSnapshot }
-
     import(elementData)
-    if (setProject) {
-        project = ProjectData(loaded)
-    }
-    // identify Qualified Names, etc.
-    if (settings.initialize && initialize)
-        initialize(1)
+    initialize(Runlevel.minRunlevel(settings.runlevel, maxRunlevel))
 }

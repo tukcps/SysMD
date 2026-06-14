@@ -37,65 +37,68 @@ import com.github.tukcps.sysmd.ui.viewmodel.*
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun SettingsDialog(openDialog: MutableState<Boolean>) {
-    val tabs = listOf(
-        SettingsTabItem.Rendering,
-        SettingsTabItem.Login,
-        SettingsTabItem.Solver,
-        SettingsTabItem.Agenda
-    )
-    val selectedIndex: MutableState<Int> = remember { mutableStateOf(0) }
-    importSettings()
+    if (openDialog.value) {
+        val tabs = listOf(
+            SettingsTabItem.Rendering,
+            SettingsTabItem.Login,
+            SettingsTabItem.Solver,
+            SettingsTabItem.Board
+        )
+        val selectedIndex: MutableState<Int> = remember { mutableStateOf(0) }
+        importSettings()
 
-    DialogWindow(
-        onCloseRequest = { openDialog.value = false },
-        state = rememberDialogState(position = WindowPosition(Alignment.Center), size = DpSize(600.dp, 400.dp)),
-        title = "Settings",
-        resizable = false
-    ) {
-        Surface {
-            Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    SettingsTabMenu(tabs, selectedIndex = selectedIndex)
-                }
-
-                Row(modifier = Modifier.fillMaxWidth().weight(1f)) {
-                    Column(modifier = Modifier
-                            .fillMaxSize()
-                            .padding(10.dp)
-                            .verticalScroll(rememberScrollState())
-                    ) {
-                        loadSettings()
-                        tabs[selectedIndex.value].screen()
+        DialogWindow(
+            onCloseRequest = { openDialog.value = false },
+            state = rememberDialogState(position = WindowPosition(Alignment.Center), size = DpSize(600.dp, 400.dp)),
+            title = "Settings",
+            resizable = false
+        ) {
+            Surface {
+                Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        SettingsTabMenu(tabs, selectedIndex = selectedIndex)
                     }
-                }
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    Column {
-                        Row(
-                            modifier = Modifier.height(50.dp).fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
+
+                    Row(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(10.dp)
+                                .verticalScroll(rememberScrollState())
                         ) {
-                            TextButton(
-                                modifier = Modifier.padding(end = 15.dp),
-                                border = BorderStroke(1.dp, AppTheme.colors.iconRed),
-                                onClick = { openDialog.value = false }
-                            ) { Text("Cancel") }
-                            TextButton(
-                                modifier = Modifier.padding(start = 15.dp, end = 20.dp),
-                                border = BorderStroke(1.dp, AppTheme.colors.iconGreen),
-                                onClick = {
-                                    if (settingsViewModel.allOk()) {
-                                        openDialog.value = false
-                                        storeSettings()
-                                        exportSettings()
+                            loadSettings()
+                            tabs[selectedIndex.value].screen()
+                        }
+                    }
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        Column {
+                            Row(
+                                modifier = Modifier.height(50.dp).fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                TextButton(
+                                    modifier = Modifier.padding(end = 15.dp),
+                                    border = BorderStroke(1.dp, AppTheme.colors.iconRed),
+                                    onClick = { openDialog.value = false }
+                                ) { Text("Cancel") }
+                                TextButton(
+                                    modifier = Modifier.padding(start = 15.dp, end = 20.dp),
+                                    border = BorderStroke(1.dp, AppTheme.colors.iconGreen),
+                                    onClick = {
+                                        if (settingsViewModel.allOk()) {
+                                            openDialog.value = false
+                                            storeSettings()
+                                            exportSettings()
+                                        }
                                     }
-                                }
-                            ) { Text("  Save  ") }
-                            TextButton(
-                                modifier = Modifier.padding(end = 15.dp),
-                                border = BorderStroke(1.dp, AppTheme.colors.iconBlue),
-                                onClick = { tabs[selectedIndex.value].reset() }
-                            ) { Text("Default") }
+                                ) { Text("  Save  ") }
+                                TextButton(
+                                    modifier = Modifier.padding(end = 15.dp),
+                                    border = BorderStroke(1.dp, AppTheme.colors.iconBlue),
+                                    onClick = { tabs[selectedIndex.value].reset() }
+                                ) { Text("Default") }
+                            }
                         }
                     }
                 }
@@ -257,7 +260,7 @@ fun RenderingScreen() {
 
 
 @Composable
-fun AgendaScreen() {
+fun BoardScreen() {
     val d = settingsViewModel
 
     Column(

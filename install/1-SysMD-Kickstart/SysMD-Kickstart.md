@@ -1,9 +1,11 @@
 ---
 title:        SysMD Kickstart
 subtitle:     SysMD Notebook User Interface 
-author:       RPTU Kaiserslautern-Landau, Chair of Cyber-Physical Systems
-logo:         Files/icon.png
+author:       Christoph Grimm (RPTU Kaiserslautern-Landau, Chair of Cyber-Physical Systems)
+logo:         icon.png
 ---
+
+
 [toc]
 
 # SysMD Notebook Overview
@@ -17,7 +19,7 @@ The *tool* permits editing *documents* that consist of *cells* that can be
 The *language extension* extends SysML v2 to better support 
 - interactive work,  
 - integration in Notebook-like environments, 
-- formulation of constraints and ranges for which the expression syntax is carefully extended.
+- formulation of constraints and ranges does not require these extensions; however, we have libraries in standard KerML for that purpose.
 
 In the following, we first give an introduction to the SysMD Notebook, and then a  
 brief overview of the SysML v2 textual language constructs as supported by SysMD. 
@@ -32,14 +34,15 @@ SysMD Notebook consists of
 - In the right pane, **issues** and **errors** are listed. 
 
 ## Projects
+
 To create a new SysMD project, select the rider “Project” in the left panel.
 It is shown below.
 
-![Files/projects.png](Files/projects.png){width=600 height=500}
+![Files/projects.png](Files/projects.png){width=700 height=500}
  
 ### Creating a project
 
-Click on the large "+" icon.
+Click on the large "+" icon at the bottom of the Navigation pane.
 This opens a dialog in which you can enter the data for the project: 
 
 - name of the project, 
@@ -53,30 +56,42 @@ You can edit the path; the default is 'SysMD' in the user's home directory.
 
 ### Updating a project
 
-Click on the pencil in the project's card. 
-This will open the project update dialog, where you can update the project's data. 
+Right-Click (depending on the platform) in the project's card. 
+This will open the project update menu, where you can choose to
 
-### Deleting a project 
-
-Click on the trash bin in the project's card. 
-This will remove the project. 
+- Open/close a project session in which you can edit files, compile, solve, etc. them. 
+- Edit the project information.
+- Change the project's icon.
+- Add files to the project.
+- Open a browser to directly access the files edited.
+- delete the project.
 The project is actually not deleted, only marked as deleted by adding a suffix `.deleted`. 
 
 > In case something goes wrong, the project is still in the directory with a suffix '.deleted'.
 > In the files .project.json and .meta.json you find further settings - see below. 
 
-(Usages, Icon: t.b.d.)
+A project consists of files that are shown as tabs. 
+We describe them next. 
 
-## Files 
+## Files/Tabs
 
 A project consists of multiple _files_.
+They are persisted in an interchange project in the directory shown on the bottom of the navigation pane. 
 The files appear once a project is opened as tabs in the main window of SysMD Notebook.
+As a good practice, a file can be considered as a subchapter of a specification document 
+(or an interactive tutorial like this kickstart or the SysML v2 tutorial).
 
-### Creating, (re-)naming, and deleting Files
-In SysMD, each project consists of multiple files. 
-Each file is saved in the project's folder.
-The project's folder is in the user's home directory and by default called 'SysMD.' 
+### Creating, (re-)naming, and deleting files
+
+In SysMD, each project consists of multiple files.  
+Currently the files are in Markdown format.
+This allows us to exchange documents with stakeholders that are not modeling experts and do not have a focus on modeling.
+In future also SysML/KerML export following standard might be supported.
+Each file is saved in the interchange project's folder.
+
+The project's folder is by default in the user's home directory and by default called 'SysMD.' 
 In this folder the project folder is created in a directory with the same name as the project's initial name.
+
 In the project folder are
 
 - an initial file created together with the project. 
@@ -84,26 +99,20 @@ In the project folder are
 - a file `.meta.json` that holds an index of all files that belong to a project. 
 - additional files if added. 
 
-- Note that deleting a file will not remove it from the computer, it will only be removed from the index. 
+Note that deleting a file in SysMD will not delete it from the computer, 
+it will only be removed from the index. 
 
-### Adding and renaming files
-In SysMD Notebook, all files of a project are opened and shown as tabs in the main window.
-To add a file, click on the '+' right of the list of all tabs or files. 
+### Adding, deleting, and renaming files 
 
-![Files/addfile.png](Files/addfile.png){width=600 height=250}
-
-A new tab and a new file are created; you can rename it by using a secondary (right) mouse click on the tab.
-
-### Deleting files 
-(t.b.d. -- currently only closes the tab)
-
-
-Some options are not yet available via the UI. 
-
-- To have nice icon in the project list and the document, add a file `icon.png` to the project's
-folder `Files`.
+In SysMD Notebook, files of a project are opened and shown as tabs in the main window.
+We can close some of them in case there are too many files. 
+To add, delete, or rename files of a project, right-click on the file of an active project-session. 
+ 
+Note that some options are not yet available via the UI. 
+ 
 - Usages can be added to the file `.project.json`. 
-- Multiple source files are registered in `.meta.json`. 
+- Multiple source files are registered in `.meta.json`, but as SysMD uses MD, 
+  it in this respect is not compliant with the standard (export of compliant SysML and index is WiP). 
 - All files are saved in the Markdown format; 
   SysML v2 and KerML textual representations are saved in code parts of the Markdown documents.   
 
@@ -124,6 +133,7 @@ A cell can be of the kinds
   Both languages are translated into SysML’s KerML metamodel class instances and can be exchanged via the SysMLv2 API. 
 
 ### Add and Delete Cells
+
 A new SysMD document is empty in the beginning. 
 To add a cell, click on the small gray circle with a "+" that is shown. 
 
@@ -138,14 +148,15 @@ If the mouse is over an icon, SysMD notebook shows an explanation what action is
 To delete an element, select the trash bin, to edit the pencil, 
 and to minimize the document-cell, select the “-”.
 
-##- Documentation vs. Code-Cells. 
+## Documentation vs. Code-Cells. 
+
 Markdown is _easy_ to learn, efficient, and effective.
 The following text shows how to create a third level heading, how to emphasize; 
 just to give you an example. 
 
 *Double-click into the cell below!*  
 
-### Third level Heading; click here! 
+### Try: Third level Heading; click here! 
 
 Below an item list:
 - This is *emphasized*.
@@ -159,5 +170,3 @@ You want to learn more on Markdown?
 [[Learn more about Markdown by clicking this link!]](https://www.markdownguide.org/getting-started/)
 
 Note that SysMD Notebook also renders LaTeX equations like $\alpha = \sum_{x=0}^{100} x$.
-
-

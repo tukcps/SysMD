@@ -10,8 +10,9 @@ import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.ClassImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.PackageImplementation
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.session.SessionImplementation
+import com.github.tukcps.sysmd.services.session.implementation.SessionImplementation
 import io.github.tukcps.aadd.values.IntegerRange
 import util.assertNoIssues
 import util.testSession
@@ -41,7 +42,7 @@ class ActionsContextTests {
             ClassActions<Class>(this, ::ClassImplementation).parse {
                 create(Identification("klass"))
             }
-            model.initialize(1)
+            model.initialize(Runlevel.NAMES_RESOLVED)
             val klass = model.global.resolve("klass")?.memberElement as Class?
             assertNotNull(klass)
             assertTrue(model.status.issues.isEmpty(), model.status.issues.toString())
@@ -61,7 +62,7 @@ class ActionsContextTests {
                     addSpecialization("Base::Anything")
                 }
             }
-            model.initialize(1)
+            model.initialize(Runlevel.NAMES_RESOLVED)
             assertTrue(model.status.issues.isEmpty(), model.status.issues.toString())
             assertNotNull(model.global.resolve("pkg::klass")?.memberElement)
         }
@@ -78,7 +79,7 @@ class ActionsContextTests {
                 addTyping("Base::Anything")
                 addMultiplicity(IntegerRange(2, 3))
             }
-            model.initialize(1)
+            model.initialize(Runlevel.NAMES_RESOLVED)
             val feature = model.global.resolve("feature")?.memberElement
             assertNotNull(feature)
             val typing = feature.getOwnedElementOfType<FeatureTyping>()
@@ -100,7 +101,7 @@ class ActionsContextTests {
             semantics.addTyping("ScalarValues::Integer")
             semantics.addMultiplicity(IntegerRange(2, 3))
         }
-        initialize(1)
+        initialize(Runlevel.NAMES_RESOLVED)
         val multiplicity = feature.getOwnedElementOfType<Multiplicity>()
         assertNotNull(multiplicity)
         assertEquals("2 .. 3", multiplicity.typeConstraint.firstOrNull())

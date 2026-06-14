@@ -2,12 +2,14 @@ package models.kerml
 
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.*
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.check.checkConsistency
 import com.github.tukcps.sysmd.services.check.checkConsistencyOfBuilders
 import com.github.tukcps.sysmd.services.findRelationshipsFrom
 import com.github.tukcps.sysmd.services.findRelationshipsTo
 import com.github.tukcps.sysmd.services.initialize
 import util.mockup.loadKerML
+import util.testProjectSession
 import util.testSession
 import kotlin.test.*
 
@@ -55,7 +57,7 @@ class KerMLModelTests {
     /**
      * Check the delete function of the model.
      */
-    @Test fun deleteElementTest() = testSession {
+    @Test fun deleteElementTest() = testProjectSession {
         val pkg = PackageImplementation(declaredName="pkg")
         val pkgCreated = addOwnedMember(pkg, global)
 
@@ -163,7 +165,7 @@ class KerMLModelTests {
 
     /** A name can only be used once in a namespace, otherwise create will warn. */
     @Test fun defineElementTwiceWithNoChange() = testSession {
-        val a1 = addOwnedMember(ElementImplementation(declaredName="a"), global)
+        addOwnedMember(ElementImplementation(declaredName="a"), global)
         addOwnedMember(ElementImplementation(declaredName="a"), global)
         assertEquals(1, status.updatedValues.size)
     }
@@ -204,7 +206,7 @@ class KerMLModelTests {
         val rel = addOwnedRelationship(AnnotationImplementation(declaredName="rel",
             owningRelatedElement = global, annotatingElement = a, annotatedElement = b
         ), global)
-        initialize()
+        initialize(Runlevel.MODEL)
         val relsA = findRelationshipsFrom(a, "rel")
         // assertSame(createdRel, relsA.first())
         assertTrue(relsA.contains(rel))
@@ -230,7 +232,7 @@ class KerMLModelTests {
         }
         val updated = addOwnedMember(update, global)
         addOwnedRelationship(SpecializationImplementation(updated, anything), updated)
-        initialize()
+        initialize(Runlevel.ALL)
         assertEquals("prop2", updated.declaredName)
         assertEquals(created.elementId, updated.elementId)
     }

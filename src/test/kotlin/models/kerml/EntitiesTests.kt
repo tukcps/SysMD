@@ -1,9 +1,13 @@
 package models.kerml
 
-import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.model.kerml.Anything
+import com.github.tukcps.sysmd.model.kerml.Package
+import com.github.tukcps.sysmd.model.kerml.Specialization
+import com.github.tukcps.sysmd.model.kerml.getOwnedElementOfType
 import com.github.tukcps.sysmd.model.kerml.implementation.SpecializationImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.TypeImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.getOwned
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.initialize
 import util.testSession
 import kotlin.test.*
@@ -37,7 +41,7 @@ class EntitiesTests {
         val claCreated = addOwnedMember(cla, global)
         addOwnedRelationship(SpecializationImplementation(claCreated, anything))
         val specialization = claCreated.getOwnedElementOfType<Specialization>() !!
-        initialize()
+        initialize(Runlevel.MODEL)
         assertEquals(claCreated.allSupertypes().first(), specialization.general)
         assertEquals(specialization.specific, claCreated)
         assertEquals(specialization.specific.elementId, claCreated.elementId)

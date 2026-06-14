@@ -3,6 +3,7 @@
 package constraintnettests
 
 import com.github.tukcps.sysmd.model.kerml.Namespace
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.initialize
 import io.github.tukcps.aadd.BDD
 import io.github.tukcps.aadd.values.Range
@@ -64,7 +65,7 @@ class DDBasedDiscreteSolverTests {
            }
         """)
         assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
-        initialize()
+        initialize(Runlevel.ALL)
         solver.propagate()
         //FIXME: Exception even before assertions...
         assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}"
@@ -119,14 +120,12 @@ class DDBasedDiscreteSolverTests {
         loadKerML(catchExceptions = false, input = """
             feature x: ScalarValues::Real = [1.0..3.0];
             inv r { x >= 1.0+1.0}
-        """.trimIndent()
-        )
+        """)
         assertNoIssues()
-        initialize()
+        initialize(Runlevel.ALL)
         solver.propagate()
         assertNoIssues()
         val x = solver.getVariable("x")!!
-        // println(x.quantity.getMinAsDouble())
         assertTrue(x.vectorQuantity.getMinAsDouble() <= 2.0)
     }
 
@@ -135,8 +134,7 @@ class DDBasedDiscreteSolverTests {
         loadKerML(catchExceptions = false, input = """
             feature x: ScalarValues::Real = [1.0..3.0];
             inv r { x < 1.0+1.0 }
-        """.trimIndent()
-        )
+        """)
         assertNoIssues()
         solver.propagate()
         assertNoIssues()
@@ -245,7 +243,7 @@ class DDBasedDiscreteSolverTests {
             feature y: ScalarValues::Real = [1.0 .. 4.0];
             feature a: ScalarValues::Boolean = x >= y {:>> range = "true";}
         """)
-        initialize()
+        initialize(Runlevel.ALL)
         //TODO: The actual test^^
     }
 
@@ -259,7 +257,7 @@ class DDBasedDiscreteSolverTests {
             feature a: ScalarValues::Boolean = x >= y {:>> range = "true";}
             feature z: ScalarValues::Real = ITE(a, 3.0, 2.0) {:>> range = "1.0 .. 2.0";}
         """)
-        initialize()
+        initialize(Runlevel.ALL)
         //TODO: The actual test^^
     }
 
@@ -545,7 +543,6 @@ class DDBasedDiscreteSolverTests {
             feature g: ScalarValues::Boolean = true or false;
             """)
         // There is no exor function ... yet. Either we add one ...
-        initialize()
         solver.propagate()
         assertNoIssues()
         val a = solver.getVariable("a")
@@ -626,12 +623,8 @@ class DDBasedDiscreteSolverTests {
             inv constr { 
                 arbitraryConstraint1 and arbitraryConstraint2 or arbitraryConstraint3 
             }
-        """)
+        """, Runlevel.ALL)
         assertNoIssues()
-        // println("reactToUserChangesTest before initialization")
-        initialize()
-        // println("reactToUserChangesTest before 1. propagation")
-        solver.propagate()
         val constraint = solver.getVariable("constr")
         val arbitraryConstraint3 = solver.getVariable("arbitraryConstraint3")
         //1. One related constraint should be introduced: aC1 and aC2 evaluate to false => aC3 has to be true
@@ -643,6 +636,7 @@ class DDBasedDiscreteSolverTests {
         arbitraryConstraint3!!.expression = "false"
         arbitraryConstraint3.compileExpression()
         // println("reactToUserChangesTest before 2. propagation")
+        runlevel = Runlevel.VARIANCE_CHECKED
         solver.propagate()
         //This scenario should result in not satisfiable Constraint.
         assertEquals("Contradiction", constraint!!.vectorQuantity.bdd().toString())
@@ -897,17 +891,15 @@ class DDBasedDiscreteSolverTests {
     @Test
     fun evenCycleFeasible() = testSession("ScalarValues") {
         val n = 4
-        loadKerML(cycle("x", n).joinToString("\n"))
-        solver.propagate()
-        assertEquals(0, status.issues.size)
+        loadKerML(cycle("x", n).joinToString("\n"), Runlevel.ALL)
+        assertNoIssues()
 
         for(i in 1 .. n) {
             val v = solver.getVariable("x$i")!!.vectorQuantity.value
             assertEquals("Unknown", v.toString())
         }
 
-        loadKerML("feature y : ScalarValues::Boolean(true) = x1;")
-        solver.propagate()
+        loadKerML("feature y : ScalarValues::Boolean(true) = x1;", Runlevel.ALL)
 
         for(i in 1 .. n) {
             val v = solver.getVariable("x$i")!!.vectorQuantity.value

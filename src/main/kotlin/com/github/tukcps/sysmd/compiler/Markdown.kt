@@ -2,10 +2,10 @@ package com.github.tukcps.sysmd.compiler
 
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.implementation.TextualRepresentationImplementation
+import com.github.tukcps.sysmd.services.repositories.local.Language
 import com.github.tukcps.sysmd.services.repositories.local.ProjectUsageData
 import com.github.tukcps.sysmd.services.repositories.local.getMdSource
-import com.github.tukcps.sysmd.services.session.Session
-import com.github.tukcps.sysmd.ui.viewmodel.TextualRepresentationViewModel.Companion.Language
+import com.github.tukcps.sysmd.services.session.ProjectSession
 import org.commonmark.Extension
 import org.commonmark.ext.front.matter.YamlFrontMatterBlock
 import org.commonmark.ext.front.matter.YamlFrontMatterExtension
@@ -25,17 +25,17 @@ import java.net.URI
  * @param createTextualRepresentationIn The namespace in the KerML model into which Textual Representations and
  * Documentation elements will be added.
  */
-fun Session.importMD(input: String, createTextualRepresentationIn: Namespace?) {
+fun ProjectSession.importMD(input: String, createTextualRepresentationIn: Namespace?) {
     val inputLines = input.lines()
 
     val extensions: List<Extension> = listOf(TablesExtension.create(), YamlFrontMatterExtension.create())
 
     // We use the Commonmark Markdown-Parser and include SourceSpans.
-    val parser: Parser = Parser.builder()
+    val mdParser: Parser = Parser.builder()
         .extensions(extensions)
         .includeSourceSpans(IncludeSourceSpans.BLOCKS_AND_INLINES).build()
 
-    val document: Node = parser.parse(input)
+    val document: Node = mdParser.parse(input)
 
     // The currently edited heading level. As a hashmap Level -> Namespace.
     // val headings = HeadingMgr(owningAnnotation)
@@ -71,7 +71,7 @@ fun Session.importMD(input: String, createTextualRepresentationIn: Namespace?) {
                 while (yaml != null) {
                     try {
                         when (yaml.key) {
-                            "usage"      -> yaml.values.firstOrNull()?.let { it.split(",").forEach { str -> project?.addUsage(ProjectUsageData(URI(str.trim()))) } }
+                            "usage"      -> yaml.values.firstOrNull()?.let { it.split(",").forEach { str -> project.addUsage(ProjectUsageData(URI(str.trim()))) } }
                         }
                     } catch (e: Exception) {
                         status.fatal(message = "Error while parsing YAML", cause = e)

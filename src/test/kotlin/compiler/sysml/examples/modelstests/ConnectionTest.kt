@@ -1,6 +1,7 @@
-package sysmlv2specificationtests.modelstests
+package compiler.sysml.examples.modelstests
 
 import com.github.tukcps.sysmd.exceptions.Issue
+import com.github.tukcps.sysmd.services.Runlevel
 import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Test
@@ -14,7 +15,7 @@ class ConnectionTest {
      * same names in later usage. Must be used to identify end feature, not to name a new one.
      */
     @Test
-    fun testConnection() = testSession("Connections", "Parts", initialize = false) {
+    fun testConnection() = testSession("Connections", "Parts", runlevel = Runlevel.NONE) {
         loadSysMLv2("""
             package 'Connections Example' {
                 part def WheelHubAssembly;

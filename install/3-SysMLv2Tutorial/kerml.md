@@ -1,8 +1,8 @@
 ---
-logo: Files/logo.png
 subtitle: KerML - The Kernel Modeling Language
-author: RPTU Kaiserslautern-Landau, Chair of Cyber-Physical Systems
+author: Christoph Grimm (RPTU Kaiserslautern-Landau, Chair of Cyber-Physical Systems)
 ---
+
 [toc]
 
 ---

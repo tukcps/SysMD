@@ -1,6 +1,6 @@
 ---
 subtitle:   SysML v2 API 
-author:     RPTU Kaiserslautern-Landau, Chair of Cyber-Physical Systems
+author:     Christoph Grimm (RPTU Kaiserslautern-Landau, Chair of Cyber-Physical Systems)
 ---
 
 [toc]

@@ -3,12 +3,13 @@ package com.github.tukcps.sysmd.ui.syntaxhighlighting
 import androidx.compose.runtime.MutableState
 import androidx.compose.ui.text.input.TextFieldValue
 import com.github.tukcps.sysmd.model.kerml.Element
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.session.Session
-import com.github.tukcps.sysmd.services.session.SessionManager
-import com.github.tukcps.sysmd.ui.viewmodel.TabsViewModel
+import com.github.tukcps.sysmd.services.session.SessionManager.sessionService
+import com.github.tukcps.sysmd.services.session.implementation.SessionImplementation
+import com.github.tukcps.sysmd.ui.viewmodel.EditorTabsViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import org.apache.logging.log4j.LogManager
 
 /**
@@ -33,16 +34,22 @@ val indexerScope = CoroutineScope(Dispatchers.Default)
 object Indexer {
 
     var indexerSession: Session? = null
-    var tabsViewModel: TabsViewModel? = null
+    var editorTabsViewModel: EditorTabsViewModel? = null
     var updatedTextFields = mutableSetOf<TextFieldValue>()
-
-
+    
     fun indexAllTabs() {
         indexerSession?.status?.reset()
-        indexerSession?.loadUsages()
-        tabsViewModel?.editorTabs?.forEach {
+        editorTabsViewModel?.editorTabs?.forEach {
             it.cells.forEach { cell ->
-                cell.compile(propagate = false)
+                editorTabsViewModel?.sessionIdState?.value?.let { sessionId ->
+                sessionService.updateModel(
+                    session = sessionId,
+                    code = cell.body.text,
+                    language = cell.language.value,
+                    namespace = cell.namespace.value,
+                    runlevel = Runlevel.NAMES_RESOLVED
+                )
+                }
             }
         }
     }
@@ -54,12 +61,12 @@ object Indexer {
     /**
      * Initializes the Index lists by scanning all Markdown files of the SysMD data Folder
      */
-    fun initializeIndexes(tabsViewModel: TabsViewModel) {
+    fun initializeIndexes(editorTabsViewModel: EditorTabsViewModel) {
         try {
-            Indexer.tabsViewModel = tabsViewModel
-            indexerSession = SessionManager.startSession()
+            Indexer.editorTabsViewModel = editorTabsViewModel
+            indexerSession = SessionImplementation()
             indexAllTabs()
-            logger.info("Indexed project $tabsViewModel with ${indexerSession?.status?.issues?.size} issues")
+            logger.info("Indexed project $editorTabsViewModel with ${indexerSession?.status?.issues?.size} issues")
         } catch (e: Exception) {
             logger.info(e.message)
         }

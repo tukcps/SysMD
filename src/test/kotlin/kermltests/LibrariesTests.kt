@@ -1,6 +1,7 @@
 package kermltests
 
 import com.github.tukcps.sysmd.model.kerml.Association
+import com.github.tukcps.sysmd.services.Runlevel
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
@@ -76,7 +77,7 @@ class LibrariesTests {
         assertNoIssues()
 
         val ranges = javaClass.getResourceAsStream("/libraries/Ranges.kerml")!!.bufferedReader().use { it.readText() }
-        settings.initialize=false
+        settings.runlevel= Runlevel.NONE
         loadKerML(ranges)
         assertNoIssues()
     }

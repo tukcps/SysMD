@@ -1,6 +1,7 @@
 package constraintnettests
 
 import com.github.tukcps.sysmd.model.kerml.Feature
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import util.assertNoIssues
 import util.mockup.loadSysMLv2
@@ -18,8 +19,7 @@ class CalculationDefinitionTests {
                 return result: ScalarValues::Real = x*2.0; 
             }
             attribute a: ScalarValues::Real = f(2.0); 
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
         val f = global.resolve("f")
         val a = global.resolveVar("a")
@@ -42,9 +42,8 @@ class CalculationDefinitionTests {
             attribute b: SpeedValue = 26.0 [km/h];
             attribute c: SpeedValue = Velocity(a, b);
             attribute c2: SpeedValue = Velocity(10.0 [m/s], b);
-        """)
+        """, Runlevel.ALL)
         assertNoIssues()
-        solver.propagate()
         assertEquals(global.resolve("Velocity::v1")!!.member<Feature>()!!.direction, Feature.FeatureDirectionKind.IN)
         assertEquals(global.resolve("Velocity::v2")!!.member<Feature>()!!.direction, Feature.FeatureDirectionKind.IN)
         assertEquals(global.resolve("Velocity::a")!!.member<Feature>()!!.direction, null)
@@ -67,8 +66,7 @@ class CalculationDefinitionTests {
             attribute b1: ISQ::MassValue = 20.0 [kg];
             attribute c: ISQ::EnergyValue = Energy(a,b);
             attribute c1: ISQ::EnergyValue = Energy(a1,b1);
-         """)
-        solver.propagate()
+         """, Runlevel.ALL)
         assertNoIssues()
         assertTrue(10000.0 in global.resolveVar("c")!!.vectorQuantity.aadd().getRange())
         assertTrue(40.0 in global.resolveVar("c1")!!.vectorQuantity.aadd().getRange())
@@ -88,8 +86,7 @@ class CalculationDefinitionTests {
             attribute b1: LengthValue = (10.0,1.0,17.0) [m];
             attribute c: LengthValue = Distance(a,b);
             attribute c1: LengthValue = Distance(a,b1);
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
         assertTrue(15.0 in global.resolveVar("c")!!.vectorQuantity.aadd().getRange())
         assertTrue(5.0 in global.resolveVar("c1")!!.vectorQuantity.aadd().getRange())
@@ -113,8 +110,7 @@ class CalculationDefinitionTests {
             attribute d: ScalarValues::Integer = 9;
             attribute e: ScalarValues::Integer = SumOfFourValues(a,b,c,d);
             attribute e1: ScalarValues::Integer = SumOfFourValues(d,c,b,a);
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
         assert(30 in global.resolveVar("e")!!.vectorQuantity.idd().getRange())
         assert(30 in global.resolveVar("e1")!!.vectorQuantity.idd().getRange())
@@ -139,8 +135,7 @@ class CalculationDefinitionTests {
             attribute d2: ScalarValues::Integer;
             attribute e1: Ranges::IntegerInRange = SumOfFourValues(a1,b1,c1,d1) {:>> range = "35..35";}
             attribute e2: Ranges::IntegerInRange = SumOfFourValues(8,7,6,d2) {:>> range = "40..40";}
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
         assertEquals(14, global.resolveVar("d1")!!.vectorQuantity.idd().getRange().min)
         assertEquals(14, global.resolveVar("d1")!!.vectorQuantity.idd().getRange().max)
@@ -165,8 +160,7 @@ class CalculationDefinitionTests {
                     attribute e2: Ranges::IntegerInRange = SumOfFourValues(d2) {:>> range = "17..17";}
                  }
              }    
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
         assertEquals(13, global.resolveVar("Test::TestModule::d1")!!.vectorQuantity.idd().getRange().min)
         assertEquals(13, global.resolveVar("Test::TestModule::d1")!!.vectorQuantity.idd().getRange().max)
@@ -191,8 +185,7 @@ class CalculationDefinitionTests {
                     attribute e2: Ranges::RealInRange = SumOfFourValues(d2) {:>> range = "36.0..36.0";}
                  }
              }    
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
         assertEquals(14.0, global.resolveVar("Test::TestModule::d1")!!.vectorQuantity.aadd().getRange().min, 0.000001)
         assertEquals(14.0, global.resolveVar("Test::TestModule::d1")!!.vectorQuantity.aadd().getRange().max, 0.000001)
@@ -222,8 +215,7 @@ class CalculationDefinitionTests {
                     //attribute e2: ScalarValues::Integer(14) = SumOfFourValues(a,b2); 
                  }
             }
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
         assertEquals(6, global.resolveVar("Test::TestModule::x")!!.vectorQuantity.idd().getRange().min)
         assertEquals(7, global.resolveVar("Test::TestModule::y")!!.vectorQuantity.idd().getRange().max)
@@ -255,9 +247,8 @@ class CalculationDefinitionTests {
                 attribute e1: Ranges::RealInRange = SumOfFourValues(a,b,c1,d1) {:>> range = "35.0..35.0";} 
                 attribute e2: Ranges::RealInRange = SumOfFourValues(a,b,c2,d2) {:>> range = "35.0..35.0";} 
              } 
-             """)
-        solver.propagate()
-        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
+        """, Runlevel.ALL)
+        assertNoIssues()
         assertEquals(14.0, global.resolveVar("TestModule::d1")!!.vectorQuantity.aadd().getRange().min,0.000001)
         assertEquals(14.0, global.resolveVar("TestModule::d1")!!.vectorQuantity.aadd().getRange().max,0.000001)
         assert(14.0 in global.resolveVar("TestModule::d1")!!.vectorQuantity.aadd().getRange())
@@ -285,9 +276,8 @@ class CalculationDefinitionTests {
                     attribute i: ScalarValues::Real;
                     attribute j: Ranges::RealInRange = SumOfFourValues(h,i) {:>> range = "14.0..14.0";}
                  } 
-             """)
-        solver.propagate()
-        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
+             """, Runlevel.ALL)
+        assertNoIssues()
         assertEquals(7.0, global.resolveVar("TestModule::b")!!.vectorQuantity.aadd().getRange().min,0.000001)
         assertEquals(7.0, global.resolveVar("TestModule::b")!!.vectorQuantity.aadd().getRange().max,0.000001)
         assert(7.0 in global.resolveVar("TestModule::b")!!.vectorQuantity.aadd().getRange())
@@ -315,12 +305,11 @@ class CalculationDefinitionTests {
                     attribute g: ISQ::EnergyValue = Energy(e,f) {:>> range = "10000..10000";}
                 }
             } 
-        """)
+        """, Runlevel.ALL)
         val a = global.resolve("Test::TestModule::a")
         assertNotNull(a)
         val b = global.resolve("Test::TestModule::b")
         assertNotNull(b)
-        solver.propagate()
         assertNoIssues()
         assert(10000.0 in global.resolveVar("Test::TestModule::c")!!.vectorQuantity.aadd().getRange())
         //sqrt could be positive or negative value
@@ -341,8 +330,7 @@ class CalculationDefinitionTests {
                 return result: ScalarValues::Integer = if i=="QM" ? 1 else 0;           
             }              
             attribute a: ScalarValues::Integer = ConvertASILtoInt("QM"); 
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
         //sqrt could be positive or negative value
         assertEquals(1, global.resolveVar("a")!!.vectorQuantity.idd().getRange().min)
@@ -358,8 +346,7 @@ class CalculationDefinitionTests {
             } 
  
             attribute a: ScalarValues::String = ConvertIntToASIL(1);
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
         assertEquals("A", global.resolveVar("a")!!.vectorQuantity.value.asStrDD().toString())
     }
@@ -384,8 +371,7 @@ class CalculationDefinitionTests {
                 return result: ScalarValues::String = ConvertIntToASIL(part1asInt+part2asInt); 
             }
             attribute a: ScalarValues::String = ASILDecomposition("A","QM");                
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
         //sqrt could be positive or negative value
         assertEquals("A", global.resolveVar("a")!!.vectorQuantity.value.asStrDD().toString())
@@ -401,9 +387,7 @@ class CalculationDefinitionTests {
             
             attribute e: ScalarValues::Integer.
             attribute f: ScalarValues::String("QM") = ConvertIntToASIL(e).                 
-             """
-        )
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
         //sqrt could be positive or negative value
         assertEquals(2, global.resolveVar("e")!!.vectorQuantity.idd().getRange().min)
@@ -419,9 +403,7 @@ class CalculationDefinitionTests {
             
             attribute e: ScalarValues::Integer;
             attribute f: ScalarValues::String("A") = ConvertIntToASIL(e);            
-             """
-        )
-        solver.propagate()
+        """, Runlevel.SOLVED)
         assertNoIssues()
         //sqrt could be positive or negative value
         assertEquals(0, global.resolveVar("e")!!.vectorQuantity.idd().getRange().min)
@@ -464,8 +446,7 @@ class CalculationDefinitionTests {
             attribute stopDist: ISQ::LengthValue = StoppingDistance(speed, brakeForce, mass) {
                 :>> range = "0..70.0"; :>> unit = "m";
             }
-        """)
-        solver.propagate()
+        """, Runlevel.SOLVED)
         assertNoIssues()
         assertEquals(62.5, global.resolveVar("stopDist")!!.vectorQuantity.valuesIn("m")[0].asAadd().getRange().min,0.000001)
         assertEquals(70.0, global.resolveVar("stopDist")!!.vectorQuantity.valuesIn("m")[0].asAadd().getRange().max,0.000001)

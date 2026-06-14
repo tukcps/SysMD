@@ -2,7 +2,7 @@ package com.github.tukcps.sysmd.ui.paneright
 
 import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.ui.styles.AppTheme
-import com.github.tukcps.sysmd.ui.viewmodel.TabsViewModel
+import com.github.tukcps.sysmd.ui.viewmodel.EditorTabsViewModel
 
 /**
  * This class stores additional information to the qualified names of the
@@ -54,7 +54,7 @@ class IssueViewModel(
      * depending on the available information
      */
     fun errorOriginString(
-        editorTabsModel: TabsViewModel?,
+        editorTabsModel: EditorTabsViewModel?,
     ): String {
         // val editorTabModel = editorTabsModel?.active
         var str = "Causing input not related to particular tab"
@@ -62,7 +62,7 @@ class IssueViewModel(
             editorTabsModel?.editorTabs?.forEach { editorTabModel ->
                 val index = editorTabModel.cells.indexOfFirst { cell -> cell.body.text == getInput() }
                 if (index >= 0) {
-                    str = "${editorTabModel.tabTitle.value}, cell ${index+1}" + if (getLine() != null && getLine()!! > 0) ", line: ${getLine()}" else ""
+                    str = "${editorTabModel.nameState.value}, cell ${index+1}" + if (getLine() != null && getLine()!! > 0) ", line: ${getLine()}" else ""
                 }
             }
         }
@@ -117,7 +117,7 @@ class IssueViewModel(
 
 
     override fun toString(): String {
-        return "AgendaElement: (QualifiedName: $qualifiedName, ErrorMessage: ${issue?.message}, Line: ${issue?.token?.lineNo})"
+        return "BoardElement: (QualifiedName: $qualifiedName, ErrorMessage: ${issue?.message}, Line: ${issue?.token?.lineNo})"
     }
 
     override fun equals(other: Any?): Boolean {

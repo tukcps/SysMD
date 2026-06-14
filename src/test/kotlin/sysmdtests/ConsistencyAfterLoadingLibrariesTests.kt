@@ -1,11 +1,12 @@
 package sysmdtests
 
 import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.check.checkLibraryElementIds
 import com.github.tukcps.sysmd.services.check.checkOwnership
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.session.Session
-import com.github.tukcps.sysmd.services.session.SessionImplementation
+import com.github.tukcps.sysmd.services.session.implementation.SessionImplementation
 import com.github.tukcps.sysmd.services.session.loadLibrary
 import org.junit.jupiter.api.parallel.ResourceAccessMode.READ_WRITE
 import org.junit.jupiter.api.parallel.ResourceLock
@@ -152,7 +153,7 @@ class ConsistencyAfterLoadingLibrariesTests {
         val session = SessionImplementation(libraries = mutableListOf())
         session.loadLibrary("Base")
         session.loadLibrary("ScalarValues")
-        session.initialize()
+        session.initialize(Runlevel.MODEL)
         val elements = session.export().map { it.payloadElementSnapshot!! }
         // val sources = elements.filter { it.declaredName in setOf("source", "target") }
         assertTrue(session.status.issues.isEmpty(), session.status.issues.toString())
@@ -177,7 +178,7 @@ class ConsistencyAfterLoadingLibrariesTests {
     @Test
     fun readISO26262fromResources() = testSession {
         loadLibrary("ISO26262")
-        initialize()
+        initialize(Runlevel.MODEL)
         checkOwnership()
         assertNoIssues()
     }
@@ -194,8 +195,7 @@ class ConsistencyAfterLoadingLibrariesTests {
         assertTrue(status.issues.isEmpty(), "${status.issues}")
         assertTrue(4 <= global.getOwnedElementsOfType<Element>().size)
         checkForOneGlobal(this)
-        settings.initialize = true
-        initialize()
+        initialize(Runlevel.MODEL)
         checkOwnership()
         assertTrue(status.issues.isEmpty(), "${status.issues}")
     }

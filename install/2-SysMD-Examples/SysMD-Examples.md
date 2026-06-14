@@ -1,6 +1,7 @@
 ---
 title: SysMD Examples
-author: University of Kaiserslautern-Landau, Chair of Cyber-Physical Systems
+author: Christoph Grimm (University of Kaiserslautern-Landau, Chair of Cyber-Physical Systems)
+logo: icon.png
 ---
 
 # Examples

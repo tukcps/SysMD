@@ -27,7 +27,14 @@ fun EditorEmptyView() = Box(Modifier.fillMaxSize()) {
         )
 
         Text(
-            "No project in active session; select one in the navigation panel left.",
+            "No project in active session? Select one in the navigation pane left.",
+            color = LocalContentColor.current.copy(alpha = 0.60f),
+            fontSize = 18.sp,
+            modifier = Modifier.align(Alignment.CenterHorizontally).padding(6.dp)
+        )
+
+        Text(
+            "Project selected, but no file chosen? Select one from the active project in the pane left.",
             color = LocalContentColor.current.copy(alpha = 0.60f),
             fontSize = 18.sp,
             modifier = Modifier.align(Alignment.CenterHorizontally).padding(6.dp)

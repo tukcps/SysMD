@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,13 +22,13 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.github.tukcps.sysmd.services.repositories.local.Language
 import com.github.tukcps.sysmd.ui.composables.SysMDTooltipArea
+import com.github.tukcps.sysmd.ui.rendering.Markdown
 import com.github.tukcps.sysmd.ui.styles.AppTheme
+import com.github.tukcps.sysmd.ui.viewmodel.CellViewModel
 import com.github.tukcps.sysmd.ui.viewmodel.InternalRefReference
 import com.github.tukcps.sysmd.ui.viewmodel.MyIcons
-import com.github.tukcps.sysmd.ui.viewmodel.TextualRepresentationViewModel
-import com.github.tukcps.sysmd.ui.viewmodel.TextualRepresentationViewModel.Companion.Language.*
-import com.github.tukcps.sysmd.ui.viewmodel.TextualRepresentationViewModel.Companion.compilableLanguages
 
 data class CellAction(
     val icon: ImageVector,
@@ -100,8 +99,7 @@ fun CellActionMenu(
 
 @Composable
 fun CellToolbar(
-    model: TextualRepresentationViewModel,
-    index: Int,
+    model: CellViewModel,
     isSelected: Boolean,
     collapsed: MutableState<Boolean>,
     onEditToggle: () -> Unit,
@@ -123,7 +121,7 @@ fun CellToolbar(
 
     val menuActions = buildList {
         // Collapse/Expand action
-        if (model.language.value != YAML) {
+        if (model.language.value != Language.YAML) {
             add(CellAction(
                 icon = if (collapsed.value) MyIcons.Add else MyIcons.Remove,
                 label = if (collapsed.value) "Expand Cell" else "Collapse Cell",
@@ -133,7 +131,7 @@ fun CellToolbar(
         }
 
         // Compile action (only for compilable languages)
-        if (model.language.value in compilableLanguages) {
+        if (model.language.value.isCompilable()) {
             // Add separator if we have previous actions
             if (isNotEmpty()) {
                 add(CellAction(
@@ -230,7 +228,7 @@ fun CellToolbar(
 @Suppress("EXPERIMENTAL_IS_NOT_ENABLED")
 @Composable
 fun Cell(
-    model: TextualRepresentationViewModel,
+    model: CellViewModel,
     index: Int,
     selectedIndex: MutableState<Int>,
     selectedItem: MutableState<Boolean>,
@@ -293,7 +291,6 @@ fun Cell(
                     // Toolbar with actions
                     CellToolbar(
                         model = model,
-                        index = index,
                         isSelected = isSelected(),
                         collapsed = collapsed,
                         onEditToggle = changeEditStatusDescription,
@@ -319,7 +316,7 @@ fun Cell(
                         // Content area
                         if (index == selectedIndex.value && selectedItem.value) {
                             Column {
-                                LanguageDropdown(model.language, model.namespace, model.bodyState, ::onLanguageChange)
+                                LanguageDropdown(model.language, model.namespace, ::onLanguageChange)
 
                                 Row(modifier = Modifier.onGloballyPositioned { coordinates ->
                                     mainRowWidth = with(density) { coordinates.size.width.toDp() }
@@ -331,59 +328,58 @@ fun Cell(
                                         model.annotations,
                                         model.resultsAnnotations,
                                         readOnly = false,
-                                        useHighlighting = model.language.value in compilableLanguages,
+                                        useHighlighting = model.language.value.isCompilable(),
                                         cellWasChanged,
                                         enableElementListScrolling
                                     )
                                 }
                             }
                         } else {
-                            if (model.sessionState.value.project?.directory != null)
-                                when(model.language.value) {
-                                    YAML -> Frontmatter(model.tabViewModel.tabsViewModel, model.bodyState)
-                                    in setOf(KerML, SYS_MD, SYS_ML) -> {
-                                        Column {
-                                            Row(Modifier.background(MaterialTheme.colorScheme.background)
-                                                .fillMaxWidth()
-                                                .onGloballyPositioned { coordinates ->
-                                                    mainRowWidth = with(density) { coordinates.size.width.toDp() }
-                                                }) {
-                                                if ( (model.language.value == SYS_MD || model.language.value == SYS_ML)
-                                                    && model.namespace.value !in setOf("Global", "")
+                            when(model.language.value) {
+                                Language.YAML -> Frontmatter(model.cellListViewModel.editorTabsViewModel, model.bodyState)
+                                in setOf(Language.KerML, Language.SYS_MD, Language.SYS_ML) -> {
+                                    Column {
+                                        Row(Modifier.background(MaterialTheme.colorScheme.background)
+                                            .fillMaxWidth()
+                                            .onGloballyPositioned { coordinates ->
+                                                mainRowWidth = with(density) { coordinates.size.width.toDp() }
+                                            }) {
+                                            if ( (model.language.value == Language.SYS_MD || model.language.value == Language.SYS_ML)
+                                                && model.namespace.value !in setOf("Global", "")
+                                            )
+                                                Text(
+                                                    " package ${model.namespace.value} owns ",
+                                                    fontSize = 12.sp,
+                                                    lineHeight = 14.sp
                                                 )
-                                                    Text(
-                                                        " package ${model.namespace.value} owns ",
-                                                        fontSize = 12.sp,
-                                                        lineHeight = 14.sp
-                                                    )
-                                            }
-                                            Editor(
-                                                mainRowWidth,
-                                                model.bodyState,
-                                                model.annotations,
-                                                model.resultsAnnotations,
-                                                readOnly = true,
-                                                useHighlighting = model.language.value in compilableLanguages,
-                                                cellWasChanged,
-                                                enableElementListScrolling
-                                            )
                                         }
-                                    }
-                                    else -> {
-                                        Column(Modifier.padding(start = 6.dp)) {
-                                            Markdown(
-                                                model.tabViewModel.tabsViewModel,
-                                                model.body.text,
-                                                internalRefReference
-                                            )
-                                        }
+                                        Editor(
+                                            mainRowWidth,
+                                            model.bodyState,
+                                            model.annotations,
+                                            model.resultsAnnotations,
+                                            readOnly = true,
+                                            useHighlighting = model.language.value.isCompilable(),
+                                            cellWasChanged,
+                                            enableElementListScrolling
+                                        )
                                     }
                                 }
+                                else -> {
+                                    Column(Modifier.padding(start = 6.dp)) {
+                                        Markdown(
+                                            model.cellListViewModel.editorTabsViewModel,
+                                            model.body.text,
+                                            internalRefReference
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }
                 // Display annotations if selected
-                if (model.language.value in compilableLanguages)
+                if (model.language.value.isCompilable())
                     AnnotationsView(model)
             }
         } else {
@@ -402,7 +398,6 @@ fun Cell(
                         // Simplified toolbar for collapsed view
                         CellToolbar(
                             model = model,
-                            index = index,
                             isSelected = isSelected(),
                             collapsed = collapsed,
                             onEditToggle = changeEditStatusDescription,
@@ -424,9 +419,9 @@ fun Cell(
 
                         Column(Modifier.background(MaterialTheme.colorScheme.background).fillMaxWidth()) {
                             when (model.language.value) {
-                                MARKDOWN, YAML -> {
+                                Language.MARKDOWN, Language.YAML -> {
                                     Markdown(
-                                        model.tabViewModel.tabsViewModel,
+                                        model.cellListViewModel.editorTabsViewModel,
                                         model.body.text.trim().lines()[0] + " (...)",
                                         internalRefReference
                                     )
@@ -444,7 +439,7 @@ fun Cell(
                                             model.annotations,
                                             model.resultsAnnotations,
                                             readOnly = true,
-                                            useHighlighting = model.language.value in compilableLanguages,
+                                            useHighlighting = model.language.value.isCompilable(),
                                             cellWasChanged,
                                             enableElementListScrolling
                                         )

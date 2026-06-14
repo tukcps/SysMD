@@ -5,25 +5,22 @@ package com.github.tukcps.sysmd.ui
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.material3.surfaceColorAtElevation
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.*
-import androidx.compose.ui.input.pointer.PointerEventType
-import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextRange
@@ -33,13 +30,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.github.tukcps.sysmd.imports.ResultAnnotation
-import com.github.tukcps.sysmd.ui.syntaxhighlighting.Indexer
-import com.github.tukcps.sysmd.ui.syntaxhighlighting.SyntaxHighlighter
 import com.github.tukcps.sysmd.settings
 import com.github.tukcps.sysmd.ui.composables.*
 import com.github.tukcps.sysmd.ui.styles.AppTheme
 import com.github.tukcps.sysmd.ui.styles.Fonts
+import com.github.tukcps.sysmd.ui.syntaxhighlighting.Indexer
+import com.github.tukcps.sysmd.ui.syntaxhighlighting.SyntaxHighlighter
+import kotlinx.coroutines.launch
 import org.jetbrains.skiko.currentNanoTime
+
 
 /**
  * Holds data and methods to realize a delay between key presses.
@@ -162,6 +161,10 @@ fun Editor(
 
         Box{
             // The editable field itself, right of line numbers.
+
+            val bringIntoViewRequester = remember { BringIntoViewRequester() }
+            val coroutineScope = rememberCoroutineScope()
+
             BasicTextField(
                 readOnly = readOnly,
                 //replace tabs with 4 spaces if there are tabs
@@ -197,8 +200,9 @@ fun Editor(
                     }
                     .horizontalScroll(horizontalState, enabled = true)
                     .onGloballyPositioned { coordinates ->
-                    editorHeight.value = with(density) { coordinates.size.height.toDp() }
-                },
+                        editorHeight.value = with(density) { coordinates.size.height.toDp() }
+                    }
+                    .bringIntoViewRequester(bringIntoViewRequester),
 
                 // only perform syntax highlighting if you need it e.g. if you are in a code block
                 //visualTransformation = if (useHighlighting) syntaxHighlightingTransformation else VisualTransformation.None,
@@ -208,6 +212,11 @@ fun Editor(
                         elementEdited.value = true
                     }
                     Indexer.addChangedEditorCell(lines.value)
+                },
+                onTextLayout = { textLayoutResult ->
+                    val cursorIndex = lines.value.selection.start
+                    val cursorRect = textLayoutResult.getCursorRect(cursorIndex)
+                    coroutineScope.launch { bringIntoViewRequester.bringIntoView(cursorRect) }
                 }
             )
 

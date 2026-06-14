@@ -1,6 +1,6 @@
 package sysmdtests
 
-import com.github.tukcps.sysmd.services.resolve.resolveVar
+import com.github.tukcps.sysmd.services.Runlevel
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
@@ -22,10 +22,10 @@ class AggregationFunctionsTests {
                 feature b: c2[2..2]; 
                 feature p3: ScalarValues::Real = sumOverParts(p); 
             }
-        """)
+        """, Runlevel.ALL)
         assertNoIssues()
         // println(resolveName<Expression>(global, "c3::p3"))
-        assertEquals(5.0, global.resolveVar("c3::p3")!!.vectorQuantity.getMinAsDouble(), 0.000001)
+        assertEquals(5.0, solver.getVariable("c3::p3")!!.min(), 0.000001)
     }
 
     /**
@@ -41,11 +41,10 @@ class AggregationFunctionsTests {
                 feature a:  c1[1..1];
                 feature b:  c2[2..3];
                 feature p3: ScalarValues::Real = sumOverParts(p); 
-            }""")
+            }""", Runlevel.ALL)
         assertNoIssues()
-        solver.propagate()
-        assertEquals(5.0, global.resolveVar("c3::p3")!!.vectorQuantity.getMinAsDouble(), 0.0001)
-        assertEquals(10.0, global.resolveVar("c3::p3")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
+        assertEquals(5.0, solver.getVariable("c3::p3")!!.vectorQuantity.getMinAsDouble(), 0.0001)
+        assertEquals(10.0, solver.getVariable("c3::p3")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
     }
 
 
@@ -70,8 +69,8 @@ class AggregationFunctionsTests {
         assertNoIssues()
         solver.propagate()
         // println(resolveName<Expression>("l::c3::p3"))
-        assertEquals(1.0, global.resolveVar("c3::p3")!!.min(), 0.0001)
-        assertEquals(4.0, global.resolveVar("c3::p3")!!.max(), 0.0001)
+        assertEquals(1.0, solver.getVariable("c3::p3")!!.min(), 0.0001)
+        assertEquals(4.0, solver.getVariable("c3::p3")!!.max(), 0.0001)
     }
 
     /**
@@ -100,7 +99,7 @@ class AggregationFunctionsTests {
         assertNoIssues()
         solver.propagate()
         // println(resolveName<Expression>("l::c3::p3"))
-        assertEquals(11.0, global.resolveVar("c3::p3")!!.vectorQuantity.getMinAsDouble(), 0.0001)
-        assertEquals(40.0, global.resolveVar("c3::p3")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
+        assertEquals(11.0, solver.getVariable("c3::p3")!!.vectorQuantity.getMinAsDouble(), 0.0001)
+        assertEquals(40.0, solver.getVariable("c3::p3")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
     }
 }

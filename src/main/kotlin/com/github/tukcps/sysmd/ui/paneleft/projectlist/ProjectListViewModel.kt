@@ -5,72 +5,73 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import com.github.tukcps.sysmd.services.repositories.local.ProjectData
-import com.github.tukcps.sysmd.services.repositories.local.SysMDProjectService
-import com.github.tukcps.sysmd.services.session.Session
 import com.github.tukcps.sysmd.services.session.SessionManager.projectService
-import com.github.tukcps.sysmd.settings
-import com.github.tukcps.sysmd.ui.viewmodel.TabsViewModel
-import kotlin.io.path.Path
-import kotlin.io.path.createDirectories
+import com.github.tukcps.sysmd.ui.viewmodel.EditorTabsViewModel
+import kotlin.uuid.Uuid
+
 
 /**
  * The view model of the project list left.
- * @param sessionState the session with the currently edited model.
- * @param tabsViewModel the tabs that are currently open.
+ * @param sessionIdState the session with the currently edited model.
+ * @param editorTabsViewModel the tabs that are currently open.
  * @param reset
  */
 class ProjectListViewModel(
-    var sessionState: MutableState<Session>,
-    var tabsViewModel: TabsViewModel,
-    var reset: () -> Unit
+    var sessionIdState: MutableState<Uuid>,
+    var editorTabsViewModel: () -> EditorTabsViewModel,
+    val refreshTrees: () -> Unit,
+    val reset: () -> Unit
 ) {
     /**
      * The project that is edited in the current session. Note that currently only one single session
      * is supported by the UI (but we might supporte more in future).
      */
-    var projectOfSession:     MutableState<ProjectViewModel?> = mutableStateOf(null)
+    var selectedProjectState: MutableState<ProjectViewModel?> = mutableStateOf(null)
     var showNewProjectDialog: MutableState<Boolean> = mutableStateOf(false)
-    var viewModelsOfProjects: MutableState<SnapshotStateList<ProjectViewModel>> = mutableStateOf(mutableStateListOf())
+    var projectViewModels:    MutableState<SnapshotStateList<ProjectViewModel>> = mutableStateOf(mutableStateListOf())
     var projectToUpdate:      MutableState<ProjectViewModel?> = mutableStateOf(null)
 
     init {
-        getProjects()
+        getProjectsFromRepository()
     }
 
     /**
-     * Reads all potential folders and files in the data folder into the view model.
-     * Each project is assumed to be in its own folder, where the project has the
-     * same name as the folder (+suffix .md).
+     * Reads all projects from the project service into the view model.
      */
-    fun getProjects() {
+    fun getProjectsFromRepository() {
         val projects = projectService.getProjects()
-        viewModelsOfProjects.value = mutableStateListOf()
+        projectViewModels.value = mutableStateListOf()
         projects.forEach {
             val projectViewModel = ProjectViewModel(
-                sessionState = sessionState,
-                tabsViewModel = tabsViewModel,
-                reset = reset,
+                sessionIdState = sessionIdState,
+                editorTabsViewModel = editorTabsViewModel,
                 project =  it,
-                activeProject = projectOfSession
+                selectedProjectState = selectedProjectState,
+                reset = reset,
+                refreshTrees = refreshTrees,
             )
-            viewModelsOfProjects.value.add(projectViewModel)
+            projectViewModels.value.add(projectViewModel)
         }
     }
 
     /**
-     * Creates a new project:
+     * Creates a new project, based on a view model created by the**NewProjectDialog**.
+     * The project is transferred to the view model.
      * - creates suitable project folder
      * - creates main project file in the tabs
      * - closes dialog
      * @param projectViewModel a view model of the project to be created
      */
-    fun createProject(projectViewModel: ProjectViewModel) {
-        projectViewModel.updateProject(
-            projectService.createProject(name = projectViewModel.name, description = projectViewModel.description, defaultBranch = null).also { projectViewModel.project?.id = it.id} as ProjectData
-        )
-        projectViewModel.directory = Path(settings.dataFolder).resolve(projectViewModel.name)
-        projectViewModel.directory.createDirectories()
-        viewModelsOfProjects.value.add(projectViewModel)
+    fun onCreateProject(projectViewModel: ProjectViewModel) {
+        val project = projectService.createProject(
+            name = projectViewModel.name,
+            description = projectViewModel.description,
+            defaultBranch = null)
+            .also { projectViewModel.project?.id = it.id
+            } as ProjectData
+
+        projectViewModel.updateProject(project = project)
+        projectViewModels.value.add(projectViewModel)
         showNewProjectDialog.value = false
     }
 
@@ -78,25 +79,31 @@ class ProjectListViewModel(
      * Deletes a project by renaming it to name.datetime.deleted.
      * @param projectViewModel the view model of the project to be deleted.
      */
-    fun deleteProject(projectViewModel: ProjectViewModel) {
-        if (projectViewModel != projectOfSession.value) {
-            viewModelsOfProjects.value.remove(projectViewModel)
-            projectService.deleteProject(projectViewModel.project?.id!!)
-            SysMDProjectService.logger.info("Deleted project ${projectViewModel.project?.name}")
-        }
+    fun onDeleteProject(projectViewModel: ProjectViewModel) {
+        projectViewModel.closeProjectSession()
+        projectViewModels.value.remove(projectViewModel)
+        projectService.deleteProject(projectViewModel.project?.id!!)
     }
 
     /**
      * Starts a session of a project
      * @param projectViewModel the project view model that shall be rendered. If necessary, a new session is started.
      */
-    fun openProject(projectViewModel: ProjectViewModel) {
-        if (projectViewModel != projectOfSession.value) {
-            projectViewModel.openProject()
+    fun onOpenProject(projectViewModel: ProjectViewModel) {
+
+        if (selectedProjectState.value == projectViewModel) return
+
+        // If there are changes in the currently open project, show the save project dialog.
+        if (selectedProjectState.value != projectViewModel && selectedProjectState.value?.unsavedChangesExist() == true) {
+            selectedProjectState.value?.showSaveProjectDialog?.value = true
+        } else {
+            // switch to selected project
+            selectedProjectState.value?.closeProjectSession()
+            projectViewModels.value.forEach { project ->
+                project.isExpanded.value = projectViewModel == projectViewModel.selectedProjectState
+            }
+            projectViewModel.isExpanded.value = true
+            projectViewModel.createProjectSession()
         }
-    }
-
-    fun updateProject(projectViewModel: ProjectViewModel) {
-
     }
 }

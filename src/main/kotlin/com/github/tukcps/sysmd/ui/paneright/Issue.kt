@@ -21,8 +21,8 @@ import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.exceptions.explanation
 import com.github.tukcps.sysmd.logger
 import com.github.tukcps.sysmd.ui.composables.SysMDTooltipArea
-import com.github.tukcps.sysmd.ui.viewmodel.TabViewModel
-import com.github.tukcps.sysmd.ui.viewmodel.TabsViewModel
+import com.github.tukcps.sysmd.ui.viewmodel.CellListViewModel
+import com.github.tukcps.sysmd.ui.viewmodel.EditorTabsViewModel
 import kotlinx.coroutines.launch
 
 /**
@@ -31,7 +31,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun Issue(
     issueViewModel: IssueViewModel,
-    editorTabsModel: TabsViewModel
+    editorTabsModel: EditorTabsViewModel
 ) {
     val expanded: MutableState<Boolean> = remember { mutableStateOf(false) }
     if (!expanded.value) {
@@ -45,9 +45,9 @@ fun Issue(
 private fun ExpandedIssue(
     expanded: MutableState<Boolean>,
     issueViewModel: IssueViewModel,
-    editorTabsModel: TabsViewModel
+    editorTabsModel: EditorTabsViewModel
 ) {
-    val editorTabModel = editorTabsModel.active
+    val editorTabModel = editorTabsModel.selectedCellList
     Card(
         modifier = Modifier.padding(all = 5.dp).clickable { expanded.value = !expanded.value },
         colors = CardDefaults.cardColors(),
@@ -74,7 +74,7 @@ private fun ExpandedIssue(
                         maxLines = 1
                     )
                 }
-                AgendaButtons(issueViewModel.wikiLink(), editorTabModel = editorTabModel, issueViewModel)
+                BoardButtons(issueViewModel.wikiLink(), editorTabModel = editorTabModel, issueViewModel)
             }
             Row(
                 modifier = Modifier
@@ -98,9 +98,9 @@ private fun ExpandedIssue(
 private fun FoldedIssue(
     expanded: MutableState<Boolean>,
     issueViewModel: IssueViewModel,
-    editorTabsModel: TabsViewModel,
+    editorTabsModel: EditorTabsViewModel,
 ) {
-    val editorTabModel = editorTabsModel.active
+    val editorTabModel = editorTabsModel.selectedCellList
     Card(
         modifier = Modifier.padding(all = 5.dp).clickable { expanded.value = !expanded.value },
         colors = CardDefaults.cardColors(),
@@ -125,7 +125,7 @@ private fun FoldedIssue(
                     maxLines = 1
                 )
             }
-            AgendaButtons(issueViewModel.wikiLink(), editorTabModel = editorTabModel, issueViewModel)
+            BoardButtons(issueViewModel.wikiLink(), editorTabModel = editorTabModel, issueViewModel)
         }
     }
 }
@@ -141,9 +141,9 @@ private fun LeadingIcon(kind: Issue.Kind, issueViewModel: IssueViewModel) {
 }
 
 @Composable
-private fun AgendaButtons(
+private fun BoardButtons(
     link: String,
-    editorTabModel: TabViewModel?,
+    editorTabModel: CellListViewModel?,
     issueViewModel: IssueViewModel
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -151,13 +151,27 @@ private fun AgendaButtons(
 
     FilledIconButton(
         onClick = {
-            if (editorTabModel != null) {
+            val projectList = editorTabModel?.editorTabsViewModel?.projectListViewModel()
+            val project = projectList?.selectedProjectState?.value
+            project?.fileData?.cellData?.forEach { (tab, cellList) ->
+                cellList.forEach { cell ->
+                    if (cell.body == issueViewModel.getInput()) {
+                        print("found")
+                    }
+                }
+                project.showTab(tab)
+            }
+
+            editorTabModel?.editorTabsViewModel?.editorTabs?.forEach { tab ->
                 // Gets index of cell by id
-                val index = editorTabModel.cells.indexOfFirst { cell -> cell.body.text == issueViewModel.getInput() }
+                val index = tab.cells.indexOfFirst { cell -> cell.body.text == issueViewModel.getInput() }
+
+                if (index >= 0)
+                    editorTabModel.editorTabsViewModel.selectedIndex.value = tab.editorTabsViewModel.findTabIndexByName(tab.nameState.value)
 
                 // Scroll to cell
                 if (index >= 0) coroutineScope.launch {
-                    editorTabModel.scrollState.animateScrollToItem(index = index)
+                    tab.scrollState.animateScrollToItem(index = index)
                 }
             }
         },
