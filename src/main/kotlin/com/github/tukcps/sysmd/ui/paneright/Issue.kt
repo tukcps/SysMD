@@ -151,27 +151,30 @@ private fun BoardButtons(
 
     FilledIconButton(
         onClick = {
+            // search in all files, and open tab if issue-input is in it
             val projectList = editorTabModel?.editorTabsViewModel?.projectListViewModel()
             val project = projectList?.selectedProjectState?.value
             project?.fileData?.cellData?.forEach { (tab, cellList) ->
                 cellList.forEach { cell ->
                     if (cell.body == issueViewModel.getInput()) {
-                        print("found")
+                        project.showTab(tab)
                     }
                 }
-                project.showTab(tab)
             }
 
             editorTabModel?.editorTabsViewModel?.editorTabs?.forEach { tab ->
                 // Gets index of cell by id
                 val index = tab.cells.indexOfFirst { cell -> cell.body.text == issueViewModel.getInput() }
+                if (index in tab.cells.indices) {
+                    val cell = tab.cells[index]
+                    cell.collectVariablesToDisplay()
+                    editorTabModel.editorTabsViewModel.selectedIndex.value =
+                        tab.editorTabsViewModel.findTabIndexByName(tab.nameState.value)
 
-                if (index >= 0)
-                    editorTabModel.editorTabsViewModel.selectedIndex.value = tab.editorTabsViewModel.findTabIndexByName(tab.nameState.value)
-
-                // Scroll to cell
-                if (index >= 0) coroutineScope.launch {
-                    tab.scrollState.animateScrollToItem(index = index)
+                    // Scroll to cell
+                    if (index >= 0) coroutineScope.launch {
+                        tab.scrollState.animateScrollToItem(index = index)
+                    }
                 }
             }
         },

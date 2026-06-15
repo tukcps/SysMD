@@ -122,10 +122,8 @@ object SysMDNotebook {
             var showSplashWindow by remember { mutableStateOf(true) }
             var showMainWindow by remember { mutableStateOf(false) }
 
-            val showSaveDialog = remember { mutableStateOf(false) }
             val showSettingsDialog = sysMdViewModel.showSettingsDialog
             val openUCB = remember { mutableStateOf(false) }
-            val editorWithTabs = sysMdViewModel.editorTabsViewModel
 
             LaunchedEffect(Unit) {
                 _isLaunching.collectLatest { launching ->
@@ -156,18 +154,20 @@ object SysMDNotebook {
                 }
             } else {
                 MaterialTheme(colorScheme = colors) {
+                    /** Shows a dialog before deleting a project, and if deleted, resets the (then invalid) session. */
                     Window(
                         onCloseRequest = {
-                            editorWithTabs.editorTabs.forEach { editorTab ->
-                                if (editorTab.elementEdited.value) showSaveDialog.value = true
+                            if (sysMdViewModel.projectListViewModel.selectedProjectState.value?.unsavedChangesExist() == true)
+                                sysMdViewModel.showSaveBeforeExitDialog.value = true
+                            else {
+                                if (RESTRepository.onlineState.value)
+                                    try {
+                                        RESTRepository.deleteSession()
+                                    } catch (ex: Exception) {
+                                        ex.printStackTrace()
+                                    }
+                                exitApplication()
                             }
-
-                            if (RESTRepository.onlineState.value)
-                                try { RESTRepository.deleteSession() } catch (ex: Exception) {
-                                    ex.printStackTrace()
-                                }
-
-                            exitApplication()
                         },
                         title = "SysMD Notebook",
                         state = rememberWindowState(
@@ -179,14 +179,16 @@ object SysMDNotebook {
                     ) {
                         MenuBar(sysMdViewModel)
                         MainView(sysMdViewModel)
-                        if (showSaveDialog.value)
-                            SaveDialog(
-                                showSaveDialog = showSaveDialog,
-                                onSave = { sysMdViewModel.editorTabsViewModel.save(); exitApplication() },
-                                onDrop = { exitApplication() }
-                            )
-                        if (showSettingsDialog.value)
-                            SettingsDialog(showSettingsDialog)
+
+                        SaveDialog(sysMdViewModel.showSaveBeforeExitDialog,
+                            itemName = "Project '${sysMdViewModel.projectListViewModel.selectedProjectState.value?.name}' and/or its files",
+                            onSave = {
+                                sysMdViewModel.projectListViewModel.selectedProjectState.value?.saveProjectToRepository()
+                                exitApplication() },
+                            onDrop = {  exitApplication() },
+                        )
+
+                        SettingsDialog(showSettingsDialog)
                         if (showNoSuchFileWarning.value)
                             displayWarningNoSuchFileOrDirectory(showNoSuchFileWarning)
                         if (showDirectoryWarning.value)

@@ -216,7 +216,8 @@ fun Editor(
                 onTextLayout = { textLayoutResult ->
                     val cursorIndex = lines.value.selection.start
                     val cursorRect = textLayoutResult.getCursorRect(cursorIndex)
-                    coroutineScope.launch { bringIntoViewRequester.bringIntoView(cursorRect) }
+                    if (!readOnly)
+                        coroutineScope.launch { bringIntoViewRequester.bringIntoView(cursorRect) }
                 }
             )
 

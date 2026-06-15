@@ -228,7 +228,7 @@ fun CellToolbar(
 @Suppress("EXPERIMENTAL_IS_NOT_ENABLED")
 @Composable
 fun Cell(
-    model: CellViewModel,
+    cellViewModel: CellViewModel,
     index: Int,
     selectedIndex: MutableState<Int>,
     selectedItem: MutableState<Boolean>,
@@ -288,9 +288,9 @@ fun Cell(
                             }
                         )
                 ) {
-                    // Toolbar with actions
+                    // Toolbar with actions for the cell
                     CellToolbar(
-                        model = model,
+                        model = cellViewModel,
                         isSelected = isSelected(),
                         collapsed = collapsed,
                         onEditToggle = changeEditStatusDescription,
@@ -316,7 +316,7 @@ fun Cell(
                         // Content area
                         if (index == selectedIndex.value && selectedItem.value) {
                             Column {
-                                LanguageDropdown(model.language, model.namespace, ::onLanguageChange)
+                                LanguageDropdown(cellViewModel.language, cellViewModel.namespace, ::onLanguageChange)
 
                                 Row(modifier = Modifier.onGloballyPositioned { coordinates ->
                                     mainRowWidth = with(density) { coordinates.size.width.toDp() }
@@ -324,19 +324,19 @@ fun Cell(
                                 {
                                     Editor(
                                         mainRowWidth,
-                                        model.bodyState,
-                                        model.annotations,
-                                        model.resultsAnnotations,
+                                        cellViewModel.bodyState,
+                                        cellViewModel.annotations,
+                                        cellViewModel.resultsAnnotations,
                                         readOnly = false,
-                                        useHighlighting = model.language.value.isCompilable(),
+                                        useHighlighting = cellViewModel.language.value.isCompilable(),
                                         cellWasChanged,
                                         enableElementListScrolling
                                     )
                                 }
                             }
                         } else {
-                            when(model.language.value) {
-                                Language.YAML -> Frontmatter(model.cellListViewModel.editorTabsViewModel, model.bodyState)
+                            when(cellViewModel.language.value) {
+                                Language.YAML -> Frontmatter(cellViewModel.cellListViewModel.editorTabsViewModel, cellViewModel.bodyState)
                                 in setOf(Language.KerML, Language.SYS_MD, Language.SYS_ML) -> {
                                     Column {
                                         Row(Modifier.background(MaterialTheme.colorScheme.background)
@@ -344,22 +344,22 @@ fun Cell(
                                             .onGloballyPositioned { coordinates ->
                                                 mainRowWidth = with(density) { coordinates.size.width.toDp() }
                                             }) {
-                                            if ( (model.language.value == Language.SYS_MD || model.language.value == Language.SYS_ML)
-                                                && model.namespace.value !in setOf("Global", "")
+                                            if ( (cellViewModel.language.value == Language.SYS_MD || cellViewModel.language.value == Language.SYS_ML)
+                                                && cellViewModel.namespace.value !in setOf("Global", "")
                                             )
                                                 Text(
-                                                    " package ${model.namespace.value} owns ",
+                                                    " package ${cellViewModel.namespace.value} owns ",
                                                     fontSize = 12.sp,
                                                     lineHeight = 14.sp
                                                 )
                                         }
                                         Editor(
                                             mainRowWidth,
-                                            model.bodyState,
-                                            model.annotations,
-                                            model.resultsAnnotations,
+                                            cellViewModel.bodyState,
+                                            cellViewModel.annotations,
+                                            cellViewModel.resultsAnnotations,
                                             readOnly = true,
-                                            useHighlighting = model.language.value.isCompilable(),
+                                            useHighlighting = cellViewModel.language.value.isCompilable(),
                                             cellWasChanged,
                                             enableElementListScrolling
                                         )
@@ -368,8 +368,8 @@ fun Cell(
                                 else -> {
                                     Column(Modifier.padding(start = 6.dp)) {
                                         Markdown(
-                                            model.cellListViewModel.editorTabsViewModel,
-                                            model.body.text,
+                                            cellViewModel.cellListViewModel.editorTabsViewModel,
+                                            cellViewModel.body.text,
                                             internalRefReference
                                         )
                                     }
@@ -379,8 +379,8 @@ fun Cell(
                     }
                 }
                 // Display annotations if selected
-                if (model.language.value.isCompilable())
-                    AnnotationsView(model)
+                if (cellViewModel.language.value.isCompilable())
+                    AnnotationsView(cellViewModel)
             }
         } else {
             if (collapsed.value && !hidden.value) {
@@ -397,7 +397,7 @@ fun Cell(
                     ) {
                         // Simplified toolbar for collapsed view
                         CellToolbar(
-                            model = model,
+                            model = cellViewModel,
                             isSelected = isSelected(),
                             collapsed = collapsed,
                             onEditToggle = changeEditStatusDescription,
@@ -418,11 +418,11 @@ fun Cell(
                         )
 
                         Column(Modifier.background(MaterialTheme.colorScheme.background).fillMaxWidth()) {
-                            when (model.language.value) {
+                            when (cellViewModel.language.value) {
                                 Language.MARKDOWN, Language.YAML -> {
                                     Markdown(
-                                        model.cellListViewModel.editorTabsViewModel,
-                                        model.body.text.trim().lines()[0] + " (...)",
+                                        cellViewModel.cellListViewModel.editorTabsViewModel,
+                                        cellViewModel.body.text.trim().lines()[0] + " (...)",
                                         internalRefReference
                                     )
                                 }
@@ -434,12 +434,12 @@ fun Cell(
                                         Editor(
                                             mainRowWidth,
                                             mutableStateOf(
-                                                TextFieldValue(model.body.text.trim().lines()[0] + " (...)")
+                                                TextFieldValue(cellViewModel.body.text.trim().lines()[0] + " (...)")
                                             ),
-                                            model.annotations,
-                                            model.resultsAnnotations,
+                                            cellViewModel.annotations,
+                                            cellViewModel.resultsAnnotations,
                                             readOnly = true,
-                                            useHighlighting = model.language.value.isCompilable(),
+                                            useHighlighting = cellViewModel.language.value.isCompilable(),
                                             cellWasChanged,
                                             enableElementListScrolling
                                         )

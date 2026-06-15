@@ -56,7 +56,8 @@ class SysMDViewModel {
     val inheritance = mutableStateOf(TreeViewModel(
         IsATree(sessionIdState, mutableStateOf(sessionService.getSession(sessionId)?.anything?.toDAO()?: ElementData(elementId = UUID.randomUUID(), type="Package"))), null, null, ::display, false))
 
-    val showSettingsDialog: MutableState<Boolean> = mutableStateOf(false)
+    val showSaveBeforeExitDialog = mutableStateOf(false)
+    val showSettingsDialog = mutableStateOf(false)
     val reconnectionRequired:MutableState<Boolean> = mutableStateOf(false)
 
     //Manage the commit process

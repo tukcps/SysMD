@@ -56,7 +56,7 @@ fun CellList(
     // If the ElementList scrolling is enabled/disabled (disabling can happen when the suggestion dropDown Menu is active)
     val enableElementListScrolling = remember { mutableStateOf(true) }
 
-    /** Action: Delete a single element; opens confirm dialog */
+    /** Action: Delete a single cell; opens confirm dialog */
     fun onDeleteRequest(i: Int) {
         index.value = i
         showConfirmDelete.value = true
@@ -98,7 +98,7 @@ fun CellList(
                             }
                         }
                         Cell(
-                            model = cellListViewModel.cells[index],
+                            cellViewModel = cellListViewModel.cells[index],
                             index = index,
                             selectedIndex = cellListViewModel.selectedIndex,
                             selectedItem = cellListViewModel.editState,
