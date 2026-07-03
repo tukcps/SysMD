@@ -30,7 +30,7 @@ class WebProject {
      * Checks all the conditions before a Commit
      */
     fun checkBeforeCommit(editorTab: CellListViewModel) {
-        val bodyEdited = editorTab.elementEdited.value
+        val bodyEdited = editorTab.hasChangesState.value
         val languageChanged = mutableStateOf(false)
 
         for (oeDAO in oldCommitElementsDAOList) {

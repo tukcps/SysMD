@@ -13,6 +13,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import com.github.tukcps.sysmd.services.repositories.local.ElementData
 import com.github.tukcps.sysmd.services.session.SessionManager
 import com.github.tukcps.sysmd.ui.composables.TreeViewNodeModel
+import com.github.tukcps.sysmd.model.kerml.Feature
+import com.github.tukcps.sysmd.model.kerml.Multiplicity
 import kotlin.uuid.Uuid
 import kotlin.uuid.Uuid.Companion.NIL
 import kotlin.uuid.toKotlinUuid
@@ -36,7 +38,7 @@ class IsATree(
         get() = children().isNotEmpty()
 
     override val name: String
-        get() = element?.generateName() ?: "(no element)"
+        get() = element?.generateName(sessionId) ?: "(no element)"
 
     override fun children(): List<TreeViewNodeModel> =
         mutableListOf<TreeViewNodeModel>().also { result ->
@@ -82,7 +84,7 @@ class HasATree(
                 ?:false
 
     override val name: String
-        get() = element?.generateName() ?: "(no element)"
+        get() = element?.generateName(sessionId) ?: "(no element)"
 
     override fun children(): List<TreeViewNodeModel> {
         val result = mutableListOf<TreeViewNodeModel>()
@@ -109,6 +111,21 @@ class HasATree(
 /**
  * Function that generates the name for display in a UI.
  */
-fun ElementData.generateName(): String = try {
-    "[$type] ${declaredName?:declaredShortName?:""}"
+fun ElementData.generateName(sessionId: Uuid? = null): String = try {
+    var displayName = "[$type] ${declaredName?:declaredShortName?:""}"
+    if (sessionId != null) {
+        val session = SessionManager.getSession(sessionId)
+        val kermlElement = session?.get(elementId)
+        if (kermlElement is Feature) {
+            val variable = kermlElement.variable
+            if (variable != null) {
+                if (kermlElement is Multiplicity) {
+                    displayName += " ${variable.vectorQuantity}"
+                } else {
+                    displayName += " = ${variable.vectorQuantity}"
+                }
+            }
+        }
+    }
+    displayName
 } catch (_: Exception) { "(?)"}

@@ -17,7 +17,6 @@ import java.awt.Desktop
 import java.io.File
 import java.net.URI
 import java.util.*
-import kotlin.math.min
 import kotlin.uuid.Uuid
 
 
@@ -39,7 +38,7 @@ data class ProjectViewModel(
     val refreshTrees: () -> Unit,
 ) {
     val fileData: FileData = FileData()
-    var isChangedState = mutableStateOf(false)
+    var hasChangesState = mutableStateOf(false)
 
     var fileToDelete: MutableState<String?> = mutableStateOf(null)
     val isExpanded = mutableStateOf(this == selectedProjectState.value)
@@ -95,7 +94,7 @@ data class ProjectViewModel(
         project?.name = projectViewModel.name
         project?.description = projectViewModel.description
         website = (projectViewModel.project?.project as InterchangeProject).website
-        isChangedState.value = true
+        hasChangesState.value = true
         // this.maintainer = (projectViewModel.project?.project as InterchangeProject).maintainer?:mutableListOf()
     }
 
@@ -104,10 +103,10 @@ data class ProjectViewModel(
      * @return true if there are unsaved changes
      */
     fun unsavedChangesExistInFiles(): Boolean =
-        editorTabsViewModel().editorTabs.any { it.elementEdited.value }
+        editorTabsViewModel().editorTabs.any { it.hasChangesState.value }
 
     fun unsavedChangesExist(): Boolean =
-        unsavedChangesExistInFiles() || isChangedState.value
+        unsavedChangesExistInFiles() || hasChangesState.value
 
     /**
      * Reads the project's data record for editing.
@@ -126,7 +125,7 @@ data class ProjectViewModel(
             // Initialize states to be sure
             selectedProjectState.value = this
             isExpanded.value = true
-            isChangedState.value = false
+            hasChangesState.value = false
 
             // Start a new session with the project
             sessionIdState.value = sessionService.createSession(project!!).id
@@ -155,7 +154,7 @@ data class ProjectViewModel(
         filesState.clear()
 
         // Mark it as inactive, not changed
-        isChangedState.value = false
+        hasChangesState.value = false
         selectedProjectState.value = null
         isExpanded.value = false
     }
@@ -182,8 +181,12 @@ data class ProjectViewModel(
         project?.meta?.index?.clear()
         project?.meta?.index = fileData.cellData.map { (file, _) -> file to file }.toMap(LinkedHashMap())
         project?.meta?.let { sessionService.putMeta(sessionIdState.value, project!!.meta!!) }
-        fileData.cellData.forEach { (file, cells) -> saveFileToRepository(file, cells) }
-        isChangedState.value = false
+        fileData.cellData.forEach { (file, cells) ->
+            saveFileToRepository(file, cells)
+            cells.forEach { hasChangesState.value = false }
+        }
+        editorTabsViewModel().editorTabs.forEach { it.hasChangesState.value = false }
+        hasChangesState.value = false
     }
 
     /**
@@ -214,11 +217,12 @@ data class ProjectViewModel(
      * Shows a tab (with a file) of a project in the main area.
      */
     fun showTab(name: String) {
-        val foundFile = fileData.cellData[name]
+        val cellDataKey = fileData.cellData.keys.firstOrNull { it.equals(name, ignoreCase = true) }
+        val foundFile = if (cellDataKey != null) fileData.cellData[cellDataKey] else null
 
         if (foundFile != null) {
             // Open the file in the tab view, or select it.
-            editorTabsViewModel().showTab(name)
+            editorTabsViewModel().showTab(cellDataKey!!)
         } else {
             logger.error("File '$name' not found in project index.")
         }
@@ -274,15 +278,18 @@ data class ProjectViewModel(
             filesState.removeAt(index)
             filesState.add(index, newName)
 
-            fileData.cellData = LinkedHashMap(fileData.cellData.mapKeys { (key, _) -> if (key == oldName) newName else key })
+            fileData.cellData = LinkedHashMap(fileData.cellData.mapKeys { (key, _) -> if (key.equals(oldName, ignoreCase = true)) newName else key })
 
             project?.meta?.index?.clear()
             project?.meta?.index = fileData.cellData.map { (file, _) -> file to file }.toMap(LinkedHashMap())
 
-            editorTabsViewModel().updateTabTitle(index, newName)
+            editorTabsViewModel().updateTabTitle(oldName, newName)
             editorTabsViewModel().selectedIndex.value = -1
-            editorTabsViewModel().selectedIndex.value = min(index, editorTabsViewModel().editorTabs.size-1)
-            isChangedState.value = true
+            val tabIndex = editorTabsViewModel().findTabIndexByName(newName)
+            if (tabIndex >= 0) {
+                editorTabsViewModel().selectedIndex.value = tabIndex
+            }
+            hasChangesState.value = true
             return true
         }
         return false
@@ -332,23 +339,27 @@ data class ProjectViewModel(
 
         // Set active model to newly created one
         editorTabsViewModel().selectedIndex.value = editorTabsViewModel().editorTabs.size-1
-        isChangedState.value = true
+        hasChangesState.value = true
     }
 
     /**
      * Delete File of a project
      */
     fun deleteFileFromProject() {
+        val target = fileToDelete.value ?: return
         // Close tab if open
-        val close = editorTabsViewModel().editorTabs.find { it.nameState.value == fileToDelete.value}
+        val close = editorTabsViewModel().editorTabs.find { it.nameState.value.equals(target, ignoreCase = true) }
         close?.let { editorTabsViewModel().hideTab(it) }
 
         // delete file from index
-        filesState.removeIf { it == fileToDelete.value }
+        filesState.removeIf { it.equals(target, ignoreCase = true) }
 
         // delete in Session
-        fileData.cellData.remove(fileToDelete.value)
-        isChangedState.value = true
+        val cellDataKey = fileData.cellData.keys.firstOrNull { it.equals(target, ignoreCase = true) }
+        if (cellDataKey != null) {
+            fileData.cellData.remove(cellDataKey)
+        }
+        hasChangesState.value = true
     }
 
     /**
@@ -382,6 +393,8 @@ data class ProjectViewModel(
      * @param runLevel To what extent do the compile run, e.g., NONE (compile), MODEL (builds model), ALL (solver)
      */
     fun compile(runLevel: Runlevel) {
+        // Get the changes from editor tabs first
+        getChangesFromEditor()
         // First, compile all files of the project, no analysis (would report errors)
         fileData.cellData.values.forEach { cellData ->
             cellData.forEach { cell ->

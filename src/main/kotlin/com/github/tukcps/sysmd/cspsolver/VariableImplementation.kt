@@ -12,9 +12,11 @@ import com.github.tukcps.sysmd.model.expression.functions.AstByImplements
 import com.github.tukcps.sysmd.model.expression.functions.AstByParts
 import com.github.tukcps.sysmd.model.expression.functions.AstBySpecializations
 import com.github.tukcps.sysmd.model.kerml.Membership
+import com.github.tukcps.sysmd.quantities.Representer
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import io.github.tukcps.aadd.AADD
 import io.github.tukcps.aadd.BDD
+import io.github.tukcps.aadd.DD
 import io.github.tukcps.aadd.IDD
 import io.github.tukcps.aadd.StrDD
 import io.github.tukcps.aadd.values.IntegerRange
@@ -80,13 +82,35 @@ open class VariableImplementation (
         }
     }
 
+    private fun formatSingleValue(element: DD<*>): String {
+        return when (element) {
+            is IDD -> {
+                val range = element.getRange()
+                val minIsInf = range.min == Long.MIN_VALUE || range.min <= -2147483647L
+                val maxIsInf = range.max == Long.MAX_VALUE || range.max >= 2147483647L
+                when {
+                    minIsInf && maxIsInf -> "*..*"
+                    range.min == range.max -> range.min.toString()
+                    range.min > range.max -> "∅"
+                    else -> {
+                        val min = if (minIsInf) "*" else range.min.toString()
+                        val max = if (maxIsInf) "*" else range.max.toString()
+                        "$min..$max"
+                    }
+                }
+            }
+            is AADD -> Representer().represent(element)
+            else -> element.toString()
+        }
+    }
+
     /** A getter for a string representation of the value, with field for serialization. */
     override var valueStr: String = ""
         get() {
-            field = if (vectorQuantity.values.size > 1)
-                vectorQuantity.values.toString()
-            else
-                vectorQuantity.value.toString()
+            val formatted = vectorQuantity.values.map { formatSingleValue(it) }
+            field = if (formatted.all { it == "*..*" }) "*..*"
+            else if (formatted.size > 1) formatted.toString()
+            else formatted[0]
             return field
         }
 

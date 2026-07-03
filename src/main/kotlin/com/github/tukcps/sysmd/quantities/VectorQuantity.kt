@@ -734,12 +734,15 @@ override fun toString(): String {
         is Integer -> {
             values.joinTo(resultingString, ", ") {
                 val value = it.asIdd().getRange()
+                val minIsInf = value.min == Long.MIN_VALUE || value.min <= -2147483647L
+                val maxIsInf = value.max == Long.MAX_VALUE || value.max >= 2147483647L
                 when {
+                    minIsInf && maxIsInf -> "*..*"
                     value.min == value.max -> value.min.toString()
                     value.min > value.max -> "∅"
                     else -> {
-                        val min = if (value.min == Long.MIN_VALUE) "*" else value.min.toString()
-                        val max = if (value.max == Long.MAX_VALUE) "*" else value.max.toString()
+                        val min = if (minIsInf) "*" else value.min.toString()
+                        val max = if (maxIsInf) "*" else value.max.toString()
                         "$min..$max"
                     }
                 }
@@ -1343,9 +1346,9 @@ override fun toString(): String {
      */
     fun isConstrained(): Boolean {
         values.forEach {
-            if (it is Real && (!it.minIsInf || !it.maxIsInf))
+            if (it is Real)
                 return true
-            if (it is Integer && (!it.minIsInf || !it.maxIsInf))
+            if (it is Integer)
                 return true
             if (it is Bool && it.value != XBool.X)
                 return true

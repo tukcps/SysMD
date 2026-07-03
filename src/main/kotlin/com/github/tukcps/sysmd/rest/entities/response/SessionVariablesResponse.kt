@@ -9,7 +9,7 @@ data class VariableResponse(
 ) {
     constructor(variable: Variable): this(
         variable.path,
-        variable.vectorQuantity.value.toString(),
+        variable.valueStr,
         variable.vectorQuantity.unit.toString()
     )
 }

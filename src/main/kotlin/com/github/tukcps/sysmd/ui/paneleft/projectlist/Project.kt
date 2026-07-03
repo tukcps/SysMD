@@ -411,11 +411,13 @@ private fun FileItem(
                 // Display only
                 Row {
                     val selected = projectViewModel.editorTabsViewModel().selectedCellList?.nameState?.value
-                    val edited = projectViewModel.editorTabsViewModel().editorTabs.getOrNull(index)?.elementEdited?.value
+                    val fileItemName = projectViewModel.filesState.getOrNull(index) ?: ""
+                    val tab = projectViewModel.editorTabsViewModel().findTabByName(fileItemName)
+                    val edited = tab?.hasChangesState?.value
                     Text(
-                        text = projectViewModel.filesState[index],
+                        text = fileItemName,
                         style = MaterialTheme.typography.bodySmall,
-                        color = if (isHovered || selected == projectViewModel.filesState[index])
+                        color = if (isHovered || selected?.equals(fileItemName, ignoreCase = true) == true)
                             MaterialTheme.colorScheme.primary
                         else
                             MaterialTheme.colorScheme.onSurface.copy(alpha = ContentAlpha.medium),

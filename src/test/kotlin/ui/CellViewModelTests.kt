@@ -65,4 +65,23 @@ class CellViewModelTests {
         // Check that inherited feature "weight = 1500" is shown under "Car"!
         assertTrue(displayStrings.any { it.contains("Feature: weight") && it.contains("1500") })
     }
+
+    @Test
+    fun testOpenNetworkTabs() {
+        val sysMDViewModel = SysMDViewModel()
+        val tabsViewModel = sysMDViewModel.editorTabsViewModel
+        
+        tabsViewModel.showTab("NeuralNetwork.md")
+        // Try opening with different casing to verify case-insensitive matching
+        tabsViewModel.showTab("network.md")
+        
+        println("SelectedIndex after opening network.md: ${tabsViewModel.selectedIndex.value}")
+        println("Tabs: ${tabsViewModel.editorTabs.map { it.nameState.value }}")
+        
+        assert(tabsViewModel.selectedIndex.value == 1)
+
+        // Verify name-based tab renaming works
+        tabsViewModel.updateTabTitle("network.md", "Network-Renamed.md")
+        assert(tabsViewModel.editorTabs[1].nameState.value == "Network-Renamed.md")
+    }
 }

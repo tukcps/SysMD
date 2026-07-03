@@ -35,6 +35,27 @@ class QuantityToStringTests {
     }
 
     @Test
+    fun undefinedQuantityRepresentationTest() = testSession("ScalarValues") {
+        loadKerML("""
+            feature a: ScalarValues::Integer;
+            feature b: ScalarValues::Real;
+            feature c: ScalarValues::Integer[2] = (1..2147483647, 4..2147483647);
+            feature d: ScalarValues::Integer[2];
+        """)
+        solver.propagate()
+        val a = global.resolveVar("a")!!
+        val b = global.resolveVar("b")!!
+        val c = global.resolveVar("c")!!
+        val d = global.resolveVar("d")!!
+        assertEquals("*..*", a.vectorQuantity.toString())
+        assertEquals("*..*", b.vectorQuantity.toString())
+        assertEquals("*..*", a.valueStr)
+        assertEquals("*..*", b.valueStr)
+        assertEquals("[1..*, 4..*]", c.valueStr)
+        assertEquals("*..*", d.valueStr)
+    }
+
+    @Test
     fun singleValues3() = testSession("ISQ") {
         loadKerML("""
                     feature a: Quantities::ScalarQuantityValue(0.0000001).

@@ -193,7 +193,7 @@ class RestAPISessionServiceTest {
         assertEquals(HttpStatus.OK.value(), response.statusCode.value())
         val variables = jsonMapper.readValue(response.body, VariablesResponse::class.java)
         assertTrue(variables.variables.isNotEmpty())
-        assertTrue(variables.variables.any { it.qualifiedName=="x" && it.value == "2.0" && it.unit == "1"})
+        assertTrue(variables.variables.any { it.qualifiedName=="x" && it.value == "2" && it.unit == "1"})
     }
 
     @Test fun getSubtypesTest() = testProjectSession("ScalarValues") {

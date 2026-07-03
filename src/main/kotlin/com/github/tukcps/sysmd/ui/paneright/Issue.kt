@@ -21,9 +21,10 @@ import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.exceptions.explanation
 import com.github.tukcps.sysmd.logger
 import com.github.tukcps.sysmd.ui.composables.SysMDTooltipArea
-import com.github.tukcps.sysmd.ui.viewmodel.CellListViewModel
 import com.github.tukcps.sysmd.ui.viewmodel.EditorTabsViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * List element for agenda
@@ -47,7 +48,6 @@ private fun ExpandedIssue(
     issueViewModel: IssueViewModel,
     editorTabsModel: EditorTabsViewModel
 ) {
-    val editorTabModel = editorTabsModel.selectedCellList
     Card(
         modifier = Modifier.padding(all = 5.dp).clickable { expanded.value = !expanded.value },
         colors = CardDefaults.cardColors(),
@@ -74,7 +74,7 @@ private fun ExpandedIssue(
                         maxLines = 1
                     )
                 }
-                BoardButtons(issueViewModel.wikiLink(), editorTabModel = editorTabModel, issueViewModel)
+                BoardButtons(issueViewModel.wikiLink(), editorTabsViewModel = editorTabsModel, issueViewModel)
             }
             Row(
                 modifier = Modifier
@@ -100,7 +100,6 @@ private fun FoldedIssue(
     issueViewModel: IssueViewModel,
     editorTabsModel: EditorTabsViewModel,
 ) {
-    val editorTabModel = editorTabsModel.selectedCellList
     Card(
         modifier = Modifier.padding(all = 5.dp).clickable { expanded.value = !expanded.value },
         colors = CardDefaults.cardColors(),
@@ -125,7 +124,7 @@ private fun FoldedIssue(
                     maxLines = 1
                 )
             }
-            BoardButtons(issueViewModel.wikiLink(), editorTabModel = editorTabModel, issueViewModel)
+            BoardButtons(issueViewModel.wikiLink(), editorTabsViewModel = editorTabsModel, issueViewModel)
         }
     }
 }
@@ -143,7 +142,7 @@ private fun LeadingIcon(kind: Issue.Kind, issueViewModel: IssueViewModel) {
 @Composable
 private fun BoardButtons(
     link: String,
-    editorTabModel: CellListViewModel?,
+    editorTabsViewModel: EditorTabsViewModel,
     issueViewModel: IssueViewModel
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -152,8 +151,8 @@ private fun BoardButtons(
     FilledIconButton(
         onClick = {
             // search in all files, and open tab if issue-input is in it
-            val projectList = editorTabModel?.editorTabsViewModel?.projectListViewModel()
-            val project = projectList?.selectedProjectState?.value
+            val projectList = editorTabsViewModel.projectListViewModel()
+            val project = projectList.selectedProjectState.value
             project?.fileData?.cellData?.forEach { (tab, cellList) ->
                 cellList.forEach { cell ->
                     if (cell.body == issueViewModel.getInput()) {
@@ -162,19 +161,18 @@ private fun BoardButtons(
                 }
             }
 
-            editorTabModel?.editorTabsViewModel?.editorTabs?.forEach { tab ->
+
+            editorTabsViewModel.editorTabs.forEach { tab ->
                 // Gets index of cell by id
                 val index = tab.cells.indexOfFirst { cell -> cell.body.text == issueViewModel.getInput() }
                 if (index in tab.cells.indices) {
                     val cell = tab.cells[index]
                     cell.collectVariablesToDisplay()
-                    editorTabModel.editorTabsViewModel.selectedIndex.value =
+                    editorTabsViewModel.selectedIndex.value =
                         tab.editorTabsViewModel.findTabIndexByName(tab.nameState.value)
 
                     // Scroll to cell
-                    if (index >= 0) coroutineScope.launch {
-                        tab.scrollState.animateScrollToItem(index = index)
-                    }
+                    coroutineScope.launch { delay(100.milliseconds); tab.scrollState.animateScrollToItem(index = index) }
                 }
             }
         },

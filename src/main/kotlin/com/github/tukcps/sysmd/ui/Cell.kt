@@ -236,7 +236,7 @@ fun Cell(
     hiddenElementIds: MutableMap<Int, Boolean>,
     onDeleteRequest: (Int) -> Unit,
     onMoveRequest: (Int, MoveRequest) -> Unit,
-    cellWasChanged: MutableState<Boolean>,
+    hasChangesState: MutableState<Boolean>,
     internalRefReference: InternalRefReference,
     enableElementListScrolling: MutableState<Boolean>,
 ) {
@@ -297,15 +297,15 @@ fun Cell(
                         onCollapseToggle = onCollapseExpand,
                         onDelete = {
                             onDeleteRequest(index)
-                            cellWasChanged.value = true
+                            hasChangesState.value = true
                         },
                         onMoveUp = {
                             onMoveRequest(index, MoveRequest.Up)
-                            cellWasChanged.value = true
+                            hasChangesState.value = true
                         },
                         onMoveDown = {
                             onMoveRequest(index, MoveRequest.Down)
-                            cellWasChanged.value = true
+                            hasChangesState.value = true
                         },
                         modifier = Modifier.padding(4.dp)
                     )
@@ -329,7 +329,7 @@ fun Cell(
                                         cellViewModel.resultsAnnotations,
                                         readOnly = false,
                                         useHighlighting = cellViewModel.language.value.isCompilable(),
-                                        cellWasChanged,
+                                        hasChangesState,
                                         enableElementListScrolling
                                     )
                                 }
@@ -360,7 +360,7 @@ fun Cell(
                                             cellViewModel.resultsAnnotations,
                                             readOnly = true,
                                             useHighlighting = cellViewModel.language.value.isCompilable(),
-                                            cellWasChanged,
+                                            hasChangesState,
                                             enableElementListScrolling
                                         )
                                     }
@@ -404,15 +404,15 @@ fun Cell(
                             onCollapseToggle = onCollapseExpand,
                             onDelete = {
                                 onDeleteRequest(index)
-                                cellWasChanged.value = true
+                                hasChangesState.value = true
                             },
                             onMoveUp = {
                                 onMoveRequest(index, MoveRequest.Up)
-                                cellWasChanged.value = true
+                                hasChangesState.value = true
                             },
                             onMoveDown = {
                                 onMoveRequest(index, MoveRequest.Down)
-                                cellWasChanged.value = true
+                                hasChangesState.value = true
                             },
                             modifier = Modifier.padding(4.dp)
                         )
@@ -440,7 +440,7 @@ fun Cell(
                                             cellViewModel.resultsAnnotations,
                                             readOnly = true,
                                             useHighlighting = cellViewModel.language.value.isCompilable(),
-                                            cellWasChanged,
+                                            hasChangesState,
                                             enableElementListScrolling
                                         )
                                     }

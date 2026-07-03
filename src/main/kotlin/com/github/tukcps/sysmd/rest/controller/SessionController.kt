@@ -239,9 +239,9 @@ class SessionController {
     @Operation(summary = "Gets all document file names, including non-sysml files like pictures etc.")
     @GetMapping(path = ["/session/cells"], produces = [MediaType.APPLICATION_JSON_VALUE])
     fun getAllCells(
-        @RequestHeader(value = "SessionId", required = true) sessionId: Uuid,
+        @RequestHeader(value = "SessionId", required = true) sessionId: UUID,
     ): ResponseEntity<MutableMap<String, List<ElementResponse>>> {
-        val session = sessionService.getSession(sessionId)
+        val session = sessionService.getSession(sessionId.toKotlinUuid())
         val project = session?.project
         val cellIndex = project?.getCells()
         val responseContent = mutableMapOf<String, List<ElementResponse>>()

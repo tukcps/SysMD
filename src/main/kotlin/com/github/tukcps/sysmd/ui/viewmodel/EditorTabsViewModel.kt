@@ -49,17 +49,20 @@ class EditorTabsViewModel(
      * @param name the file or tab to be shown and activated
      */
     fun showTab(name: String) {
-        val existing: CellListViewModel? = editorTabs.find { tab -> tab.nameState.value == name }
+        val existing: CellListViewModel? = editorTabs.find { tab -> tab.nameState.value.equals(name, ignoreCase = true) }
         if (existing == null) {
             val editorTab = CellListViewModel(sessionIdState, this, mutableStateOf(name))
-            if (projectListViewModel().selectedProjectState.value?.fileData?.cellData[name] != null)
-                editorTab.addTabAndCellList(sessionIdState, projectListViewModel().selectedProjectState.value?.fileData!!.cellData[name]!!)
+            val project = projectListViewModel().selectedProjectState.value
+            val cellDataKey = project?.fileData?.cellData?.keys?.firstOrNull { it.equals(name, ignoreCase = true) }
+            if (cellDataKey != null && project.fileData.cellData[cellDataKey] != null) {
+                editorTab.addTabAndCellList(sessionIdState, project.fileData.cellData[cellDataKey]!!)
+            }
             editorTab.close = { hideTab(editorTab) }
             editorTabs.add(editorTab)
         }
         // Select the shown tab
-       selectedIndex.value = editorTabs
-            .indexOfFirst { it.nameState.value == name }
+        selectedIndex.value = editorTabs
+            .indexOfFirst { it.nameState.value.equals(name, ignoreCase = true) }
             .takeIf { it >= 0 } ?: 0
     }
 
@@ -75,13 +78,13 @@ class EditorTabsViewModel(
 
     /**
      * Changes the name of a file/tab.
-     * @param index the index in the list of tabs.
-     * @param name new name of the tab.
+     * @param oldName the old name of the tab.
+     * @param newName new name of the tab.
      */
-    fun updateTabTitle(index: Int, name: String) {
-        val tab = editorTabs.getOrNull(index)
-        if (tab == null) { logger.error("$name could not be not selected due to internal error.") }
-        tab?.nameState?.value = name
+    fun updateTabTitle(oldName: String, newName: String) {
+        val tab = findTabByName(oldName)
+        if (tab == null) { logger.error("$newName could not be updated due to internal error.") }
+        tab?.nameState?.value = newName
     }
 
     /**
@@ -89,20 +92,15 @@ class EditorTabsViewModel(
      */
     fun save() = editorTabs.forEach { tab ->
         tab.save()
-        tab.elementEdited.value = false
+        tab.hasChangesState.value = false
     }
 
     /**
      * Searches a tab by its name and returns its index in the list of tabs; -1 if not there
      */
     fun findTabIndexByName(name: String): Int {
-        var index = 0
-        editorTabs.forEach {
-            tab -> if (tab.nameState.value == name) return index
-            index++
-        }
-        return -1
+        return editorTabs.indexOfFirst { it.nameState.value.equals(name, ignoreCase = true) }
     }
 
-    fun findTabByName(name: String): CellListViewModel? = editorTabs.find { it.nameState.value == name }
+    fun findTabByName(name: String): CellListViewModel? = editorTabs.find { it.nameState.value.equals(name, ignoreCase = true) }
 }

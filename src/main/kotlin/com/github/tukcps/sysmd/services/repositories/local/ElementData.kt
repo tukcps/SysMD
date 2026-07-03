@@ -5,6 +5,7 @@ import com.github.tukcps.sysmd.model.expression.*
 import com.github.tukcps.sysmd.model.expression.implementation.*
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.*
+import com.github.tukcps.sysmd.model.sysml.CaseDefinition
 import com.github.tukcps.sysmd.model.sysml.implementation.*
 import io.github.tukcps.sysmlv2.api.entities.ElementDAO
 import io.github.tukcps.sysmlv2.api.entities.Identified
@@ -107,6 +108,9 @@ fun ElementDAO.toElement(): Element {
         "AttributeUsage"    -> AttributeUsageImplementation()
         "Behavior"          -> BehaviorImplementation()
         "BodyExpression" -> BodyExpressionImplementation()
+        "CaseDefinition"    -> CaseDefinitionImplementation()
+        "CaseUsage"         -> CaseUsageImplementation()
+        "CalculationUsage"   -> CalculationUsageImplementation()
         "CalculationDefinition" -> CalculationDefinitionImplementation()
         "Class"             -> ClassImplementation()
         "Classifier"        -> ClassifierImplementation()
@@ -167,6 +171,7 @@ fun ElementDAO.toElement(): Element {
         "Subsetting"        -> SubsettingImplementation()
         "TextualRepresentation" -> TextualRepresentationImplementation(body = body!!, language = language!!)
         "Type"              -> TypeImplementation()
+        "VerificationCaseDefinition" -> VerificationCaseDefinitionImplementation()
         "VerificationCaseUsage" -> VerificationCaseUsageImplementation()
         else             -> {
             logger.error("Element with unknown type '$type' in Element DAO; must be valid entity type.")

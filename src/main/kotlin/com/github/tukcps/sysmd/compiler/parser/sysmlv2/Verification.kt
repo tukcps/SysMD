@@ -4,8 +4,12 @@ import com.github.tukcps.sysmd.compiler.SysMLv2
 import com.github.tukcps.sysmd.compiler.parser.kerml.MemberPrefix
 import com.github.tukcps.sysmd.compiler.parser.util.Unsupported
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
-import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.VerificationCaseActions
+import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
+import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.VerificationCaseDefinitionActions
+import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.VerificationCaseUsageActions
 import com.github.tukcps.sysmd.exceptions.throwSyntaxError
+import com.github.tukcps.sysmd.model.sysml.implementation.CaseUsageImplementation
+import com.github.tukcps.sysmd.model.sysml.implementation.VerificationCaseDefinitionImplementation
 import com.github.tukcps.sysmd.model.sysml.implementation.VerificationCaseUsageImplementation
 
 
@@ -13,7 +17,7 @@ import com.github.tukcps.sysmd.model.sysml.implementation.VerificationCaseUsageI
  *      VerificationCaseDefinition = OccurrenceDefinitionPrefix 'verification' 'def'
  *              DefinitionDeclaration CaseBody
  */
-fun SysMLv2.VerificationCaseDefinition() {
+fun SysMLv2.VerificationCaseDefinition() = VerificationCaseDefinitionActions(context = semantics, creator = ::VerificationCaseDefinitionImplementation).parse {
     VERIFICATION.consume()
     DEF.consume()
     DefinitionDeclaration()
@@ -24,7 +28,7 @@ fun SysMLv2.VerificationCaseDefinition() {
  *      VerificationCaseUsage = OccurrenceUsagePrefix 'verification'
  *              ConstraintUsageDeclaration CaseBody
  */
-fun SysMLv2.VerificationCaseUsage() = VerificationCaseActions(context = semantics, creator = ::VerificationCaseUsageImplementation).parse {
+fun SysMLv2.VerificationCaseUsage() = VerificationCaseUsageActions(context = semantics, creator = ::VerificationCaseUsageImplementation).parse {
     VERIFICATION.consume()
     ConstraintUsageDeclaration()
     CaseBody()
@@ -75,7 +79,7 @@ fun SysMLv2.CaseBodyItemStarts(): Boolean = actionBodyItemStarts() ||
  *          MemberPrefix 'objective'
  *          ownedRelatedElement += ObjectiveRequirementUsage
  */
-fun SysMLv2.ObjectiveMember() {
+fun SysMLv2.ObjectiveMember() = FeatureActions<CaseUsageImplementation>(semantics, ::CaseUsageImplementation).parse {
     OBJECTIVE.consume()
     ObjectiveRequirementUsage()
 }

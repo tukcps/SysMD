@@ -2,7 +2,7 @@ package com.github.tukcps.sysmd.model.sysml.implementation
 
 import com.github.tukcps.sysmd.model.sysml.CalculationDefinition
 
-class CalculationDefinitionImplementation(
+open class CalculationDefinitionImplementation(
     declaredName: String? = null,
     declaredShortName: String? = null,
     elementType: String = "CalculationDefinition",

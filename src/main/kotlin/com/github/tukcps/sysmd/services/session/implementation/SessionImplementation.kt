@@ -111,7 +111,9 @@ open class SessionImplementation(
     private fun initialize() {
         // global, Base, and Anything are always present, even without loading a library.
         repo.elements[global.elementId!!] = global
-        val baseLibrary = addOwnedMember(PackageImplementation(declaredName = "Base", isStandard = true, isLibraryElement = true), global)
+        val baseLibrary = addOwnedMember(PackageImplementation(declaredName = "Base", isStandard = true, isLibraryElement = true).also {
+            it.elementId = Generators.nameBasedGenerator().generate("Base")
+        }, global)
         addOwnedMember(anything, baseLibrary)
 
         require(global === this[global.elementId!!])

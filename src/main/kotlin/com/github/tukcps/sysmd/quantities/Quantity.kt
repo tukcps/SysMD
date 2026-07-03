@@ -520,12 +520,15 @@ class Quantity : VectorQuantity {
         when (value) {
             is Integer -> {
                 val range = (value as Integer).getRange()
+                val minIsInf = range.min == Long.MIN_VALUE || range.min <= -2147483647L
+                val maxIsInf = range.max == Long.MAX_VALUE || range.max >= 2147483647L
                 return when {
+                    minIsInf && maxIsInf -> "*..*"
                     range.min == range.max -> range.min.toString()
                     range.min > range.max -> "∅"
                     else -> {
-                        val min = if (range.min == Long.MIN_VALUE) "*" else range.min.toString()
-                        val max = if (range.max == Long.MAX_VALUE) "*" else range.max.toString()
+                        val min = if (minIsInf) "*" else range.min.toString()
+                        val max = if (maxIsInf) "*" else range.max.toString()
                         "$min..$max"
                     }
                 }

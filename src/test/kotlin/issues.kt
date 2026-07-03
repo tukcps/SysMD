@@ -187,6 +187,18 @@ class IssuesAndRegressions {
         assertEquals(IntegerRange(1, 2), comp.multiplicityRange)
     }
 
+    @Test
+    fun multiplicityBaseAmbiguityTest() = testSession("ScalarValues", "Parts") {
+        loadSysMLv2("""
+            part def Wire;
+            part wireLidar: Wire[0..1] {
+                attribute test: ScalarValues::Real;
+            }
+        """)
+        solver.propagate()
+        assertNoIssues()
+    }
+
     /** Use of multiplicity as variable. */
     @Test
     fun automotiveExample() = testSession("Occurrences")  {

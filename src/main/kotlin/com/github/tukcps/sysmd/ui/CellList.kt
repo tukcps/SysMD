@@ -105,7 +105,7 @@ fun CellList(
                             collapsedElementIds = cellListViewModel.collapsedCellIndices,
                             hiddenElementIds = cellListViewModel.hiddenElementIds,
                             onDeleteRequest = ::onDeleteRequest,
-                            cellWasChanged = cellListViewModel.elementEdited,
+                            hasChangesState = cellListViewModel.hasChangesState,
                             onMoveRequest = cellListViewModel::onMoveRequest,
                             internalRefReference = cellListViewModel.references,
                             enableElementListScrolling = enableElementListScrolling,

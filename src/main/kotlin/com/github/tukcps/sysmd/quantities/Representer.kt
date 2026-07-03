@@ -36,7 +36,7 @@ class Representer(
     private fun findInputType() {
         inputType = if (max.isNaN() || min.isNaN())
             InputType.NaN
-        else if (max == Double.POSITIVE_INFINITY || min == Double.NEGATIVE_INFINITY)
+        else if (max >= Float.MAX_VALUE.toDouble() || min <= -Float.MAX_VALUE.toDouble() || max == Double.POSITIVE_INFINITY || min == Double.NEGATIVE_INFINITY)
             InputType.InfinityIncluded
         else if (max < min)
             InputType.Illegal   //cases for same, close positive and close negative  values
@@ -57,10 +57,14 @@ class Representer(
         findInputType()
         return when (this.inputType) {
             InputType.NaN -> naNString
-            InputType.InfinityIncluded -> when (min) {
-                Double.NEGATIVE_INFINITY if max == Double.POSITIVE_INFINITY -> "$infinityString..$infinityString"
-                Double.NEGATIVE_INFINITY -> "$infinityString.." + toEngineeringNotation(max)
-                else -> toEngineeringNotation(min) + "..$infinityString"
+            InputType.InfinityIncluded -> {
+                val isMinInf = min == Double.NEGATIVE_INFINITY || min <= -Float.MAX_VALUE.toDouble()
+                val isMaxInf = max == Double.POSITIVE_INFINITY || max >= Float.MAX_VALUE.toDouble()
+                when {
+                    isMinInf && isMaxInf -> "$infinityString..$infinityString"
+                    isMinInf -> "$infinityString.." + toEngineeringNotation(max)
+                    else -> toEngineeringNotation(min) + "..$infinityString"
+                }
             }
             InputType.ClosedRange -> toEngineeringNotation(min)
             InputType.Illegal -> illegalValue

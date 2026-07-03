@@ -48,11 +48,10 @@ class CellListViewModel(
 
     /** The states of the view model. */
     val cells = mutableStateListOf<CellViewModel>()
-
     var scrollState = LazyListState()
     val editState =  mutableStateOf(false)
 
-    val elementEdited: MutableState<Boolean> = mutableStateOf(false)
+    val hasChangesState: MutableState<Boolean> = mutableStateOf(false)
     val references = InternalRefReference(editorTabModel = this) { generateTableOfContents() }
 
     /**

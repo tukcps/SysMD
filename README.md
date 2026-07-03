@@ -13,7 +13,7 @@ Key features include:
 - The ability to exchange content as Markdown documents (e.g., via email), enabling collaboration with stakeholders who are not experts in systems engineering.
 
 A key differentiator of SysMD is that models—such as requirements, constraints, and calculations—are **executable**.
-By “executable models,” we mean that an integrated constraint solver can:
+By “executable models,” we mean that an **integrated constraint solver** can:
 - verify the consistency of SysML v2 models, and
 - automatically compute missing values.
 
@@ -113,6 +113,7 @@ SysMD was developed and is maintained by
   - Moritz Herzog (RPTU)
   - Nicolas Theobald (RPTU)
 - HOOD Group
+  - Bertil Muth
   - Markus Eberhard
 
 The solver very much profits from the AADD library for computation with ranges:

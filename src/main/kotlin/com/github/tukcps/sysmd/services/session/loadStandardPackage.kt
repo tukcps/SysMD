@@ -108,7 +108,7 @@ val Arrangements = hashMapOf(
     "KerML"         to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Ranges", "KerML"),
     "KerMLLibraries" to listOf("Base", "ScalarValues", "Ranges", "Objects", "Links", "Occurrences", "Performances", "Ranges", "ISQ", "Quantities"),
     "SysMLLibraries" to listOf("Base", "ScalarValues", "Ranges", "Objects", "Links", "Occurrences", "Performances", "Items", "Ranges",
-        "Ports", "Parts",  "Actions", "Calculations", "Constraints", "Requirements", "Interfaces", "States", "Connections", "Signals", "ISQ", "Quantities"),
+        "Ports", "Parts",  "Actions", "Calculations", "Constraints", "Requirements", "Interfaces", "States", "Connections", "Signals", "ISQ", "Quantities", "VerificationCases"),
     "ISO26262"      to listOf("Base", "ScalarValues", "Ranges", "Objects", "Links", "Occurrences", "ISO26262", "Quantities"),
     "Signals"       to listOf("Base", "ScalarValues", "Links", "Occurrences", "Signals"),
     "SysMD"         to listOf("Base", "ScalarValues", "SysMD"),
