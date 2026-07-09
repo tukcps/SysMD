@@ -5,13 +5,14 @@ package com.github.tukcps.sysmd.ui.dialogs
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.Icon
-import androidx.compose.material.Text
-import androidx.compose.material.TextButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Alignment
@@ -99,9 +100,18 @@ fun SaveDialog(
                         shape = CircleShape,
                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                         border = BorderStroke(1.dp, AppTheme.colors.iconRed),
-                        onClick = { onDrop(); showSaveDialog.value = false }
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.onSurface),
+                        onClick = {
+                            onDrop()
+                            showSaveDialog.value = false
+                        }
                     ) {
-                        Text("Drop Changes", maxLines = 1, style = MaterialTheme.typography.labelMedium)
+                        Text(
+                            "Drop Changes",
+                            maxLines = 1,
+                            style = MaterialTheme.typography.labelMedium
+                        )
                     }
 
                     Spacer(modifier = Modifier.width(16.dp))
@@ -114,9 +124,19 @@ fun SaveDialog(
                         shape = CircleShape,
                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                         border = BorderStroke(1.dp, AppTheme.colors.iconGreen),
-                        onClick = { onSave(); showSaveDialog.value = false }
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.onSurface
+                        ),
+                        onClick = {
+                            onSave()
+                            showSaveDialog.value = false
+                        }
                     ) {
-                        Text("Save Changes", maxLines = 1, style = MaterialTheme.typography.labelMedium)
+                        Text(
+                            "Save Changes",
+                            maxLines = 1,
+                            style = MaterialTheme.typography.labelMedium
+                        )
                     }
                 }
             },
