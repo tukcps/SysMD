@@ -391,11 +391,11 @@ class SessionController {
     @Operation(summary = "Gets all owned elements of an element.")
     @GetMapping(path = ["/session/elements/{elementId}/ownedelements"], produces = [MediaType.APPLICATION_JSON_VALUE])
     fun getOwnedElements(
-        @RequestHeader(value = "SessionId", required = true) sessionId: Uuid,
-        @Parameter(description = "elementId of an element of kind Type", required = true) @PathVariable elementId: Uuid
+        @RequestHeader(value = "SessionId", required = true) sessionId: UUID,
+        @Parameter(description = "elementId of an element of kind Type", required = true) @PathVariable elementId: UUID
     ): ResponseEntity<ArrayList<ElementResponse>>  {
         return try {
-            val owned = sessionService.getOwnedElements(sessionId, elementId)
+            val owned = sessionService.getOwnedElements(sessionId.toKotlinUuid(), elementId.toKotlinUuid())
             return if (owned != null)
                 ResponseEntity.ok().body(owned.map { ElementResponse(it) }.toCollection(ArrayList()))
             else

@@ -1,6 +1,8 @@
 package com.github.tukcps.sysmd.ui.viewmodel
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.icons.Icons
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -10,7 +12,9 @@ import com.github.tukcps.sysmd.compiler.scanner.Token.Definitions.keywords
 import com.github.tukcps.sysmd.logger
 import com.github.tukcps.sysmd.settings
 import com.github.tukcps.sysmd.ui.styles.AppTheme
+import com.github.tukcps.sysmd.ui.styles.DarkColors
 import com.github.tukcps.sysmd.ui.styles.Fonts
+import com.github.tukcps.sysmd.ui.styles.LightColors
 import kotlinx.io.IOException
 import kotlinx.io.buffered
 import kotlinx.io.files.Path
@@ -97,4 +101,12 @@ fun exportSettings() {
     } catch (_: Exception) {
         logger.error("Error exporting settings")
     }
+}
+
+
+@Composable
+fun colorMode() = when (settings.colorStyle) {
+    "dark" -> DarkColors
+    "light" -> LightColors
+    else -> if (isSystemInDarkTheme()) DarkColors else LightColors
 }

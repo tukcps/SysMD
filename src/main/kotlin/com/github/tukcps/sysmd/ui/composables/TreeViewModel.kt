@@ -5,7 +5,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.vector.ImageVector
 
-
 /**
  * Interface class that must be implemented by the class that is displayed.
  * The view model TreeViewModel uses it to set up a displayable tree with additional
@@ -13,14 +12,19 @@ import androidx.compose.ui.graphics.vector.ImageVector
  * @property hasChildren true if node has children
  * @property ignoreChildren if set, no children of node will be displayed
  * @property name Name of the node that will be displayed
- * @property children Method that returns a list of the same type's children (TreeViewNodeModel)
  */
 interface TreeViewNodeModel {
     val hasChildren: Boolean
     val ignoreChildren: Boolean
     val name: String
+
+    /** Returns list of children of a node. */
     fun children(): List<TreeViewNodeModel>
+
+    /** @return An image vector for display as Icon */
     fun icon(): ImageVector
+
+    /** @return The element (of any type), can be used to generate texts etc. after cast. */
     fun element(): Any?
 }
 

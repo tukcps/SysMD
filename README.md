@@ -74,6 +74,29 @@ resp. on Windows systems:
 gradlew.bat bootRun
 ```
 
+### Troubleshooting
+
+If the build or startup fails, verify that the required tool versions are installed:
+
+```bash
+java --version      # Java 21+
+./gradlew --version # Gradle 8+
+```
+
+If you are connected to a corporate network, Gradle may require proxy access to download dependencies from external repositories. If dependency resolution fails, check the proxy settings in `gradle.properties`.
+
+Example:
+
+```properties
+systemProp.http.proxyHost=cloudproxy.yourdomain.com
+systemProp.http.proxyPort=8080
+systemProp.https.proxyHost=cloudproxy.yourdomain.com
+systemProp.https.proxyPort=8080
+```
+
+Please contact your IT support team if you are unsure about the correct proxy configuration.
+
+
 ## Creating installer
 
 To create a platform-specific installer, use the Gradle target  ```sysMDPackage```.

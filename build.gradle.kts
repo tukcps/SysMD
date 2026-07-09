@@ -126,6 +126,7 @@ dependencies {
     implementation("org.diagramsascode:diagramsascode-image:0.1.5")
     implementation("org.apache.xmlgraphics:batik-transcoder:1.19")
     implementation("org.apache.xmlgraphics:batik-codec:1.19")
+    implementation(libs.ui.graphics.desktop)
 
     // Use the Kotlin JUnit integration.
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:2.3.20")

@@ -1,7 +1,6 @@
 package com.github.tukcps.sysmd
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
@@ -32,6 +31,7 @@ import com.github.tukcps.sysmd.ui.rendering.showNoSuchFileWarning
 import com.github.tukcps.sysmd.ui.rendering.showOpenFileExternalWarning
 import com.github.tukcps.sysmd.ui.styles.*
 import com.github.tukcps.sysmd.ui.viewmodel.SysMDViewModel
+import com.github.tukcps.sysmd.ui.viewmodel.colorMode
 import com.github.tukcps.sysmd.ui.viewmodel.importSettings
 import com.github.tukcps.sysmd.ui.viewmodel.loadSettings
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -107,11 +107,7 @@ object SysMDNotebook {
 
         application {
 
-            val colors = when (settings.colorStyle) {
-                "dark" -> DarkColors
-                "light" -> LightColors
-                else -> if (isSystemInDarkTheme()) DarkColors else LightColors
-            }
+            val colors = colorMode()
             AppTheme.colors.onWarning = if (colors == DarkColors) dark_onWarning else light_onWarning
             AppTheme.colors.warningContainer = if (colors == DarkColors) dark_WarningContainer else light_WarningContainer
             AppTheme.colors.warning = if (colors == DarkColors) dark_Warning else light_Warning
@@ -197,7 +193,7 @@ object SysMDNotebook {
                             displayWarningOpenFileWithDefaultSystemProgram(showOpenFileExternalWarning, fileURIToOpen)
                         if (menuState.deleteFileClicked.value)
                             displayWarningFileDeletion(menuState.deleteFileClicked) {}//todo - check if needed
-                        if (menuState.systemCexportClicked.value) {
+                        if (menuState.systemCExportClicked.value) {
                             var ucbData: UcbDataPack? = null
                             val systemcExporter = Exporter()
                             try {
@@ -205,11 +201,11 @@ object SysMDNotebook {
                                 ucbData = systemcExporter.getUCBData()
                                 openUCB.value = true
                             } catch (e: Exception) {
-                                menuState.systemCexportClicked.value = false
+                                menuState.systemCExportClicked.value = false
                                 logger.error("Problem with analyzing the SysMD tree: ${e.localizedMessage}")
                             }
                             if (openUCB.value) {
-                                UserControlBoard(ucbData!!, systemcExporter, menuState.systemCexportClicked, openUCB)
+                                UserControlBoard(ucbData!!, systemcExporter, menuState.systemCExportClicked, openUCB)
                             }
                         }
                     }

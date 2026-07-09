@@ -15,7 +15,6 @@ import kotlin.test.assertNotNull
 
 class ErrorReportingTests {
 
-
     /**
      * Repeated execution of the same code does not add new errors.
      */

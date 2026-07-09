@@ -61,9 +61,6 @@ object AppTheme {
     )
 }
 
-
-
-
 fun Font(@Suppress("UNUSED_PARAMETER") name: String, res: String, weight: FontWeight, style: FontStyle): Font =
     androidx.compose.ui.text.platform.Font("font/$res.ttf", weight, style)
 

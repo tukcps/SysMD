@@ -9,30 +9,28 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.onClick
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.CursorDropdownMenu
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerButton
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.isShiftPressed
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import com.github.tukcps.sysmd.services.repositories.local.ElementData
-import com.github.tukcps.sysmd.ui.styles.AppTheme
+import com.github.tukcps.sysmd.ui.styles.DarkColors
 import com.github.tukcps.sysmd.ui.viewmodel.HasATree
 import com.github.tukcps.sysmd.ui.viewmodel.IsATree
+import com.github.tukcps.sysmd.ui.viewmodel.colorMode
 
 data class MenuState(
     val menuClicked: MutableState<Boolean>,
@@ -41,10 +39,10 @@ data class MenuState(
     val deleteFileClicked:MutableState<Boolean>,
     val createBranchClicked:MutableState<Boolean>,
     val deleteProjectClicked:MutableState<Boolean>,
-    val systemCexportClicked: MutableState<Boolean>,
+    val systemCExportClicked: MutableState<Boolean>,
     val connectToBackendClicked:MutableState<Boolean>,
-    val importResultsClicked: MutableState<Boolean>,
-    )
+    val importResultsClicked: MutableState<Boolean>
+)
 
 val menuState = MenuState(
     menuClicked = mutableStateOf(false),
@@ -53,9 +51,9 @@ val menuState = MenuState(
     deleteFileClicked = mutableStateOf(false),
     createBranchClicked = mutableStateOf(false),
     deleteProjectClicked = mutableStateOf(false),
-    systemCexportClicked = mutableStateOf(false),
+    systemCExportClicked = mutableStateOf(false),
     connectToBackendClicked = mutableStateOf(false),
-    importResultsClicked = mutableStateOf(false),
+    importResultsClicked = mutableStateOf(false)
 )
 
 
@@ -73,8 +71,8 @@ fun TreeViewPlus(
         with(LocalDensity.current) {
             Column {
                 val scrollState = rememberLazyListState()
-                val fontSize = AppTheme.fontSize
-                val lineHeight = fontSize.toDp() * 1.5f
+                val textStyle = MaterialTheme.typography.bodySmall
+                val lineHeight = textStyle.fontSize.toDp() * 1.5f
 
                 Row {
                     LazyColumn(
@@ -83,7 +81,7 @@ fun TreeViewPlus(
                     ) {
                         items(model.value.items.size) {
                             if (filter(model.value.items[it] ))
-                                TreeItem(fontSize, lineHeight, model.value, it)
+                                TreeItem(textStyle, lineHeight, model.value, it)
                         }
                     }
                 }
@@ -98,7 +96,7 @@ fun TreeViewPlus(
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
 private fun TreeItem(
-    fontSize: TextUnit,
+    textStyle: TextStyle,
     height: Dp,
     model: TreeViewModel,
     index: Int,
@@ -115,14 +113,13 @@ private fun TreeItem(
             }
             .onClick(
                 matcher = { it.button == PointerButton.Primary && it.keyboardModifiers.isShiftPressed }
-            ) {
-                model.items[index].display(index)
-            }
-            .height(height)
+            ) { model.items[index].display(index) }
+            .defaultMinSize(minHeight = height)
             .fillMaxWidth()
+            .padding(vertical = 1.dp)
             .background(if (index == model.selectedItem.value) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
     ) {
-        val active = remember { mutableStateOf(false) }
+        var active by remember { mutableStateOf(false) }
         if(menuState.menuClicked.value){
             Contextmenu(model)
         }
@@ -137,23 +134,44 @@ private fun TreeItem(
             )
         }
 
-        // Text right of icon.
-        Text(
-            text = model.items.getOrNull(index)?.name?:"(?)",
-            color = if (active.value) LocalContentColor.current.copy(alpha = 0.60f) else LocalContentColor.current,
+        // Colors for different kind in treeview
+        val colors = typeBadgeColor( ((model.items.getOrNull(index)?.element) as? ElementData)?.type ?: "")
+        val textColor = if (active) colors.foreground else colors.foreground.copy(alpha = 0.75f)
+
+        Surface(
             modifier = Modifier
                 .align(Alignment.CenterVertically)
-                .clipToBounds()
                 .onPointerEvent(PointerEventType.Move) {}
-                .onPointerEvent(PointerEventType.Enter) { active.value = true }
-                .onPointerEvent(PointerEventType.Exit) { active.value = false },
-            softWrap = true,
-            fontSize = fontSize,
-            overflow = TextOverflow.Ellipsis,
-            maxLines = 1
-        )
+                .onPointerEvent(PointerEventType.Enter) { active = true }
+                .onPointerEvent(PointerEventType.Exit) { active = false },
+            color = colors.background,
+            shape = CircleShape,
+            tonalElevation = 0.dp,
+            shadowElevation = 0.dp
+        ) {
+            Text(
+                text = model.items.getOrNull(index)?.name ?: "(?)",
+                style = textStyle,
+                color = textColor,
+                modifier = Modifier.padding(
+                    horizontal = 6.dp,
+                    vertical = 1.dp
+                ),
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis,
+                maxLines = 1
+            )
+        }
     }
 }
+data class BadgeColors(
+    val background: Color,
+    val foreground: Color
+)
+
+@Composable
+fun typeBadgeColor(type: String): BadgeColors =
+    TypeBadgeColors.colors(type, colorMode() == DarkColors)
 
 @Composable
 fun Contextmenu(model: TreeViewModel) {
@@ -176,7 +194,7 @@ fun Contextmenu(model: TreeViewModel) {
 
                 DropdownMenuItem(
                     { Text("Export SystemC") },
-                    { menuState.systemCexportClicked.value = true
+                    { menuState.systemCExportClicked.value = true
                         elementToSystemC = mutableStateOf((model.items[model.selectedItem.value].item.node as HasATree).element) }
                 )
             }
@@ -191,6 +209,6 @@ fun Contextmenu(model: TreeViewModel) {
     }
 
     //Closing Menu
-    if(menuState.renderClicked.value || menuState.createFileClicked.value || menuState.deleteFileClicked.value)
+    if (menuState.renderClicked.value || menuState.createFileClicked.value || menuState.deleteFileClicked.value)
         menuState.menuClicked.value = false
 }

@@ -16,17 +16,20 @@ val logger: Logger = LoggerFactory.getLogger("SysMD Notebook")
 
 suspend fun main(args: Array<String>) {
 
+    val headless = "headless" in args
     // Launches Spring Boot Backend
-    CoroutineScope(Dispatchers.IO).launch {
+    val springJob = CoroutineScope(Dispatchers.IO).launch {
         SpringApplicationBuilder(
             SysMdRunner::class.java,
-        ).headless("headless" in args)
+        ).headless(headless)
             .run(*args)
     }
 
     // Launches SysMD Notebook
-    if ("headless" !in args)
+    if (!headless)
         SysMDNotebook.showUI(args)
+    else
+        springJob.join()
 }
 
 /**
