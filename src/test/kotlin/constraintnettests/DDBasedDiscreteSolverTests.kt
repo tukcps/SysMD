@@ -7,11 +7,10 @@ import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.initialize
 import io.github.tukcps.aadd.BDD
 import io.github.tukcps.aadd.values.Range
-import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.Test
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
+import kotlin.test.*
 
 class DDBasedDiscreteSolverTests {
 
@@ -312,7 +311,7 @@ class DDBasedDiscreteSolverTests {
         solver.propagate()
         val y = solver.getVariable("z")
         assertNotNull(y)
-        assertTrue(y!!.vectorQuantity.value == builder.False)
+        assertTrue(y.vectorQuantity.value == builder.False)
         //disc.solve(props)
         // println("break")
     }

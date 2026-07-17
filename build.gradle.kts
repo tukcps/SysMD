@@ -13,7 +13,7 @@ import org.gradle.internal.os.OperatingSystem
  * - also set the value standalone according to your setup
  */
 group   = "com.github.tukcps"
-version = "4.2.6"               // must be number.number.number
+version = "4.2.7"               // must be number.number.number
 val aaddVersion = "0.1.15"
 val sysmlapiVersion = "3.9.12"
 val useMavenAADD = true
@@ -227,4 +227,154 @@ tasks.named<Delete>("clean") {
             include("sysmd.log.*.gz")   // z. B. sysmd.log.2025-11-25.gz
         }
     )
+}
+
+/**
+ * Source set for generated sources from OMG XMI
+ */
+kotlin {
+    sourceSets.main {
+        kotlin.srcDir(layout.buildDirectory.dir("generatedAntlr"))
+        kotlin.srcDir(layout.buildDirectory.dir("generated/source/sysmd/main/kotlin"))
+    }
+}
+
+/**
+ * Source set for the standalone MOF metamodel generator.
+ */
+val generatorSourceSet = sourceSets.create("generator") {
+    kotlin.srcDir("src/generator/kotlin")
+    resources.srcDir("src/generator/resources")
+}
+
+configurations[generatorSourceSet.implementationConfigurationName]
+    .extendsFrom(configurations["implementation"])
+
+configurations[generatorSourceSet.runtimeOnlyConfigurationName]
+    .extendsFrom(configurations["runtimeOnly"])
+
+/**
+ * Source set for metamodel generator tests.
+ */
+val generatorTestSourceSet = sourceSets.create("generatorTest") {
+    kotlin.srcDir("src/generatorTest/kotlin")
+    resources.srcDir("src/generatorTest/resources")
+
+    compileClasspath += generatorSourceSet.output
+    runtimeClasspath += generatorSourceSet.output
+}
+
+configurations[generatorTestSourceSet.implementationConfigurationName]
+    .extendsFrom(configurations["testImplementation"])
+
+configurations[generatorTestSourceSet.runtimeOnlyConfigurationName]
+    .extendsFrom(configurations["testRuntimeOnly"])
+
+/**
+ * Registers a SysMD metamodel generator task.
+ *
+ * @param name Gradle task name.
+ * @param target Optional generator target. If omitted, all generator targets
+ * are executed.
+ * @param description Task description.
+ */
+fun registerGeneratorTask(
+    name: String,
+    target: String? = null,
+    description: String
+) {
+    tasks.register<JavaExec>(name) {
+        group = "sysmd"
+        this.description = description
+
+        dependsOn(generatorSourceSet.classesTaskName)
+
+        mainClass.set("com.github.tukcps.sysmd.model.generator.GeneratorMain")
+
+        classpath = generatorSourceSet.runtimeClasspath
+
+        target?.let {
+            args(it)
+        }
+    }
+}
+
+/**
+ * SysMD's metamodel generator tasks.
+ */
+registerGeneratorTask(
+    name = "generateMetamodel",
+    description = "Runs all SysMD metamodel generator targets."
+)
+
+registerGeneratorTask(
+    name = "generateMetamodelReport",
+    target = "report",
+    description = "Creates the SysMD metamodel report."
+)
+
+registerGeneratorTask(
+    name = "generateDataElementReport",
+    target = "dataReport",
+    description = "Creates the SysMD data element report."
+)
+
+registerGeneratorTask(
+    name = "generateElementType",
+    target = "type",
+    description = "Generates the SysMD element type enumeration."
+)
+
+registerGeneratorTask(
+    name = "generateElementHierarchy",
+    target = "hierarchy",
+    description = "Generates the SysMD element hierarchy."
+)
+
+/* not in v2.4.x
+registerGeneratorTask(
+    name = "generateElementFactory",
+    target = "factory",
+    description = "Generates the SysMD element factory."
+)
+
+registerGeneratorTask(
+    name = "generateElementData",
+    target = "elementData",
+    description = "Generates the common SysMD element data interface."
+)
+
+registerGeneratorTask(
+    name = "generateMigrationProposals",
+    target = "migration",
+    description = "Generates metamodel migration proposals."
+)
+
+registerGeneratorTask(
+    name = "generateElementTypeResolver",
+    target = "typeResolver",
+    description = "Generates runtime metamodel type resolution."
+) */
+
+/**
+ * Runs the metamodel generator tests.
+ */
+tasks.register<Test>("generatorTest") {
+    group = "sysmd"
+    description = "Runs the metamodel generator tests."
+
+    testClassesDirs = generatorTestSourceSet.output.classesDirs
+    classpath = generatorTestSourceSet.runtimeClasspath
+
+    useJUnitPlatform()
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    if (name == "compileKotlin") {
+        dependsOn("generateElementType", "generateElementHierarchy")
+    }
+}
+
+tasks.named("bootRun") {
+    dependsOn("generateElementType", "generateElementHierarchy")
 }

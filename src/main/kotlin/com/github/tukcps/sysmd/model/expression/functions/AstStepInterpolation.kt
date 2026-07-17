@@ -23,7 +23,7 @@ internal class AstStepInterpolation(model: Session, args: ArrayList<AstNode>) :
 
     init {
         if (numberOfParameters % 2 != 1 && numberOfParameters >= 3)
-            throw SemanticError("Step function needs an even number of Real or Integer parameters")
+            throw SemanticError("Step function needs an odd number of Real or Integer parameters")
 
         for (i in 1..args.indices.last step 2)
             points.add(Pair(getParam(i).upQuantity.asQuantity(), getParam(i + 1).upQuantity.asQuantity()))

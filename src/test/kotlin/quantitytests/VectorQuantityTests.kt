@@ -9,13 +9,10 @@ import io.github.tukcps.aadd.IDD
 import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.quantities.Unit
 import com.github.tukcps.sysmd.quantities.VectorQuantity
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
+import kotlin.test.assertEquals
+import kotlin.test.BeforeTest
+import kotlin.test.Test
 
-
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class VectorQuantityTests {
     private lateinit var DDdummy0: AADD
     private lateinit var DDdummy0_5: AADD
@@ -53,7 +50,7 @@ class VectorQuantityTests {
     private lateinit var BDDdummyT: BDD
     private lateinit var BDDdummyF: BDD
 
-    @BeforeAll
+    @BeforeTest
     fun setUp() {
         DDBuilder {
             DDdummy0 = real(0.0)

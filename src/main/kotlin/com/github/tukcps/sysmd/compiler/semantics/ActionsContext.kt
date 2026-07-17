@@ -68,7 +68,7 @@ open class ActionsContext(
      * @param ownerPrefix a string of owners separated by '::'
      */
     fun addOwningNamespaces(ownerPrefix: String = "") {
-        val ownersPrefixes = ownerPrefix.split("::").filter { it.isNotBlank() }
+        val ownersPrefixes = ownerPrefix.split("::").filter { it.isNotBlank() && it != "Global" }
         ownersPrefixes.forEach {
             if (it.isNotEmpty()) {
                 val found = element<Namespace>().resolveLocal(it)?.memberElement

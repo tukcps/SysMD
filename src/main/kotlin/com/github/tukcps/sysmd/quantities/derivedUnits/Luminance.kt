@@ -14,7 +14,7 @@ open class Luminance(name: String, symbol: String, prefix: Prefix, convFac: Doub
     /**
      * generate UnitObjects and add them to the UnitList
      */
-    object Stilb : Luminance("stilb", "sb", NoPrefix, 1.0)
+    object Stilb : Luminance("stilb", "sb", NoPrefix, 10000.0)
 
     override fun copy(): Luminance {
         return Luminance(name, symbol, prefix, convFac, exponent, isLogarithmic)

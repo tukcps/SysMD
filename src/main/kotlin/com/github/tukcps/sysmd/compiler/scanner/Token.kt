@@ -225,7 +225,7 @@ data class Token(
             "private" to Kind.PRIVATE,
             "protected" to Kind.PROTECTED,
             "public" to Kind.PUBLIC,
-            "readonly" to Kind.READONLY,            // Missing in standard -- bug?
+            "readonly" to Kind.READONLY,            // Deprecated
             "redefines" to Kind.REDEFINES,
             "redefinition" to Kind.REDEFINITION,
             "references" to Kind.REFERENCES,

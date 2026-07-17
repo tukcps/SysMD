@@ -15,6 +15,11 @@ import com.github.tukcps.sysmd.services.session.SessionManager
 import com.github.tukcps.sysmd.ui.composables.TreeViewNodeModel
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Multiplicity
+import com.github.tukcps.sysmd.model.kerml.Relationship
+import com.github.tukcps.sysmd.model.kerml.Connector
+import com.github.tukcps.sysmd.model.kerml.Association
+import com.github.tukcps.sysmd.model.sysml.InterfaceUsage
+import com.github.tukcps.sysmd.model.sysml.AttributeUsage
 import kotlin.uuid.Uuid
 import kotlin.uuid.Uuid.Companion.NIL
 import kotlin.uuid.toKotlinUuid
@@ -121,9 +126,17 @@ fun ElementData.generateName(sessionId: Uuid? = null): String = try {
             if (variable != null) {
                 if (kermlElement is Multiplicity) {
                     displayName += " ${variable.vectorQuantity}"
-                } else {
+                } else if (kermlElement is AttributeUsage) {
                     displayName += " = ${variable.vectorQuantity}"
                 }
+            }
+        }
+        if (kermlElement is Relationship && kermlElement !is Connector && kermlElement !is Association) {
+            val targetName = kermlElement.target.firstOrNull()?.let {
+                it.qualifiedName ?: it.escapedName() ?: "[${it.elementType}]"
+            }
+            if (targetName != null) {
+                displayName += " $targetName"
             }
         }
     }

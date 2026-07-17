@@ -11,6 +11,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.builder.SpringApplicationBuilder
 
 
+/**
+ * Where SysMD persists all its Settings.
+ */
 var settings: Settings = Settings()
 val logger: Logger = LoggerFactory.getLogger("SysMD Notebook")
 

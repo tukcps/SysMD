@@ -10,7 +10,6 @@ import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 
 class InvariantTests {
     @Test

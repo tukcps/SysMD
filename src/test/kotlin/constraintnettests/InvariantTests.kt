@@ -2,13 +2,12 @@ package constraintnettests
 
 import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.resolve.resolveVar
-import org.junit.jupiter.api.Assertions
+import kotlin.test.assertEquals
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Test
-import kotlin.test.assertEquals
 
 class InvariantTests {
 
@@ -163,8 +162,8 @@ class InvariantTests {
             assert constraint ass { 12 / f < 6 } 
         """, Runlevel.SOLVED)
         assertNoIssues()
-        Assertions.assertEquals(2, global.resolveVar("f")!!.idd().getRange().min)
-        Assertions.assertEquals(4, global.resolveVar("f")!!.idd().getRange().max)
+        assertEquals(2, global.resolveVar("f")!!.idd().getRange().min)
+        assertEquals(4, global.resolveVar("f")!!.idd().getRange().max)
     }
 
     @Test
@@ -174,8 +173,8 @@ class InvariantTests {
             assert constraint ass { 12 * f > 24 } 
         """, Runlevel.SOLVED)
         assertNoIssues()
-        Assertions.assertEquals(2, global.resolveVar("f")!!.idd().getRange().min)
-        Assertions.assertEquals(4, global.resolveVar("f")!!.idd().getRange().max)
+        assertEquals(2, global.resolveVar("f")!!.idd().getRange().min)
+        assertEquals(4, global.resolveVar("f")!!.idd().getRange().max)
     }
 
     @Test
@@ -303,5 +302,30 @@ class InvariantTests {
         val resultVar = global.resolveVar("result")!!
         assertEquals(2.0, resultVar.max(), 0.00001)
         assertEquals(1.0, resultVar.min(), 0.00001)
+    }
+
+    @Test
+    fun restrictIntegerNegative() = testSession("Ranges") {
+        loadSysMLv2(
+            """    
+                attribute weight: Ranges::IntegerInRange {:>> range = "-50..0";}
+                assert constraint r { weight <= -30 }
+        """
+        )
+        solver.propagate()
+        assertNoIssues()
+        assertEquals(-50L, global.resolveVar("weight")!!.min())
+        assertEquals(-30L, global.resolveVar("weight")!!.max())
+    }
+
+    @Test
+    fun restrictRealNegative() = testSession("Ranges") {
+        loadKerML("""   
+                feature weight: Ranges::RealInRange {:>> range = "-50.0..0.0";} 
+                inv r { weight >= -30.0 }
+        """, Runlevel.SOLVED)
+        assertNoIssues()
+        assertEquals(-30.0, global.resolveVar("weight")!!.vectorQuantity.value.asAadd().min, 0.00001)
+        assertEquals(0.0, global.resolveVar("weight")!!.max(), 0.00001)
     }
 }

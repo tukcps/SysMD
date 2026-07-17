@@ -25,7 +25,7 @@ internal class AstLinearInterpolation(model: Session, args: ArrayList<AstNode>) 
 
     init {
         if (numberOfParameters % 2 != 1 && numberOfParameters >= 3)
-            throw SemanticError("linear needs an even number of real-valued parameters")
+            throw SemanticError("linear needs an odd number of real-valued parameters")
         // Constant???
     }
 
@@ -69,6 +69,7 @@ internal class AstLinearInterpolation(model: Session, args: ArrayList<AstNode>) 
                     y0 + (y1 - y0) / (x1 - x0) * (x - x0)
                 )
             )
+            return
         }
 
         if (parameters.size == 7) {
@@ -88,7 +89,41 @@ internal class AstLinearInterpolation(model: Session, args: ArrayList<AstNode>) 
                     ) // x between x1 and x2
                 )
             )
+            return
         }
+
+        // General recursive implementation for 9+ parameters
+        val N = (parameters.size - 1) / 2 - 1 // number of segments
+        val xPoints = (0..N).map { getParam(1 + it * 2).upQuantity.asQuantity() }
+        val yPoints = (0..N).map { getParam(2 + it * 2).upQuantity.asQuantity() }
+
+        fun getSegmentInterpolation(i: Int): Quantity {
+            val xi = xPoints[i]
+            val yi = yPoints[i]
+            val xNext = xPoints[i+1]
+            val yNext = yPoints[i+1]
+            return yi + (yNext - yi) / (xNext - xi) * (x - xi)
+        }
+
+        fun buildIte(i: Int): Quantity {
+            if (i == N - 1) {
+                return getSegmentInterpolation(i)
+            }
+            return (x.le(xPoints[i+1])).bdd().ite(
+                getSegmentInterpolation(i),
+                buildIte(i + 1)
+            )
+        }
+
+        val innerInterpolation = buildIte(0)
+
+        upQuantity = (x.le(xPoints[0])).bdd().ite(
+            yPoints[0],
+            (x.ge(xPoints[N])).bdd().ite(
+                yPoints[N],
+                innerInterpolation
+            )
+        )
     }
 
     override fun evalDown() {
@@ -114,6 +149,7 @@ internal class AstLinearInterpolation(model: Session, args: ArrayList<AstNode>) 
                     x0 + (x1 - x0) / (y1 - y0) * (y - y0)
                 )
             )
+            return
         }
 
         if (parameters.size == 7) {
@@ -164,7 +200,56 @@ internal class AstLinearInterpolation(model: Session, args: ArrayList<AstNode>) 
                     )
                 )
             )
+            return
         }
+
+        // General recursive implementation for 9+ parameters (monotonic y values assumed)
+        val N = (parameters.size - 1) / 2 - 1 // number of segments
+        val xPoints = (0..N).map { getParam(1 + it * 2).upQuantity.asQuantity() }
+        val yPoints = (0..N).map { getParam(2 + it * 2).upQuantity.asQuantity() }
+
+        val xSeg = (0..N).map { i ->
+            val xi = xPoints[i]
+            val yi = yPoints[i]
+            val xNext = xPoints[i+1]
+            val yNext = yPoints[i+1]
+            xi + (xNext - xi) / (yNext - yi) * (y - yi)
+        }
+
+        val isIncreasing = yPoints[0].getMinAsDouble() <= yPoints[N].getMaxAsDouble()
+
+        fun buildDownIte(i: Int): Quantity {
+            if (i == N - 1) {
+                return xSeg[i]
+            }
+            val cond = if (isIncreasing) y.le(yPoints[i+1]) else y.ge(yPoints[i+1])
+            return cond.bdd().ite(
+                xSeg[i],
+                buildDownIte(i + 1)
+            )
+        }
+
+        val innerDownInterpol = buildDownIte(0)
+
+        val firstIte = if (isIncreasing) {
+            (y.le(yPoints[0])).bdd().ite(
+                Quantity(model.builder.real(-Double.MAX_VALUE..xPoints[0].getMaxAsDouble()), xPoints[0].unit, xPoints[0].unitSpec),
+                (y.ge(yPoints[N])).bdd().ite(
+                    Quantity(model.builder.real(xPoints[N].getMinAsDouble()..Double.MAX_VALUE), xPoints[N].unit, xPoints[N].unitSpec),
+                    innerDownInterpol
+                )
+            )
+        } else {
+            (y.ge(yPoints[0])).bdd().ite(
+                Quantity(model.builder.real(-Double.MAX_VALUE..xPoints[0].getMaxAsDouble()), xPoints[0].unit, xPoints[0].unitSpec),
+                (y.le(yPoints[N])).bdd().ite(
+                    Quantity(model.builder.real(xPoints[N].getMinAsDouble()..Double.MAX_VALUE), xPoints[N].unit, xPoints[N].unitSpec),
+                    innerDownInterpol
+                )
+            )
+        }
+
+        getParam(0).downQuantity = firstIte
     }
 
     override fun clone(): AstLinearInterpolation {

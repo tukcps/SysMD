@@ -14,7 +14,7 @@ open class KinematicViscosity(name: String, symbol: String, prefix: Prefix, conv
     /**
      * generate UnitObjects and add them to the UnitList
      */
-    object Stokes : KinematicViscosity("stokes", "St", NoPrefix, 1.0)
+    object Stokes : KinematicViscosity("stokes", "St", NoPrefix, 0.0001)
 
     override fun copy(): KinematicViscosity {
         return KinematicViscosity(name, symbol, prefix, convFac, exponent, isLogarithmic)

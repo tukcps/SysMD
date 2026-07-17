@@ -2,6 +2,7 @@ package constraintnettests
 
 import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.letVar
+import com.github.tukcps.sysmd.services.resolve.resolveVar
 import io.github.tukcps.aadd.BDD
 import util.assertNoIssues
 import util.mockup.loadKerML
@@ -113,5 +114,31 @@ class KerMLBddTests {
         assertSame(builder.conds.getCondition(1), builder.False)
         assertSame(builder.conds.getCondition(2), builder.Bool)
         assertSame(builder.conds.getCondition(3), builder.True)
+    }
+
+    /**
+     * Comparison of two AADDs that cannot be equal must return FALSE.
+     * Tests that (p > p2) evaluates to False when p is in 2..4 and p2 = p + 1.
+     * Problem was: correlation terms were lost, maybe by intersect operation.
+     * Fixed: always new created in each iteration should be done once with fixed noise variable.
+     * Remaining: Infeasible paths are not reduced; converted to True/False in toString.
+     */
+    @Test
+    fun fail4() = testSession("ScalarValues", "Ranges") {
+        loadKerML("""
+            feature p:  Ranges::RealInRange {:>> range = "2 .. 4";}
+            feature p2: ScalarValues::Real = p + 1.0;
+            feature p3: ScalarValues::Boolean = ( p > p2 ).
+        """)
+        solver.propagate()
+
+        val p = global.resolveVar("p")!!.vectorQuantity.aadd()
+        val p2 = global.resolveVar("p2")!!.vectorQuantity.aadd()
+        val p3 = global.resolveVar("p3")!!.vectorQuantity.bdd()
+
+        assertEquals(2.0, p.min, 0.00001)
+        assertEquals(3.0, p2.min, 0.00001)
+        assertEquals("False", p3.toString())
+        assertNoIssues()
     }
 }

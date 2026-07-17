@@ -1,9 +1,7 @@
 package constraintnettests
 
 import com.github.tukcps.sysmd.services.resolve.resolveVar
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTimeoutPreemptively
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import util.assertNoIssues
 import util.mockup.loadKerML
@@ -11,6 +9,8 @@ import util.testSession
 import java.time.Duration
 import java.util.concurrent.TimeUnit
 import kotlin.math.PI
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class ConstraintNetConvergence {
 
@@ -37,21 +37,6 @@ class ConstraintNetConvergence {
     }
 
     /**
-     * Convergence of LP solver is vague if large and small numbers occur in an LP problem
-     */
-    @Test fun convergenceTest3()  = assertTimeoutPreemptively(Duration.ofMillis(800)) {
-        testSession("ScalarValues") {
-            loadKerML(input = """
-                feature r:       ScalarValues::Real = 1000.0; 
-                feature mass:    ScalarValues::Real = density * volume; 
-                feature volume:  ScalarValues::Real = 4.0/3.0*3.141 * r * r; 
-                feature density: ScalarValues::Real = 10.0;              
-            """)
-            solver.propagate()
-        }
-    }
-
-    /**
      * In multiplication and division, AADD has not yet full consideration of FP round-off.
      * Let's see how good this is handled in AST-BinOp where we add some slack.
      */
@@ -69,5 +54,19 @@ class ConstraintNetConvergence {
             assertEquals(41.88749E5, global.resolveVar("volume")!!.vectorQuantity.getMinAsDouble(), 0.01E5)
         }
     }
-}
 
+    /**
+     * Convergence of LP solver is vague if large and small numbers occur in an LP problem
+     */
+    @Test fun convergenceTest3()  = assertTimeoutPreemptively(Duration.ofMillis(800)) {
+        testSession("ScalarValues") {
+            loadKerML(input = """
+                feature r:       ScalarValues::Real = 1000.0; 
+                feature mass:    ScalarValues::Real = density * volume; 
+                feature volume:  ScalarValues::Real = 4.0/3.0*3.141 * r * r; 
+                feature density: ScalarValues::Real = 10.0;              
+            """)
+            solver.propagate()
+        }
+    }
+}

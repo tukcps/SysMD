@@ -21,7 +21,7 @@ internal class AstCityBlockDistance(model: Session, args: ArrayList<AstNode>) :
         upQuantity = when (arg.upQuantity.values[0]) {
             is AADD -> VectorQuantity(mutableListOf(model.builder.Reals), "?")
             is IDD -> VectorQuantity(mutableListOf(model.builder.Integers))
-            else -> throw SemanticError("abs must have Real or Int argument")
+            else -> throw SemanticError("cityBlockDistance must have Real or Int argument")
         }
         evalUp()
         downQuantity = upQuantity.clone()

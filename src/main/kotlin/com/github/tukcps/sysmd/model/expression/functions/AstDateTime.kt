@@ -52,14 +52,17 @@ internal class AstDateTime(model: Session, args: ArrayList<AstNode>) :
      * Converts a datetime string to a unix timestamp
      */
     private fun toUnix(datetime: String): Double {
-        return if (datetime.contains("T")) { //contains an explicit time
-            if (datetime.length > 20) // if length > 20, the datetime string contains a timezone
-                OffsetDateTime.parse(datetime, DateTimeFormatter.ISO_OFFSET_DATE_TIME).toEpochSecond().toDouble()
-            else
-                LocalDateTime.parse(datetime, DateTimeFormatter.ISO_LOCAL_DATE_TIME).atZone(UTC).toEpochSecond()
-                    .toDouble()
-        } else { //contains no explicit time
+        if (!datetime.contains("T")) {
             throw SemanticError("DateTime must contain a time")
+        }
+        return try {
+            OffsetDateTime.parse(datetime, DateTimeFormatter.ISO_OFFSET_DATE_TIME).toEpochSecond().toDouble()
+        } catch (e: Exception) {
+            try {
+                LocalDateTime.parse(datetime, DateTimeFormatter.ISO_LOCAL_DATE_TIME).atZone(UTC).toEpochSecond().toDouble()
+            } catch (e2: Exception) {
+                throw SemanticError("Invalid DateTime format: $datetime")
+            }
         }
     }
 

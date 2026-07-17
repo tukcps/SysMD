@@ -156,7 +156,7 @@ class ProjectData(
      * The directory is given by settings and derived from settings and project name,
      * project attribute 'directory'.
      */
-    @Deprecated("Use service function for setting meta and project data instead")
+    // @Deprecated("Use service function for setting meta and project data instead")
     fun saveToInterchangeFiles() {
         try {
             if (directory != null) {

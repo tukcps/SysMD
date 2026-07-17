@@ -627,11 +627,11 @@ fun KerML.FeaturePrefix() {
         PORTION   then  { semantics.prefixes.add(PORTION) }
         others          {  }
     }
-    READONLY.optional   { semantics.prefixes.add(READONLY) }
+    CONST.optional   { semantics.prefixes.add(READONLY) }
     DERIVED.optional    { semantics.prefixes.add(DERIVED) }
     END.optional        { semantics.prefixes.add(END) }
 }
-val FEATURE_PREFIX_START = setOf(IN, OUT, INOUT, COMPOSITE, PORTION, READONLY, DERIVED, END)
+val FEATURE_PREFIX_START = setOf(CONST, IN, OUT, INOUT, COMPOSITE, PORTION, DERIVED, END)
 
 /**
  *      TypeBodyElement =

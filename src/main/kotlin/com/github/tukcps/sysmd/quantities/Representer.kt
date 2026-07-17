@@ -134,10 +134,13 @@ class Representer(
         if (precision <= 0) {
             return "0"
         }
-        val plainString1 = BigDecimal(num).toPlainString()
+        val isNegative = num < 0
+        val absNum = abs(num)
+        val plainString1 = BigDecimal(absNum).toPlainString()
 
         //Find Scale
         val scales1 = findScale(plainString1) //[DecimalPosition,FirstSigFigure,Scale]
+        val prefix = if (isNegative) "-" else ""
         if (scales1[2] !in -3..5) {
             if (scales1[2] < -200) { // value is close to zero
                 return "0"
@@ -145,7 +148,7 @@ class Representer(
             //calculate precision for rounding
             var reminder = Math.floorMod(scales1[2], 3)
             var precision = reminder + 1 + precision
-            val plainString2 = BigDecimal(num).round(MathContext(precision, RoundingMode.HALF_EVEN)).toPlainString()
+            val plainString2 = BigDecimal(absNum).round(MathContext(precision, RoundingMode.HALF_EVEN)).toPlainString()
             //multiples of 3 only
             val scales2 = findScale(plainString2)
             reminder = Math.floorMod(scales2[2], 3)
@@ -165,8 +168,8 @@ class Representer(
             endResult = endResult.replace(".e", "e")
             endResult = endResult.replace("e0$".toRegex(), "")
             endResult = endResult.replace("\\.$".toRegex(), "")
-            return endResult
+            return prefix + endResult
         }
-        return BigDecimal(num).setScale(precision, RoundingMode.HALF_EVEN).stripTrailingZeros().toPlainString()
+        return prefix + BigDecimal(absNum).setScale(precision, RoundingMode.HALF_EVEN).stripTrailingZeros().toPlainString()
     }
 }

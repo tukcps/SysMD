@@ -254,3 +254,6 @@ sysmd.log*
 src/test/resources/saveAndLoadProjectData/name/.meta.json
 src/test/resources/saveAndLoadProjectData/name/.project.json
 src/test/resources/saveAndLoadProjectData/project/.project.json
+src/main/resources/metamodel/KerML.xmi
+src/main/resources/metamodel/SysML.xmi
+*.generated

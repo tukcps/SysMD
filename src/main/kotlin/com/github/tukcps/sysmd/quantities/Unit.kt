@@ -301,10 +301,11 @@ class Unit : Cloneable {
      * Transforms Unit to the SI System (does not consider value of Quantity)
      */
     fun toSI():Unit {
-        unitSet.forEach { it.prefix = NoPrefix }
-        val resultUnit = clone().apply { unitSet.clear() }
+        val resultUnit = clone()
+        val originalUnitSet = resultUnit.unitSet.toList()
+        resultUnit.unitSet.clear()
         // Change Unit to SI
-        unitSet.forEach { currentUnit ->
+        originalUnitSet.forEach { currentUnit ->
             currentUnit.getBaseUnits().forEach {
                 //change exponent of derived unit
                 resultUnit.addUnitOfMeasurement(it.clone().apply { exponent = currentUnit.exponent * it.exponent })
@@ -315,11 +316,6 @@ class Unit : Cloneable {
     }
 
     override fun hashCode(): Int {
-        var result = unitSet.hashCode()
-        result = 31 * result + unitStr.hashCode()
-        result = 31 * result + unitDomain.hashCode()
-        result = 31 * result + isLogarithmic.hashCode()
-        result = 31 * result + isDifference.hashCode()
-        return result
+        return unitSet.hashCode()
     }
 }

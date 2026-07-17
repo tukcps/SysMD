@@ -39,7 +39,7 @@ class AstIte(model: Session, args: ArrayList<AstNode>) :
 
             is AADD -> {
                 if (parameters[2].upQuantity.values[0] !is AADD)
-                    throw SemanticError("Expect 3rd parameter of ite function of type Bool")
+                    throw SemanticError("Expect 3rd parameter of ite function of type Real")
                 upQuantity = VectorQuantity(mutableListOf(model.builder.Reals), "?")
             }
 

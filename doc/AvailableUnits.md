@@ -20,7 +20,9 @@ For Quantities without a domain, the following types from the **Quantities** pac
 |                              | Pound                     |      GBP      |
 | **AreaValue**                | Square Meter              |      m^2      |
 |                              | Acre                      |      ac       |
+|                              | Hectare                   |      ha       |
 | **BitRateValue**             | Bits per Second           |  bps or b/s   |
+|                              | Bytes per Second          |      Bps      |
 | **MassDensityValue**         | Kilogram per Cubic Meter  |    kg/m^3     |
 | **DimensionOneValue**        | Percent                   |       %       |
 |                              | Decibel                   |      dB       |
@@ -35,6 +37,7 @@ For Quantities without a domain, the following types from the **Quantities** pac
 |                              | Mile                      |      mi       |
 |                              | Nautical mile             |      nmi      |
 | **MassValue**                | Kilogram                  |      kg       |
+|                              | Gram                      |       g       |
 |                              | Tonne (metric ton)        |       t       |
 |                              | Short Ton                 |      tn       |
 |                              | Grain                     |      gr       |
@@ -80,8 +83,8 @@ For Quantities without a domain, the following types from the **Quantities** pac
 |                             | Floating point operations per second | FLOPS |
 | **KinematicViscosityValue** | Stokes                    |     St     |
 | **MomentOfForceValue**      | Newton Meter              |     Nm     |
-| **MomentOfInertiaValue**    | Kilogram Meter squared    |   kg*m^2   |
-| **MomentumValue**           | Kilogram Meter per Second |   kg*m/s   |
+| **MomentOfInertiaValue**    | Kilogram Meter squared    |   kg m^2   |
+| **MomentumValue**           | Kilogram Meter per Second |   kg m/s   |
 | **PowerValue**              | Watt                      |     W      |
 |                             | Horsepower                |     HP     |
 | **PressureValue**           | Pascal                    |     Pa     |
@@ -115,7 +118,7 @@ For Quantities without a domain, the following types from the **Quantities** pac
 |----------------------------|----------------|:----------:|
 | **IlluminanceValue**       | Lux            |     lx     |
 | **LuminanceValue**         | Stilb          |     sb     |
-| **LuminousEnergyValue**    | Lumen Second   |    lm*s    |
+| **LuminousEnergyValue**    | Lumen Second   |     lm s     |
 | **LuminousFluxValue**      | Lumen          |     lm     |
 | **LuminousIntensityValue** | Candela        |     cd     |
 | **LuminousEfficacyValue**  | Lumen per Watt |    lm/W    |
@@ -140,7 +143,7 @@ the above units and by adding a prefix directly to the above units.
 | **CartesianElectricFieldStrength3dVector** | Newton per Coulomb        |    N/C     |
 | **CartesianForce3dVector**                 | Newton                    |     N      |
 | **CartesianMagneticFluxDensity3dVector**   | Tesla                     |     T      |
-| **CartesianMomentum3dVector**              | Kilogram Meter per Second |   kg*m/s   |
+| **CartesianMomentum3dVector**              | Kilogram Meter per Second |   kg m/s   |
 | **CartesianMomentOfForce3dVector**         | Newton Meter              |     Nm     |
 | **CartesianPosition3dVector**              | Meter                     |     m      |
 | **CartesianVelocity3dVector**              | Meter per Second          |    m/s     |

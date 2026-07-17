@@ -284,7 +284,7 @@ class ImportTest {
                     "\t\"resultUnit\": \"$resultUnit\",\n" +
                     "\t\"referenceValue\": 0.0,\n" +
                     "\t\"referenceUnit\": \"dB\",\n" +
-                    "\t\"successful\": 1,\n" +
+                    "\t\"successful\": true,\n" +
                     "\t\"attributeQualifiedName\": \"$attrFQN\"\n}]")
         }
     }

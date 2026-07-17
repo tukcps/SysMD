@@ -45,6 +45,7 @@ class CellViewModelTests {
             sessionIdState = sessionIdState,
             refreshTrees = {},
             language = mutableStateOf(Language.KerML),
+            namespace = mutableStateOf("Global"),
             bodyState = mutableStateOf(TextFieldValue(subclassCode))
         )
         

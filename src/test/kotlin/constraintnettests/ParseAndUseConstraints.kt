@@ -312,4 +312,28 @@ class ParseAndUseConstraintsTests {
         solver.propagate()
         assertIssue("Cyclic")
     }
+
+    @Test
+    fun constraintTestRealNegative() = testSession("Ranges") {
+        loadKerML("""
+            feature a: Ranges::RealInRange {:>> range = "-2.0 .. -1.0";}
+        """, Runlevel.VARIABLES)
+        val a = solver.getVariable("a")!!
+        solver.propagate()
+        assertNoIssues()
+        assertEquals(-2.0, a.min())
+        assertEquals(-1.0, a.max())
+    }
+
+    @Test
+    fun constraintTestIntegerNegative() = testSession("Ranges") {
+        loadKerML("""
+            feature a: Ranges::IntegerInRange { :>> range = "-2 .. -1"; } 
+        """)
+        solver.propagate()
+        val a = solver.getVariable("a")!!
+        assertNoIssues()
+        assertEquals(-2L, a.min())
+        assertEquals(-1L, a.max())
+    }
 }

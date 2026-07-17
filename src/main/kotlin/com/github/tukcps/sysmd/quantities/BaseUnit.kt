@@ -24,7 +24,7 @@ open class BaseUnit(
     isDifference: Boolean = false,
     alternativeDomain: String = ""
 ) :
-    UnitOfMeasurement(name, symbol, prefix, domain, convFac, exponent, isDifference, alternativeDomain = alternativeDomain), Cloneable {
+    UnitOfMeasurement(name, symbol, prefix, domain, convFac, exponent, isDifference = isDifference, alternativeDomain = alternativeDomain), Cloneable {
 
     override fun clone(): BaseUnit = copy()
 

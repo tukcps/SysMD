@@ -43,7 +43,7 @@ class FeatureTests {
     @Test
     fun prefixesTest() = testSession {
         loadKerML("""
-           in abstract composite readonly derived feature f; 
+           in abstract composite const derived feature f; 
            out portion feature all g; 
         """)
         assertNoIssues()

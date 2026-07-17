@@ -21,7 +21,6 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.github.tukcps.sysmd.services.repositories.local.Language
 import com.github.tukcps.sysmd.ui.composables.SysMDTooltipArea
 import com.github.tukcps.sysmd.ui.rendering.Markdown
@@ -347,11 +346,7 @@ fun Cell(
                                             if ( (cellViewModel.language.value == Language.SYS_MD || cellViewModel.language.value == Language.SYS_ML)
                                                 && cellViewModel.namespace.value !in setOf("Global", "")
                                             )
-                                                Text(
-                                                    " package ${cellViewModel.namespace.value} owns ",
-                                                    fontSize = 12.sp,
-                                                    lineHeight = 14.sp
-                                                )
+                                                Text(" package ${cellViewModel.namespace.value} owns ", style = MaterialTheme.typography.bodyMedium)
                                         }
                                         Editor(
                                             mainRowWidth,

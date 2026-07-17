@@ -3,7 +3,7 @@ package com.github.tukcps.sysmd.model.expression.functions
 
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.exceptions.SysMDFatalInternalError
-import com.github.tukcps.sysmd.imports.JsonImporter
+import com.github.tukcps.sysmd.imports.CharacterizationImporter
 import com.github.tukcps.sysmd.imports.Result
 import com.github.tukcps.sysmd.model.expression.AstLeaf
 import com.github.tukcps.sysmd.model.expression.AstNode
@@ -75,7 +75,7 @@ internal class AstCharacterizedResult (
          * If loading results is not possible to set the min and max values of the Quantity to -Inf and +Inf
          */
         try {
-            importedResults = JsonImporter.importJson(
+            importedResults = CharacterizationImporter.importJson(
                 filePath = filePath
             )
 

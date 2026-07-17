@@ -4,11 +4,13 @@ import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import io.github.tukcps.aadd.AADD
 import io.github.tukcps.aadd.values.Range
-import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.Test
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 
 class ConstraintPropagationTests {
@@ -54,7 +56,7 @@ class ConstraintPropagationTests {
         loadKerML("feature a: ISQ::ElectricPotentialDifferenceValue {:>> unit = \"mV\"; :>> range = \"1..20\";}")
         val a = global.resolveVar("a")
         assertNotNull(a)
-        assertEquals("1..20 mV", a!!.vectorQuantity.toString())
+        assertEquals("1..20 mV", a.vectorQuantity.toString())
         assertNoIssues()
     }
 
@@ -431,5 +433,220 @@ class ConstraintPropagationTests {
             assertEquals("True", global.resolveVar("d")!!.bool().toString())
             assertNoIssues()
         }
+    }
+
+    /**
+     * Tests that a value can be assigned to ISQ units including non-SI units.
+     * Previously it was not possible to assign a value without a formula to a non-SI unit.
+     */
+    @Test
+    fun unitTransformTest() = testSession("ISQ") {
+        loadKerML(input = """
+            // It is not possible to assign a value without a formula to a non-SI unit
+            //only test1 works
+            type Test :> Base::Anything {
+                feature test1: ISQ::ElectricCurrentValue = 1.0 A;
+                feature test2: ISQ::ForceValue = 1.0 N;
+                feature test3: ISQ::ResistanceValue = 1.0 [Ohm];
+                feature test4: Quantities::ScalarQuantityValue [Ohm m] = 1.0 [Ohm m];
+            }
+            """
+        )
+        solver.propagate()
+        assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
+    }
+
+    /**
+     * Tests that ISQ units are propagated correctly across multiple solver iterations.
+     * Uses mass density, radius and volume in a sphere-volume computation.
+     */
+    @Test
+    fun unitsInMultipleIterations() = testSession("Occurrences", "ISQ", "Math") {
+        loadKerML("""package hello { 
+            class world {
+                feature density: ISQ::MassDensityValue = 1.0 [kg/l];
+                feature r:       ISQ::LengthValue = 1000.0 km;
+                feature volume:  ISQ::VolumeValue = 4.0/3.0 * r * r * r * Math::pi;
+                feature mass:    ISQ::MassValue = density * volume;
+                }
+            }
+            """)
+        solver.propagate()
+        assertNoIssues()
+    }
+
+    /** Does not copy up-propagated value into quantity field */
+    @Test
+    fun additionTrivial2() = testSession("Occurrences", "ISQ") {
+        loadKerML(""" 
+            package p { 
+                class i {
+                    feature p: ISQ::LengthValue = 1.0 m + 1.0 km;
+                }
+            }
+        """)
+        // p::i::p is wrongly identified in initialization --> resolveName issue?
+        assertNoIssues()
+        solver.propagate()
+        assertEquals(1001.0, global.resolveVar("p::i::p")!!.vectorQuantity.getMaxAsDouble(), 0.00001)
+    }
+
+    /**
+     * Tests LengthValue addition between m and km values at the top-level namespace.
+     * FIX: in evalDown, unit is not converted if unitSpec is empty string.
+     */
+    @Test
+    fun fail2() = testSession("ISQ") {
+        loadKerML("""
+            feature p: ISQ::LengthValue = 1.0 m;
+            feature p2: ISQ::LengthValue = 1.0 km; 
+            feature p3: ISQ::LengthValue = p + p2;
+        """)
+        assertNoIssues()
+        solver.propagate()
+        assertNoIssues()
+        assertEquals(1001.0, global.resolveVar("p3")!!.vectorQuantity.getMinAsDouble(), 0.001)
+        assertNoIssues()
+    }
+
+    /**
+     * Tests LengthValue addition between m and km values inside a package/class.
+     * If for properties p, p2 a unit becomes known later and is not in UnitSpec,
+     * it might not be considered properly in p3.
+     */
+    @Test
+    fun fail3() = testSession("Occurrences", "ISQ") {
+        loadKerML("""
+            package p { 
+                class a { 
+                    feature p: ISQ::LengthValue = 1.0 [m];
+                    feature p2: ISQ::LengthValue = 1.0 [km];
+                    feature p3: ISQ::LengthValue = p + p2;
+                }
+            }
+        """)
+        assertNoIssues()
+        solver.propagate()
+        assertNoIssues()
+        assertEquals(1001.0, global.resolveVar("p::a::p3")!!.vectorQuantity.getMinAsDouble(), 0.001)
+    }
+
+    /**
+     * Tests that intersection in an intermediate result is computed on both up and down propagation.
+     * Feature V from up-propagation should not be overwritten by the down-propagated value.
+     * Uses I*R = V, I*V = P with ranges on I and R.
+     */
+    @Test
+    fun simplePhysicsExample() = testSession("ScalarValues", "Ranges") {
+        loadKerML(""" 
+            feature I: Ranges::RealInRange {:>> range = "9.9 .. 10.1";}
+            feature R: Ranges::RealInRange {:>> range = "1.9 .. 2.1";} 
+            feature V: ScalarValues::Real = I * R; 
+            feature P: ScalarValues::Real = I * V; 
+        """, Runlevel.ALL)
+        assertEquals(9.9*1.9, solver.getVariable("V")!!.min(), 0.00001)
+        assertEquals(10.1*2.1, solver.getVariable("V")!!.max(), 0.00001)
+        assertNoIssues()
+        solver.propagate()
+        assertNoIssues()
+        assertEquals(9.9*1.9, solver.getVariable("V")!!.min(), 0.00001)
+        assertEquals(21.21, solver.getVariable("V")!!.max(), 0.00001)
+    }
+
+    @Test
+    fun multiplicationNegative() = testSession("Ranges") {
+        loadKerML("""
+            feature b: Ranges::RealInRange {:>> range = "-10.0 .. -5.0";}
+            feature c: Ranges::RealInRange {:>> range = "-3.0 .. -2.0";}
+            feature a: ScalarValues::Real = b * c;
+        """)
+        solver.propagate()
+        assertNoIssues()
+        assertEquals(10.0, global.resolveVar("a")!!.min(), 0.00001)
+        assertEquals(30.0, global.resolveVar("a")!!.max(), 0.00001)
+    }
+
+    @Test
+    fun multiplicationMixed() = testSession("Ranges") {
+        loadKerML("""
+            feature b: Ranges::RealInRange {:>> range = "-2.0 .. 3.0";}
+            feature c: Ranges::RealInRange {:>> range = "-5.0 .. 1.0";}
+            feature a: ScalarValues::Real = b * c;
+        """)
+        solver.propagate()
+        assertNoIssues()
+        assertEquals(-15.0, global.resolveVar("a")!!.min(), 0.00001)
+        assertEquals(10.0, global.resolveVar("a")!!.max(), 0.00001)
+    }
+
+    @Test
+    fun evalDownMultiplicationMixed() = testSession("Ranges") {
+        loadKerML("""
+            feature b: Ranges::RealInRange {:>> range = "-3.0 .. 4.0";}
+            feature c: Ranges::RealInRange {:>> range = "1.0 .. 2.0";}
+            feature a: Ranges::RealInRange = b * c {:>> range = "2.0 .. 6.0";}
+        """)
+        solver.propagate()
+        assertNoIssues()
+        val b = global.resolveVar("b")!!
+        assertEquals(1.0, b.min(), 0.00001)
+        assertEquals(4.0, b.max(), 0.00001)
+    }
+
+    @Test
+    fun divisionNegative() = testSession("Ranges") {
+        loadKerML("""
+            feature b: Ranges::RealInRange {:>> range = "-20.0 .. -10.0";}
+            feature c: Ranges::RealInRange {:>> range = "-5.0 .. -2.0";}
+            feature a: ScalarValues::Real = b / c;
+        """)
+        solver.propagate()
+        assertNoIssues()
+        assertEquals(2.0, global.resolveVar("a")!!.min(), 0.00001)
+        assertEquals(10.0, global.resolveVar("a")!!.max(), 0.00001)
+    }
+
+    @Test
+    fun divisionMixed() = testSession("Ranges") {
+        loadKerML("""
+            feature b: Ranges::RealInRange {:>> range = "1.0 .. 10.0";}
+            feature c: Ranges::RealInRange {:>> range = "-2.0 .. 5.0";}
+            feature a: ScalarValues::Real = b / c;
+        """)
+        solver.propagate()
+        assertNoIssues()
+        val a = global.resolveVar("a")!!
+        assertEquals(Double.NEGATIVE_INFINITY, a.min(), 0.00001)
+        assertEquals(Double.POSITIVE_INFINITY, a.max(), 0.00001)
+    }
+
+    @Test
+    fun evalUpAdditionNegative() = testSession("ISQ", "Ranges") {
+        loadKerML("""
+            feature b: ISQ::LengthValue {:>> range = "-5.0 .. -2.0";}
+            feature c: ISQ::LengthValue {:>> range = "-10.0 .. -3.0";}
+            feature d: ISQ::LengthValue {:>> range = "-1.0 .. -1.0";}
+            feature a: ISQ::LengthValue = b + c + d;
+        """)
+        solver.propagate()
+        assertNoIssues()
+        assertEquals(-16.0, global.resolveVar("a")!!.min(), 0.00001)
+        assertEquals(-6.0, global.resolveVar("a")!!.max(), 0.00001)
+        assertEquals("m", global.resolveVar("a")!!.vectorQuantity.unit.toString())
+    }
+
+    @Test
+    fun evalUpSubtractionNegative() = testSession("ISQ", "Ranges") {
+        loadKerML("""
+            feature b: ISQ::LengthValue {:>> range = "-5.0 .. -2.0";}
+            feature c: ISQ::LengthValue {:>> range = "-10.0 .. -3.0";}
+            feature d: ISQ::LengthValue {:>> range = "-1.0 .. -1.0";}
+            feature a: ISQ::LengthValue = b - c - d;
+        """)
+        solver.propagate()
+        assertNoIssues()
+        assertEquals(-1.0, global.resolveVar("a")!!.min(), 0.00001)
+        assertEquals(9.0, global.resolveVar("a")!!.max(), 0.00001)
+        assertEquals("m", global.resolveVar("a")!!.vectorQuantity.unit.toString())
     }
 }

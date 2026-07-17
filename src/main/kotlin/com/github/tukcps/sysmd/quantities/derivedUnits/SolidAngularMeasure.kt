@@ -13,7 +13,7 @@ open class SolidAngularMeasure(name: String, symbol: String, prefix: Prefix, con
     /**
      * generate UnitObjects and add them to the UnitList
      */
-    object Steradian : Pressure("steradian", "sr", NoPrefix, 1.0)
+    object Steradian : SolidAngularMeasure("steradian", "sr", NoPrefix, 1.0)
 
     override fun copy(): SolidAngularMeasure {
         return SolidAngularMeasure(name, symbol, prefix, convFac, exponent, isLogarithmic)

@@ -2,8 +2,8 @@ package constraintnettests
 
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import io.github.tukcps.aadd.values.XBool
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Test
+import kotlin.test.assertEquals
+import kotlin.test.Test
 import util.mockup.loadKerML
 import util.testSession
 
