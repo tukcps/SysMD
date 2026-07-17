@@ -111,11 +111,3 @@ fun colorMode() = when (settings.colorStyle) {
     "light" -> LightColors
     else -> if (isSystemInDarkTheme()) DarkColors else LightColors
 }
-
-
-@Composable
-fun colorMode() = when (settings.colorStyle) {
-    "dark" -> DarkColors
-    "light" -> LightColors
-    else -> if (isSystemInDarkTheme()) DarkColors else LightColors
-}

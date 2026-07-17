@@ -72,8 +72,31 @@ object TypeBadgeColors {
         isSubclassOf(type, "Type")
             -> BadgeFamily.StructureDef
 
-        else -> {
+        else ->
             BadgeFamily.Default
+    }
+
+    // ---------- Public API --------------------------------------------------
+    fun colors(type: String, dark: Boolean): BadgeColors {
+        return when (family(type)) {
+            BadgeFamily.Package
+                -> if (dark) PackageDark else PackageLight
+            BadgeFamily.AnnotatingElement
+                -> if (dark) AnnotatingElementDark else AnnotatingElementLight
+            BadgeFamily.BehaviorDef
+                -> if (dark) BehaviorDefDark else BehaviorDefLight
+            BadgeFamily.BehaviorUsage
+                -> if (dark) BehaviorUsageDark else BehaviorUsageLight
+            BadgeFamily.ComputeUsage
+                -> if (dark) ComputeUsageDark else ComputeUsageLight
+            BadgeFamily.ComputeDef
+                -> if (dark) ComputeDefDark else ComputeDefLight
+            BadgeFamily.StructureUsage
+                -> if (dark) StructureUsageDark else StructureUsageLight
+            BadgeFamily.StructureDef
+                -> if (dark) StructureDefDark else StructureDefLight
+            BadgeFamily.Default
+                -> if (dark) DefaultDark else DefaultLight
         }
     }
 }
