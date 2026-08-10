@@ -7,6 +7,7 @@ import com.github.tukcps.sysmd.exports.systemCElements.PortType
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Specialization
+import com.github.tukcps.sysmd.model.kerml.Type
 import io.github.tukcps.aadd.AADD
 import io.github.tukcps.aadd.IDD
 import io.github.tukcps.aadd.StrDD
@@ -49,10 +50,10 @@ fun isVariable(feature : Feature) : Boolean {
 fun isVariableWithoutValues(feature : Feature) : Boolean {
     require(feature !is Variable)
     return when {
-        feature.model!!.repo.realType in feature.allSupertypes(true) -> feature.expression?.isEmpty() == true && !feature.variable!!.rangeSpecs[0].isFinite()
-        feature.model!!.repo.integerType in feature.allSupertypes(true)-> feature.expression?.isEmpty() ==true  && feature.variable!!.intSpecs[0].toString().contains("MAX")
-        feature.model!!.repo.stringType in feature.allSupertypes(true)-> (feature.variable!!.vectorQuantity.value as StrDD.Leaf).value.isEmpty()
-        feature.model!!.repo.booleanType in feature.allSupertypes(true)-> feature.expression?.isEmpty() == true
+        feature.model.repo.realType as Type in feature.allSupertypes(true) -> feature.expression?.isEmpty() == true && !feature.variable!!.rangeSpecs[0].isFinite()
+        feature.model.repo.integerType as Type in feature.allSupertypes(true)-> feature.expression?.isEmpty() ==true  && feature.variable!!.intSpecs[0].toString().contains("MAX")
+        feature.model.repo.stringType as Type in feature.allSupertypes(true)-> (feature.variable!!.vectorQuantity.value as StrDD.Leaf).value.isEmpty()
+        feature.model.repo.booleanType as Type in feature.allSupertypes(true)-> feature.expression?.isEmpty() == true
         else -> throw SysMDFatalInternalError("Cannot perform this Variable Check on a Expression with Data Type \"${feature.type.firstOrNull()}\"")
     }
 }
@@ -63,7 +64,7 @@ fun isVariableWithoutValues(feature : Feature) : Boolean {
  * @return A Pair containing the min (Pair.first) and max (Pair.second) values.
  */
 fun dependencyStringToMinMax(dependency: String) : Pair<Double,Double>{
-    val keepChars = "[^.0-9.-]".toRegex()
+    val keepChars = "[^.0-9-]".toRegex()
     if(dependency.isNotEmpty()){
         val min = dependency.substringBefore(" .. ").removePrefix("[").replace(keepChars, "").toDouble()
         val max = dependency.substringAfter(" .. ").substringBefore("]").replace(keepChars, "").toDouble()
@@ -101,10 +102,10 @@ fun getElementOfType(element : Element, type : String) : Element {
  */
 fun Specialization.toDataType() : DataType {
     return when (this.general) {
-        model!!.repo.realType -> DataType.REAL
-        model!!.repo.integerType -> DataType.INT
-        model!!.repo.booleanType -> DataType.BOOLEAN
-        model!!.repo.stringType -> DataType.STRING
+        model.repo.realType -> DataType.REAL
+        model.repo.integerType -> DataType.INT
+        model.repo.booleanType -> DataType.BOOLEAN
+        model.repo.stringType -> DataType.STRING
         // else -> throw SysMDFatalInternalError("The FeatureTypingImplementation \"${this.declaredName}\" has no known and translatable data type.")
         else -> DataType.REAL
     }

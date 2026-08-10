@@ -16,8 +16,8 @@ class AllOnePropagationTests {
     fun allOnePropagationTestReal() = testSession("Ranges") {
         loadKerML("""
             // a is a Real from 1..2, and is assigned a value from 1.2 to 2.5
-            feature all a: Ranges::RealInRange = oneOf(1.5 .. 2.5) {:>> range = "1 .. 2";}
-            feature b: Ranges::RealInRange = oneOf(1.5 .. 2.5) {:>> range = "1 .. 2";}
+            feature all a: Ranges::RealInRange = oneOf(1.5 .. 2.5) {:>> range = 1 .. 2;}
+            feature b: Ranges::RealInRange = oneOf(1.5 .. 2.5) {:>> range = 1 .. 2;}
         """)
         solver.propagate()
         val a = solver.getVariable("a")!!
@@ -33,8 +33,8 @@ class AllOnePropagationTests {
     fun allOnePropagationTestInt() = testSession("Ranges") {
         loadKerML("""
             // Contradiction ...         
-            feature all a: Ranges::IntegerInRange = oneOf(5 .. 15) {:>> range = "1 .. 10";}
-            feature b: Ranges::IntegerInRange = oneOf(5 .. 15) {:>> range = "1 .. 10";}
+            feature all a: Ranges::IntegerInRange = oneOf(5 .. 15) {:>> range = 1 .. 10;}
+            feature b: Ranges::IntegerInRange = oneOf(5 .. 15) {:>> range = 1 .. 10;}
         """)
         solver.propagate()
         val a = solver.getVariable("a")!!
@@ -49,11 +49,11 @@ class AllOnePropagationTests {
     @Test 
     fun allOnePropagationTestRealNew() = testSession("Ranges") {
         loadKerML("""
-                feature all a: Ranges::RealInRange { :>> range = "1.0 .. 10.0"; }
+                feature all a: Ranges::RealInRange { :>> range = 1.0 .. 10.0; }
         """)
         solver.propagate()
         assertNoIssues()
-        val a = global.resolveVar("a")!!
+        val a = solver.getVariable("a")!!
         assertEquals(1.0, a.min(), 0.000001)
         assertEquals(10.0, a.max(), 0.000001)
     }
@@ -61,14 +61,14 @@ class AllOnePropagationTests {
     @Test 
     fun allOnePropagationTestIntNew() = testSession("Ranges") {
         loadKerML("""
-                feature all a: Ranges::IntegerInRange = oneOf(5 .. 15) { :>> range = "1 .. 10";  }
-                feature b: Ranges::IntegerInRange = oneOf(5 .. 15) {:>> range = "1 .. 10"; }
+                feature all a: Ranges::IntegerInRange = oneOf(5 .. 15) { :>> range = 1 .. 10;  }
+                feature b: Ranges::IntegerInRange = oneOf(5 .. 15) {:>> range = 1 .. 10; }
         """)
         solver.propagate()
         assertEquals(Issue.Kind.WARN_INCONSISTENCY, status.issues.firstOrNull()?.kind,
             "Insatisfiability for all shall be reported")
-        val a = global.resolveVar("a")!!
-        val b = global.resolveVar("b")!!
+        val a = solver.getVariable("a")!!
+        val b = solver.getVariable("b")!!
         assertEquals(1.0, a.min(), 0.000001)
         assertEquals(10.0, a.max(), 0.000001)
         assertEquals(5.0, b.min(), 0.000001)

@@ -14,19 +14,17 @@ class RepeatedStatementsTests {
      */
     @Test
     fun repeatedClassDeclaration() = testSession("Occurrences") {
-        settings.catchExceptions = false
-        loadKerML(
-            """ 
-                class A; 
-                class A; 
-        """
-        )
+        settings.reportDoubleNames = false
+        loadKerML(""" 
+            class A; 
+            class A; 
+        """)
         assertNoIssues()
     }
 
     @Test
     fun repeatedClassDeclaration2() = testSession("Occurrences") {
-        settings.catchExceptions = false
+        settings.reportDoubleNames = false
         loadKerML("class A;")
         loadKerML("class A;")
         assertNoIssues()
@@ -34,13 +32,11 @@ class RepeatedStatementsTests {
 
     @Test
     fun repeatedFeatureDeclaration() = testSession("ScalarValues") {
-        settings.catchExceptions = false
-        loadKerML(
-            """ 
-                feature A; 
-                feature A; 
-        """
-        )
+        settings.reportDoubleNames = false
+        loadKerML(""" 
+            feature A; 
+            feature A; 
+        """)
         assertNoIssues()
     }
 }

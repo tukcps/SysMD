@@ -15,7 +15,7 @@ import com.github.tukcps.sysmd.services.session.Session
  */
 fun Session.getRelationshipsFrom(element: Element, name: String, ofClass: Type? = null): Set<Relationship> {
     val sourceOfRelationship = mutableSetOf<Relationship>()
-    repo.elements.values.filterIsInstance<Relationship>().forEach {
+    repo.elements().filterIsInstance<Relationship>().forEach {
         if (element in it.source.map { if (it is Feature) it.referencedFeature?:it else it}) sourceOfRelationship.add(it)
     }
     val result: MutableSet<Relationship> = mutableSetOf()
@@ -40,7 +40,7 @@ fun Session.getRelationshipsFrom(element: Element, name: String, ofClass: Type? 
  */
 fun Session.getRelationshipsTo(element: Element, name: SimpleName, ofClass: Type? = null): Set<Relationship> {
     val targetOfRelationship = mutableSetOf<Relationship>()
-    repo.elements.values.filterIsInstance<Relationship>().forEach {
+    repo.elements().filterIsInstance<Relationship>().forEach {
         if (element in it.target.map { if (it is Feature) it.referencedFeature?:it else it }) targetOfRelationship.add(it)
     }
     val results: MutableSet<Relationship> = mutableSetOf()
@@ -68,8 +68,8 @@ fun Session.getRelationshipsTo(element: Element, name: SimpleName, ofClass: Type
 fun Session.findRelationshipsFrom(element: Element, name: String, ofClass: Type? = null): Set<Relationship> {
     val result = getRelationshipsFrom(element, name, ofClass)
     return when (element) {
-        is Anything -> emptySet()
-        is Type -> result + findRelationshipsFrom(element.generalization.firstOrNull() as Namespace, name)
+        is Classifier if element.generalization.isEmpty() -> emptySet()
+        is Type -> result + findRelationshipsFrom(element.generalization.firstOrNull() as Namespace??:global, name)
         else -> result
     }
 }
@@ -86,8 +86,8 @@ fun Session.findRelationshipsFrom(element: Element, name: String, ofClass: Type?
 fun Session.findRelationshipsTo(element: Element, name: String, ofClass: Type? = null): Set<Relationship> {
     val result = getRelationshipsTo(element, name, ofClass)
     return when (element) {
-        is Anything -> emptySet()
-        is TypeImplementation -> result + findRelationshipsTo(element.generalization.firstOrNull() as Namespace, name)
+        is Classifier if element.generalization.isEmpty() -> emptySet()
+        is TypeImplementation -> result + findRelationshipsTo(element.generalization.firstOrNull()?:global, name)
         else -> result
     }
 }

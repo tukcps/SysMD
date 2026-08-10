@@ -26,7 +26,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.github.tukcps.sysmd.services.repositories.local.ElementData
+import com.github.tukcps.sysmd.model.datamodel.ElementData
+import com.github.tukcps.sysmd.model.generated.ElementType
 import com.github.tukcps.sysmd.ui.styles.DarkColors
 import com.github.tukcps.sysmd.ui.viewmodel.HasATree
 import com.github.tukcps.sysmd.ui.viewmodel.IsATree
@@ -135,7 +136,8 @@ private fun TreeItem(
         }
 
         // Colors for different kind in treeview
-        val colors = typeBadgeColor( ((model.items.getOrNull(index)?.element) as? ElementData)?.type ?: "")
+        val colors = typeBadgeColor( ((model.items.getOrNull(index)?.element) as? ElementData)
+            ?.type ?: ElementType.Element)
         val textColor = if (active) colors.foreground else colors.foreground.copy(alpha = 0.75f)
 
         Surface(
@@ -170,7 +172,7 @@ data class BadgeColors(
 )
 
 @Composable
-fun typeBadgeColor(type: String): BadgeColors =
+fun typeBadgeColor(type: ElementType): BadgeColors =
     TypeBadgeColors.colors(type, colorMode() == DarkColors)
 
 @Composable
@@ -185,7 +187,7 @@ fun Contextmenu(model: TreeViewModel) {
             is HasATree -> {
                 selectedElement =
                     mutableStateOf((model.items[model.selectedItem.value].item.node as HasATree).element)
-                if (selectedElement?.value?.type == "StateUsage") {
+                if (selectedElement?.value?.type == ElementType.StateUsage) {
                     DropdownMenuItem(
                         { Text("Render diagram") },
                         { menuState.renderClicked.value = true }

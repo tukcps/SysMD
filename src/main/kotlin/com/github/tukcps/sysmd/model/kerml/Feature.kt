@@ -1,7 +1,8 @@
 package com.github.tukcps.sysmd.model.kerml
 
 import com.github.tukcps.sysmd.cspsolver.Variable
-import io.github.tukcps.aadd.values.IntegerRange
+import com.github.tukcps.sysmd.model.expression.Expression
+import com.github.tukcps.sysmd.model.util.MultiplicityRange
 
 
 /**
@@ -17,15 +18,16 @@ interface Feature: Type {
     val type: List<Type>
     val typing: List<FeatureTyping>
     val ownedTypeFeaturing: List<FeatureTyping>
+    /** The value of this feature, as bound by a [FeatureValue] membership */
+    val featureValue: Expression? get() = membership.filterIsInstance<FeatureValue>().firstOrNull()?.value
 
     enum class FeatureDirectionKind { IN, OUT, INOUT}
     var direction: FeatureDirectionKind?
 
     /**
-     * Getter and setter for the specified multiplicity; via
-     * the owned Multiplicity element.
+     * Getter for the specified multiplicity; via the owned Multiplicity element and its range.
      */
-    val multiplicityRange: IntegerRange
+    val multiplicityRange: MultiplicityRange
 
     /** Variable that is true if the feature constrains the source/target of a relationship.*/
     var isEnd: Boolean
@@ -35,6 +37,8 @@ interface Feature: Type {
     var isOrdered: Boolean
     var isDerived: Boolean
     var isReadOnly: Boolean
+    var isConstant: Boolean
+    var isVariable: Boolean
     /** True if the feature value was assigned with ':=' or 'default =', meaning it can be overridden in subtypes. */
     var isDefaultValue: Boolean
     /** True if the feature value was assigned with ':=' or '=', meaning it's an initial value assignment. */
@@ -53,7 +57,7 @@ interface Feature: Type {
      * Together, they are serialized as textual representation body
      */
     val unitConstraint: String?
-    var typeConstraint: MutableList<String>
+    val typeConstraint: MutableList<String>
     var expression: String?
 
     /**

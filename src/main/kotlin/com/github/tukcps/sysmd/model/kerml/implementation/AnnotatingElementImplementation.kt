@@ -2,6 +2,8 @@ package com.github.tukcps.sysmd.model.kerml.implementation
 
 import com.github.tukcps.sysmd.model.kerml.AnnotatingElement
 import com.github.tukcps.sysmd.model.kerml.Element
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
 /**
  * Annotating element following 7.2.3.3.1, 2 KerMLv2
@@ -12,18 +14,21 @@ import com.github.tukcps.sysmd.model.kerml.Element
  * An AnnotatingElement is attached to its annotatedElement by an Annotation Relationship
  */
 open class AnnotatingElementImplementation(
+    model : Session,
+    elementId : Uuid = Uuid.random(),
     declaredName: String? = null,
     declaredShortName: String? = null,
     override var body: String = "",
-    elementType: String = "AnnotatingElement"
 ): AnnotatingElement, ElementImplementation(
+    model,
+    elementId = elementId,
     declaredName = declaredName,
     declaredShortName = declaredShortName,
-    elementType = elementType
 ) {
 
-    override fun clone(): AnnotatingElement =  AnnotatingElementImplementation()
-        .also { klon -> klon.updateFrom(this) }
+    override fun clone(): AnnotatingElement = AnnotatingElementImplementation(model).also { klon ->
+        klon.updateFrom(this)
+    }
 
     override fun updateFrom(template: Element) {
         super.updateFrom(template)

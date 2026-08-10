@@ -10,48 +10,65 @@ import com.github.tukcps.sysmd.compiler.parser.util.ParserProductionRules
 import com.github.tukcps.sysmd.compiler.scanner.Token
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.compiler.semantics.ActionsContext
+import com.github.tukcps.sysmd.compiler.semantics.UuidPolicies
+import com.github.tukcps.sysmd.compiler.semantics.UuidPolicy
+import com.github.tukcps.sysmd.compiler.semantics.fixIDs
 import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.exceptions.SyntaxError
 import com.github.tukcps.sysmd.exceptions.SysMDException
-import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.model.datamodel.ElementData
 import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.quantities.Quantity
-import com.github.tukcps.sysmd.services.session.Session
+import com.github.tukcps.sysmd.services.session.*
+import com.github.tukcps.sysmd.services.session.implementation.SessionImplementation
 import io.github.tukcps.aadd.AADD
 import io.github.tukcps.aadd.IDD
-
 
 /**
  * This class provides a parser for the language SysML v2 and SysMD.
  * The parser uses the recursive descent method.
- * It inherits some infrastructure from KParser, in particular DSL functions
+ * It inherits infrastructure from ParserProductionRules, in particular DSL functions
  * for modeling production rules (lambda parameters for functions), with the help of current and lookahead
  * token tok:
  *
- *  [ production ]       -> optional(tok)  { production }
- *  [ production ]+      -> oneOrMore(tok) { production }
- *  [ production ]*      -> noOrMore(tok)  { production }
- *  (p1|p2|p3...|others) -> alternatives { start tok1 {p1} tok2 {p2} ... }
+ *   - [ production ]       -> optional(tok)  { production }
+ *   - [ production ]+      -> oneOrMore(tok) { production }
+ *   - [ production ]*      -> noOrMore(tok)  { production }
+ *   - (p1|p2|p3...|others) -> alternatives { start tok1 {p1} tok2 {p2} ... }
+ *   - consume()/consume(to) allow consuming a specific or arbitrary token.
  *
- *  consume()/consume(to) allow consuming a specific or arbitrary token.
- *
- * Details for these functions are given in the KParser class.
+ * Details for these functions are given in the ParserProductionRules class.
  * Examples for the use of the parser are in the unit test.
  * Parameters are:
- * @param model: the model in which the result will be saved; by default, the memory-only model
- * representation and the generated elements.
+ * @param status: an object in which issues are reported, and results are given, including
+ * the generated ElementData.
+ * @param keywords the keywords for the ParserProductionRules
  */
 open class KerML(
-    val model: Session,                                 // model in which the results will be returned.
-    keywords: Map<String, Token.Kind> = Token.kerMLKeywords,
+    @Deprecated("dont use ")
+    val model: Session = SessionImplementation(), // Just for transition.
+    val status: SessionStatus = model.status,
+    val settings: SessionSettings = model.settings,
+    val uuidPolicy : UuidPolicy = UuidPolicies.NewSysMD,
+    keywords: Map<String, Token.Kind> = Token.kerMLKeywords
 ) : ParserProductionRules(keywords = keywords) {
-    /** If true, don't resolve any qualified names and produce `RawNameExpression` instead.
+
+    /**
+     *  For setting options by .settings { ... }
+     */
+    fun settings(block: SessionSettings.() -> Unit): KerML {
+        settings.block()
+        return this
+    }
+
+    /**
+     * If true, don't resolve any qualified names and produce `RawNameExpression` instead.
      * Hack to support some legacy syntax.
      */
     var unresolvedNamesMode = false
         private set
 
-    var semantics = ActionsContext(model, compiler = this)
+    val semantics = ActionsContext(this)
 
     /**
      * Parses an input directly given as a CharSequence.
@@ -59,43 +76,52 @@ open class KerML(
      * @param ownerQualifiedName the qualified name of the package that gives the scope.
      */
     fun parse(
-        input: CharSequence,
-        ownerQualifiedName: QualifiedName = "",
-    ){
+        input: String,
+        ownerQualifiedName: QualifiedName? = null,
+    ): List<ElementData>{
         this.input = input
         semantics.initOwningNamespaces(ownerQualifiedName)
         parse()
+        uuidPolicy.fixIDs(semantics.elementsBuilt)
+        status.elementsBuilt.addAll(semantics.elementsBuilt)
+        return semantics.elementsBuilt
     }
-
 
     /**
      * Re-definition of the Parser template's error message function.
      * error is a lambda that is used for error reporting.
      */
-    override var error = fun(message: String) {
-        model.status.error(message = message, this, element = semantics.element())
+    override fun error(message: String, exception: Exception)
+    {
+        nextToken()
+        status.error(
+            kind = Issue.Kind.ERROR_SYNTACTICAL,
+            message = message,
+            element = semantics.element,
+            cause = exception
+        )
     }
 
     /**
+     * Starting rule for KerML models.
+     *
      *    RootNamespace :- ( NamespaceBodyElement )* EOF
      */
-    open fun parse() {
+    open fun parse()  {
         noOrMore(stop = EOF) {
             try {
                 NamespaceBodyElement()   // KerML textual
             } catch (exception: Exception) {
                 handleError(exception)
-                semantics.initOwningNamespaces("Global")
+                semantics.initOwningNamespaces()
             }
         }
         try {
             EOF.consume()
         } catch (exception: Exception) {
             handleError(exception)
-            semantics.initOwningNamespaces("Global")
         }
     }
-
 
     /**
      *          QualifiedNameList :- QualifiedName ("," QualifiedName )*
@@ -109,7 +135,6 @@ open class KerML(
         }
         return result
     }
-
 
     /**
      * ValueRange :- [-] ValueLiteral [.. [-] ValueLiteral]
@@ -165,9 +190,9 @@ open class KerML(
 
         // report error.
         if (exception is SysMDException) {
-            model.status.error(exception.message, this, cause = exception, kind = exception.kind)
+            status.error(exception.message, semantics.element, cause = exception, kind = exception.kind)
         } else
-            model.status.fatal(exception.message?: "Unknown error",  this, cause = exception)
+            status.fatal(exception.message?: "Unknown error",  this, cause = exception)
         // Skip input until we get the next DOT (=end of triple) or RCURBRACE or EOF.
         var nested = 0
         while (
@@ -183,11 +208,11 @@ open class KerML(
         //    semantics.popOwner()
         consume()
         if (token .kind == EOF)
-            model.status.error( "Unexpected end of input", this)
+            status.error( "Unexpected end of input", semantics.element, cause = exception)
     }
 
     internal fun handleSyntaxError(message: String) {
-        model.status.error(message, this, semantics.namespace, kind=Issue.Kind.ERROR_SYNTACTICAL)
+        status.error(message, element = semantics.element, kind=Issue.Kind.ERROR_SYNTACTICAL)
         // Skip input until we get the next DOT (=end of triple) or RCURBRACE or EOF.
         var nested = 0
         while (
@@ -204,11 +229,11 @@ open class KerML(
         // semantics.popOwner()
         consume()
         if (token .kind == EOF)
-            model.status.error( "Unexpected end of input", this)
+            status.error(kind = Issue.Kind.ERROR_SYNTACTICAL, message = "Unexpected end of input", element = semantics.element)
     }
 
     override fun toString(): String {
-        return "Parser at '${token.string}', line ${token.lineNo}; #issues: ${model.status.issues.size}"
+        return "Parser at '${token.string}', line ${token.lineNo}, #issues: ${status.issues.size}"
     }
 
     /**
@@ -220,36 +245,6 @@ open class KerML(
         }
     }
 
-    fun unresolvedFeature(relativeName: String): UnresolvedFeature =
-        UnresolvedFeature(relativeName = relativeName).also {
-            it.input = input
-            it.indices = indices
-        }
-
-    fun unresolvedFeatureChain(relativeName: String): UnresolvedFeatureChain =
-        UnresolvedFeatureChain(relativeName = relativeName).also {
-            it.input = input
-            it.indices = indices
-        }
-
-    fun unresolvedType(relativeName: String): UnresolvedType =
-        UnresolvedType(relativeName = relativeName).also {
-            it.input = input
-            it.indices = indices
-        }
-
-    fun unresolvedElement(relativeName: String): UnresolvedElement =
-        UnresolvedElement(relativeName = relativeName).also {
-            it.input = input
-            it.indices = indices
-        }
-
-    fun unresolvedNamespace(relativeName: String): UnresolvedNamespace =
-        UnresolvedNamespace(relativeName = relativeName).also {
-            it.input = input
-            it.indices = indices
-        }
-
     /** Executes a production in which names should not be resolved.
      * Only toggles `unresolvedNamedMode` flag, the used production rule has to respect that setting.
      */
@@ -257,5 +252,15 @@ open class KerML(
     = if(!condition || this.unresolvedNamesMode) body() else {
         this.unresolvedNamesMode = true
         try { body() } finally { this.unresolvedNamesMode = false }
+    }
+
+    /**
+     * Executes semantic action in the context ActionsContext.
+     */
+    inline fun <T> T.semantics(
+        block: ActionsContext.(T) -> Unit
+    ): T {
+        semantics.block(this)
+        return this
     }
 }

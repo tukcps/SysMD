@@ -1,6 +1,11 @@
 package com.github.tukcps.sysmd.rest.entities.api.entities.responseModels
 
-import com.github.tukcps.sysmd.rest.entities.api.entities.ElementDAO
+import com.github.tukcps.sysmd.model.datamodel.IntRangeSerializer
+import com.github.tukcps.sysmd.model.generated.ElementDataIF
+import com.github.tukcps.sysmd.model.generated.ElementType
+import com.github.tukcps.sysmd.model.kerml.Feature
+import com.github.tukcps.sysmd.model.kerml.Import
+import com.github.tukcps.sysmd.model.sysml.*
 import com.github.tukcps.sysmd.rest.entities.api.entities.Identified
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -12,13 +17,11 @@ import kotlin.uuid.Uuid
 @Serializable
 class ElementResponse(
     @SerialName("@id")
-    var id: Uuid? = null,
+    var id: Uuid = Uuid.random(),
 
     @SerialName("@type")
-    override var type: String,
+    override var type: ElementType = ElementType.Element,
 
-    override var name: String? = null,
-    override var shortName: String? = null,
     override var declaredName: String? = null,
     override var declaredShortName: String? = null,
     override var ownedElement: MutableList<Identified> = mutableListOf(),     // The IDs of the owned elements.
@@ -28,7 +31,7 @@ class ElementResponse(
     override var owningRelationship: Identified? = null,
 
     // For type = Feature
-    override var direction: String? = null,
+    override var direction: Feature.FeatureDirectionKind? = null,
 
     // For type = Import
     override var importedMemberName: String? = null,
@@ -39,15 +42,12 @@ class ElementResponse(
     override var body: String? = null,                           // Documentation
 
     // For type = Relationship and subtypes thereof
-    override var source: MutableList<Identified>? = null,
-    override var target: MutableList<Identified>? = null,
+    override var source: MutableList<Identified> = mutableListOf(),
+    override var target: MutableList<Identified> = mutableListOf(),
     override var isStandard: Boolean? = null,
-    override var isLibraryElement: Boolean? = false,
     override var isImplied: Boolean? = null,
     override var isImpliedIncluded: Boolean? = null,
-    override var documentation: Identified? = null,
-    override var textualRepresentation: MutableList<Identified>? = null,
-    override var visibility: String? = null,
+    override var visibility: Import.VisibilityKind? = null,
     override var isAbstract: Boolean? = null,
     override var isSufficient: Boolean? = null,
     override var isConjugated: Boolean? = null,
@@ -56,16 +56,50 @@ class ElementResponse(
     override var isComposite: Boolean? = null,
     override var isEnd: Boolean? = null,
     override var isDerived: Boolean? = null,
-    override var isReadOnly: Boolean? = null,
-): ElementDAO {
-    override var elementId: Uuid?
+    override var isConstant: Boolean? = null,
+    override var locale: String? = null,
+    override var isRecursive: Boolean? = null,
+    override var isImportAll: Boolean? = null,
+    override var memberShortName: String? = null,
+    override var memberName: String? = null,
+    override var isPortion: Boolean? = null,
+    override var isVariable: Boolean? = null,
+    override var isInitial: Boolean? = null,
+    override var isDefault: Boolean? = null,
+    override var isVariation: Boolean? = null,
+    override var requirementConstraintMembershipKind: RequirementConstraintMembership.RequirementConstraintKind? = null,
+    override var transitionFeatureMembershipKind: TransitionFeatureMembership.TransitionFeatureKind? = null,
+    override var stateSubactionMembershipKind: StateSubactionMembership.StateSubactionKind? = null,
+    override var isIndividual: Boolean? = null,
+    override var portionKind: OccurrenceUsage.PortionKind? = null,
+    override var literalStringValue: String? = null,
+    override var literalIntegerValue: Long? = null,
+    override var literalRationalValue: Double? = null,
+    override var literalBooleanValue: Boolean? = null,
+    override var isNegated: Boolean? = null,
+    override var isParallel: Boolean? = null,
+    override var operator: String? = null,
+    override var reqId: String? = null,
+    override var triggerInvocationExpressionKind: TriggerInvocationExpression.TriggerKind? = null,
+    override var ownedRelatedElement: MutableList<Identified> = mutableListOf(),
+    override var owningRelatedElement: Identified? = null,
+): ElementDataIF {
+    /**
+     * `indices` declared by `./.`.
+     * MOF multiplicity: `0..1`.
+     */
+    @Serializable(with = IntRangeSerializer::class)
+    override var indices: IntRange? = null
+
+    /**
+     * `input` declared by `./.`.
+     * MOF multiplicity: `0..1`.
+     */
+    override var input: String? = null
+
+    override var elementId: Uuid
         get() = id
         set(value) { id = value }
     override var aliasIds: MutableList<String> = mutableListOf()
     override var ownedRelationship: MutableList<Identified> = mutableListOf()
-
-    constructor(element: ElementDAO): this(id = element.elementId, type = element.type) {
-        copyFrom(element)
-    }
-    private constructor(): this(id= Uuid.random(), type="Element")
 }

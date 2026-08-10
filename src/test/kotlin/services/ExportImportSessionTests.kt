@@ -1,17 +1,13 @@
 package services
 
+import com.github.tukcps.sysmd.model.generated.ElementDataIF
 import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.rest.entities.api.entities.getElements
 import com.github.tukcps.sysmd.services.check.checkConsistency
-import io.github.tukcps.sysmlv2.api.entities.ElementDAO
-import io.github.tukcps.sysmlv2.api.entities.getElements
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
+import kotlin.test.*
 
 class ExportImportSessionTests {
 
@@ -21,27 +17,26 @@ class ExportImportSessionTests {
      */
     @Test
     fun exportImportRelationship() {
-        var export = listOf<ElementDAO>()
+        var export = listOf<ElementDataIF>()
 
         // compute export && check it
         testSession("ScalarValues") {
-            checkConsistency(repo.elements.values, checkForNoTransients = false)
+            checkConsistency(repo.elements(), checkForNoTransients = false)
             loadKerML("private import Base::*;")
-            export = export().getElements().filter { it.type == "NamespaceImport" }
+            export = export().getElements().filter { it.type.name == "NamespaceImport" }
             val import = export.first()
-            assertEquals(1, import.source!!.size)
-            assertEquals(1, import.target!!.size)
-            assertNull(import.source!!.first().id) // Importing namespace is Global.
-            assertNotNull(import.target!!.first().id)
+            assertEquals(1, import.source.size)
+            assertEquals(1, import.target.size)
+            assertNull(import.source.first().id) // Importing namespace is Global.
+            assertNotNull(import.target.first().id)
         }
 
         // Import export && check relationships
         testSession {
             import(export)
             val import = global.getOwnedElementOfType<Import>() !!
-            assertTrue(import.source.size == 1 && import.source.first().elementId != null)
-            assertTrue(import.target.size == 1 &&
-                        import.target.first().elementId != null)
+            assertEquals(import.source.size, 1)
+            assertEquals(import.target.size, 1)
         }
     }
 
@@ -54,7 +49,7 @@ class ExportImportSessionTests {
      */
     @Test
     fun exportImportRelationships() {
-        var export: List<ElementDAO> = mutableListOf()
+        var export: List<ElementDataIF> = mutableListOf()
 
         testSession {
             loadKerML("""
@@ -75,8 +70,8 @@ class ExportImportSessionTests {
             val spec = a.getOwnedElementsOfType<Specialization>().first()
             assertEquals(a, spec.source.first())
             assertEquals(a.elementId, spec.source.first().elementId)
-            assertEquals(anything, spec.target.first())
-            assertEquals(anything.elementId, spec.target.first().elementId)
+            assertEquals(repo.anything!!, spec.target.first())
+            assertEquals(repo.anything!!.elementId, spec.target.first().elementId)
 
             // Save it in DB and see if
             export = export().filter { it.payloadElementSnapshot != null }.mapNotNull { it.payloadElementSnapshot }
@@ -96,7 +91,7 @@ class ExportImportSessionTests {
 
             val spec = a.getOwnedElementsOfType<Specialization>().first()
             assertEquals(a.elementId, spec.source.first().elementId)
-            assertEquals(anything.elementId, spec.target.first().elementId)
+            assertEquals(repo.anything!!.elementId, spec.target.first().elementId)
         }
     }
 }

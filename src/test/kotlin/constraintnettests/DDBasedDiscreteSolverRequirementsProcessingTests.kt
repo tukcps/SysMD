@@ -1,5 +1,6 @@
 package constraintnettests
 
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import io.github.tukcps.aadd.values.XBool
 import kotlin.test.assertEquals
@@ -12,22 +13,21 @@ class DDBasedDiscreteSolverRequirementsProcessingTests {
     @Test
     fun restrictInteger() = testSession("ScalarValues") {
         loadKerML("""                
-            feature weight: ScalarValues::Integer {:>> range = "0..50";}
+            feature weight: ScalarValues::Integer {:>> range = 0..50;}
             inv r { weight <= 30 }
-        """)
-        solver.propagate()
-        val r = global.resolveVar("r")
+        """, Runlevel.ALL)
+        val r = solver.getVariable("r")
         assertEquals(r!!.boolSpecs.first(), XBool.True)
     }
 
     @Test
     fun restrictInteger2() = testSession("ScalarValues") {
         loadKerML("""                
-            feature weight: ScalarValues::Integer {:>> range = "0..50";}
+            feature weight: ScalarValues::Integer {:>> range = 0..50;}
             inv r { weight <= 30 }
         """)
         solver.propagate()
-        val r = global.resolveVar("r")
+        val r = solver.getVariable("r")
         assertEquals(r!!.boolSpecs.first(), XBool.True)
     }
 }

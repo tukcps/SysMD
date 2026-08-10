@@ -2,22 +2,21 @@
 
 package com.github.tukcps.sysmd.compiler.parser.sysmlv2
 import com.github.tukcps.sysmd.compiler.SysMLv2
-import com.github.tukcps.sysmd.compiler.parser.kerml.ConnectorEndMember
+import com.github.tukcps.sysmd.compiler.parser.kerml.ConnectorEnd
 import com.github.tukcps.sysmd.compiler.parser.kerml.ValuePart
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
-import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.ConnectionDefinitionActions
-import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.ConnectionUsageActions
+import com.github.tukcps.sysmd.compiler.semantics.kerml.parse
+import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.ConnectionDefinitionAction
+import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.ConnectionUsageAction
 import com.github.tukcps.sysmd.exceptions.throwSyntaxError
-import com.github.tukcps.sysmd.model.sysml.ConnectionUsage
-import com.github.tukcps.sysmd.model.sysml.implementation.ConnectionDefinitionImplementation
-import com.github.tukcps.sysmd.model.sysml.implementation.ConnectionUsageImplementation
+import com.github.tukcps.sysmd.model.generated.ElementType
 
 /**
  * 8.2.2.13.1 Connection Definition and Usage
  *
  *      ConnectionDefinition = OccurrenceDefinitionPrefix 'connection' 'def' Definition
  */
-fun SysMLv2.ConnectionDefinition() = ConnectionDefinitionActions(semantics, ::ConnectionDefinitionImplementation).parse {
+fun SysMLv2.ConnectionDefinition() = ConnectionDefinitionAction(semantics, ElementType.ConnectionDefinition).parse {
     CONNECTION.consume()
     DEF.consume()
     Definition()
@@ -31,7 +30,7 @@ fun SysMLv2.ConnectionDefinition() = ConnectionDefinitionActions(semantics, ::Co
  *          )
  *          UsageBody
  */
-fun SysMLv2.ConnectionUsage() = ConnectionUsageActions<ConnectionUsage>(semantics, ::ConnectionUsageImplementation, "Connections::Connection").parse {
+fun SysMLv2.ConnectionUsage() = ConnectionUsageAction(semantics, ElementType.ConnectionUsage).parse {
     alternatives {
         CONNECTION starts {
             CONNECTION.consume()
@@ -45,7 +44,6 @@ fun SysMLv2.ConnectionUsage() = ConnectionUsageActions<ConnectionUsage>(semantic
             }
         }
         CONNECT starts {
-            semantics.create(null)
             CONNECT.consume()
             ConnectorPart()
         }
@@ -72,9 +70,9 @@ val connectorPartStart get() = binaryConnectorPartStart + naryConnectorPartStart
  *      BinaryConnectorPart = ConnectorEndMember 'to' ConnectorEndMember
  */
 fun SysMLv2.BinaryConnectorPart() {
-    ConnectorEndMember()        .also { semantics.setSourceEnd(it) }
+    ConnectorEnd()        .also { semantics.setSourceEnd(it) }
     TO.consume()
-    ConnectorEndMember()        .also { semantics.setTargetEnd(it) }
+    ConnectorEnd()        .also { semantics.setTargetEnd(it) }
 }
 val binaryConnectorPartStart = setOf(NAME_LIT)
 
@@ -84,10 +82,10 @@ val binaryConnectorPartStart = setOf(NAME_LIT)
  */
 fun SysMLv2.NaryConnectorPart() {
     LBRACE.consume()
-    ConnectorEndMember()    .also { semantics.setTargetEnd(it) }
+    ConnectorEnd()    .also { semantics.setTargetEnd(it) }
     noOrMore(COMMA) {
         COMMA.consume()
-        ConnectorEndMember().also { semantics.addTargetEnd(it) }
+        ConnectorEnd().also { semantics.addTargetEnd(it) }
     }
     RBRACE.consume()
 }
@@ -105,9 +103,9 @@ fun SysMLv2.BindingConnectorAsUsage() {
     // UsagePrefix()
     BINDING.optional { UsageDeclaration() }
     BIND.consume()
-    ConnectorEndMember()
+    ConnectorEnd()
     EQ.consume()
-    ConnectorEndMember()
+    ConnectorEnd()
     UsageBody()
 }
 fun SysMLv2.BindingConnectorAsUsageStarts(): Boolean =

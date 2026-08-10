@@ -1,28 +1,16 @@
 package com.github.tukcps.sysmd.model.sysml.implementation
 
-import com.github.tukcps.sysmd.model.util.SimpleName
-import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
+import com.github.tukcps.sysmd.model.kerml.Structure
 import com.github.tukcps.sysmd.model.sysml.ItemUsage
-import java.util.*
+import com.github.tukcps.sysmd.model.util.MultiplicityRange
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
-class ItemUsageImplementation(
-    declaredName: SimpleName? = null,
-    declaredShortName: SimpleName? = null,
-    elementType: String = "ItemUsage",
-):
-    ItemUsage, FeatureImplementation(
-    declaredName =declaredName,
-    declaredShortName =declaredShortName,
-    elementType =elementType) {
-    override fun clone(): ItemUsage {
-        val klon = ItemUsageImplementation(
-            declaredName = declaredName,
-            declaredShortName = declaredShortName,
-        ).also { klon ->
-            klon.model = model
-            klon.updated = updated
-            klon.isComposite = isComposite
-        }
-        return klon
-    }
+open class ItemUsageImplementation(model : Session,elementId : Uuid = Uuid.random())
+    : ItemUsage, OccurrenceUsageImplementation(model,elementId = elementId)
+{
+    override val defaultMultiplicityRange = MultiplicityRange.USAGE_DEFAULT
+    override fun clone(): ItemUsage = ItemUsageImplementation(model).also { it.updateFrom(this) }
+    override val itemDefinition: MutableList<Structure>
+        get() = TODO("Not yet implemented")
 }

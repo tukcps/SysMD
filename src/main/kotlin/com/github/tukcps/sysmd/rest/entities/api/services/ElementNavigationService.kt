@@ -1,9 +1,9 @@
 package com.github.tukcps.sysmd.rest.entities.api.services
 
+import com.github.tukcps.sysmd.model.generated.ElementDataIF
 import com.github.tukcps.sysmd.rest.entities.api.entities.Commit
-import com.github.tukcps.sysmd.rest.entities.api.entities.ElementDAO
 import com.github.tukcps.sysmd.rest.entities.api.entities.Project
-import java.util.*
+import kotlin.uuid.Uuid
 
 /**
  * The element navigation service API.
@@ -16,21 +16,21 @@ interface ElementNavigationService {
      * Gets all elements of a project by project and commit id.
      * In extension to the standard, we accept nullable commit -> the head of default-branch
      */
-    fun getElements(project: Project, commit: Commit? = null): Collection<ElementDAO>
+    fun getElements(project: Project, commit: Commit? = null): Collection<ElementDataIF>
 
     /**
      * Gets a concrete element of a project and commit by id.
      * In extension to the standard, we accept null commit -> head of default-branch.
      */
-    fun getElementById(project: Project, commit: Commit? = null, elementId: UUID): ElementDAO?
+    fun getElementById(project: Project, commit: Commit? = null, elementId: Uuid): ElementDataIF?
 
     /**
      * Gets a concrete relationship by project, commit, related element id and direction
      */
-    fun getRelationshipsByRelatedElement(project: Project, commit: Commit, elementId: UUID, direction: String ) : Collection<ElementDAO>
+    fun getRelationshipsByRelatedElement(project: Project, commit: Commit, elementId: Uuid, direction: String ) : Collection<ElementDataIF>
 
     /**
      * Gets the elements owned by the root namespace by project and commit id.
      */
-    fun getRootElements(project: Project, commit: Commit): Collection<ElementDAO>
+    fun getRootElements(project: Project, commit: Commit): Collection<ElementDataIF>
 }

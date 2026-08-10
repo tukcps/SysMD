@@ -31,20 +31,11 @@ class ElementDataClassifier(
     fun isIncluded(
         clazz: MOFClass,
         attribute: MOFAttribute,
-    ): Boolean {
-
-        if (isStructuralReference(clazz, attribute))
-            return true
-
-        if (
-            attribute.isDerived &&
-            attribute.name !in
-            GeneratorConfiguration.ELEMENT_DATA_DERIVED_PROPERTIES
-        ) {
-            return false
-        }
-
-        return isData(attribute)
+    ): Boolean = when {
+        isStructuralReference(clazz, attribute) -> true
+        attribute.name in GeneratorConfiguration.ELEMENT_DATA_DERIVED_PROPERTIES -> true
+        attribute.isDerived -> false
+        else -> isData(attribute)
     }
 
     /**

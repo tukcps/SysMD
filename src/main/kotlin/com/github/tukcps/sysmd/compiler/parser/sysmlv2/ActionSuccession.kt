@@ -2,16 +2,14 @@
 
 package com.github.tukcps.sysmd.compiler.parser.sysmlv2
 
-import com.github.tukcps.sysmd.compiler.*
-import com.github.tukcps.sysmd.compiler.parser.kerml.*
+import com.github.tukcps.sysmd.compiler.SysMLv2
+import com.github.tukcps.sysmd.compiler.parser.kerml.ConnectorEnd
+import com.github.tukcps.sysmd.compiler.parser.kerml.FeatureChain
+import com.github.tukcps.sysmd.compiler.parser.kerml.OwnedExpression
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
-import com.github.tukcps.sysmd.compiler.semantics.*
-import com.github.tukcps.sysmd.compiler.semantics.kerml.*
-import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.model.kerml.implementation.*
-import com.github.tukcps.sysmd.model.sysml.*
-import com.github.tukcps.sysmd.model.sysml.implementation.*
-import java.util.*
+import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureAction
+import com.github.tukcps.sysmd.compiler.semantics.kerml.parse
+import com.github.tukcps.sysmd.model.generated.ElementType
 
 /**
  * 8.2.2.17.8 Action Successions
@@ -31,7 +29,7 @@ fun SysMLv2.ActionTargetSuccession() {
 fun SysMLv2.TargetSuccession() {
     // SourceEndMember t.b.d.
     THEN.consume()
-    ConnectorEndMember()
+    ConnectorEnd()
 }
 
 /**
@@ -50,14 +48,14 @@ fun SysMLv2.TargetSuccession() {
  *          'then' ownedRelationship += TransitionSuccessionMember
  *          UsageBody
  */
-fun SysMLv2.GuardedSuccession() = FeatureActions<TransitionUsage>(this.semantics, ::TransitionUsageImplementation).parse {
-    optional(setOf(SUCCESSION), noMatch = { semantics.create(null)}) {
+fun SysMLv2.GuardedSuccession() = FeatureAction(this.semantics, type = ElementType.TransitionUsage).parse {
+    optional(SUCCESSION) {
         SUCCESSION.consume()
         UsageDeclaration()
     }
     FIRST.consume()
     FeatureChain()
-    GuardExpressionMember()
+    GuardExpression()
     THEN.consume()
     FeatureChain()
     UsageBody()
@@ -65,15 +63,15 @@ fun SysMLv2.GuardedSuccession() = FeatureActions<TransitionUsage>(this.semantics
 fun SysMLv2.guardedSuccessionStarts(): Boolean =
     token.kind == SUCCESSION || (token.kind == FIRST && nextToken.kind == IF)
 
-
-fun SysMLv2.GuardExpressionMember() = FeatureActions<Feature>(semantics, ::FeatureImplementation).parse {
+// Fixme: Wrong, should be a TransitionFeatureMembership
+fun SysMLv2.GuardExpression() = FeatureAction(semantics, ElementType.Feature).parse {
     IF.consume()
     val iBeforeExpression = token.indices.first
-    OwnedExpression().also {
-        val guardCondition = semantics.element<Feature>()
-        semantics.create(Identification("guard_" + UUID.randomUUID().toString()))
-        guardCondition.indices = iBeforeExpression..consumedToken.indices.last
-        guardCondition.expression = input.subSequence(guardCondition.indices!!).toString().trim()
+    val expr = OwnedExpression()
+    semantics.addOwnedElement(expr, ElementType.FeatureMembership)
+    expr.semantics {
+        element.indices = iBeforeExpression..consumedToken.indices.last
+        element.body = input.subSequence(element.indices!!).toString().trim()
     }
 }
 

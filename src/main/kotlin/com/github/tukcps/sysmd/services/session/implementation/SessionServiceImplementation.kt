@@ -4,13 +4,18 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import com.github.tukcps.sysmd.compiler.KerML
+import com.github.tukcps.sysmd.compiler.SysMD
+import com.github.tukcps.sysmd.compiler.SysMLv2
 import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.logger
+import com.github.tukcps.sysmd.model.datamodel.ElementData
+import com.github.tukcps.sysmd.model.datamodel.toElementData
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.OwningMembership
 import com.github.tukcps.sysmd.model.kerml.Type
-import com.github.tukcps.sysmd.model.kerml.implementation.TextualRepresentationImplementation
 import com.github.tukcps.sysmd.model.util.QualifiedName
+import com.github.tukcps.sysmd.rest.entities.interchange.InterchangeProject
 import com.github.tukcps.sysmd.rest.entities.interchange.Meta
 import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.initialize
@@ -23,14 +28,13 @@ import com.github.tukcps.sysmd.ui.listChildNames
 import com.github.tukcps.sysmd.ui.readBytes
 import com.github.tukcps.sysmd.ui.writeBytes
 import com.github.tukcps.sysmd.ui.writeText
-import io.github.tukcps.sysmlv2.interchange.InterchangeProject
+import com.github.tukcps.sysmd.services.util.JsonSupport
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
 import kotlinx.serialization.json.Json
 import kotlin.uuid.Uuid
-import kotlin.uuid.toJavaUuid
 
-class SessionServiceImplementation: SessionService {
+class SessionServiceImplementation : SessionService {
 
     /**
      * @return A collection with all available Sessions.
@@ -83,18 +87,14 @@ class SessionServiceImplementation: SessionService {
         try {
             if (directory != null) {
                 SystemFileSystem.createDirectories(directory)
-                val objectMapper = ObjectMapper()
-                    .registerKotlinModule()
-                    .registerModule(JavaTimeModule())
-                    .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-                    .writerWithDefaultPrettyPrinter()
-
+                val jsonForProject = JsonSupport.json.encodeToString(
+                    InterchangeProject(project.project as InterchangeProject).also { it.id = project.id }
+                )
                 val projectJson = Path(directory, ".project.json")
-                val jsonForProject = objectMapper.writeValueAsString(InterchangeProject(project.project as InterchangeProject).also { it.id = project.id })
                 projectJson.writeText(jsonForProject)
 
                 val metaFileJson = Path(directory, ".meta.json")
-                val jsonForMeta = Json.encodeToString(meta)
+                val jsonForMeta = JsonSupport.json.encodeToString(meta)
                 metaFileJson.writeText(jsonForMeta)
                 logger.info("Project '${project.name}' saved to interchange files.")
             } else
@@ -167,7 +167,7 @@ class SessionServiceImplementation: SessionService {
      * @return A ByteArray with the file contents.
      */
     override fun getIcon(projectId: Uuid): ByteArray? {
-        val projectDir = SessionManager.projectService.getProjectById(projectId.toJavaUuid())?.directory
+        val projectDir = SessionManager.projectService.getProjectById(projectId)?.directory
         val imagePath = projectDir?.let { Path(projectDir, "Files", "icon.png") }
         return imagePath?.readBytes()
     }
@@ -220,27 +220,32 @@ class SessionServiceImplementation: SessionService {
 
     /**
      * Updates a new model in abstract representation by a given piece of code.
-     * @param session The session with the project.
+     * @param sessionId The session with the project.
      * @param code The code from which the abstract representation will be created.
      * @param language Either SysML or KerML.
-     * @return The session status that eventually contains error messages.
+     * @param namespace The namespace to which the elements generated are added.
+     * @return The session status that eventually contains error messages, or null if session not found.
      */
     override fun updateModel(
-        session: Uuid,
+        sessionId: Uuid,
         code: String,
         language: Language,
         namespace: String?,
         runlevel: Runlevel
     ): SessionStatus? {
-        SessionManager.getSession(session)?.also { session ->
-            TextualRepresentationImplementation(
-                language = Language.languageWithNamespace(language, namespace),
-                body = code,
-            ).also { it.model = session }.compile()
-            session.initialize(runlevel)
-            return session.status
+        val session = SessionManager.getSession(sessionId) ?: return null
+
+        with (session) {
+            val elements = when (language) {
+                Language.SYS_MD -> SysMD(this).parse(code, namespace)
+                Language.KerML  -> KerML(this).parse(code, namespace)
+                Language.SYS_ML -> SysMLv2(this).parse(code, namespace)
+                else            -> { this.status.error("Unexpected language: $language"); emptyList() }
+            }
+            import(elements, namespace)
+            initialize(runlevel)
+            return status
         }
-        return null
     }
 
     /**
@@ -248,7 +253,7 @@ class SessionServiceImplementation: SessionService {
      * @param session The session with the model.
      */
     override fun getAllElements(session: Uuid): List<ElementData>? =
-        SessionManager.getSession(session)?.get()?.map { it.toDAO() }
+        SessionManager.getSession(session)?.get()?.map { it.toElementData() }
 
     /**
      * Gets a for a list of IDs the respective elements as a map id -> ElementData.
@@ -263,7 +268,7 @@ class SessionServiceImplementation: SessionService {
         val session = getSession(session) ?: return null
         val result = HashMap<Uuid, ElementData?>()
         for (id in byId) {
-            result[id] = session[id]?.toDAO()
+            result[id] = session[id]?.toElementData()
         }
         return result
     }
@@ -279,7 +284,7 @@ class SessionServiceImplementation: SessionService {
         val session = getSession(session) ?: return null
         val namespace = session.global.resolve(namespace) as? Namespace
         val membership = namespace?.resolve(qualifiedName) as OwningMembership?
-        return Triple(membership?.toDAO(), membership?.ownedMemberElement?.toDAO(), session.status)
+        return Triple(membership?.toElementData(), membership?.ownedMemberElement?.toElementData(), session.status)
     }
 
     /**
@@ -294,7 +299,7 @@ class SessionServiceImplementation: SessionService {
     ): List<ElementData>? {
         val session = SessionManager.getSession(session)
         val owner = session?.get(owner)
-        return owner?.ownedElement?.map { it.toDAO() }
+        return owner?.ownedElement?.map { it.toElementData() }
     }
 
     /**
@@ -309,7 +314,7 @@ class SessionServiceImplementation: SessionService {
         val session = SessionManager.getSession(session)
         val generic = session?.get(type)
         return if (generic is Type) {
-            generic.subtypes.map { it.toDAO() }
+            generic.subtypes.map { it.toElementData() }
         } else
             null
     }

@@ -4,12 +4,12 @@ import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.Function
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.SpecializationImplementation
+import com.github.tukcps.sysmd.model.util.MultiplicityRange
+import com.github.tukcps.sysmd.model.util.UnresolvedType
 import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolveVar
-import com.github.tukcps.sysmd.services.session.loadLibrary
 import io.github.tukcps.aadd.functions.numInternalNodes
-import io.github.tukcps.aadd.values.IntegerRange
 import io.github.tukcps.aadd.values.XBool
 import io.github.tukcps.aadd.values.XBool.Companion.True
 import org.junit.jupiter.api.assertAll
@@ -27,24 +27,24 @@ class IssuesAndRegressions {
     @Ignore // IDD do not use solver so far, and finding the solution requires the LP solver
     fun minTestMultipleParams3Integer() = testSession("Ranges") {
         loadKerML("""
-            feature a: Ranges::IntegerInRange {:>> range = "0..7";}
-            feature b: Ranges::IntegerInRange {:>> range = "1..6";}
-            feature c: Ranges::IntegerInRange {:>> range = "2..5";}
-            feature d: Ranges::IntegerInRange {:>> range = "3..4";}
-            feature e: Ranges::IntegerInRange = min(a,b,c,d) {:>> range = "4..5";}
+            feature a: Ranges::IntegerInRange {:>> range = 0..7;}
+            feature b: Ranges::IntegerInRange {:>> range = 1..6;}
+            feature c: Ranges::IntegerInRange {:>> range = 2..5;}
+            feature d: Ranges::IntegerInRange {:>> range = 3..4;}
+            feature e: Ranges::IntegerInRange = min(a,b,c,d) {:>> range = 4..5;}
         """)
         solver.propagate()
         assertNoIssues()
-        val result = global.resolveVar("a")
+        val result = solver.getVariable("a")
         assertEquals(4, result!!.vectorQuantity.value.asIdd().min)
         assertEquals(7, result.vectorQuantity.value.asIdd().max)
-        val result1 = global.resolveVar("b")
+        val result1 = solver.getVariable("b")
         assertEquals(4, result1!!.vectorQuantity.value.asIdd().min)
         assertEquals(6, result1.vectorQuantity.value.asIdd().max)
-        val result2 = global.resolveVar("c")
+        val result2 = solver.getVariable("c")
         assertEquals(4, result2!!.vectorQuantity.value.asIdd().min)
         assertEquals(5, result2.vectorQuantity.value.asIdd().max)
-        val result3 = global.resolveVar("d")
+        val result3 = solver.getVariable("d")
         assertEquals(4, result3!!.vectorQuantity.value.asIdd().min)
         assertEquals(4, result3.vectorQuantity.value.asIdd().max)
         assertNoIssues()
@@ -77,19 +77,18 @@ class IssuesAndRegressions {
     @Test
     fun issue34test() = testSession("Occurrences", "Ranges") {
         loadKerML(input = """
-            class Wheel { feature price : Ranges::RealInRange { :>> range = "1.0..1.0";} }
-            class Body { feature price : Ranges::RealInRange { :>> range = "1.0..1.0";} }
-            class Chassis { feature price : Ranges::RealInRange { :>> range = "1.0..1.0";}}
+            class Wheel { feature price : Ranges::RealInRange { :>> range = 1.0..1.0;} }
+            class Body { feature price : Ranges::RealInRange { :>> range = 1.0..1.0;} }
+            class Chassis { feature price : Ranges::RealInRange { :>> range = 1.0..1.0;} }
             class Car {
                 feature wheel: Wheel;
                 feature body: Body;
                 feature chassis: Chassis;
                 feature carPrice: Ranges::RealInRange = sumOverParts(price);
             }
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
-        val price = global.resolveVar("Car::carPrice")!!
+        val price = solver.getVariable("Car::carPrice")!!
         assertEquals(3.0, price.min(), 0.000001)
         assertEquals(3.0, price.max(), 0.000001)
     }
@@ -98,9 +97,9 @@ class IssuesAndRegressions {
      * After repeated load of a document, its elements should be updated,
      * but not duplicated.
      */
-    @Test fun elementsNotAppearTwice() = testSession("Base") {
-        loadLibrary("ScalarValues")
-        initialize(Runlevel.ALL)
+    @Test fun elementsNotAppearTwice() = testSession {
+        loadLibrary("ScalarValues") // also loads Base ...
+        initialize(Runlevel.MODEL)
         assertNoIssues()
         val elements = get()
         loadLibrary("ScalarValues")
@@ -120,16 +119,13 @@ class IssuesAndRegressions {
     fun featuresAndMultiplicitiesNotAppearTwice() = testSession {
         loadLibrary("Base")
         loadLibrary("ScalarValues")
-        loadLibrary("Links")
-        loadLibrary("Occurrences")
+        loadLibrary("ScalarValues")
         initialize(Runlevel.MODEL)
         assertNoIssues()
         val first = get().toList()
 
         loadLibrary("Base")
         loadLibrary("ScalarValues")
-        loadLibrary("Links")
-        loadLibrary("Occurrences")
         initialize(Runlevel.MODEL)
         val second = get()
         assertNoIssues()
@@ -149,17 +145,16 @@ class IssuesAndRegressions {
     @Test
     fun unitDisappearsTest() = testSession("Occurrences", "ISQ") {
         loadKerML("""
-                    class Vehicle {
-                        feature mass: ISQ::MassValue = bySpecializations(mass);
-                    }
-                    class Car :> Vehicle {
-                        feature mass: ISQ::MassValue = 100.0 kg;
-                    }
-                    class Bicycle :> Vehicle {
-                        feature mass: ISQ::MassValue = oneOf(10.0 .. 20.0 [kg]);
-                    }
-            """)
-        solver.propagate()
+            class Vehicle {
+                feature mass: ISQ::MassValue = bySpecializations(mass);
+            }
+            class Car :> Vehicle {
+                feature mass: ISQ::MassValue = 100.0 kg;
+            }
+            class Bicycle :> Vehicle {
+                feature mass: ISQ::MassValue = oneOf(10.0 .. 20.0 [kg]);
+            }
+        """, Runlevel.ALL)
         assertNoIssues()
         val vehicle: Class? = global.resolve("Vehicle")!!.member()
         val mass =vehicle?.resolveVar("mass")!!
@@ -184,18 +179,17 @@ class IssuesAndRegressions {
         val test = global.resolve("Test")?.member<Type>()
         val comp = test!!.resolve("comp")?.member<Feature>()!!
         assertEquals(1, comp.getOwnedElementsOfType<Multiplicity>().size) // Just the multiplicity
-        assertEquals(IntegerRange(1, 2), comp.multiplicityRange)
+        assertEquals(MultiplicityRange(1, 2), comp.multiplicityRange)
     }
 
     @Test
-    fun multiplicityBaseAmbiguityTest() = testSession("ScalarValues", "Parts") {
+    fun multiplicityBaseAmbiguityTest() = testSession("Parts") {
         loadSysMLv2("""
             part def Wire;
             part wireLidar: Wire[0..1] {
                 attribute test: ScalarValues::Real;
-            }
-        """)
-        solver.propagate()
+            } 
+        """, Runlevel.MODEL)
         assertNoIssues()
     }
 
@@ -210,15 +204,14 @@ class IssuesAndRegressions {
                     feature  wheels: ExampleDesign::Wheels[2..6];
                     feature numAxis: ScalarValues::Integer = wheels::cardinality/2;
                 }
-            }""")
-        solver.propagate()
+            }
+        """, Runlevel.ALL)
         assertNoIssues()
-        val multi = global.resolveVar("ExampleDesign::Chassis::wheels::cardinality")!!
+        val multi = solver.getVariable("ExampleDesign::Chassis::wheels::multiplicity")!!
         assertNotNull(multi)
         assertEquals(2L, multi.min())
         assertEquals(6L, multi.max())
     }
-
 
     @Test
     fun variableUnknownIsReportedAsError() = testSession("ScalarValues") {
@@ -252,23 +245,21 @@ class IssuesAndRegressions {
         assertNotEquals(s1, s2)
         assertNotEquals(s1, s3)
         assertNotEquals(s2, s3)
-        assertEquals(IntegerRange(4,5), global.resolve("Device::sensor")?.member<Feature>()?.multiplicityRange)
-        assertEquals(IntegerRange(4,4), global.resolve("DeviceB::sensor")?.member<Feature>()?.multiplicityRange)
-        assertEquals(IntegerRange(5,5), global.resolve("DeviceA::sensor")?.member<Feature>()?.multiplicityRange)
+        assertEquals(MultiplicityRange(4, 5), global.resolve("Device::sensor")?.member<Feature>()?.multiplicityRange)
+        assertEquals(MultiplicityRange(4,4), global.resolve("DeviceB::sensor")?.member<Feature>()?.multiplicityRange)
+        assertEquals(MultiplicityRange(5,5), global.resolve("DeviceA::sensor")?.member<Feature>()?.multiplicityRange)
     }
-
 
     @Test
     fun issue112_inheritPartsShort() = testSession("ScalarValues") {
-        settings.catchExceptions = false
         loadKerML("""
-                type a :> Base::Anything {
-                    feature f1;
-                }
-                type b :> a;
-            """)
+            type a :> Base::Anything {
+                feature f1;
+            }
+            type b :> a;
+        """, Runlevel.MODEL)
         loadSysMD("""
-                b::f1 hasA feature f: Base::Anything;
+            b::f1 hasA feature f: Base::Anything;
         """)
         assertNoIssues()
         val inherited = global.resolve( "b::f1")?.memberElement
@@ -282,7 +273,6 @@ class IssuesAndRegressions {
      */
     @Test
     fun issue112_inheritPartsShort2() = testSession("Occurrences") {
-        settings.catchExceptions = false
         loadKerML("""
             class a {
                 feature f1: Base::Anything;
@@ -335,11 +325,11 @@ class IssuesAndRegressions {
         loadKerML("""
             package X {
                 private import Ranges::*;
-                feature x: RealInRange { :>> range = "10.0..20.0";}
+                feature x: RealInRange { :>> range = 10.0..20.0;}
             }
         """)
         assertNoIssues()
-        val x = global.resolveVar("X::x")
+        val x = solver.getVariable("X::x")
         assertNotNull(x)
         assertEquals(10.0, x.min(), 0.0001)
     }
@@ -371,7 +361,7 @@ class IssuesAndRegressions {
         solver.propagate()
         //  val generated = getOwnedElement(textualRepresentation,"Generated elements") as Annotation?
 
-        val x = global.resolveVar("X::Z::x")
+        val x = solver.getVariable("X::Z::x")
         assertNoIssues()
         assertEquals(10.0, x?.vectorQuantity?.getMinAsDouble()!!, 0.0001)
     }
@@ -380,43 +370,48 @@ class IssuesAndRegressions {
     fun propagateStringTest() = testSession("ScalarValues") {
 
         val value = FeatureImplementation(
+            this,
             declaredName = "testPropertyString"
         ).also {
             it.expression = "The String is saved here"
         }
 
         val created = addOwnedMember(value, global)
-        addOwnedRelationship(SpecializationImplementation(created, UnresolvedType("ScalarValues::String")), created)
+        addOwnedRelationship(SpecializationImplementation(
+            this,
+            specific = created,
+            general = UnresolvedType(this, "ScalarValues::String")
+        ), created)
         initialize(Runlevel.VARIABLES)
-        val str = global.resolveVar("testPropertyString")
+        val str = solver.getVariable("testPropertyString")
         assertNotNull(str)
     }
 
 
     @Test
-    fun simpleMultiplicationWithZero() = testSession("ScalarValues", "Ranges") {
+    fun simpleMultiplicationWithZero() = testSession("Ranges") {
         loadKerML("""
-            feature a: Ranges::RealInRange {:>> range = "1..1";}
-            feature b: Ranges::RealInRange {:>> range = "0..5";}
-            feature c: Ranges::RealInRange = a*b {:>> range = "2..2";}
+            feature a: Ranges::RealInRange {:>> range = 1..1;}
+            feature b: Ranges::RealInRange {:>> range = 0..5;}
+            feature c: Ranges::RealInRange = a*b {:>> range = 2..2;}
         """, Runlevel.ALL)
         assertNoIssues()
-        assertEquals(2.0, global.resolveVar("b")!!.vectorQuantity.getMinAsDouble(), 0.0001)
-        assertEquals(2.0, global.resolveVar("b")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
-        assertEquals(1.0, global.resolveVar("a")!!.vectorQuantity.getMinAsDouble(), 0.0001)
-        assertEquals(1.0, global.resolveVar("a")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
+        assertEquals(2.0, solver.getVariable("b")!!.vectorQuantity.getMinAsDouble(), 0.0001)
+        assertEquals(2.0, solver.getVariable("b")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
+        assertEquals(1.0, solver.getVariable("a")!!.vectorQuantity.getMinAsDouble(), 0.0001)
+        assertEquals(1.0, solver.getVariable("a")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
     }
 
 
     @Test
     fun maxTest1EvalDown() = testSession("Ranges") {
         loadKerML(input = """
-            feature a: Ranges::RealInRange {:>> range = "1..1";}
-            feature b: Ranges::RealInRange {:>> range = "0..5";}
-            feature c: Ranges::RealInRange = max(a,b) {:>> range = "2..2";}
+            feature a: Ranges::RealInRange {:>> range = 1..1;}
+            feature b: Ranges::RealInRange {:>> range = 0..5;}
+            feature c: Ranges::RealInRange = max(a,b) {:>> range = 2..2;}
         """, Runlevel.ALL)
         assertNoIssues()
-        val result = global.resolveVar("b")
+        val result = solver.getVariable("b")
         assertEquals(2.0,result!!.vectorQuantity.getMinAsDouble(),0.000001)
         assertEquals(2.0,result.vectorQuantity.getMaxAsDouble(),0.000001)
         assertNoIssues()
@@ -430,29 +425,28 @@ class IssuesAndRegressions {
     @Test //Multiple executions of initialize() and solver.propagate() lead to not working detection of redefinition
     fun repeatedExecutionCausesWrongResultsTest() = testSession("ISQ") {
         val model = """
-                        type PartWithVolume :> Base::Anything {
-                            feature height:  ISQ::LengthValue = oneOf(10.0 .. 100.0 [cm]);
-                            feature width:   ISQ::LengthValue = oneOf(1.0 .. 1.1  [m]);
-                            feature length:  ISQ::LengthValue = oneOf(1.0 .. 1.1  [m]);
-                            feature volume:  ISQ::VolumeValue = height * width * length {:>> range = "1 .. 2"; :>> unit = "m^3";}
-                        }
-                    """
+            type PartWithVolume :> Base::Anything {
+                feature height:  ISQ::LengthValue = oneOf(10.0 .. 100.0 [cm]);
+                feature width:   ISQ::LengthValue = oneOf(1.0 .. 1.1  [m]);
+                feature length:  ISQ::LengthValue = oneOf(1.0 .. 1.1  [m]);
+                feature volume:  ISQ::VolumeValue = height * width * length {:>> range = 1 .. 2 [m^3];}
+            }
+         """
         loadKerML(model, Runlevel.VARIABLES)
         assertNoIssues()
-        var volume = global.resolveVar("PartWithVolume::volume")!!
-        val height = global.resolveVar("PartWithVolume::height")!!
+        var volume = solver.getVariable("PartWithVolume::volume")!!
+        val height = solver.getVariable("PartWithVolume::height")!!
         assertNotNull(height)
         assertEquals(1.0, volume.min(), 0.000001)
         assertEquals(1.21, volume.max(), 0.001)
         solver.propagate()
         initialize(Runlevel.ALL)
         initialize(Runlevel.ALL)
-        volume = global.resolveVar("PartWithVolume::volume")!!
+        volume = solver.getVariable("PartWithVolume::volume")!!
         assertEquals(1.0, volume.min(), 0.000001)
         assertEquals(1.21, volume.max(), 0.001)
-        loadKerML(model)
-        solver.propagate()
-        assertNoIssues()
+        loadKerML(model, Runlevel.ALL)
+        assertNoIssues() // fixme: the Memberships in FeatureReferenceExpression are duplicated because their owners revert to UnresolvedElements
         assertEquals(1.0, volume.min(), 0.000001)
         assertEquals(1.21, volume.max(), 0.001)
     }
@@ -480,18 +474,18 @@ class IssuesAndRegressions {
     }
 
     @Test
-    fun extendPropertyRange() = testSession("ScalarValues", "Ranges", runlevel = Runlevel.ALL) {
+    fun extendPropertyRange() = testSession("Ranges", runlevel = Runlevel.ALL) {
         loadKerML("""
-                type Test :> Base::Anything {
-                    feature property: Ranges::RealInRange { :>> range = "0 .. *";}
-                }
+            type Test :> Base::Anything {
+                feature property: Ranges::RealInRange { :>> range = 0 .. *;}
+            }
 
-                type Car :> Test {
-                    feature property: ScalarValues::Real = 4.0; // property: Real(0 .. *) = 4.0. works
-                }
-            """)
+            type Car :> Test {
+                feature property: Ranges::RealInRange = 4.0; 
+            }
+        """)
         assertNoIssues()
-        val result = global.resolveVar("Car::property")!!
+        val result = solver.getVariable("Car::property")!!
         assertEquals(4.0, result.vectorQuantity.getMinAsDouble(), 0.000001)
     }
 
@@ -513,12 +507,11 @@ class IssuesAndRegressions {
      * Feels wrong, but ... SysML v2 allows features to be typed by types, and
      * features are types.
      */
-    @Test fun issue165typedFeatureInheritance() = testSession("ScalarValues", "Ranges") {
+    @Test fun issue165typedFeatureInheritance() = testSession("Ranges") {
         loadKerML("""
-            feature a : Ranges::IntegerInRange { :>> range = "0 .. 5";}
+            feature a : Ranges::IntegerInRange { :>> range = 0 .. 5;}
             feature x: a; // Here, a Type is needed. And a feature is a type ...
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
         assertTrue(status.issues.isEmpty(), "Features should be OK for typing features?")
     }
 
@@ -532,8 +525,8 @@ class IssuesAndRegressions {
         """)
         solver.propagate()
         assertNoIssues()
-        val wb1 = global.resolveVar("weightBoundary1")!!
-        val wb2 = global.resolveVar("weightBoundary2")!!
+        val wb1 = solver.getVariable("weightBoundary1")!!
+        val wb2 = solver.getVariable("weightBoundary2")!!
 
         assertEquals(15, wb1.vectorQuantity.value.asIdd().getRange().min)
         assertEquals(15, wb1.vectorQuantity.value.asIdd().getRange().max)
@@ -547,7 +540,6 @@ class IssuesAndRegressions {
          """)
         // Failure: 'Specialization' object is created in package p, not in element p.
         val pp = global.resolve("p::p")?.memberElement // there is no p in p.
-        solver.propagate()
         assertEquals("p", pp!!.escapedName())
         assertNoIssues()
     }
@@ -564,7 +556,7 @@ class IssuesAndRegressions {
             package x;
             type a :> x;
         """)
-        assertTrue(status.issues.any {  issue -> issue.message.contains("type") })
+        assertIssue("type")
     }
 
     /**
@@ -601,7 +593,7 @@ class IssuesAndRegressions {
                 connection r: ISO26262::implements connect vehicle::engine to drive;
                 assert constraint enoughPower { drive::power > 0.0 kW }
             }
-        """, Runlevel.VARIABLES)
+        """, Runlevel.ALL)
         assertNoIssues()
         val drive = global.resolve("archExample::drive")?.member<Feature>()
         assertNotNull(drive)
@@ -609,7 +601,7 @@ class IssuesAndRegressions {
         assertNoIssues()
         // val engine = global.resolveName<Type>("archExample::Engine")
         // val power = global.resolveName<Expression>("archExample::drive::power")
-        val enoughPower = global.resolveVar("archExample::enoughPower")
+        val enoughPower = solver.getVariable("archExample::enoughPower")
         assertEquals(True, enoughPower?.vectorQuantity?.value as XBool)
     }
 
@@ -621,9 +613,8 @@ class IssuesAndRegressions {
     fun issue194NoConvergenceIfNaNisResult() = testSession("ScalarValues")  {
         loadSysMLv2("""
             attribute result3: ScalarValues::Real = power2(10000000000.0);
-        """)
-        solver.propagate()
-        // println(status.numberOfPropagateIterations)
+        """, Runlevel.ALL)
+        assertTrue {status.numberOfPropagateIterations < 6}
         assertNoIssues()
     }
 
@@ -643,16 +634,16 @@ class IssuesAndRegressions {
         loadKerML("""
             private import ScalarValues::*;
             type p :> Base::Anything {
-                feature a {
-                    feature s: Real = 1.0;
+                feature a [1]{
+                    feature s [1]: Real = 1.0;
                 }
-                feature b {
-                    feature s: Real = 2.0;
+                feature b [2]{
+                    feature s [1]: Real = 2.0;
                 }
                 feature s1: Real = sumOverParts(s);
         }""", Runlevel.SOLVED)
         assertNoIssues()
-        assertEquals(3.0, global.resolveVar("p::s1")!!.min(), 0.0001)
+        assertEquals(5.0, solver.getVariable("p::s1")!!.min(), 0.0001)
     }
 
     //Tests for Issue #243
@@ -679,18 +670,18 @@ class IssuesAndRegressions {
         assertNoIssues()
         solver.propagate()
         assertNoIssues()
-        global.resolveVar("x1")!!
-        global.resolveVar("y1")!!
-        val r1 = global.resolveVar("r1")!!
-        global.resolveVar("x2")!!
-        global.resolveVar("y2")!!
-        val r2 = global.resolveVar("r2")!!
-        global.resolveVar("x3")!!
-        global.resolveVar("y3")!!
-        val r3 = global.resolveVar("r3")!!
-        global.resolveVar("x4")!!
-        global.resolveVar("y4")!!
-        val r4 = global.resolveVar("r4")!!
+        solver.getVariable("x1")!!
+        solver.getVariable("y1")!!
+        val r1 = solver.getVariable("r1")!!
+        solver.getVariable("x2")!!
+        solver.getVariable("y2")!!
+        val r2 = solver.getVariable("r2")!!
+        solver.getVariable("x3")!!
+        solver.getVariable("y3")!!
+        val r3 = solver.getVariable("r3")!!
+        solver.getVariable("x4")!!
+        solver.getVariable("y4")!!
+        val r4 = solver.getVariable("r4")!!
 
         println(r1.vectorQuantity.bdd().toIteString())
         println("r1 depth: ${r1.vectorQuantity.bdd().height()}")
@@ -722,9 +713,9 @@ class IssuesAndRegressions {
         assertNoIssues()
         solver.propagate()
         assertNoIssues()
-        global.resolveVar("x1")!!
-        global.resolveVar("y1")!!
-        val r1 = global.resolveVar("r1")!!
+        solver.getVariable("x1")!!
+        solver.getVariable("y1")!!
+        val r1 = solver.getVariable("r1")!!
         println("r1 depth: ${r1.vectorQuantity.bdd().height()}")
         println("r1 #nodes: ${r1.vectorQuantity.bdd().numInternalNodes()}")
         println("r1 bdd: ${r1.vectorQuantity.bdd().toIteString()}")
@@ -740,10 +731,10 @@ class IssuesAndRegressions {
             attribute r3: ScalarValues::Boolean = r1 and r2;
         """, Runlevel.SOLVED)
         assertNoIssues()
-        global.resolveVar("x1")!!
-        global.resolveVar("y1")!!
-        val r1 = global.resolveVar("r1")!!
-        val r2 = global.resolveVar("r2")!!
+        solver.getVariable("x1")!!
+        solver.getVariable("y1")!!
+        val r1 = solver.getVariable("r1")!!
+        val r2 = solver.getVariable("r2")!!
         println("r1 depth: ${r1.vectorQuantity.bdd().height()}")
         println("r1 #nodes: ${r1.vectorQuantity.bdd().numInternalNodes()}")
         println("r1 bdd: ${r1.vectorQuantity.bdd().toIteString()}")
@@ -771,12 +762,12 @@ class IssuesAndRegressions {
         assertNoIssues()
         solver.propagate()
         assertNoIssues()
-        global.resolveVar("x1")!!
-        global.resolveVar("y1")!!
-        val r1 = global.resolveVar("r1")!!
-        val r2 = global.resolveVar("r2")!!
-        val r3 = global.resolveVar("r3")!!
-        val r4 = global.resolveVar("r4")!!
+        solver.getVariable("x1")!!
+        solver.getVariable("y1")!!
+        val r1 = solver.getVariable("r1")!!
+        val r2 = solver.getVariable("r2")!!
+        val r3 = solver.getVariable("r3")!!
+        val r4 = solver.getVariable("r4")!!
 
 
 
@@ -812,8 +803,8 @@ class IssuesAndRegressions {
         assertNoIssues()
         solver.propagate()
         assertNoIssues()
-        val x1 = global.resolveVar("x1")!!
-        val y1 = global.resolveVar("y1")!!
+        val x1 = solver.getVariable("x1")!!
+        val y1 = solver.getVariable("y1")!!
         //val r1 = global.resolveName<Expression>("r1")!!
 
 
@@ -847,10 +838,10 @@ class IssuesAndRegressions {
         assertNoIssues()
         solver.propagate()
         assertNoIssues()
-        val x1 = global.resolveVar("x1")!!
-        val y1 = global.resolveVar("y1")!!
-        val r1 = global.resolveVar("r1")!!
-        val rn = global.resolveVar("rn")!!
+        val x1 = solver.getVariable("x1")!!
+        val y1 = solver.getVariable("y1")!!
+        val r1 = solver.getVariable("r1")!!
+        val rn = solver.getVariable("rn")!!
 
 
         println("r1 depth: ${r1.vectorQuantity.bdd().height()}")
@@ -871,10 +862,9 @@ class IssuesAndRegressions {
                 feature x:  ScalarValues::Real;
                 inv a1 { x >= 95.0 }
                 inv a2 { x <= 96.0 }
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
-        global.resolveVar("x")
+        solver.getVariable("x")
     }
 
     @Test
@@ -882,7 +872,7 @@ class IssuesAndRegressions {
         loadKerML("""
             feature x: ScalarValues::Real = 2.0 ^ 2.0 ^ 3.0;
         """, Runlevel.ALL)
-        val x = global.resolveVar("x")
+        val x = solver.getVariable("x")
         assertEquals(256.0, x!!.min(), 0.0001)
     }
 
@@ -925,7 +915,7 @@ class IssuesAndRegressions {
      * BUT: Supertypes are duplicated.
      */
     @Test
-    fun referenceDuplicatesTestIssue260() = testSession("ScalarValues", "ISQ", "Parts", "Ports", "Requirements") {
+    fun referenceDuplicatesTestIssue260() = testSession("SysMLLibraries") {
         loadSysMLv2("""
             private import ScalarValues::*;
             private import ISQ::*;
@@ -965,14 +955,14 @@ class IssuesAndRegressions {
     }
 
     @Test
-    fun assertTestRealMultiplication() = testSession("ScalarValues", "ISQ", "Ranges") {
+    fun assertTestRealMultiplication() = testSession("Ranges") {
         loadSysMLv2("""
             attribute f: ScalarValues::Real = oneOf(1.0 .. 4.0); 
             assert constraint ass { 2.0 * f < 4.0 } 
         """, Runlevel.ALL)
         assertNoIssues()
-        assertEquals(1.0, global.resolveVar("f")!!.min(), 0.00001)
-        assertEquals(2.0, global.resolveVar("f")!!.aadd().getRange().max, 0.00001)
+        assertEquals(1.0, solver.getVariable("f")!!.min(), 0.00001)
+        assertEquals(2.0, solver.getVariable("f")!!.aadd().getRange().max, 0.00001)
     }
 
     @Ignore
@@ -983,8 +973,8 @@ class IssuesAndRegressions {
             assert constraint ass {  1.0 < 2.0 / f } 
         """, Runlevel.SOLVED)
         assertNoIssues()
-        assertEquals(1.0, global.resolveVar("f")!!.min(), 0.00001)
-        assertEquals(2.0, global.resolveVar("f")!!.max(), 0.00001)
+        assertEquals(1.0, solver.getVariable("f")!!.min(), 0.00001)
+        assertEquals(2.0, solver.getVariable("f")!!.max(), 0.00001)
     }
 
     @Ignore
@@ -995,22 +985,21 @@ class IssuesAndRegressions {
             assert constraint ass { 6.0 + f < 8.0 } 
         """, Runlevel.SOLVED)
         assertNoIssues()
-        //assertEquals(-2.0, global.resolveVar("f")!!.min(), 0.00001)
-        assertEquals(2.0, global.resolveVar("f")!!.aadd().getRange().max, 0.00001)
+        //assertEquals(-2.0, solver.getVariable("f")!!.min(), 0.00001)
+        assertEquals(2.0, solver.getVariable("f")!!.aadd().getRange().max, 0.00001)
     }
 
     @Test
-    fun assertTestRealSub() = testSession("ScalarValues") {
+    fun assertTestRealSub() = testSession("Constraints") {
         loadSysMLv2("""
             attribute f: ScalarValues::Real = oneOf(1.0 .. 4.0); 
             assert constraint ass { 6.0 - f < 4.0 } 
         """, Runlevel.SOLVED)
         assertNoIssues()
-        assertEquals(2.0, global.resolveVar("f")!!.min(), 0.00001)
-        assertEquals(4.0, global.resolveVar("f")!!.aadd().getRange().max, 0.00001)
+        assertEquals(2.0, solver.getVariable("f")!!.min(), 0.00001)
+        assertEquals(4.0, solver.getVariable("f")!!.aadd().getRange().max, 0.00001)
     }
 
-    @Ignore
     @Test
     fun assertTestRealDiv2() = testSession("ScalarValues") {
         loadSysMLv2("""
@@ -1018,25 +1007,22 @@ class IssuesAndRegressions {
             assert constraint ass {  8.0/f > 4.0 } 
         """, Runlevel.SOLVED)
         assertNoIssues()
-        assertEquals(1.0, global.resolveVar("f")!!.min(), 0.00001)
-        assertEquals(2.0, global.resolveVar("f")!!.max(), 0.00001)
+        assertEquals(1.0, solver.getVariable("f")!!.min(), 0.00001)
+        assertEquals(2.0, solver.getVariable("f")!!.max(), 0.00001)
     }
 
-
     @Test
-    fun issueExpression() = testSession("ScalarValues", "ISQ", "Ranges") {
+    fun issueExpression() = testSession("ScalarValues") {
         loadSysMLv2("""
             private import ScalarValues::*;
             // Bug fixed in Test: 1) attribute constraint = type?, 2) constraint must evaluate to a boolean. 
-            assert constraint FLOPS: Real = 5.0 == 5.0 ;
+            assert constraint FLOPS = 5.0 == 5.0 ;
         """, Runlevel.SOLVED)
         assertNoIssues()
     }
 
-
-
     @Test
-    fun issueEmptyBody() = testSession("Constraints", "Requirements") {
+    fun issueEmptyBody() = testSession("Requirements") {
         loadSysMLv2("""
             attribute a: ScalarValues::Real;
             attribute b: ScalarValues::Real;
@@ -1065,15 +1051,17 @@ class IssuesAndRegressions {
 
     @Test
     fun checkFunctions() = testSession("DataFunctions") {
-        assertAll(get().filter { it.isLibraryElement }.filterIsInstance<Function>().map { f -> {
+        assertAll(get().filterIsInstance<Function>().map { f -> {
             val res = assertNotNull(f.result, "${f.qualifiedName} has no result")
-            val param = f.parameter
-
             assertEquals(Feature.FeatureDirectionKind.OUT, res.direction)
+            val param = f.parameter
             assertSame(res, param.last(), "Return of ${f.qualifiedName} isn't last parameter")
 
-            param.dropLast(1).forEach {
-                assertEquals(Feature.FeatureDirectionKind.IN, it.direction, "stdlib functions should be pure")
+            if(f.isLibraryElement)
+            {
+                param.dropLast(1).forEach {
+                    assertEquals(Feature.FeatureDirectionKind.IN, it.direction, "stdlib functions should be pure")
+                }
             }
 
             /*println(
@@ -1097,7 +1085,7 @@ class IssuesAndRegressions {
             package Foo2 {
                 alias bar for Foo::xyz;
             }
-        """.trimIndent())
+        """)
         assertNoIssues()
 
         val pkg = assertIs<Package>(global.resolve("Foo")?.memberElement)
@@ -1121,10 +1109,10 @@ class IssuesAndRegressions {
     @Test
     fun issue207syntaxNotSupported() = testSession("Parts") {
         loadSysMLv2("""
-                part tree {
-                    part trunk;
-                    part branch [1 .. 8];
-                }
+            part tree {
+                part trunk;
+                part branch [1 .. 8];
+            }
         """)
         assertNoIssues()
     }

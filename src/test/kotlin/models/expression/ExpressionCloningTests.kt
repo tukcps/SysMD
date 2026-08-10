@@ -1,15 +1,16 @@
 package models.expression
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.github.tukcps.sysmd.model.datamodel.toElementData
 import com.github.tukcps.sysmd.model.expression.Expression
 import com.github.tukcps.sysmd.model.expression.InvocationExpression
 import com.github.tukcps.sysmd.model.expression.OperatorExpression
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.FeatureTyping
 import com.github.tukcps.sysmd.model.kerml.Package
+import com.github.tukcps.sysmd.rest.entities.api.entities.Identified
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.inheritance.deepCloneWithInheritedFeature
-import com.github.tukcps.sysmd.services.repositories.local.toDAO
-import io.github.tukcps.sysmlv2.api.entities.Identified
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
@@ -101,15 +102,15 @@ class ExpressionCloningTests
 	/** Ensures clone behaves properly on a feature */
 	fun checkClone(original : Feature)
 	{
-		val before = original.toDAO()
+		val before = original.toElementData()
 		val clone = original.clone()
-		val after = original.toDAO()
+		val after = original.toElementData()
 
 		val mapper = ObjectMapper()
 		// ensure the original wasn't mutated
 		assertEquals(mapper.writeValueAsString(before), mapper.writeValueAsString(after))
 
-		assertNull(clone.owningRelationship) // clone must be free-standing, but only top-level of deep clone
+		assertNull(clone.owningRelationship) // clone must be freestanding, but only top-level of deep clone
 		assertProperClone(original, clone)
 
 		// TODO: structural stuff
@@ -136,14 +137,14 @@ class ExpressionCloningTests
 		val tt = twoPlusTwo()
 		addElement(tt)
 
-		kotlin.test.assertEquals(2, tt.argument.size)
+		assertEquals(2, tt.argument.size)
 		assertNotEquals(tt.argument[0], tt.argument[1])
-		kotlin.test.assertEquals(this, tt.model)
+		assertEquals(this, tt.model)
 		for(a in tt.argument)
-			kotlin.test.assertEquals(this, a.model)
+			assertEquals(this, a.model)
 
-		assertIsTwoPlusTwo(tt.clone()).also {
-			kotlin.test.assertEquals(this, it.model)
+		assertIsTwoPlusTwo(tt.deepCloneWithInheritedFeature(global)).also {
+			assertEquals(this, it.model)
 		}
 
 		assertNoIssues()
@@ -151,7 +152,7 @@ class ExpressionCloningTests
 
 	@Test
 	fun deepClone() = testSession {
-		loadKerML("feature x; feature foo = f(x); package Bar;")
+		loadKerML("feature x; feature foo = f(x); package Bar;", Runlevel.MODEL)
 		assertNoIssues() // will break once proper resolution is added
 
 		val foo = global.resolve("foo")!!.member<Feature>()!!
@@ -171,30 +172,23 @@ class ExpressionCloningTests
 		{
 			for(expr in call.argument + call)
 			{
-				expr.ownedRelationship.filterIsInstance<FeatureTyping>().also {
-					val msg = "${expr.path()} `${expr.astString}`: $it"
-					assertEquals(1, it.size,  msg)
-					assertEquals("ScalarValues::Integer", it.single().type.qualifiedName, msg)
-				}
+				assertContains(expr.type.map { it.qualifiedName }, "ScalarValues::Integer", "Mistyped $expr at ${expr.path()}")
 			}
 		}
 
 		loadKerML("""package P;""")
-		val x = twoPlusTwo()
+		val x = parseExpr("2+2")
 		assertNoIssues()
+		assertIs<OperatorExpression>(x)
 
 		x.initType()
 		assertNoIssues()
 		assertTyped(x)
 
-		val x2 = x.clone()
+		// deep clone also keeps types
+		val x2 = x.deepCloneWithInheritedFeature(global.resolve("P")!!.member<Package>()!!)
+		assertNoIssues()
 		assertProperClone(x, x2)
 		assertTyped(x2)
-
-		// deep clone also keeps types
-		val x3 = x.deepCloneWithInheritedFeature(global.resolve("P")!!.member<Package>()!!) as OperatorExpression
-		assertNoIssues()
-		assertProperClone(x, x3)
-		assertTyped(x3)
 	}
 }

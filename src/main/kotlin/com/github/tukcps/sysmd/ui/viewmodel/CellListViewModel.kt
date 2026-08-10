@@ -7,7 +7,8 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.text.input.TextFieldValue
-import com.github.tukcps.sysmd.services.repositories.local.ElementData
+import com.github.tukcps.sysmd.model.datamodel.ElementData
+import com.github.tukcps.sysmd.model.generated.ElementType
 import com.github.tukcps.sysmd.services.repositories.local.Language
 import com.github.tukcps.sysmd.services.repositories.local.toMarkdownString
 import com.github.tukcps.sysmd.services.session.SessionManager.sessionService
@@ -16,7 +17,6 @@ import org.commonmark.Extension
 import org.commonmark.ext.front.matter.YamlFrontMatterExtension
 import org.commonmark.ext.gfm.tables.TablesExtension
 import org.commonmark.parser.Parser
-import java.util.*
 import kotlin.uuid.Uuid
 
 
@@ -66,8 +66,8 @@ class CellListViewModel(
 
         val body = cellViewModel.body.text
         return ElementData(
-            elementId = UUID.randomUUID(),
-            type = "TextualRepresentation",
+            elementId = Uuid.random(),
+            type = ElementType.TextualRepresentation,
             language = language,
             body = body
         )

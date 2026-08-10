@@ -5,11 +5,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.github.tukcps.sysmd.compiler.importMD
-import com.github.tukcps.sysmd.services.Runlevel
-import com.github.tukcps.sysmd.services.repositories.local.ElementData
+import com.github.tukcps.sysmd.model.datamodel.ElementData
+import com.github.tukcps.sysmd.model.datamodel.toElementData
+import com.github.tukcps.sysmd.model.generated.ElementType
 import com.github.tukcps.sysmd.services.repositories.local.Language
-import com.github.tukcps.sysmd.services.repositories.local.toDAO
 import com.github.tukcps.sysmd.services.session.SessionManager
+import com.github.tukcps.sysmd.services.session.SessionManager.SYSML_LIBRARIES
 import com.github.tukcps.sysmd.services.session.SessionManager.projectService
 import com.github.tukcps.sysmd.services.session.SessionManager.sessionService
 import com.github.tukcps.sysmd.services.session.loadSysMDFromFile
@@ -17,7 +18,6 @@ import com.github.tukcps.sysmd.ui.composables.TreeViewModel
 import com.github.tukcps.sysmd.ui.composables.TreeViewNodeModel
 import com.github.tukcps.sysmd.ui.paneleft.projectlist.ProjectListViewModel
 import com.github.tukcps.sysmd.ui.paneright.BoardViewModel
-import java.util.*
 import kotlin.uuid.Uuid
 
 
@@ -52,9 +52,11 @@ class SysMDViewModel {
 
     // The selectable tree views
     val composition = mutableStateOf(TreeViewModel(
-        HasATree(sessionIdState, mutableStateOf(sessionService.getSession(sessionId)?.global?.toDAO()?: ElementData(elementId = UUID.randomUUID(), type="Package"))), null, null, ::display, false))
+        HasATree(sessionIdState, mutableStateOf(sessionService.getSession(sessionId)?.global?.toElementData()
+            ?: ElementData(elementId = Uuid.random(), ElementType.Package))), null, null, ::display, false))
     val inheritance = mutableStateOf(TreeViewModel(
-        IsATree(sessionIdState, mutableStateOf(sessionService.getSession(sessionId)?.anything?.toDAO()?: ElementData(elementId = UUID.randomUUID(), type="Package"))), null, null, ::display, false))
+        IsATree(sessionIdState, mutableStateOf(sessionService.getSession(sessionId)?.repo?.anything?.toElementData()
+            ?: ElementData(elementId = Uuid.random(), ElementType.Package))), null, null, ::display, false))
 
     val showSaveBeforeExitDialog = mutableStateOf(false)
     val showSettingsDialog = mutableStateOf(false)
@@ -81,9 +83,11 @@ class SysMDViewModel {
 
         if (project != null) {
             // Re-start project
-            sessionId = SessionManager.createSession(project = project).id
+            val session = SessionManager.createSession(project = project, libraries = SYSML_LIBRARIES)
+            session.settings.includeOwningRelationshipsToRoot = false
+            sessionId = session.id
             sessionService.getSession(sessionId)?.project?.getIndexedFiles()?.forEach { file ->
-                sessionService.getSession(sessionId)?.loadSysMDFromFile(file, compile = false, runlevel = Runlevel.NAMES_RESOLVED)
+                sessionService.getSession(sessionId)?.loadSysMDFromFile(file)
             }
         }
         // reset the UI
@@ -97,8 +101,8 @@ class SysMDViewModel {
      * This function should be called after each change in the KerML model of a session.
      */
     fun refreshTrees() {
-        composition.value = TreeViewModel(HasATree(sessionIdState, mutableStateOf(sessionService.getSession(sessionId)?.global?.toDAO())), null, null, ::display, false)
-        inheritance.value = TreeViewModel(IsATree(sessionIdState, mutableStateOf(sessionService.getSession(sessionId)?.anything?.toDAO())), sort = false)
+        composition.value = TreeViewModel(HasATree(sessionIdState, mutableStateOf(sessionService.getSession(sessionId)?.global?.toElementData())), null, null, ::display, false)
+        inheritance.value = TreeViewModel(IsATree(sessionIdState, mutableStateOf(sessionService.getSession(sessionId)?.repo?.anything?.toElementData())), sort = false)
         boardViewModel.clear()
         boardViewModel.update()
         boardIsEmpty.value = boardViewModel.isEmpty()

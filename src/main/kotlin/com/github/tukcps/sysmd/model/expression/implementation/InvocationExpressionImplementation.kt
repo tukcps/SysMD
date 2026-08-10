@@ -1,34 +1,65 @@
 package com.github.tukcps.sysmd.model.expression.implementation
 
+import com.github.tukcps.sysmd.model.expression.Expression
 import com.github.tukcps.sysmd.model.expression.InvocationExpression
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.util.SimpleName
+import com.github.tukcps.sysmd.model.util.Unresolved
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
 /** ref. 8.3.4.8.5 */
 open class InvocationExpressionImplementation(
+    model : Session,
+    elementId : Uuid = Uuid.random(),
     declaredName: SimpleName? = null,
     declaredShortName: SimpleName? = null,
-    typeConstraint: MutableList<String> = mutableListOf(),
     expression: String? = null,
-    elementType: String = "InvocationExpression"
 ) : InvocationExpression, InstantiationExpressionImplementation(
+    model,
+    elementId = elementId,
     declaredName = declaredName,
     declaredShortName = declaredShortName,
-    typeConstraint = typeConstraint,
     expression = expression,
-    elementType = elementType
 ) {
     override fun toAstString(b : StringBuilder, precedence : Int)
     {
-        b.append(functionName)
+        b.append(functionName) // generating a relative name could be nicer
         b.append("(")
-        for((i, p) in argument.withIndex())
+        var head = true
+
+        for(arg in positionalArguments)
         {
-            if(i > 0)
+            if(! head)
                 b.append(", ")
 
-            p.toAstString(b, 0)
+            head = false
+
+            if(arg is Expression)
+            {
+                arg.toAstString(b, 0)
+                continue
+            }
+
+            arg.featureValue?.let {
+                it.toAstString(b, 0)
+                continue
+            }
+
+            b.append(arg.qualifiedName ?: "???") // fallback, this happens e.g. for type references
         }
+
+        if(head) for((feat,arg) in namedArguments)
+        {
+            if(! head)
+                b.append(", ")
+
+            head = false
+            b.append((feat as? Unresolved)?.relativeName ?: feat.name ?: feat.shortName)
+            b.append(" = ")
+            arg.toAstString(b, 0)
+        }
+
         b.append(")")
     }
 
@@ -42,12 +73,9 @@ open class InvocationExpressionImplementation(
     }
 
     override fun clone() = InvocationExpressionImplementation(
+        model,
         declaredName= declaredName,
         declaredShortName = declaredShortName,
-        typeConstraint = typeConstraint,
         expression = expression,
-        elementType = elementType,
-    ).also {
-        it.updateFrom(this)
-    }
+    ).also { it.updateFrom(this) }
 }

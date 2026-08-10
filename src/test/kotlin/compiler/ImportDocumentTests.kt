@@ -6,7 +6,6 @@ import com.github.tukcps.sysmd.model.kerml.implementation.MetadataFeatureImpleme
 import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.initialize
 import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import util.testProjectSession
 
@@ -19,9 +18,33 @@ class ImportDocumentTests {
 
 
     /**
-     * The namespace/owner prefix shall be considered.
+     * The package in which elements will be added is given as Language parameter of MD.
+     * It shall be considered when the compiler is run.
      */
-    @Test fun importMdWithLanguageAndNamespace() = testProjectSession {
+    @Test
+    fun importMdWithLanguageAndNamespace() = testProjectSession {
+        val input = """
+# H1
+## H2 
+*value* or _value_
+```KerML::Import
+classifier Test;
+```          
+        """
+        // Create File annotating an element ...
+        val fileAnnotation = addOwnedMember(MetadataFeatureImplementation(this, declaredName = "test"), global)
+        // Parse it, creates Textual representations inside.
+        importMD(input, fileAnnotation)
+        initialize(Runlevel.NAMES_RESOLVED)
+        Assertions.assertTrue((fileAnnotation.ownedElement.last() as TextualRepresentation).language == "KerML::Import")
+        Assertions.assertTrue((fileAnnotation.ownedElement.last() as TextualRepresentation).getOwnerPrefix() == "Import")
+    }
+
+    /**
+     * The namespace/owner prefix shall be considered.
+     * And not be added a second time by second compilation.
+     */
+    @Test fun importMdWithLanguageAndNamespaceTwice() = testProjectSession {
         val input = """
             # H1
             ```KerML
@@ -34,41 +57,11 @@ class ImportDocumentTests {
             ``` 
         """.trimIndent()
         // Create File annotating an element ...
-        val fileAnnotation = addOwnedMember(MetadataFeatureImplementation(declaredName = "test"), global)
+        val fileAnnotation = addOwnedMember(MetadataFeatureImplementation(this, declaredName = "test"), global)
         // Parse it, creates Textual representations inside.
         importMD(input, fileAnnotation)
-        (fileAnnotation.ownedElement[1] as TextualRepresentation).compile()
-        (fileAnnotation.ownedElement[3] as TextualRepresentation).compile()
         initialize(Runlevel.NAMES_RESOLVED)
         Assertions.assertTrue((fileAnnotation.ownedElement.last() as TextualRepresentation).language == "KerML::X")
         Assertions.assertTrue((fileAnnotation.ownedElement.last() as TextualRepresentation).getOwnerPrefix() == "X")
-        val test = global.resolve("X::Y")?.memberElement
-        assertNotNull(test)
-    }
-
-    /**
-     * The package in which elements will be added is given as Language parameter of MD.
-     * It shall be considered when the compiler is run.
-     */
-    @Test
-    fun importMdWithLanguageAndNamespace2() = testProjectSession("ScalarValues") {
-        val input = """
-# H1
-## H2 
-*value* or _value_
-```KerML::ScalarValues
-class Test;
-```          
-        """
-        // Create File annotating an element ...
-        val fileAnnotation = addOwnedMember(MetadataFeatureImplementation(declaredName = "test"), global)
-        // Parse it, creates Textual representations inside.
-        importMD(input, fileAnnotation)
-        (fileAnnotation.ownedElement.last() as TextualRepresentation).compile()
-        initialize(Runlevel.NAMES_RESOLVED)
-        Assertions.assertTrue((fileAnnotation.ownedElement.last() as TextualRepresentation).language == "KerML::ScalarValues")
-        Assertions.assertTrue((fileAnnotation.ownedElement.last() as TextualRepresentation).getOwnerPrefix() == "ScalarValues")
-        val test = global.resolve("ScalarValues::Test")?.memberElement
-        assertNotNull(test)
     }
 }

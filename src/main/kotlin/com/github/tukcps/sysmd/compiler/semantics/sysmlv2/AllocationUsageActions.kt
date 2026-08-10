@@ -2,29 +2,26 @@
 
 package com.github.tukcps.sysmd.compiler.semantics.sysmlv2
 
-import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.compiler.semantics.ActionsContext
-import com.github.tukcps.sysmd.compiler.semantics.kerml.AssociationActions
-import com.github.tukcps.sysmd.model.sysml.AllocationUsage
-import com.github.tukcps.sysmd.model.sysml.implementation.AllocationDefinitionImplementation
-import com.github.tukcps.sysmd.model.util.SimpleName
+import com.github.tukcps.sysmd.compiler.semantics.kerml.TypeAction
+import com.github.tukcps.sysmd.model.generated.ElementType
+import com.github.tukcps.sysmd.model.util.QualifiedName
 
-class AllocationDefinitionActions(
+class AllocationDefinitionAction(
     context: ActionsContext,
-    specializes: QualifiedName = "Allocations::Allocation",
-): AssociationActions<AllocationDefinitionImplementation>(
+): TypeAction(
     context = context,
-    creator = ::AllocationDefinitionImplementation,
-    specializes = specializes,
+    type = ElementType.AllocationDefinition,
+    isImplicit = "Allocations::Allocation",
 )
 
 
-class AllocationUsageActions<T: AllocationUsage>(
+class AllocationUsageAction(
     context: ActionsContext,
-    creator: (SimpleName?, SimpleName?) -> T,
-    defaultType: QualifiedName = "Connections::Connection",
-): ConnectionUsageActions<AllocationUsage>(
+    type: ElementType = ElementType.AllocationUsage,
+    isImplicit: QualifiedName = "Connections::Connection",
+): ConnectionUsageAction(
     context = context,
-    creator = creator,
-    defaultType = defaultType,
+    type = type,
+    isImplicit = isImplicit,
 )

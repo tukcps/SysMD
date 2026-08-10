@@ -10,8 +10,7 @@ class GeneralizationTest {
 
 
     @Test
-    fun testGeneralization() = testSession("States", "Requirements", "Interfaces", "Allocations", "Connections",
-        "Attributes", "Ports", "Parts", "Items", "Occurrences") {
+    fun testGeneralization() = testSession("SysMLLIbraries") {
         loadSysMLv2(
             """
                 package 'Generalization Example' {

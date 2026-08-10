@@ -12,4 +12,4 @@ val nonFeatureElementStart = annotatingElementStart +
         ) + specializationStart + DISJOINING_START + CONJUGATION_START
 
 val typeBodyElementStarts =
-    nonFeatureElementStart+ FEATURE_PREFIX_START + featureElementStart + ALIAS + IMPORT
+    nonFeatureElementStart+ FeaturePrefixStart + featureElementStart + ALIAS + IMPORT

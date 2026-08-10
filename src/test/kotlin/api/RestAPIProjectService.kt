@@ -3,10 +3,10 @@ package api
 import com.fasterxml.jackson.databind.json.JsonMapper
 import com.github.tukcps.sysmd.SysMdRunner
 import com.github.tukcps.sysmd.rest.Rest
-import com.github.tukcps.sysmd.rest.controller.ProjectController
+import com.github.tukcps.sysmd.rest.entities.api.entities.responseModels.ProjectResponse
 import com.github.tukcps.sysmd.services.session.SessionManager.projectService
+import com.github.tukcps.sysmd.services.util.JsonSupport
 import com.github.tukcps.sysmd.settings
-import io.github.tukcps.sysmlv2.api.entities.responseModels.ProjectResponse
 import org.junit.jupiter.api.TestInstance
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.HttpStatus
@@ -17,6 +17,7 @@ import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.uuid.Uuid
 
 
 /**
@@ -36,7 +37,7 @@ import kotlin.test.assertNotNull
 )
 @DirtiesContext
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
-class RestAPIProjectService() {
+class RestAPIProjectServiceTests {
     private var jsonMapper: JsonMapper =  JsonMapper.builder().findAndAddModules().build()
 
     init {
@@ -69,7 +70,7 @@ class RestAPIProjectService() {
         assertNotNull(Rest.extractKeyFromBody("@id", response.body))
 
         // Check if a project is correct in the SysMD folder resp. internal buffer.
-        val project = projectService.getProjectById(UUID.fromString(Rest.extractKeyFromBody("@id", response.body)))
+        val project = projectService.getProjectById(Uuid.parse(Rest.extractKeyFromBody("@id", response.body)!!))
         assertNotNull(project)
         with (project){
             assertEquals("postProjectTest", name)
@@ -119,7 +120,7 @@ class RestAPIProjectService() {
 
         // ==Assert==
         assertEquals(HttpStatus.OK, response.statusCode)
-        val projects = jsonMapper.readValue(response.body, ProjectController.ProjectResponseList()::class.java)
+        val projects:  List<ProjectResponse>  = JsonSupport.json.decodeFromString(response.body!!)
         // id must be somewhere in documents.
         // val found = projects.find { it.id == id }
         // assertNotNull(found)
@@ -145,7 +146,7 @@ class RestAPIProjectService() {
 
         // ==Assert==
         assertEquals(HttpStatus.OK.value(), response.statusCode.value())
-        val project = jsonMapper.readValue(response.body, ProjectResponse::class.java)
+        val project = JsonSupport.json.decodeFromString<ProjectResponse>(response.body!!)
         assertEquals(actualProject.id, project.id)
         assertEquals(actualProject.name, project.name)
         assertEquals(actualProject.description, project.description)
@@ -190,7 +191,7 @@ class RestAPIProjectService() {
         val projects = projectService.getProjects()
         val id: String
         // Check if a project is correct in the SysMD folder resp. internal buffer.
-        with(projectService.getProjects().first() { it.name == "postProjectTest" }) {
+        with(projectService.getProjects().first { it.name == "postProjectTest" }) {
             id = this.id.toString()
             assertEquals("postProjectTest", name)
             assertEquals("Description of Document, optional", description)

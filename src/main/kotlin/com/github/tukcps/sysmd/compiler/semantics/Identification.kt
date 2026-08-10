@@ -1,5 +1,6 @@
 package com.github.tukcps.sysmd.compiler.semantics
 
+import com.github.tukcps.sysmd.model.datamodel.ElementData
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.util.SimpleName
 
@@ -15,6 +16,7 @@ class Identification(
 ): Cloneable {
 
     constructor(element: Element): this(element.declaredShortName, element.declaredName)
+    constructor(element : ElementData) : this(element.declaredShortName, element.declaredName)
 
     override fun toString(): String =
                 (if (shortName!= null) "shortName: $shortName" else "")+

@@ -3,49 +3,47 @@
 package com.github.tukcps.sysmd.compiler.semantics.sysmlv2
 
 import com.github.tukcps.sysmd.compiler.semantics.ActionsContext
-import com.github.tukcps.sysmd.compiler.semantics.Identification
-import com.github.tukcps.sysmd.compiler.semantics.kerml.ClassActions
-import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
-import com.github.tukcps.sysmd.model.sysml.ActionDefinition
-import com.github.tukcps.sysmd.model.sysml.ActionUsage
+import com.github.tukcps.sysmd.compiler.semantics.kerml.ClassAction
+import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureAction
+import com.github.tukcps.sysmd.model.generated.ElementType
 import com.github.tukcps.sysmd.model.sysml.ReferenceUsage
-import com.github.tukcps.sysmd.model.sysml.implementation.AcceptActionUsageImplementation
 import com.github.tukcps.sysmd.model.util.QualifiedName
-import com.github.tukcps.sysmd.model.util.SimpleName
 import java.util.*
 
-open class ActionDefinitionActions<T: ActionDefinition>(
+open class ActionDefinitionAction(
     context: ActionsContext,
-    creator: (SimpleName?, SimpleName?) -> T,
-    specializes: QualifiedName = "Base::Anything",
-): ClassActions<T>(
+    type: ElementType = ElementType.ActionDefinition,
+    isImplicit: QualifiedName = "Actions::Action",
+): ClassAction(
     context = context,
-    creator = creator,
-    isImplicit = specializes,
+    type = type,
+    isImplicit = isImplicit,
 )
 
-open class ActionUsageActions<T: ActionUsage>(
+open class ActionUsageAction(
     context: ActionsContext,
-    creator: (SimpleName?, SimpleName?) -> T,
-    defaultType: QualifiedName = "Occurrences::Occurrence",
-): FeatureActions<T>(
+    type: ElementType = ElementType.ActionUsage,
+    isImplicit: QualifiedName = "Actions::Action",
+): FeatureAction(
     context = context,
-    creator = creator,
-    defaultType = defaultType,
+    type = type,
+    isImplicit = isImplicit,
 )
 
-class AcceptActionUsageActions(
+class AcceptActionUsageAction(
     context: ActionsContext,
     var payloadParameter : ReferenceUsage? = null,
-): FeatureActions<AcceptActionUsageImplementation>(
+): FeatureAction(
     context,
-    creator = ::AcceptActionUsageImplementation,
-    defaultType = "Occurrences::Occurrence",
+    type = ElementType.AcceptActionUsage,
+    isImplicit = "Actions::Action",
 ) {
-    fun create() {
-        super.create(Identification(name = "accept_" + UUID.randomUUID().toString()))
+    override fun afterProduction() {
+        element.declaredName = "accept_" + UUID.randomUUID().toString()
         payloadParameter?.let {
-            context.model.addOwnedMember(it, created)
+            // Hmm ... payloadParameter never written?
+            //     context.addOwnedElement(payloadParameter)
         }
+        super.afterProduction()
     }
 }

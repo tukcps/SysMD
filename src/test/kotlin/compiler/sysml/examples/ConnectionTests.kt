@@ -22,7 +22,7 @@ class ConnectionTests {
     @Test
     fun testNormalConnectionDefinition() = testSession("Connections") {
         loadSysMLv2("""
-        connection def ConnectionDef1;
+            connection def ConnectionDef1;
         """)
         assertNoIssues()
 

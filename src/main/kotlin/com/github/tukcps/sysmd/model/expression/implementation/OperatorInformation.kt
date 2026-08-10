@@ -52,6 +52,8 @@ class BinaryOperatorInformation private constructor(
 	companion object
 	{
 		val bySymbol = mapOf(
+			"." to BinaryOperatorInformation(999, "ControlFunctions", leftSpace = false, rightSpace = false, special = true),
+
 			"^" to BinaryOperatorInformation(110, rightAssociative = true, leftSpace = false, rightSpace = false),
 			"**" to BinaryOperatorInformation(110, rightAssociative = true, leftSpace = false, rightSpace = false),
 

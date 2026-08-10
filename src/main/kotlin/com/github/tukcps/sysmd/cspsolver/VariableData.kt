@@ -34,10 +34,10 @@ data class VariableData(
  */
 fun Type.toBaseType(): BaseType = when {
     this is Multiplicity -> BaseType.Int
-    this.specializes(this.model!!.repo.integerType) -> BaseType.Int
-    this.specializes(this.model!!.repo.booleanType) -> BaseType.Bool
-    this.specializes(this.model!!.repo.realType) -> BaseType.Real
-    this.specializes(this.model!!.repo.stringType) -> BaseType.String
+    this.specializes(this.model.repo.integerType) -> BaseType.Int
+    this.specializes(this.model.repo.booleanType) -> BaseType.Bool
+    this.specializes(this.model.repo.realType) -> BaseType.Real
+    this.specializes(this.model.repo.stringType) -> BaseType.String
     else -> Unknown
 }
 
@@ -45,7 +45,7 @@ fun Type.toBaseType(): BaseType = when {
  * Function that gets the unit of a feature if it is a quantity.
  */
 fun Feature.getUnit(): String? {
-    if (this.specializes(this.model!!.repo.quantity)) {
+    if (this.specializes(this.model.repo.quantity)) {
         val unit = resolveLocal("unit")?.member<Feature>()?.expression?.trim('"', ' ')?:""
         return unit
     }
@@ -55,9 +55,8 @@ fun Feature.getUnit(): String? {
 fun Feature.getRange(): List<String>? {
     return when {
         this is Invariant -> { mutableListOf(if (isNegated) "False" else "True") }
-        typeConstraint.isNotEmpty() -> { typeConstraint.map {it} }
-        this.specializes(this.model!!.repo.range) -> {
-            val rangeExpr = resolveLocal("range")?.member<Feature>()?.expression?.trim('"', ' ') ?: ""
+        this.specializes(this.model.repo.range) -> {
+            val rangeExpr = resolveLocal("range")?.member<Feature>()?.expression?: ""
             // Check if this is a 3D vector type and range expression is empty
             if (rangeExpr.isEmpty() && type.any { it.qualifiedName?.contains("3dVector") == true }) {
                 listOf("", "", "") // in this case the Domain is a 3D vector and should contain 3 values
@@ -65,7 +64,8 @@ fun Feature.getRange(): List<String>? {
                 rangeExpr.split(",").map { it.trim() } // Split into Components for Vectors
             }
         }
-        this.specializes(this.model!!.repo.booleanType) -> { listOf(resolveLocal("range")?.member<Feature>()?.expression?.trim('"', ' ') ?: "") }
+        this.specializes(this.model.repo.booleanType) -> { listOf(resolveLocal("range")?.member<Feature>()?.expression?.trim('"', ' ') ?: "") }
+        typeConstraint.isNotEmpty() -> { typeConstraint.map {it} }
         else -> { null }
     }
 }
@@ -101,14 +101,14 @@ fun getVariableInfo(namespace: QualifiedName, membership: Membership): List<Vari
     val elementPath = namespace + pathOrNameSegment(membership)
     val result = mutableListOf<VariableData>()
 
-    if (element.owner is Type && (element.owner as Type).specializes(element.model!!.repo.inRangeType))
+    if (element.owner is Type && (element.owner as Type).specializes(element.model.repo.inRangeType))
         return result
 
     if (element is Feature &&
-        ( element.specializes(element.model!!.repo.booleanType)
-                || element.specializes(element.model!!.repo.realType)
-                || element.specializes(element.model!!.repo.integerType)
-                || element.specializes(element.model!!.repo.stringType)
+        ( element.specializes(element.model.repo.booleanType)
+                || element.specializes(element.model.repo.realType)
+                || element.specializes(element.model.repo.integerType)
+                || element.specializes(element.model.repo.stringType)
                 )
     ) {
         result.add(VariableData(
@@ -127,12 +127,12 @@ fun getVariableInfo(namespace: QualifiedName, membership: Membership): List<Vari
             result.addAll(vars)
         }
     }
-    // following piece is needed in branches where we have fully compliant membership implementation.
-    /* if (element is Type)
-        element.inheritedMembership.forEach {
+    if (element is Type) {
+        element.inheritedMemberships(excludeImplied = false).forEach {
             val vars = getVariableInfo(elementPath, it)
             result.addAll(vars)
-        } */
+        }
+    }
     return result
 }
 

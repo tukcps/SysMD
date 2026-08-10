@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import com.github.tukcps.sysmd.model.generated.ElementType
 import com.github.tukcps.sysmd.services.repositories.local.Language
 import com.github.tukcps.sysmd.services.repositories.local.Language.Companion.allLanguages
 import com.github.tukcps.sysmd.ui.composables.TooltipInstant
@@ -74,7 +75,7 @@ fun LanguageDropdown(
 
             if (selectedLanguage.value in setOf(Language.SYS_MD, Language.KerML, Language.SYS_ML)) {
                 Spacer(Modifier.width(10.dp)) // Same as width of line numbers of Editor Composable
-                val badge = TypeBadgeColors.colors("Package", colorMode() == DarkColors)
+                val badge = TypeBadgeColors.colors(ElementType.Package, colorMode() == DarkColors)
 
                 Text("/   ", style = MaterialTheme.typography.bodyMedium)
 

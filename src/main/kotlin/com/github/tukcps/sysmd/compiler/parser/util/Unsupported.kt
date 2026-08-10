@@ -10,7 +10,7 @@ import com.github.tukcps.sysmd.compiler.scanner.Token
  * It consumes tokens until a semicolon has been consumed.
  */
 fun KerML.Unsupported(message: String? = null) {
-    model.status.info(message?:"Not yet implemented: $token", this, semantics.namespace)
+    status.info(message?:"Not yet implemented: $token", semantics.element)
     noOrMore(stop = Token.Kind.SEMICOLON) {
         consume()
     }

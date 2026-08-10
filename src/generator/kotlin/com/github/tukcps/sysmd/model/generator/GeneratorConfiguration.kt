@@ -134,7 +134,9 @@ object GeneratorConfiguration {
     ),
         "Relationship" to setOf(
             "source",
-            "target"
+            "target",
+            "owningRelatedElement",
+            "ownedRelatedElement"
         )
     )
 
@@ -144,7 +146,8 @@ object GeneratorConfiguration {
      */
     val REMAPPED_CONSTRUCTORS = mapOf(
         "Expression" to Optional.of("BodyExpressionImplementation"), // SysMD has a specific subtype for these expressions
-        "LiteralExpression" to Optional.empty() // Do unspecified literals even make sense?
+        "LiteralExpression" to Optional.empty(), // Do unspecified literals even make sense?
+        "FeatureChaining" to Optional.empty() // we don't implement these.
     )
 
     /**
@@ -154,7 +157,14 @@ object GeneratorConfiguration {
      * from the semantic model. Only add properties here if they are required
      * during parsing, compilation, or model exchange.
      */
-    val ELEMENT_DATA_DERIVED_PROPERTIES = emptySet<String>()
+    val ELEMENT_DATA_DERIVED_PROPERTIES = setOf(
+        /* On Relationship. Needed for properly tracking ownership.
+        * Is derived as `subsets relatedElement`, but which element is picked cannot be reconstructed.
+        */
+        "owningRelatedElement",
+        /* Also on relationship. Per standard, ownedElement only contains indirectly owned elements. */
+        "ownedRelatedElement"
+    )
 }
 
 

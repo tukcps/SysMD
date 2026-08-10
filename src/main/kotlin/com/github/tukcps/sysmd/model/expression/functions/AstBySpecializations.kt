@@ -12,6 +12,7 @@ import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.quantities.VectorDimensionError
 import com.github.tukcps.sysmd.quantities.VectorQuantity
+import com.github.tukcps.sysmd.model.datamodel.toElementData
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.session.Session
 import io.github.tukcps.aadd.AADD
@@ -28,8 +29,8 @@ class AstBySpecializations(model: Session, namespace: Namespace, args: ArrayList
     AstFunction("bySpecializations", model, 1, args) {
 
     private val inNameSpace: Type = if (namespace is Type) namespace else {
-        model.status.error("bySpecializations not applicable in namespace that is not a type", element = namespace, kind = Issue.Kind.ERROR_SEMANTIC)
-        model.anything
+        model.status.error("bySpecializations not applicable in namespace that is not a type", element = namespace.toElementData(), kind = Issue.Kind.ERROR_SEMANTIC)
+        model.repo.anything!!
     }
     private val propertyName: QualifiedName = (getParam(0) as AstLeaf).qualifiedName!!
 
@@ -50,7 +51,7 @@ class AstBySpecializations(model: Session, namespace: Namespace, args: ArrayList
                 val newSubclassProperty = subclass.resolveVar(propertyName)
                     ?: throw SemanticError("Missing value $propertyName in ${subclass.qualifiedName}")
                 if (newSubclassProperty.vectorQuantity.unit != quantity.unit)
-                    model.status.error("different units in different subclasses", element = inNameSpace)
+                    model.status.error("different units in different subclasses", element = inNameSpace.toElementData())
                 result = chooser.ite(result, newSubclassProperty.vectorQuantity.values[0])
             }
             this.upQuantity = VectorQuantity(result, quantity.unit.clone())

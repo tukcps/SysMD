@@ -6,9 +6,10 @@ import com.github.tukcps.sysmd.compiler.SysMLv2
 import com.github.tukcps.sysmd.compiler.parser.kerml.*
 import com.github.tukcps.sysmd.compiler.parser.util.Unsupported
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
-import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
-import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
+import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureAction
+import com.github.tukcps.sysmd.compiler.semantics.kerml.parse
+import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.UsageDeclarationAction
+import com.github.tukcps.sysmd.model.generated.ElementType
 
 
 /**
@@ -76,16 +77,16 @@ fun SysMLv2.usageStarts() = usageDeclarationStarts()
 /**
  *      UsageDeclaration = Identification FeatureSpecializationPart?
  */
-internal fun SysMLv2.UsageDeclaration() {
-    Identification().also { semantics.create(it) }
+internal fun SysMLv2.UsageDeclaration() = UsageDeclarationAction(semantics).parse {
+    Identification().also { semantics.action.setIdentification(it) }
     optional(start = featureSpecializationPartStart) {
         FeatureSpecializationPart()
     }
-    // SysMD proprietary extension
-    TypeConstraint().also { if ( it.isNotEmpty() ) semantics.addTypeConstraint(it) }
-    UnitConstraint().also { semantics.addUnitConstraint(it) }
-}
 
+    // SysMD proprietary extension
+    TypeConstraint().semantics { addTypeConstraint(it) }
+    UnitConstraint().semantics { addUnitConstraint(it) } // TODO: Drop
+}
 
 /**
  *      UsageCompletion = ValuePart? UsageBody
@@ -112,7 +113,7 @@ fun SysMLv2.UsageBody() {
  *
  * Note: Both productions are implemented as one by making ref optional.
  */
-fun SysMLv2.ReferenceUsage() = FeatureActions<Feature>(semantics, ::FeatureImplementation).parse {
+fun SysMLv2.ReferenceUsage() = FeatureAction(semantics, ElementType.Feature).parse {
     // RefPrefix()      Prefixed are done in calling production
     // REF.optional()
     Usage()

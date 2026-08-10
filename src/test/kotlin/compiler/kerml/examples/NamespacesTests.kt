@@ -1,10 +1,20 @@
 package compiler.kerml.examples
 
+import com.github.tukcps.sysmd.compiler.parser.util.toIndentedString
+import com.github.tukcps.sysmd.model.kerml.Element
+import com.github.tukcps.sysmd.model.kerml.Feature
+import com.github.tukcps.sysmd.model.kerml.Membership
+import com.github.tukcps.sysmd.model.kerml.Package
+import com.github.tukcps.sysmd.services.check.reportDoubleNamesInNamespace
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
-import kotlin.test.assertTrue
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertSame
 
 class NamespacesTests {
 
@@ -14,7 +24,7 @@ class NamespacesTests {
      * Kernel Modeling Language: https://www.omg.org/spec/KerML/1.0/Beta2/PDF/changebar
      */
     @Test
-    fun testNamespaceDeclaration() = testSession("ScalarValues", "Base", "Objects", "Occurrences", "Links") {
+    fun testNamespaceDeclaration() = testSession("Occurrences",) {
         loadKerML("""
             namespace <'1.1'> N1; // This is an empty namespace.
             namespace <'1.2'> N2 {
@@ -24,7 +34,7 @@ class NamespacesTests {
                 feature f : C;
                 namespace N3; // This is a nested namespace.
             }
-        """.trimIndent())
+        """)
         assertNoIssues()
     }
 
@@ -34,14 +44,14 @@ class NamespacesTests {
      * Kernel Modeling Language: https://www.omg.org/spec/KerML/1.0/Beta2/PDF/changebar
      */
     @Test
-    fun testElementVisibilityDeclaration() = testSession("ScalarValues", "Base", "Objects", "Occurrences", "Links") {
+    fun testElementVisibilityDeclaration() = testSession {
         loadKerML("""
             namespace N3 {
                 public class C;
                 private datatype D;
                 feature f : C; // public by default
             }
-        """.trimIndent())
+        """)
         assertNoIssues()
     }
 
@@ -51,7 +61,7 @@ class NamespacesTests {
      * Kernel Modeling Language: https://www.omg.org/spec/KerML/1.0/Beta2/PDF/changebar
      */
     @Test
-    fun testAliasElementDeclaration() = testSession("ScalarValues", "Base", "Objects", "Occurrences", "Links") {
+    fun testAliasElementDeclaration() = testSession {
         loadKerML("""
             namespace N4 {
                 class A;
@@ -71,7 +81,7 @@ class NamespacesTests {
      * Kernel Modeling Language: https://www.omg.org/spec/KerML/1.0/Beta2/PDF/changebar
      */
     @Test
-    fun testCommentAsOwnedMemberOfNamespace() = testSession("Occurrences") {
+    fun testCommentAsOwnedMemberOfNamespace() = testSession {
         loadKerML("""
             namespace N5 {
                 class A;
@@ -106,6 +116,37 @@ class NamespacesTests {
             feature f: C;
             package P;
         """)
+        assertNoIssues()
+    }
+
+    @Test
+    fun testAliases() = testSession {
+        loadKerML("""
+            package a {
+                feature foo;
+            }
+            package b {
+                alias bar for a::foo;
+                alias abc for a::foo;
+                alias xyz for a::foo;
+            }
+        """.trimIndent())
+
+        val foo = global.resolve("a::foo")!!.member<Feature>()!!
+
+        for(name in listOf("bar", "abc", "xyz"))
+        {
+            val rel = assertNotNull( global.resolve("b::$name"), "resolve couldn't find aliased member")
+            assertSame(foo, rel.memberElement, "alias resolved to wrong element")
+
+            // assertEquals(name, rel.memberName) // fixme: SysMD implementation incorrect
+        }
+
+        assertNull(global.resolve("b::foo"), "Alias shouldn't expose aliased member")
+        assertNull(global.resolve("b::a::foo"), "Alias shouldn't expose aliased member")
+
+        assertNoIssues()
+        reportDoubleNamesInNamespace()
         assertNoIssues()
     }
 }

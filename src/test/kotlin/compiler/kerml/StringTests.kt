@@ -1,6 +1,7 @@
 package compiler.kerml
 
 import com.github.tukcps.sysmd.model.kerml.Feature
+import com.github.tukcps.sysmd.services.Runlevel
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
@@ -14,8 +15,7 @@ class StringTests {
      */
     @Test
     fun stringSyntax() = testSession("ScalarValues") {
-        loadKerML("""feature label1: ScalarValues::String = "string value1";""")
-        solver.propagate()
+        loadKerML("feature label1: ScalarValues::String = \"string value1\";", Runlevel.MODEL)
         assertNoIssues()
         val label1 = global.resolve("label1")?.member<Feature>()
         assertEquals( "\"string value1\"", label1?.expression)

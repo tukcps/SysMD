@@ -1,6 +1,8 @@
 package com.github.tukcps.sysmd.model.kerml
 
 import com.github.tukcps.sysmd.exceptions.Issue.Kind
+import com.github.tukcps.sysmd.model.util.MultiplicityRange
+import com.github.tukcps.sysmd.model.datamodel.toElementData
 
 
 /**
@@ -12,6 +14,13 @@ interface Type: Namespace {
     var isSufficient: Boolean
     val isConjugated: Boolean
         get() = getOwnedElementsOfType<Conjugation>().isNotEmpty()
+
+    /** All features of this type */
+    val feature: List<Feature> get() = member.filterIsInstance<Feature>()
+
+
+    /** The features of this Type that have a non-null direction */
+    val directedFeature get() = feature.filter { it.direction !== null }
 
     /**
      * If this Type is conjugated, then return just the originalType of the Conjugation.
@@ -78,7 +87,7 @@ interface Type: Namespace {
             return true
         generalization.forEach {
             if (depth > 200) {
-                model?.status?.error("Cyclic dependency in inheritance of $supertype ", kind=Kind.ERROR_CYCLIC_DEPENDENCY, element = this)
+                model.status.error("Cyclic dependency in inheritance of $supertype ", kind=Kind.ERROR_CYCLIC_DEPENDENCY, element = this.toElementData())
             } else {
                 if (it.specializes(supertype, depth+1))
                     return true
@@ -95,10 +104,10 @@ interface Type: Namespace {
      * @return A list of all its supertypes
      */
     fun allSupertypes(transitive: Boolean = false, visited: MutableSet<Type> = mutableSetOf()): List<Type> {
-        val supertypes = generalization.toMutableList()
+        val supertypes = supertypes().toMutableList()
 
         if (this in supertypes || this in visited) {
-            model?.status?.error("Cyclic dependency in definition of type ${this.qualifiedName}", kind = Kind.ERROR_CYCLIC_DEPENDENCY, element = this)
+            model.status.error("Cyclic dependency in definition of type ${this.qualifiedName}", kind = Kind.ERROR_CYCLIC_DEPENDENCY, element = this.toElementData())
             return listOf()
         }
         if (transitive) {
@@ -112,10 +121,11 @@ interface Type: Namespace {
     /** All subtypes of this type after initialization */
     val subtypes: MutableSet<Type>
 
-    /** @return All features of this type */
-    fun features(): List<Feature> = member.filterIsInstance<Feature>()
-
-    /** The owned multiplicity element of this type. */
+    /**
+     * The owned multiplicity element of this type.
+     * Means the number of elements that have this type.
+     * Default: 0 .. *
+     */
     fun multiplicity(): Multiplicity? = member.filterIsInstance<Multiplicity>().firstOrNull()
 
     /**
@@ -138,11 +148,12 @@ interface Type: Namespace {
         visited += this
         generalization.forEach {
             return when (it) {
-                is Anything -> false
                 in visited  -> true
                 else -> it.isCyclic(visited)
             }
         }
         return false
     }
+
+    fun multiplicityRange(): MultiplicityRange
 }

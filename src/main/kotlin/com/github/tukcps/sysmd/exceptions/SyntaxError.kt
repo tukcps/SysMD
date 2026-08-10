@@ -15,8 +15,7 @@ class SyntaxError(
     message = message,
     kind = kind,
     input = parser.input,
-    token = parser.token,
-    element = parser.semantics.element(),
+    token = parser.token
 )
 
 

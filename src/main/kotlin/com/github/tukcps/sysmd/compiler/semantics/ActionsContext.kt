@@ -2,305 +2,265 @@ package com.github.tukcps.sysmd.compiler.semantics
 
 import com.github.tukcps.sysmd.compiler.KerML
 import com.github.tukcps.sysmd.compiler.scanner.Token
-import com.github.tukcps.sysmd.compiler.semantics.kerml.NamespaceActions
+import com.github.tukcps.sysmd.compiler.semantics.kerml.ElementAction
+import com.github.tukcps.sysmd.compiler.semantics.kerml.RootNamespaceAction
+import com.github.tukcps.sysmd.compiler.semantics.kerml.TypeAction
 import com.github.tukcps.sysmd.exceptions.SemanticError
+import com.github.tukcps.sysmd.model.datamodel.*
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.model.expression.functions.*
-import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.model.kerml.implementation.*
+import com.github.tukcps.sysmd.model.generated.ElementType
+import com.github.tukcps.sysmd.model.kerml.Feature
+import com.github.tukcps.sysmd.model.kerml.Import
+import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.util.QualifiedName
-import com.github.tukcps.sysmd.services.session.Session
-import io.github.tukcps.aadd.values.IntegerRange
-import java.util.*
+import com.github.tukcps.sysmd.model.util.TypeConstraint
+import com.github.tukcps.sysmd.rest.entities.api.entities.Identified
+import com.github.tukcps.sysmd.services.session.SessionStatus
+import kotlin.uuid.Uuid
 
 /**
- * This class provides methods that add KerML-Element instances to
- * the KerML model in a session.
- * @param model the KerML model in use in a Session
- * between the textual representation element and the generated elements is added.
+ * This class provides methods that help building the ownership hierarchy of a KerML metamodel.
+ * It interacts with semantic actions, for which it provides some context informatoin that limits the need
+ * for passing parameters.
+ * It maintains for this purpose:
+ * - the current semantic action.
+ * - the current element via the semantic action (for convenience)
+ * - the owning element that must be set by the semantic actions. It must be null for the root namespace.
+ * Parameters are:
  *
- * The semantic actions add KerML elements to an owner in the KerML model.
- * As the owner is not completely known, we maintain a stack of the owner's:```owners```.
- * Each action has the parameters:
- * - owner (optional, if known), Identity that can also contain reference and/or id.
- * - element to be added if not created by the action.
- * - the actions shall return the element
- *
- * Generally, a semantic action shall interact with the parser as follows:
- * 1) create the element via *constructor* (hence, not yet owned by KerML model)
- * 2) modify, extend the element such that it satisfies invariants of instances (e.g. features must have specialization, etc.)
- * 3) finally, if (1,2) were successful, call the semantic action with all data needed.
- * 4) add optional parts to the element
+ * @param compiler the compiler that is used (KerML, SysML v2, SysMD script)
+ * @param status data structure, where results of the compiler are added
  */
 open class ActionsContext(
-    val model: Session,
     val compiler: KerML,
+    val status: SessionStatus = compiler.status
 ) {
+    /**
+     * The action that is currently being parsed.
+     * Having at least the RootNamespace prevents many nullable types.
+     */
+    var action: ElementAction = RootNamespaceAction(this)
 
     /**
-     * A stack with allow nested namespaces.
+     * The element that is currently built by the semantic action.
+     * Just a getter into the semantic action that owns it.
      */
-    private val owners: Stack<NamespaceActions<Namespace>> = Stack<NamespaceActions<Namespace>>()
+    val element: ElementData
+        get() = action.element
+
+    /** Constructs a reference to the current element */
+    val elementReference : Identified get() = when(val action = this.action) {
+        is RootNamespaceAction -> when(val qn = action.qualifiedName) {
+            null -> IdentifiedImplementation(null)
+            else -> IdentifiedByName(name = qn, resolvesTo = IdentificationKind.Namespace)
+        }
+        else -> IdentifiedImplementation(element.elementId)
+    }
+
+    /** Whether [element] is the root namespace or not.
+     * A non-null ownerPrefix indicates that
+     * */
+    val elementIsRoot get() = action.let { it is RootNamespaceAction && it.qualifiedName === null }
 
     /**
-     * The visibility of the top of the owners; only needed between prefixes are parsed and semantic action
-     * is started.
+     * Sets declared name and shortName of the element.
+     * @param name the declared name
+     * @param shortName the declared short name
      */
-    var visibility: Import.VisibilityKind? = null
+    fun setIdentification(name: String?, shortName: String?) {
+        element.declaredName = name
+        element.declaredShortName = shortName
+    }
+
+    /**
+     * Sets path of owning element for SysMD language and notebook extensions.
+     * Here, it allows compilation in the context of a given package.
+     * @param ownerPrefix a string with owning package qualified name; null if RootNamespace
+     */
+    fun initOwningNamespaces(ownerPrefix: QualifiedName? = null) {
+        (action as RootNamespaceAction).qualifiedName = ownerPrefix
+    }
+
+    /**
+     * The list in which the elements built by the semantic actions are saved.
+     */
+    internal val elementsBuilt: MutableList<ElementData> = mutableListOf()
+
+    /**
+     * A flag in which the visibility kind is saved by the production Prefix.
+     */
+    internal var visibility: Import.VisibilityKind? = null
 
     /**
      * A set with the prefixes of the currently parsed definition or declaration.
      * Valid from start of prefixes being parsed and the first semantic actions are executed.
      */
-    val prefixes = mutableSetOf<Token.Kind>()
-
-    /**
-     * Initializes the owner stack.
-     * @param ownerPrefix a string with owners separated by '::'
-     */
-    fun initOwningNamespaces(ownerPrefix: String = "") {
-        owners.clear()
-        addOwningNamespaces(ownerPrefix)
-    }
-
-    /**
-     * Adds multiple owning namespaces; needed for SysMD only.
-     * @param ownerPrefix a string of owners separated by '::'
-     */
-    fun addOwningNamespaces(ownerPrefix: String = "") {
-        val ownersPrefixes = ownerPrefix.split("::").filter { it.isNotBlank() && it != "Global" }
-        ownersPrefixes.forEach {
-            if (it.isNotEmpty()) {
-                val found = element<Namespace>().resolveLocal(it)?.memberElement
-                val action = NamespaceActions<Namespace>(this, ::PackageImplementation)
-                action.parse {
-                    if (found != null)
-                        currentActions()?.created = found as Namespace
-                    else
-                        create(Identification(name = it))
-                }
-                pushOwningNamespace(action)
-            }
-        }
-    }
-
-
-    /**
-     * Pushes an owner to the stack of owning namespaces.
-     * @param owner of new elements that will be created.
-     */
-    fun pushOwningNamespace(owner: NamespaceActions<Namespace>) {
-        if (owner != model.global)
-            owners.push(owner)
-    }
-
-    /**
-     * Removes the top name from the owners' stack
-     */
-    fun popOwningNamespace() {
-        owners.pop()
-    }
-
-    fun currentActions(): NamespaceActions<Namespace>?  = if (owners.isEmpty()) null else owners.peek()
-
-
-    /**
-     * @return the currently processed namespace
-     */
-    @Suppress("UNCHECKED_CAST")
-    fun <T: Namespace> element(): T = (currentActions()?.created as T?) ?: (model.global as T)
-
-    fun owner(): Namespace = if (owners.size-2 in owners.indices) owners[owners.size-2].created else model.global
-
-    fun create(identification: Identification?) =
-            currentActions()?.create(identification)
-
-    /**
-     * Adds the namespace prefix of a parse run to the name given as parameter.
-     * @return ownerPrefix + name, considering "::" and formatting.
-     */
-    fun ownerName(): QualifiedName {
-        var s = ""
-        owners.forEach {
-            if (it != model.global) {
-                s += if (it != null) it.created.escapedName() + "::"
-                else "${it}::"
-            }
-        }
-        s = s.removeSuffix("::")
-        return s
-    }
-
+    internal val prefixes = mutableSetOf<Token.Kind>()
 
     /**
      * Marker only for the generation of AST in Expressions.
      * ONLY FOR USE IN EXPRESSION !!!
      */
-    var namespace: Namespace = model.global
+    @Deprecated("Session will be dropped, use will not work anyhow now. ")
+    var namespace: Namespace = compiler.model.global
+
+    /** The owning relationship that was generated by addOwnedElement() */
+    var owningRelationship: ElementData? = null
+
+    /**
+     * Adds to the current element a new element together with an owning relationship.
+     * @param ownedElement the element given as data model ElementData
+     * @param owningRelationshipType the type of the owning relationship to be used
+     * @return A pair of the generated owning relationship, and the owned element
+     */
+    fun addOwnedElement(ownedElement: ElementData, owningRelationshipType: ElementType): Pair<ElementData?, ElementData> {
+        assert(this.element !== ownedElement) { "Tried to make element own itself" }
+        val owner = elementReference
+        val owned = IdentifiedImplementation(ownedElement.elementId)
+
+        owningRelationship = when {
+            elementIsRoot && !compiler.settings.includeOwningRelationshipsToRoot -> null
+            else -> ElementData(
+                elementId = Uuid.random(),
+                type = owningRelationshipType,
+                target = mutableListOf(owned.clone()),
+                source = mutableListOf(owner.clone()),
+                owningRelatedElement = owner.clone(),
+                ownedRelatedElement = mutableListOf(owned.clone()),
+                input = compiler.input,
+                // fixme: these are wrong.
+                ownedElement = mutableListOf(owned.clone()),
+                owner = owner.clone()
+            )
+        }
+        val rel = IdentifiedImplementation(owningRelationship?.elementId)
+
+        ownedElement.owningRelationship = rel.clone()
+        ownedElement.owningMembership = rel.clone()
+        element.ownedRelationship.add(rel.clone())
+
+        owningRelationship?.let { elementsBuilt.add(it) }
+        elementsBuilt.add(ownedElement)
+
+        return Pair(owningRelationship, ownedElement)
+    }
+
+    /**
+     * Adds to the current element a new element together with an owning relationship.
+     * Also adds it to the list of built elements.
+     * @param ownedRelationship the relationship that is added to the current element.
+     */
+    fun addOwnedRelationship(ownedRelationship: ElementData) {
+        // owningMembership is nullable, then we have the root namespace.
+        element.ownedRelationship.add(IdentifiedImplementation(ownedRelationship.elementId))
+
+        // fixme: likely wrong, as relationships only have (owner !== null) if they are owned via OwningMembership
+        if (!elementIsRoot)
+            ownedRelationship.owner = IdentifiedImplementation(element.elementId)
+
+        // source links it with the owning element; null for root namespace!
+        val source = elementReference
+        ownedRelationship.source = mutableListOf(source)
+        ownedRelationship.owningRelatedElement = source.clone()
+        elementsBuilt.add(ownedRelationship)
+    }
+
+    /**
+     * Adds an owned relationship to the current type, e.g., a specialization, type-featuring.
+     * @param target the target of the owned relationship, identified by name or id.
+     * @param type the type of the owned relationship to be generated.
+     */
+    fun addOwnedRelationship(target: Identified, type: ElementType) {
+        val action = action
+
+        if (action is TypeAction) {
+            action.superTypeDefined = true
+            val source = elementReference
+
+            val ownedRelationship = ElementData(
+                elementId = Uuid.random(),
+                type = type,
+                source = mutableListOf(source),
+                target = mutableListOf(target),
+                owningRelatedElement = source.clone(),
+
+                owner = source.clone() // fixme: wrong.
+            )
+            action.element.ownedRelationship.add(IdentifiedImplementation(ownedRelationship.elementId))
+            elementsBuilt.add(ownedRelationship)
+        } else
+            status.fatal("Internal issue: owner of addOwnedRelationship must be a type")
+    }
 
     /**
      * Adds an owned unioning relationship.
      * @param type the name of the type, as in the source code
      */
-    fun addUnioning(type: QualifiedName): Unioning {
-        val owner = element<Type>()
-        val unioning = UnioningImplementation(unionedType = owner, unioningType = UnresolvedType(type))
-        model.addOwnedRelationship(unioning, owner)
-        return unioning
-    }
-
+    fun addUnioning(type: QualifiedName) =
+        addOwnedRelationship(compiler.typeByName(type), ElementType.Unioning)
 
     /**
      * Adds an owned differencing relationship.
      * @param type the name of the type, as in the source code
      */
-    fun addDifferencing(type: QualifiedName): Differencing {
-        val owner = element<Type>()
-        val differencing = DifferencingImplementation(typeDifferenced = owner, differencingType = UnresolvedType(type))
-        model.addOwnedRelationship(differencing, owner)
-        return differencing
-    }
+    fun addDifferencing(type: QualifiedName) =
+        addOwnedRelationship(compiler.typeByName(type), ElementType.Differencing)
 
     /**
      * Adds an owned differencing relationship.
      * @param type the name of the type, as in the source code
      */
-    fun addIntersecting(type: QualifiedName): Intersecting {
-        val owner = element<Type>()
-        val intersecting = IntersectingImplementation(typeIntercected = owner, intersectingType = UnresolvedType(type))
-        model.addOwnedRelationship(intersecting, owner)
-        return intersecting
-    }
+    fun addIntersecting(type: QualifiedName) =
+        addOwnedRelationship(compiler.typeByName(type), ElementType.Intersecting)
 
     /**
      * Adds an owned feature typing relationship.
      * @param type the name of the type, as in the source code
      */
-    fun addDisjoining(type: QualifiedName): Disjoining {
-        val owner = element<Type>()
-        val disjoining = DisjoiningImplementation(typeDisjoined = owner, disjoiningType = UnresolvedType(type))
-        model.addOwnedRelationship(disjoining, owner)
-        return disjoining
-    }
-
+    fun addDisjoining(type: QualifiedName) =
+        addOwnedRelationship(compiler.typeByName(type), ElementType.Disjoining)
 
     /**
-     * Adds owned multiplicity.
-     * @param integerRange integerRange the range, by default 0 .. *
+     * Adds a typing to features.
+     * @param type the type of owning feature as a Qualified Name.
      */
-    fun addMultiplicity(integerRange: IntegerRange): Multiplicity {
-        val multiplicity = MultiplicityImplementation(multiplicity = "${integerRange.min} .. ${integerRange.max}")
-        val owner = element<Type>()
-        model.addOwnedMember(multiplicity, owner)
-
-        // val featureTyping = FeatureTypingImplementation(typedFeature = multiplicity, type = UnresolvedType("ScalarValues::Integer"))
-        // model.addOwnedRelationship(featureTyping, multiplicity)
-        return multiplicity
-    }
+    fun addTyping(type: QualifiedName) =
+        addOwnedRelationship(compiler.typeByName(type), ElementType.FeatureTyping)
 
     /**
      * Adds a ReferenceSubsetting relationship.
      * @param referencedFeature qualified name of the referenced feature
      */
-    fun addReferenceSubsetting(referencedFeature: QualifiedName) {
-        val owner = element<Feature>()
-        val reference = ReferenceSubsettingImplementation(
-            referencingFeature = owner,
-            referencedFeature = UnresolvedFeature(referencedFeature)
-        )
-        model.addOwnedRelationship(reference, owner)
-    }
-
+    fun addReferenceSubsetting(referencedFeature: Identified) =
+        addOwnedRelationship(referencedFeature, ElementType.ReferenceSubsetting)
 
     /**
      * Adds a ReferenceSubsetting relationship.
-     * @param referencedFeature the referencing feature that can also be unresolved
+     * @param referencedFeature qualified name of the referenced feature
      */
-    fun addReferenceSubsetting(referencedFeature: Feature) {
-        if (element<Namespace>() !is Feature) {
-            model.status.info("Info: could not add reference-subsetting to ${referencedFeature.qualifiedName}")
-            return
-        }
-        val owner = element<Feature>()
-        val reference = ReferenceSubsettingImplementation(
-            referencingFeature = owner, referencedFeature = referencedFeature
-        )
-        model.addOwnedRelationship(reference, owner)
-    }
+    fun addReferenceSubsetting(referencedFeature: QualifiedName) =
+        addOwnedRelationship(compiler.featureByName(referencedFeature), ElementType.ReferenceSubsetting)
 
     /**
-     * Adds an owned Subclassification relationship
+     * Adds an owned Subclassification relationship.
      * @param type the type for which owned subclassification is created
      */
-    fun addSubclassification(type: String) {
-        val owner = element<Type>()
-        val subclassification = SubclassificationImplementation(
-            subclassification = owner,
-            superclassification = UnresolvedType(type)
-        )
-        model.addOwnedRelationship(subclassification, owner)
-    }
+    fun addSubclassification(type: String) =
+        addOwnedRelationship(compiler.typeByName(type), ElementType.Subclassification)
 
     /**
      * Adds a Redefinition relationship.
      * @param redefinedFeature
      */
-    fun addRedefinition(redefinedFeature: QualifiedName) {
-        val owner = element<Feature>()
-        val redefinition = RedefinitionImplementation(
-            redefiningFeature = owner,
-            redefinedFeature = UnresolvedFeature(redefinedFeature)
-        )
-        model.addOwnedRelationship(redefinition, owner)
-    }
-
-    /**
-     * Adds one or more owned Specializations to a Type
-     * @param type a type name for which an owned Specialization is created
-     */
-    fun addSpecialization(type: QualifiedName) {
-        val owner = element<Type>()
-        val specialization = SpecializationImplementation(
-            specific = owner,
-            general = UnresolvedType(type)
-        )
-        model.addOwnedRelationship(specialization, owner)
-    }
-
-    fun addConjugation(conjugated: String) {
-        val owner = element<Type>()
-        val conjugation = ConjugationImplementation(
-            type = owner,
-            conjugated = UnresolvedType(conjugated)
-        )
-        model.addOwnedRelationship(conjugation, owner)
-    }
-
-    /**
-     * Adds FeatureTyping elements to a created Feature.
-     * The types are still names and will become references during initialization.
-     * @param type a list of qualified names that shall be added.
-     */
-    fun addTyping(type: QualifiedName) {
-        val owner = element<Feature>()
-        val typing = FeatureTypingImplementation(
-            typedFeature = owner,
-            type = UnresolvedType(type)
-        )
-        model.addOwnedRelationship(typing, owner)
-    }
-
-    /**
-     * Adds an owned subsetting.
-     */
-    fun addSubsetting(subsettedFeature: QualifiedName) {
-        val owner = element<Feature>()
-        val subsetting = SubsettingImplementation(
-            subsettingFeature = owner,
-            subsettedFeature = UnresolvedFeature(subsettedFeature)
-        )
-        model.addOwnedRelationship(subsetting, owner)
-    }
+    fun addRedefinition(redefinedFeature: QualifiedName) =
+        addOwnedRelationship(compiler.featureByName(redefinedFeature), ElementType.Redefinition)
+    fun addSpecialization(type: QualifiedName) =
+        addOwnedRelationship(compiler.typeByName(type), ElementType.Specialization)
+    fun addConjugation(conjugated: String) =
+        addOwnedRelationship(compiler.typeByName(conjugated) , ElementType.Conjugation)
+    fun addSubsetting(subsettedFeature: QualifiedName) =
+        addOwnedRelationship(compiler.featureByName(subsettedFeature), ElementType.Subsetting)
 
     /**
      * Adds a reference subsetting to the feature
@@ -312,54 +272,89 @@ open class ActionsContext(
         }
     }
 
-
     /**
      * Adds a sequence of redefinition
      */
     fun addRedefinitions(redefines: MutableList<String>) {
-        if (element<Feature>().escapedName() == null)
-            element<Feature>().declaredName = redefines.firstOrNull()
+        if (element.declaredName == null && element.declaredShortName == null)
+            element.declaredName = redefines.firstOrNull()
         redefines.forEach {
             addRedefinition(it)
         }
     }
 
-
+    /**
+     * Adds a constraint on the unit of the element on top of the owner stack.
+     * @param unitConstraint the unit expected.
+     */
     fun addUnitConstraint(unitConstraint: String?) {
-        if (unitConstraint != null) {
-            val constraint = FeatureImplementation()
-            constraint.declaredName = "unit"
-            constraint.expression = unitConstraint
-            model.addOwnedMember(constraint, element<Feature>())
+        if (compiler.settings.addConstraints)
+            if (unitConstraint != null) {
+                addOwnedElement(
+                    ElementData(
+                        elementId = Uuid.random(),
+                        type = ElementType.Feature,
+                        declaredName = "unit",
+                        body = unitConstraint
+                    ),
+                    ElementType.FeatureMembership
+                )
+            }
+    }
+
+    /**
+     * Generates a Features with an expression that acts as constraint for the range
+     * of an owning type.
+     * @param typeConstraint the constraint that is added to the type definition.
+     */
+    fun addTypeConstraint(typeConstraint: TypeConstraint) {
+        if (compiler.settings.addConstraints && typeConstraint.value.isNotEmpty())
+        {
+            addOwnedElement(
+                ElementData(
+                    elementId = Uuid.random(),
+                    type = ElementType.Feature,
+                    declaredName = "range",
+                    body = typeConstraint.toString()
+                ),
+                ElementType.FeatureMembership
+            )
         }
     }
 
-    fun addTypeConstraint(typeConstraint: MutableList<String>) {
-        element<Feature>().typeConstraint = typeConstraint
-        if (typeConstraint.isNotEmpty()) {
-            val constraint = FeatureImplementation()
-            constraint.declaredName = "range"
-            constraint.expression = typeConstraint.firstOrNull()
-            model.addOwnedMember(constraint, element<Feature>())
-        }
+    fun setSource(source: Identified) {
+        element.source = mutableListOf(source)
     }
 
-    fun addTarget(target: Element) {
-        element<Connector>().target.add(target)
+    fun addSource(source: Identified) {
+        element.source.add(source)
     }
 
-    fun setSource(source: Element) {
-        element<Connector>().source = mutableListOf(source)
+    fun setTarget(target: Identified) {
+        element.target = mutableListOf(target)
     }
 
-    fun setTarget(target: Element) {
-        element<Connector>().target = mutableListOf(target)
+    fun addTarget(target: Identified) {
+        element.target.add(target)
     }
 
-    fun setSourceEnd(source: Feature) { setSource(source) }
-    fun addTargetEnd(target: Feature) { addTarget(target) }
-    fun setTargetEnd(target: Feature) { setTarget(target) }
+    fun setSourceEnd(source: ElementData) {
+        element.source = mutableListOf(IdentifiedImplementation(source.elementId))
+    }
 
+    fun setSourceEnd(name: QualifiedName) {
+        element.source = mutableListOf(IdentifiedByName(name = name, resolvesTo = IdentificationKind.Element))
+    }
+
+    fun setTargetEnd(target: QualifiedName) {
+        element.target = mutableListOf(IdentifiedByName(target, resolvesTo = IdentificationKind.Element))
+    }
+
+    fun addTargetEnd(target: ElementData) = element.target.add(IdentifiedImplementation(target.elementId))
+
+    fun setTargetEnd(target: ElementData) {
+        element.target = mutableListOf(IdentifiedImplementation(target.elementId))
+    }
 
     fun directionFromPrefixes(): Feature.FeatureDirectionKind? = when {
         Token.Kind.IN in prefixes -> Feature.FeatureDirectionKind.IN
@@ -378,59 +373,61 @@ open class ActionsContext(
      * @throws SemanticError
      */
     fun handleFunctionCall(function: QualifiedName, param: ArrayList<AstNode>, semantics: ActionsContext): AstNode {
-        when (function) {
-            "owns" -> return AstHasA(model, param, semantics)
-            "ITE" -> return AstIte(model, param)
-            "oneOf" -> return buildOneOfAst(model, param, semantics)
-            "allOf" -> return AstAllOf(model, param)
-            "anyOf" -> return AstAnyOf(model, param)
-            "sum_i" -> return AstSumI(namespace, model, param)
-            "sum" -> return AstSum(namespace, model, param)
-            "sumOverParts" -> return AstSumOverParts(model, namespace, param, transitive = true)
-            "sumOverSubclasses" -> return AstSumOverSubclasses(model, namespace, param, transitive = true)
-            "productOverParts" -> return AstProductOverParts(model, namespace, param, transitive = true)
-            "productOverSubclasses" -> return AstProductOverSubclasses(model, namespace, param, transitive = true)
-            "sumOverPartsNotTransitive" -> return AstSumOverParts(model, namespace, param, transitive = false)
-            "sumOverSubclassesNotTransitive" -> return AstSumOverSubclasses(model, namespace, param, transitive = false)
-            "productOverPartsNotTransitive" -> return AstProductOverParts(model, namespace, param, transitive = false)
-            "productOverSubclassesNotTransitive" -> return AstProductOverSubclasses(model, namespace, param, transitive = false)
-            "characterizedResult" -> return AstCharacterizedResult(model, namespace, param)
-            "ln" -> return AstLn(model, param)
-            "exp" -> return AstExp(model, param)
-            "sqr" -> return AstSqr(model, param)
-            "sqrt" -> return AstSqrt(model, param)
-            "ceil" -> return AstCeil(model, param)
-            "floor" -> return AstFloor(model, param)
-            "power2" -> return AstPower2(model, param)
-            "pow2" -> return AstPower2(model, param)
-            "powerb" -> return AstPower(model, param)
-            "power" -> return AstPower(model, param)
-            "powb" -> return AstPower(model, param)
-            "pow" -> return AstPower(model, param)
-            "sin" -> return AstSin(model,param)
-            "cos" -> return AstCos(model,param)
-            "toReal" -> return AstToReal(model, param)
-            "DateTime" -> return AstDateTime(model, param)
-            "Date" -> return AstDate(model, param)
-            "Month" -> return AstMonth(model, param)
-            "Year" -> return AstYear(model, param)
-            "max" -> return AstMax(model, param)
-            "min" -> return AstMin(model, param)
-            "abs" -> return AstAbs(model, param)
-            "intersect" -> return AstIntersect(model, param)
-            "bySpecializations" -> return AstBySpecializations(model, namespace, param)
-            "byParts" -> return AstByParts(model, namespace, param)
-            "byImplements" -> return AstByImplements(model, namespace, param)
-            "linearInterpolation" -> return AstLinearInterpolation(model, param)
-            "stepInterpolation" -> return AstStepInterpolation(model,param)
-            "ToReal" -> return AstReal(model, param)
-            "ToInteger" -> return AstInteger(model, param)
-            "norm" -> return AstNormalizeVector(model,param)
-            "size" -> return AstVectorSize(model, param)
-            "angle" -> return AstVectorAngle(model,param)
-            "cityBlockDistance" -> return AstCityBlockDistance(model,param)
-            "quantityOfVectorAtPosition" -> return AstQuantityOfVectorAtPosition(model,param)
-            else -> return AstUserDefinedFunction(model,namespace, param, function)
+        val model = compiler.model
+        val namespace = this.namespace
+        return when (function) {
+            "owns" -> AstHasA(model, param, semantics)
+            "ITE" -> AstIte(model, param)
+            "oneOf" -> buildOneOfAst(model, param, semantics)
+            "allOf" -> AstAllOf(model, param)
+            "anyOf" -> AstAnyOf(model, param)
+            "sum_i" -> AstSumI(namespace, model, param)
+            "sum" -> AstSum(namespace, model, param)
+            "sumOverParts" -> AstSumOverParts(model, namespace, param, transitive = true)
+            "sumOverSubclasses" -> AstSumOverSubclasses(model, namespace, param, transitive = true)
+            "productOverParts" -> AstProductOverParts(model, namespace, param, transitive = true)
+            "productOverSubclasses" -> AstProductOverSubclasses(model, namespace, param, transitive = true)
+            "sumOverPartsNotTransitive" -> AstSumOverParts(model, namespace, param, transitive = false)
+            "sumOverSubclassesNotTransitive" -> AstSumOverSubclasses(model, namespace, param, transitive = false)
+            "productOverPartsNotTransitive" -> AstProductOverParts(model, namespace, param, transitive = false)
+            "productOverSubclassesNotTransitive" -> AstProductOverSubclasses(model, namespace, param, transitive = false)
+            "characterizedResult" -> AstCharacterizedResult(model, namespace, param)
+            "ln" -> AstLn(model, param)
+            "exp" -> AstExp(model, param)
+            "sqr" -> AstSqr(model, param)
+            "sqrt" -> AstSqrt(model, param)
+            "ceil" -> AstCeil(model, param)
+            "floor" -> AstFloor(model, param)
+            "power2" -> AstPower2(model, param)
+            "pow2" -> AstPower2(model, param)
+            "powerb" -> AstPower(model, param)
+            "power" -> AstPower(model, param)
+            "powb" -> AstPower(model, param)
+            "pow" -> AstPower(model, param)
+            "sin" -> AstSin(model,param)
+            "cos" -> AstCos(model,param)
+            "toReal" -> AstToReal(model, param)
+            "DateTime" -> AstDateTime(model, param)
+            "Date" -> AstDate(model, param)
+            "Month" -> AstMonth(model, param)
+            "Year" -> AstYear(model, param)
+            "max" -> AstMax(model, param)
+            "min" -> AstMin(model, param)
+            "abs" -> AstAbs(model, param)
+            "intersect" -> AstIntersect(model, param)
+            "bySpecializations" -> AstBySpecializations(model, namespace, param)
+            "byParts" -> AstByParts(model, namespace, param)
+            "byImplements" -> AstByImplements(model, namespace, param)
+            "linearInterpolation" -> AstLinearInterpolation(model, param)
+            "stepInterpolation" -> AstStepInterpolation(model,param)
+            "ToReal" -> AstReal(model, param)
+            "ToInteger" -> AstInteger(model, param)
+            "norm" -> AstNormalizeVector(model,param)
+            "size" -> AstVectorSize(model, param)
+            "angle" -> AstVectorAngle(model,param)
+            "cityBlockDistance" -> AstCityBlockDistance(model,param)
+            "quantityOfVectorAtPosition" -> AstQuantityOfVectorAtPosition(model,param)
+            else -> AstUserDefinedFunction(model,namespace, param, function)
         }
     }
 }

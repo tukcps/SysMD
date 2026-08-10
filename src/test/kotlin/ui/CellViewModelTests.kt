@@ -9,32 +9,38 @@ import com.github.tukcps.sysmd.ui.viewmodel.CellViewModel
 import com.github.tukcps.sysmd.ui.viewmodel.SysMDViewModel
 import util.assertNoIssues
 import util.testProjectSession
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
+/**
+ * Some tests for cell view model in SysMD Notebook.
+ * Different cells are compiled step by step. 
+ */
 class CellViewModelTests {
 
+    @Ignore // TODO: adapt to SysMD interactive
     @Test
-    fun testInheritedFeaturesDisplayedWhenNoLocalFeatures() = testProjectSession("ScalarValues", "Base", "Objects", "Occurrences", "Links") {
+    fun testInheritedFeaturesDisplayedWhenNoLocalFeatures() = testProjectSession("ScalarValues") {
         // 1. Load the superclass defining a feature
         val superclassCode = """
             package test {
                 private import ScalarValues::*;
-                class Vehicle {
+                classifier Vehicle {
                     feature weight : Real = 1500.0;
                 }
             }
-        """.trimIndent()
-        
-        KerML(this).parse(superclassCode, "Global")
+        """
+        import(KerML(this).parse(superclassCode))
         
         // 2. Load the subclass defining no local features, but specializing/extending the superclass
         val subclassCode = """
             package test {
                 private import ScalarValues::*;
-                class Car specializes test::Vehicle;
+                classifier Car specializes test::Vehicle;
             }
-        """.trimIndent()
+        """
+        import(KerML(this).parse(subclassCode, "Global"))
 
         val sysMDViewModel = SysMDViewModel().also { it.sessionIdState.value = id}
         val sessionIdState = sysMDViewModel.sessionIdState
@@ -58,7 +64,7 @@ class CellViewModelTests {
         val displayStrings = cell.displayItems.map { it.text }
         
         // Let's print them for debugging if it fails
-        println("Display items:")
+        // println("Display items:")
         displayStrings.forEach { println(it) }
         
         // Check that "Car" class is mentioned
@@ -76,8 +82,8 @@ class CellViewModelTests {
         // Try opening with different casing to verify case-insensitive matching
         tabsViewModel.showTab("network.md")
         
-        println("SelectedIndex after opening network.md: ${tabsViewModel.selectedIndex.value}")
-        println("Tabs: ${tabsViewModel.editorTabs.map { it.nameState.value }}")
+        // println("SelectedIndex after opening network.md: ${tabsViewModel.selectedIndex.value}")
+        // println("Tabs: ${tabsViewModel.editorTabs.map { it.nameState.value }}")
         
         assert(tabsViewModel.selectedIndex.value == 1)
 

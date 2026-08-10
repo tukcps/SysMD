@@ -1,9 +1,17 @@
-- SysMD 4.3+ (Roadmap for future) shall target
-    - an ANTLR-based parser with comprehensive standard, based on the reference implementation
-    - a cleaner solver-api,
-    - dispatcher for function- and operator-overloading.
+- SysMD 4.4+ (Roadmap 2027)
+    - consolidates standard conformance,
+    - further work on dispatcher for overloading functions & solver
 
-- SysMD 4.2 refines the existing framework, and mostly prepares 4.3, add some features missing, and fix bugs.
+- SysMD 4.3+ (Roadmap 2026) targets
+    - an ANTLR-based parser with comprehensive standard, generated from the standard's EBNF,
+    - Metamodel classes, generated from the XMI of OMF,
+    - a cleaner solver-api,
+    - dispatcher for function- and operator-overloading (late versions)
+
+- SysMD 4.2 refines the existing framework,
+    - prepares 4.3,
+    - extends UI,
+    . adds some features missing, and fixes bugs.
 
 - SysMD 4.0+ implements parts of the platform-specific REST API of SysML v2 (projects endpoint, but not versioning).
   It permits access to the local projects and elements.

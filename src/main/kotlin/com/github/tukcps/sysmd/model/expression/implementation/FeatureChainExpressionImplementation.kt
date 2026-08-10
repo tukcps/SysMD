@@ -3,36 +3,31 @@ package com.github.tukcps.sysmd.model.expression.implementation
 import com.github.tukcps.sysmd.model.expression.FeatureChainExpression
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.util.SimpleName
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
 /** '.' has infinitely higher precedence than proper operators, but e.g. `(a.b.c).d.e` still forces parens  */
 private const val dotPrecedence = 1000_000
 
 class FeatureChainExpressionImplementation(
+	model : Session,
+	elementId : Uuid = Uuid.random(),
 	declaredName: SimpleName? = null,
 	declaredShortName: SimpleName? = null,
-	typeConstraint: MutableList<String> = mutableListOf(),
-	expression: String? = null,
-	elementType: String = "FeatureChainExpression"
 ) : FeatureChainExpression, OperatorExpressionImplementation(
-	declaredName = declaredName,
-	declaredShortName = declaredShortName,
-	typeConstraint = typeConstraint,
-	expression = expression,
-	elementType = elementType
+    model,
+    elementId = elementId,
+    declaredName = declaredName,
+    declaredShortName = declaredShortName,
 ) {
 	init {
 		operator = "."
 	}
 
+	/** Non-Standard. We don't implement FeatureChain as own element type. */
 	override var targetFeature : String? = null
 
-	override fun clone() = FeatureChainExpressionImplementation(
-		declaredName= declaredName,
-		declaredShortName = declaredShortName,
-		typeConstraint = typeConstraint,
-		expression = expression,
-		elementType = elementType,
-	).also {
+	override fun clone() = FeatureChainExpressionImplementation(model).also {
 		it.updateFrom(this)
 	}
 
@@ -41,7 +36,7 @@ class FeatureChainExpressionImplementation(
 		super.updateFrom(template)
 
 		if(template is FeatureChainExpressionImplementation)
-			targetFeature = template.targetFeature
+			this.targetFeature = template.targetFeature
 	}
 
 	override fun toAstString(b : StringBuilder, precedence : Int)

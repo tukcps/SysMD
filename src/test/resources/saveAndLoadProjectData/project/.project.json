@@ -1,11 +1,11 @@
 {
-  "name" : "name",
-  "version" : "*",
-  "description" : "description",
-  "license" : null,
-  "maintainer" : null,
-  "website" : null,
-  "topic" : null,
-  "usage" : [ ],
-  "id" : "e97c3fc1-3b90-4b0e-a934-474ee0dde8bf"
+    "name": "name",
+    "version": "*",
+    "description": "description",
+    "license": null,
+    "maintainer": null,
+    "website": null,
+    "topic": null,
+    "usage": [],
+    "id": "dda871b2-7487-4941-88e5-5cabd0f8d365"
 }

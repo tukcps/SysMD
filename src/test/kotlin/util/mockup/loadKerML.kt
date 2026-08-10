@@ -17,18 +17,13 @@ import com.github.tukcps.sysmd.services.session.Session
 fun Session.loadKerML(
     input: String,
     runlevel: Runlevel = settings.runlevel,
-    catchExceptions: Boolean = settings.catchExceptions,
 ){
-    settings.catchExceptions = catchExceptions
     settings.runlevel = runlevel
-    KerML(this).parse(input)
+    val elements = KerML(this).parse(input)
+    import(elements)
     try {
-       initialize(settings.runlevel)
+        initialize(settings.runlevel)
     }  catch (exception: SysMDError) {
-        status.fatal("initialization failed", cause = exception)
-        if (!settings.catchExceptions)
-            throw exception
+        status.fatal("Building/analyzing model failed", cause = exception)
     }
 }
-
-

@@ -1,17 +1,18 @@
 package services
 
-import com.github.tukcps.sysmd.services.repositories.local.ElementData
+import com.github.tukcps.sysmd.model.datamodel.ElementData
+import com.github.tukcps.sysmd.model.generated.ElementType
 import com.github.tukcps.sysmd.services.repositories.local.toMarkdownString
-import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
 
 class ToMarkdownTests {
     @Test
     fun testCellsToMarkdown() {
         val cells = listOf(ElementData(
-            elementId = UUID.randomUUID(),
-            type = "TextualRepresentation",
+            elementId = Uuid.random(),
+            type = ElementType.TextualRepresentation,
             language = "YAML",
             body = """
 ---
@@ -22,8 +23,8 @@ logo:         Files/icon.png
 ---
         """.trimIndent()),
             ElementData(
-                elementId = UUID.randomUUID(),
-                type = "TextualRepresentation",
+                elementId = Uuid.random(),
+                type = ElementType.TextualRepresentation,
                 language = "Markdown",
                 body = """
                     # Testheading
@@ -32,16 +33,16 @@ logo:         Files/icon.png
                 """.trimIndent()
             ),
             ElementData(
-                elementId = UUID.randomUUID(),
-                type = "TextualRepresentation",
+                elementId = Uuid.random(),
+                type = ElementType.TextualRepresentation,
                 language = "SysML",
                 body = """
                     package testSysML;
                 """.trimIndent()
             ),
             ElementData(
-                elementId = UUID.randomUUID(),
-                type = "TextualRepresentation",
+                elementId = Uuid.random(),
+                type = ElementType.TextualRepresentation,
                 language = "KerML",
                 body = """
                     package testKerML;

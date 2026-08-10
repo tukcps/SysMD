@@ -4,7 +4,7 @@ import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.rest.entities.interchange.Meta
 import com.github.tukcps.sysmd.services.Runlevel
-import com.github.tukcps.sysmd.services.repositories.local.ElementData
+import com.github.tukcps.sysmd.model.datamodel.ElementData
 import com.github.tukcps.sysmd.services.repositories.local.Language
 import com.github.tukcps.sysmd.services.repositories.local.ProjectData
 import kotlin.uuid.ExperimentalUuidApi
@@ -115,13 +115,13 @@ interface SessionService {
     /**
      * Updates a new model in abstract representation by a given piece of code.
      * The update is made by running the compiler and further actions defined by runlevel.
-     * @param session The session with the project.
+     * @param sessionId The session with the project.
      * @param code The code from which the abstract representation will be created.
      * @param language Either SysML or KerML.
      * @param namespace The namespace that will be updated by adding the compiled code; null for Global.
      * @return The session status that eventually contains error messages.
      */
-    fun updateModel(session: Uuid, code: String, language: Language, namespace: String?, runlevel: Runlevel): SessionStatus?
+    fun updateModel(sessionId: Uuid, code: String, language: Language, namespace: String?, runlevel: Runlevel): SessionStatus?
 
     /**
      * Gets all elements of the session's abstract representation model.

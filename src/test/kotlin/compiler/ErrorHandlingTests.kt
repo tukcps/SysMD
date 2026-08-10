@@ -5,6 +5,7 @@ import com.github.tukcps.sysmd.cspsolver.VariableImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.MembershipImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.SpecializationImplementation
+import com.github.tukcps.sysmd.services.Runlevel
 import util.assertIssue
 import util.mockup.loadKerML
 import util.testSession
@@ -19,13 +20,13 @@ class ErrorHandlingTests {
      */
     @Test
     fun errorMessageDependencyStringTest() = testSession("ScalarValues")  {
-        var p = FeatureImplementation(declaredName = "XXX")
+        var p = FeatureImplementation(this, declaredName = "XXX")
         p.expression = "asdf +++ asdf" // nonsense
         p = addOwnedMember(p, global)
-        addOwnedRelationship(SpecializationImplementation(p, anything), p)
+        addOwnedRelationship(SpecializationImplementation(this, specific = p, general = repo.anything!!), p)
         solver.addVariable(p.path(),
             VariableImplementation(
-                MembershipImplementation(memberElement = p),
+                MembershipImplementation(this, memberElement = p),
                 solver=solver,
                 baseType = Variable.BaseType.Real,
                 path = p.path(),
@@ -52,19 +53,16 @@ class ErrorHandlingTests {
 
     @Test
     fun missingSuperClassError() = testSession {
-        loadKerML("Engine :> ; ")
-        solver.propagate()
+        loadKerML("Engine :> ; ", Runlevel.MODEL)
         assertIssue("Expected")
     }
 
     @Test
-    fun loadFailed() = testSession {
+    fun wringSuperClassError() = testSession("ScalarValues") {
         loadKerML("""
             package SportsCar;
             type Porsche911 :> SportsCar;
-        """)
-        solver.propagate()
-        solver.propagate()
+        """, Runlevel.MODEL)
         assertIssue("SportsCar", "Expected issue with SportsCar that is inappropriate type")
     }
 

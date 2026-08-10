@@ -6,7 +6,6 @@ import com.github.tukcps.sysmd.rest.entities.api.entities.Project
 import com.github.tukcps.sysmd.rest.entities.api.entities.ProjectUsage
 import kotlin.uuid.Uuid
 
-
 /**
  * Status: Complete and compliant 1-2025.
  */

@@ -9,8 +9,8 @@ Time can be presented in the following units: second (s), minute (min), hour (h)
 
 Examples:
 ```
-   t1: Real = 10.0 [s] {:>> unit = "s"; :>> range = "20..50";}  
-   t2: Real = 10.0 [min] {:>> unit = "min"; :>> range = "20..50";} 
+   t1: Real = 10.0 [s] {:>> range = 20..50 [s];}  
+   t2: Real = 10.0 [min] {:>> range = 20..50 [min];} 
 ```
 
 ## Date

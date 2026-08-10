@@ -9,6 +9,8 @@ import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.compiler.scanner.Token
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.quantities.VectorQuantity
+import com.github.tukcps.sysmd.quantities.contains
+import com.github.tukcps.sysmd.quantities.isZero
 import com.github.tukcps.sysmd.quantities.ite
 import kotlin.math.max
 import kotlin.math.min
@@ -119,7 +121,8 @@ class AstBinOp(
                 l.downQuantity = downQuantity + prevR.upQuantity
                 r.downQuantity = prevL.upQuantity - downQuantity
             }
-            TIMES -> {
+            /* In the case of e.g. `0 = x * 0`, x becomes a don't care, but AADD division will yield an infeasible value */
+            TIMES if !(downQuantity.values.all { 0 in it } && (prevL.upQuantity.value.isZero || prevR.upQuantity.value.isZero)) -> {
                 l.downQuantity = downQuantity / prevR.upQuantity
                 r.downQuantity = downQuantity / prevL.upQuantity
             }

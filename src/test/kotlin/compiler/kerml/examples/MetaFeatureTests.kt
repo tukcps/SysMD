@@ -41,7 +41,7 @@ class MetaFeatureTests {
                 feature approved[1] : Boolean;
                 feature approver[1] : String;
             }
-            metadata ApprovalAnnotation about Design {
+            metadata ApprovalAnnotationF typed by ApprovalAnnotation about Design {
                 feature redefines approved = true;
                 feature redefines approver = "John Smith";
             }

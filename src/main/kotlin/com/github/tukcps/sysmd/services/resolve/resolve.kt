@@ -2,9 +2,12 @@ package com.github.tukcps.sysmd.services.resolve
 
 import com.github.tukcps.sysmd.exceptions.ElementNotFoundException
 import com.github.tukcps.sysmd.exceptions.Issue
-import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.model.kerml.Element
+import com.github.tukcps.sysmd.model.kerml.Feature
+import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.implementation.findRecursive
 import com.github.tukcps.sysmd.model.util.QualifiedName
+import com.github.tukcps.sysmd.model.datamodel.toElementData
 
 
 /**
@@ -26,14 +29,14 @@ inline fun <reified T: Element> Namespace.resolveOld(
     // if (this is Feature && this.redefining != null)
     //     return redefining!!.findRecursive(qualifiedName, emptySet(), emptySet(), true, searchInSuperClass, resolveReferences ) as T?
 
-    if (qualifiedName == "Global" && this == model!!.global) return model!!.global as T
+    if (qualifiedName == "Global" && this == model.global) return model.global as T
 
-    var found = findRecursive(qualifiedName, emptySet(), emptySet(),true, searchInSuperClass)
+    val found = findRecursive(qualifiedName, emptySet(), emptySet(),true, searchInSuperClass)
 
     if (found?.memberElement is T?)
         return found?.memberElement as T?
 
-    model?.status?.error("'$qualifiedName' could be resolved, but is of wrong type", element = found,
+    model.status.error("'$qualifiedName' could be resolved, but is of wrong type", element = found.toElementData(),
         cause = ElementNotFoundException(this, "'$qualifiedName' could be resolved, but is of wrong type"),
         kind = Issue.Kind.ERROR_UNRESOLVED_NAME
     )

@@ -1,32 +1,27 @@
 package constraintnettests.functionstests
 
-import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.services.Runlevel
-import io.github.tukcps.aadd.IDD
-import kotlin.test.Test
-import kotlin.test.Ignore
 import util.assertNoIssues
 import util.mockup.loadKerML
-import util.mockup.loadSysMLv2
 import util.testSession
-import kotlin.math.*
-import kotlin.test.*
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class AbsTests {
 
         @Test
         fun absTestReal() = testSession("Ranges") {
             loadKerML("""
-                feature qa: Ranges::RealInRange {:>> range = "5.0 .. 5.0";}
-                feature qb: Ranges::RealInRange {:>> range = "1.0 .. 5.0";} 
-                feature qc: Ranges::RealInRange {:>> range = "0.0 .. 1.0";}
-                feature qd: Ranges::RealInRange {:>> range = "0.0 .. 0.0";} 
-                feature qe: Ranges::RealInRange {:>> range = "-1.0 .. 5.0";} 
-                feature qf: Ranges::RealInRange {:>> range = "-5.0 .. 5.0";}
-                feature qg: Ranges::RealInRange {:>> range = "-5.0 .. 1.0";}
-                feature qh: Ranges::RealInRange {:>> range = "-5.0 .. -1.0";}
-                feature qi: Ranges::RealInRange {:>> range = "-5.0 .. 0.0";}
-                feature qj: Ranges::RealInRange {:>> range = "-5.0 .. -5.0";} 
+                feature qa: Ranges::RealInRange {:>> range = 5.0 .. 5.0;}
+                feature qb: Ranges::RealInRange {:>> range = 1.0 .. 5.0;} 
+                feature qc: Ranges::RealInRange {:>> range = 0.0 .. 1.0;}
+                feature qd: Ranges::RealInRange {:>> range = 0.0 .. 0.0;} 
+                feature qe: Ranges::RealInRange {:>> range = -1.0 .. 5.0;} 
+                feature qf: Ranges::RealInRange {:>> range = -5.0 .. 5.0;}
+                feature qg: Ranges::RealInRange {:>> range = -5.0 .. 1.0;}
+                feature qh: Ranges::RealInRange {:>> range = -5.0 .. -1.0;}
+                feature qi: Ranges::RealInRange {:>> range = -5.0 .. 0.0;}
+                feature qj: Ranges::RealInRange {:>> range = -5.0 .. -5.0;} 
                 feature a: ScalarValues::Real = abs(qa); 
                 feature b: ScalarValues::Real = abs(qb); 
                 feature c: ScalarValues::Real = abs(qc); 
@@ -65,10 +60,9 @@ class AbsTests {
         @Test
         fun absTestInteger() = testSession("Ranges") {
             loadKerML("""
-                feature qa: Ranges::IntegerInRange {:>> range = "5 .. 5";}
+                feature qa: Ranges::IntegerInRange {:>> range = 5;}
                 feature a: ScalarValues::Integer = abs(qa);
-                """)
-            solver.propagate()
+            """, Runlevel.ALL)
             assertNoIssues()
             assertEquals(5L, solver.getVariable("a")!!.min())
             assertEquals(5L, solver.getVariable("a")!!.max())
@@ -77,8 +71,8 @@ class AbsTests {
         @Test
         fun absTestEvalDown() = testSession("Ranges") {
             loadKerML(input = """
-                feature a: Ranges::RealInRange {:>> range = "2.0..8.0";}
-                feature b: Ranges::RealInRange = abs(a) {:>> range = "6.0..6.0";}
+                feature a: Ranges::RealInRange {:>> range = 2.0..8.0;}
+                feature b: Ranges::RealInRange = abs(a) {:>> range = 6.0..6.0;}
             """)
             solver.propagate()
             assertNoIssues()
@@ -91,7 +85,7 @@ class AbsTests {
         @Test
         fun absTestIntegerNegative() = testSession("Ranges") {
             loadKerML("""
-                feature qa: Ranges::IntegerInRange {:>> range = "-3 .. -3";}
+                feature qa: Ranges::IntegerInRange {:>> range = -3 .. -3;}
                 feature a: ScalarValues::Integer = abs(qa);
             """)
             solver.propagate()
@@ -103,9 +97,9 @@ class AbsTests {
         @Test
         fun absTestInteger_negative_range() = testSession("Ranges") {
             loadKerML("""
-                feature qa: Ranges::IntegerInRange {:>> range = "-5 .. -3";}
+                feature qa: Ranges::IntegerInRange {:>> range = -5 .. -3;}
                 feature a: ScalarValues::Integer = abs(qa);
-                """)
+            """)
             solver.propagate()
             assertNoIssues()
             assertEquals(3, solver.getVariable("a")!!.idd().getRange().min)
@@ -115,7 +109,7 @@ class AbsTests {
         @Test
         fun absTestIntegerMixed() = testSession("Ranges") {
             loadKerML("""
-                feature qa: Ranges::IntegerInRange {:>> range = "-3 .. 3";}
+                feature qa: Ranges::IntegerInRange {:>> range = -3 .. 3;}
                 feature a: ScalarValues::Integer = abs(qa);
             """)
             solver.propagate()
@@ -127,10 +121,9 @@ class AbsTests {
         @Test
         fun absTestEvalDownMixed() = testSession("Ranges") {
             loadKerML(input = """
-                feature a: Ranges::RealInRange {:>> range = "-8.0..8.0";}
-                feature b: Ranges::RealInRange = abs(a) {:>> range = "6.0..6.0";}
-            """)
-            solver.propagate()
+                feature a: Ranges::RealInRange {:>> range = -8.0..8.0;}
+                feature b: Ranges::RealInRange = abs(a) {:>> range = 6.0;}
+            """, Runlevel.ALL)
             assertNoIssues()
             val result = solver.getVariable("a")!!
             assertEquals(-6.0, result.min(), 0.000001)

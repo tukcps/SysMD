@@ -150,7 +150,7 @@ object Rest {
         return this.extractKeyFromBody("@id", body)
     }
 
-    fun extractEntityUUIDFromBody(body: String?):String? {
+    fun extractEntityUuidFromBody(body: String?):String? {
         return this.extractKeyFromBody("entityId",body)
     }
 

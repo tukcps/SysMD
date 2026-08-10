@@ -1,27 +1,34 @@
 package com.github.tukcps.sysmd.model.kerml.implementation
 
+import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Package
 import com.github.tukcps.sysmd.model.util.SimpleName
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
 
-class PackageImplementation(
+open class PackageImplementation(
+    model: Session,
+    elementId : Uuid = Uuid.random(),
     declaredName: SimpleName? = null,
     declaredShortName: SimpleName? = null,
-    isLibraryElement: Boolean = false,
     isStandard: Boolean = false,
-    elementType: String = "Package"
 ): Package, NamespaceImplementation(
+    model,
+    elementId = elementId,
     declaredName = declaredName,
     declaredShortName = declaredShortName,
-    elementType = elementType
 ) {
     init {
         this.isStandard = (owner?.isStandard == true) or isStandard
-        this.isLibraryElement = (owner?.isStandard == true) or isLibraryElement
     }
 
-    override fun clone(): Package = PackageImplementation().also { klon ->
-        klon.isLibraryElement = isLibraryElement
+    override fun updateFrom(template: Element) {
+        isStandard = template.isStandard
+        super.updateFrom(template)
+    }
+
+    override fun clone(): Package = PackageImplementation(model).also { klon ->
         klon.isStandard = isStandard
         klon.updateFrom(this)
     }

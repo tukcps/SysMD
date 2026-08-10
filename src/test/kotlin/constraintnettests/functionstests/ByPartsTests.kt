@@ -1,16 +1,11 @@
 package constraintnettests.functionstests
 
-import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.services.Runlevel
-import io.github.tukcps.aadd.IDD
-import kotlin.test.Test
-import kotlin.test.Ignore
 import util.assertNoIssues
 import util.mockup.loadKerML
-import util.mockup.loadSysMLv2
 import util.testSession
-import kotlin.math.*
-import kotlin.test.*
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class ByPartsTests {
 
@@ -18,14 +13,14 @@ class ByPartsTests {
         fun byParts() = testSession("Occurrences", "Ranges") {
             loadKerML("""
                 class c {
-                    feature a: Ranges::RealInRange {:>> range = "0..10";}
+                    feature a: Ranges::RealInRange {:>> range = 0..10;}
                 }
                 class c1 :> c {
-                    feature a: Ranges::RealInRange {:>> range = "0..5";}
+                    feature a: Ranges::RealInRange {:>> range = 0..5;}
                 }
 
                 class c2 :> c {
-                    feature a: Ranges::RealInRange {:>> range = "0..2";}
+                    feature a: Ranges::RealInRange {:>> range = 0..2;}
                 }
 
                 class b {
@@ -45,20 +40,20 @@ class ByPartsTests {
         fun byPartsEvalDown() = testSession("Occurrences", "Ranges") {
             loadKerML("""
                 class c {
-                    feature a: Ranges::RealInRange {:>> range = "0..10";}
+                    feature a: Ranges::RealInRange {:>> range = 0..10;}
                 }
                 class c1 :> c {
-                    feature a: Ranges::RealInRange {:>> range = "0..5";}
+                    feature a: Ranges::RealInRange {:>> range = 0..5;}
                 }
 
                 class c2 :> c {
-                    feature a: Ranges::RealInRange {:>> range = "0..2";}
+                    feature a: Ranges::RealInRange {:>> range = 0..2;}
                 }
 
                 class b {
                     feature cElemem1: c1; 
                     feature cElemen2: c2; 
-                    feature a: Ranges::RealInRange = byParts(a) {:>> range = "1..3";} 
+                    feature a: Ranges::RealInRange = byParts(a) {:>> range = 1..3;} 
                 }
             """, Runlevel.ALL)
             assertNoIssues()

@@ -1,23 +1,27 @@
 package com.github.tukcps.sysmd.model.expression.implementation
 
 import com.github.tukcps.sysmd.model.expression.MetadataAccessExpression
-import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.model.kerml.Element
+import com.github.tukcps.sysmd.model.kerml.MetadataFeature
+import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.kerml.implementation.MembershipImplementation
-import com.github.tukcps.sysmd.model.util.*
+import com.github.tukcps.sysmd.model.util.SimpleName
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
 class MetadataAccessExpressionImplementation(
+	model : Session,
+	elementId : Uuid = Uuid.random(),
 	declaredName: SimpleName? = null,
 	declaredShortName: SimpleName? = null,
-	typeConstraint: MutableList<String> = mutableListOf(),
 	expression: String? = null,
-	elementType: String = "MetadataAccessExpression"
 ) : MetadataAccessExpression, ExpressionImplementation(
+	model,
+	elementId = elementId,
 	declaredName = declaredName,
 	declaredShortName = declaredShortName,
-	typeConstraint = typeConstraint,
-	expression = expression,
-	elementType = elementType)
-{
+	expression = expression
+) {
 	override val metaclassFeature : MetadataFeature
 		get() = TODO("Not yet implemented")
 
@@ -29,8 +33,8 @@ class MetadataAccessExpressionImplementation(
 			if(value !== null)
 			{
 				assert(referencedElement === null)
-				value.model = this.model
-				model!!.addOwnedRelationship(MembershipImplementation(
+				model.addOwnedRelationship(MembershipImplementation(
+					model,
 					memberElement = value,
 					membershipOwningNamespace = this
 				))
@@ -58,19 +62,11 @@ class MetadataAccessExpressionImplementation(
 	}
 
 	override fun clone() = MetadataAccessExpressionImplementation(
+		model,
 		declaredName = declaredName,
 		declaredShortName = declaredShortName,
-		typeConstraint = typeConstraint,
 		expression = expression
 	).also {
 		it.updateFrom(this)
-	}
-
-	override fun updateFrom(template : Element)
-	{
-		super.updateFrom(template)
-
-		if(template is MetadataAccessExpression && referencedElement === null)
-			this.referencedElement = template.referencedElement
 	}
 }

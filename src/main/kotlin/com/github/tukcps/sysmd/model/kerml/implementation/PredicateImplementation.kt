@@ -2,17 +2,22 @@ package com.github.tukcps.sysmd.model.kerml.implementation
 
 import com.github.tukcps.sysmd.model.kerml.Predicate
 import com.github.tukcps.sysmd.model.util.SimpleName
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
-class PredicateImplementation(
+open class PredicateImplementation(
+    model : Session,
+    elementId : Uuid = Uuid.random(),
     declaredName: SimpleName? = null,
-    declaredShortName: SimpleName? = null,
-    elementType: String = "Predicate",
+    declaredShortName: SimpleName? = null
 ): Predicate, FunctionImplementation(
+    model,
+    elementId = elementId,
     declaredName = declaredName,
-    declaredShortName = declaredShortName,
-    elementType = elementType
+    declaredShortName = declaredShortName
 ) {
-    override fun clone(): PredicateImplementation =
-        PredicateImplementation(declaredName, declaredShortName).also { klon-> updateFrom(this) }
+    override fun clone() = PredicateImplementation(model, declaredName = declaredName, declaredShortName = declaredShortName).also {
+        updateFrom(this)
+    }
 
 }

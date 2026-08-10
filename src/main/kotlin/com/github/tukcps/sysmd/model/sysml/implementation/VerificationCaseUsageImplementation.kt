@@ -1,12 +1,31 @@
 package com.github.tukcps.sysmd.model.sysml.implementation
 
-import com.github.tukcps.sysmd.model.sysml.VerificationCaseUsage
-import com.github.tukcps.sysmd.model.util.SimpleName
+import com.github.tukcps.sysmd.model.kerml.Feature
+import com.github.tukcps.sysmd.model.kerml.Function
+import com.github.tukcps.sysmd.model.sysml.*
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
-class VerificationCaseUsageImplementation(
-    declaredShortName: SimpleName? ?= null,
-    declaredName: SimpleName? ?= null,
-    elementType: String = "VerificationCaseUsage",
-): VerificationCaseUsage, ActionUsageImplementation(
-    elementType = elementType
-)
+class VerificationCaseUsageImplementation(model : Session,elementId : Uuid = Uuid.random()) :
+    VerificationCaseUsage,
+    ActionUsageImplementation(model,elementId = elementId)
+{
+    override val verificationCaseDefinition: VerificationCaseDefinition?
+        get() = TODO("Not yet implemented")
+    override val verifiedRequirement: MutableList<RequirementUsage>
+        get() = TODO("Not yet implemented")
+    override val actorParameter: MutableList<PartUsage>
+        get() = TODO("Not yet implemented")
+    override val caseDefinition: CaseDefinition?
+        get() = TODO("Not yet implemented")
+    override val objectiveRequirement: RequirementUsage?
+        get() = TODO("Not yet implemented")
+    override val subjectParameter: Usage
+        get() = TODO("Not yet implemented")
+    override val calculationDefinition: Function?
+        get() = TODO("Not yet implemented")
+
+    override fun modelLevelEvaluable(visited: Set<Feature>): Boolean {
+        TODO("Not yet implemented")
+    }
+}

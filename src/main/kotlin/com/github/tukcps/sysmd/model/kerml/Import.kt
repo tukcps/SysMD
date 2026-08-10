@@ -19,7 +19,12 @@ interface Import: Relationship {
     enum class VisibilityKind {
         Public,
         Private,
-        Protected
+        Protected;
+
+        companion object {
+            fun fromString(value: String?): VisibilityKind? =
+                entries.find { it.name.equals(value?.trim(), ignoreCase = true) }
+        }
     }
 
     var visibility: VisibilityKind

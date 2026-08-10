@@ -19,11 +19,23 @@ standard library package Ranges {
 
     For example, consider the following model:
 
-
-        feature x: ScalarValues::Real, Ranges::OneRealIn = f(something) {
-            min :>> -3.141; // constant, may not change.
-            max :>> 100.0   // constant, may not change.
+        feature x: ScalarValues::Real, Ranges::OneInRange = f(something) {
+            range :>> [-3.141 .. 3.142];
         }
+
+       It inherits the types Real, which specifies that the result is generally from the domain of the Reals.
+       Furthermore, the type OnInRange that adds an invariant to the domain.
+       It specifies that there must exist **at least one** element in the range that satisfies all constraints in
+       a system.
+       An example is the choice from a range of possible values, e.g., by parameterization.
+
+       Note that another marker `AllInRange` specifies that **all* elements in the range must allow to
+       satisfy all constraints in a system.
+       An example is the specification of operation ranges - here, one usually wants that a system is operational
+       for **all** values in a range.
+
+       Finally, we distinguish ontologically between parameterization (open choices by an engineer)
+       and external uncertainties, where a free choice is not meaningful (e.g. the value of $\pi$.)
     */
 
     doc /*
@@ -40,9 +52,9 @@ standard library package Ranges {
 
     // Abstract Range from which a Real is chosen
     datatype InRange :> Base::Anything {
-        feature range: ScalarValues::String;
-        // inv thatIsInRange { (min <= that) and (that <= max) }
-        // Automatically added by SysMD's compiler
+        feature range: ScalarValues::ScalarValue;
+        // inv thatIsInRange { (that.min <= that.range.min) and (that.range.max <= that.max) }
+        // Automatically added and globally solved by SysMD's compiler
     }
     
     datatype AllInRange :> InRange; 
@@ -53,11 +65,10 @@ standard library package Ranges {
     datatype RealInRange :> ScalarValues::Real, InRange; 
     datatype AllIntegerInRange :> ScalarValues::Integer, AllInRange; 
     datatype AllRealInRange :> ScalarValues::Real, AllInRange; 
+
     datatype BooleanInSpec :> ScalarValues::Boolean {
-        feature range: ScalarValues::String; // Not final, should be in another file
+        feature range: ScalarValues::Boolean; // Links with solver that handels unknown bools
     }
-    datatype QuantityInRange :> RealInRange {
-        feature unit: ScalarValues::String;
-    }    
+    datatype QuantityInRange :> RealInRange { feature unit: ScalarValues::String; }
     datatype AllQuantityOf :> QuantityInRange; 
 }

@@ -1,5 +1,6 @@
 package com.github.tukcps.sysmd.model.kerml
 
+import com.github.tukcps.sysmd.model.generated.elementType
 
 
 /**
@@ -43,8 +44,6 @@ interface Relationship: Element {
      */
     fun relationshipString(from: String="from", to: String = "to"): String =
         "$from " +
-        source.joinToString(", ") { it.escapedName()?:"[${it.elementType}]" }  + " $to " +
+        source.joinToString(", ") { it.escapedName()?:"[${it.elementType().name}]" }  + " $to " +
         target.joinToString(", ") { it.escapedName()?:"(no name)" }
-
-    override fun clone(): Relationship
 }

@@ -1,4 +1,3 @@
-@file:JvmName("Strings")
 @file:Suppress("FunctionName", "GrazieInspection")
 
 package com.github.tukcps.sysmd.compiler.parser.kerml
@@ -12,9 +11,13 @@ import com.github.tukcps.sysmd.compiler.parser.util.Unsupported
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.compiler.semantics.kerml.*
 import com.github.tukcps.sysmd.exceptions.SyntaxError
-import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.model.kerml.implementation.*
-import io.github.tukcps.aadd.values.IntegerRange
+import com.github.tukcps.sysmd.model.datamodel.IdentificationKind
+import com.github.tukcps.sysmd.model.datamodel.IdentifiedByName
+import com.github.tukcps.sysmd.model.generated.ElementType
+import com.github.tukcps.sysmd.model.util.IntegerRange
+import com.github.tukcps.sysmd.model.util.MultiplicityRange
+import com.github.tukcps.sysmd.model.util.TypeConstraint
+import com.github.tukcps.sysmd.rest.entities.api.entities.Identified
 
 /**
  * SPECIALIZES is a pseudo-lexical element that is either
@@ -33,19 +36,19 @@ fun KerML.SPECIALIZES() {
  */
 fun KerML.SpecializationPart() {
     SPECIALIZES()
-    QualifiedName().also        { semantics.addSpecialization(it) }
+    QualifiedName().semantics       { addSpecialization(it) }
     noOrMore(start = COMMA) {
         COMMA.consume()
-        QualifiedName().also    { semantics.addSpecialization(it) }
+        QualifiedName().semantics   { addSpecialization(it) }
     }
 }
 
 fun KerML.SuperclassingPart() {
     SPECIALIZES()
-    QualifiedName().also        { semantics.addSubclassification(it) }
+    QualifiedName().semantics       { addSubclassification(it) }
     noOrMore(start = COMMA) {
         COMMA.consume()
-        QualifiedName().also    { semantics.addSubclassification(it) }
+        QualifiedName().semantics   { addSubclassification(it) }
     }
 }
 
@@ -54,16 +57,15 @@ fun KerML.SuperclassingPart() {
  */
 fun KerML.ConjugationPart() {
     CONJUGATES.consume()
-    QualifiedName().also    { semantics.addConjugation(it) }
+    QualifiedName().semantics       { addConjugation(it) }
 }
-
 
 /**
  *      TypePrefix = ('abstract')? (PrefixMetadataMember)*
  */
 fun KerML.TypePrefix() {
     if (ABSTRACT in semantics.prefixes)
-        semantics.element<Type>().isAbstract = true
+        semantics.element.isAbstract = true
 }
 
 /**
@@ -71,7 +73,7 @@ fun KerML.TypePrefix() {
  *
  *      Type = TypePrefix 'type' TypeDeclaration TypeBody
  */
-fun KerML.Type() = TypeActions<Type>(semantics, creator = ::TypeImplementation).parse {
+fun KerML.Type() = TypeAction(semantics, ElementType.Type).parse {
     TypePrefix()
     TYPE.consume()
     TypeDeclaration()
@@ -84,9 +86,11 @@ fun KerML.Type() = TypeActions<Type>(semantics, creator = ::TypeImplementation).
  *          TypeRelationshipPart*
  */
 fun KerML.TypeDeclaration() {
-    ALL.optional            { semantics.element<Type>().isSufficient = true }
-    Identification().also   { semantics.create(it) }
-    OwnedMultiplicity().also { if (it != IntegerRange(1, 1)) semantics.addMultiplicity(it) }
+    ALL.optional                { semantics.element.isSufficient = true }
+    Identification().semantics  { action.setIdentification(it) }
+    optional(LCBRACE) {
+        OwnedMultiplicity()
+    }
     oneOrMore(SPECIALIZES or DPGT or CONJUGATES) {
         alternatives {
             SPECIALIZES or DPGT starts { SpecializationPart() }
@@ -117,10 +121,10 @@ fun KerML.TypeRelationshipPart() {
 fun KerML.DisjoiningPart() {
     DISJOINT.consume()
     FROM.consume()
-    QualifiedName().also { semantics.addDisjoining(it) }
+    QualifiedName().semantics       { addDisjoining(it) }
     noOrMore(start = COMMA) {
         COMMA.consume()
-        QualifiedName().also { semantics.addDisjoining(it) }
+        QualifiedName().semantics   { addDisjoining(it) }
     }
 }
 
@@ -129,10 +133,10 @@ fun KerML.DisjoiningPart() {
  */
 fun KerML.UnioningPart() {
     UNIONS.consume()
-    QualifiedName().also     { semantics.addUnioning(it) }
+    QualifiedName().semantics     { addUnioning(it) }
     noOrMore(start = COMMA) {
         COMMA.consume()
-        QualifiedName().also { semantics.addUnioning(it) }
+        QualifiedName().semantics { addUnioning(it) }
     }
 }
 
@@ -141,10 +145,10 @@ fun KerML.UnioningPart() {
  */
 fun KerML.IntersectingPart() {
     INTERSECTS.consume()
-    QualifiedName().also     { semantics.addIntersecting(it) }
+    QualifiedName().semantics     { addIntersecting(it) }
     noOrMore(start = COMMA) {
         COMMA.consume()
-        QualifiedName().also { semantics.addIntersecting(it) }
+        QualifiedName().semantics { addIntersecting(it) }
     }
 }
 
@@ -153,10 +157,10 @@ fun KerML.IntersectingPart() {
  */
 fun KerML.DifferencingPart() {
     DIFFERENCES.consume()
-    QualifiedName().also     { semantics.addDifferencing(it) }
+    QualifiedName().semantics     { addDifferencing(it) }
     noOrMore(start = COMMA) {
         COMMA.consume()
-        QualifiedName().also { semantics.addDifferencing(it) }
+        QualifiedName().semantics { addDifferencing(it) }
     }
 }
 
@@ -165,7 +169,7 @@ fun KerML.DifferencingPart() {
  *
  *      Classifier = TypePrefix 'classifier' ClassifierDeclaration TypeBody
  */
-fun KerML.Classifier() = ClassifierActions<Classifier>(this.semantics, creator =  ::ClassifierImplementation).parse {
+fun KerML.Classifier() = TypeAction(this.semantics, ElementType.Classifier).parse {
     TypePrefix()
     CLASSIFIER.consume()
     ClassifierDeclaration()
@@ -181,9 +185,11 @@ fun KerML.Classifier() = ClassifierActions<Classifier>(this.semantics, creator =
  *          TypeRelationshipPart*
  */
 fun KerML.ClassifierDeclaration() {
-    ALL.optional             { semantics.element<Classifier>().isSufficient = true }
-    Identification().also    { semantics.create(it) }
-    OwnedMultiplicity().also { if (it != IntegerRange(1,1) ) semantics.addMultiplicity(it)}
+    ALL.optional                    { semantics.element.isSufficient = true }
+    Identification().semantics      { action.setIdentification(it) }
+    optional(LCBRACE) {
+        OwnedMultiplicity()
+    }
     alternatives {
         SPECIALIZES or DPGT starts  { SuperclassingPart() }
         CONJUGATES starts           { ConjugationPart() }
@@ -194,11 +200,10 @@ fun KerML.ClassifierDeclaration() {
     }
 }
 
-
 /**
  *      DataType :- "datatype" ClassifierDeclaration TypeBody
  */
-fun KerML.Datatype() = DataTypeActions<DataType>(semantics, ::DataTypeImplementation).parse {
+fun KerML.Datatype() = TypeAction(semantics, ElementType.DataType, isImplicit = "Base::DataValue").parse {
     DATATYPE.consume()
     ClassifierDeclaration()
     TypeBody()
@@ -210,7 +215,7 @@ fun KerML.Datatype() = DataTypeActions<DataType>(semantics, ::DataTypeImplementa
  *      Class = TypePrefix 'class' ClassifierDeclaration TypeBody
  *          Note: Calling production handles prefixes before.
  */
-fun KerML.Class() = ClassActions(semantics, ::ClassImplementation).parse {
+fun KerML.Class() = ClassAction(semantics).parse {
     TypePrefix()
     CLASS.consume()
     ClassifierDeclaration()
@@ -245,10 +250,10 @@ fun KerML.SpecificType() =
         else -> QualifiedName()
     }
 
-fun KerML.GeneralType(): Feature =
+fun KerML.GeneralType(): Identified =
     when(nextToken.kind) {
-        DOT ->  FeatureChain().let { return unresolvedFeatureChain(it) }
-        else -> QualifiedName().let { return unresolvedFeature(it) }
+        DOT ->  FeatureChain().let { return IdentifiedByName(name=it, IdentificationKind.FeatureChain) }
+        else -> QualifiedName().let { return IdentifiedByName(name=it, IdentificationKind.Feature) }
     }
 
 /**
@@ -275,16 +280,15 @@ fun KerML.FeatureChain(): String {
  *      OwnedConjugation = [QualifiedName] | FeatureChain
  */
 val CONJUGATION_START = setOf(CONJUGATION, CONJUGATE)
-fun KerML.Conjugation() {
-    val conjugation = RelationshipActionsImpl<Conjugation>(semantics, ::ConjugationImplementation)
+fun KerML.Conjugation() = OwnedRelationshipAction(semantics, ElementType.Conjugation).parse {
     if (token.kind ==CONJUGATION) {
         CONJUGATION.consume()
-        Identification().also { conjugation.create(it) }
-    } else conjugation.create(null)
+        Identification()    .semantics { setIdentification(it) }
+    }
     CONJUGATE.consume()
-    QualifiedName().also { conjugation.created.conjugatedType = unresolvedType(it) }
+    QualifiedName()         .semantics { setSource(IdentifiedByName(it, IdentificationKind.Type)) }
     CONJUGATES.consume()
-    QualifiedName().also { conjugation.created.originalType = unresolvedType(it) }
+    QualifiedName()         .semantics { setTarget(IdentifiedByName(it, IdentificationKind.Type)) }
     RelationshipBody()
 }
 
@@ -320,7 +324,9 @@ fun KerML.Disjoining() {
  *          )
  *          ValuePart? TypeBody
  */
-fun KerML.Feature() = FeatureActions<Feature>(semantics, ::FeatureImplementation).parse {
+fun KerML.Feature(membershipOverride : ElementType? = null) = FeatureAction(
+    semantics, owningMembershipType = membershipOverride ?: ElementType.FeatureMembership
+).parse {
     FEATURE.optional()
     FeatureDeclaration()
     optional(valuePartStart) {
@@ -336,7 +342,7 @@ fun KerML.Feature() = FeatureActions<Feature>(semantics, ::FeatureImplementation
  *          'expr' FeatureDeclaration ValuePart?
  *          FunctionBody
  */
-fun KerML.ExpressionFeature() = FeatureActions<Feature>(semantics, ::FeatureImplementation).parse {
+fun KerML.ExpressionFeature() = FeatureAction(semantics, ElementType.Feature).parse {
     EXPR.consume()
     FeatureDeclaration()
     optional(valuePartStart) {
@@ -355,26 +361,27 @@ fun KerML.ExpressionFeature() = FeatureActions<Feature>(semantics, ::FeatureImpl
  *          FeatureRelationshipPart*
  */
 fun KerML.FeatureDeclaration() {
-    ALL.optional { semantics.element<Feature>().isSufficient = true }
+    ALL.optional { semantics.element.isSufficient = true }
     alternatives {
         NAME_LIT or LT starts {
-            Identification().also { semantics.create(it) }
+            Identification().also { semantics.action.setIdentification(it) }
             alternatives {
                 featureSpecializationPartStart starts { FeatureSpecializationPart() }
                 CONJUGATION starts { ConjugationPart() }
-                others {  }
+                others {  } // Optional
             }
         }
-        featureSpecializationPartStart starts { semantics.create(null); FeatureSpecializationPart() }
-        CONJUGATION starts { semantics.create(null); ConjugationPart() }
+        featureSpecializationPartStart starts { FeatureSpecializationPart() }
+        CONJUGATION starts { ConjugationPart() }
+        // ? It seems that in contradiction to grammar, features without identification are allowed ... ?
+        others { }
     }
     noOrMore(start = setOf(CHAINS, FEATURED, INVERSE, DISJOINT, UNIONS, DIFFERENCES, INTERSECTS)) {
         FeatureRelationshipPart()
     }
 
     // The Following is a non-standard extension / might be replaced later by the standard
-    TypeConstraint().also { semantics.addTypeConstraint(it) }
-    UnitConstraint().also { semantics.addUnitConstraint(it) }
+    TypeConstraint().semantics { addTypeConstraint(it) }
 }
 
 /**
@@ -402,15 +409,17 @@ fun KerML.FeatureSpecializationPart() {
     alternatives {
         featureSpecializationStart starts {
             oneOrMore(featureSpecializationStart) { FeatureSpecialization()  }
-            optional( {token.kind == LCBRACE && nextToken.kind == INTEGER_LIT} ) { MultiplicityPart().also { semantics.addMultiplicity(it) } }
+            optional( {token.kind == LCBRACE && nextToken.kind == INTEGER_LIT} ) {
+                MultiplicityPart()
+            }
             noOrMore(featureSpecializationStart) { FeatureSpecialization() }
         }
         LCBRACE then TIMES  starts {
-            MultiplicityPart().also { semantics.addMultiplicity(it) }
+            MultiplicityPart()
             noOrMore(featureSpecializationStart) { FeatureSpecialization() }
         }
         LCBRACE then INTEGER_LIT starts {
-            MultiplicityPart().also { semantics.addMultiplicity(it) }
+            MultiplicityPart()
             noOrMore(featureSpecializationStart) { FeatureSpecialization() }
         }
     }
@@ -426,39 +435,66 @@ val featureSpecializationPartStart get() = featureSpecializationStart + LCBRACE
  *
  *      MultiplicityPart = OwnedMultiplicity? ( 'ordered' ( 'nonunique')? | 'nonunique' ('ordered')?))
  */
-fun KerML.MultiplicityPart(): IntegerRange {
-    val multiplicity = OwnedMultiplicity()
+fun KerML.MultiplicityPart() {
+    OwnedMultiplicity()
     alternatives {
-        ORDERED starts { ORDERED.consume(); NONUNIQUE.optional() }
-        NONUNIQUE starts { NONUNIQUE.consume(); ORDERED.optional() }
+        ORDERED starts {
+            ORDERED.consume         { semantics.element.isOrdered = true }
+            NONUNIQUE.optional      { semantics.element.isUnique = false }
+        }
+        NONUNIQUE starts {
+            NONUNIQUE.consume       { semantics.element.isUnique = false }
+            ORDERED.optional        { semantics.element.isOrdered = true }
+        }
         others {  }
     }
-    return multiplicity
 }
-
 
 /**
  * Parses an optional Multiplicity; if it is not present, the result is [1, 1]
  *
  *      Multiplicity :- ["[" (IntegerLiteral | "*") [".." ( IntegerLiteral | "*" ] ) "]"]
  */
-fun KerML.OwnedMultiplicity(): IntegerRange {
-    var multiplicity = IntegerRange(1, 1)
+fun KerML.OwnedMultiplicity() = MultiplicityAction(semantics).parse {
     optional(LCBRACE, consume = true) {
-        parseIntegerRange().also { multiplicity = it }
-        RCBRACE.consume()
+        parseMultiplicityRange().semantics { (action as MultiplicityAction).typeConstraint = TypeConstraint(it.toString()) }
+        RCBRACE.consume               { (semantics.action as TypeAction).multiplicityAdded = true}
     }
-    return multiplicity
+}
+
+/**
+ *      MultiplicityRange :- ConstInt [".." ConstInt]
+ */
+fun KerML.parseMultiplicityRange(): MultiplicityRange {
+    val result = MultiplicityRange(0L, null)
+    ConstInt().also {
+        if (consumedToken.kind == TIMES) {
+            result.min = 0
+        } else {
+            result.min = it; result.max = it
+        }
+    }
+    optional(DOTDOT, consume = true) {
+        ConstInt().also {
+            if (consumedToken.kind == TIMES) {
+                result.max = null
+            } else
+                result.max = it
+        }
+    }
+    if (result.min > (result.max ?: Long.MAX_VALUE))
+        throw SyntaxError(this, message = "max of range must be larger or equal min")
+    return result
 }
 
 /**
  *      IntegerRange :- ConstInt [".." ConstInt]
  */
 fun KerML.parseIntegerRange(): IntegerRange {
-    val result = IntegerRange(IntegerRange.Integers)
+    val result = IntegerRange(null, null)
     ConstInt().also {
         if (consumedToken.kind == TIMES) {
-            result.min = -Long.MIN_VALUE; result.max = Long.MAX_VALUE
+            result.min = null; result.max = null
         } else {
             result.min = it; result.max = it
         }
@@ -466,7 +502,7 @@ fun KerML.parseIntegerRange(): IntegerRange {
     optional(DOTDOT, consume = true) {
         ConstInt().also { result.max = it }
     }
-    if (result.min > result.max)
+    if ((result.min ?: Long.MIN_VALUE) > (result.max ?: Long.MAX_VALUE))
         throw SyntaxError(this, message = "max of range must be larger or equal min")
     return result
 }
@@ -531,8 +567,10 @@ fun KerML.FeatureRelationshipPart() {
  *
  *      TypeConstraint = ["(" (LiteralExpression [.. LiteralExpression])* | (true | false)* ")"]
  */
-fun KerML.TypeConstraint(): MutableList<String> {
-    val constraintSpec = mutableListOf<String>()
+fun KerML.TypeConstraint(): TypeConstraint {
+    val value = mutableListOf<String>()
+    var unit = ""
+
     if (tokenIs(LBRACE) &&
         nextToken.kind in setOf(MINUS, TIMES, INTEGER_LIT, FLOAT_LIT, STRING_LIT, TRUE, FALSE)) {
         LBRACE.consume()
@@ -545,37 +583,34 @@ fun KerML.TypeConstraint(): MutableList<String> {
                     DOTDOT.consume()
                     Number()                .also { max = it  }
                 }
-                constraintSpec.add("$min .. ${max?:min}")
+                value.add("$min .. ${max?:min}")
 
-                noOrMore(start = COMMA) { //Multiple constraints for vector
-                    COMMA.consume()
-                    var min: String? = null
-                    var max: String? = null
-                    Number()                    .also { min = it  }
+                noOrMore(start = COMMA) { // Multiple constraints for vector
+                    COMMA.consume             { min = null; max = null }
+                    Number()                  .also { min = it  }
                     optional(DOTDOT, noMatch = min) {
                         DOTDOT.consume()
-                        Number()                .also { max = it  }
+                        Number()              .also { max = it  }
                     }
-                    constraintSpec.add("$min .. ${max?:min}")
+                    value.add("$min .. ${max?:min}")
                 }
             }
             (TRUE or FALSE) starts {
                 while(!tokenIs(RBRACE)){
                     if(consumeIfTokenIs(TRUE))
-                        constraintSpec.add("true")
+                        value.add("true")
                     else if(consumeIfTokenIs(FALSE))
-                        constraintSpec.add("false")
+                        value.add("false")
                 }
             }
             (STRING_LIT) starts {
-                val string = token.string
-                consume()
-                constraintSpec.add(string)
+                consume { value.add(token.string) }
             }
         }
+        UnitConstraint().also { unit = it?:"" }
         RBRACE.consume()
     }
-    return constraintSpec
+    return TypeConstraint(value, unit)
 }
 
 /**
@@ -627,11 +662,11 @@ fun KerML.FeaturePrefix() {
         PORTION   then  { semantics.prefixes.add(PORTION) }
         others          {  }
     }
-    CONST.optional   { semantics.prefixes.add(READONLY) }
+    CONST.optional   { semantics.prefixes.add(CONST) }
     DERIVED.optional    { semantics.prefixes.add(DERIVED) }
     END.optional        { semantics.prefixes.add(END) }
 }
-val FEATURE_PREFIX_START = setOf(CONST, IN, OUT, INOUT, COMPOSITE, PORTION, DERIVED, END)
+val FeaturePrefixStart = setOf(IN, OUT, INOUT, COMPOSITE, PORTION, CONST, DERIVED, END)
 
 /**
  *      TypeBodyElement =
@@ -645,7 +680,7 @@ fun KerML.TypeBodyElement() {
     noOrMore(HASHTAG) { PrefixMetadataMember()}
     alternatives {
         nonFeatureElementStart starts       { NonFeatureElement() }
-        FEATURE_PREFIX_START   starts       { FeatureElement() }
+        FeaturePrefixStart starts           { FeatureElement() }
         featureElementStart starts          { FeatureElement() }
         ALIAS starts                        { AliasMember() }
         IMPORT starts                       { Import() }

@@ -1,36 +1,35 @@
 package com.github.tukcps.sysmd.model.expression.implementation
 
-import com.github.tukcps.sysmd.model.expression.*
-import com.github.tukcps.sysmd.model.expression.functions.*
-import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.model.expression.OperatorExpression
+import com.github.tukcps.sysmd.model.expression.functions.AstFunction
+import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Function
-import com.github.tukcps.sysmd.model.util.*
+import com.github.tukcps.sysmd.model.kerml.Type
+import com.github.tukcps.sysmd.model.util.SimpleName
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
 open class OperatorExpressionImplementation(
+	model: Session,
+	elementId : Uuid = Uuid.random(),
 	declaredName: SimpleName? = null,
 	declaredShortName: SimpleName? = null,
-	typeConstraint: MutableList<String> = mutableListOf(),
 	expression: String? = null,
-	elementType: String = "OperatorExpression"
 ) : OperatorExpression, InvocationExpressionImplementation(
+	model,
+	elementId = elementId,
 	declaredName = declaredName,
 	declaredShortName = declaredShortName,
-	typeConstraint = typeConstraint,
 	expression = expression,
-	elementType = elementType
 )
 {
-	//Non-standard
-	override var operatorPrecedence: Array<String>? = null
-
 	override var operatorAst: AstFunction? = null
 
 	override fun clone() = OperatorExpressionImplementation(
+		model,
 		declaredName= declaredName,
 		declaredShortName = declaredShortName,
-		typeConstraint = typeConstraint,
 		expression = expression,
-		elementType = elementType,
 	).also {
 		it.updateFrom(this)
 	}
@@ -42,7 +41,6 @@ open class OperatorExpressionImplementation(
 		if(template is OperatorExpressionImplementation)
 		{
 			operator = template.operator
-			operatorPrecedence = template.operatorPrecedence
 			operatorAst = template.operatorAst
 		}
 	}
@@ -51,7 +49,7 @@ open class OperatorExpressionImplementation(
 	@Deprecated("BaseFunction, DataFunctions, ControlFunctions not yet implemented")
 	override fun instantiatedType() : Type? {
 		operator?.let {
-			return model!!.global.resolve(operator!!)?.member<Function>() //returns null if not initialized/not resolved
+			return model.global.resolve(operator!!)?.member<Function>() //returns null if not initialized/not resolved
 		}
 		return null
 	}
@@ -121,7 +119,7 @@ open class OperatorExpressionImplementation(
 				argument[0].toAstString(b, Int.MAX_VALUE)
 			}
 
-			else -> super<InvocationExpressionImplementation>.toAstString(b, precedence)
+			else -> super.toAstString(b, precedence)
 		}
 
 	}

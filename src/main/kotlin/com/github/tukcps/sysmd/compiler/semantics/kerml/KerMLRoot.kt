@@ -5,110 +5,76 @@ package com.github.tukcps.sysmd.compiler.semantics.kerml
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.LIBRARY
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.STANDARD
 import com.github.tukcps.sysmd.compiler.semantics.ActionsContext
-import com.github.tukcps.sysmd.compiler.semantics.Identification
-import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.model.kerml.implementation.*
+import com.github.tukcps.sysmd.model.datamodel.IdentificationKind
+import com.github.tukcps.sysmd.model.datamodel.IdentifiedByName
+import com.github.tukcps.sysmd.model.generated.ElementType
+import com.github.tukcps.sysmd.model.kerml.Import
+import com.github.tukcps.sysmd.model.kerml.Namespace
+import com.github.tukcps.sysmd.model.kerml.Relationship
 import com.github.tukcps.sysmd.model.util.QualifiedName
-import com.github.tukcps.sysmd.model.util.SimpleName
 
 /**
- * Class with functions that add a comment.
- * If the semantic actions object was build with a generatedElementsAnnotation not null,
- * the created package will be added to it as well.
- *
- * @param context holds the core data needed by all semantic actions
+ * Semantic action that builds an owned relationship and returns it.
  */
-open class CommentActions<T: Comment>(
+open class OwnedRelationshipAction(
     context: ActionsContext,
-    creator: (SimpleName?, SimpleName?) -> T
-): AnnotatingElementActions<T>(context, creator) {
-    /**
-     * Adds an annotation (=relationship) to the about-elements.
-     * @param about List of elements related to the comment
-     */
-    fun addAbout(about: List<QualifiedName>) {
-        about.forEach {
-            val annotation = AnnotationImplementation(
-                owningRelatedElement = created,
-                annotatingElement = created,
-                annotatedElement = UnresolvedElement( it)
-            )
-            context.model.addOwnedRelationship(annotation,  created)
-        }
-    }
-}
-
-/**
- * Class with functions that add a comment.
- * If the semantic actions object was build with a generatedElementsAnnotation not null,
- * the created package will be added to it as well.
- *
- * @param context holds the core data needed by all semantic actions
- */
-class DocumentationActions(
-    context: ActionsContext,
-    var body: String = "",
-): CommentActions<Documentation>(
+    type: ElementType,
+): RelationshipAction(
     context = context,
-    creator = ::DocumentationImplementation,
-) {
-    override fun create(identification: Identification?) {
-        super.create(identification)
-        created.body = body.trim()
+    type = type
+)
+
+/**
+ * Class with functions that add a namespace.
+ * @param context holds the context information needed by all semantic actions
+ * @param type type that is used to create the element
+ */
+open class NamespaceAction(
+    context: ActionsContext,
+    type: ElementType,
+    owningMembershipType: ElementType? = ElementType.OwningMembership,
+): ElementAction(context, type, owningMembershipType) {
+
+    var visibility = Import.VisibilityKind.Public
+
+    override fun beforeProduction() {
+        super.beforeProduction()
+        context.owningRelationship?.visibility = (context.visibility?:Import.VisibilityKind.Public)
     }
 }
 
 /**
- * Class with functions that add a textual representation.
- * @param context holds the core data needed by all semantic actions
+ * Class with functions that add a dependency.
+ * @param context holds the context information needed by all semantic actions
  */
-open class AnnotatingElementActions<T: AnnotatingElement>(
-    context: ActionsContext,
-    creator: (SimpleName?, SimpleName?) -> T,
-): SemanticAction<T>(context, creator)
+class DependencyAction(
+    context: ActionsContext
+): ElementAction(
+    context = context,
+    type = ElementType.Dependency,
+    owningMembershipType = ElementType.OwningMembership,
+) {
+    override fun afterProduction() {
+        element.isStandard = STANDARD in context.prefixes
+        if (LIBRARY in context.prefixes)
+            element.type = ElementType.LibraryPackage
+        super.afterProduction()
+    }
+}
 
 /**
  * Class with functions that add a namespace.
  * If the semantic actions object was build with a generatedElementsAnnotation not null,
  * the created package will be added to it as well.
- *
  * @param context holds the core data needed by all semantic actions
+ * @param type type that is used to create the element
+ * @param owningMembership if null, an annotating membership will be inserted automatically.
  */
-open class NamespaceActions<T: Namespace>(
+open class AnnotatingElementAction(
     context: ActionsContext,
-    creator: (SimpleName?, SimpleName?) -> T,
-) : SemanticAction<T>(context, creator) {
-
-    override fun init() {
-        context.pushOwningNamespace(this as NamespaceActions<Namespace>)
-        super.init()
-    }
-
-    override fun finish() {
-        super.finish()
-        context.popOwningNamespace()
-    }
-
-    override fun create(identification: Identification?) {
-        super.create(identification)
-        created.isStandard = STANDARD in context.prefixes
-        created.isLibraryElement = LIBRARY in context.prefixes
-    }
-}
-
-interface RelationshipActions<T: Relationship> {
-    var created: T
-    val context: ActionsContext
-}
-
-/**
- * Actions for Membership
- */
-open class MembershipActions<T: Membership>(
-    context: ActionsContext,
-    creator: (SimpleName?, SimpleName?) -> T
-): RelationshipActions<T>, SemanticAction<T>(context, creator)
-
+    type: ElementType,
+    owningMembership: ElementType = ElementType.OwningMembership,
+): ElementAction(context, type, owningMembership)
 
 /**
  * Class with functions that add an import.
@@ -117,69 +83,53 @@ open class MembershipActions<T: Membership>(
  *
  * @param context holds the core data needed by all semantic actions
  */
-class ImportActions(
+class ImportAction(
     context: ActionsContext,
-    var isImportAll: Boolean = false,
-    var isRecursive: Boolean = false,
-    var importQualifiedName: QualifiedName? = null,
-): SemanticAction<Import>(context, ::NamespaceImportImplementation), RelationshipActions<Import> {
+    type: ElementType = ElementType.NamespaceImport
+): OwnedRelationshipAction(
+    context = context,
+    type = type             // Overwritten directly in semantic actions
+) {
+    var isImportAll: Boolean = false
+    var isRecursive: Boolean = false
+    var importQualifiedName: QualifiedName? = null
 
-    fun createNamespaceImport() {
+    override fun beforeProduction() {
+        super.beforeProduction()
+        element.visibility = context.visibility
         if (context.visibility == null) {
-            context.model.status.info("import must be explicit public or private", context.compiler)
+            context.status.info("import must be explicit 'public' or 'private'", element)
         }
-        created = NamespaceImportImplementation()
-        created.isRecursive = isRecursive
-        created.isImportAll = isImportAll
-        setImportedNamespace()
-        setImportingNamespace(context.element())
-        super.create(null)
     }
 
-    fun createMembershipImport() {
-        if (context.visibility == null) {
-            context.model.status.info("import must be explicit public or private", context.compiler)
-        }
-        created = MembershipImportImplementation()
-        created.isRecursive = isRecursive
-        created.isImportAll = isImportAll
-        setImportedMember()
-        setImportingNamespace(context.element())
-        super.create(null)
-    }
+    override fun afterProduction() {
+        element.type = type
+        val ref = IdentifiedByName(importQualifiedName!!, when(element.type) {
+            ElementType.NamespaceImport -> IdentificationKind.Namespace
+            else -> IdentificationKind.Membership
+        })
 
-    fun parseImport(production: ImportActions.() -> Unit){
-        production()
-    }
-
-    override fun finish() {}
-
-    fun setImportingNamespace(owningNamespace: Namespace) {
-       created.source = mutableListOf(owningNamespace)
-    }
-
-    fun setImportedNamespace() {
-        created.target = mutableListOf(UnresolvedNamespace(importQualifiedName))
-    }
-
-    fun setImportedMember() {
-        created.target = mutableListOf(UnresolvedMembership(importQualifiedName))
+        element.target = mutableListOf(ref)
+        super.afterProduction()
     }
 }
 
-/**
- * Action that creates a Specialization or kind thereof
- */
+
+// Graveyard
+@Deprecated("...")
+interface RelationshipActions<T: Relationship> {
+    var created: T
+    val context: ActionsContext
+}
+
+@Deprecated("No.")
 class RelationshipActionsImpl<T: Relationship>(
     context: ActionsContext,
-    creator: (SimpleName?, SimpleName?) -> T
+    creator: () -> T
 ): SemanticAction<T>(context, creator), RelationshipActions<T>
 
-
-/**
- * Adds a dependency to the model
- */
-class DependencyActions<T: Dependency>(
+@Deprecated("No.")
+open class NamespaceActions<T: Namespace>(
     context: ActionsContext,
-    creator: (SimpleName?, SimpleName?) -> T
-): SemanticAction<Dependency>(context, creator), RelationshipActions<Dependency>
+    creator: () -> T,
+) : SemanticAction<T>(context, creator)

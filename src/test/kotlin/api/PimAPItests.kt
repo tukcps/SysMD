@@ -1,20 +1,25 @@
 package api
 
+import com.github.tukcps.sysmd.model.datamodel.ElementData
+import com.github.tukcps.sysmd.model.generated.ElementType
+import com.github.tukcps.sysmd.model.kerml.Element
+import com.github.tukcps.sysmd.rest.CommitImplementation
 import com.github.tukcps.sysmd.rest.entities.interchange.Meta
-import com.github.tukcps.sysmd.services.repositories.local.ElementData
 import com.github.tukcps.sysmd.services.repositories.local.ProjectData
 import com.github.tukcps.sysmd.services.session.SessionManager.elementNavigationService
 import com.github.tukcps.sysmd.services.session.SessionManager.projectService
 import com.github.tukcps.sysmd.services.session.SessionManager.sessionService
-import io.github.tukcps.sysmlv2.api.entities.CommitImplementation
 import kotlinx.datetime.Instant
+import org.junit.jupiter.api.parallel.Execution
+import org.junit.jupiter.api.parallel.ExecutionMode
 import util.testProjectSession
-import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
 
+@Execution(ExecutionMode.SAME_THREAD)
 class PimApiServicesTests {
 
     /**
@@ -45,16 +50,17 @@ class PimApiServicesTests {
     fun getElements() = testProjectSession("Base") {
         val project = projectService.getProjects().first { it.name == "testSession" }
         assertNotNull(project)
-        val elements = elementNavigationService.getElements(project, CommitImplementation(id= UUID.randomUUID()))
+        val elements = elementNavigationService.getElements(project, CommitImplementation())
         assertNotNull(elements)
         assertTrue(elements.isNotEmpty())
     }
 
     @Test
     fun getElementByIdTest()  = testProjectSession("Base") {
+        val base = global.resolve("Base")!!.member<Element>()
         val project = projectService.getProjects().first { it.name == "testSession" }
         assertNotNull(project)
-        val element = elementNavigationService.getElementById(project, CommitImplementation(id=UUID.randomUUID()) , UUID.fromString("077fe9c5-4ed5-5d26-ba54-7f4ded3ef9a9"))
+        val element = elementNavigationService.getElementById(project, CommitImplementation() , base?.elementId!!)
         assertNotNull(element)
         assertEquals("Base", element.declaredName)
     }
@@ -63,7 +69,7 @@ class PimApiServicesTests {
     fun getRootElements() = testProjectSession {
         val project = projectService.getProjects().first { it.name == "testSession" }
         assertNotNull(project)
-        val elements = elementNavigationService.getRootElements(project, CommitImplementation(id=UUID.randomUUID()))
+        val elements = elementNavigationService.getRootElements(project, CommitImplementation())
         assertNotNull(elements)
         assertEquals(1, elements.size)
         // assertEquals("Base", elements.first().name)
@@ -137,8 +143,8 @@ class PimApiServicesTests {
             session.id,
             "a",
             listOf(ElementData(
-                UUID.randomUUID(),
-                type = "TextualRepresentation",
+                Uuid.random(),
+                type = ElementType.TextualRepresentation,
                 body = "content",
                 language = "SysML"
             ))

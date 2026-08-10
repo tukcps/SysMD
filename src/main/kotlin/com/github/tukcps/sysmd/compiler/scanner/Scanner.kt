@@ -22,7 +22,7 @@ import kotlin.math.pow
  *  @param keywords a map of keywords
  */
 open class Scanner(
-    var indices: IntRange?=null,
+    protected var indices: IntRange?=null,
     val skip: Set<Token.Kind> = setOf(WHITESPACE, NOTE),
     val keywords: Map<String, Token.Kind>
 ) {
@@ -30,7 +30,7 @@ open class Scanner(
      * The input as a String. Setting it will reset i, lineNo, columnNo, token, etc.:
      * however, it will not change the mode.
      **/
-    var input: CharSequence = ""           // Giving it a new input resets all states.
+    var input: String = ""           // Giving it a new input resets all states.
         set(it) {
             position = indices?.first?:0
             currLineNo = 1

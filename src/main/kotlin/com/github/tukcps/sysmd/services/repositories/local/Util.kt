@@ -1,5 +1,7 @@
 package com.github.tukcps.sysmd.services.repositories.local
 
+import com.github.tukcps.sysmd.model.datamodel.ElementData
+import com.github.tukcps.sysmd.model.generated.ElementType
 import com.github.tukcps.sysmd.services.repositories.local.Language.Companion.toLanguage
 import kotlinx.io.buffered
 import kotlinx.io.files.Path
@@ -13,7 +15,7 @@ import org.commonmark.ext.gfm.tables.TablesExtension
 import org.commonmark.node.*
 import org.commonmark.parser.IncludeSourceSpans
 import org.commonmark.parser.Parser
-import java.util.*
+import kotlin.uuid.Uuid
 
 
 /**
@@ -97,19 +99,40 @@ fun Path.getCells(): List<ElementData> {
             is ThematicBreak -> { beforeFirstHeading = false }
             is FencedCodeBlock -> {
                 val language = node.info
-                cells.add(ElementData(UUID.randomUUID(), type = "TextualRepresentation", language = language, body = node.literal.trim('\n')))
+                cells.add(
+                    ElementData(
+                        Uuid.random(),
+                        type = ElementType.TextualRepresentation,
+                        language = language,
+                        body = node.literal.trim('\n')
+                    )
+                )
                 afterCodeBlock = true
             }
             is Heading -> {
                 afterCodeBlock = false
                 beforeFirstHeading = false
                 val str = getMdSource(node, inputLines)
-                cells.add(ElementData(UUID.randomUUID(), type = "TextualRepresentation", language = "Markdown", body = str))
+                cells.add(
+                    ElementData(
+                        Uuid.random(),
+                        type = ElementType.TextualRepresentation,
+                        language = "Markdown",
+                        body = str
+                    )
+                )
             }
             is YamlFrontMatterBlock -> {
                 if (afterCodeBlock || beforeFirstHeading) {
                     val str = getMdSource(node, inputLines)
-                    cells.add(ElementData(UUID.randomUUID(), type = "TextualRepresentation", language = Language.YAML.toString(), body=str))
+                    cells.add(
+                        ElementData(
+                            Uuid.random(),
+                            type = ElementType.TextualRepresentation,
+                            language = Language.YAML.toString(),
+                            body = str
+                        )
+                    )
                     afterCodeBlock = false
                 }
                 var yaml = node.firstChild as YamlFrontMatterNode?
@@ -122,7 +145,14 @@ fun Path.getCells(): List<ElementData> {
                 // FencedCodeBlock and Heading include all respective
                 if (afterCodeBlock || beforeFirstHeading) {
                     val str = getMdSource(node, inputLines)
-                    cells.add(ElementData(UUID.randomUUID(), type = "TextualRepresentation", language = Language.MARKDOWN.toString(), body=str))
+                    cells.add(
+                        ElementData(
+                            Uuid.random(),
+                            type = ElementType.TextualRepresentation,
+                            language = Language.MARKDOWN.toString(),
+                            body = str
+                        )
+                    )
                     afterCodeBlock = false
                 }
             }
@@ -149,15 +179,6 @@ fun toMarkdownString(cells: List<ElementData>): String {
             str.append("```\n")
     }
     return str.toString()
-}
-
-/**
- * Transform a list of textual representations in different languages,
- * or documentations to a Markdown string.
- * @param cells list of reps or docs,
- */
-fun toSysML(cells: List<ElementData>): String {
-    TODO()
 }
 
 /** The languages handled in SysMD Notebook. */

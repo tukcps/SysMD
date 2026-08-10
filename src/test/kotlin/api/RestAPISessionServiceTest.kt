@@ -7,6 +7,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.github.tukcps.sysmd.SysMdRunner
 import com.github.tukcps.sysmd.model.sysml.AttributeUsage
 import com.github.tukcps.sysmd.rest.Rest
+import com.github.tukcps.sysmd.rest.entities.api.entities.responseModels.ElementResponse
 import com.github.tukcps.sysmd.rest.entities.requests.CodeRequest
 import com.github.tukcps.sysmd.rest.entities.requests.IndexEntry
 import com.github.tukcps.sysmd.rest.entities.requests.ProjectMetaRequest
@@ -18,9 +19,9 @@ import com.github.tukcps.sysmd.services.repositories.local.Language
 import com.github.tukcps.sysmd.services.repositories.local.ProjectData
 import com.github.tukcps.sysmd.services.session.SessionManager
 import com.github.tukcps.sysmd.services.session.SessionManager.projectService
+import com.github.tukcps.sysmd.services.util.JsonSupport
 import com.github.tukcps.sysmd.settings
 import com.github.tukcps.sysmd.ui.readBytes
-import io.github.tukcps.sysmlv2.api.entities.responseModels.ElementResponse
 import kotlinx.io.files.Path
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -112,7 +113,7 @@ class RestAPISessionServiceTest {
     fun getAllElementsOfSessionTest() = testProjectSession("Base") {
         val response = Rest.get("/session/elements", id.toString())
         assertEquals(HttpStatus.OK.value(), response.statusCode.value())
-        val elements = jsonMapper.readValue(response.body, Array<ElementResponse>::class.java)
+        val elements: List<ElementResponse> = JsonSupport.json.decodeFromString(response.body!!)
         assertTrue(elements.isNotEmpty())
     }
 
@@ -123,10 +124,10 @@ class RestAPISessionServiceTest {
             language = Language.SYS_ML.toString(),
             namespace = "",
             runlevel = Runlevel.MODEL.toString(),
-            body = "package test;",
+            body = "package test;"
         )
         val codeRequestJson = jsonMapper.writeValueAsString(codeRequest)
-        val session = SessionManager.createSession(project)
+        val session = SessionManager.createSession(project, "SysMLLibraries")
         val response = Rest.put("/session/model", codeRequestJson, sessionId = session.id.toString())
         val test = session.global.resolve("test")?.memberElement
         assertNotNull(test)
@@ -197,9 +198,9 @@ class RestAPISessionServiceTest {
     }
 
     @Test fun getSubtypesTest() = testProjectSession("ScalarValues") {
-        val response = Rest.get("/session/elements/${anything.elementId}/subtypes", id.toString())
+        val response = Rest.get("/session/elements/${repo.anything!!.elementId}/subtypes", id.toString())
         assertEquals(HttpStatus.OK.value(), response.statusCode.value())
-        val subtypes = jsonMapper.readValue(response.body, Array<ElementResponse>::class.java)
+        val subtypes: List<ElementResponse> = JsonSupport.json.decodeFromString(response.body!!)
         assertTrue(subtypes.isNotEmpty())
     }
 }

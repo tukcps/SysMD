@@ -1,28 +1,16 @@
 package com.github.tukcps.sysmd.model.kerml.implementation
 
 import com.github.tukcps.sysmd.model.kerml.Structure
-import com.github.tukcps.sysmd.model.util.SimpleName
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
 /**
  * A Class that is an occurrence
  */
-open class StructureImplementation(
-    declaredName: SimpleName? = null,
-    declaredShortName: SimpleName? = null,
-    elementType: String = "Structure",
-): Structure, ClassImplementation(
-    declaredName=declaredName,
-    declaredShortName=declaredShortName,
-    elementType=elementType
-) {
-
-    override fun clone(): Structure {
-        return StructureImplementation(
-            declaredName = declaredName,
-            declaredShortName = declaredShortName,
-            elementType = elementType
-        ).also {
-            it.updateFrom(this)
-        }
+open class StructureImplementation(model : Session,elementId : Uuid = Uuid.random())
+    : Structure, ClassImplementation(model,elementId = elementId)
+{
+    override fun clone(): Structure = StructureImplementation(model).also {
+        it.updateFrom(this)
     }
 }

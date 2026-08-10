@@ -1,11 +1,10 @@
 import org.gradle.internal.os.OperatingSystem
 
-/*
+/**
  * Gradle build file for SysMD Notebook.
- * - gradle clean: cleans up.
- * - gradle build: builds it.
- * - gradle test: tests it.
- * - gradle publish: publishes it as Maven pom in the cpsgit repository.
+ * `gradle clean`: cleans up.
+ * `gradle build`: builds it.
+ * `gradle test`: tests it.
  *
  * IMPORTANT: in plugins, you must
  * - comment-out the kotlin version if you use it in a hierarchical Gradle build
@@ -13,14 +12,12 @@ import org.gradle.internal.os.OperatingSystem
  * - also set the value standalone according to your setup
  */
 group   = "com.github.tukcps"
-version = "4.2.7"               // must be number.number.number
+version = "4.3.0"               // must be number.number.number
 val aaddVersion = "0.1.15"
-val sysmlapiVersion = "3.9.12"
 val useMavenAADD = true
-val useMavenSysMLAPI = true
 
-if (JavaVersion.current() < JavaVersion.VERSION_21) {
-    throw GradleException("The build must be run with JVM 21 or newer.")
+if (JavaVersion.current() < JavaVersion.VERSION_25) {
+    throw GradleException("The build must be run with JVM 25 or newer.")
 } else {
     val versionFile = file("src/main/composeResources/files/version.txt")
     versionFile.createNewFile()
@@ -32,14 +29,14 @@ plugins {
     // Plugin that checks for updates of dependencies
     id("com.github.ben-manes.versions") version "0.53.0"
     id("idea")
-    kotlin("jvm") version "2.4.0"
-    kotlin("plugin.serialization") version "2.4.0"
-    id("org.springframework.boot") version "4.0.6"
+    kotlin("jvm") version "2.4.10"
+    kotlin("plugin.serialization") version "2.4.10"
+    id("org.springframework.boot") version "4.1.0"
     id("io.spring.dependency-management") version "1.1.7"
     alias(libs.plugins.jetbrainsCompose) apply true
     alias(libs.plugins.compose.compiler) apply true
     id("maven-publish")
-    kotlin("plugin.spring") version "2.3.21"
+    kotlin("plugin.spring") version "2.4.10"
 }
 
 // Repositories where to search
@@ -52,7 +49,7 @@ repositories {
 }
 
 kotlin {
-    jvmToolchain(21)
+    jvmToolchain(25)
 }
 
 // Dependencies
@@ -69,22 +66,17 @@ dependencies {
         implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0")
     }
 
-    if (!useMavenSysMLAPI) {
-        println("  *** using SysMLv2API from project clone in ./sysmlapi     ***")
-        implementation(project(":sysmlapi"))
-    } else {
-        println("  *** using SysML API $sysmlapiVersion from Maven repository        ***")
-        implementation("io.github.tukcps:sysmlapi:$sysmlapiVersion")
-    }
-
     // Logging via log4j and KMP kotlin-logging
     configurations.all { exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging") }
     implementation("org.springframework.boot:spring-boot-starter-log4j2")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json")
     implementation("io.github.oshai:kotlin-logging:8.0.4")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
     implementation("io.ktor:ktor-utils:3.5.0")
     implementation("io.ktor:ktor-http:3.5.0")
+
+    implementation("io.github.pdvrieze.xmlutil:serialization:0.90.2") // XML für KMP
+
 
     // For UUID version 5 (name-based)
     implementation("com.fasterxml.uuid:java-uuid-generator:5.1.0")
@@ -159,6 +151,8 @@ compose.resources {
 // Configuration of tasks
 tasks.test {
     useJUnitPlatform()
+    testLogging { showStandardStreams = true }
+    systemProperty("log4j2.level", "DEBUG")
 }
 
 /**
@@ -166,8 +160,9 @@ tasks.test {
  * For Windows, WiX-Tools 3.0 to 3.11.2 must be installed.
  * If it does not work, make bootJar explicit first and ensure that the folder 'libraries' is empty before.
  */
-tasks.register<Exec>("sysMDPackage") {
+tasks.register<Exec>("generateSysMDInstaller") {
     description = "Creates the SysMD installer"
+    group = "sysmd"
     dependsOn("bootJar")
 
     val os = OperatingSystem.current()
@@ -228,12 +223,12 @@ tasks.named<Delete>("clean") {
     )
 }
 
-/**
- * Source set for generated sources from OMG XMI
- */
+tasks.named("compileKotlin") {
+    dependsOn("generateMetamodel")
+}
+
 kotlin {
     sourceSets.main {
-        kotlin.srcDir(layout.buildDirectory.dir("generatedAntlr"))
         kotlin.srcDir(layout.buildDirectory.dir("generated/source/sysmd/main/kotlin"))
     }
 }
@@ -286,10 +281,12 @@ fun registerGeneratorTask(
         group = "sysmd"
         this.description = description
 
+        // this ensures that `generateMetamodel` only runs if the outputs are out of date.
+        if(target === null)
+            outputs.dir(layout.buildDirectory.dir("source/main/kotlin"))
+
         dependsOn(generatorSourceSet.classesTaskName)
-
         mainClass.set("com.github.tukcps.sysmd.model.generator.GeneratorMain")
-
         classpath = generatorSourceSet.runtimeClasspath
 
         target?.let {
@@ -330,7 +327,6 @@ registerGeneratorTask(
     description = "Generates the SysMD element hierarchy."
 )
 
-/* not in v2.4.x
 registerGeneratorTask(
     name = "generateElementFactory",
     target = "factory",
@@ -353,7 +349,7 @@ registerGeneratorTask(
     name = "generateElementTypeResolver",
     target = "typeResolver",
     description = "Generates runtime metamodel type resolution."
-) */
+)
 
 /**
  * Runs the metamodel generator tests.
@@ -366,14 +362,4 @@ tasks.register<Test>("generatorTest") {
     classpath = generatorTestSourceSet.runtimeClasspath
 
     useJUnitPlatform()
-}
-
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-    if (name == "compileKotlin") {
-        dependsOn("generateElementType", "generateElementHierarchy")
-    }
-}
-
-tasks.named("bootRun") {
-    dependsOn("generateElementType", "generateElementHierarchy")
 }

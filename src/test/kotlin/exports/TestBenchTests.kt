@@ -19,7 +19,7 @@ class TestBenchTests {
             
             // Library instances --> SystemC classes
             part def Amplifier isA Base::Anything {
-                attribute gain: Quantities::ScalarQuantityValue = [0.0 .. 100.0] dB {:>> unit = "dB";}
+                attribute gain: Quantities::ScalarQuantityValue = [0.0 .. 100.0] dB;
             }
             
             // Concrete model --> SystemC instances of library classes
@@ -31,7 +31,7 @@ class TestBenchTests {
                     out port output{
                        attribute value: ScalarValues::Real;  
                     }   
-                    attribute gain: Quantities::ScalarQuantityValue = [15.0 .. 20.0] dB {:>> unit = "dB";}  
+                    attribute gain: Quantities::ScalarQuantityValue = [15.0 .. 20.0] dB;
                 }
                 
                 part stage2: Amplifier {
@@ -41,7 +41,7 @@ class TestBenchTests {
                     out port output{
                        attribute value: ScalarValues::Real;  
                     }
-                    attribute gain: Quantities::ScalarQuantityValue = [5.0 .. 20.0] dB {:>> unit = "dB";}  
+                    attribute gain: Quantities::ScalarQuantityValue = [5.0 .. 20.0] dB;
                 }
                 
                 part driver: Amplifier {
@@ -51,13 +51,13 @@ class TestBenchTests {
                     out port output{
                        attribute value: ScalarValues::Real;  
                     }
-                    attribute gain: Quantities::ScalarQuantityValue = [5.0 .. 20.0] dB {:>> unit = "dB";}  
+                    attribute gain: Quantities::ScalarQuantityValue = [5.0 .. 20.0] dB;
                 }
                 
-                attribute total_gain: Quantities::ScalarQuantityValue = productOverParts(gain) {:>> unit = "dB"; :>> range = "20 .. 30";} 
+                attribute total_gain: Quantities::ScalarQuantityValue = productOverParts(gain) {:>> range = 20 .. 30 [dB];} 
             }
             
-            attribute ambientTemperature : ISQ::TemperatureValue = [-15.0 .. 40.0] °C {:>> unit = "°C";}
+            attribute ambientTemperature : ISQ::TemperatureValue = [-15.0 .. 40.0] °C;
             
             connection def Signal;
             interface lna_to_stage2 : Signal connect Amp_Pipecleaner::myAmplifier::lna::output to Amp_Pipecleaner::myAmplifier::stage2::input;

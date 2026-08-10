@@ -1,50 +1,53 @@
 package models.expression
 
 import com.github.tukcps.sysmd.compiler.KerML
-import com.github.tukcps.sysmd.compiler.parser.kerml.Expression
+import com.github.tukcps.sysmd.compiler.parser.kerml.OwnedExpression
 import com.github.tukcps.sysmd.compiler.parser.kerml.tokenOf
+import com.github.tukcps.sysmd.compiler.parser.util.toIndentedString
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.EOF
 import com.github.tukcps.sysmd.compiler.semantics.Identification
 import com.github.tukcps.sysmd.model.expression.*
 import com.github.tukcps.sysmd.model.expression.implementation.BinaryOperatorInformation
-import com.github.tukcps.sysmd.model.kerml.FeatureTyping
+import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.Type
-import com.github.tukcps.sysmd.model.kerml.UnresolvedElement
-import com.github.tukcps.sysmd.model.kerml.UnresolvedType
-import com.github.tukcps.sysmd.model.util.QualifiedName
+import com.github.tukcps.sysmd.model.util.*
 import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.check.checkOwnership
+import com.github.tukcps.sysmd.services.inheritance.deepCloneWithInheritedFeature
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.opentest4j.AssertionFailedError
 import util.assertNoIssues
 import util.testSession
 import kotlin.test.*
 
-
-private fun InvocationExpression.assertArgs(vararg argChecks : Expression.() -> Unit)
+private fun Feature.expression(cont : Expression.() -> Unit)
 {
-	val argument = argument
-	assertEquals(argChecks.size, argument.size) {
+	assertIs<Expression>(this)
+	cont()
+}
+
+private fun InvocationExpression.assertArgs(vararg argChecks : Feature.() -> Unit)
+{
+	val args = positionalArguments
+	assertEquals(argChecks.size, args.size) {
 		"In `$astString`: Arity mismatch!"
 	}
 
-	for((arg, check) in argument zip argChecks)
+	for((arg, check) in args zip argChecks)
 		check(arg)
 }
 
-private fun Expression.operator(op : String, vararg argChecks : Expression.() -> Unit)
-{
+private fun Feature.operator(op : String, vararg argChecks : Feature.() -> Unit) = expression {
 	val msg = "Got '${astString}'"
 	assertIs<OperatorExpression>(this, msg)
 	assertEquals(op, operator, msg)
 	assertArgs(*argChecks)
 }
 
-private fun Expression.operator(op : String, vararg features : String)
+private fun Feature.operator(op : String, vararg features : String)
 = operator(op, *featureRefs(*features))
 
-private fun Expression.typeOperator(op : String, expr : Expression.() -> Unit, type : Type.() -> Unit)
-{
+private fun Feature.typeOperator(op : String, expr : Feature.() -> Unit, type : Type.() -> Unit) = expression {
 	val msg = "Got '${astString}'"
 	assertIs<OperatorExpression>(this, msg)
 	assertEquals(op, operator, msg)
@@ -54,8 +57,7 @@ private fun Expression.typeOperator(op : String, expr : Expression.() -> Unit, t
 	assertIsNot<Expression>(p[1])
 	assertIs<FeatureTyping>(p[1].ownedRelationship.single()).type.type()
 }
-private fun Expression.typeOperator(op : String, type : Type.() -> Unit)
-{
+private fun Feature.typeOperator(op : String, type : Type.() -> Unit) = expression {
 	val msg = "Got '${astString}'"
 	assertIs<OperatorExpression>(this, msg)
 	assertEquals(op, operator, msg)
@@ -64,54 +66,68 @@ private fun Expression.typeOperator(op : String, type : Type.() -> Unit)
 	assertIs<FeatureTyping>(t.ownedRelationship.single()).type.type()
 }
 
-private fun Expression.typeOperator(op : String, feature : String, type : String) = typeOperator(op, {
+private fun Feature.typeOperator(op : String, feature : String, type : String) = typeOperator(op, {
 	featureRef(feature)
 }, {
 	assertIs<UnresolvedType>(this)
 	assertEquals(type, relativeName)
 })
-private fun Expression.typeOperator(op : String, type : String) = typeOperator(op) {
+private fun Feature.typeOperator(op : String, type : String) = typeOperator(op) {
 	assertIs<UnresolvedType>(this)
 	assertEquals(type, relativeName)
 }
 
 
-private fun Expression.invocation(of : QualifiedName, vararg argChecks : Expression.() -> Unit)
+private fun Feature.invocation(of : QualifiedName, vararg argChecks : Feature.() -> Unit)
 {
 	assertIs<InvocationExpression>(this)
 	assertEquals(of, functionName)
 	assertArgs(*argChecks)
 }
 
-private fun Expression.invocation(of : QualifiedName, vararg argChecks : Pair<String, Expression.() -> Unit>)
+private fun Feature.invocation(of : QualifiedName, vararg argChecks : Pair<String, Feature.() -> Unit>)
 {
 	assertIs<InvocationExpression>(this)
 	assertEquals(of, functionName)
-	val pars = parameterMembership
+	val args = namedArguments
 
-	for((entry, p) in argChecks zip pars)
+	assertEquals(argChecks.size, args.size, "Arity mismatch!")
+
+	for((feature, value) in args)
 	{
-		val (name, check) = entry
-		assertEquals(Identification(name), Identification(p.memberShortName, p.memberName))
-		// this placeholder is inserted to signal that indices need to be recalculated once function is known
-		assertEquals(-1, p.parameterIndex)
-		check(assertIs<Expression>(p.ownedMemberParameter))
+		val id = if(feature is Unresolved) Identification(feature.relativeName)
+				 else Identification(feature)
+		val check = argChecks.firstOrNull { Identification(it.first) == id }?.second
+		assertNotNull(check, "No matches for named argument $feature")
+
+		check(value)
 	}
 }
 
-private fun Expression.bodyExpression(vararg args : String, result : Expression.() -> Unit)
+private inline fun Feature.featureWithValue(body : Expression.() -> Unit)
 {
-	assertIs<BodyExpression>(this)
-	val arguments = this.arguments
-	assertEquals(args.size, arguments.size)
-
-	for((i,a) in arguments.withIndex())
-		assertEquals(args[i], a.name, "argument #$i")
-
-	assertNotNull(returnExpression, "no return expression").result()
+	assertIsNot<Expression>(this)
+	val fv = ownedRelationship.filterIsInstance<FeatureValue>().single()
+	fv.value.body()
 }
 
-private fun Expression.metadataAccess(of : QualifiedName)
+private fun Feature.bodyExpression(vararg args : String, result : Feature.() -> Unit) = featureRef {
+	assertIs<BodyExpression>(this)
+	// Only return features are related via a ParameterMembership for some reason.
+	assertEquals(listOfNotNull(returnParameter), parameter)
+
+	for((i,a) in inputParameters.withIndex())
+		assertEquals(args[i], a.name, "argument #$i")
+
+	assertNotNull(resultExpression, "no return expression").result()
+}
+
+/** FOr some reason, some usages of body expressions have an additional layer of indirection */
+private fun Feature.bodyArgument(vararg args : String, result : Feature.() -> Unit) = featureWithValue {
+	bodyExpression(*args, result = result)
+}
+
+private fun Feature.metadataAccess(of : QualifiedName)
 {
 	assertIs<MetadataAccessExpression>(this)
 	assertIs<UnresolvedElement>(referencedElement).also {
@@ -119,73 +135,89 @@ private fun Expression.metadataAccess(of : QualifiedName)
 	}
 }
 
-private fun Expression.index(list : Expression.() -> Unit, index : Expression.() -> Unit)
+private fun Feature.index(list : Feature.() -> Unit, index : Feature.() -> Unit)
 {
 	assertIs<IndexExpression>(this)
 	operator("#", list, index)
 }
 
-private fun Expression.featureRef(feature : QualifiedName)
+private fun Feature.featureRef(body : Feature.() -> Unit)
+{
+	assertIs<FeatureReferenceExpression>(this)
+	assertNotNull(referent).body()
+}
+
+private fun Feature.featureRef(feature : QualifiedName)
 {
 	assertIs<FeatureReferenceExpression>(this)
 	// we cannot resolve here, data isn't loaded yet
 	assertEquals(feature, astString)
 }
 
-private fun Expression.rawName(name : QualifiedName)
+private fun Feature.rawName(name : QualifiedName)
 {
-	assertIs<RawNameExpression>(this)
-	assertEquals(name, rawName)
+	assertIs<LiteralString>(this)
+	assertTrue(isNameLiteral)
+	assertEquals(name, value)
 }
 
-private inline fun Expression.featureChain(chain : String, op : Expression.() -> Unit)
+private fun Feature.functionRef(name : QualifiedName)
+{
+	featureWithValue {
+		assertIs<FeatureReferenceExpression>(this)
+		val fr = ownedElement.filterIsInstance<Expression>().single()
+		val f = assertIs<Unresolved>(fr.type.single())
+		assertEquals(name, f.relativeName)
+	}
+}
+
+private inline fun Feature.featureChain(chain : String, op : Feature.() -> Unit)
 {
 	assertIs<FeatureChainExpression>(this)
 	assertEquals(chain, targetFeature)
-	assertEquals(1, argument.size, "FeatureChainExpression should be unary")
+	assertEquals(1, positionalArguments.size, "FeatureChainExpression should be unary")
 	assertNotNull(source).op()
 }
 
-private fun featureRefs(vararg names : String) : Array<Expression.() -> Unit>
+private fun featureRefs(vararg names : String) : Array<Feature.() -> Unit>
 = names.map { n ->
-	{ x : Expression -> x.featureRef(n) }
+	{ x : Feature -> x.featureRef(n) }
 }.toTypedArray()
 
-private fun literals(vararg vals : Long) : Array<Expression.() -> Unit>
+private fun literals(vararg vals : Long) : Array<Feature.() -> Unit>
 = vals.map { v ->
-	{ x : Expression -> x.literal(v) }
+	{ x : Feature -> x.literal(v) }
 }.toTypedArray()
 
-private fun literals(vararg vals : Double) : Array<Expression.() -> Unit>
-		= vals.map { v ->
-	{ x : Expression -> x.literal(v) }
+private fun literals(vararg vals : Double) : Array<Feature.() -> Unit> = vals.map { v ->
+	{ x : Feature -> x.literal(v) }
 }.toTypedArray()
 
-private fun Expression.literal(want : Boolean)
+private fun Feature.literal(want : Boolean)
 {
 	assertIs<LiteralBoolean>(this)
 	assertEquals(want, value)
 }
 
-private fun Expression.literal(want : Long)
+private fun Feature.literal(want : Long)
 {
 	assertIs<LiteralInteger>(this)
 	assertEquals(want, value)
 }
 
-private fun Expression.literal(want : Double)
+private fun Feature.literal(want : Double)
 {
 	assertIs<LiteralRational>(this)
 	assertEquals(want, assertNotNull(value), 1e-8)
 }
 
-private fun Expression.flatten(op : String = ",") : List<Expression>
+private fun Feature.flatten(op : String = ",") : List<Feature>
 = if(this is OperatorExpression && operator == op)
-	argument.filter { it !is NullExpression }.flatMap { it.flatten(op) }
+	positionalArguments.filter { it !is NullExpression }.flatMap { it.flatten(op) }
 else
 	listOf(this)
 
-private fun Expression.sequence(vararg checkEntry : Expression.() -> Unit)
+private fun Feature.sequence(vararg checkEntry : Feature.() -> Unit)
 {
 	val xs = flatten()
 	assertEquals(checkEntry.size, xs.size, "Sequence size mismatch")
@@ -202,7 +234,13 @@ class SyntaxSamples
 		val parser = KerML(this)
 		parser.input = str
 		parser.semantics.initOwningNamespaces("")
-		val expr = parser.Expression()
+		val expr = parser.OwnedExpression()
+		val elements = parser.semantics.elementsBuilt
+		elements.add(expr) // left out otherwise
+
+		println(elements.toIndentedString())
+
+		import(elements)
 		assertNoIssues()
 
 		when(leaving) {
@@ -215,8 +253,10 @@ class SyntaxSamples
 			}
 		}
 
-		expr.body()
-		addOwnedMember(expr, global)
+		val e = assertIs<Expression>(get(expr.elementId))
+
+		e.body()
+		addOwnedMember(e, global)
 
 		assertNoIssues()
 		checkOwnership()
@@ -231,10 +271,11 @@ class SyntaxSamples
 			assertProperClone(expr, repo.elements[expr.elementId!!] as Expression)
 		}*/
 
-		// creates dangling pointers
-		assertProperClone(expr, expr.clone())
+		val clone = e.deepCloneWithInheritedFeature(global)
+		assertProperClone(e, clone)
 	}
 
+	/** Tests that all operators have matching tokens */
 	@Test
 	fun lexerSupport() = testSession {
 		val report = mutableListOf<String>()
@@ -484,7 +525,7 @@ class SyntaxSamples
 		typeOperator("all", "Sensor")
 	}
 
-	private fun Expression.assertPrecedenceExample() = operator("+", {
+	private fun Feature.assertPrecedenceExample() = operator("+", {
 		operator("+", {
 			operator("-", "w")
 		}, {
@@ -624,21 +665,29 @@ class SyntaxSamples
 		})
 	}
 
-	@Test @Ignore // TODO new expressions inside BodyExpression
+	@Test
 	fun functionOperation2() = parseTest("sensors -> select {in s: Sensor; s::isActive}") {
 		invocation("select", {
 			featureRef("sensors")
 		}, {
-			bodyExpression() {}
+			bodyArgument("s") {
+				featureRef("s::isActive")
+			}
 		})
 	}
 
-	@Test @Ignore // TODO new expressions inside BodyExpression
+	@Test
 	fun functionOperation3() = parseTest("members -> reject {in m: Member; not m->isInGoodStanding()}") {
 		invocation("reject", {
 			featureRef("members")
 		}, {
-			// TODO
+			bodyArgument("m") {
+				operator("not", {
+					invocation("isInGoodStanding", {
+						featureRef("m")
+					})
+				})
+			}
 		})
 	}
 
@@ -647,17 +696,19 @@ class SyntaxSamples
 		invocation("reduce", {
 			featureRef("factors")
 		}, {
-			assertEquals("x * y", this.expression)
-			// TODO: once OwnedExpression is updated to actually set ownership
-			/*bodyExpression("x", "y") {
+			bodyArgument("x", "y") {
 				operator("*", "x", "y")
-			}*/
+			}
 		})
 	}
 
 	@Test
 	fun functionOperation5() = parseTest("factors -> reduce RealFunctions::'*'") {
-		invocation("reduce", *featureRefs("factors", "RealFunctions::*"))
+		invocation("reduce", {
+			featureRef("factors")
+		}, {
+			functionRef("RealFunctions::*")
+		})
 	}
 
 
@@ -695,6 +746,7 @@ class SyntaxSamples
 
 	@Test
 	fun invocation4() = parseTest("AddMember(newMember = who, organization = org)") {
+		assertEquals("AddMember(newMember = who, organization = org)", astString)
 		invocation("AddMember",
 			"newMember" to {
 				featureRef("who")
@@ -733,10 +785,22 @@ class SyntaxSamples
 	fun featureRef3() = parseTest("sensor::isActive") { featureRef("sensor::isActive") }
 
 
-	@Test @Ignore // TODO: new expressions inside BodyExpression
+	@Test // TODO: new expressions inside BodyExpression
 	fun body1() = parseTest("apply({in x; if x istype Integer? (x as Integer) + 1 else 0}, 1)") {
 		invocation("apply", {
-			// TODO
+			bodyExpression("x") {
+				operator("if", {
+					typeOperator("istype", "x", "Integer")
+				}, {
+					operator("+", {
+						typeOperator("as", "x", "Integer")
+					}, {
+						literal(1)
+					})
+				}, {
+					literal(0)
+				})
+			}
 		}, {
 			literal(1)
 		})
@@ -763,25 +827,25 @@ class SyntaxSamples
 	@Test
 	fun literal4() = parseTest("3.14") {
 		assertIs<LiteralRational>(this)
-		assertTrue(assertNotNull(value) in 3.13999 .. 3.14001, value.toString())
+		assertEquals(assertNotNull(value), 3.14, 0.00001)
 	}
 
 	@Test @Ignore // TODO: fix lexer
 	fun literal5() = parseTest(".5") {
 		assertIs<LiteralRational>(this)
-		assertTrue(assertNotNull(value) in 0.4999 .. 0.5001, value.toString())
+		assertEquals(assertNotNull(value), 0.5, 0.001)
 	}
 
 	@Test
 	fun literal6() = parseTest("2.5E-10") {
 		assertIs<LiteralRational>(this)
-		assertTrue(assertNotNull(value) in 2.4999E-10 .. 2.5001E-10, value.toString())
+		assertEquals(assertNotNull(value), 2.5E-10, 1E-14)
 	}
 
 	@Test
 	fun literal7() = parseTest("1E+3") {
 		assertIs<LiteralRational>(this)
-		assertTrue(assertNotNull(value) in 999.99 .. 1000.01, value.toString())
+		assertEquals(assertNotNull(value), 1000.0, 0.01)
 	}
 
 	@Test
@@ -934,13 +998,12 @@ class SyntaxSamples
 	 * (at some point they may be rewritten to appropriate SysMLv2 expressions instead)
 	 */
 	@Test
-	fun legacyFunction1() = parseTest("sumOverSubclasses(2 + x)") {
+	fun legacyFunction1() = parseTest("sumOverSubclasses(2 + foo)") {
 		invocation("sumOverSubclasses", {
 			operator("+", {
 				literal(2)
 			}, {
-				assertIs<RawNameExpression>(this)
-				assertEquals("x", rawName)
+				rawName("foo")
 			})
 		})
 	}

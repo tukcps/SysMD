@@ -15,7 +15,7 @@ library package SysMD {
     metaclass File [1 .. *] {
         feature cells: String[1..*]; // Cells
     }
- }
+}
 
 // Example
 metadata a: SysMD::Project {

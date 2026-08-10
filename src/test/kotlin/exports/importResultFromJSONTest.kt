@@ -46,28 +46,28 @@ class ImportTest {
                 part def Amplifier :> Base::Anything;
             
                 part def LNA :> Amplifier {    
-                    attribute gain: Quantities::ScalarQuantityValue = [5.0 .. 20.0] dB {:>> unit = "dB";}
+                    attribute gain: Quantities::ScalarQuantityValue = [5.0 .. 20.0] dB {:>> range = (*..*) [dB];}
                 }
             
                 part def Stage2 :> Amplifier { 
-                    attribute gain: Quantities::ScalarQuantityValue = [11.0 .. 20.0] dB {:>> unit = "dB";}
+                    attribute gain: Quantities::ScalarQuantityValue = [11.0 .. 20.0] dB {:>> range = (*..*) [dB];}
                 }
             
                 part def Driver :> Amplifier {
-                    attribute gain: Quantities::ScalarQuantityValue = [10.0 .. 30.0] dB {:>> unit = "dB";}
+                    attribute gain: Quantities::ScalarQuantityValue = [10.0 .. 30.0] dB {:>> range = (*..*) [dB];}
                 }
                 
                 part myAmplifier {
                     part lna:    LNA;  
                     part stage2: Stage2;  
                     part driver: Driver;  
-                    attribute gain: Quantities::ScalarQuantityValue(26.0 .. 35.0) [dB] = characterizedResult(productOverParts(gain),"${Paths.get("").toAbsolutePath()}/src/test/resources/importResultsTestDir/testFile.json"); 
+                    attribute gain: Quantities::ScalarQuantityValue(26.0 .. 35.0 [dB]) = characterizedResult(productOverParts(gain),"${Paths.get("").toAbsolutePath()}/src/test/resources/importResultsTestDir/testFile.json"); 
                 }
             }
             """, Runlevel.ALL)
         assertNoIssues()
-        assertEquals(28.5, global.resolveVar("test::myAmplifier::gain")!!.aadd().min,0.00001)
-        assertEquals(28.5,global.resolveVar("test::myAmplifier::gain")!!.aadd().max,0.00001)
+        assertEquals(28.5, solver.getVariable("test::myAmplifier::gain")!!.aadd().min,0.00001)
+        assertEquals(28.5,solver.getVariable("test::myAmplifier::gain")!!.aadd().max,0.00001)
         assertNoIssues()
     }
 
@@ -122,7 +122,7 @@ class ImportTest {
     @Test
     //This test deliberately uses a non-existing JSON file which causes the function to use a [-Inf,+Inf] range as intersection partner
     //The result should therefore be the actual result of the ASTFunction
-    fun wrongFileNameTest() = testSession("Parts", "ISQ") {
+    fun wrongFileNameTest() = testSession("Parts", "ISQ", "Attributes") {
         Files.createDirectories(Paths.get("src/test/resources/importResultsTestDir"))
         loadSysMLv2("""
             package test {
@@ -132,34 +132,34 @@ class ImportTest {
                 part def Amplifier :> Base::Anything;
             
                 part def LNA :> Amplifier {    
-                    attribute gain: ScalarQuantityValue(5.0 .. 20.0) [dB];
+                    attribute gain: ScalarQuantityValue(5.0 .. 20.0 [dB]);
                 }
             
                 part def Stage2 :> Amplifier { 
-                    attribute gain: ScalarQuantityValue(11.0 .. 20.0) [dB];
+                    attribute gain: ScalarQuantityValue(11.0 .. 20.0 [dB]);
                 }
             
                 part def Driver :> Amplifier {
-                    attribute gain: ScalarQuantityValue(10.0 .. 30.0) [dB];
+                    attribute gain: ScalarQuantityValue(10.0 .. 30.0 [dB]);
                 }
                 
                 part myAmplifier {
                     part lna:    LNA;  
                     part stage2: Stage2;  
                     part driver: Driver;  
-                    attribute gain: ScalarQuantityValue(26.0 .. 35.0) [dB] = characterizedResult(productOverParts(gain),"wrongFileNameThatDoesntWork.json"); 
+                    attribute gain: ScalarQuantityValue(26.0 .. 35.0 [dB]) = characterizedResult(productOverParts(gain),"wrongFileNameThatDoesntWork.json"); 
                 }
             }
         """, Runlevel.ALL)
         assertEquals(1, status.issues.size, "Expected an error message that reports missing file with JSON")
-        assertEquals(26.0, global.resolveVar("test::myAmplifier::gain")!!.aadd().min,0.00001)
-        assertEquals(35.0,global.resolveVar("test::myAmplifier::gain")!!.aadd().max,0.00001)
+        assertEquals(26.0, solver.getVariable("test::myAmplifier::gain")!!.aadd().min,0.00001)
+        assertEquals(35.0,solver.getVariable("test::myAmplifier::gain")!!.aadd().max,0.00001)
     }
 
     @Test
     //This test deliberately declares a wrong unit in the JSON file which causes the function to use a [-Inf,+Inf] range as intersection partner
     //The result should therefore be the actual result of the ASTFunction
-    fun wrongUnitTest() = testSession("Parts", "ISQ", "Ranges") {
+    fun wrongUnitTest() = testSession("Parts", "ISQ", "Ranges", "Attributes") {
         Files.createDirectories(Paths.get("src/test/resources/importResultsTestDir"))
         writeJson(
             resultValue = 28.5,
@@ -174,28 +174,28 @@ class ImportTest {
                 part def Amplifier;
             
                 part def LNA :> Amplifier {    
-                    attribute gain: ScalarQuantityValue(5.0 .. 20.0) [dB]; 
+                    attribute gain: ScalarQuantityValue(5.0 .. 20.0 [dB]); 
                 }
             
                 part def Stage2 :> Amplifier { 
-                    attribute gain: ScalarQuantityValue(11.0 .. 20.0) [dB];
+                    attribute gain: ScalarQuantityValue(11.0 .. 20.0 [dB]);
                 }
             
                 part def Driver :> Amplifier {
-                    attribute gain: ScalarQuantityValue(10.0 .. 30.0) [dB];
+                    attribute gain: ScalarQuantityValue(10.0 .. 30.0 [dB]);
                 }
                 
                 part myAmplifier {
                     part lna:    LNA;  
                     part stage2: Stage2;  
                     part driver: Driver;  
-                    attribute gain: ScalarQuantityValue(26.0 .. 35.0) [dB] = characterizedResult(productOverParts(gain),"${Paths.get("").toAbsolutePath()}/src/test/resources/importResultsTestDir/testFile.json"); 
+                    attribute gain: ScalarQuantityValue(26.0 .. 35.0 [dB]) = characterizedResult(productOverParts(gain),"${Paths.get("").toAbsolutePath()}/src/test/resources/importResultsTestDir/testFile.json"); 
                 }
             }
         """, Runlevel.ALL)
         //assertTrue(status.issues.isEmpty(), "${status.issues}")
-        assertEquals(26.0, global.resolveVar("test::myAmplifier::gain")!!.aadd().min, 0.00001)
-        assertEquals(35.0,global.resolveVar("test::myAmplifier::gain")!!.aadd().max, 0.00001)
+        assertEquals(26.0, solver.getVariable("test::myAmplifier::gain")!!.aadd().min, 0.00001)
+        assertEquals(35.0,solver.getVariable("test::myAmplifier::gain")!!.aadd().max, 0.00001)
         assertEquals(1, status.issues.filter { it.kind == Issue.Kind.ERROR }.size)
     }
 
@@ -238,8 +238,8 @@ class ImportTest {
             }
         """, Runlevel.ALL)
        // assertTrue(status.issues.isEmpty(), "${status.issues}")
-        assertEquals(26.0, global.resolveVar("test::myAmplifier::gain")!!.rangeSpecs[0].min,0.00001)
-        assertEquals(35.0,global.resolveVar("test::myAmplifier::gain")!!.rangeSpecs[0].max,0.00001)
+        assertEquals(26.0, solver.getVariable("test::myAmplifier::gain")!!.rangeSpecs[0].min,0.00001)
+        assertEquals(35.0,solver.getVariable("test::myAmplifier::gain")!!.rangeSpecs[0].max,0.00001)
         assertEquals(1, status.issues.size, "Error messages: ${status.issues}")
     }
 
@@ -271,8 +271,8 @@ class ImportTest {
         """, Runlevel.ALL)
         assertNoIssues()
 
-        assertEquals(28.5, global.resolveVar("gain")!!.min(),0.00001)
-        assertEquals(28.5,global.resolveVar("gain")!!.max(),0.00001)
+        assertEquals(28.5, solver.getVariable("gain")!!.min(),0.00001)
+        assertEquals(28.5,solver.getVariable("gain")!!.max(),0.00001)
         assertNoIssues()
     }
 

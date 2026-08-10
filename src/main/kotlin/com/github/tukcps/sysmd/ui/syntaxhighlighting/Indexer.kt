@@ -43,7 +43,7 @@ object Indexer {
             it.cells.forEach { cell ->
                 editorTabsViewModel?.sessionIdState?.value?.let { sessionId ->
                 sessionService.updateModel(
-                    session = sessionId,
+                    sessionId = sessionId,
                     code = cell.body.text,
                     language = cell.language.value,
                     namespace = cell.namespace.value,

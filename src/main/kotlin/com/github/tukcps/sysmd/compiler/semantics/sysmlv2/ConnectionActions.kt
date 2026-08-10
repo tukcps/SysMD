@@ -2,53 +2,39 @@
 
 package com.github.tukcps.sysmd.compiler.semantics.sysmlv2
 
-import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.compiler.semantics.ActionsContext
-import com.github.tukcps.sysmd.compiler.semantics.kerml.AssociationActions
-import com.github.tukcps.sysmd.compiler.semantics.kerml.ConnectorActions
-import com.github.tukcps.sysmd.model.sysml.ConnectionDefinition
-import com.github.tukcps.sysmd.model.sysml.ConnectionUsage
-import com.github.tukcps.sysmd.model.sysml.SuccessionAsUsage
-import com.github.tukcps.sysmd.model.util.SimpleName
+import com.github.tukcps.sysmd.compiler.semantics.kerml.ConnectorAction
+import com.github.tukcps.sysmd.compiler.semantics.kerml.TypeAction
+import com.github.tukcps.sysmd.model.generated.ElementType
+import com.github.tukcps.sysmd.model.util.QualifiedName
 
-
-open class ConnectionUsageActions<T: ConnectionUsage>(
+open class ConnectionUsageAction(
     context: ActionsContext,
-    creator: (SimpleName?, SimpleName?)->T,
-    defaultType: QualifiedName = "Connections::Connection",
-): ConnectorActions<T>(
+    type: ElementType = ElementType.ConnectionUsage,
+    isImplicit: QualifiedName = "Connections::Connection",
+): ConnectorAction(
     context = context,
-    creator = creator,
-    defaultType = defaultType,
-) {
-    override fun finish() {
-        if (created.type.isEmpty()) {
-            context.addTyping("Connections::Connection")
-        }
-        super.finish()
-    }
-}
-
-
-open class ConnectionDefinitionActions<T: ConnectionDefinition>(
-    context: ActionsContext,
-    creator: (SimpleName?, SimpleName?) -> T,
-    specializes: QualifiedName = "Connections::Connection",
-): AssociationActions<ConnectionDefinition>(
-    context = context,
-    creator = creator,
-    specializes,
+    type = type,
+    isImplicit = isImplicit,
 )
 
-
-
-class SuccessionAsUsageSemantics<T: SuccessionAsUsage>(
+open class ConnectionDefinitionAction(
     context: ActionsContext,
-    creator: (SimpleName?, SimpleName?) -> T,
-    specializes: QualifiedName = "Occurrences::HappensBefore",
-): ConnectorActions<SuccessionAsUsage>(
+    type: ElementType = ElementType.CalculationDefinition,
+    isImplicit: QualifiedName = "Connections::Connection",
+): TypeAction(
     context = context,
-    creator = creator,
-    specializes,
+    type = type,
+    isImplicit = isImplicit,
+)
+
+class SuccessionAsUsageAction(
+    context: ActionsContext,
+    type: ElementType = ElementType.SuccessionAsUsage,
+    isImplicit: QualifiedName = "Occurrences::HappensBefore"
+): ConnectorAction(
+    context = context,
+    type = type,
+    isImplicit,
 )
 

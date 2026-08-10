@@ -16,7 +16,7 @@ interface Function: Behavior
 
 	val result : Feature?
 		// FIXME: Standard specifies arity 1 for this, but then sets it to null?
-		get() = this.ownedRelationship.filterIsInstance<ReturnParameterMembership>().singleOrNull()?.ownedMemberParameter
+		get() = ownedMembership.filterIsInstance<ReturnParameterMembership>().singleOrNull()?.ownedMemberParameter
 
 	/** If not null, gives a builtin function that defines this model function */
 	val builtin : BuiltinFunction?
@@ -26,39 +26,31 @@ interface Function: Behavior
 	{
 		val parameter = this.parameter
 		val result = this.result
-		// indices into parameter and args
-		var pIx = 0
-		var aIx = 0
-		// number of arguments assigned to parameter[pIx]
-		var curArity = 0
 
-		while(true) when {
-			aIx >= args.size -> break // all arguments processed
-			pIx >= parameter.size -> return false // too many arguments
-			parameter[pIx] === result || curArity >= parameter[pIx].multiplicityRange.max -> {
-				++pIx
-				curArity = 0
-			}
-			else -> {
-				val par = parameter[pIx]
+		for((ix, arg) in args.withIndex())
+		{
+			if(ix >= parameter.size)
+				return false // too many args
 
-				if(! checkVariance(par.type, args[aIx].type, par.direction!!))
-					return false
+			val par = parameter[ix]
 
-				++aIx
-				++curArity
-			}
+			if(par == result)
+				return false // argument is not accepted for result
+
+			if(! checkVariance(par.type, arg.type, par.direction!!))
+				return false // type mismatch
 		}
 
-		return curArity >= parameter[pIx].multiplicityRange.min &&
-				parameter.drop(pIx + 1).all { it === result || it.multiplicityRange.min == 0L }
+		val x = parameter.drop(args.size).none { it != result && it.featureValue === null && 0 !in it.multiplicityRange } // too few arguments
+
+		return x
 	}
 }
 
 private fun checkVariance(signature : List<Type>, argument : List<Type>, variance : FeatureDirectionKind) : Boolean
 = when(variance) {
-	// FIXME: Are these correct semantics for non-singleton type lists?
-	IN -> signature.all { pt -> argument.all { at -> at.specializes(pt) } }
+	// FIXME: Are these correct semantics for non-singleton type lists? Also empty list probably shouldn't be wildcard
+	IN -> signature.all { pt -> argument.isEmpty() || argument.any { at -> at.specializes(pt) } }
 	OUT -> signature.all { pt -> argument.all { at -> pt.specializes(at) } }
 	INOUT -> checkVariance(signature, argument, IN) && checkVariance(signature, argument, OUT)
 }

@@ -10,19 +10,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.vector.ImageVector
-import com.github.tukcps.sysmd.services.repositories.local.ElementData
-import com.github.tukcps.sysmd.services.session.SessionManager
-import com.github.tukcps.sysmd.ui.composables.TreeViewNodeModel
+import com.github.tukcps.sysmd.model.datamodel.ElementData
+import com.github.tukcps.sysmd.model.generated.ElementType
+import com.github.tukcps.sysmd.model.generated.elementType
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Multiplicity
 import com.github.tukcps.sysmd.model.kerml.Relationship
-import com.github.tukcps.sysmd.model.kerml.Connector
-import com.github.tukcps.sysmd.model.kerml.Association
-import com.github.tukcps.sysmd.model.sysml.InterfaceUsage
-import com.github.tukcps.sysmd.model.sysml.AttributeUsage
+import com.github.tukcps.sysmd.services.session.SessionManager
+import com.github.tukcps.sysmd.ui.composables.TreeViewNodeModel
 import kotlin.uuid.Uuid
 import kotlin.uuid.Uuid.Companion.NIL
-import kotlin.uuid.toKotlinUuid
 
 
 /**
@@ -48,16 +45,19 @@ class IsATree(
     override fun children(): List<TreeViewNodeModel> =
         mutableListOf<TreeViewNodeModel>().also { result ->
         SessionManager.sessionService
-            .getSubtypes(sessionId, element?.elementId?.toKotlinUuid() ?: NIL)
+            .getSubtypes(sessionId, element?.elementId ?: NIL)
             ?.forEach { result.add(HasATree(sessionIdState, mutableStateOf(it))) }
     }
 
     // Method that, for a given element, determines an icon.
     override fun icon(): ImageVector {
         return when (element?.type) {
-            "Package" -> Icons.Default.Folder
-            "TextualRepresentation" -> Icons.Default.TextFields
-            "Feature", "AttributeUsage" -> Icons.AutoMirrored.Filled.FeaturedPlayList
+            ElementType.Package
+                -> Icons.Default.Folder
+            ElementType.TextualRepresentation
+                -> Icons.Default.TextFields
+            ElementType.Feature, ElementType.AttributeUsage
+                -> Icons.AutoMirrored.Filled.FeaturedPlayList
             else -> Icons.Outlined.AddIcCall
         }
     }
@@ -84,7 +84,7 @@ class HasATree(
         get() = if (ignoreChildren)  false
         else
             SessionManager.sessionService
-                .getOwnedElements(sessionId, element?.elementId?.toKotlinUuid() ?: NIL)
+                .getOwnedElements(sessionId, element?.elementId ?: NIL)
                 ?.isNotEmpty()
                 ?:false
 
@@ -94,7 +94,7 @@ class HasATree(
     override fun children(): List<TreeViewNodeModel> {
         val result = mutableListOf<TreeViewNodeModel>()
         SessionManager.sessionService
-            .getOwnedElements(sessionId, element?.elementId?.toKotlinUuid() ?: NIL)
+            .getOwnedElements(sessionId, element?.elementId ?: NIL)
             ?.forEach { owned ->
                 result.add(HasATree(sessionIdState, mutableStateOf(owned)))
             }
@@ -104,9 +104,10 @@ class HasATree(
     // Method that, for a given element, determines an icon.
     override fun icon(): ImageVector {
         return when (element?.type) {
-            "Package" -> Icons.Default.Folder
-            "TextualRepresentation" -> Icons.Default.TextFields
-            "Feature", "AttributeUsage" -> Icons.AutoMirrored.Filled.FeaturedPlayList
+            ElementType.Package -> Icons.Default.Folder
+            ElementType.TextualRepresentation -> Icons.Default.TextFields
+            ElementType.Feature,
+            ElementType.AttributeUsage -> Icons.AutoMirrored.Filled.FeaturedPlayList
             else -> Icons.Outlined.AddIcCall
         }
     }
@@ -117,23 +118,23 @@ class HasATree(
  * Function that generates the name for display in a UI.
  */
 fun ElementData.generateName(sessionId: Uuid? = null): String = try {
-    var displayName = "[$type] ${declaredName?:declaredShortName?:""}"
+    var displayName = "[${type.name}] ${declaredName?:declaredShortName?:""}"
     if (sessionId != null) {
         val session = SessionManager.getSession(sessionId)
         val kermlElement = session?.get(elementId)
         if (kermlElement is Feature) {
             val variable = kermlElement.variable
             if (variable != null) {
-                if (kermlElement is Multiplicity) {
-                    displayName += " ${variable.vectorQuantity}"
-                } else if (kermlElement is AttributeUsage) {
-                    displayName += " = ${variable.vectorQuantity}"
+                displayName += if (kermlElement is Multiplicity) {
+                    " ${variable.vectorQuantity}"
+                } else {
+                    " = ${variable.vectorQuantity}"
                 }
             }
         }
-        if (kermlElement is Relationship && kermlElement !is Connector && kermlElement !is Association) {
+        if (kermlElement is Relationship) {
             val targetName = kermlElement.target.firstOrNull()?.let {
-                it.qualifiedName ?: it.escapedName() ?: "[${it.elementType}]"
+                it.qualifiedName ?: it.escapedName() ?: "[${it.elementType()}]"
             }
             if (targetName != null) {
                 displayName += " $targetName"

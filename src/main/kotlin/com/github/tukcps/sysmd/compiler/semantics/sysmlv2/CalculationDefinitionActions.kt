@@ -1,20 +1,17 @@
 package com.github.tukcps.sysmd.compiler.semantics.sysmlv2
 
 import com.github.tukcps.sysmd.compiler.semantics.ActionsContext
-import com.github.tukcps.sysmd.compiler.semantics.kerml.FunctionActions
-import com.github.tukcps.sysmd.model.sysml.CalculationDefinition
-import com.github.tukcps.sysmd.model.util.QualifiedName
-import com.github.tukcps.sysmd.model.util.SimpleName
+import com.github.tukcps.sysmd.compiler.semantics.kerml.TypeAction
+import com.github.tukcps.sysmd.model.generated.ElementType
 
 
 /**
  * Semantic action for the definition of a Calculation.
  * @param context The context of the parser
- * @param creator lambda that creates a Calculation element
- * @param specializes The default class
+ * @param isImplicit The default class
  */
-class CalculationDefinitionActions <T: CalculationDefinition> (
+class CalculationDefinitionAction (
     context: ActionsContext,
-    creator: (SimpleName?, SimpleName?) -> T,
-    specializes: QualifiedName = "Calculations::Calculation",
-): FunctionActions<T>(context, creator, specializes)
+    type: ElementType = ElementType.CalculationDefinition,
+    isImplicit: String = "Calculations::Calculation"
+): TypeAction(context, type, isImplicit = isImplicit) {}

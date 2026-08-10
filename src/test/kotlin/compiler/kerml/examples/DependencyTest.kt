@@ -4,7 +4,6 @@ import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
-import kotlin.test.assertTrue
 
 class DependencyTest {
 
@@ -46,7 +45,7 @@ class DependencyTest {
             dependency 'Service Layer'
             to 'Data Layer', 'External Interface Layer' {
                 /* 'Service Layer' is the client of this dependency,
-                * not its name. */
+                 * not its name. */
             }
         """)
         assertNoIssues()

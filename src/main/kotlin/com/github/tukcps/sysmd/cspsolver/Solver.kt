@@ -6,10 +6,7 @@ import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.model.expression.Expression
 import com.github.tukcps.sysmd.model.expression.FeatureReferenceExpression
 import com.github.tukcps.sysmd.model.expression.checkEvent
-import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.kerml.Membership
-import com.github.tukcps.sysmd.model.kerml.Namespace
-import com.github.tukcps.sysmd.model.kerml.Type
+import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.session.Session
@@ -62,8 +59,15 @@ class Solver(
     }
 
 
-    fun getVariable(path: String, index: Int = 0): Variable? =
-        variables[path]?.get(index)
+    fun getVariable(path: String, index: Int = 0): Variable? {
+        variables[path]?.getOrNull(index)?.let { return it }
+        val feature = model.global.resolve(path)?.memberElement as? Feature
+        val ref = feature?.referencedFeature
+        if (ref != null) {
+            return getVariable(ref.path(), index)
+        }
+        return null
+    }
 
     /**
      * Gets a variable by its id. The id is equal to the element id if there is an associated feature.
@@ -93,7 +97,8 @@ class Solver(
         reset()
 
         // Create a variable for each feature for constraint propagation
-        val memberships = model.get().filterIsInstance<Membership>().asSequence().filter { it.memberElement is Feature }
+        val memberships = model.get().filterIsInstance<OwningMembership>()
+            .filter { it.memberElement is Feature && (it.memberElement as Feature).specializes(model.repo.scalarType)}
 
         memberships.forEach { membership ->
             val feature = membership.memberElement as Feature
@@ -102,7 +107,7 @@ class Solver(
             val owner = feature.owner
 
             if (feature.referencedFeature === null &&
-                !(feature is Expression && owner is Expression) && // skip non-root expressions
+                !(feature is Expression && owner is Expression) && // skip non-basic expressions
                 membership.owningNamespace !is FeatureReferenceExpression && // skip duplicating referenced features
                 baseType != Unknown
             ) {
@@ -113,11 +118,12 @@ class Solver(
                         VariableImplementation(
                             membership,
                             solver = model.solver,
+                            relatedElement = membership.memberElement.elementId,
                             path = feature.path(),
                             baseType = feature.toBaseType(),
                             satisfyAll = feature.isSufficient,
-                            unitSpec = feature.getUnit()?:"",
-                            valueSpecs = feature.getRange()?:mutableListOf(""),
+                            unitSpec = feature.unitConstraint?:"",
+                            valueSpecs = feature.typeConstraint,
                             expression = feature.expression
                         )
                     )
@@ -137,7 +143,9 @@ class Solver(
         // Compile all expressions first so that ASTs and their dependency strings are available
         // for the topological sort below. This is necessary so that aggregation functions like
         // sumOverParts can report their actual (fully-qualified) dependencies.
-        sortedVars.forEach { v -> v.forEach { it.compileExpression() } }
+        sortedVars.forEach { v -> v.forEach {
+            it.compileExpression() }
+        }
 
         // Order the properties by their dependencies into the repo.schedule.
         // This schedule is used for initialization of the properties.
@@ -296,7 +304,7 @@ class Solver(
                         }
                     } catch (e: Exception) {
                         variable.stable = true
-                        model.status.error( e.message ?: "(issue in constraint propagation)", path = variable.path, cause = e)
+                        model.status.error( e.message ?: "(issue in constraint propagation, ${variable.path})", cause = e)
                     }
                 }
                 discreteSolver.advanceState()
@@ -308,7 +316,11 @@ class Solver(
                 model.status.numberOfPropagateIterations += 1
             } while (!modelIsStable && model.status.numberOfPropagateIterations < 100)
             if (!modelIsStable)
-                model.status.warn( Issue.Kind.WARN_ITERATIONS_EXCEEDED,"Number of constraint propagation iterations exceeded; issue with: $instable. Increase it if needed.")
+                model.status.warn(
+                    Issue.Kind.WARN_ITERATIONS_EXCEEDED,
+                    "Number of constraint propagation iterations exceeded; issue with: $instable. Increase it if needed.",
+                )
+
 
             // Copy updated entries into the status map, check consistency.
             schedule.forEach {

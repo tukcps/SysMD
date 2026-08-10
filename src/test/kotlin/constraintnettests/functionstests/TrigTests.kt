@@ -1,11 +1,12 @@
 package constraintnettests.functionstests
 
-import kotlin.test.Test
-import kotlin.test.Ignore
+import com.github.tukcps.sysmd.services.Runlevel
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
-import kotlin.math.*
+import kotlin.math.sin
+import kotlin.test.Ignore
+import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class TrigTests {
@@ -13,7 +14,7 @@ class TrigTests {
     @Test
     fun sinTest() = testSession("Ranges") {
         loadKerML("""
-            feature a: Ranges::RealInRange {:>> range = "0.0 .. 1.57079632679";}
+            feature a: Ranges::RealInRange {:>> range = 0.0 .. 1.57079632679;}
             feature b: ScalarValues::Real = sin(a);
         """)
         solver.propagate()
@@ -26,7 +27,7 @@ class TrigTests {
     @Test
     fun cosTest() = testSession("Ranges") {
         loadKerML("""
-            feature a: Ranges::RealInRange {:>> range = "0.0 .. 1.57079632679";}
+            feature a: Ranges::RealInRange {:>> range = 0.0 .. 1.57079632679;}
             feature b: ScalarValues::Real = cos(a);
         """)
         solver.propagate()
@@ -39,11 +40,10 @@ class TrigTests {
     @Test
     fun sinEvalDown() = testSession("Ranges") {
         loadKerML("""
-            feature a: Ranges::RealInRange {:>> range = "0.1 .. 3.0";}
+            feature a: Ranges::RealInRange {:>> range = 0.1 .. 3.0;}
             // sin(0.5) is ~0.4794255386
-            feature b: Ranges::RealInRange = sin(a) {:>> range = "0.4794255 .. 0.4794256";}
-        """)
-        solver.propagate()
+            feature b: Ranges::RealInRange = sin(a) {:>> range = 0.4794255 .. 0.4794256;}
+        """, Runlevel.ALL)
         assertNoIssues()
         val a = solver.getVariable("a")!!
         assertEquals(0.5, a.min(), 0.001)
@@ -53,7 +53,7 @@ class TrigTests {
     @Test
     fun sinCosTest() = testSession("Ranges") {
         loadKerML("""
-            feature a: Ranges::RealInRange { :>> range = "0.5 .. 0.5";}
+            feature a: Ranges::RealInRange { :>> range = 0.5 .. 0.5;}
             feature b: ScalarValues::Real = sin(a);
             feature c: ScalarValues::Real = cos(a);
         """)
@@ -66,7 +66,7 @@ class TrigTests {
     @Test
     fun sinCosTest2() = testSession("Ranges") {
         loadKerML("""
-            feature a: Ranges::RealInRange {:>> range = "1.0 .. 1.0";}
+            feature a: Ranges::RealInRange {:>> range = 1.0;}
             feature b: ScalarValues::Real = sin(a);
             feature c: ScalarValues::Real = cos(a);""")
         solver.propagate()
@@ -78,7 +78,7 @@ class TrigTests {
     @Test
     fun sinCosTest3() = testSession("Ranges") {
         loadKerML("""
-            feature a: Ranges::RealInRange { :>> range = "0.5 .. 1.0";}
+            feature a: Ranges::RealInRange { :>> range = 0.5 .. 1.0;}
             feature b: ScalarValues::Real = sin(a);
             feature c: ScalarValues::Real = cos(a); """)
         solver.propagate()
@@ -92,7 +92,7 @@ class TrigTests {
     @Test
     fun sinCosTestNegative() = testSession("Ranges") {
         loadKerML("""
-            feature a: Ranges::RealInRange {:>> range = "-1.0 .. -0.5";}
+            feature a: Ranges::RealInRange {:>> range = -1.0 .. -0.5;}
             feature b: ScalarValues::Real = sin(a);
             feature c: ScalarValues::Real = cos(a); """)
         solver.propagate()
@@ -104,7 +104,7 @@ class TrigTests {
     @Test
     fun sinCosTestMixed() = testSession("Ranges") {
         loadKerML("""
-            feature a: Ranges::RealInRange {:>> range = "-1.0 .. 1.0";}
+            feature a: Ranges::RealInRange {:>> range = -1.0 .. 1.0;}
             feature b: ScalarValues::Real = sin(a);
         """)
         solver.propagate()
@@ -118,7 +118,7 @@ class TrigTests {
     @Test
     fun sinTestQuadrantSpanning() = testSession("Ranges") {
         loadKerML("""
-            feature a: Ranges::RealInRange {:>> range = "0.0 .. 3.14159265359";}
+            feature a: Ranges::RealInRange {:>> range = 0.0 .. 3.14159265359;}
             feature b: ScalarValues::Real = sin(a);
         """)
         solver.propagate()
@@ -131,7 +131,7 @@ class TrigTests {
     @Test
     fun sinTestFullCircle() = testSession("Ranges") {
         loadKerML("""
-            feature a: Ranges::RealInRange {:>> range = "0.0 .. 6.28318530718";}
+            feature a: Ranges::RealInRange {:>> range = 0.0 .. 6.28318530718;}
             feature b: ScalarValues::Real = sin(a);
         """)
         solver.propagate()

@@ -3,28 +3,24 @@ package com.github.tukcps.sysmd.cspsolver
 import com.github.tukcps.sysmd.compiler.KerML
 import com.github.tukcps.sysmd.compiler.parser.kerml.legacy.Expression
 import com.github.tukcps.sysmd.cspsolver.Variable.BaseType
-import com.github.tukcps.sysmd.exceptions.ExpressionError
-import com.github.tukcps.sysmd.exceptions.SemanticError
-import com.github.tukcps.sysmd.exceptions.SolverError
-import com.github.tukcps.sysmd.exceptions.SysMDError
+import com.github.tukcps.sysmd.exceptions.*
 import com.github.tukcps.sysmd.model.expression.AstRoot
 import com.github.tukcps.sysmd.model.expression.functions.AstByImplements
 import com.github.tukcps.sysmd.model.expression.functions.AstByParts
 import com.github.tukcps.sysmd.model.expression.functions.AstBySpecializations
+import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Membership
 import com.github.tukcps.sysmd.quantities.Representer
 import com.github.tukcps.sysmd.quantities.VectorQuantity
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.BDD
-import io.github.tukcps.aadd.DD
-import io.github.tukcps.aadd.IDD
-import io.github.tukcps.aadd.StrDD
+import com.github.tukcps.sysmd.model.datamodel.toElementData
+import io.github.tukcps.aadd.*
 import io.github.tukcps.aadd.values.IntegerRange
 import io.github.tukcps.aadd.values.NumberRange
 import io.github.tukcps.aadd.values.Range
 import io.github.tukcps.aadd.values.XBool
 import java.util.*
 import java.util.Locale.getDefault
+import kotlin.uuid.Uuid
 
 
 /**
@@ -43,10 +39,13 @@ import java.util.Locale.getDefault
 open class VariableImplementation (
     private var membership: Membership,
     override val solver: Solver,
+    override val relatedElement: Uuid? = null,
+    @Deprecated("Replace with relatedElement (getting element by path requires session, by uuid trivial)",
+        replaceWith = ReplaceWith("relatedElement"))
     override val path: String,
     override val baseType: BaseType,
     override val satisfyAll: Boolean = false,
-    private val valueSpecs: List<String> = listOf(),
+    private val  valueSpecs: List<String> = listOf(),
     override val unitSpec: String = "",
     override val domain: String? = null,
     override var expression: String? = null
@@ -64,10 +63,12 @@ open class VariableImplementation (
     init {
         when (baseType) {
             BaseType.Real -> if (valueSpecs.isEmpty()) rangeSpecs = mutableListOf(Range.Reals) else
-                valueSpecs.forEach { rangeSpecs.add(if (it.isNotBlank()) Range(it) else Range.Reals) }
+                valueSpecs.forEach {
+                    rangeSpecs.add(if (it.isNotBlank()) Range(it.trim('\"', '(', ')')) else Range.Reals) }
 
             BaseType.Int  -> if(valueSpecs.isEmpty()) intSpecs = mutableListOf(IntegerRange.Integers) else
-                valueSpecs.forEach { intSpecs.add(if (it.isNotBlank()) IntegerRange(it.trim('[', ']', ' ')) else IntegerRange.Integers) }
+                valueSpecs.forEach {
+                    intSpecs.add(if (it.isNotBlank()) IntegerRange(it.trim('[', ']', ' ', '"')) else IntegerRange.Integers) }
 
             BaseType.Bool -> if(valueSpecs.isEmpty()) boolSpecs = mutableListOf(XBool.X)
                 else valueSpecs.forEach {
@@ -232,7 +233,6 @@ open class VariableImplementation (
         return this
     }
 
-
     /** Setter for range specification that also initializes the value */
     override fun intSpec(init: IntegerRange) : Variable {
         updated = true
@@ -261,7 +261,6 @@ open class VariableImplementation (
         if (vectorQuantity.values[0] is IDD) return vectorQuantity.values[0] as IDD
         else throw SolverError("Expression value cannot be cast to IDD", path = path)
     }
-
 
     /** Creates a compact string, skipping fields not relevant, incl. doc */
     override fun toString(): String =
@@ -293,35 +292,44 @@ open class VariableImplementation (
      * parsed and the ast is created.
      */
     override fun compileExpression() {
+        var elementForError: Element? = null
         try {
             val parserSysMD = KerML(solver.model).also { it.input = expression?:"" }
 
             if (expression?.isNotBlank() == true) {
                 // set the scope to the element to which the property belongs.
                 parserSysMD.semantics.namespace = membership.owningNamespace!!
-
+                elementForError = parserSysMD.semantics.namespace
                 ast = AstRoot(solver.model, this, parserSysMD.Expression())
                 // Initialize internal AST nodes, starting from leaves
                 ast?.runDepthFirst { initialize() }
                 when (baseType) {
                     BaseType.Bool if (ast!!.upQuantity.values[0] !is BDD) ->
-                        throw SemanticError("Expecting dependency of type Boolean")
+                        throw SolverError("Expecting expression of type Boolean")
                     BaseType.Int if (ast!!.upQuantity.values[0] !is IDD) ->
-                        throw SemanticError("Expecting dependency of type Integer")
+                        throw SolverError("Expecting expression of type Integer")
                     BaseType.Real if (ast!!.upQuantity.values[0] !is AADD) ->
-                        throw SemanticError("Expecting dependency of type Real")
+                        throw SolverError("Expecting expression of type Real", elementId =  relatedElement)
                     BaseType.String if (ast!!.upQuantity.value !is StrDD) ->
-                        throw SemanticError("Expecting dependency of type String")
+                        throw SolverError("Expecting expression of type String", elementId = relatedElement)
                     else -> {}
                 }
             }
         } catch (exception: Exception) {
             ast = null
-            solver.model.status.error(
-                message = "In variable '${expression}' of ${path}: ${exception.message}",
-                path = path,
-                cause = exception
-            )
+            if (exception is SysMDException) {
+                solver.model.status.error(
+                    message = "In variable '${expression}' of ${path}: ${exception.message}",
+                    element = (exception.element?: solver.model[relatedElement?: solver.model.global.elementId])?.toElementData(),
+                    cause = exception
+                )
+            } else if (exception is DDTypeCastError) {
+                solver.model.status.error(
+                    message = "In variable '${expression}' of ${path}: In SysMD, we expect typed literals (1.0 is Real. 1 is Integer, and do NOT CAST.",
+                    element = elementForError?.toElementData(),
+                    cause = exception,
+                )
+            }
         }
     }
 

@@ -1,4 +1,7 @@
 package api
+import com.github.tukcps.sysmd.model.datamodel.ElementData
+import com.github.tukcps.sysmd.model.generated.ElementDataIF
+import com.github.tukcps.sysmd.model.generated.ElementType
 import com.github.tukcps.sysmd.rest.RESTRepository
 import com.github.tukcps.sysmd.rest.RESTRepository.deleteBranch
 import com.github.tukcps.sysmd.rest.RESTRepository.deleteProject
@@ -17,20 +20,19 @@ import com.github.tukcps.sysmd.rest.RESTRepository.postProject
 import com.github.tukcps.sysmd.rest.RESTRepository.postSession
 import com.github.tukcps.sysmd.rest.RESTRepository.saveElementsLocally
 import com.github.tukcps.sysmd.rest.Rest
-import com.github.tukcps.sysmd.services.repositories.local.ElementData
+import com.github.tukcps.sysmd.rest.entities.api.entities.Project
 import com.github.tukcps.sysmd.settings
-import io.github.tukcps.sysmlv2.api.entities.ElementDAO
-import io.github.tukcps.sysmlv2.api.entities.Project
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import java.util.*
+import org.junit.jupiter.api.assertNotNull
+import kotlin.uuid.Uuid
 
 /**
  * These tests require a running Backend.
  * They should be enabled manually to see if the data is transferred to the database.
  */
- class RESTRepositoryTest {
+class RESTRepositoryTest {
 
     private val user = "admin@cps.de"
     private val password = "admin"
@@ -43,7 +45,7 @@ import java.util.*
     @BeforeEach
     fun setUp() {
         saveElementsLocally.value=false
-        internalSessionId=UUID.randomUUID()
+        internalSessionId= Uuid.random()
         try {
             if (online) {
                 settings.rest.baseURI = "localhost"
@@ -74,11 +76,10 @@ import java.util.*
 
     @Test
     fun deleteProjectTest() = onlyOnline {
-        val project = postProject("TestDeleteProject","Description")
-
+        val project = postProject("TestDeleteProject", "Description")
         val deleted = deleteProject(project?.id!!)
         assertFalse(getProjects().contains(project))
-        assertEquals(true, deleted)
+        assertNotNull(deleted)
     }
 
 
@@ -89,8 +90,8 @@ import java.util.*
         val branch = postBranch(project,"TestDeleteBranch", branchesOfProject.first().referencedCommitId!!)
         val newBranchesListOfProject = getBranches(project)
         assertTrue(newBranchesListOfProject.size > branchesOfProject.size)
-        val deleted = deleteBranch(project, branch?.id ?: UUID.randomUUID())
-        assertEquals(true, deleted)
+        val deleted = deleteBranch(project, branch?.id ?: Uuid.random())
+        assertNotNull(deleted)
     }
 
 
@@ -170,13 +171,13 @@ import java.util.*
     fun postCommitTest() = onlyOnline {
         val project = createProject("TestProjectCommit", "Description")!!
         // empty List
-        val elementsDAOList : MutableList<ElementDAO> = mutableListOf()
+        val elementsDAOList : MutableList<ElementDataIF> = mutableListOf()
         elementsDAOList.add(
             ElementData(
-                elementId = UUID.randomUUID(),
-                type = "TextualRepresentation",
-                name = "Initial Commit",
-                shortName = "string",
+                elementId = Uuid.random(),
+                type = ElementType.TextualRepresentation,
+                declaredName = "Initial Commit",
+                declaredShortName = "string",
                 language = "Markdown",
                 body = "")
         )
@@ -204,12 +205,12 @@ import java.util.*
         val projectId = project?.id
 
         // creates an ElementDAOList
-        val elementsDAOList: MutableList<ElementDAO> = mutableListOf()
+        val elementsDAOList: MutableList<ElementDataIF> = mutableListOf()
         val elementDAO = ElementData(
-            elementId = UUID.randomUUID(),
-            type = "TextualRepresentation",
-            name = "First Element",
-            shortName = "string",
+            elementId = Uuid.random(),
+            type = ElementType.TextualRepresentation,
+            declaredName = "First Element",
+            declaredShortName = "string",
             language = "SysMD",
             body = "Hello World")
         elementsDAOList.add(elementDAO)
@@ -237,14 +238,14 @@ import java.util.*
     fun postCommitWithDataTest2() = onlyOnline {
         val project = createProject("TestProject", "Description")
         val projectId = project?.id
-        val elementsDAOList : MutableList<ElementDAO> = mutableListOf()
+        val elementsDAOList : MutableList<ElementDataIF> = mutableListOf()
 
         val elementDAO1 = ElementData(
-            elementId = UUID.randomUUID(),
-            type = "TextualRepresentation",
+            elementId = Uuid.random(),
+            type = ElementType.TextualRepresentation,
             language = "Markdown",
-            name= "element 1",
-            shortName = "shortName",
+            declaredName = "element 1",
+            declaredShortName = "shortName",
             body ="## SysMD Tutorial")
         elementsDAOList.add(elementDAO1)
 
@@ -253,12 +254,12 @@ import java.util.*
         assertEquals(1, getElements(project, commit1).size)
 
         val elementDAO2 = ElementData(
-            elementId = UUID.randomUUID(),
-            type = "TextualRepresentation",
+            elementId = Uuid.random(),
+            type = ElementType.TextualRepresentation,
             language = "Markdown",
-            name= "element 2",
-            shortName = "shortName",
-            body = "SysMD does not want to and does not replace SysMLv2 textual.")
+            declaredName = "element 2",
+            declaredShortName = "shortName",
+            body = "SysMD does not want to and does not replace SysML v2 textual.")
 
         elementsDAOList.add(elementDAO2)
         val commit2 = postCommit("TestCommit2.md","Description2", project, elementsDAOList, null)
@@ -276,13 +277,13 @@ import java.util.*
         val commits = getCommit(project)
         assertEquals(1, commits.size)
 
-        val headId = defaultBranch!!.referencedCommitId
+        val headId = defaultBranch!!.referencedCommitId()
         val headCommit = getCommitById(project, headId!!)
         assertTrue(headCommit.description.isNotEmpty())
         assertEquals(headCommit.owningProject, project.id)
 
         val elements = getElements(project, headCommit)
-        assertTrue(elements.size>0)
+        assertTrue(elements.isNotEmpty())
     }
 
     @Test
@@ -302,14 +303,14 @@ import java.util.*
     @Test
     fun testMergeTwoBranches() = onlyOnline {
         val project = createProject("TestMergeBranchProject","Tests the merge for the Projects")
-        val elementsDAOList : MutableList<ElementDAO> = mutableListOf()
+        val elementsDAOList : MutableList<ElementDataIF> = mutableListOf()
 
         val elementDAO1 = ElementData(
-            elementId = UUID.randomUUID(),
-            type = "TextualRepresentation",
+            elementId = Uuid.random(),
+            type = ElementType.TextualRepresentation,
             language = "Markdown",
-            name= "element 1",
-            shortName = "shortName",
+            declaredName = "element 1",
+            declaredShortName = "shortName",
             body ="## SysMD Tutorial")
         elementsDAOList.add(elementDAO1)
 
@@ -323,11 +324,11 @@ import java.util.*
         assertEquals(2,branchesList.size)
 
         val elementDAO2 = ElementData(
-            elementId = UUID.randomUUID(),
-            type = "TextualRepresentation",
+            elementId = Uuid.random(),
+            type = ElementType.TextualRepresentation,
             language = "Markdown",
-            name= "element 2",
-            shortName = "shortName",
+            declaredName = "element 2",
+            declaredShortName = "shortName",
             body = "SysMD does not want to and does not replace SysMLv2 textual.")
 
         elementsDAOList.add(elementDAO2)

@@ -72,12 +72,11 @@ class ConstraintNetNormalizationTests {
     }
 
     @Test
-    fun booleanNormalizationWithoutPropertiesToBeNormalized() = testSession {
-        loadKerML("""package ScalarValues { datatype Boolean :> Base::DataValue; };
-                package Base { type DataValue :> Base::Anything; }
-                feature x: ScalarValues::Boolean; 
-                feature y: ScalarValues::Boolean; 
-                feature z: ScalarValues::Boolean = x and y; 
+    fun booleanNormalizationWithoutPropertiesToBeNormalized() = testSession("ScalarValues") {
+        loadKerML("""
+            feature x: ScalarValues::Boolean; 
+            feature y: ScalarValues::Boolean;                 
+            feature z: ScalarValues::Boolean = x and y; 
         """, Runlevel.VARIABLES)
         assertNoIssues()
         val normalizedProperties = normalizer.normalizeBooleanConstraints(this)
@@ -134,8 +133,8 @@ class ConstraintNetNormalizationTests {
         loadKerML("""
             feature x: ScalarValues::Boolean; 
             feature y: ScalarValues::Boolean; 
-            inv a1 false { not (x and y) }
-            inv a2 false { not (x or y) } 
+            inv false a1 { not (x and y) }
+            inv false a2 { not (x or y) } 
         """, Runlevel.VARIABLES)
         assertNoIssues()
         val normalizedProperties = normalizer.normalizeBooleanConstraints(this)
@@ -145,15 +144,14 @@ class ConstraintNetNormalizationTests {
     @Test
     fun booleanNormalizationTwoSetsOfPropertiesToBeNormalizedAndNegated() = testSession("ScalarValues") {
         loadKerML("""
-            package ScalarValues { datatype Boolean; }
             feature x: ScalarValues::Boolean;
             feature y: ScalarValues::Boolean;
             feature z: ScalarValues::Boolean;
-            inv a1 false { not (x and y) };
-            inv a2 false { not (x or y) };
-            inv b1 false { not (y or z) };
-            inv b2 false { not (y and z) };
-        """, Runlevel.VARIABLES)
+            inv false a1 { not (x and y) };
+            inv false a2 { not (x or y) };
+            inv false b1 { not (y or z) };
+            inv false b2 { not (y and z) };
+        """, Runlevel.ALL)
         assertNoIssues()
         val normalizedProperties = normalizer.normalizeBooleanConstraints(this)
         assertEquals(5, normalizedProperties.properties.size)

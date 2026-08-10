@@ -11,6 +11,7 @@ import io.github.tukcps.aadd.IDD
 import io.github.tukcps.aadd.values.IntegerRange
 import io.github.tukcps.aadd.values.Range
 import io.github.tukcps.aadd.values.XBool
+import kotlin.uuid.Uuid
 
 
 /**
@@ -25,6 +26,8 @@ interface Variable: ConstraintPropagation {
 
     val solver: Solver
 
+    val relatedElement: Uuid?
+    // @Deprecated("Replace with relatedElement", ReplaceWith("relatedElement"))
     val path: String
 
     val baseType: BaseType

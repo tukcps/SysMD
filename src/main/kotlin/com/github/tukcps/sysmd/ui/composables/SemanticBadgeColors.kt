@@ -2,6 +2,8 @@ package com.github.tukcps.sysmd.ui.composables
 
 import androidx.compose.ui.graphics.Color
 import com.github.tukcps.sysmd.model.datamodel.isSubclassOf
+import com.github.tukcps.sysmd.model.generated.ElementType
+import com.github.tukcps.sysmd.model.generated.ElementType.*
 
 /**
  * We introduce colors based on the role of classes in the Metamodel.
@@ -48,28 +50,28 @@ object TypeBadgeColors {
     private val DefaultDark             = BadgeColors(Color(0xFF3A3C3F), Color(0xFFE4E4E4))
 
     // ---------- Classification ----------------------------------------------
-    private fun family(type: String): BadgeFamily = when {
+    private fun family(type: ElementType): BadgeFamily = when {
 
         // Pure hierarchical structure
-        type == "Package" || type == "Namespace"
+        type == LibraryPackage || type == Package || type == Namespace
             -> BadgeFamily.Package
-        isSubclassOf(type, "AnnotatingElement")
+        isSubclassOf(type, AnnotatingElement)
             -> BadgeFamily.AnnotatingElement
 
-        isSubclassOf(type, "Behavior") || isSubclassOf(type, "Interaction")
+        isSubclassOf(type, Behavior) || isSubclassOf(type, Interaction)
             -> BadgeFamily.BehaviorDef
-        isSubclassOf(type, "Step") || isSubclassOf(type, "Succession") || isSubclassOf(type, "Flow")
+        isSubclassOf(type, Step) || isSubclassOf(type, Succession) || isSubclassOf(type, Flow)
             -> BadgeFamily.BehaviorUsage
 
-        isSubclassOf(type, "Multiplicity") || isSubclassOf(type, "Expression") || isSubclassOf(type, "AttributeUsage")
-                || type == "Feature"
+        isSubclassOf(type, Multiplicity) || isSubclassOf(type, Expression) || isSubclassOf(type, AttributeUsage)
+                || type == Feature
                     -> BadgeFamily.ComputeUsage
-        isSubclassOf(type, "Function") || isSubclassOf(type, "AttributeDefinition")
+        isSubclassOf(type, Function) || isSubclassOf(type, AttributeDefinition)
             -> BadgeFamily.ComputeDef
 
-        isSubclassOf(type, "Feature")
+        isSubclassOf(type, Feature)
             -> BadgeFamily.StructureUsage
-        isSubclassOf(type, "Type")
+        isSubclassOf(type, Type)
             -> BadgeFamily.StructureDef
 
         else ->
@@ -77,7 +79,7 @@ object TypeBadgeColors {
     }
 
     // ---------- Public API --------------------------------------------------
-    fun colors(type: String, dark: Boolean): BadgeColors {
+    fun colors(type: ElementType, dark: Boolean): BadgeColors {
         return when (family(type)) {
             BadgeFamily.Package
                 -> if (dark) PackageDark else PackageLight

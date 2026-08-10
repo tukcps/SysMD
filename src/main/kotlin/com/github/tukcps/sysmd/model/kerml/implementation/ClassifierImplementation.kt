@@ -1,25 +1,20 @@
 package com.github.tukcps.sysmd.model.kerml.implementation
 
 import com.github.tukcps.sysmd.model.kerml.Classifier
-import java.util.*
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
 open class ClassifierImplementation(
+    model : Session,
+    elementId : Uuid = Uuid.random(),
     declaredName: String? = null,
     declaredShortName: String? = null,
-    elementType: String = "Classifier"
 ): Classifier, TypeImplementation(
+    model,
+    elementId = elementId,
     declaredName=declaredName,
     declaredShortName = declaredShortName,
-    elementType = elementType
 ) {
 
-    override fun clone(): Classifier {
-        return ClassifierImplementation(
-            declaredName=declaredName,
-            declaredShortName=declaredShortName,
-        ).also {
-            it.model = model
-            it.updated = updated
-        }
-    }
+    override fun clone(): Classifier = ClassifierImplementation(model).also { it.updateFrom(this) }
 }

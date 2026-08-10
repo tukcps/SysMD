@@ -3,16 +3,15 @@
 package com.github.tukcps.sysmd.compiler.parser.sysmlv2
 
 import com.github.tukcps.sysmd.compiler.SysMLv2
+import com.github.tukcps.sysmd.compiler.parser.kerml.FeatureChain
 import com.github.tukcps.sysmd.compiler.parser.kerml.QualifiedName
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.compiler.semantics.Identification
-import com.github.tukcps.sysmd.compiler.semantics.kerml.TypeActions
+import com.github.tukcps.sysmd.compiler.semantics.kerml.TypeAction
+import com.github.tukcps.sysmd.compiler.semantics.kerml.parse
 import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.*
-import com.github.tukcps.sysmd.model.kerml.Type
-import com.github.tukcps.sysmd.model.kerml.implementation.ClassImplementation
-import com.github.tukcps.sysmd.model.sysml.SuccessionAsUsage
-import com.github.tukcps.sysmd.model.sysml.implementation.SuccessionAsUsageImplementation
-import java.util.*
+import com.github.tukcps.sysmd.model.datamodel.elementByName
+import com.github.tukcps.sysmd.model.generated.ElementType
 
 
 /**
@@ -31,13 +30,13 @@ import java.util.*
  *          | 'state' UsageDeclaration )
  *      ValuePart? StateUsageBody
  */
-fun SysMLv2.StateUsage() = StateUsageActions(semantics).parse {
+fun SysMLv2.StateUsage() = StateUsageAction(semantics).parse {
     STATE.consume()
     UsageDeclaration()
     StateUsageBody()
 }
 
-fun SysMLv2.StateDefinition() = TypeActions<Type>(semantics, ::ClassImplementation).parse {
+fun SysMLv2.StateDefinition() = TypeAction(semantics, ElementType.StateDefinition).parse {
     STATE.consume()
     DEF.consume()
     DefinitionDeclaration()
@@ -55,38 +54,30 @@ fun SysMLv2.StateDefinition() = TypeActions<Type>(semantics, ::ClassImplementati
  *          'then' TransitionSuccessionMember
  *          ActionBody
  */
-fun SysMLv2.TransitionUsage() = TransitionUsageActions(semantics).parse {
+fun SysMLv2.TransitionUsage() = TransitionUsageAction(semantics).parse {
 
     TRANSITION.consume()
 
     if(usageDeclarationStarts() || token.kind == FIRST) {
         UsageDeclaration()
         FIRST.consume()
-    } else semantics.create(Identification("trans_"+UUID.randomUUID().toString()))
-
-    // FeatureChainMember()
-    val succession = SuccessionAsUsageSemantics<SuccessionAsUsage>(semantics, ::SuccessionAsUsageImplementation)
-    succession.parse {
-        semantics.create(Identification("succ_" + UUID.randomUUID().toString()))
-        QualifiedName().also { semantics.setSourceEnd(unresolvedFeature(it)) }
     }
+
+    val source = FeatureChain()
 
     // EmptyParameterMember()
     optional(ACCEPT) { TriggerActionMember() }
-    optional(IF) { GuardExpressionMember()}
+    optional(IF) { GuardExpression()}
     THEN.consume()
-    succession.parse {
-        TransitionSuccessionMember()
-    }
+
+    TransitionSuccession(source)
+
     ActionBody()
 }
 
 
-fun SysMLv2.TransitionSuccessionMember() { // = SuccessionAsUsageSemantics(semantics, ::SuccessionAsUsageImplementation).parse {
-    QualifiedName().also {
-        semantics.create(null)
-        semantics.setTargetEnd(unresolvedFeature(it))
-    }
+fun SysMLv2.TransitionSuccession(source: String?=null) = SuccessionAsUsageAction(semantics).parse {
+    QualifiedName().semantics { setTarget(elementByName(it)); if (source != null) setSource(elementByName(source)) }
 }
 
 
@@ -100,7 +91,7 @@ fun SysMLv2.TransitionSuccessionMember() { // = SuccessionAsUsageSemantics(seman
  */
 fun SysMLv2.PayloadParameter() = PayloadParameterActions(semantics).parse { //typeName = QualifiedName())
     // PayloadFeature only
-    semantics.create(Identification(name = "payload"))
+    setIdentification(Identification(name = "payload"))
     QualifiedName().also { semantics.addTyping(it) }
     // other option not implemented ...
 }
@@ -109,9 +100,7 @@ fun SysMLv2.TriggerValuePart() {
 
 }
 
-
-fun SysMLv2.TriggerActionMember() = AcceptActionUsageActions(semantics).parse {
-    semantics.create(null)
+fun SysMLv2.TriggerActionMember() = AcceptActionUsageAction(semantics).parse {
     ACCEPT.consume()
     AcceptParameterPart()
 }

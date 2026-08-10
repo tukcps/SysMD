@@ -26,13 +26,12 @@ fun Namespace.resolveVars(qualifiedName: QualifiedName, searchInSuperClass: Bool
     }
 
     if (found?.memberElement is Feature)
-        return model!!.solver.getVariables(found.memberElement.path())?.toList()?:emptyList()
+        return model.solver.getVariables(found.memberElement.path())?.toList()?:emptyList()
 
     if (found == null)
         return emptyList()
 
-    model?.status?.error("'$qualifiedName' could be resolved, but is of wrong type",
-        element = found,
+    model.status.error("'$qualifiedName' could be resolved, but is of wrong type",
         cause = ElementNotFoundException(this, "'$qualifiedName' could be resolved, but is of wrong type"))
     return emptyList()
 }

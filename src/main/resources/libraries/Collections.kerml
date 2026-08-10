@@ -1,11 +1,11 @@
 
 standard library package Collections {
 
-        private import Base::*;
-        private import ScalarValues::*;
-        private import SequenceFunctions::size;
-        private import IntegerFunctions::*;
-        private import ControlFunctions::*;
+    private import Base::*;
+    private import ScalarValues::*;
+    private import SequenceFunctions::size;
+    private import IntegerFunctions::*;
+    private import ControlFunctions::*;
 
     abstract datatype Collection {
         feature elements[0..*] nonunique;

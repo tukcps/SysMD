@@ -5,15 +5,16 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import com.github.tukcps.sysmd.model.datamodel.ElementData
+import com.github.tukcps.sysmd.rest.entities.api.entities.CommitDataObject
+import com.github.tukcps.sysmd.rest.entities.api.entities.Project
+import com.github.tukcps.sysmd.rest.entities.api.entities.ProjectUsage
+import com.github.tukcps.sysmd.rest.entities.interchange.InterchangeProject
 import com.github.tukcps.sysmd.rest.entities.interchange.Meta
+import com.github.tukcps.sysmd.rest.entities.interchange.ProjectBase
+import com.github.tukcps.sysmd.services.util.JsonSupport
 import com.github.tukcps.sysmd.ui.writeText
-import io.github.tukcps.sysmlv2.api.entities.CommitDataObject
-import io.github.tukcps.sysmlv2.api.entities.Project
-import io.github.tukcps.sysmlv2.api.entities.ProjectUsage
-import io.github.tukcps.sysmlv2.interchange.InterchangeProject
-import io.github.tukcps.sysmlv2.interchange.ProjectBase
-import kotlinx.datetime.toJavaInstant
-import kotlinx.datetime.toKotlinInstant
+import kotlinx.datetime.Instant
 import kotlinx.io.buffered
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
@@ -21,9 +22,7 @@ import kotlinx.io.readString
 import kotlinx.io.writeString
 import kotlinx.serialization.json.Json
 import org.apache.logging.log4j.LogManager
-import java.time.OffsetDateTime
-import java.time.ZoneOffset
-import java.util.*
+import kotlin.uuid.Uuid
 
 
 /**
@@ -43,7 +42,7 @@ class ProjectData(
     var meta: Meta? = null,             // In case of interchange project
 ): Project {
 
-    override var id: UUID
+    override var id: Uuid
         get() = project.id
         set(value) { project.id = value }
 
@@ -51,12 +50,12 @@ class ProjectData(
         get() = project.name
         set(value) { if (project is Project) (project as Project).name = value else (project as InterchangeProject).name = value?:""}
 
-    override var created: OffsetDateTime
+    override var created: Instant
         get() = if (project is Project) (project as Project).created
-            else meta?.created?.toJavaInstant()?.atOffset(ZoneOffset.UTC)?:OffsetDateTime.now()
+            else meta?.created?: Instant.DISTANT_FUTURE
         set(value) {
             if (project is Project) (project as Project).created = value
-            else meta?.created = value.toInstant().toKotlinInstant()
+            else meta?.created = value
         }
 
     override var alias: Collection<String>
@@ -114,10 +113,7 @@ class ProjectData(
     @Deprecated("Use function in services")
     fun addIndex(key: String, fileName: String): Path {
         if (meta == null) {
-            meta = Meta(
-                index = linkedMapOf(key to fileName),
-                created = created.toInstant().toKotlinInstant(),
-            )
+            meta = Meta(index = linkedMapOf(key to fileName), created = created)
         }
         meta?.index?.set(key, fileName)
 
@@ -156,20 +152,16 @@ class ProjectData(
      * The directory is given by settings and derived from settings and project name,
      * project attribute 'directory'.
      */
-    // @Deprecated("Use service function for setting meta and project data instead")
+    @Deprecated("Use service function for setting meta and project data instead (???)")
     fun saveToInterchangeFiles() {
         try {
             if (directory != null) {
                 SystemFileSystem.createDirectories(directory!!)
-                val objectMapper = ObjectMapper()
-                    .registerKotlinModule()
-                    .registerModule(JavaTimeModule())
-                    .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-                    .writerWithDefaultPrettyPrinter()
 
                 val projectJson = Path(directory!!, ".project.json")
                 SystemFileSystem.sink(projectJson).buffered().use { sink ->
-                    val jsonForProject = objectMapper.writeValueAsString(InterchangeProject(this.project as InterchangeProject)
+                    val jsonForProject = JsonSupport.json.encodeToString(
+                        InterchangeProject(this.project as InterchangeProject)
                         .also { it.id = this.project.id }
                     )
                     sink.writeString(jsonForProject)
@@ -201,10 +193,14 @@ class ProjectData(
                 if (SystemFileSystem.metadataOrNull(metaFile)?.isRegularFile != true) return null
 
                 val projectJson = SystemFileSystem.source(projectFile).buffered().use { it.readString() }
-                val project =  objectMapper.readValue(projectJson, InterchangeProject("").javaClass)
+                val project = try {
+                    JsonSupport.json.decodeFromString<InterchangeProject>(projectJson)
+                } catch (e: Exception) {
+                    objectMapper.readValue(projectJson, InterchangeProject::class.java)
+                }
 
                 val metaJson = SystemFileSystem.source(metaFile).buffered().use { it.readString() }
-                val meta = Json.decodeFromString<Meta>(metaJson)
+                val meta = JsonSupport.json.decodeFromString<Meta>(metaJson)
 
                 val projectData = ProjectData(project, directory, meta)
                 return projectData
@@ -213,9 +209,11 @@ class ProjectData(
                 return null
             }
         }
+
         private val objectMapper: ObjectMapper = jacksonObjectMapper()
             .registerKotlinModule()
             .registerModule(JavaTimeModule())
+            .registerModule(com.github.tukcps.sysmd.configuration.JacksonKotlinUuidConfig.createModule())
             .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
 
         private val logger = LogManager.getLogger(ProjectData::class.java)!!

@@ -1,23 +1,31 @@
 package com.github.tukcps.sysmd.model.expression.implementation
 
-import com.github.tukcps.sysmd.model.expression.*
-import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.model.kerml.implementation.FeatureTypingImplementation
-import com.github.tukcps.sysmd.model.util.*
-import io.github.tukcps.aadd.*
+import com.github.tukcps.sysmd.model.expression.AstLeaf
+import com.github.tukcps.sysmd.model.expression.AstNode
+import com.github.tukcps.sysmd.model.expression.LiteralExpression
+import com.github.tukcps.sysmd.model.kerml.Type
+import com.github.tukcps.sysmd.model.util.QualifiedName
+import com.github.tukcps.sysmd.model.util.SimpleName
+import com.github.tukcps.sysmd.model.util.UnresolvedType
+import com.github.tukcps.sysmd.services.session.Session
+import io.github.tukcps.aadd.AADD
+import io.github.tukcps.aadd.BDD
+import io.github.tukcps.aadd.DD
+import io.github.tukcps.aadd.IDD
+import kotlin.uuid.Uuid
 
 abstract class LiteralExpressionImplementation(
+    model : Session,
+    elementId : Uuid = Uuid.random(),
     declaredName: SimpleName? = null,
     declaredShortName: SimpleName? = null,
-    typeConstraint: MutableList<String> = mutableListOf(),
     expression: String? = null,
-    elementType: String = "LiteralExpression"
 ) : LiteralExpression, ExpressionImplementation(
+    model,
+    elementId = elementId,
     declaredName = declaredName,
     declaredShortName = declaredShortName,
-    typeConstraint = typeConstraint,
     expression = expression,
-    elementType = elementType
 )
 {
     override var isModelLevelEvaluable: Boolean = true
@@ -32,24 +40,24 @@ abstract class LiteralExpressionImplementation(
     abstract val literalValue: AstLeaf? //can't narrow value field down to Leaf, so here we go...
 
     override var domain: DD<*>? = null
-        get() {
+        get() =
             //literalValue?.dd?.evaluate() }
-            val dom = literalValue?.dd?.evaluate()
-            when (dom) {
-                is BDD -> (if (dom.height() == 0) return dom else return this.model?.builder?.Bool)
-                is AADD -> return dom
-                is IDD -> return dom
+            when (val dom = literalValue?.dd?.evaluate()) {
+                is BDD -> if (dom.height() == 0) dom else this.model.builder.Bool
+                is AADD -> dom
+                is IDD -> dom
                 //is String -> throw Exception("TODO")
                 else -> TODO()
             }
-        }
 
     /** Qualified name of this literal's type */
     abstract val typeName : QualifiedName
     protected abstract val cachedType : Type?
 
     /** Propagates type information around this  */
-    override fun learnType() : List<Type> = listOf(cachedType ?: UnresolvedType(typeName))
+    override fun learnType() : List<Type> = listOf(
+        cachedType ?: UnresolvedType(model, typeName)
+    )
 
 
     final override fun initialize()
@@ -64,7 +72,9 @@ abstract class LiteralExpressionImplementation(
     }
 
     final override fun evalDown()
-    {}
+    {
+        downQuantity = upQuantity
+    }
 
     override fun toAstString(b : StringBuilder, precedence : Int)
     {

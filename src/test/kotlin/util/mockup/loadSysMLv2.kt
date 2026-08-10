@@ -16,7 +16,8 @@ fun Session.loadSysMLv2(
     input: String,
     runlevel: Runlevel = settings.runlevel,
 ){
-    SysMLv2(model = this).parse(input)
+    val elements = SysMLv2(model = this).parse(input)
+    import(elements)
     try {
         initialize(runlevel)
     } catch(exception: SysMDError) {

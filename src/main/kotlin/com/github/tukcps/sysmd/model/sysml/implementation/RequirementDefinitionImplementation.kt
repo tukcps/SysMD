@@ -2,19 +2,20 @@ package com.github.tukcps.sysmd.model.sysml.implementation
 
 import com.github.tukcps.sysmd.model.kerml.implementation.TypeImplementation
 import com.github.tukcps.sysmd.model.sysml.RequirementDefinition
-import java.util.UUID
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
-class RequirementDefinitionImplementation(
+open class RequirementDefinitionImplementation(
+    model : Session,
+    elementId : Uuid = Uuid.random(),
     declaredName: String? = null,
     declaredShortName: String? = null,
 ): RequirementDefinition, TypeImplementation(
+    model,
+    elementId = elementId,
     declaredName = declaredName,
     declaredShortName = declaredShortName,
-    elementType = "RequirementDefinition"
 ) {
-    override fun clone(): RequirementDefinition  = RequirementDefinitionImplementation(
-        declaredName = declaredName,
-        declaredShortName = declaredShortName).also {
-            it.updateFrom(this)
-        }
+    override fun clone(): RequirementDefinition  = RequirementDefinitionImplementation(model)
+        .also { it.updateFrom(this) }
 }

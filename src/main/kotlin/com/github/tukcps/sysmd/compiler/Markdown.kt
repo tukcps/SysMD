@@ -6,6 +6,7 @@ import com.github.tukcps.sysmd.services.repositories.local.Language
 import com.github.tukcps.sysmd.services.repositories.local.ProjectUsageData
 import com.github.tukcps.sysmd.services.repositories.local.getMdSource
 import com.github.tukcps.sysmd.services.session.ProjectSession
+import io.ktor.http.*
 import org.commonmark.Extension
 import org.commonmark.ext.front.matter.YamlFrontMatterBlock
 import org.commonmark.ext.front.matter.YamlFrontMatterExtension
@@ -14,7 +15,6 @@ import org.commonmark.ext.gfm.tables.TablesExtension
 import org.commonmark.node.*
 import org.commonmark.parser.IncludeSourceSpans
 import org.commonmark.parser.Parser
-import java.net.URI
 
 
 /**
@@ -50,7 +50,7 @@ fun ProjectSession.importMD(input: String, createTextualRepresentationIn: Namesp
             is FencedCodeBlock -> {
                 val language = node.info.ifEmpty { "SysMD" }
                 if (createTextualRepresentationIn != null)
-                    addOwnedMember(TextualRepresentationImplementation(language = language, body = node.literal.trim('\n')), createTextualRepresentationIn)
+                    addOwnedMember(TextualRepresentationImplementation(this, language = language, body = node.literal.trim('\n')), createTextualRepresentationIn)
                 afterCodeBlock = true
             }
             is Heading -> {
@@ -58,20 +58,21 @@ fun ProjectSession.importMD(input: String, createTextualRepresentationIn: Namesp
                 beforeFirstHeading = false
                 val str = getMdSource(node, inputLines)
                 if (createTextualRepresentationIn != null)
-                    addOwnedMember(TextualRepresentationImplementation(language = "Markdown", body = str), createTextualRepresentationIn)
+                    addOwnedMember(TextualRepresentationImplementation(this, language = "Markdown", body = str), createTextualRepresentationIn)
             }
             is YamlFrontMatterBlock -> {
                 if (afterCodeBlock || beforeFirstHeading) {
                     val str = getMdSource(node, inputLines)
                     if (createTextualRepresentationIn != null)
-                        addOwnedMember(TextualRepresentationImplementation(language = Language.YAML.toString(), body=str), createTextualRepresentationIn)
+                        addOwnedMember(TextualRepresentationImplementation(this, language = Language.YAML.toString(), body=str), createTextualRepresentationIn)
                     afterCodeBlock = false
                 }
                 var yaml = node.firstChild as YamlFrontMatterNode?
                 while (yaml != null) {
                     try {
                         when (yaml.key) {
-                            "usage"      -> yaml.values.firstOrNull()?.let { it.split(",").forEach { str -> project.addUsage(ProjectUsageData(URI(str.trim()))) } }
+                            "usage"      -> yaml.values.firstOrNull()?.let { it.split(",").forEach {
+                                str -> project.addUsage(ProjectUsageData(Url(str.trim()))) } }
                         }
                     } catch (e: Exception) {
                         status.fatal(message = "Error while parsing YAML", cause = e)
@@ -84,7 +85,7 @@ fun ProjectSession.importMD(input: String, createTextualRepresentationIn: Namesp
                 if (afterCodeBlock || beforeFirstHeading) {
                     val str = getMdSource(node, inputLines)
                     if (createTextualRepresentationIn != null)
-                        addOwnedMember(TextualRepresentationImplementation(language = Language.MARKDOWN.toString(), body=str), createTextualRepresentationIn)
+                        addOwnedMember(TextualRepresentationImplementation(this, language = Language.MARKDOWN.toString(), body=str), createTextualRepresentationIn)
                     afterCodeBlock = false
                 }
             }

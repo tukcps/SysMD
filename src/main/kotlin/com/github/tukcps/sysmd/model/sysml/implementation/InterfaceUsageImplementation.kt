@@ -1,19 +1,13 @@
 package com.github.tukcps.sysmd.model.sysml.implementation
 
 import com.github.tukcps.sysmd.model.sysml.InterfaceUsage
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
-class InterfaceUsageImplementation(
-    declaredName: String? = null,
-    declaredShortName: String? = null,
-    elementType: String = "InterfaceUsage",
-): InterfaceUsage, ConnectionUsageImplementation(
-    declaredName = declaredName,
-    declaredShortName = declaredShortName,
-    elementType = elementType,
-){
-    override fun clone(): InterfaceUsage {
-        return InterfaceUsageImplementation().also {
-            it.updateFrom(this)
-        }
+class InterfaceUsageImplementation(model : Session,elementId : Uuid = Uuid.random())
+    : InterfaceUsage, ConnectionUsageImplementation(model,elementId = elementId)
+{
+    override fun clone(): InterfaceUsage = InterfaceUsageImplementation(model).also {
+        it.updateFrom(this)
     }
 }

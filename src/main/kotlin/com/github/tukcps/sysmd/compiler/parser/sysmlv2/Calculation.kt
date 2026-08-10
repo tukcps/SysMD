@@ -6,13 +6,10 @@ import com.github.tukcps.sysmd.compiler.SysMLv2
 import com.github.tukcps.sysmd.compiler.parser.kerml.MemberPrefix
 import com.github.tukcps.sysmd.compiler.parser.kerml.OwnedExpression
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
-import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
-import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.CalculationDefinitionActions
-import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.kerml.Namespace
-import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
-import com.github.tukcps.sysmd.model.sysml.implementation.CalculationDefinitionImplementation
-
+import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureAction
+import com.github.tukcps.sysmd.compiler.semantics.kerml.parse
+import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.CalculationDefinitionAction
+import com.github.tukcps.sysmd.model.generated.ElementType
 
 /**
  * 8.2.2.18 Calculations Textual Notation
@@ -41,7 +38,7 @@ import com.github.tukcps.sysmd.model.sysml.implementation.CalculationDefinitionI
  *      CalculationDefinition = OccurrenceDefinitionPrefix 'calc' 'def'
  *          DefinitionDeclaration CalculationBody
  */
-fun SysMLv2.CalculationDefinition() = CalculationDefinitionActions(semantics, ::CalculationDefinitionImplementation).parse {
+fun SysMLv2.CalculationDefinition() = CalculationDefinitionAction(semantics).parse {
     CALC.consume()
     DEF.consume()
     DefinitionDeclaration()
@@ -52,7 +49,7 @@ fun SysMLv2.CalculationDefinition() = CalculationDefinitionActions(semantics, ::
  *      CalculationUsage = OccurrenceUsagePrefix 'calc'
  *          ActionUsageDeclaration CalculationBody
  */
-fun SysMLv2.CalculationUsage() = FeatureActions<Feature>(semantics, ::FeatureImplementation).parse {
+fun SysMLv2.CalculationUsage() = FeatureAction(semantics, ElementType.CalculationUsage).parse {
     CALC.consume()
     ActionUsageDeclaration()
     CalculationBody()
@@ -99,12 +96,11 @@ fun SysMLv2.CalculationBodyItemStarts(): Boolean = actionBodyItemStarts() || (to
  *      ResultExpressionMember = MemberPrefix?  OwnedExpression
  */
 fun SysMLv2.ResultExpressionMember() {
-    val owner = semantics.element<Namespace>()
+    val owner = semantics.element
     val iBeforeExpression = token.indices.first
     OwnedExpression().also {
-        if (owner is Feature) {
-            owner.indices = iBeforeExpression..consumedToken.indices.last
-            owner.expression = input.subSequence(owner.indices!!).toString().trim()
-        }
+        owner.indices = iBeforeExpression..consumedToken.indices.last
+        owner.body = input.subSequence(owner.indices!!).toString().trim()
+        semantics.addOwnedElement(it, ElementType.ResultExpressionMembership)
     }
 }

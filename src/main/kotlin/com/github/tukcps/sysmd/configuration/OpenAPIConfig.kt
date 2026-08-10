@@ -29,8 +29,8 @@ class OpenAPIConfig {
                     .license(License().name("(c) TU Kaiserslautern, Department of Cyber-Physical Systems"))
             )        .tags(
                 listOf(
-                    Tag().name(SESSION_RESOURCE).description("The Session Controller is for the administration of sessions."),
-                    Tag().name(PROJECT_RESOURCE).description("CRUD operations on Projects"),
+                    Tag().name(SESSION_RESOURCE).description("The Session Controller provides the session service API for, e.g., a web-based GUI."),
+                    Tag().name(PROJECT_RESOURCE).description("The Project Controller provides CRUD operations on Projects"),
                     Tag().name(ELEMENT_RESOURCE).description("Getting the Elements of Project's Commits"),
                 )
             )

@@ -16,7 +16,6 @@ interface TextualRepresentation: AnnotatingElement {
     /**
      * Runs the parser depending on the language field.
      */
-    fun compile()
     override fun clone(): TextualRepresentation
 
     fun getOwnerPrefix(): QualifiedName {

@@ -5,10 +5,10 @@ package com.github.tukcps.sysmd.compiler.parser.sysmlv2
 import com.github.tukcps.sysmd.compiler.SysMLv2
 import com.github.tukcps.sysmd.compiler.parser.kerml.*
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
-import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
+import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureAction
+import com.github.tukcps.sysmd.compiler.semantics.kerml.parse
 import com.github.tukcps.sysmd.exceptions.throwSyntaxError
-import com.github.tukcps.sysmd.model.sysml.StateUsage
-import com.github.tukcps.sysmd.model.sysml.implementation.StateUsageImplementation
+import com.github.tukcps.sysmd.model.generated.ElementType
 
 
 /**
@@ -39,7 +39,7 @@ fun SysMLv2.StateActionUsage() {
  *          (OwnedReferenceSubsetting FeatureSpecializationPart? | 'action' UsageDeclaration)
  *          ValuePart?
  */
-fun SysMLv2.StatePerformActionUsage() = FeatureActions<StateUsage>(semantics, ::StateUsageImplementation, "States::StateAction").parse {
+fun SysMLv2.StatePerformActionUsage() = FeatureAction(semantics, ElementType.StateUsage, "States::StateAction").parse {
     PerformActionUsageDeclaration()
     ActionBody()
 }
@@ -164,7 +164,7 @@ fun SysMLv2.StateBodyItem() {
  */
 fun SysMLv2.TargetTransitionUsageMember() {
     THEN.consume()
-    TransitionSuccessionMember()
+    TransitionSuccession()
     ActionBody()
 }
 

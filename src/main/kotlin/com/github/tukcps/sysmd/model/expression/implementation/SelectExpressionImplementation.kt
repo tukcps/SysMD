@@ -2,31 +2,32 @@ package com.github.tukcps.sysmd.model.expression.implementation
 
 import com.github.tukcps.sysmd.model.expression.SelectExpression
 import com.github.tukcps.sysmd.model.util.SimpleName
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
 class SelectExpressionImplementation(
+	model : Session,
+	elementId : Uuid = Uuid.random(),
 	declaredName: SimpleName? = null,
 	declaredShortName: SimpleName? = null,
-	typeConstraint: MutableList<String> = mutableListOf(),
-	expression: String? = null,
-	elementType: String = "SelectExpression"
+	expression: String? = null
 ) : SelectExpression, OperatorExpressionImplementation(
-	declaredName = declaredName,
-	declaredShortName = declaredShortName,
-	typeConstraint = typeConstraint,
-	expression = expression,
-	elementType = elementType)
-{
+    model,
+    elementId = elementId,
+    declaredName = declaredName,
+    declaredShortName = declaredShortName,
+    expression = expression
+) {
 
 	init {
 		operator = "select"
 	}
 
 	override fun clone() = SelectExpressionImplementation(
+		model,
 		declaredName= declaredName,
 		declaredShortName = declaredShortName,
-		typeConstraint = typeConstraint,
 		expression = expression,
-		elementType = elementType,
 	).also {
 		it.updateFrom(this)
 	}

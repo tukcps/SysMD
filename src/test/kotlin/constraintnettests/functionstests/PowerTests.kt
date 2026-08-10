@@ -2,23 +2,21 @@ package constraintnettests.functionstests
 
 import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.services.Runlevel
-import io.github.tukcps.aadd.IDD
-import kotlin.test.Test
-import kotlin.test.Ignore
 import util.assertNoIssues
 import util.mockup.loadKerML
-import util.mockup.loadSysMLv2
 import util.testSession
-import kotlin.math.*
-import kotlin.test.*
+import kotlin.math.pow
+import kotlin.test.Ignore
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class PowerTests {
 
         @Test
         fun evalUpWithPowB_real_value() = testSession("Ranges") {
             loadKerML("""
-                feature a: Ranges::RealInRange {:>> range = "3.0 .. 3.0";} 
-                feature b: Ranges::RealInRange {:>> range = "4.0 .. 4.0";} 
+                feature a: Ranges::RealInRange {:>> range = 3.0 .. 3.0;} 
+                feature b: Ranges::RealInRange {:>> range = 4.0 .. 4.0;} 
                 feature c: ScalarValues::Real = power(a, b); 
             """, Runlevel.ALL)
             val c = solver.getVariable("c") !!
@@ -32,8 +30,8 @@ class PowerTests {
         fun evalUpWithPowB_real_range() = testSession("Ranges") {
             loadKerML(
                 """
-                feature a: Ranges::RealInRange {:>> range = "1.5 .. 3.5";}
-                feature b: Ranges::RealInRange {:>> range = "2.5 .. 4.5";}
+                feature a: Ranges::RealInRange {:>> range = 1.5 .. 3.5;}
+                feature b: Ranges::RealInRange {:>> range = 2.5 .. 4.5;}
                 feature c: ScalarValues::Real = power(a, b); """
             )
             solver.propagate()
@@ -60,8 +58,8 @@ class PowerTests {
         @Test
         fun power_int_value() = testSession("Ranges") {
             loadKerML("""
-                feature a: Ranges::IntegerInRange {:>> range = "2..3";}
-                feature b: Ranges::IntegerInRange {:>> range = "4..5";}
+                feature a: Ranges::IntegerInRange {:>> range = 2..3;}
+                feature b: Ranges::IntegerInRange {:>> range = 4..5;}
                 feature c: ScalarValues::Integer = power(a, b);"""
             )
             solver.propagate()
@@ -74,11 +72,10 @@ class PowerTests {
         @Test
         fun power_evalDownA() = testSession("Ranges") {
             loadKerML("""
-                feature a: Ranges::IntegerInRange {:>> range = "1..2";}
-                feature b: Ranges::IntegerInRange {:>> range = "1..3";}
-                feature c: Ranges::IntegerInRange = power(a, b) {:>> range = "8..8";} """
-            )
-            solver.propagate()
+                feature a: Ranges::IntegerInRange {:>> range = 1..2;}
+                feature b: Ranges::IntegerInRange {:>> range = 1..3;}
+                feature c: Ranges::IntegerInRange = power(a, b) {:>> range = 8;} 
+            """, Runlevel.ALL)
             assertEquals(2L, solver.getVariable("a")!!.min())
             assertEquals(2L, solver.getVariable("a")!!.max())
             assertEquals("1", solver.getVariable("a")!!.vectorQuantity.unit.toString())
@@ -88,9 +85,9 @@ class PowerTests {
         @Test @Ignore
         fun power_evalDownB() = testSession("Ranges") {
             loadKerML("""
-                feature a: Ranges::IntegerInRange {:>> range = "1..2";}
-                feature b: Ranges::IntegerInRange {:>> range = "1..3";}
-                feature c: Ranges::IntegerInRange = power(a, b) {:>> range = "8..8";} """
+                feature a: Ranges::IntegerInRange {:>> range = 1..2;}
+                feature b: Ranges::IntegerInRange {:>> range = 1..3;}
+                feature c: Ranges::IntegerInRange = power(a, b) {:>> range = 8;} """
             )
             solver.propagate()
             assertEquals(8, solver.getVariable("c")!!.idd().getRange().min)
@@ -121,8 +118,8 @@ class PowerTests {
             loadKerML("""
                 feature a: ScalarValues::Integer = 0;
                 feature b: ScalarValues::Integer = 3;
-                feature c: ScalarValues::Integer = power(a, b);"""
-            )
+                feature c: ScalarValues::Integer = power(a, b);
+            """)
             solver.propagate()
             assertEquals(0, solver.getVariable("c")!!.idd().getRange().min)
             assertEquals(0, solver.getVariable("c")!!.idd().getRange().max)
@@ -188,7 +185,7 @@ class PowerTests {
                 feature a: ScalarValues::Real = 5.0;
                 feature b: ScalarValues::Real = 3.0;
                 feature y: ScalarValues::Real = a^b;
-            """, com.github.tukcps.sysmd.services.Runlevel.ALL)
+            """, Runlevel.ALL)
             assertEquals(125.0, solver.getVariable("y")!!.min(), 0.0001)
             assertNoIssues()
         }
@@ -200,7 +197,7 @@ class PowerTests {
                 feature a: ScalarValues::Integer = 5;
                 feature b: ScalarValues::Integer = 3;
                 feature y: ScalarValues::Integer = a^b;
-            """, com.github.tukcps.sysmd.services.Runlevel.ALL)
+            """, Runlevel.ALL)
             assertEquals(125L, solver.getVariable("y")!!.min())
             assertNoIssues()
         }
@@ -211,8 +208,8 @@ class PowerTests {
             loadKerML("""
                     feature a: ScalarValues::Real;
                     feature b: ScalarValues::Real = 3.0;
-                    feature y: Ranges::RealInRange = a ^ b{ :>> range = "125..125";}
-            """, com.github.tukcps.sysmd.services.Runlevel.ALL)
+                    feature y: Ranges::RealInRange = a ^ b{ :>> range = 125;}
+            """, Runlevel.ALL)
             assertEquals(5.0, solver.getVariable("a")!!.min(), 0.0001)
             assertEquals(5.0, solver.getVariable("a")!!.max(), 0.0001)
             assertNoIssues()
@@ -235,11 +232,10 @@ class PowerTests {
         @Test
         fun power_negative_exponent() = testSession("Ranges") {
             loadKerML("""
-                feature a: Ranges::RealInRange {:>> range = "2.0 .. 2.0";}
-                feature b: Ranges::RealInRange {:>> range = "-2.0 .. -2.0";}
+                feature a: Ranges::RealInRange {:>> range = 2.0 .. 2.0;}
+                feature b: Ranges::RealInRange {:>> range = -2.0 .. -2.0;}
                 feature c: ScalarValues::Real = power(a, b);
-            """)
-            solver.propagate()
+            """, Runlevel.ALL)
             assertNoIssues()
             assertEquals(0.25, solver.getVariable("c")!!.min(), 0.000001)
             assertEquals(0.25, solver.getVariable("c")!!.max(), 0.000001)
@@ -248,11 +244,10 @@ class PowerTests {
         @Test
         fun power_negative_base_fractional_exponent() = testSession("Ranges") {
             loadKerML("""
-                feature a: Ranges::RealInRange {:>> range = "-2.0 .. -2.0";}
-                feature b: Ranges::RealInRange {:>> range = "0.5 .. 0.5";}
+                feature a: Ranges::RealInRange {:>> range = -2.0 .. -2.0;}
+                feature b: Ranges::RealInRange {:>> range = 0.5 .. 0.5;}
                 feature c: ScalarValues::Real = power(a, b);
-            """)
-            solver.propagate()
+            """, Runlevel.ALL)
             assertEquals(1, status.issues.size)
             assertEquals(Issue.Kind.WARN_INCONSISTENCY, status.issues.firstOrNull()?.kind)
         }

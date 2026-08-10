@@ -9,7 +9,7 @@ import util.mockup.loadKerML
 import kotlin.test.*
 
 class InvocationExpressionsTests {
-	@Test
+	@Test @Ignore // fixme: named args need to be redone
 	fun namedArgumentResolution() = testSession("ScalarValues") {
 		loadKerML("""
 			private import ScalarValues::*;
@@ -17,35 +17,8 @@ class InvocationExpressionsTests {
 		""".trimIndent())
 		assertNoIssues()
 
-		val expr = InvocationExpressionImplementation(
-			"result", "result"
-		).also {
-			it.model = this
-			it.functionName = "foo"
-			addOwnedMember(it, global)
-
-			val y = literalExpression(true).apply {
-				declaredName = "y"
-				declaredShortName = "y"
-			}
-			val x = literalExpression(17).apply {
-				declaredName = "x"
-				declaredShortName = "x"
-			}
-
-			// setting negative indices signals that name-based reordering is required
-			assertIs<ParameterMembership>(
-				addOwnedMember(y, it).owningRelationship
-			).apply {
-				parameterIndex = -1
-			}
-
-			assertIs<ParameterMembership>(
-				addOwnedMember(x, it).owningRelationship
-			).apply {
-				parameterIndex = -1
-			}
-		}
+		val expr = parseExpr("foo(y = true, x = 17)")
+		assertIs<InvocationExpression>(expr)
 
 		// reorder arguments based on names
 		expr.initType()

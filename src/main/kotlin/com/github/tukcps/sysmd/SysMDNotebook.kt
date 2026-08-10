@@ -18,8 +18,9 @@ import com.github.tukcps.sysmd.exports.Exporter
 import com.github.tukcps.sysmd.exports.UcbDataPack
 import com.github.tukcps.sysmd.generated.resources.Res
 import com.github.tukcps.sysmd.generated.resources.logo
+import com.github.tukcps.sysmd.model.datamodel.toElement
 import com.github.tukcps.sysmd.rest.RESTRepository
-import com.github.tukcps.sysmd.services.repositories.local.toElement
+import com.github.tukcps.sysmd.services.session.SessionManager
 import com.github.tukcps.sysmd.ui.MainView
 import com.github.tukcps.sysmd.ui.MenuBar
 import com.github.tukcps.sysmd.ui.composables.elementToSystemC
@@ -197,7 +198,8 @@ object SysMDNotebook {
                             var ucbData: UcbDataPack? = null
                             val systemcExporter = Exporter()
                             try {
-                                systemcExporter.analyzeSysMD(elementToSystemC?.value!!.toElement())
+                                val session = SessionManager.getSession(sysMdViewModel.sessionId) ?: throw IllegalStateException("No session")
+                                systemcExporter.analyzeSysMD(elementToSystemC?.value!!.toElement(session))
                                 ucbData = systemcExporter.getUCBData()
                                 openUCB.value = true
                             } catch (e: Exception) {

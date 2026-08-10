@@ -4,6 +4,9 @@ import com.github.tukcps.sysmd.compiler.KerML
 import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.exceptions.SysMDException
 import com.github.tukcps.sysmd.model.kerml.Element
+import com.github.tukcps.sysmd.model.datamodel.ElementData
+import java.util.*
+import kotlin.uuid.Uuid
 
 /**
  * In this class, we save the status of the current analysis.
@@ -17,24 +20,26 @@ import com.github.tukcps.sysmd.model.kerml.Element
  * - FATAL (internal events that require a reset)
  */
 class SessionStatus {
-
-    /** The number of iterations used in the constraint propagation */
-    var numberOfPropagateIterations: Int = 0
+    /**
+     * The elements built in the last compile run.
+     */
+    val elementsBuilt = mutableListOf<ElementData>()
 
     /**
      * Hashmap of error messages, property id is key, string (error message).
      */
     val issues = linkedSetOf<Issue>()
 
+    /** The number of iterations used in the constraint propagation */
+    var numberOfPropagateIterations: Int = 0
+
+
+
     /**
      * Map of updated values; the element id is the key, and string (updated result).
      */
     val updatedValues: HashMap<String, String> = hashMapOf()
 
-    /**
-     * List of all created element's path
-     */
-    val createdElements = mutableSetOf<String>()
 
     /**
      * Resets all internal values: source, lineNo, columnNo, and the maps errors, errorsByLine,
@@ -42,24 +47,22 @@ class SessionStatus {
      */
     fun reset() {
         issues.clear()
-        updatedValues.clear()
-        createdElements.clear()
+        elementsBuilt.clear()
     }
 
     /**
      * The information reporting function adds message reports to the status.
      * @param message A descriptive information message.
-     * @param compiler The compiler in which complementary context information is searched.
      * @param element The session in which complementary context information is searched.
      */
-    fun info(message: String, compiler: KerML? = null, element: Element? = null, cause: Throwable? = null) {
+    fun info(message: String, element: ElementData? = null, cause: Throwable? = null) {
         issues.add(
             Issue(
                 kind = Issue.Kind.INFO,
                 message = message,
-                input = compiler?.input?:element?.input,
-                token = compiler?.token,
-                path = compiler?.semantics?.ownerName()?:element?.path(),
+                input = element?.input,
+                indices = element?.indices,
+                element = element?.elementId,
                 cause = cause
             )
         )
@@ -68,17 +71,16 @@ class SessionStatus {
     /**
      * The information reporting function adds message reports to the status.
      * @param message A descriptive information message.
-     * @param compiler The compiler in which complementary context information is searched.
      * @param element The session in which complementary context information is searched.
      */
-    fun inconsistency(message: String, compiler: KerML? = null, element: Element? = null, path: String?=null, kind: Issue.Kind = Issue.Kind.WARN_INCONSISTENCY) {
+    fun inconsistency(message: String, element: ElementData?=null, kind: Issue.Kind = Issue.Kind.WARN_INCONSISTENCY) {
         issues.add(
             Issue(
                 kind = kind,
                 message = message,
-                input = compiler?.input?:element?.input,
-                token = compiler?.token,
-                path = path?:compiler?.semantics?.ownerName()?:element?.path(),
+                input = element?.input,
+                indices = element?.indices,
+                element = element?.elementId
             )
         )
     }
@@ -87,23 +89,41 @@ class SessionStatus {
      * The information reporting function adds message reports to the status.
      * @param kind A classification of the warning
      * @param message A descriptive information message.
-     * @param compiler The compiler in which complementary context information is searched.
      * @param element The session in which complementary context information is searched.
      */
     fun warn(
         kind: Issue.Kind = Issue.Kind.WARN,
-        message: String, compiler: KerML? = null,
-        path: String? = null,
-        element: Element? = null,
+        message: String,
+        element: ElementData? = null,
         cause: Throwable? = null) {
         issues.add(
             Issue(
                 kind = kind,
                 message = message,
-                input = compiler?.input?:element?.input?:element?.owner?.input,
-                indices = element?.indices?:element?.owner?.indices,
-                token = compiler?.token,
-                path = path?:element?.path(),
+                input = element?.input,
+                indices = element?.indices,
+                element =element?.elementId,
+                cause = cause
+            )
+        )
+    }
+
+    /**
+     * The information reporting function adds message reports to the status.
+     * @param kind A classification of the warning
+     * @param message A descriptive information message.
+     * @param elementId The element id of the related element.
+     */
+    fun warn(
+        kind: Issue.Kind = Issue.Kind.WARN,
+        message: String,
+        elementId: Uuid?,
+        cause: Throwable? = null) {
+        issues.add(
+            Issue(
+                kind = kind,
+                message = message,
+                element = elementId,
                 cause = cause
             )
         )
@@ -112,19 +132,20 @@ class SessionStatus {
     /**
      * The information reporting function adds message reports to the status.
      * @param message A descriptive information message.
-     * @param compiler The compiler in which complementary context information is searched.
      * @param element The session in which complementary context information is searched.
      */
-    fun error(message: String, compiler: KerML? = null, element: Element? = null, path: String? = null, kind: Issue.Kind=Issue.Kind.ERROR, cause: Throwable? = null) {
-
+    fun error(
+        message: String,
+        element: ElementData? = null,
+        kind: Issue.Kind=Issue.Kind.ERROR,
+        cause: Throwable? = null
+    ) {
         val issue = Issue(
             kind = kind,
             message = message,
-            input = compiler?.input?:element?.input?:(cause as? SysMDException)?.input?:(cause as? SysMDException)?.element?.input,
-            indices = compiler?.token?.indices?:element?.indices,
-            token = compiler?.token,
-            path = path?:compiler?.semantics?.ownerName()?:element?.path(),
-            cause = cause
+            input = element?.input,
+            indices = element?.indices,
+            cause = cause,
         )
         issues.add(issue)
     }
@@ -133,7 +154,8 @@ class SessionStatus {
      * The information reporting function adds message reports to the status.
      * @param message A descriptive information message.
      * @param compiler The compiler in which complementary context information is searched.
-     * @param element The session in which complementary context information is searched.
+     * @param element The element in which complementary context information is searched.
+     * @param cause A stacktrace in cause of an exception, for debugging.
      */
     fun fatal(message: String, compiler: KerML? = null, element: Element? = null, cause: Throwable? = null) {
         issues.add(
@@ -142,13 +164,12 @@ class SessionStatus {
                 message = message+if (cause?.message != null) " - ${cause.message}" else "",
                 input = compiler?.input?:element?.input?:(cause as? SysMDException)?.input?:(cause as? SysMDException)?.element?.input,
                 indices = element?.indices,
-                token = compiler?.token,
-                path = compiler?.semantics?.ownerName()?:element?.path(),
+                element = element?.elementId,
                 cause = cause?:SysMDException(message)
             )
         )
     }
 
-    override fun toString(): String = "Status: ${issues.size} issues reported, ${createdElements.size} elements created, ${updatedValues.size} values updated."
+    override fun toString(): String = "Status: ${issues.size} issues"
 
 }

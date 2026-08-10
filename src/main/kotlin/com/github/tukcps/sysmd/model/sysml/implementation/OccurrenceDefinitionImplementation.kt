@@ -2,14 +2,13 @@ package com.github.tukcps.sysmd.model.sysml.implementation
 
 import com.github.tukcps.sysmd.model.kerml.implementation.ClassImplementation
 import com.github.tukcps.sysmd.model.sysml.OccurrenceDefinition
-import java.util.UUID
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
-class OccurrenceDefinitionImplementation(
-    declaredName: String? = null,
-    declaredShortName: String? = null,
-    elementType: String = "OccurrenceDefinition"
-) : OccurrenceDefinition, ClassImplementation(
-    declaredName = declaredName,
-    declaredShortName = declaredShortName,
-    elementType = elementType
-)
+open class OccurrenceDefinitionImplementation(model : Session,elementId : Uuid = Uuid.random())
+    : OccurrenceDefinition, ClassImplementation(model,elementId = elementId)
+{
+    override fun clone(): OccurrenceDefinition = OccurrenceDefinitionImplementation(model).also {
+        it.updateFrom(this)
+    }
+}

@@ -2,27 +2,31 @@ package com.github.tukcps.sysmd.model.sysml.implementation
 
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.sysml.PortUsage
+import com.github.tukcps.sysmd.model.util.MultiplicityRange
 import com.github.tukcps.sysmd.model.util.SimpleName
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
 class PortUsageImplementation(
+    model : Session,
+    elementId : Uuid = Uuid.random(),
     declaredName: SimpleName? = null,
     declaredShortName: SimpleName? = null,
-    elementType: String = "PortUsage"
 ): PortUsage, FeatureImplementation(
+    model,
+    elementId = elementId,
     declaredName = declaredName,
     declaredShortName = declaredShortName,
-    elementType =elementType
 ) {
-    override fun clone(): PortUsage {
-        val klon = PortUsageImplementation(
-            declaredName = declaredName,
-            declaredShortName = declaredShortName,
-        ).also { klon ->
-            super.updateFrom(this)
-            klon.model = model
-            klon.updated = updated
-            klon.isComposite = isComposite
-        }
-        return klon
+    override val defaultMultiplicityRange: MultiplicityRange = MultiplicityRange.USAGE_DEFAULT
+
+    override fun clone() = PortUsageImplementation(
+        model,
+        declaredName = declaredName,
+        declaredShortName = declaredShortName,
+    ).also { klon ->
+        klon.updateFrom(this)
+        klon.updated = updated
+        klon.isComposite = isComposite
     }
 }

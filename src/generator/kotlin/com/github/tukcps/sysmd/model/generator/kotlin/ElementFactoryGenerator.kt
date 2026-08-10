@@ -29,6 +29,8 @@ class ElementFactoryGenerator : KotlinGenerator() {
             "com.github.tukcps.sysmd.model.kerml.implementation.*",
             "com.github.tukcps.sysmd.model.sysml.implementation.*",
             "com.github.tukcps.sysmd.model.expression.implementation.*",
+            "com.github.tukcps.sysmd.services.session.Session",
+            "kotlin.uuid.Uuid"
         )
 
         writer.line("/**")
@@ -36,15 +38,15 @@ class ElementFactoryGenerator : KotlinGenerator() {
         writer.line(" * For configuration, check the file GeneratorConfiguration.")
         writer.line(" * @param type ElementType, for which an Element will be created.")
         writer.line(" */")
-        writer.begin("fun createElement(type: ElementType): Element = when(type)")
+        writer.begin("fun createElement(type: ElementType, model : Session, id : Uuid): Element = when(type)")
 
         classes.forEach { clazz ->
             val remap = GeneratorConfiguration.REMAPPED_CONSTRUCTORS[clazz.name]
 
             writer.line(when {
-                remap === null -> "ElementType.${clazz.name} -> ${clazz.name}Implementation()"
-                remap.isEmpty -> "// ElementType.${clazz.name} -> ${clazz.name}Implementation()"
-                else -> "ElementType.${clazz.name} -> ${remap.get()}()"
+                remap === null -> "ElementType.${clazz.name} -> ${clazz.name}Implementation(model, elementId = id)"
+                remap.isEmpty -> "// ElementType.${clazz.name} -> ${clazz.name}Implementation(model, elementId = id)"
+                else -> "ElementType.${clazz.name} -> ${remap.get()}(model, elementId = id)"
             })
         }
         writer.line("else -> throw Exception(\"Cannot instantiate abstract element type\")")

@@ -1,36 +1,47 @@
 package com.github.tukcps.sysmd.model.kerml.implementation
 
-import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.model.generated.elementType
+import com.github.tukcps.sysmd.model.kerml.Element
+import com.github.tukcps.sysmd.model.kerml.Multiplicity
+import com.github.tukcps.sysmd.model.kerml.Specialization
+import com.github.tukcps.sysmd.model.kerml.Type
+import com.github.tukcps.sysmd.model.util.UnresolvedType
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
 
 /**
  * The multiplicity is a Feature that is an integer range or set.
  */
-class MultiplicityImplementation(
+open class MultiplicityImplementation(
+    model : Session,
+    elementId : Uuid = Uuid.random(),
     name: String? = "cardinality",
     shortName: String? = null,
-    multiplicity: String = "1 .. 1",
-    elementType: String = "Multiplicity"
 ): Multiplicity, FeatureImplementation(
+    model,
+    elementId = elementId,
     declaredName = name,
-    declaredShortName = shortName,
-    typeConstraint = mutableListOf(multiplicity),
-    elementType = elementType
+    declaredShortName = shortName
 ) {
 
+    /**
+     * The range is a natural, maybe bounded by some constraints.
+     * A MultiplicityRange gives upper and lower value.
+     */
     override val generalization: List<Type>
-        get() = listOf(model?.repo?.naturalType?: UnresolvedType("ScalarValues::Natural"))
+        get() = listOf(model.repo.naturalType?: UnresolvedType(model, "ScalarValues::Natural"))
 
     override val ownedSpecialization: List<Specialization>
         get() = mutableListOf()
 
     override fun toString(): String {
-        return "[$elementType] = " + try {variable?.vectorQuantity.toString()} catch (_: Exception) { ""}
+        return "[${elementType().name}] = " + try {variable?.vectorQuantity.toString()} catch (_: Exception) { ""}
     }
 
     override fun updateFrom(template: Element) {
-        require (template is Multiplicity)
-        this.typeConstraint = template.typeConstraint
+        check (template is Multiplicity)
+        super.updateFrom(template)
     }
 
     /**
@@ -41,12 +52,7 @@ class MultiplicityImplementation(
      * ONLY to create a backup or in really internal logic when there are no or well-understood owned elements.
      * TAKE CARE!
      */
-    override fun clone(): Multiplicity {
-        return MultiplicityImplementation(
-            name=declaredName,
-            shortName=declaredShortName,
-        ).also {
-            it.typeConstraint = typeConstraint
-        }
+    override fun clone(): Multiplicity = MultiplicityImplementation(model).also {
+        it.updateFrom(this)
     }
 }

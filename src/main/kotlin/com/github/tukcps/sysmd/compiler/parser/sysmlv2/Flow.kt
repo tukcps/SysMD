@@ -3,14 +3,13 @@
 package com.github.tukcps.sysmd.compiler.parser.sysmlv2
 
 import com.github.tukcps.sysmd.compiler.SysMLv2
-import com.github.tukcps.sysmd.compiler.parser.kerml.ConnectorEndMember
+import com.github.tukcps.sysmd.compiler.parser.kerml.ConnectorEnd
 import com.github.tukcps.sysmd.compiler.parser.kerml.ValuePart
 import com.github.tukcps.sysmd.compiler.parser.kerml.valuePartStart
 import com.github.tukcps.sysmd.compiler.parser.util.Unsupported
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
-import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.ConnectionUsageActions
-import com.github.tukcps.sysmd.model.sysml.ConnectionUsage
-import com.github.tukcps.sysmd.model.sysml.implementation.ConnectionUsageImplementation
+import com.github.tukcps.sysmd.compiler.semantics.kerml.parse
+import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.ConnectionUsageAction
 
 /**
  * 8.2.2.13.4 Messages and Flow Connections
@@ -26,7 +25,7 @@ fun SysMLv2.FlowDefinition() {
 /**
  *      Message : FlowConnectionUsage = OccurrenceUsagePrefix 'message' MessageDeclaration DefinitionBody { isAbstract = true }
  */
-fun SysMLv2.Message() = ConnectionUsageActions<ConnectionUsage>(semantics, ::ConnectionUsageImplementation, "Connections::Connection").parse {
+fun SysMLv2.Message() = ConnectionUsageAction(semantics).parse {
     MESSAGE.consume()
     MessageDeclaration()
     DefinitionBody()
@@ -66,7 +65,7 @@ fun SysMLv2.MessageDeclaration() {
 /**
  *      FlowUsage = OccurrenceUsagePrefix 'flow' FlowDeclaration DefinitionBody
  */
-fun SysMLv2.FlowUsage() = ConnectionUsageActions<ConnectionUsage>(semantics, ::ConnectionUsageImplementation, "Connections::Connection").parse {
+fun SysMLv2.FlowUsage() = ConnectionUsageAction(semantics).parse {
     FLOW.consume()
     FlowDeclaration()
     DefinitionBody()
@@ -100,7 +99,6 @@ fun SysMLv2.FlowDeclaration() {
             }
         }
         else -> {
-            semantics.create(null)
             FlowEndMember()
             TO.consume()
             FlowEndMember()
@@ -130,7 +128,7 @@ fun SysMLv2.FlowDeclaration() {
  *      FlowEndMember : EndFeatureMembership = ownedRelatedElement += FlowEnd
  */
 fun SysMLv2.FlowEndMember() {
-    ConnectorEndMember()
+    ConnectorEnd()
 }
 
 /**

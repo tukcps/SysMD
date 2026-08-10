@@ -21,9 +21,7 @@ class PartAndPortTests {
      */
     @Test
     fun portTest1() = testSession("Ports") {
-        loadSysMLv2("""
-            port p; 
-        """)
+        loadSysMLv2(" port p;")
         assertNoIssues()
         val p = global.resolve("p")?.memberElement as PortUsage?
         assertNotNull(p)
@@ -36,9 +34,7 @@ class PartAndPortTests {
      */
     @Test
     fun portTestDirection() = testSession("Ports") {
-        loadSysMLv2("""
-            out port p; 
-        """)
+        loadSysMLv2("out port p;")
         assertNoIssues()
         val p = global.resolve("p")?.memberElement
         assertTrue(p is PortUsage)
@@ -52,9 +48,7 @@ class PartAndPortTests {
      */
     @Test
     fun portDefTest() = testSession("Ports") {
-        loadSysMLv2("""
-            port def <short> p; 
-        """)
+        loadSysMLv2("port def <short> p;")
         assertNoIssues()
         val p = global.resolve("p")?.memberElement
         assertTrue(p is PortDefinition)
@@ -90,9 +84,7 @@ class PartAndPortTests {
      */
     @Test
     fun partTest1() = testSession("Parts") {
-        loadSysMLv2("""
-            part p; 
-        """)
+        loadSysMLv2("part p;")
         assertNoIssues()
         val p = global.resolve("p")?.memberElement
         assertTrue(p is PartUsage)

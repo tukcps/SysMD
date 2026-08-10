@@ -26,8 +26,7 @@ data class IssueResponse(
         kind = issue.kind,
         message = issue.message,
         line = issue.line(),
-        token = issue.token?.string,
-        elementId = session?.global?.resolve(issue.path?:"")?.memberElement?.elementId.toString(),
+        elementId = issue.element?.toString(),
         inputHash = hashBase64UrlSafe(issue.input.toString()),
         indices = issue.indices
     )

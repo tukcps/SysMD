@@ -1,7 +1,7 @@
 package com.github.tukcps.sysmd.ui.paneleft.projectlist
 
 import com.github.tukcps.sysmd.model.util.QualifiedName
-import com.github.tukcps.sysmd.services.repositories.local.ElementData
+import com.github.tukcps.sysmd.model.datamodel.ElementData
 import com.github.tukcps.sysmd.services.repositories.local.Language
 import com.github.tukcps.sysmd.ui.viewmodel.CellListViewModel
 import com.github.tukcps.sysmd.ui.viewmodel.EditorTabsViewModel

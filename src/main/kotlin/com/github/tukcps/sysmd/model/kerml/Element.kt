@@ -1,23 +1,18 @@
 package com.github.tukcps.sysmd.model.kerml
 
-import com.fasterxml.uuid.Generators
 import com.github.tukcps.sysmd.compiler.semantics.Identification
 import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.model.util.SimpleName
 import com.github.tukcps.sysmd.services.ModelServices
-import java.util.*
+import kotlin.uuid.Uuid
 
 interface Element: ModelServices {
-    /**
-     * The name of the respective KerML class; usually the same as the name of the interface.
-     */
-    val elementType: String
 
     /**
      * A unique id of the Element that remains unchained over the whole lifecycle of the element.
      * We use UUIDv4 as suggested in SysMLv2 Std, except for library elements for which we use UUIDv5.
      */
-    var elementId: UUID?
+    val elementId: Uuid
 
     /** Tool-specific ids; not used */
     var aliasIds: Collection<String>
@@ -64,7 +59,11 @@ interface Element: ModelServices {
     /** Reified Relationship from which owner and the below properties are derived. */
     var owningRelationship: OwningMembership?
 
-    /** The ownership is modeled by a set of owned elements.*/
+    /**
+     * The ownership is modeled by a set of owned elements.
+     * This assumes that we have an Element that is not a Relationship.
+     * Relationship overloads ownedElement.
+     */
     val ownedElement: List<Element>
         get() = ownedRelationship.map {
             if (it is OwningMembership)
@@ -82,7 +81,7 @@ interface Element: ModelServices {
     val standardNamespace: Namespace?
 
     /** Whether the element is from SysML or KerML libraries, these have UUID type 5, not 4 */
-    var isLibraryElement: Boolean
+    val isLibraryElement: Boolean
     var isStandard: Boolean
 
     /** Whether (all) implied relationships are included or not */
@@ -104,15 +103,11 @@ interface Element: ModelServices {
      */
     var documentation: MutableList<Documentation>
 
+    /**
+     * Function that updates this element from a given template.
+     * @param template element with updates for this element.
+     */
     fun updateFrom(template: Element)
-
-    fun generateUUID() {
-        elementId = if (!isLibraryElement && !isStandard)
-            Generators.randomBasedGenerator().generate()
-        else {
-            Generators.nameBasedGenerator().generate(path())
-        }
-    }
 }
 
 

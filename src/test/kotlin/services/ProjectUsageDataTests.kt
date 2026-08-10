@@ -2,13 +2,13 @@ package services
 
 import com.github.tukcps.sysmd.services.check.checkConsistencyOfBuilders
 import com.github.tukcps.sysmd.services.session.SessionManager.projectService
-import com.github.tukcps.sysmd.services.session.loadLibrary
 import com.github.tukcps.sysmd.services.session.loadProject
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.parallel.Isolated
 import org.junit.jupiter.api.parallel.ResourceAccessMode.READ_WRITE
 import org.junit.jupiter.api.parallel.ResourceLock
 import org.junit.jupiter.api.parallel.Resources.SYSTEM_PROPERTIES
+import util.loadLibraryArrangement
 import util.testProjectSession
 import util.testSession
 import kotlin.test.*
@@ -61,8 +61,8 @@ class ProjectUsageDataTests {
     @Test @ResourceLock(value = SYSTEM_PROPERTIES, mode = READ_WRITE)
     fun scalarValuesLoadTest() = testSession {
         projectService.reset()
-        loadLibrary("Base")
-        loadLibrary("ScalarValues")
+        loadLibraryArrangement("Base")
+        loadLibraryArrangement("ScalarValues")
         val numElements = get().size
         val bool = global.resolve("ScalarValues::Boolean")
         val builder = bool?.model?.builder
@@ -70,11 +70,11 @@ class ProjectUsageDataTests {
         assertNotNull(builder)
 
         // LoadLibrary must not create Imports duplicates?
-        loadLibrary("ScalarValues")
+        loadLibraryArrangement("ScalarValues")
         assertEquals(numElements, get().size)
-        loadLibrary("ScalarValues")
-        loadLibrary("ScalarValues")
-        loadLibrary("ScalarValues")
+        loadLibraryArrangement("ScalarValues")
+        loadLibraryArrangement("ScalarValues")
+        loadLibraryArrangement("ScalarValues")
         assertEquals(numElements, get().size)
         checkConsistencyOfBuilders()
 

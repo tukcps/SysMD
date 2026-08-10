@@ -436,7 +436,7 @@ class Exporter {
                     PortType.BIDIRECTIONAL -> bidirectionalPorts.add(it.apply {  it.createdFromExpression = true})
                 }
             } ?: when {
-                expression.model!!.repo.realType in (expression as Type).allSupertypes(true) -> {
+                expression.model.repo.realType as Type in (expression as Type).allSupertypes(true) -> {
                     if(isVariableWithoutValues(expression)){
                         variablesNoValues.add(VariableNoValues(expression, DataType.REAL))
                     }else if(isVariable(expression)){
@@ -445,7 +445,7 @@ class Exporter {
                         constants.add(Constant(expression, DataType.REAL, ::dependencyStringToMinMax))
                     }
                 }
-                expression.model!!.repo.integerType in (expression as Type).allSupertypes(true) -> {
+                expression.model.repo.integerType in (expression as Type).allSupertypes(true) -> {
                     if(isVariableWithoutValues(expression)){
                         variablesNoValues.add(VariableNoValues(expression, DataType.INT))
                     }else if(isVariable(expression)){
@@ -454,14 +454,14 @@ class Exporter {
                         constants.add(Constant(expression, DataType.INT, ::dependencyStringToMinMax))
                     }
                 }
-                expression.model!!.repo.stringType in (expression as Type).allSupertypes(true) -> {
+                expression.model.repo.stringType in (expression as Type).allSupertypes(true) -> {
                     if(isVariableWithoutValues(expression)){
                         variablesNoValues.add(VariableNoValues(expression, DataType.STRING))
                     }else{
                         variables.add(Variable(expression, DataType.STRING, ::dependencyStringToMinMax))
                     }
                 }
-                expression.model!!.repo.booleanType in (expression as Type).allSupertypes(true) -> {
+                expression.model.repo.booleanType as Type in (expression as Type).allSupertypes(true) -> {
                     if(isVariableWithoutValues(expression)){
                         variablesNoValues.add(VariableNoValues(expression, DataType.BOOLEAN))
                     }else{
@@ -499,9 +499,9 @@ class Exporter {
      */
     private fun setUpChannels(element: Element) {
         run {
-            val signal = element.model?.global?.resolve("Signals::Signal")?.memberElement
-            val complexSignal = element.model?.global?.resolve("Signals::ComplexSignal")?.memberElement
-            val bus = element.model?.global?.resolve("Signals::Bus")?.memberElement
+            val signal = element.model.global.resolve("Signals::Signal")?.memberElement
+            val complexSignal = element.model.global.resolve("Signals::ComplexSignal")?.memberElement
+            val bus = element.model.global.resolve("Signals::Bus")?.memberElement
             when(element){
                 is ConnectorImplementation -> {
                     //Create a Channel and add it to allChannels list
@@ -673,7 +673,7 @@ class Exporter {
                 usage = Usage(
                     instanceName = element.escapedName().toString(),
                     className = "", //The class name is set down in the apply{} scope
-                    amount = (element.multiplicityRange.max.toInt()),
+                    amount = (element.multiplicityRange.max?: Long.MAX_VALUE).toInt(),
                     module = allModules[element.qualifiedName + "_CLASS"].let { mod1 ->
                         (if(mod1?.useSuperClass == true) mod1.superClassModule else mod1) ?:allModules[element.type.first().qualifiedName].let { mod2 ->
                             mod2 ?: allModules[element.type.first().qualifiedName + "_CLASS"].let { mod3 ->
@@ -690,7 +690,7 @@ class Exporter {
                 usage = Usage(
                     instanceName = element.escapedName().toString(),
                     className = element.name.toString() + "_CLASS",
-                    amount = (element.multiplicityRange.max.toInt()),
+                    amount = (element.multiplicityRange.max?: Long.MAX_VALUE).toInt(),
                     module = allModules[element.qualifiedName + "_CLASS"].let { mod1 ->
                             mod1 ?: throw SysMDFatalInternalError("No Module found for Usage: ${element.declaredName}")
                         }

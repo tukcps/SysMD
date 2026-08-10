@@ -2,7 +2,13 @@
 
 package com.github.tukcps.sysmd.model.kerml.implementation
 
-import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.model.kerml.Association
+import com.github.tukcps.sysmd.model.kerml.Element
+import com.github.tukcps.sysmd.model.kerml.Namespace
+import com.github.tukcps.sysmd.model.kerml.Type
+import com.github.tukcps.sysmd.model.util.UnresolvedNamespace
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
 
 /**
@@ -10,16 +16,18 @@ import com.github.tukcps.sysmd.model.kerml.*
  * It owns two End Features that are the Association Ends.
  */
 open class AssociationImplementation(
+    model : Session,
+    elementId : Uuid = Uuid.random(),
     declaredName: String? = null,
     declaredShortName: String? = null,
-    elementType: String = "Association"
 ): Association, ClassifierImplementation(
+    model,
+    elementId = elementId,
     declaredName = declaredName,
     declaredShortName = declaredShortName,
-    elementType = elementType
 ) {
     override var isImplied: Boolean = false
-    override var owningRelatedElement: Element = UnresolvedNamespace()
+    override var owningRelatedElement: Element = UnresolvedNamespace(model)
     override var ownedRelatedElement: MutableList<Element> = ownedElement
 
     override var isAbstract: Boolean = false
@@ -30,6 +38,9 @@ open class AssociationImplementation(
 
     override val owner: Element?
         get() = owningRelationship?.owningRelatedElement
+
+    override val owningNamespace: Namespace?
+        get() = (owner as? Namespace) ?: owner?.owningNamespace
 
     override fun toString(): String = super.toString() +
             if (isAbstract) ", abstract " else "" +
@@ -47,12 +58,11 @@ open class AssociationImplementation(
     override val associationEnd: List<Type>
         get() = (source + target) as MutableList<Type>
 
-    override fun clone(): Association {
-        return AssociationImplementation(
-            declaredName = declaredName,
-            declaredShortName = declaredShortName,
-        ).also { klon -> klon.updateFrom(this) }
-    }
+    override fun clone(): Association = AssociationImplementation(
+        model,
+        declaredName = declaredName,
+        declaredShortName = declaredShortName,
+    ).also { klon -> klon.updateFrom(this) }
 
     override val subtypes: MutableSet<Type> = mutableSetOf()
 }

@@ -1,33 +1,40 @@
 package models.expression
 
+import com.github.tukcps.sysmd.compiler.parser.util.toIndentedString
+import com.github.tukcps.sysmd.model.expression.Expression
+import com.github.tukcps.sysmd.model.expression.FeatureReferenceExpression
+import com.github.tukcps.sysmd.model.expression.InvocationExpression
+import com.github.tukcps.sysmd.model.expression.OperatorExpression
 import com.github.tukcps.sysmd.model.expression.implementation.*
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Function
 import com.github.tukcps.sysmd.model.util.firstName
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.Runlevel
+import com.github.tukcps.sysmd.services.session.Session
 import org.junit.jupiter.api.assertAll
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.*
 
+fun Session.parseExpr(str : String) : Expression
+{
+	val tmpName = "ex${get().size}"
+
+	loadKerML("""
+			feature $tmpName = $str ;
+		""".trimIndent())
+	assertNoIssues()
+
+	return global.resolve(tmpName).let { assertNotNull(it, "feature is missing?") }
+		.memberElement.let { assertIs<Feature>(it) }
+		.ownedElement.filterIsInstance<Expression>().singleOrNull().let { assertNotNull(it, "missing a value!") }
+}
+
 class DataFunctionTests
 {
-	private fun Function.acceptsArity(n : Int) : Boolean
-	{
-		var n = n.toLong()
-
-		result.let { r -> parameter.filter { it !== r } }.map { it.multiplicityRange }.forEach {
-			when {
-				n in it -> n = 0
-				n > it.max -> n -= it.max
-				else -> return false
-			}
-		}
-
-		return true
-	}
+	private val Function.arity get() = parameter.minus(result).size
 
 	@Test @Ignore // TODO: istype, hastype, @, @@, as, meta, !=, ===, !==, and, or, implies, ??, all
 	fun testStdlibComplete() = testSession("DataFunctions") {
@@ -51,7 +58,7 @@ class DataFunctionTests
 
 				assertSame(assertNotNull(f.result), f.parameter.last(),
 					"$name has improper result parameter")
-				assertTrue(f.acceptsArity(arity), "$name cannot be invoked with $arity operands")
+				assertEquals(arity, f.arity, "$name cannot be invoked with $arity operands")
 			}
 		})
 	}
@@ -59,7 +66,7 @@ class DataFunctionTests
 	@Test
 	fun operatorResolutionTest() = testSession("DataFunctions") {
 		assertNoIssues()
-		val expr = twoPlusTwo()
+		val expr = parseExpr("2+2")
 		expr.initType()
 		assertNoIssues()
 
@@ -72,11 +79,11 @@ class DataFunctionTests
 		assertNotNull(f.result)
 		assertEquals(f.parameter[2], f.result)
 
-		assertEquals(1, expr.type.size)
-		assertEquals("ScalarValues::Integer", expr.type.single().qualifiedName)
+		// should the implicit Base::Anything be removed?
+		assertContains(expr.type.map { it.qualifiedName }, "ScalarValues::Integer")
 	}
 
-	@Test
+	@Test @Ignore // not permitted by standard, no longer supported
 	fun testOverloadByArity() = testSession("ScalarValues") {
 		loadKerML("""
 			private import ScalarValues::*;
@@ -86,19 +93,13 @@ class DataFunctionTests
 		""".trimIndent())
 		assertNoIssues()
 
-		val call1 = InvocationExpressionImplementation(
-			"call1", "call1",
-		).apply {
-			model = this@testSession
+		val call1 = InvocationExpressionImplementation(this, declaredName = "call1").apply {
 			functionName = "f"
 		}
 		for(i in 1..5)
 			addOwnedMember(literalExpression("call1_arg$i", i.toLong()), call1)
 
-		val call2 = InvocationExpressionImplementation(
-			"call2", "call2",
-		).apply {
-			model = this@testSession
+		val call2 = InvocationExpressionImplementation(this, declaredName = "call2").apply {
 			functionName = "f"
 		}
 		for(i in 1..3)
@@ -130,21 +131,8 @@ class DataFunctionTests
 		""".trimIndent())
 		assertNoIssues()
 
-		val callS = InvocationExpressionImplementation(
-			"call1", "call1",
-		).apply {
-			model = this@testSession
-			functionName = "f"
-		}
-		addOwnedMember(literalExpression("call1_arg", "foobar"), callS)
-
-		val callI = InvocationExpressionImplementation(
-			"call2", "call2",
-		).apply {
-			model = this@testSession
-			functionName = "f"
-		}
-		addOwnedMember(literalExpression("call2_arg", 4711L), callI)
+		val callS = assertIs<InvocationExpression>(parseExpr("f(\"foobar\")"))
+		val callI = assertIs<InvocationExpression>(parseExpr("f(4711)"))
 
 		assertEquals("f(\"foobar\")", callS.astString)
 		assertEquals("f(4711)", callI.astString)
@@ -180,10 +168,7 @@ class DataFunctionTests
 		""".trimIndent())
 		assertNoIssues()
 
-		val call = InvocationExpressionImplementation(
-			"call", "call",
-		).apply {
-			model = this@testSession
+		val call = InvocationExpressionImplementation(this, declaredName = "call").apply {
 			functionName = "pkg::f"
 		}
 		addOwnedMember(literalExpression(null, 47), call)
@@ -214,10 +199,11 @@ class DataFunctionTests
 		}
 	}
 
+
 	@Test
 	fun iteTest() = testSession("DataFunctions") {
-		val expr = operatorExpression("if",
-			literalExpression(true), literalExpression(20), literalExpression(10))
+		val expr = parseExpr("if true ? 20 else 30")
+
 		expr.initialize()
 		expr.evalUpRec()
 		expr.evalDownRec()
@@ -226,25 +212,26 @@ class DataFunctionTests
 	}
 
 	@Test
-	fun iteTest2() = testSession("DataFunctions") {
+	fun iteTest2() = testSession("ScalarValues", "DataFunctions") {
 		loadKerML("""
 			private import ScalarValues::*;
 			feature x : Boolean;
 		""", Runlevel.VARIABLES)
 		assertNoIssues()
+		val expr = parseExpr("if x ? 20 else 30")
 
-		val x = featureReferenceExpression("x")
-		val expr = operatorExpression("if", x,
-			literalExpression(20), literalExpression(30)
-		)
-		val twenty = VectorQuantity(builder.integer(20))
+		assertIs<OperatorExpression>(expr)
+		assertEquals("if", expr.operator)
+		assertEquals("ControlFunctions::if", expr.functionName)
 
 		expr.initialize()
+		val twenty = VectorQuantity(builder.integer(20))
 		expr.downQuantity = twenty
 
 		expr.evalDownRec()
 
 		// boolean variables aren't written back to variables
+		val x = assertIs<FeatureReferenceExpression>(expr.positionalArguments.first())
 		assertEquals(VectorQuantity(builder.True), x.downQuantity)
 		assertEquals(twenty, expr.downQuantity)
 	}

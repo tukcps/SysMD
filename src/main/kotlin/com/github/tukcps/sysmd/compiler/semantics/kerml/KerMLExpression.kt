@@ -16,6 +16,6 @@ class ConditionalExpressionActions(
     var elseExpr: AstNode? = null,
 ) {
     internal fun run(): AstIte {
-        return AstIte(context.model, arrayListOf(condExpr!!, thenExpr!!, elseExpr!!))
+        return AstIte(context.compiler.model, arrayListOf(condExpr!!, thenExpr!!, elseExpr!!))
     }
 }

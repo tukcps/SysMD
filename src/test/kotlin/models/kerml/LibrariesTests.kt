@@ -1,12 +1,12 @@
 package models.kerml
 
-import com.fasterxml.uuid.Generators
+import com.github.tukcps.sysmd.compiler.semantics.UuidPolicies.libraryUuid5
+import com.github.tukcps.sysmd.model.datamodel.version
 import com.github.tukcps.sysmd.model.kerml.DataType
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.session.loadLibrary
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
@@ -45,19 +45,19 @@ class LibrariesTests {
     @Test
     fun initScalarValuesModelOK() = testSession("Base") {
         loadKerML("""
-                    package ScalarValues {
-                        datatype ScalarValue;
-                        datatype String specializes ScalarValue;
-                        datatype Number specializes ScalarValue;
-                        datatype Real specializes Number;
-                        datatype Integer specializes Number;
-                        datatype Natural specializes Integer; // TODO: (0 .. *)  
-                        datatype Boolean specializes Number;
-                        datatype Requirement specializes Boolean;
-                        datatype Performance specializes Real;
-                        datatype Quality specializes Real; 
-                    }
-            """)
+            package ScalarValues {
+                datatype ScalarValue;
+                datatype String specializes ScalarValue;
+                datatype Number specializes ScalarValue;
+                datatype Real specializes Number;
+                datatype Integer specializes Number;
+                datatype Natural specializes Integer; // TODO: (0 .. *)  
+                datatype Boolean specializes Number;
+                datatype Requirement specializes Boolean;
+                datatype Performance specializes Real;
+                datatype Quality specializes Real; 
+                }
+        """)
         assertNoIssues()
         val real = global.resolve("ScalarValues::Real")?.memberElement
         assertNotNull(real as? DataType)
@@ -72,13 +72,14 @@ class LibrariesTests {
     fun loadLibrary() = testSession {
         loadLibrary("ScalarValues")
         initialize(Runlevel.MODEL)
-        val real = global.resolve("ScalarValues::Real")?.memberElement
-        val sv = global.resolve("ScalarValues")?.memberElement
-        assertEquals(5, real?.elementId?.version())
-        assertEquals(5, sv?.elementId?.version())
-        assertTrue(sv!!.isLibraryElement)
+        val real = global.resolve("ScalarValues::Real")?.memberElement !!
+        val sv = global.resolve("ScalarValues")?.memberElement !!
+        assertEquals(5, real.elementId.version)
+        assertEquals(5, sv.elementId.version)
+        assertTrue(sv.isLibraryElement)
         // println (" sv path ${sv.path()}")
-        assertEquals(Generators.nameBasedGenerator().generate(sv.path() ), sv.elementId)
-        assertEquals(Generators.nameBasedGenerator().generate("ScalarValues::Real"), real!!.elementId)
+
+        assertEquals(libraryUuid5("ScalarValues"), sv.elementId)
+        assertEquals(libraryUuid5("ScalarValues::Real"), real.elementId)
     }
 }

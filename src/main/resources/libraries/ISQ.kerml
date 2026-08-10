@@ -6,73 +6,73 @@ standard library package ISQ {
 
 
     // Base quantities
-    datatype LengthValue :> Quantities::ScalarQuantityValue { :>> unit default = "m"; }
-    datatype DurationValue :> Quantities::ScalarQuantityValue { :>> unit default = "s"; }
-    datatype MassValue :> Quantities::ScalarQuantityValue { :>> unit default = "kg"; }
-    datatype ElectricCurrentValue :> Quantities::ScalarQuantityValue { :>> unit default = "A"; }
-    datatype ThermodynamicTemperatureValue :> Quantities::ScalarQuantityValue { :>> unit default = "K"; }
-    datatype LuminousIntensityValue :> Quantities::ScalarQuantityValue { :>> unit default = "cd";  }
-    datatype AmountOfSubstanceValue :> Quantities::ScalarQuantityValue { :>> unit default = "mol"; }
-    datatype AmountOfMoneyValue :> Quantities::ScalarQuantityValue { :>> unit default = "EUR"; }
-    datatype StorageCapacityValue :> Quantities::ScalarQuantityValue{ :>> unit default = "bit"; }
+    datatype LengthValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [m]; }
+    datatype DurationValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [s]; }
+    datatype MassValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [kg]; }
+    datatype ElectricCurrentValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [A]; }
+    datatype ThermodynamicTemperatureValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [K]; }
+    datatype LuminousIntensityValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [cd];  }
+    datatype AmountOfSubstanceValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [mol]; }
+    datatype AmountOfMoneyValue :> Quantities::ScalarQuantityValue { :>> range default :=  *..* [EUR]; }
+    datatype StorageCapacityValue :> Quantities::ScalarQuantityValue{ :>> range default := *..* [bit]; }
 
     // Derived quantities
-    datatype AbsorbedDoseValue :> Quantities::ScalarQuantityValue { :>> unit default = "Gy"; }
-    datatype AreaValue :> Quantities::ScalarQuantityValue { :>> unit default = "m^2";  }
-    datatype BitRateValue :> Quantities::ScalarQuantityValue { :>> unit default = "bit/s"; }
-    datatype ConductanceValue :> Quantities::ScalarQuantityValue { :>> unit default = "S"; }
-    datatype DoseEquivalentValue :> Quantities::ScalarQuantityValue{ :>> unit default = "Sv"; }
-    datatype DimensionOneValue :> Quantities::ScalarQuantityValue { :>> unit default = "1"; }
-    datatype EnergyValue :> Quantities::ScalarQuantityValue { :>> unit default = "J"; }
-    datatype EnergyDensityValue :> Quantities::ScalarQuantityValue { :>> unit default = "J/m^3"; }
-    datatype EntropyValue :> Quantities::ScalarQuantityValue { :>> unit default = "J/K"; }
-    datatype FrequencyValue :> Quantities::ScalarQuantityValue { :>> unit default = "1/s"; }
-    datatype IlluminanceValue :> Quantities::ScalarQuantityValue { :>> unit default = "lx"; }
-    datatype KinematicViscosityValue :> Quantities::ScalarQuantityValue { :>> unit default = "St"; }
-    datatype LuminanceValue :> Quantities::ScalarQuantityValue { :>> unit default = "sb"; }
-    datatype LuminousEfficacyValue :> Quantities::ScalarQuantityValue { :>> unit default = "lm/W"; }
-    datatype LuminousEnergyValue :> Quantities::ScalarQuantityValue { :>> unit default = "lm s"; }
-    datatype LuminousFluxValue :> Quantities::ScalarQuantityValue { :>> unit default = "lm"; }
-    datatype PermittivityValue :> Quantities::ScalarQuantityValue { :>> unit default = "F/m"; }
-    datatype MagneticFluxValue :> Quantities::ScalarQuantityValue { :>> unit default = "Wb"; }
-    datatype MagneticFluxDensityValue :> Quantities::ScalarQuantityValue { :>> unit default = "T"; }
-    datatype MomentOfForceValue :> Quantities::ScalarQuantityValue { :>> unit default = "Nm"; }
-    datatype MomentOfInertiaValue :> Quantities::ScalarQuantityValue { :>> unit default = "kg m^2"; }
-    datatype NuclearActivityValue :> Quantities::ScalarQuantityValue { :>> unit default = "Bq"; }
-    datatype SolidAngularMeasureValue :> Quantities::ScalarQuantityValue { :>> unit default = "sr"; }
+    datatype AbsorbedDoseValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [Gy]; }
+    datatype AreaValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [m^2];  }
+    datatype BitRateValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [bit/s]; }
+    datatype ConductanceValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [S]; }
+    datatype DoseEquivalentValue :> Quantities::ScalarQuantityValue{ :>> range default := *..* [Sv]; }
+    datatype DimensionOneValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [1]; }
+    datatype EnergyValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [J]; }
+    datatype EnergyDensityValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [J/m^3]; }
+    datatype EntropyValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [J/K]; }
+    datatype FrequencyValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [1/s]; }
+    datatype IlluminanceValue :> Quantities::ScalarQuantityValue { :>> range default := (*..*) [lx]; }
+    datatype KinematicViscosityValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [St]; }
+    datatype LuminanceValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [sb]; }
+    datatype LuminousEfficacyValue :> Quantities::ScalarQuantityValue { :>> range default := *..*[lm/W]; }
+    datatype LuminousEnergyValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [lm s]; }
+    datatype LuminousFluxValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [lm]; }
+    datatype PermittivityValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [F/m]; }
+    datatype MagneticFluxValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [Wb]; }
+    datatype MagneticFluxDensityValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [T]; }
+    datatype MomentOfForceValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [Nm]; }
+    datatype MomentOfInertiaValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [kg m^2]; }
+    datatype NuclearActivityValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [Bq]; }
+    datatype SolidAngularMeasureValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [sr]; }
 
     // Mechanical quantities
-    datatype AccelerationValue :> Quantities::ScalarQuantityValue { :>> unit default = "m/s^2"; }
-    datatype ForceValue :> Quantities::ScalarQuantityValue { :>> unit default = "N"; }
-    datatype MassDensityValue :> Quantities::ScalarQuantityValue { :>> unit default = "kg/m^3"; }
-    datatype MassFlowValue :> Quantities::ScalarQuantityValue { :>> unit default = "kg/s"; }
-    datatype MomentumValue :> Quantities::ScalarQuantityValue { :>> unit default = "kg m/s"; }
-    datatype PowerValue :> Quantities::ScalarQuantityValue { :>> unit default = "W"; }
-    datatype PressureValue :> Quantities::ScalarQuantityValue { :>> unit default = "Pa"; }
-    datatype SpeedValue :> Quantities::ScalarQuantityValue { :>> unit default = "m/s"; }
-    datatype VolumeValue :> Quantities::ScalarQuantityValue { :>> unit default = "m^3"; }
+    datatype AccelerationValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [m/s^2]; }
+    datatype ForceValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [N]; }
+    datatype MassDensityValue :> Quantities::ScalarQuantityValue { :>> range default :=  *..* [kg/m^3]; }
+    datatype MassFlowValue :> Quantities::ScalarQuantityValue { :>> range default :=  *..* [kg/s]; }
+    datatype MomentumValue :> Quantities::ScalarQuantityValue { :>> range default :=  *..* [kg m/s]; }
+    datatype PowerValue :> Quantities::ScalarQuantityValue { :>> range default :=  *..* [W]; }
+    datatype PressureValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [Pa]; }
+    datatype SpeedValue :> Quantities::ScalarQuantityValue { :>> range default :=  *..* [m/s]; }
+    datatype VolumeValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [m^3]; }
 
     // Electrical quantities
     // Current is in base quantities
-    datatype CapacitanceValue :> Quantities::ScalarQuantityValue { :>> unit default = "A s / V";}
-    datatype ElectricChargeValue :> Quantities::ScalarQuantityValue { :>> unit default = "A s";}
-    datatype ElectricFieldStrengthValue :> Quantities::ScalarQuantityValue { :>> unit default = "N/C"; }
-    datatype ElectricPotentialValue :> Quantities::ScalarQuantityValue { :>> unit default = "V"; }
-    datatype ElectricPotentialDifferenceValue :> Quantities::ScalarQuantityValue { :>> unit default = "V"; }
-    datatype InductanceValue :> Quantities::ScalarQuantityValue { :>> unit default = "H"; }
-    datatype ResistanceValue :> Quantities::ScalarQuantityValue { :>> unit default = "Ω"; }
-    datatype TimeValue :> Quantities::ScalarQuantityValue { :>> unit default = "s"; }
+    datatype CapacitanceValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [A s / V];}
+    datatype ElectricChargeValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [A s];}
+    datatype ElectricFieldStrengthValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [N/C]; }
+    datatype ElectricPotentialValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [V]; }
+    datatype ElectricPotentialDifferenceValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [V]; }
+    datatype InductanceValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [H]; }
+    datatype ResistanceValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [Ω]; }
+    datatype TimeValue :> Quantities::ScalarQuantityValue { :>> range default := *..* [s]; }
 
 
     // VectorQuantityValues
-    datatype CartesianForce3dVector :> Quantities::'3dVectorQuantityValue' { :>> unit default = "N"; }
-    datatype CartesianPosition3dVector :> Quantities::'3dVectorQuantityValue' { :>> unit default = "m"; }
-    datatype CartesianVelocity3dVector :> Quantities::'3dVectorQuantityValue' { :>> unit default = "m/s"; }
-    datatype CartesianAcceleration3dVector :> Quantities::'3dVectorQuantityValue' { :>> unit default = "m/s^2"; }
-    datatype CartesianMomentum3dVector :> Quantities::'3dVectorQuantityValue' { :>> unit default = "kg m/s"; }
-    datatype CartesianMomentOfForce3dVector :> Quantities::'3dVectorQuantityValue' { :>> unit default = "Nm"; }
-    datatype CartesianElectricFieldStrength3dVector :> Quantities::'3dVectorQuantityValue' { :>> unit default = "N/C"; }
-    datatype CartesianMagneticFluxDensity3dVector :> Quantities::'3dVectorQuantityValue' { :>> unit default = "T"; }
+    datatype CartesianForce3dVector :> Quantities::'3dVectorQuantityValue' { :>> range default := (*..*, *..*, *..*) [N]; }
+    datatype CartesianPosition3dVector :> Quantities::'3dVectorQuantityValue' { :>> range default := (*..*, *..*, *..*) [m]; }
+    datatype CartesianVelocity3dVector :> Quantities::'3dVectorQuantityValue' { :>> range default := (*..*, *..*, *..*) [m/s]; }
+    datatype CartesianAcceleration3dVector :> Quantities::'3dVectorQuantityValue' { :>> range default := (*..*, *..*, *..*) [m/s^2]; }
+    datatype CartesianMomentum3dVector :> Quantities::'3dVectorQuantityValue' { :>> range default := (*..*, *..*, *..*) [kg m/s]; }
+    datatype CartesianMomentOfForce3dVector :> Quantities::'3dVectorQuantityValue' { :>> range default := (*..*, *..*, *..*) [Nm]; }
+    datatype CartesianElectricFieldStrength3dVector :> Quantities::'3dVectorQuantityValue' { :>> range default := (*..*, *..*, *..*) [N/C]; }
+    datatype CartesianMagneticFluxDensity3dVector :> Quantities::'3dVectorQuantityValue' { :>> range default :=  (*..*, *..*, *..*) [T]; }
 
     feature <isq> 'International System of Quantities' {
          feature L: LengthValue[1];

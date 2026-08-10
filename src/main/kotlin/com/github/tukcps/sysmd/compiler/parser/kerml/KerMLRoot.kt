@@ -3,13 +3,17 @@
 package com.github.tukcps.sysmd.compiler.parser.kerml
 
 import com.github.tukcps.sysmd.compiler.KerML
+import com.github.tukcps.sysmd.compiler.parser.util.Unsupported
 import com.github.tukcps.sysmd.compiler.scanner.Token
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.compiler.semantics.Identification
 import com.github.tukcps.sysmd.compiler.semantics.kerml.*
-import com.github.tukcps.sysmd.model.kerml.Dependency
+import com.github.tukcps.sysmd.model.datamodel.IdentificationKind
+import com.github.tukcps.sysmd.model.datamodel.IdentifiedByName
+import com.github.tukcps.sysmd.model.datamodel.elementByName
+import com.github.tukcps.sysmd.model.generated.ElementType
 import com.github.tukcps.sysmd.model.kerml.Import
-import com.github.tukcps.sysmd.model.kerml.implementation.*
+import com.github.tukcps.sysmd.model.util.QualifiedName
 
 /**
  * An identification, following the conventions of SysML v2 textual:
@@ -60,7 +64,6 @@ fun KerML.RelationshipOwnedElement() {
     }
 }
 
-
 /**
  *      Dependency = ( PrefixMetadataAnnotation )*
  *          'dependency' ( Identification?
@@ -68,20 +71,19 @@ fun KerML.RelationshipOwnedElement() {
  *          'to' [QualifiedName] (',' [QualifiedName] )*
  *          RelationshipBody
  */
-fun KerML.Dependency() {
-    val dependency = DependencyActions<Dependency>(semantics, ::DependencyImplementation)
+fun KerML.Dependency() = DependencyAction(semantics).parse {
     DEPENDENCY.consume()
     if (token.kind == NAME_LIT && nextToken.kind in setOf(FROM, LCBRACE)) {
-        Identification().also { dependency.create(it) }
+        Identification().semantics { setIdentification(it) }
         FROM.consume()
-    } else
-        dependency.create(Identification(null, null))
-    QualifiedNameList().forEach { dependency.created.source.add(unresolvedElement(it)) }
+    }
+    QualifiedNameList().forEach { name -> element.source = name.map {
+        elementByName(name)}.toMutableList()
+    }
     TO.consume()
-    QualifiedNameList().forEach { dependency.created.target.add(unresolvedElement(it)) }
+    QualifiedNameList().forEach { name -> element.target = name.map { elementByName(name)}.toMutableList() }
     RelationshipBody()
 }
-
 
 /**
  *      AnnotatingElement = Comment
@@ -98,31 +100,27 @@ fun KerML.OwnedAnnotation() =
         setOf(METADATA, ATSIGN) starts { MetadataFeature() }
     }
 
-
 /**
  *      OwnedRelatedElement = NonFeatureElement | FeatureElement
  */
-fun KerML.OwnedRelatedElement() {
+fun KerML.OwnedRelatedElement() =
     when(token.kind) {
         in featureElementStart    -> FeatureElement()
         in nonFeatureElementStart -> NonFeatureElement()
         else -> handleSyntaxError("At ${token.kind}: Expected a feature or non-feature element")
     }
-}
-
 
 /**
  *     MemberPrefix :- ( 'public' | "private" | "protected" ) "abstract"?
  */
 fun KerML.MemberPrefix() {
     when(token.kind) {
-        PUBLIC    -> { PUBLIC.consume();    semantics.visibility = Import.VisibilityKind.Public }
-        PRIVATE   -> { PRIVATE.consume();   semantics.visibility = Import.VisibilityKind.Private }
-        PROTECTED -> { PROTECTED.consume(); semantics.visibility = Import.VisibilityKind.Protected }
-        else      -> {  }
+        PUBLIC    -> { PUBLIC.consume   { semantics.visibility = Import.VisibilityKind.Public} }
+        PRIVATE   -> { PRIVATE.consume  { semantics.visibility = Import.VisibilityKind.Private} }
+        PROTECTED -> { PROTECTED.consume {semantics.visibility = Import.VisibilityKind.Protected} }
+        else      -> { semantics.visibility = Import.VisibilityKind.Public }
     }
     ABSTRACT.optional    { semantics.prefixes.add(ABSTRACT) }
-    // INDIVIDUAL.optional  { semantics.prefixes.add(INDIVIDUAL) }
 }
 
 /**
@@ -144,7 +142,7 @@ fun KerML.NamespaceBodyElement() {
         ALIAS starts                        { AliasMember() }
         IMPORT starts                       { Import() }
         SEMICOLON then                      { /* Empty statement */ }
-        // Else, we have a SysMLv2 Statement
+        // Else, we maybe have a SysML v2 Statement
         others                              {
             if (token.string in Token.sysMLv2Keywords.keys
                 && token.string !in Token.kerMLKeywords.keys)
@@ -164,17 +162,27 @@ fun KerML.NamespaceBodyElement() {
  *          ( 'locale' STRING_VALUE )?
  *          REGULAR_COMMENT
  */
-internal fun KerML.Comment() = CommentActions(semantics, ::CommentImplementation).parse {
-    create()
+internal fun KerML.Comment() = AnnotatingElementAction(semantics, ElementType.Comment).parse {
     COMMENT.optional {
         optional(NAME_LIT) {
-            Identification().also { setIdentification(it) }
+            Identification().semantics  { setIdentification(it) }
         }
         ABOUT.optional {
-            QualifiedNameList().also { (this as CommentActions).addAbout(it) }
+            Annotation()
+            noOrMore(COMMA){
+                COMMA.consume()
+                Annotation()
+            }
         }
     }
-    REGULAR_COMMENT.consume().also { created.body = consumedToken.string.trimIndent().trim() }
+    REGULAR_COMMENT.consume             { element.body = consumedToken.string.trimIndent().trim() }
+}
+
+/**
+ *      Annotation := QualifiedName
+ */
+internal fun KerML.Annotation() = OwnedRelationshipAction(semantics, ElementType.Annotation).parse {
+    QualifiedName().semantics { addTarget(elementByName(it)) }
 }
 
 /**
@@ -183,10 +191,10 @@ internal fun KerML.Comment() = CommentActions(semantics, ::CommentImplementation
  *          ( 'locale' STRING_VALUE )?
  *          REGULAR_COMMENT
  */
-internal fun KerML.Documentation() = DocumentationActions(semantics).parse {
+internal fun KerML.Documentation() = AnnotatingElementAction(semantics, ElementType.Documentation).parse {
     DOC.consume()
-    Identification().also { create(it) }
-    REGULAR_COMMENT.consume().also { created.body = consumedToken.string.trim() }
+    Identification().also { setIdentification(it) }
+    REGULAR_COMMENT.consume().also { element.body = consumedToken.string.trim() }
 }
 
 /**
@@ -195,15 +203,14 @@ internal fun KerML.Documentation() = DocumentationActions(semantics).parse {
  *          'language' STRING_VALUE
  *          REGULAR_COMMENT
  */
-internal fun KerML.TextualRepresentation() = AnnotatingElementActions(semantics, ::TextualRepresentationImplementation).parse {
-    create()
+internal fun KerML.TextualRepresentation() = AnnotatingElementAction(semantics, ElementType.TextualRepresentation).parse {
     optional(REP) {
         REP.consume()
         Identification().also { setIdentification(it) }
     }
     LANGUAGE.consume()
-    NAME_LIT.consume().also { created.language = consumedToken.string }
-    REGULAR_COMMENT.consume().also { created.body = consumedToken.string.trim(' ') }
+    NAME_LIT.consume().also { element.language = consumedToken.string }
+    REGULAR_COMMENT.consume().also { element.body = consumedToken.string.trim(' ') }
 }
 
 /**
@@ -213,12 +220,11 @@ internal fun KerML.TextualRepresentation() = AnnotatingElementActions(semantics,
  *
  *      NamespaceDeclaration : Namespace = 'namespace' Identification
  */
-internal fun KerML.Namespace() = NamespaceActions(semantics, ::NamespaceImplementation).parse {
+internal fun KerML.Namespace() = NamespaceAction(semantics, ElementType.Namespace).parse {
     NAMESPACE.consume()
-    Identification().also { semantics.create(it) }
+    Identification().also { setIdentification(it) }
     NamespaceBody()
 }
-
 
 /**
  *
@@ -238,36 +244,36 @@ internal fun KerML.NamespaceBody() {
 }
 
 /**
- *
  *      Import = ( VisibilityIndicator )?
  *              'import' 'all'? ImportDeclaration RelationshipBody
  */
-internal fun KerML.Import() = ImportActions(semantics).parseImport {
+internal fun KerML.Import() = ImportAction(semantics).parse {
     IMPORT.consume()
-    ALL.optional            { isImportAll = true }
-    ImportDeclaration(this)
+    ALL.optional            { element.isImportAll = true }
+    ImportDeclaration()
     RelationshipBody()
 }
 
 /**
  *      ImportDeclaration = MembershipImport | NamespaceImport
  */
-internal fun KerML.ImportDeclaration(actions: ImportActions) {
-    QualifiedName().also { actions.importQualifiedName = it }
+internal fun KerML.ImportDeclaration() {
+    QualifiedName().also { (semantics.action as ImportAction).importQualifiedName = it }
     alternatives {
-        DPDP then TIMES  starts   { NamespaceImport(actions) }
-        others                    { MembershipImport(actions) }
+        DPDP then TIMES  starts { NamespaceImport() }
+        others                  { MembershipImport() }
     }
 }
 
 /**
  *      MembershipImport = [QualifiedName] ('::' '**'?)?
  */
-internal fun KerML.MembershipImport(actions: ImportActions) {
+internal fun KerML.MembershipImport() {
+    semantics.element.type = ElementType.MembershipImport
+    semantics.setTarget(IdentifiedByName((semantics.action as ImportAction).importQualifiedName?:"", IdentificationKind.Membership))
     DPDP.optional {
-        STARSTAR.optional().also { actions.isRecursive = true }
+        STARSTAR.optional().also { semantics.element.isRecursive = true }
     }
-    actions.createMembershipImport()
 }
 
 /**
@@ -278,15 +284,16 @@ internal fun KerML.MembershipImport(actions: ImportActions) {
  *
  *      FilterPackageMember = '[' OwnedExpression ']'
  */
-internal fun KerML.NamespaceImport(actions: ImportActions) {
+internal fun KerML.NamespaceImport() {
+    semantics.element.type = ElementType.NamespaceImport
+    semantics.setTarget(IdentifiedByName((semantics.action as ImportAction).importQualifiedName?:"", IdentificationKind.Namespace))
     DPDP.consume()
     TIMES.optional {
         DPDP.optional {
-            actions.isRecursive = true
+            semantics.action.element.isRecursive = true
             STARSTAR.consume()
         }
     }
-    actions.createNamespaceImport()
 }
 
 /**
@@ -296,15 +303,11 @@ internal fun KerML.NamespaceImport(actions: ImportActions) {
  *          'for' memberElement = [QualifiedName]
  *          RelationshipBody
  */
-internal fun KerML.AliasMember() {
-    val aliasMember = MembershipActions(semantics, ::MembershipImplementation)
+internal fun KerML.AliasMember() = OwnedRelationshipAction(semantics, ElementType.Membership).parse {
     ALIAS.consume()
-    Identification().also {
-        aliasMember.create(it)
-        aliasMember.created.membershipOwningNamespace = semantics.element()
-    }
+    Identification()        .semantics { setIdentification(it) } // fixme: this is wrong, we need to set memberName, not declaredName
     FOR.consume()
-    QualifiedName().also { aliasMember.created.target = mutableListOf(unresolvedElement(it)) }
+    QualifiedName()         .semantics { setTarget(IdentifiedByName(it, IdentificationKind.Element)) }
     RelationshipBody()
 }
 
@@ -313,12 +316,12 @@ internal fun KerML.AliasMember() {
  *
  *      QualifiedName :- "NAME_LIT ("::" NAME_LIT)*
  */
-fun KerML.QualifiedName(): String {
-    var qualifiedName: String
-    NAME_LIT.consume().also { qualifiedName = consumedToken.string }
+fun KerML.QualifiedName(): QualifiedName {
+    var qualifiedName = ""
+    NAME_LIT.consume        { qualifiedName += consumedToken.string }
     noOrMore({ token.kind == DPDP && nextToken.kind == NAME_LIT }) {
-        DPDP.consume().also { qualifiedName += "::" }
-        NAME_LIT.consume().also { qualifiedName += consumedToken.string }
+        DPDP.consume()      { qualifiedName += "::" }
+        NAME_LIT.consume    { qualifiedName += consumedToken.string }
     }
     return qualifiedName
 }
@@ -330,22 +333,22 @@ fun KerML.QualifiedName(): String {
  *          | SuccessionItemFlow
  */
 val featureElementStart = setOf(
-    FEATURE, STEP, EXPR, INV, CONNECTOR, SUCCESSION, SUCCESSION, REDEFINES  // Prefixes that start a feature kind production rule
-) + FEATURE_PREFIX_START
+    FEATURE, STEP, EXPR, BOOL, INV, CONNECTOR, BINDING, SUCCESSION, SUCCESSION, REDEFINES  // Prefixes that start a feature kind production rule
+) + FeaturePrefixStart
 
 fun KerML.FeatureElement() {
     FeaturePrefix()
     alternatives {
         REDEFINES starts { Feature() }
-        FEATURE starts { Feature() }
-        STEP    starts { Step() }
-        EXPR    starts { ExpressionFeature() }
-        // Boolean expression is handled as an Expression
-        INV     starts { Invariant() }
+        FEATURE   starts { Feature() }
+        STEP      starts { Step() }
+        EXPR      starts { ExpressionFeature() }
+        BOOL      starts { BooleanExpression() }
+        INV       starts { Invariant() }
         CONNECTOR starts { Connector() }
-        // BindingConnector is handled as Connector
+        BINDING   starts { Unsupported("Not implemented yet") }
         SUCCESSION starts { Succession() }
-        others { Feature() }
+        others           { Feature() }
     }
 }
 

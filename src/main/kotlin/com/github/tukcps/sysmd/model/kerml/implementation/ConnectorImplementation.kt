@@ -3,26 +3,34 @@
 package com.github.tukcps.sysmd.model.kerml.implementation
 
 import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.model.util.UnresolvedElement
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
 /**
  * Connector / Binary link; usage of an Association
  * connector c: A from f1 to f2;
  */
 open class ConnectorImplementation(
+    model : Session,
+    elementId : Uuid = Uuid.random(),
     declaredName: String? = null,
     declaredShortName: String? = null,
-    elementType: String = "Connector"
 ) : Connector, Type, FeatureImplementation(
+    model,
+    elementId = elementId,
     declaredName = declaredName,
     declaredShortName = declaredShortName,
-    elementType = elementType
 ) {
     // As Connector only provides interface ...
-    final override var owningRelatedElement: Element = UnresolvedElement()
+    final override var owningRelatedElement: Element = UnresolvedElement(model)
     final override var ownedRelatedElement: MutableList<Element> = mutableListOf()
 
     override val owner: Element?
         get() = owningRelationship?.owningRelatedElement
+
+    override val owningNamespace: Namespace?
+        get() = owningRelationship?.owningNamespace
 
     override val association: Association
         get() = generalization.filterIsInstance<Association>().first()
@@ -41,17 +49,15 @@ open class ConnectorImplementation(
     final override var source: MutableList<Element> = mutableListOf()
     final override var target: MutableList<Element> = mutableListOf()
 
-    override fun clone(): Connector{
-        return ConnectorImplementation(
-            declaredName = declaredName,
-            declaredShortName = declaredShortName,
-        ).also { klon ->
-            klon.model = model
-            klon.from = from.toMutableList()
-            klon.to = to.toMutableList()
-            klon.direction = direction
-            klon.updated = updated
-        }
+    override fun clone(): Connector = ConnectorImplementation(
+        model,
+        declaredName = declaredName,
+        declaredShortName = declaredShortName,
+    ).also { klon ->
+        klon.from = from.toMutableList()
+        klon.to = to.toMutableList()
+        klon.direction = direction
+        klon.updated = updated
     }
 
     override fun updateFrom(template: Element) {

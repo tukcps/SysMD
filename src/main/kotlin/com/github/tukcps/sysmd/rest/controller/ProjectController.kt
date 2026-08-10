@@ -1,10 +1,10 @@
 package com.github.tukcps.sysmd.rest.controller
 
 import com.github.tukcps.sysmd.configuration.OpenAPIConfig
+import com.github.tukcps.sysmd.rest.entities.api.entities.requestModels.ProjectRequest
+import com.github.tukcps.sysmd.rest.entities.api.entities.responseModels.ProjectResponse
 import com.github.tukcps.sysmd.rest.entities.response.ExceptionResponse
 import com.github.tukcps.sysmd.services.session.SessionManager.projectService
-import io.github.tukcps.sysmlv2.api.entities.requestModels.ProjectRequest
-import io.github.tukcps.sysmlv2.api.entities.responseModels.ProjectResponse
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -16,7 +16,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.context.request.WebRequest
-import java.util.*
+import kotlin.uuid.Uuid
 
 
 /**
@@ -47,11 +47,8 @@ class ProjectController {
     ): ProjectResponse {
         logger.info("Accessed endpoint POST /projects with project name: ${requestModel.name}")
         val project = projectService.createProject(name = requestModel.name, description = requestModel.description, defaultBranch = null)
-        return ProjectResponse(project)
+        return ProjectResponse.from(project)
     }
-
-    /** Return type of get all projects */
-    class ProjectResponseList : ArrayList<ProjectResponse>()
 
     /**
      * GET /projects
@@ -60,11 +57,8 @@ class ProjectController {
     @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "Gets all projects.")
     @GetMapping(path = ["/projects"], produces = [MediaType.APPLICATION_JSON_VALUE])
-    fun getAllProjects(): ResponseEntity<ProjectResponseList> {
-        val projects = ProjectResponseList()
-        projectService.getProjects().forEach {
-            projects.add(ProjectResponse(it))
-        }
+    fun getAllProjects(): ResponseEntity<List<ProjectResponse>> {
+        val projects = projectService.getProjects().map(ProjectResponse::from)
         val response = ResponseEntity(projects, HttpStatus.OK)
         logger.info("Accessed endpoint GET /projects.")
         return response
@@ -78,10 +72,10 @@ class ProjectController {
     @Operation(summary = "Gets a project by its id.")
     @GetMapping(path = ["/projects/{projectId}"], produces = [MediaType.APPLICATION_JSON_VALUE])
     fun getProjectById(
-        @Parameter(description = "Id of the project.", required = true) @PathVariable projectId: UUID
+        @Parameter(description = "Id of the project.", required = true) @PathVariable projectId: Uuid
     ): ResponseEntity<ProjectResponse> {
         val project = projectService.getProjectById(projectId)!!
-        val response = ResponseEntity(ProjectResponse(project), HttpStatus.OK)
+        val response = ResponseEntity(ProjectResponse.from(project), HttpStatus.OK)
         logger.info("Accessed endpoint GET /projects by ID.")
         return response
     }
@@ -94,11 +88,11 @@ class ProjectController {
     @Operation(summary = "Deletes a project by its id.")
     @DeleteMapping(path = ["/projects/{projectId}"], produces = [MediaType.APPLICATION_JSON_VALUE])
     fun deleteProjectById(
-        @Parameter(description = "Id of the project.", required = true) @PathVariable projectId: UUID
+        @Parameter(description = "Id of the project.", required = true) @PathVariable projectId: Uuid
     ): ResponseEntity<ProjectResponse> {
         val project = projectService.deleteProject(projectId)
         val response = if (project != null)
-            ResponseEntity(ProjectResponse(project), HttpStatus.OK)
+            ResponseEntity(ProjectResponse.from(project), HttpStatus.OK)
         else
             ResponseEntity(ProjectResponse(), HttpStatus.NOT_FOUND)
         logger.info("Accessed endpoint DELETE /projects/$projectId.")
@@ -114,7 +108,7 @@ class ProjectController {
     @Operation(summary = "Updates a project by its id.")
     @PutMapping(path = ["/projects/{projectId}"], produces = [MediaType.APPLICATION_JSON_VALUE])
     fun updateProjectById(
-        @Parameter(description = "Id of the project.", required = true) @PathVariable projectId: UUID,
+        @Parameter(description = "Id of the project.", required = true) @PathVariable projectId: Uuid,
         @RequestBody requestModel: ProjectRequest
     ): ResponseEntity<ProjectResponse> {
         projectService.updateProject(
@@ -122,7 +116,7 @@ class ProjectController {
             requestModel.name,
             requestModel.description,
         )
-        val response = ResponseEntity(ProjectResponse(projectService.getProjectById(projectId)!!), HttpStatus.OK)
+        val response = ResponseEntity(ProjectResponse.from(projectService.getProjectById(projectId)!!), HttpStatus.OK)
         logger.info("Accessed endpoint PUT /projects/$projectId.")
         return response
     }

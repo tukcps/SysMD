@@ -39,7 +39,7 @@ class ISQTests {
             feature x: ISQ::VolumeValue = 1000.0 [cm^3]; 
         """, Runlevel.VARIABLES)
         assertNoIssues()
-        val x = global.resolveVar("x")
+        val x = solver.getVariable("x")
         assertNotNull(x)
         assertEquals(0.001, x.min(), 0.000000000001)
     }
@@ -48,10 +48,10 @@ class ISQTests {
     fun derivedUnitTest2() = testSession("ISQ", "Occurrences")  {
         loadKerML("""
             class Car {
-                feature power: ISQ::PowerValue(10..1000) [kW]; 
+                feature power: ISQ::PowerValue(10..1000 [kW]); 
             }
             class VW :> Car { 
-                :>> power: ISQ::PowerValue(20..100) [kW]; 
+                :>> power: ISQ::PowerValue(20..100 [kW]) ; 
             }
         """, Runlevel.VARIABLES)
         assertNoIssues()

@@ -1,24 +1,35 @@
 package com.github.tukcps.sysmd.model.expression.implementation
 
 import com.github.tukcps.sysmd.model.expression.Invariant
-import com.github.tukcps.sysmd.model.kerml.UnresolvedType
 import com.github.tukcps.sysmd.model.util.SimpleName
+import com.github.tukcps.sysmd.model.util.UnresolvedType
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
-class InvariantImplementation(
+open class InvariantImplementation(
+	model : Session,
+	elementId : Uuid = Uuid.random(),
     declaredName: SimpleName? = null,
     declaredShortName: SimpleName? = null,
     expression: String? = null,
-    elementType: String = "Invariant",
 ): Invariant, ExpressionImplementation(
-    declaredName = declaredName,
-    declaredShortName = declaredShortName,
-    typeConstraint = mutableListOf("true"),
-    expression = expression,
-    elementType = elementType,
+	model,
+	elementId = elementId,
+	declaredName = declaredName,
+	declaredShortName = declaredShortName,
+	expression = expression,
 ) {
+	override val typeConstraint: MutableList<String>
+		get() = if (isNegated) mutableListOf("false") else mutableListOf("true")
+
+	override val unitConstraint: String
+		get() = ""
+
     override var isNegated: Boolean = false
 
-	override fun learnType() = listOf(model?.repo?.booleanType ?: UnresolvedType("ScalarValues::Boolean"))
+	override fun learnType() = listOf(
+		model.repo.booleanType ?: UnresolvedType(model, "ScalarValues::Boolean")
+	)
 
 	override fun initialize()
 	{
@@ -63,10 +74,10 @@ class InvariantImplementation(
 
 
 	override fun clone() = InvariantImplementation(
+		model,
 		declaredName= declaredName,
 		declaredShortName = declaredShortName,
 		expression = expression,
-		elementType = elementType,
 	).also {
 		it.updateFrom(this)
 	}

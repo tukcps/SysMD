@@ -3,22 +3,26 @@ package com.github.tukcps.sysmd.model.kerml.implementation
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.MetadataFeature
 import com.github.tukcps.sysmd.model.util.SimpleName
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
 
-class MetadataFeatureImplementation(
+open class MetadataFeatureImplementation(
+    model : Session,
+    elementId : Uuid = Uuid.random(),
     declaredName: SimpleName? = null,
     declaredShortName: SimpleName? = null,
-    elementType: String = "MetadataFeature"
 ): MetadataFeature, FeatureImplementation(
+    model,
+    elementId = elementId,
     declaredName = declaredName,
     declaredShortName = declaredShortName,
-    elementType = elementType
 ) {
     override var body: String = ""
-    override fun clone(): MetadataFeature =
-        MetadataFeatureImplementation(this.declaredName, this.declaredShortName).also {
-            it.body = body
-        }
+    override fun clone(): MetadataFeature = MetadataFeatureImplementation(model).also {
+        it.updateFrom(this)
+        it.body = body
+    }
 
     override fun updateFrom(template: Element) {
         super.updateFrom(template)

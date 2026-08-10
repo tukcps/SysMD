@@ -63,7 +63,7 @@ internal fun SysMLv2.DefinitionBodyItem() {
 }
 
 fun SysMLv2.DefinitionDeclaration() {
-    Identification().also { semantics.create(it) }
+    Identification().also { semantics.action.setIdentification(it) }
     optional(start = SPECIALIZES or DPGT) {
         SubclassificationPart()
     }

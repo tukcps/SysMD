@@ -16,7 +16,7 @@ interface ModelServices:
    /**
     * The session and model to which the element belongs.
     */
-    var model: Session?
+    val model: Session
 
     /**
      * The indices in the input string during a parse run.

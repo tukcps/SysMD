@@ -1,16 +1,16 @@
 package com.github.tukcps.sysmd.services.repositories.local
 
 
-import io.github.tukcps.sysmlv2.api.entities.ProjectUsage
+import com.github.tukcps.sysmd.rest.entities.api.entities.ProjectUsage
+import io.ktor.http.*
 import java.io.File
-import java.net.URI
-import java.util.*
+import kotlin.uuid.Uuid
 
 class ProjectUsageData(
-    var resource: URI,
+    var resource: Url,
     var versionConstraint: String = "0",
-    override var owningProject: UUID = UUID.randomUUID(),
-    override var usedCommit: UUID = UUID.randomUUID()
+    override var owningProject: Uuid = Uuid.random(),
+    override var usedCommit: Uuid = Uuid.random()
 ) : ProjectUsage {
 
     /** Checks if we have cached a local file for it. */

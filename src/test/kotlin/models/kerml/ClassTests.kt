@@ -12,12 +12,12 @@ class ClassTests {
 
     @Test
     fun getSubclassesTest() = testSession {
-        val a = addOwnedMember(ClassImplementation(declaredName = "a"), global)
-        addOwnedRelationship(SpecializationImplementation(a, anything))
-        val b = addOwnedMember(ClassImplementation(declaredName = "b"), global)
-        addOwnedRelationship(SpecializationImplementation(b, a))
-        val c = addOwnedMember(ClassImplementation(declaredName = "c"), global)
-        addOwnedRelationship(SpecializationImplementation(c, b))
+        val a = addOwnedMember(ClassImplementation(this, declaredName = "a"), global)
+        addOwnedRelationship(SpecializationImplementation(this, specific = a, general = repo.anything!!))
+        val b = addOwnedMember(ClassImplementation(this, declaredName = "b"), global)
+        addOwnedRelationship(SpecializationImplementation(this, specific = b, general = a))
+        val c = addOwnedMember(ClassImplementation(this, declaredName = "c"), global)
+        addOwnedRelationship(SpecializationImplementation(this, specific = c, general = b))
         initialize(Runlevel.MODEL)
         val aSubtypes = a.subtypes
         assertTrue(b in aSubtypes)

@@ -1,18 +1,18 @@
 package com.github.tukcps.sysmd.services.repositories.local
 
+import com.github.tukcps.sysmd.rest.entities.api.entities.Branch
+import com.github.tukcps.sysmd.rest.entities.api.entities.Project
+import com.github.tukcps.sysmd.rest.entities.api.services.ProjectService
+import com.github.tukcps.sysmd.rest.entities.interchange.InterchangeProject
 import com.github.tukcps.sysmd.settings
 import com.github.tukcps.sysmd.ui.*
-import io.github.tukcps.sysmlv2.api.entities.Branch
-import io.github.tukcps.sysmlv2.api.entities.Project
-import io.github.tukcps.sysmlv2.api.services.ProjectService
-import io.github.tukcps.sysmlv2.interchange.InterchangeProject
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.io.files.Path
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
-import java.util.*
+import kotlin.uuid.Uuid
 
 
 /**
@@ -41,9 +41,11 @@ open class SysMDProjectService: ProjectService {
      * @param defaultBranch (null)
      */
     override fun createProject(name: String?, description: String?, defaultBranch: Branch?): Project {
-        val project = ProjectData(InterchangeProject(
-            name = name?:"",
-            description = description),
+        val project = ProjectData(
+            InterchangeProject(
+                name = name ?: "",
+                description = description
+            ),
             directory = name?.let { Path(settings.dataFolder, it) }
         )
 
@@ -114,12 +116,12 @@ open class SysMDProjectService: ProjectService {
      * @param projectId the id of the project.
      * @return the project data record.
      */
-    override fun getProjectById(projectId: UUID): ProjectData? = projectDataRepository.find { it.id == projectId }
+    override fun getProjectById(projectId: Uuid): ProjectData? = projectDataRepository.find { it.id == projectId }
 
     /**
      * Updates a project
      */
-    override fun updateProject(projectId: UUID, name: String?, description: String?, defaultBranch: Branch?): Project {
+    override fun updateProject(projectId: Uuid, name: String?, description: String?, defaultBranch: Branch?): Project {
         val projectFound = projectDataRepository.firstOrNull { it.id == projectId }
         if (projectFound != null) {
             projectFound.name = name?:projectFound.name
@@ -129,12 +131,11 @@ open class SysMDProjectService: ProjectService {
         return projectFound?: TODO()
     }
 
-
     /**
      * Deletes a project, both from the files and the project list.
      * @param projectId the ID of the project
      */
-    override fun deleteProject(projectId: UUID): ProjectData? {
+    override fun deleteProject(projectId: Uuid): ProjectData? {
         try {
             val dateTime = Clock.System.now().toLocalDateTime(TimeZone.UTC)
             val dateTimeString = "${dateTime.date}T${dateTime.hour.toString().padStart(2, '0')}_${dateTime.minute.toString().padStart(2, '0')}Z"

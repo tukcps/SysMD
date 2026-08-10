@@ -1,10 +1,10 @@
 package constraintnettests.functionstests
 
 import com.github.tukcps.sysmd.services.Runlevel
-import kotlin.test.Test
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
+import kotlin.test.Test
 import kotlin.test.assertEquals
 
 /**
@@ -17,8 +17,8 @@ class UnitConversionTests {
     @Test
     fun conversionTest1() = testSession("ISQ") {
         loadKerML("""
-            feature t1: Quantities::ScalarQuantityValue = 1.0 [h^2]{:>> unit = "h^2";}
-            feature t2: Quantities::ScalarQuantityValue = t1 {:>> unit = "min^2";}
+            feature t1: Quantities::ScalarQuantityValue = 1.0 [h^2] {:>> range = (*..*) [h^2];}
+            feature t2: Quantities::ScalarQuantityValue = t1 {:>> range = (*..*) [min^2];}
         """, Runlevel.ALL)
         assertNoIssues()
         assertEquals(3600.0, solver.getVariable("t2")!!.max(), 0.0001)
@@ -37,8 +37,8 @@ class UnitConversionTests {
     @Test
     fun conversionTest3() = testSession("ISQ") {
         loadKerML("""
-            feature t1: Quantities::ScalarQuantityValue  = 1.0 [N/m^2] { :>> unit = "N/m^2";}
-            feature t2: Quantities::ScalarQuantityValue = t1 { :>> unit = "mN/dm^2";}
+            feature t1: Quantities::ScalarQuantityValue  = 1.0 [N/m^2] { :>> range = (*..*) [N/m^2];}
+            feature t2: Quantities::ScalarQuantityValue = t1 { :>> range = (* ..*) [mN/dm^2];}
         """, Runlevel.ALL)
         assertNoIssues()
         assertEquals(10.0, solver.getVariable("t2")!!.min(), 0.0001)
@@ -56,7 +56,7 @@ class UnitConversionTests {
     @Test
     fun unitConversationTest() = testSession("ISQ", "Ranges") {
         loadKerML("""
-            feature t: ISQ::AccelerationValue{ :>> range = "-9.81";}
+            feature t: ISQ::AccelerationValue{ :>> range = -9.81 [m/s^2];}
             feature s: ISQ::AccelerationValue = t;
         """, Runlevel.ALL)
         assertEquals("-9.81 m/s^2", solver.getVariable("s")!!.vectorQuantity.toString())

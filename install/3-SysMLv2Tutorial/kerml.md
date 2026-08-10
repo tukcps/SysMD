@@ -517,8 +517,7 @@ feature height:  ISQ::LengthValue = oneOf(10.0 .. 100.0 [cm]);
 feature width:   ISQ::LengthValue = oneOf(1.0 .. 1.1 [m]);
 feature length:  ISQ::LengthValue = oneOf(1.0 .. 1.1 [m]);
 feature volume:  ISQ::VolumeValue = height * width * length  {
-    :>> range = "1000..2000"; 
-    :>> unit = "l";     
+    :>> range = 1000..2000 [l]; // We want only volumes between 1000 and 2000 l 
 }
 ```
 Expressions on the right side of a feature can constrain the value of a feature, 
@@ -603,7 +602,7 @@ class Car {
     feature body:   Body;
     feature wheels: Wheel[4];
     feature engine: Engine[1 .. 2]; 
-    feature mass: ISQ::MassValue [kg] = sumOverParts(mass); 
+    feature mass: ISQ::MassValue(0..* [kg]) = sumOverParts(mass); 
     inv m { mass < 500.0 [kg] }
 }
 ```

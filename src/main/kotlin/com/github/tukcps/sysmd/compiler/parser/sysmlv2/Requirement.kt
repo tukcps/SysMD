@@ -6,13 +6,13 @@ import com.github.tukcps.sysmd.compiler.SysMLv2
 import com.github.tukcps.sysmd.compiler.parser.kerml.*
 import com.github.tukcps.sysmd.compiler.parser.util.Unsupported
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
-import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
-import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.RequirementConstraintMemberActions
-import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.RequirementDefinitionActions
+import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureAction
+import com.github.tukcps.sysmd.compiler.semantics.kerml.parse
+import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.RequirementConstraintAction
+import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.RequirementDefinitionAction
 import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.RequirementUsageActions
-import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
-import com.github.tukcps.sysmd.model.sysml.RequirementConstraintMember
+import com.github.tukcps.sysmd.model.generated.ElementType
+import com.github.tukcps.sysmd.model.sysml.RequirementConstraintMembership
 
 /**
  * From standard:
@@ -37,7 +37,7 @@ import com.github.tukcps.sysmd.model.sysml.RequirementConstraintMember
  *      RequirementDefinition = OccurrenceDefinitionPrefix
  *          'requirement' 'def' DefinitionDeclaration RequirementBody
  */
-fun SysMLv2.RequirementDefinition()  = RequirementDefinitionActions(semantics).parse {
+fun SysMLv2.RequirementDefinition()  = RequirementDefinitionAction(semantics).parse {
     REQUIREMENT.consume()
     DEF.consume()
     DefinitionDeclaration()
@@ -64,7 +64,7 @@ fun SysMLv2.RequirementUsage() = RequirementUsageActions(semantics).parse {
  *
  *      SubjectUsage = 'subject' UsageExtensionKeyword* Usage
  */
-fun SysMLv2.SubjectUsage() = FeatureActions<Feature>(semantics, ::FeatureImplementation).parse {
+fun SysMLv2.SubjectUsage() = FeatureAction(semantics, ElementType.Feature).parse {
     SUBJECT.consume()
     Usage()
 }
@@ -76,8 +76,10 @@ fun SysMLv2.SubjectUsage() = FeatureActions<Feature>(semantics, ::FeatureImpleme
  */
 fun SysMLv2.RequirementKind() {
     when(token.kind) {
-        ASSUME  -> ASSUME.consume().also  { semantics.element<RequirementConstraintMember>().kind = RequirementConstraintMember.Kind.ASSUME }
-        REQUIRE -> REQUIRE.consume().also { semantics.element<RequirementConstraintMember>().kind = RequirementConstraintMember.Kind.REQUIRE }
+        ASSUME  -> ASSUME.consume().semantics {
+            element.requirementConstraintMembershipKind = RequirementConstraintMembership.RequirementConstraintKind.ASSUME }
+        REQUIRE -> REQUIRE.consume().semantics {
+            element.requirementConstraintMembershipKind = RequirementConstraintMembership.RequirementConstraintKind.REQUIRE }
         else -> handleSyntaxError("Expecting 'assume' or 'require'")
     }
 }
@@ -101,7 +103,6 @@ fun SysMLv2.SatisfyRequirementUsage() = RequirementUsageActions(semantics).parse
         else -> {
             OwnedReferenceSubsetting()
             optional(featureSpecializationStart) { FeatureSpecializationPart() }
-            create(null)
         }
     }
     optional(valuePartStart) { ValuePart() }
@@ -132,11 +133,10 @@ fun SysMLv2.SatisfactionSubjectMember() {
  *              | (UsageExtensionKeyword* 'constraint' | UsageExtensionKeyword+)
  *                ConstraintUsageDeclaration CalculationBody
  */
-fun SysMLv2.RequirementConstraintMember() = RequirementConstraintMemberActions(semantics).parse {
+fun SysMLv2.RequirementConstraintMember() = RequirementConstraintAction(semantics).parse {
     RequirementKind()
     alternatives {
         NAME_LIT starts {
-            create()
             OwnedReferenceSubsetting()
             optional(featureSpecializationPartStart) { FeatureSpecializationPart() }
             RequirementBody()

@@ -1,17 +1,19 @@
 package com.github.tukcps.sysmd.model.kerml.implementation
 
 import com.github.tukcps.sysmd.model.kerml.Interaction
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
 class InteractionImplementation(
+    model : Session,
+    elementId : Uuid = Uuid.random(),
     declaredName: String? = null,
     declaredShortName: String? = null,
-    elementType: String = "Interaction"
 ): Interaction, AssociationImplementation(
+    model,
+    elementId = elementId,
     declaredName = declaredName,
     declaredShortName = declaredShortName,
-    elementType = elementType
 ) {
-    override fun clone(): Interaction = InteractionImplementation(declaredName, declaredShortName).also {
-        it.updateFrom(this)
-    }
+    override fun clone(): Interaction = InteractionImplementation(model).also { it.updateFrom(this) }
 }

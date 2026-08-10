@@ -1,9 +1,8 @@
 package compiler.sysml
 
 import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.services.resolve.resolveVar
-import io.github.tukcps.aadd.values.IntegerRange
-import org.junit.jupiter.api.Assertions
+import com.github.tukcps.sysmd.model.kerml.Type
+import com.github.tukcps.sysmd.model.util.MultiplicityRange
 import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
@@ -26,51 +25,46 @@ class AttributeTests {
 
     @Test
     fun testTypedAttribute() = testSession("ScalarValues") {
-        loadSysMLv2(
-            """
+        loadSysMLv2("""
             attribute <aa> a: ScalarValues::Real; 
-        """
-        )
+        """)
         assertNoIssues()
         val a = global.resolve("a")?.member<Feature>()
         assertNotNull(a)
         assertEquals("a", a.declaredName)
         assertEquals("aa", a.declaredShortName)
-        assertEquals(repo.realType, a.type.first())
-        assertEquals(IntegerRange(1, 1), a.multiplicityRange)
+        assertEquals(repo.realType as Type, a.type.first())
     }
 
     @Test
-    fun testTypedAttributeWithMultiplicity() = testSession("ScalarValues") {
-        loadSysMLv2(
-            """
-            attribute <aa> a: ScalarValues::Real [1 .. 3]; 
-        """
-        )
+    fun testAttributeMultiplicityDefault() = testSession("ScalarValues") {
+        loadSysMLv2("""
+            attribute <aa> a: ScalarValues::Real; 
+        """)
         assertNoIssues()
         val a = global.resolve("a")?.member<Feature>()
         assertNotNull(a)
-        assertEquals("a", a.declaredName)
-        assertEquals("aa", a.declaredShortName)
-        assertEquals(repo.realType, a.type.first())
-        assertEquals(IntegerRange(1, 3), a.multiplicityRange)
+        assertEquals(MultiplicityRange(1, 1), a.multiplicityRange)
+    }
+
+    @Test
+    fun testTypedAttributeWithMultiplicity() = testSession("Attributes") {
+        loadSysMLv2("attribute <aa> a: ScalarValues::Real [1 .. 3];")
+        assertNoIssues()
+        val a = global.resolve("a")?.member<Feature>()
+        assertNotNull(a)
+        assertEquals(MultiplicityRange(1, 3), a.multiplicityRange)
     }
 
     @Test
     fun parseUnitTest() = testSession("ISQ") {
-        loadSysMLv2(
-            """ 
+        loadSysMLv2(""" 
             attribute x: ISQ::SpeedValue = 10.0 [m/s];
-        """
-        )
-        solver.propagate()
+        """)
         assertNoIssues()
         val x = global.resolve("x")?.member<Feature>()
         assertNotNull(x)
-        val unit = x.variable?.vectorQuantity?.unit
-        Assertions.assertEquals("m / s", unit.toString())
-        Assertions.assertEquals(
-            0.01, global.resolveVar("x")!!.vectorQuantity.valuesIn("km/s")[0].asAadd().getRange().min, 0.000001
-        )
+        val expr = x.expression
+        assertEquals("10.0 [m/s]", expr)
     }
 }

@@ -2,30 +2,29 @@ package com.github.tukcps.sysmd.model.expression.implementation
 
 import com.github.tukcps.sysmd.model.expression.CollectExpression
 import com.github.tukcps.sysmd.model.util.SimpleName
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
 class CollectExpressionImplementation(
+	model : Session,
+	elementId : Uuid = Uuid.random(),
 	declaredName: SimpleName? = null,
 	declaredShortName: SimpleName? = null,
-	typeConstraint: MutableList<String> = mutableListOf(),
 	expression: String? = null,
-	elementType: String = "CollectExpression"
 ) : CollectExpression, OperatorExpressionImplementation(
-	declaredName = declaredName,
-	declaredShortName = declaredShortName,
-	typeConstraint = typeConstraint,
-	expression = expression,
-	elementType = elementType)
-{
+    model,
+    elementId = elementId,
+    declaredName = declaredName,
+    declaredShortName = declaredShortName,
+    expression = expression
+) {
 	init {
 		operator = "collect"
 	}
 
 	override fun clone() = CollectExpressionImplementation(
-		declaredName= declaredName,
-		declaredShortName = declaredShortName,
-		typeConstraint = typeConstraint,
+		model,
 		expression = expression,
-		elementType = elementType,
 	).also {
 		it.updateFrom(this)
 	}

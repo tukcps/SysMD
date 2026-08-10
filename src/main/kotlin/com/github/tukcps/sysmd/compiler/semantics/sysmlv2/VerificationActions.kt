@@ -1,18 +1,17 @@
 package com.github.tukcps.sysmd.compiler.semantics.sysmlv2
 
 import com.github.tukcps.sysmd.compiler.semantics.ActionsContext
-import com.github.tukcps.sysmd.model.sysml.ActionDefinition
-import com.github.tukcps.sysmd.model.sysml.VerificationCaseUsage
+import com.github.tukcps.sysmd.model.generated.ElementType
 import com.github.tukcps.sysmd.model.util.SimpleName
 
-class VerificationCaseUsageActions<T: VerificationCaseUsage>(
+class VerificationCaseUsageAction(
     context: ActionsContext,
-    creator: (SimpleName?, SimpleName?) -> T,
-    defaultType: SimpleName = "VerificationCases::VerificationCase"
-) : ActionUsageActions<T>(context, creator, defaultType)
+    type: ElementType = ElementType.VerificationCaseUsage,
+    isImplicit: SimpleName = "VerificationCases::VerificationCase"
+) : ActionUsageAction(context, type, isImplicit)
 
-class VerificationCaseDefinitionActions<T: ActionDefinition>(
+class VerificationCaseDefinitionAction(
     context: ActionsContext,
-    creator: (SimpleName?, SimpleName?) -> T,
-    defaultType: SimpleName = "VerificationCases::VerificationCase"
-) : ActionDefinitionActions<T>(context, creator, defaultType)
+    type: ElementType = ElementType.VerificationCaseDefinition,
+    isImplicit: SimpleName = "VerificationCases::VerificationCase"
+) : ActionDefinitionAction(context, type, isImplicit)

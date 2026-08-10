@@ -5,7 +5,8 @@ import com.github.tukcps.sysmd.model.kerml.Membership
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.util.*
-
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
 /**
  * KerML foresees a namespace that is an element.
@@ -14,15 +15,16 @@ import com.github.tukcps.sysmd.model.util.*
  * a different name when imported."
  */
 open class NamespaceImplementation(
+    model: Session,
+    elementId : Uuid = Uuid.random(),
     declaredName: String? = null,
     declaredShortName: String? = null,
-    elementType: String = "Namespace"
 ): Namespace, ElementImplementation(
+    model,
+    elementId = elementId,
     declaredName=declaredName,
     declaredShortName=declaredShortName,
-    elementType = elementType
 ){
-
     /**
      * Returns the visible memberships in this namespace
      * @param excluded set of already searched namespaces, to prevent circular search
@@ -70,7 +72,7 @@ open class NamespaceImplementation(
      * @return the membership of an element to which the parameter resolves
      */
     override fun resolveGlobal(qualifiedName: QualifiedName): Membership? {
-        return model?.global?.findRecursive(qualifiedName, emptySet(), emptySet())
+        return model.global.findRecursive(qualifiedName, emptySet(), emptySet())
     }
 
     /**
@@ -89,8 +91,7 @@ open class NamespaceImplementation(
         }.firstOrNull()
     }
 
-    override fun clone(): Namespace =
-        NamespaceImplementation().also { it.updateFrom(this) }
+    override fun clone(): Namespace = NamespaceImplementation(model).also { it.updateFrom(this) }
 
 }
 

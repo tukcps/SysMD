@@ -2,14 +2,10 @@
 
 package com.github.tukcps.sysmd.compiler.semantics.kerml
 
-import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.LIBRARY
-import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.STANDARD
 import com.github.tukcps.sysmd.compiler.semantics.ActionsContext
 import com.github.tukcps.sysmd.compiler.semantics.Identification
-import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.model.kerml.Annotation
-import com.github.tukcps.sysmd.model.util.SimpleName
-
+import com.github.tukcps.sysmd.model.kerml.Element
+import com.github.tukcps.sysmd.model.kerml.Import
 
 /**
  * We organize semantic actions as classes that re-use methods and fields.
@@ -21,7 +17,7 @@ import com.github.tukcps.sysmd.model.util.SimpleName
  */
 open class SemanticAction<T: Element>(
     val context: ActionsContext,
-    var creator: (SimpleName?, SimpleName?) -> T,
+    var creator: () -> T,
 ) {
     var created: T
 
@@ -30,7 +26,7 @@ open class SemanticAction<T: Element>(
      * This element can be added to the model by the method create.
      */
     init {
-        created = creator(null, null)
+        created = creator()
     }
 
     /**
@@ -40,41 +36,18 @@ open class SemanticAction<T: Element>(
      */
     open fun init() {}
 
-    fun parse( production: SemanticAction<T>.() -> Unit ): T {
-        init()
-        production()
-        finish()
-        return created
-    }
+    /**
+     * Method that parses a production rule given as parameter.
+     * @param production Method that runs in scope of a SemanticAction
+     * @return the created element of the created abstract representation
+     */
+    fun parse( production: SemanticAction<T>.() -> Unit ): T = created
 
      /**
      * Adds the element to the model.
      * @param identification name and short name.
      */
-    open fun create(identification: Identification?=null) {
-        created.declaredName = identification?.name
-        created.declaredShortName = identification?.shortName
-        created.input = context.compiler.input
-        created.indices = context.compiler.consumedToken.indices
-        if ( (STANDARD in context.prefixes) or (LIBRARY in context.prefixes) )
-            created.isLibraryElement = true
-
-        // determine the owner
-        val whereToAdd = if (created == context.element()) context.owner() else context.element()
-
-        created =
-            if (created !is Namespace && created !is Annotation && created !is Dependency && created is Relationship)
-                context.model.addOwnedRelationship(created as Relationship, whereToAdd) as T
-            else
-                context.model.addOwnedMember(
-                    created,
-                    whereToAdd,
-                    context.visibility ?: Import.VisibilityKind.Public)
-
-        context.visibility = null
-
-        context.model.status.createdElements.add(context.ownerName())
-    }
+    open fun create(identification: Identification?=null) {}
 
     /**
      * Method that is called after executing the lambda 'production'.
@@ -94,5 +67,5 @@ open class SemanticAction<T: Element>(
         created.declaredName = identification.name
     }
 
-    override fun toString(): String = "[${created.escapedName()?:created.elementType}]"
+    override fun toString(): String = "[${created.escapedName()?:""}]"
 }

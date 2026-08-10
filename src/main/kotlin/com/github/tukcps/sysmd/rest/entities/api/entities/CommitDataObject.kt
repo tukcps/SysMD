@@ -1,14 +1,14 @@
 @file:Suppress("unused")
 package com.github.tukcps.sysmd.rest.entities.api.entities
 
-import java.util.*
-import kotlin.collections.Collection
+import com.github.tukcps.sysmd.model.generated.ElementDataIF
+import kotlin.uuid.Uuid
 
 interface CommitDataObject {
-    var id: UUID
+    var id: Uuid
     var type: DataVersionType
-    var payloadElementSnapshot: ElementDAO? // not in standard; allows us faster operation
-    var element: ElementDAO?
+    var payloadElementSnapshot: ElementDataIF? // not in standard; allows us faster operation
+    var element: ElementDataIF?
     var projectUsage: ProjectUsage?
 
     /**

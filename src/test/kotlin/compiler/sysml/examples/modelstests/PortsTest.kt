@@ -9,10 +9,8 @@ import kotlin.test.Test
 class PortsTest {
 
     @Test
-    fun testPorts() = testSession("States", "Requirements", "Interfaces", "Allocations", "Connections",
-        "Attributes", "Ports", "Parts", "Items", "Occurrences") {
-        loadSysMLv2(
-            """
+    fun testPorts() = testSession("SysMLLibraries") {
+        loadSysMLv2("""
                 package 'Port Example' {
                     
                     attribute def Temp;

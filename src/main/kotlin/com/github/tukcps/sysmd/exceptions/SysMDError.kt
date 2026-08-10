@@ -4,6 +4,8 @@ import com.github.tukcps.sysmd.compiler.KerML
 import com.github.tukcps.sysmd.compiler.scanner.Scanner
 import com.github.tukcps.sysmd.compiler.scanner.Token
 import com.github.tukcps.sysmd.model.kerml.Element
+import java.util.*
+import kotlin.uuid.Uuid
 
 
 /**
@@ -20,9 +22,10 @@ open class SysMDError(
     token: Token? = null,
     kind: Issue.Kind = Issue.Kind.ERROR,
     element: Element? = null,
+    elementId: Uuid? = null,
     path: String? = null,
     cause: Throwable? = null,
-) : SysMDException(message, input, token, kind, element, path, cause)
+) : SysMDException(message, input, token, kind, element, elementId, path, cause)
 
 
 /**
@@ -72,11 +75,17 @@ open class SemanticError(message: String, element: Element? = null, cause: Throw
  * This Exception is thrown for all errors during initialized and propagate phases.
  * It just creates an error message.
  */
-open class SolverError(message: String, path: String, cause: Throwable? = null) :
-    SysMDError(
+open class SolverError(
+    message: String,
+    path: String? = null,
+    elementId: Uuid?=null,
+    cause: Throwable? = null
+) : SysMDError(
         message,
         cause = cause,
         path = path,
+        element = null,
+        elementId = elementId,
     ){
     init {
         if (cause is SysMDException && cause.element != null) {
@@ -102,7 +111,11 @@ class ExpressionError internal constructor(msg: String, element: Element? = null
 /**
  * Internal problem caused exception; e.g. due to inconsistent internal data structures.
  */
-class InternalError(message: String, cause: Throwable? = null) : SysMDError(message, cause = cause)
+class InternalError(
+    message: String,
+    element: Element? = null,
+    cause: Throwable? = null
+) : SysMDError(message, element = element, cause = cause)
 
 
 /**

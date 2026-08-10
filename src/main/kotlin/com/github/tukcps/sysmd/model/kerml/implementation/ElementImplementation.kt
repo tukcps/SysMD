@@ -1,10 +1,11 @@
 package com.github.tukcps.sysmd.model.kerml.implementation
 
+import com.github.tukcps.sysmd.model.generated.elementType
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.model.util.SimpleName
 import com.github.tukcps.sysmd.services.session.Session
-import java.util.*
+import kotlin.uuid.Uuid
 
 /**
  * Base class for the repository entities.
@@ -22,21 +23,17 @@ import java.util.*
  *   @param owningRelationship the memberships; must be resolved in case of standard libraries to get UUID5 based on qualified name
  */
 open class ElementImplementation(
-    final override var elementId: UUID? = null,
+    final override val model: Session,
+    final override val elementId: Uuid = Uuid.random(),
     final override var declaredName: SimpleName? = null,
     final override var declaredShortName: SimpleName? = null,
     final override var aliasIds: Collection<String> = emptyList(),
-    final override var ownedRelationship: MutableList<Relationship> = mutableListOf(),
+    override var ownedRelationship: MutableList<Relationship> = mutableListOf(),
     final override var owningRelationship: OwningMembership? = null,
     final override var textualRepresentation: MutableList<TextualRepresentation> = mutableListOf(),
     final override var documentation: MutableList<Documentation> = mutableListOf(),
     final override var isImpliedIncluded: Boolean = false,
-    final override val elementType: String = "Element"
  ) : Element {
-
-    /** Dependency injected by call of model.create() */
-    final override var model: Session? = null
-
     override val name: SimpleName?
         get() = declaredName
 
@@ -44,7 +41,7 @@ open class ElementImplementation(
         get() = declaredShortName
 
     /** Field-less property that gets the owning namespace. */
-    final override val owningNamespace: Namespace?
+    override val owningNamespace: Namespace?
         get() = owner.let { it as? Namespace ?: it?.owningNamespace }
 
     /** Field-less property that gets the owning standard-namespace or null if not standard. */
@@ -54,11 +51,14 @@ open class ElementImplementation(
         }
 
     /** Field that is true for a library element, then all owned elements are library elements */
-    final override var isLibraryElement: Boolean = false
-        get() = field || (owningNamespace?.isLibraryElement == true) || (this is Membership && this.memberElement.isLibraryElement) || isStandard
+    final override val isLibraryElement: Boolean
+        get() = this is LibraryPackage ||
+                (owningNamespace?.isLibraryElement == true) ||
+                (owner?.isLibraryElement == true) ||
+                (this is Membership && this.memberElement.isLibraryElement)
 
     /** Field that is true if the element is owned by a standard library */
-    final override var isStandard: Boolean = false
+    override var isStandard: Boolean = false
         get() = field || (owningNamespace?.isStandard == true)
 
     final override var isTransient: Boolean = false
@@ -85,8 +85,8 @@ open class ElementImplementation(
     /** Field-less property; name + owner's name determines qualified name. */
     final override val qualifiedName: QualifiedName?
         get() = when {
-            this == model?.global -> null
-            this.owningNamespace == model?.global -> escapedName()
+            this == model.global -> null
+            this.owningNamespace == model.global -> escapedName()
             else -> escapedName()?.let { en ->
                 owner?.qualifiedName?.let { on ->
                     "$on::$en"
@@ -103,12 +103,13 @@ open class ElementImplementation(
      */
     final override fun path(): String = when {
         qualifiedName !== null -> qualifiedName!!
-        this is Relationship && this !is Association && this !is Connector -> owningRelatedElement.path() + "/" +
-                if (this is OwningMembership)
-                    this.target.first().escapedName() ?: this.owningRelatedElement.positionOf(this)
-                else
-                    this.owningRelatedElement.positionOf(this)
-        owningRelationship !== null -> owningRelationship!!.path() + "/" + (this.escapedName() ?: this.owningRelationship!!.positionOf(this))
+
+        this is Relationship && this !is Namespace && this !is AnnotatingElement
+            -> owningRelatedElement.path() + "/" + (this.owningRelatedElement.positionOf(this)!!+1)
+
+        owningRelationship !== null
+            -> owningRelationship!!.path() + "/" + (this.owningRelationship!!.positionOf(this)!!+1)
+
         else -> ""
     }
 
@@ -124,7 +125,7 @@ open class ElementImplementation(
             if(it < 0) ownedRelationship.size else it
         }
 
-    override fun toString(): String = "[$elementType] " +
+    override fun toString(): String = "[${elementType().name}] " +
             if (escapedName() == null) "" else "'${escapedName()}'"
 
     /**
@@ -136,13 +137,12 @@ open class ElementImplementation(
      * !!! TAKE CARE !!!
      * Also, the clone is given a new id.
      */
-    override fun clone(): Element {
-        return ElementImplementation(
-            declaredName = declaredName,
-            declaredShortName = declaredShortName,
-        ).also {
-            it.updateFrom(this)
-        }
+    override fun clone(): Element = ElementImplementation(
+        model,
+        declaredName = declaredName,
+        declaredShortName = declaredShortName,
+    ).also {
+        it.updateFrom(this)
     }
 
     /**
@@ -154,21 +154,19 @@ open class ElementImplementation(
     override fun updateFrom(template: Element) {
         if (declaredName != template.declaredName) {
             declaredName = template.declaredName
-            updated = true
         }
         if (declaredShortName != template.declaredShortName) {
             declaredShortName= template.declaredShortName
-            updated = true
         }
         if (aliasIds != template.aliasIds) {
             aliasIds = template.aliasIds
-            updated = true
         }
         isTransient = template.isTransient
         hasBeenChanged = template.hasBeenChanged
         isStandard = template.isStandard
-        isLibraryElement = template.isLibraryElement
         input = template.input?:input
+        indices = template.indices?:indices
+        input = template.input
         indices = template.indices?:indices
     }
 

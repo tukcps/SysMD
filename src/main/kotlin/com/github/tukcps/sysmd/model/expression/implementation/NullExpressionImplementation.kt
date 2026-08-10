@@ -3,20 +3,22 @@ package com.github.tukcps.sysmd.model.expression.implementation
 import com.github.tukcps.sysmd.model.expression.NullExpression
 import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.util.SimpleName
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
 class NullExpressionImplementation(
+	model : Session,
+	elementId : Uuid = Uuid.random(),
 	declaredName: SimpleName? = null,
 	declaredShortName: SimpleName? = null,
-	typeConstraint: MutableList<String> = mutableListOf(),
 	expression: String? = null,
-	elementType: String = "NullExpression"
 ) : NullExpression, ExpressionImplementation(
-	declaredName = declaredName,
-	declaredShortName = declaredShortName,
-	typeConstraint = typeConstraint,
-	expression = expression,
-	elementType = elementType)
-{
+    model,
+    elementId = elementId,
+    declaredName = declaredName,
+    declaredShortName = declaredShortName,
+    expression = expression
+) {
 	/* TODO: A NullExpression must directly or indirectly specialize the base NullExpression Performances::nullEvaluations from the Kernel Semantic Library */
 
 	override fun learnType() : List<Type> = emptyList() // TODO: return `Base::Anything[0]`
@@ -39,9 +41,9 @@ class NullExpressionImplementation(
 	}
 
 	override fun clone() = NullExpressionImplementation(
+		model,
 		declaredName = declaredName,
 		declaredShortName = declaredShortName,
-		typeConstraint = typeConstraint,
 		expression = expression
 	).also {
 		it.updateFrom(this)

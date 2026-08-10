@@ -1,11 +1,14 @@
 package com.github.tukcps.sysmd.services.session
 
 import com.github.tukcps.sysmd.cspsolver.Solver
-import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.services.Runlevel
+import com.github.tukcps.sysmd.model.generated.ElementDataIF
+import com.github.tukcps.sysmd.model.kerml.Element
+import com.github.tukcps.sysmd.model.kerml.Import
+import com.github.tukcps.sysmd.model.kerml.Namespace
+import com.github.tukcps.sysmd.model.kerml.Relationship
+import com.github.tukcps.sysmd.model.util.QualifiedName
+import com.github.tukcps.sysmd.rest.entities.api.entities.CommitDataObject
 import io.github.tukcps.aadd.DDBuilder
-import io.github.tukcps.sysmlv2.api.entities.CommitDataObject
-import io.github.tukcps.sysmlv2.api.entities.ElementDAO
 import java.util.*
 import kotlin.uuid.Uuid
 
@@ -27,7 +30,7 @@ interface Session {
      * The libraries loaded; can also be a Scenario that implies multiple libraries,
      * e.g., SysMLLibraries
      */
-    val libraries: List<String>
+    val librariesLoaded: LinkedHashSet<String>
 
     /** Status and reports */
     val status: SessionStatus
@@ -38,23 +41,29 @@ interface Session {
     /** global is an imaginary package that holds all root elements */
     val global: Namespace
 
-    /** anything is the superclass of all non-classified things */
-    val anything: Anything
-
     /** data contains data structures that represent the model and support efficient access, i.e. caches */
     val repo: Repository
 
     /** The variables and the solver */
     var solver: Solver
     val builder: DDBuilder
-    var runlevel: Runlevel
+
 
     /**
      * Adds new elements to the session.
      * The existing root namespace is maintained.
      * @param newElements collection of elements that will be added.
+     * @param namespaceQualifiedName where to add the new elements; default is root namespace.
      */
-    fun import(newElements: Collection<ElementDAO>)
+    fun import(newElements: Collection<ElementDataIF>, namespaceQualifiedName: QualifiedName?)
+
+    /**
+     * Adds new elements to the session.
+     * The existing root namespace is maintained.
+     * @param newElements collection of elements that will be added.
+     * @param namespace where to add the new elements; default is root namespace.
+     */
+    fun import(newElements: Collection<ElementDataIF>, namespace: Namespace = global)
 
     /**
      * @return Returns the element of the session, and the root of the ownership tree (global)

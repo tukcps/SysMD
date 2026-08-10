@@ -15,11 +15,7 @@ import com.github.tukcps.sysmd.model.expression.functions.AstHasType
 import com.github.tukcps.sysmd.model.expression.functions.AstNot
 import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.quantities.VectorQuantity
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.BDD
-import io.github.tukcps.aadd.DD
-import io.github.tukcps.aadd.IDD
-import io.github.tukcps.aadd.StrDD
+import io.github.tukcps.aadd.*
 
 /**
  * parseExpression parses an expression and returns the AST as the result.
@@ -255,8 +251,17 @@ fun KerML.Value(): AstNode
             val min = consumedToken.number.toLong()
             // optional: Extension to range by
             val max = optional(Token.Kind.DOTDOT, consume = true, noMatch = min) {
-                Token.Kind.INTEGER_LIT.consume()
-                consumedToken.number.toLong()
+                when(token.kind) {
+                    Token.Kind.INTEGER_LIT -> {
+                        Token.Kind.INTEGER_LIT.consume()
+                        consumedToken.number.toLong()
+                    }
+                    Token.Kind.TIMES -> {
+                        Token.Kind.TIMES.consume()
+                        Long.MAX_VALUE
+                    }
+                    else -> min
+                }
             }!!
             astNode = AstLeaf(model, Quantity(model.builder.integer(min..max)))
         }
@@ -328,7 +333,7 @@ fun KerML.Value(): AstNode
                 }
                 Token.Kind.LCBRACE starts {
                     Token.Kind.LCBRACE.consume()
-                    val position = parseIntegerRange()
+                    val position = parseIntegerRange().toLongRange()
                     val rangeQuantity = Quantity(model.builder.integer(position))
                     astNode = semantics.handleFunctionCall(
                         function = "quantityOfVectorAtPosition",

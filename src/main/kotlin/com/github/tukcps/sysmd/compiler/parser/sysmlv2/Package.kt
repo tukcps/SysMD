@@ -6,20 +6,21 @@ import com.github.tukcps.sysmd.compiler.SysMLv2
 import com.github.tukcps.sysmd.compiler.parser.kerml.*
 import com.github.tukcps.sysmd.compiler.parser.util.Unsupported
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
-import com.github.tukcps.sysmd.compiler.semantics.kerml.NamespaceActions
+import com.github.tukcps.sysmd.compiler.semantics.kerml.NamespaceAction
+import com.github.tukcps.sysmd.compiler.semantics.kerml.parse
 import com.github.tukcps.sysmd.exceptions.throwSyntaxError
-import com.github.tukcps.sysmd.model.kerml.implementation.PackageImplementation
+import com.github.tukcps.sysmd.model.generated.ElementType
 
 /**
  *      Package = PrefixMetadataMember* PackageDeclaration PackageBody
  *      LibraryPackage = ('standard'?) 'library' PrefixMetadataMember* PackageDeclaration PackageBody
  *      PackageDeclaration = 'package' Identification
  */
-fun SysMLv2.Package() = NamespaceActions(semantics, ::PackageImplementation).parse {
+fun SysMLv2.Package() = NamespaceAction(semantics, ElementType.Package).parse {
     STANDARD.optional { semantics.prefixes.add(STANDARD) }
     LIBRARY.optional  { semantics.prefixes.add(LIBRARY) }
     PACKAGE.consume()
-    Identification().also { semantics.create(it) }
+    Identification().also { setIdentification(it) }
     PackageBody()
 }
 
@@ -201,7 +202,7 @@ fun SysMLv2.StructureUsageElement() {
 fun SysMLv2.structureUsageElementStarts(): Boolean = (token.kind in setOf(
     OCCURRENCE, INDIVIDUAL, TIMESLICE, SNAPSHOT, EVENT, ITEM, PART, VIEW, RENDERING, PORT, INTERFACE, FLOW, SUCCESSION, MESSAGE) +
         allocationUsageStart + connectionUsageStart) ||
-        (token.kind in FEATURE_PREFIX_START && nextToken.kind in setOf( OCCURRENCE, INDIVIDUAL, TIMESLICE, SNAPSHOT, EVENT, ITEM, PART, VIEW, RENDERING, PORT, INTERFACE, FLOW, SUCCESSION, MESSAGE) +
+        (token.kind in FeaturePrefixStart && nextToken.kind in setOf( OCCURRENCE, INDIVIDUAL, TIMESLICE, SNAPSHOT, EVENT, ITEM, PART, VIEW, RENDERING, PORT, INTERFACE, FLOW, SUCCESSION, MESSAGE) +
                 allocationUsageStart + connectionUsageStart)
 
 /**

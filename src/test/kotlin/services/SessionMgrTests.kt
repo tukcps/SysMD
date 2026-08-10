@@ -1,5 +1,6 @@
 package services
 
+import com.github.tukcps.sysmd.services.Runlevel
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
@@ -12,13 +13,12 @@ class SessionMgrTests {
     }
 
     @Test
-    fun exportTestWithInitializePropagateDigital() = testSession("ScalarValues", "Ranges") {
+    fun exportTestWithInitializePropagateDigital() = testSession("Ranges") {
         loadKerML(input = """
-            feature x: RealInRange {:>> range = "1.0..3.0";}
-            feature y: Real = x+0.1; 
-            feature r: Requirement = x >= y; 
-            """.trimIndent())
-        solver.propagate()
+            feature x: Ranges::RealInRange {:>> range = 1.0..3.0;}
+            feature y: ScalarValues::Real = x+0.1; 
+            feature r: ScalarValues::Boolean = x >= y; 
+            """, Runlevel.ALL)
         export()
         // Export does some checks
     }

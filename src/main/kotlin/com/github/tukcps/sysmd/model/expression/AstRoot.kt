@@ -7,6 +7,7 @@ import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.exceptions.SolverError
 import com.github.tukcps.sysmd.quantities.VectorDimensionError
 import com.github.tukcps.sysmd.quantities.VectorQuantity
+import com.github.tukcps.sysmd.model.datamodel.toElementData
 import com.github.tukcps.sysmd.services.session.Session
 import io.github.tukcps.aadd.AADD
 import io.github.tukcps.aadd.DD
@@ -43,7 +44,7 @@ class AstRoot(
         leaves = dependency.getLeaves()
         variable.ast = this
         if(variable.baseType == BaseType.Real && variable.vectorQuantity.unit.clone().toSI() != upQuantity.unit.clone().toSI())
-            model.status.inconsistency(path = variable.path, message = "Unit of ${variable.path} (${variable.vectorQuantity.unit}) does not match the unit of the dependency (${upQuantity.unit})")
+            model.status.inconsistency(message = "Unit of ${variable.path} (${variable.vectorQuantity.unit}) does not match the unit of the expression (${upQuantity.unit})")
         variable.vectorQuantity.values = upQuantity.values
         variable.vectorQuantity.unit = upQuantity.unit
     }
@@ -66,7 +67,7 @@ class AstRoot(
                     if(variable.rangeSpecs.size!=dependency.upQuantity.values.size && variable.rangeSpecs.size!=1)
                         throw VectorDimensionError("Vector size of ${dependency.upQuantity.values.size} does not match constraint size of ${variable.rangeSpecs.size}")
                     if (variable.vectorQuantity.values.any { it == model.builder.Empty })
-                        model.status.inconsistency(path = variable.path, message = "dependency of ${variable.path} is not satisfiable")
+                        model.status.inconsistency(message = "dependency of ${variable.path} is not satisfiable", element = model[variable.relatedElement ?: model.global.elementId]?.toElementData())
                 } else if (variable.baseType == BaseType.Real && variable.satisfyAll) {
                     // Convert the rangeSpecs to a VectorQuantity
                     val values = mutableListOf<AADD>()
@@ -77,7 +78,7 @@ class AstRoot(
                         throw VectorDimensionError("Vector size of ${dependency.upQuantity.values.size} does not match constraint size of ${variable.rangeSpecs.size}")
                     if(variable.rangeSpecs.size == dependency.upQuantity.values.size)
                         if (variable.rangeSpecs.indices.any{variable.rangeSpecs[it] !in (dependency.upQuantity.values[it] as AADD).getRange()})
-                            model.status.warn(Issue.Kind.WARN_INCONSISTENCY,"Dependency for ${variable.path} cannot be satisfied for all values of range.", path = variable.path)
+                            model.status.warn(Issue.Kind.WARN_INCONSISTENCY,"Dependency for ${variable.path} cannot be satisfied for all values of range.")
                 } else
                     throw SolverError("${variable.path}: expect expression of type Real", variable.path)
             }
@@ -100,7 +101,7 @@ class AstRoot(
                         throw VectorDimensionError("Vector size of ${dependency.upQuantity.values.size} does not match Constraint size of ${variable.intSpecs.size}")
                     if(variable.intSpecs.size == dependency.upQuantity.values.size)
                         if (variable.intSpecs.indices.any{variable.intSpecs[it] !in (dependency.upQuantity.values[it] as IDD).getRange()})
-                            model.status.warn( Issue.Kind.WARN_INCONSISTENCY,"Dependency for ${variable.path} cannot be satisfied for all values of range.", path = variable.path)
+                            model.status.warn( Issue.Kind.WARN_INCONSISTENCY,"Dependency for ${variable.path} cannot be satisfied for all values of range.")
                 } else
                     throw SolverError("${variable.path}: expect expression of type Integer", path = variable.path)
             }

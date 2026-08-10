@@ -51,6 +51,7 @@ import com.github.tukcps.sysmd.ui.styles.MDTypography
 import com.github.tukcps.sysmd.ui.viewmodel.EditorTabsViewModel
 import com.github.tukcps.sysmd.ui.viewmodel.InternalRefReference
 import com.github.tukcps.sysmd.ui.viewmodel.imageCache
+import io.ktor.http.*
 import kotlinx.io.files.Path
 import org.commonmark.Extension
 import org.commonmark.ext.front.matter.YamlFrontMatterBlock
@@ -670,7 +671,7 @@ fun MDYamlFrontMatter(
                 "maintainer" -> yaml.values.firstOrNull()?.let { maintainer.addAll(it.split(",")) }
                 "version" -> version = yaml.values.firstOrNull()
                 "usage" -> yaml.values.firstOrNull()
-                    ?.let { it.split(",").forEach { str -> usage.add(ProjectUsageData(URI(str.trim()))) } }
+                    ?.let { it.split(",").forEach { str -> usage.add(ProjectUsageData(Url(str.trim()))) } }
                 "license" -> license = yaml.values.firstOrNull()
                 "website" -> yaml.values.firstOrNull()?.let { website = URI.create(it) }
             }

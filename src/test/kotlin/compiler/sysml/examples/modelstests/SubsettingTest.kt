@@ -8,8 +8,7 @@ import kotlin.test.Test
 class SubsettingTest {
 
     @Test
-    fun testSubsetting() = testSession("States", "Requirements", "Interfaces", "Allocations", "Connections",
-        "Attributes", "Ports", "Parts", "Items", "Occurrences") {
+    fun testSubsetting() = testSession("SysMLLibraries") {
         loadSysMLv2("""
                 package 'Redefinition Example' {
                 

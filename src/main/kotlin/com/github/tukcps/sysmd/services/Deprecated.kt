@@ -8,7 +8,6 @@ import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.SpecializationImplementation
 import com.github.tukcps.sysmd.quantities.Quantity
-import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.session.Session
 import io.github.tukcps.aadd.AADD
 import io.github.tukcps.aadd.BDD
@@ -50,7 +49,7 @@ fun Session.letVar(value: Variable, dd: DD<*>): Variable { //TODO not for Vector
  */
 fun Session.letVar(qualifiedName: String, value: DD<*>): Variable {
     require(value.builder == builder)
-    val variable = global.resolveVar(qualifiedName)
+    val variable = solver.getVariable(qualifiedName)
         ?: throw ElementNotFoundException(global, "Not found in scope Global:  $qualifiedName")
     return letVar(variable, value)
 }
@@ -58,9 +57,10 @@ fun Session.letVar(qualifiedName: String, value: DD<*>): Variable {
 
 fun Session.defScalarVar(name: String, value: String, unitStr: String = "", type: String, namespace: Namespace = global) {
     val feature = FeatureImplementation(
+        this,
         declaredName = name,
-        typeConstraint = mutableListOf(value)
     )
+
     addOwnedMember(feature, namespace)
-    addOwnedRelationship(SpecializationImplementation(feature, global.resolve(type)!!.member<Classifier>()!!), feature)
+    addOwnedRelationship(SpecializationImplementation(this, specific = feature, general = global.resolve(type)!!.member<Classifier>()!!), feature)
 }

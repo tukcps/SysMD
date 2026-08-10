@@ -203,7 +203,7 @@ class MissingImplementationGenerator {
         }
 
         writer.begin(
-            "class ${clazz.name}Implementation : ${clazz.name}"
+            "class ${clazz.name}Implementation(model : Session) : ${clazz.name}"
         )
 
         writeAttributes(

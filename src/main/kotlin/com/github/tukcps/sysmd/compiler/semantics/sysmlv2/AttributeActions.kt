@@ -3,23 +3,14 @@
 package com.github.tukcps.sysmd.compiler.semantics.sysmlv2
 
 import com.github.tukcps.sysmd.compiler.semantics.ActionsContext
-import com.github.tukcps.sysmd.compiler.semantics.kerml.DataTypeActions
-import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
-import com.github.tukcps.sysmd.model.sysml.AttributeDefinition
-import com.github.tukcps.sysmd.model.sysml.AttributeUsage
-import com.github.tukcps.sysmd.model.sysml.implementation.AttributeUsageImplementation
-import com.github.tukcps.sysmd.model.util.QualifiedName
-import com.github.tukcps.sysmd.model.util.SimpleName
+import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureAction
+import com.github.tukcps.sysmd.compiler.semantics.kerml.TypeAction
+import com.github.tukcps.sysmd.model.generated.ElementType
 
-
-class AttributeDefinitionActions<T: AttributeDefinition>(
+class AttributeDefinitionAction(
     context: ActionsContext,
-    creator: (SimpleName?, SimpleName?) -> T,
-    specializes: QualifiedName = "Base::DataValue",
-): DataTypeActions<AttributeDefinition>(context, creator, specializes)
+): TypeAction(context, type = ElementType.AttributeDefinition, isImplicit = "Attributes::AttributeValue")
 
-
-class AttributeUsageActions(
+class AttributeUsageAction(
     context: ActionsContext,
-): FeatureActions<AttributeUsage>(context, ::AttributeUsageImplementation, "Base::DataValue")
-
+): FeatureAction(context, type = ElementType.AttributeUsage, isImplicit = "Attributes::attributeValues")

@@ -14,7 +14,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.github.tukcps.sysmd.services.repositories.local.ElementData
+import com.github.tukcps.sysmd.model.datamodel.ElementData
+import com.github.tukcps.sysmd.model.generated.ElementType
 import com.github.tukcps.sysmd.ui.composables.ButtonSelection
 import com.github.tukcps.sysmd.ui.composables.TreeViewModel
 import com.github.tukcps.sysmd.ui.composables.TreeViewPlus
@@ -55,7 +56,7 @@ fun DecompositionTree(
 
         TreeViewPlus(composition) {
             !   (
-                    ((!standards.value) && (it.element as ElementData?)?.isLibraryElement == true)  ||
+                    ((!standards.value) && (it.element as ElementData?)?.type == ElementType.LibraryPackage)  ||
                     ((!annotations.value) && it.name.startsWith("[MetadataFeature]"))
                 )
         }

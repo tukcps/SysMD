@@ -43,7 +43,6 @@ import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.decodeToImageBitmap
 import kotlin.math.abs
 import kotlin.uuid.Uuid
-import kotlin.uuid.toKotlinUuid
 
 /**
  * Renders a single project with collapsible details
@@ -130,7 +129,7 @@ fun Project(
                     horizontalArrangement = Arrangement.Start
                 ) {
                     val icon: ImageBitmap? = try {
-                        sessionService.getIcon(projectViewModel.project?.id?.toKotlinUuid() ?: Uuid.NIL)
+                        sessionService.getIcon(projectViewModel.project?.id ?: Uuid.NIL)
                             ?.decodeToImageBitmap()
                     } catch (e: Exception) {
                         logger.info("No 'icon.png' in the folder 'Files' of project '${projectViewModel.name}', using default icon")

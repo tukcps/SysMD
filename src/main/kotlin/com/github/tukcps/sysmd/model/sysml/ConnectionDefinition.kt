@@ -2,4 +2,7 @@ package com.github.tukcps.sysmd.model.sysml
 
 import com.github.tukcps.sysmd.model.kerml.Association
 
-interface ConnectionDefinition: Association
+interface ConnectionDefinition: Association {
+    val connectionEnd: MutableList<Usage>
+    override var isSufficient: Boolean
+}

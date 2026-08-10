@@ -1,18 +1,23 @@
 package com.github.tukcps.sysmd.model.kerml.implementation
 
 import com.github.tukcps.sysmd.model.kerml.DataType
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
 open class DataTypeImplementation(
+    model : Session,
+    elementId : Uuid = Uuid.random(),
     declaredName: String? = null,
     declaredShortName: String? = null,
-    elementType: String = "DataType"
 ): DataType, ClassifierImplementation(
+    model,
+    elementId = elementId,
     declaredName=declaredName,
     declaredShortName=declaredShortName,
-    elementType=elementType
 ) {
     override fun clone(): DataType = DataTypeImplementation(
-            declaredName=declaredName,
-            declaredShortName=declaredShortName,
-        ).also { it.updateFrom(this) }
+        model,
+        declaredName=declaredName,
+        declaredShortName=declaredShortName,
+    ).also { it.updateFrom(this) }
 }

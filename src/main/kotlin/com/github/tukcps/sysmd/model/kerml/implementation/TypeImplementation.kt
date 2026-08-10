@@ -1,26 +1,29 @@
 package com.github.tukcps.sysmd.model.kerml.implementation
 
 import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.model.util.MultiplicityRange
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
 
 /**
  * A Type (KerML 7.3.3)
  */
 open class TypeImplementation(
+    model: Session,
+    elementId : Uuid = Uuid.random(),
     declaredName: String? = null,
     declaredShortName: String? = null,
     override var isAbstract: Boolean = false,
     override var isSufficient: Boolean = false,
-    override var isConjugated: Boolean = false,
-    elementType: String = "Type",
+    override var isConjugated: Boolean = false
 ): Type, NamespaceImplementation(
+    model,
+    elementId = elementId,
     declaredName=declaredName,
     declaredShortName=declaredShortName,
-    elementType = elementType
 ) {
-    override fun clone(): Type {
-        return TypeImplementation().also { klon -> klon.updateFrom(this) }
-    }
+    override fun clone(): Type = TypeImplementation(model).also { klon -> klon.updateFrom(this) }
 
     override fun updateFrom(template: Element) {
         super.updateFrom(template)
@@ -114,7 +117,21 @@ open class TypeImplementation(
         excludedTypes: Set<Type>,
         excludeImplied: Boolean
     ): List<Membership> {
-        TODO("Not yet implemented")
+        val excludingSelf = excludedTypes + this
+        val inheritable = supertypes(excludeImplied)
+            .filter { it !in excludingSelf }
+            .flatMap { it.inheritableMemberships(excludedNamespaces, excludingSelf, excludeImplied) }
+
+        // Filter out features that are redefined by features owned by this type
+        val redefiningFeatures = ownedMembership
+            .mapNotNull { it.memberElement as? Feature }
+            .mapNotNull { it.redefining }
+            .toSet()
+
+        return inheritable.filter { m ->
+            val f = m.memberElement as? Feature
+            f == null || f !in redefiningFeatures
+        }
     }
 
     /**
@@ -122,4 +139,18 @@ open class TypeImplementation(
      * but before inheritance
      */
     override val subtypes: MutableSet<Type> = mutableSetOf()
+
+    override fun multiplicityRange(): MultiplicityRange =
+        if (getOwnedElementOfType<Multiplicity>() != null)
+            MultiplicityRange(
+                getOwnedElementOfType<Multiplicity>()?.getOwnedElementOfType<Feature>()?.expression ?: "0..*"
+            )
+        else
+            defaultMultiplicityRange
+
+    open val defaultMultiplicityRange = MultiplicityRange.TYPE_DEFAULT
+
+    override fun toString(): String {
+        return super.toString() + if (isAbstract) " abstract " else ""
+    }
 }

@@ -15,7 +15,7 @@ class SuccessionTests {
      * Example from KerML $7.4.6.4 on Successions
      */
     @Test
-    fun testSuccession7_4_6_4() = testSession("KerMLLibraries"){
+    fun testSuccession7_4_6_4() = testSession {
         loadKerML("""
             class Shoot; 
             class Focus; // Added 

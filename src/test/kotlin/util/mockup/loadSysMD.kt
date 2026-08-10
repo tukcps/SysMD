@@ -6,7 +6,6 @@ import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.session.Session
 
-
 /**
  * Loads a SysMD model from an input string into the session.
  * NOTE: Rather useful for test purposes and only used there.
@@ -16,7 +15,8 @@ fun Session.loadSysMD(
     input: String,
     runlevel: Runlevel = settings.runlevel
 ) {
-    SysMD(this).parse(input)
+    val elements = SysMD(this).parse(input)
+    import(elements)
     try {
         initialize(runlevel)
     } catch (exception: SysMDError) {

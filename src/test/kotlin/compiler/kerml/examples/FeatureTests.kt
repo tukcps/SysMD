@@ -129,7 +129,7 @@ class FeatureTests {
      */
     @Disabled
     @Test
-    fun testFeatureRedefinition() = testSession("ScalarValues", "Base", "Objects", "Occurrences", "Links") {
+    fun testFeatureRedefinition() = testSession {
         loadKerML("""
             classifier Person;
             

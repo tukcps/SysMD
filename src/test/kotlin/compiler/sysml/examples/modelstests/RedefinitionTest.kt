@@ -10,8 +10,7 @@ class RedefinitionTest {
 
 
     @Test
-    fun testRedefinition() = testSession("States", "Requirements", "Interfaces", "Allocations", "Connections",
-        "Attributes", "Ports", "Parts", "Items", "Occurrences") {
+    fun testRedefinition() = testSession("SysMLLibraries") {
         loadSysMLv2(
             """
                 package 'Redefinition Example' {

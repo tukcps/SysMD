@@ -3,38 +3,22 @@
 package com.github.tukcps.sysmd.compiler.semantics.sysmlv2
 
 import com.github.tukcps.sysmd.compiler.semantics.ActionsContext
-import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
-import com.github.tukcps.sysmd.compiler.semantics.kerml.TypeActions
-import com.github.tukcps.sysmd.model.sysml.implementation.PartDefinitionImplementation
-import com.github.tukcps.sysmd.model.sysml.implementation.PartUsageImplementation
+import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureAction
+import com.github.tukcps.sysmd.compiler.semantics.kerml.TypeAction
+import com.github.tukcps.sysmd.model.generated.ElementType
 
-
-class PartDefinitionActions(
+class PartDefinitionAction(
     context: ActionsContext
-): TypeActions<PartDefinitionImplementation>(
+): TypeAction(
     context,
-    creator = ::PartDefinitionImplementation,
-) {
-    override fun finish() {
-        if (created.specialization.isEmpty()) {
-            context.addSubclassification("Parts::Part")
-        }
-        super.finish()
-    }
-}
+    type = ElementType.PartDefinition,
+    isImplicit = "Parts::Part"
+)
 
-
-
-class PartUsageActions(
+class PartUsageAction(
     context: ActionsContext,
-): FeatureActions<PartUsageImplementation>(
+): FeatureAction(
     context,
-    creator = ::PartUsageImplementation,
-) {
-    override fun finish() {
-        if (created.specialization.isEmpty()) {
-            context.addTyping("Parts::Part")
-        }
-        super.finish()
-    }
-}
+    type = ElementType.PartUsage,
+    isImplicit = "Parts::Part"
+)

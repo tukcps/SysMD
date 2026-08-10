@@ -1,7 +1,7 @@
 package com.github.tukcps.sysmd.exceptions
 
-import com.github.tukcps.sysmd.compiler.scanner.Token
 import java.util.Objects.hash
+import kotlin.uuid.Uuid
 
 
 /**
@@ -9,8 +9,7 @@ import java.util.Objects.hash
  * @param message string that describes the issue
  * @param input input of the parser if known
  * @param indices indices that mark a specific line or region in the input
- * @param token input-token of the parser, if known, includes line a column in the input
- * @param path path to the element that is affected by the issue
+ * @param element elementId of element related to the issue
  * @param cause exception with stack trace if known
  */
 data class Issue(
@@ -18,8 +17,7 @@ data class Issue(
     val message: String,
     val input: CharSequence? = null,
     val indices: IntRange? = null,
-    val token: Token? = null,
-    val path: String? = null,
+    val element: Uuid? = null,
     val cause: Throwable? = null,
 ) {
     enum class Kind {
@@ -41,19 +39,16 @@ data class Issue(
         FATAL;
     }
 
-    fun line(): Int? {
-
+    fun line(): Int? =
         if (input !== null && indices !== null) {
             return input.subSequence(0, indices.first).count { it == '\n' } + 1
-        } else
-            return token?.lineNo
-    }
+        }  else null
 
     override fun equals(other: Any?): Boolean
         = other is Issue && kind == other.kind && message == other.message && input == other.input &&
-            indices == other.indices && token == other.token && path == other.path
+            indices == other.indices && element == other.element
 
-    override fun hashCode(): Int = hash(kind, message, input, indices, token, path)
+    override fun hashCode(): Int = hash(kind, message, input, indices, element)
 
     override fun toString() = message
 }

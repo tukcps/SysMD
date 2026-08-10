@@ -39,12 +39,12 @@ class RedefinitionTests {
         assertNotNull(af)
         assertEquals(1L, af.multiplicityRange.min)
         assertEquals(4L, af.multiplicityRange.max)
-        assertEquals(anything, af.generalization.first())
+        assertEquals(repo.anything!!, af.generalization.first())
 
         assertNotNull(bf)
         assertEquals(1L, bf.multiplicityRange.min)
         assertEquals(4L, bf.multiplicityRange.max)
-        assertTrue(repo.realType in bf.generalization)
+        assertTrue(repo.realType as Type in bf.generalization)
         assertTrue(af in bf.generalization)
     }
 
@@ -64,18 +64,18 @@ class RedefinitionTests {
         assertNotNull(af)
         assertEquals(1L, af.multiplicityRange.min)
         assertEquals(4L, af.multiplicityRange.max)
-        assertTrue(repo.realType in af.generalization)
+        assertTrue(repo.realType as Type in af.generalization)
 
         assertNoIssues()
         val bf = global.resolve("b::f")?.memberElement as Feature
         assertNotNull(bf)
         assertEquals(2L, bf.multiplicityRange.min)
         assertEquals(3L, bf.multiplicityRange.max)
-        assertTrue(repo.realType in bf.generalization)
+        assertTrue(repo.realType as Type in bf.generalization)
     }
 
     @Test
-    fun redefinitionTestBareRedefinition3() = testSession("ScalarValues", "ISQ") {
+    fun redefinitionTestBareRedefinition3() = testSession("Attributes", "ISQ") {
         loadSysMLv2("""
             attribute def Position {
                 attribute x: ISQ::LengthValue [m]; 
@@ -84,12 +84,11 @@ class RedefinitionTests {
             }
             
             attribute p: Position { 
-              redefines x = 1.0 [m];
-              redefines y = 2.0 [m]; 
-              redefines z = 1.5 [m]; 
+                redefines x = 1.0 [m];
+                redefines y = 2.0 [m]; 
+                redefines z = 1.5 [m]; 
             }
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
     }
 
@@ -117,13 +116,13 @@ class RedefinitionTests {
         assertNotNull(bf)
         assertEquals(2L, bf.ownedElement.filterIsInstance<Multiplicity>().first().variable!!.min())
         assertEquals(3L, bf.ownedElement.filterIsInstance<Multiplicity>().first().variable!!.max())
-        assertTrue(repo.realType in bf.typing.map { it.type })
+        assertTrue(repo.realType as Type in bf.typing.map { it.type })
 
         val af = global.resolve("a::f")?.memberElement as Type?
         assertNotNull(af)
         assertEquals(1L, af.ownedElement.filterIsInstance<Multiplicity>().first().variable!!.min())
         assertEquals(4L, af.ownedElement.filterIsInstance<Multiplicity>().first().variable!!.max())
-        assertEquals(anything, af.generalization.first())
+        assertEquals(repo.anything!!, af.generalization.first())
     }
 
 
@@ -150,10 +149,10 @@ class RedefinitionTests {
             }
         """, Runlevel.ALL)
         assertNoIssues()
-        assertEquals(1L, global.resolveVar("quantityDimension::quantityPowerFactors::exponent")!!.max() )
-        assertEquals("m", global.resolveVar("quantityDimension::quantityPowerFactors::unit")!!.vectorQuantity.value.asStrDD().toString())
-        assertEquals("m", global.resolveVar("lengthPF::unit")!!.vectorQuantity.value.asStrDD().toString())
-        assertEquals(1L, global.resolveVar("lengthPF::exponent")!!.min())
+        assertEquals(1L, solver.getVariable("quantityDimension::quantityPowerFactors::exponent")!!.max() )
+        assertEquals("m", solver.getVariable("quantityDimension::quantityPowerFactors::unit")!!.vectorQuantity.value.asStrDD().toString())
+        assertEquals("m", solver.getVariable("lengthPF::unit")!!.vectorQuantity.value.asStrDD().toString())
+        assertEquals(1L, solver.getVariable("lengthPF::exponent")!!.min())
     }
 
     // The types are not set as expected in addInheritedFeatures (the function should be right but not correctly called for the elements),
@@ -174,8 +173,8 @@ class RedefinitionTests {
         solver.propagate()
         // val ownsOld = global.resolve<Feature>("ownsOld")
         // val redefinedOld = global.resolve<Feature>("redefinedOld")
-        // val new = global.resolveVar("ownsOld::ownedOld::a")!!.ast!!.evalUpRec()
-        assertEquals("new", global.resolveVar("ownsOld::ownedOld::a")!!.vectorQuantity.value.asStrDD().toString())
+        // val new = solver.getVariable("ownsOld::ownedOld::a")!!.ast!!.evalUpRec()
+        assertEquals("new", solver.getVariable("ownsOld::ownedOld::a")!!.vectorQuantity.value.asStrDD().toString())
     }
 
 
@@ -184,7 +183,7 @@ class RedefinitionTests {
         loadSysMLv2("""
             private import ISQ::*;
             part def Precision{
-                attribute value: StorageCapacityValue {:>> range = "1..4"; :>> unit = "B";}
+                attribute value: StorageCapacityValue {:>> range = 1..4 [B];}
             }
             part def Float32 :> Precision{
                 attribute :>> value = 4.0 [B];
@@ -201,36 +200,33 @@ class RedefinitionTests {
             part layer5 : NeuralNetworkLayer {
                 :>> precision : Float16;
             }
-        """)
-        solver.propagate()
-        assertNoIssues()
+        """, Runlevel.ALL)
 
         // Verify that the redefined values are correctly set (in bits, since 1 B = 8 bits)
-        assertEquals(32.0, global.resolveVar("Float32::value")!!.vectorQuantity.value.asAadd().min, 0.001)
-        assertEquals(32.0, global.resolveVar("Float32::value")!!.vectorQuantity.value.asAadd().max, 0.001)
-        assertEquals(16.0, global.resolveVar("Float16::value")!!.vectorQuantity.value.asAadd().min, 0.001)
-        assertEquals(16.0, global.resolveVar("Float16::value")!!.vectorQuantity.value.asAadd().max, 0.001)
-        assertEquals(8.0, global.resolveVar("Int8::value")!!.vectorQuantity.value.asAadd().min, 0.001)
-        assertEquals(8.0, global.resolveVar("Int8::value")!!.vectorQuantity.value.asAadd().max, 0.001)
+        assertEquals(32.0, solver.getVariable("Float32::value")!!.vectorQuantity.value.asAadd().min, 0.001)
+        assertEquals(32.0, solver.getVariable("Float32::value")!!.vectorQuantity.value.asAadd().max, 0.001)
+        assertEquals(16.0, solver.getVariable("Float16::value")!!.vectorQuantity.value.asAadd().min, 0.001)
+        assertEquals(16.0, solver.getVariable("Float16::value")!!.vectorQuantity.value.asAadd().max, 0.001)
+        assertEquals(8.0, solver.getVariable("Int8::value")!!.vectorQuantity.value.asAadd().min, 0.001)
+        assertEquals(8.0, solver.getVariable("Int8::value")!!.vectorQuantity.value.asAadd().max, 0.001)
 
     }
 
     @Test
-    fun redefinitionRangeOverrideTest() = testSession("ScalarValues", "ISQ") {
+    fun redefinitionRangeOverrideTest() = testSession("ISQ", "Attributes") {
         loadSysMLv2("""
             attribute def Weight {
-                attribute value: ISQ::MassValue {:>> range = "1..100"; :>> unit = "kg";}
+                attribute value: ISQ::MassValue {:>> range = 1..100 [kg]; }
             }
             
             attribute specificWeight: Weight {
-                attribute :>> value {:>> range = "3..40"; :>> unit = "kg";}
+                attribute :>> value {:>> range = 3..40 [kg]; }
             }
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
         
         // Verify that the redefined range is used, not the superclass range
-        val specificWeightValue = global.resolveVar("specificWeight::value")
+        val specificWeightValue = solver.getVariable("specificWeight::value")
         assertNotNull(specificWeightValue)
         // The redefined range should be 3..40, not 1..100
         assertEquals(3.0, specificWeightValue.min(), 0.001)
@@ -238,69 +234,59 @@ class RedefinitionTests {
     }
 
     @Test
-    fun redefinitionUnitAndValueInInheritedPartTest() = testSession("ScalarValues", "ISQ", "Parts") {
+    fun redefinitionUnitAndValueInInheritedPartTest() = testSession("ISQ", "Parts") {
         loadSysMLv2("""
             private import ISQ::*;
             
             part def TemperatureSensor {
                 attribute temperature: ISQ::ThermodynamicTemperatureValue {
-                    :>> range = "0..100";
-                    :>> unit = "°C";
-                }
+                    :>> range = 0..100 [°C]; }
             }
             
             part def NarrowRangeSensor :> TemperatureSensor {
-                attribute :>> temperature {
-                    :>> range = "20..80";
-                    :>> unit = "°C";
-                }
+                attribute :>> temperature { :>> range = 20..80 [°C]; }
             }
             
             part def KelvinSensor :> TemperatureSensor {
-                attribute :>> temperature {
-                    :>> range = "293..353";
-                    :>> unit = "K";
-                }
+                attribute :>> temperature { :>> range = 293..353 [K]; }
             }
         """)
         solver.propagate()
         assertNoIssues()
         
         // Verify base part definition
-        val baseTemp = global.resolveVar("TemperatureSensor::temperature")
+        val baseTemp = solver.getVariable("TemperatureSensor::temperature")
         assertNotNull(baseTemp)
         assertEquals(0.0, baseTemp.min(), 0.001)
         assertEquals(100.0, baseTemp.max(), 0.001)
         
         // Verify narrow range sensor redefinition (same unit, refined range)
-        val narrowRangeTemp = global.resolveVar("NarrowRangeSensor::temperature")
+        val narrowRangeTemp = solver.getVariable("NarrowRangeSensor::temperature")
         assertNotNull(narrowRangeTemp)
         assertEquals(20.0, narrowRangeTemp.min(), 0.001)
         assertEquals(80.0, narrowRangeTemp.max(), 0.001)
         
         // Verify kelvin sensor redefinition (different unit, corresponding range)
-        val kelvinTemp = global.resolveVar("KelvinSensor::temperature")
+        val kelvinTemp = solver.getVariable("KelvinSensor::temperature")
         assertNotNull(kelvinTemp)
         assertEquals(293.0, kelvinTemp.min(), 0.001)
         assertEquals(353.0, kelvinTemp.max(), 0.001)
     }
 
     @Test
-    fun redefinitionInvalidRangeSameUnitTest() = testSession("ScalarValues", "ISQ", "Parts") {
+    fun redefinitionInvalidRangeSameUnitTest() = testSession("ISQ", "Parts") {
         loadSysMLv2("""
             private import ISQ::*;
             
             part def TemperatureSensor {
                 attribute temperature: ISQ::ThermodynamicTemperatureValue {
-                    :>> range = "0..100";
-                    :>> unit = "°C";
+                    :>> range = 0..100 [°C];
                 }
             }
             
             part def InvalidSensor :> TemperatureSensor {
                 attribute :>> temperature {
-                    :>> range = "-50..150";  // Invalid: not a refinement of 0..100
-                    :>> unit = "°C";
+                    :>> range = -50..150 [°C];
                 }
             }
         """, Runlevel.VARIANCE_CHECKED)
@@ -309,21 +295,17 @@ class RedefinitionTests {
     }
 
     @Test
-    fun redefinitionInvalidRangeDifferentUnitTest() = testSession("ScalarValues", "ISQ", "Parts") {
-        loadSysMLv2("""
-            private import ISQ::*;
-            
+    fun redefinitionInvalidRangeDifferentUnitTest() = testSession("ISQ", "Parts", "Attributes") {
+        loadSysMLv2("""            
             part def TemperatureSensor {
                 attribute temperature: ISQ::ThermodynamicTemperatureValue {
-                    :>> range = "0..100";
-                    :>> unit = "°C";
+                    :>> range = 0..100 [°C];
                 }
             }
             
             part def InvalidKelvinSensor :> TemperatureSensor {
                 attribute :>> temperature {
-                    :>> range = "200..400";  // Invalid: 200K=-73°C, 400K=127°C, not within 0..100°C
-                    :>> unit = "K";
+                    :>> range = 200..400 [K];  // Invalid: 200K=-73°C, 400K=127°C, not within 0..100°C
                 }
             }
         """, Runlevel.VARIANCE_CHECKED)

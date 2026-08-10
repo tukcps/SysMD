@@ -31,8 +31,5 @@ interface Membership: Relationship {
 
     var visibility: Import.VisibilityKind
 
-    @Deprecated("use memberElement.path()", replaceWith = ReplaceWith("memberElement.path()"))
-    fun memberQualifiedName() = memberElement.path()
-
-    override fun clone(): Membership
+   //  override fun clone(): Membership
 }

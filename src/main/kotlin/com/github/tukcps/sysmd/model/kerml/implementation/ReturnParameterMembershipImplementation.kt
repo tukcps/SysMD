@@ -4,14 +4,20 @@ import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Feature.FeatureDirectionKind.OUT
 import com.github.tukcps.sysmd.model.kerml.ReturnParameterMembership
 import com.github.tukcps.sysmd.model.kerml.Type
-import com.github.tukcps.sysmd.model.kerml.UnresolvedFeature
+import com.github.tukcps.sysmd.model.util.UnresolvedFeature
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
 class ReturnParameterMembershipImplementation(
-	ownedMemberParameter: Feature = UnresolvedFeature(),
-	owningType: Type = UnresolvedFeature(),
+	model: Session,
+	elementId : Uuid = Uuid.random(),
+	ownedMemberParameter: Feature = UnresolvedFeature(model),
+	owningType: Type = UnresolvedFeature(model),
 	elementType: String = "ReturnParameterMembership",
 	parameterIndex : Int = -1
 ) : ReturnParameterMembership, ParameterMembershipImplementation(
+	model,
+	elementId = elementId,
 	ownedMemberParameter = ownedMemberParameter,
 	owningType = owningType,
 	elementType = elementType,
@@ -26,6 +32,7 @@ class ReturnParameterMembershipImplementation(
 		}
 
 	override fun clone() =  ReturnParameterMembershipImplementation(
+		model,
 		ownedMemberParameter = ownedMemberParameter,
 		owningType = owningType,
 		parameterIndex = parameterIndex

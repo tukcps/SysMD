@@ -1,7 +1,7 @@
 package models.kerml
 
 import com.github.tukcps.sysmd.model.kerml.Type
-import com.github.tukcps.sysmd.model.kerml.UnresolvedType
+import com.github.tukcps.sysmd.model.util.UnresolvedType
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.SpecializationImplementation
 import com.github.tukcps.sysmd.services.Runlevel
@@ -29,27 +29,29 @@ class VariableTests {
     fun valueConstructorTest() = testSession("ScalarValues") {
 
         // allowed identifier declaration
-        var p = FeatureImplementation(declaredName="Property12_2test")
+        var p = FeatureImplementation(this, declaredName="Property12_2test")
         addOwnedMember(p, global)
-        addOwnedRelationship(SpecializationImplementation(p, global.resolve("ScalarValues::Real")!!.memberElement as Type), p)
+        addOwnedRelationship(SpecializationImplementation(this, specific = p, general = global.resolve("ScalarValues::Real")!!.memberElement as Type), p)
         initialize(Runlevel.ALL)
         assertTrue(solver.getVariable("Property12_2test")!!.vectorQuantity.value is AADD)
 
-        p = FeatureImplementation(declaredName="Property12_2test2")
+        p = FeatureImplementation(this, declaredName="Property12_2test2")
         addOwnedMember(p, global)
-        addOwnedRelationship(SpecializationImplementation(p, repo.booleanType!!), p)
+        addOwnedRelationship(SpecializationImplementation(this, specific = p, general = repo.booleanType!!), p)
         initialize(Runlevel.ALL)
         assertTrue(solver.getVariable("Property12_2test2")!!.vectorQuantity.value is BDD)
 
-        p = FeatureImplementation(declaredName="Property12_2test3")
+        p = FeatureImplementation(this, declaredName="Property12_2test3")
         addOwnedMember(p, global)
-        addOwnedRelationship(SpecializationImplementation(p, UnresolvedType("ScalarValues::Real")), p)
+        addOwnedRelationship(SpecializationImplementation(this, specific = p, general = UnresolvedType(this, "ScalarValues::Real")), p)
         initialize(Runlevel.ALL)
         assertTrue(solver.getVariable("Property12_2test3")!!.vectorQuantity.value is AADD)
 
-        p = FeatureImplementation(declaredName="Property12_2test4", typeConstraint = mutableListOf( "true" ))
+        p = FeatureImplementation(this, declaredName="Property12_2test4").also {
+            //  it.typeConstraint = mutableListOf("true")
+        }
         addOwnedMember(p, global)
-        addOwnedRelationship(SpecializationImplementation(p, UnresolvedType("ScalarValues::Boolean")), p)
+        addOwnedRelationship(SpecializationImplementation(this, specific = p, general = UnresolvedType(this, "ScalarValues::Boolean")), p)
         initialize(Runlevel.ALL)
         initialize(Runlevel.ALL)
         assertTrue(solver.getVariable("Property12_2test4")!!.vectorQuantity.value is BDD)

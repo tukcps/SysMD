@@ -1,12 +1,9 @@
 package com.github.tukcps.sysmd.model.kerml.implementation
 
-import com.github.tukcps.sysmd.compiler.KerML
-import com.github.tukcps.sysmd.compiler.SysMD
-import com.github.tukcps.sysmd.compiler.SysMLv2
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
-import com.github.tukcps.sysmd.model.util.dropFirstName
-import com.github.tukcps.sysmd.model.util.firstName
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
 
 /**
@@ -20,53 +17,31 @@ import com.github.tukcps.sysmd.model.util.firstName
  * @param body the model itself
  */
 class TextualRepresentationImplementation(
+    model : Session,
+    elementId : Uuid = Uuid.random(),
     declaredName: String? = null,
     declaredShortName: String? = null,
     override var language: String="SysML",
     body: String="",
-    elementType: String = "TextualRepresentation"
 ): TextualRepresentation, AnnotatingElementImplementation(
+    model,
+    elementId = elementId,
     declaredName = declaredName,
     declaredShortName = declaredShortName,
     body=body,
-    elementType = elementType
 ) {
-    /**
-     * Runs the parser depending on the language field.
-     */
-    override fun compile() {
-        when (language.firstName()) {
-            "SysMD" -> SysMD(model!!).parse(this.body, language.dropFirstName())
-            "KerML" -> KerML(model!!).parse(this.body, language.dropFirstName())
-            "SysML" -> SysMLv2(model!!).parse(this.body, language.dropFirstName())
-            else    -> model?.status?.error("Unexpected language: $language")
-        }
-    }
-
-    override fun clone(): TextualRepresentation {
-        return TextualRepresentationImplementation(
-            declaredName = declaredName,
-            declaredShortName = declaredShortName,
-            language = language,
-            body = body).also { klon ->
-            klon.model = model
-            klon.updated = updated
-        }
-    }
+    override fun clone(): TextualRepresentation = TextualRepresentationImplementation(model)
+        .also { it.updateFrom(this) }
 
     override fun updateFrom(template: Element) {
         super.updateFrom(template)
         if (template is TextualRepresentation) {
-            // owner = template.owner
-            // ownedElements = Identity.copyOfIdentityList(ownedElements)
             language = template.language
             body = template.body
         }
     }
 
     override fun toString(): String {
-        return "TextualRepresentation {" +
-                "body=$body, +" +
-                "id='${elementId}' }"
+        return "[TextualRepresentation]" +"body=$body"
     }
 }

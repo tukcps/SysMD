@@ -8,25 +8,26 @@ import com.github.tukcps.sysmd.model.kerml.implementation.MembershipImplementati
 import com.github.tukcps.sysmd.model.util.SimpleName
 import com.github.tukcps.sysmd.quantities.VectorDimensionError
 import com.github.tukcps.sysmd.quantities.VectorQuantity
+import com.github.tukcps.sysmd.services.session.Session
 import io.github.tukcps.aadd.AADD
 import io.github.tukcps.aadd.BDD
 import io.github.tukcps.aadd.IDD
 import io.github.tukcps.aadd.StrDD
+import kotlin.uuid.Uuid
 
 class FeatureReferenceExpressionImplementation(
+	model : Session,
+	elementId : Uuid = Uuid.random(),
 	declaredName : SimpleName? = null,
 	declaredShortName : SimpleName? = null,
-	typeConstraint : MutableList<String> = mutableListOf(),
 	expression : String? = null,
-	elementType : String = "FeatureReferenceExpression"
 ) : FeatureReferenceExpression, ExpressionImplementation(
+	model,
+	elementId = elementId,
 	declaredName,
 	declaredShortName,
-	typeConstraint,
-	expression,
-	elementType
-)
-{
+	expression
+) {
 	/** Setter as shorthand for initialization, won't work right if referent already set */
 	override var referent: Feature?
 		get() = super.referent
@@ -34,8 +35,8 @@ class FeatureReferenceExpressionImplementation(
 			if(value !== null)
 			{
 				assert(referent === null)
-				value.model = this.model
-				model!!.addOwnedRelationship(MembershipImplementation(
+				model.addOwnedRelationship(MembershipImplementation(
+					model,
 					memberElement = value,
 					membershipOwningNamespace = this
 				))
@@ -58,7 +59,7 @@ class FeatureReferenceExpressionImplementation(
 	override fun initialize()
 	{
 		// FIXME: fallback only in place for testing; throw IllegalStateException instead
-		upQuantity = referent?.variable?.vectorQuantity ?: VectorQuantity(model!!.builder.Integers)
+		upQuantity = referent?.variable?.vectorQuantity ?: VectorQuantity(model.builder.Integers)
 
 		downQuantity = upQuantity
 	}
@@ -96,8 +97,10 @@ class FeatureReferenceExpressionImplementation(
 							s !in (q as AADD).getRange()
 						})
 					{
-						model!!.status.warn(Issue.Kind.WARN_INCONSISTENCY,
-							"Cannot be satisfied for all values.", path = variable?.path)
+						model.status.warn(
+							Issue.Kind.WARN_INCONSISTENCY, "Cannot be satisfied for all values.",
+							elementId = variable?.relatedElement
+						)
 					}
 				}
 
@@ -117,8 +120,8 @@ class FeatureReferenceExpressionImplementation(
 							s !in (q as IDD).getRange()
 						})
 					{
-						model!!.status.warn(Issue.Kind.WARN_INCONSISTENCY,
-							"Cannot be satisfied for all values.", path =  variable?.path)
+						model.status.warn(Issue.Kind.WARN_INCONSISTENCY,
+							"Cannot be satisfied for all values.", elementId =  variable?.relatedElement)
 					}
 				}
 
@@ -139,22 +142,13 @@ class FeatureReferenceExpressionImplementation(
 	}
 
 	override fun clone() = FeatureReferenceExpressionImplementation(
+		model,
 		declaredName= declaredName,
 		declaredShortName = declaredShortName,
-		typeConstraint = typeConstraint,
 		expression = expression,
-		elementType = elementType,
 	).also {
 		it.updateFrom(this)
 	}
-
-	override fun updateFrom(template : Element)
-	{
-		super.updateFrom(template)
-
-		if(template is FeatureReferenceExpression && referent === null)
-			this.referent = template.referent
-	}
-
+	
 	// TODO
 }

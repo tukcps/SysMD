@@ -96,13 +96,13 @@ systemProp.https.proxyPort=8080
 
 Please contact your IT support team if you are unsure about the correct proxy configuration.
 
-
 ## Creating installer
 
-To create a platform-specific installer, use the Gradle target  ```sysMDPackage```.
+To create a platform-specific installer, use the Gradle target  ```generateSysMDInstaller```.
+It is part of the Task-group `sysmd`.
 
 ```
-./gradlew sysMDPackage
+./gradlew generateSysMDInstaller
 ```
 
 # Access via REST

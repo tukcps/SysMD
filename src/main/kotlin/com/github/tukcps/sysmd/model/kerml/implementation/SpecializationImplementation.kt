@@ -3,39 +3,42 @@ package com.github.tukcps.sysmd.model.kerml.implementation
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Specialization
 import com.github.tukcps.sysmd.model.kerml.Type
-import com.github.tukcps.sysmd.model.kerml.UnresolvedType
+import com.github.tukcps.sysmd.model.util.ErrorElement
+import com.github.tukcps.sysmd.model.util.UnresolvedType
+import com.github.tukcps.sysmd.model.datamodel.toElementData
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
 @Suppress("UNCHECKED_CAST")
 open class SpecializationImplementation(
-    specific: Type = UnresolvedType("self"),
-    general: Type = UnresolvedType("Base::Anything"),
-    elementType: String = "Specialization"
+    model : Session,
+    elementId : Uuid = Uuid.random(),
+    specific: Type = UnresolvedType(model, "self"),
+    general: Type = UnresolvedType(model, "Base::Anything"),
 ): Specialization, RelationshipImplementation(
+    model,
+    elementId = elementId,
     owningRelatedElement = specific,
     source = mutableListOf(specific),
     target = mutableListOf(general),
-    elementType = elementType
 ) {
 
     override var general: Type
-        get() = ( (target.firstOrNull() as Type?) ?: model?.anything as Type)
+        get() = target.firstOrNull() as? Type
+            ?: ErrorElement(model, target.first()).also { model.status.error("Name ${target.firstOrNull()} must resolve to a type", element = owner?.toElementData()) }
         set(value) { target = mutableListOf(value) }
 
     override var specific: Type
-        get() = (
-                if (source.firstOrNull() !is Type)
-                    TODO()
-                else (source.firstOrNull() as Type?) ?: this.owner as Type)
+        get() = source.firstOrNull() as? Type
+            ?: ErrorElement(model, target.first()).also { model.status.error("Name ${target.firstOrNull()} must resolve to a type", element = owner?.toElementData()) }
         set(value) { source= mutableListOf(value) }
 
-    override fun clone(): Specialization {
-        return SpecializationImplementation(
-            specific = specific,
-            general = general
-        ).also { klon ->
-            klon.isTransient = isTransient
-            klon.model = model
-        }
+    override fun clone(): Specialization = SpecializationImplementation(
+        model,
+        specific = specific,
+        general = general
+    ).also { klon ->
+        klon.isTransient = isTransient
     }
 
     override fun updateFrom(template: Element) {

@@ -4,6 +4,7 @@ import com.github.tukcps.sysmd.model.sysml.ItemDefinition
 import com.github.tukcps.sysmd.model.sysml.ItemUsage
 import com.github.tukcps.sysmd.model.sysml.OccurrenceDefinition
 import com.github.tukcps.sysmd.model.sysml.OccurrenceUsage
+import com.github.tukcps.sysmd.services.Runlevel
 import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
@@ -14,17 +15,12 @@ import kotlin.test.assertTrue
 
 class ItemAndOccurrenceUsageTests {
 
-
     /**
      * An item usage generates a feature of class "Items::Item".
      */
     @Test
     fun itemTest1() = testSession("Items") {
-        loadSysMLv2(
-            """
-            item p; 
-        """
-        )
+        loadSysMLv2("item p;")
         assertNoIssues()
         val p = global.resolve("p")?.memberElement as ItemUsage?
         assertNotNull(p)
@@ -36,12 +32,10 @@ class ItemAndOccurrenceUsageTests {
      */
     @Test
     fun itemDefTestWithSpecialization() = testSession("Items") {
-        loadSysMLv2(
-            """
+        loadSysMLv2("""
             item def p1; 
             item def p2 :> p1; 
-        """
-        )
+        """, Runlevel.MODEL)
         assertNoIssues()
         val p2 = global.resolve("p2")?.memberElement
         assertNotNull(p2 as? ItemDefinition)
@@ -53,11 +47,7 @@ class ItemAndOccurrenceUsageTests {
      */
     @Test
     fun occurrenceTest1() = testSession("Occurrences") {
-        loadSysMLv2(
-            """
-            occurrence p; 
-        """
-        )
+        loadSysMLv2(" occurrence p;")
         assertNoIssues()
         val p = global.resolve("p")?.memberElement
         assertTrue(p is OccurrenceUsage)
@@ -69,12 +59,10 @@ class ItemAndOccurrenceUsageTests {
      */
     @Test
     fun occurrenceDefTestWithSpecialization() = testSession("Occurrences") {
-        loadSysMLv2(
-            """
+        loadSysMLv2("""
             occurrence def p1; 
             occurrence def p2 :> p1; 
-        """
-        )
+        """)
         assertNoIssues()
         val p2 = global.resolve("p2")?.memberElement
         assertNotNull(p2 as? OccurrenceDefinition)

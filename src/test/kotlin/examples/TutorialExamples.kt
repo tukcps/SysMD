@@ -14,7 +14,7 @@ import kotlin.test.assertEquals
 class TutorialExamples {
     @Test
     fun specializationExample() = testSession("Occurrences") {
-        loadKerML(catchExceptions = false, input = """
+        loadKerML("""
             package p {
                 class c1 {
                    feature p: ScalarValues::Real(1 .. 2);
@@ -55,15 +55,15 @@ class TutorialExamples {
 
 
     @Test
-    fun deCompositionExample() = testSession("Occurrences", "ISQ", "Ranges") {
-        loadKerML(catchExceptions = false, input = """
+    fun deCompositionExample() = testSession("Occurrences", "ISQ") {
+        loadKerML("""
             package Example {
                 class Engine { 
-                    feature mass: ISQ::MassValue(10..500);  
+                    feature mass: ISQ::MassValue(10..500 [kg]);  
                 }
 
                 class Wheel {
-                    feature mass: ISQ::MassValue(20..50);  
+                    feature mass: ISQ::MassValue(20..50 [kg]);  
                 }
 
                 class Car { 
@@ -72,9 +72,7 @@ class TutorialExamples {
                     feature totalMass: ISQ::MassValue = sumOverParts(mass); 
                 }
             }
-        """)
-        assertNoIssues()
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
         val mass = solver.getVariable("Example::Car::totalMass")!!
         assertEquals(800.0, mass.vectorQuantity.getMaxAsDouble(), 0.00001)
@@ -94,13 +92,13 @@ class TutorialExamples {
     /**
      * First Example from the SysMD Kickstart.
      */
-    @Test fun volumeExample() = testSession("ISQ", "Ranges")  {
+    @Test fun volumeExample() = testSession("ISQ")  {
         loadKerML(""" 
             feature partWithVolume {
-                feature height:  ISQ::LengthValue {:>> unit = "cm"; :>> range = "10 .. 100";}
-                feature width:   ISQ::LengthValue{:>> range = "1 .. 1.1";}
-                feature length:  ISQ::LengthValue {:>> range = "1 .. 1.1";}
-                feature volume:  ISQ::VolumeValue = height * width * length {:>> unit = "l"; :>> range = "1000 .. 2000";}
+                feature height:  ISQ::LengthValue {:>> range = 10 .. 100 [cm];}
+                feature width:   ISQ::LengthValue{:>> range = 1 .. 1.1 [m];}
+                feature length:  ISQ::LengthValue {:>> range = 1 .. 1.1 [m];}
+                feature volume:  ISQ::VolumeValue = height * width * length { :>> range = 1000 .. 2000 [l];}
             }
         """, Runlevel.ALL)
         assertNoIssues()
@@ -112,7 +110,7 @@ class TutorialExamples {
     }
 
     @Test
-    fun issueExample() = testSession("ISQ", "Occurrences", "Ranges") {
+    fun issueExample() = testSession("ISQ", "Occurrences") {
         loadKerML("""
             // A general class 
             class Wheel {
@@ -122,19 +120,19 @@ class TutorialExamples {
             }
             
             class Rim {
-                feature mass: ISQ::MassValue {:>> range = "20 .. 30";}
+                feature mass: ISQ::MassValue {:>> range = 20 .. 30 [kg];}
             }
             
             class Tire {
-                feature mass: ISQ::MassValue {:>> range = "10 .. 20";}
+                feature mass: ISQ::MassValue {:>> range = 10 .. 20 [kg];}
             }
             
             class SummerTire {
-                feature mass: ISQ::MassValue {:>> range = "10 .. 10";}
+                feature mass: ISQ::MassValue {:>> range = 10 .. 10 [kg];}
             }
             
             class WinterTire { 
-                feature mass: ISQ::MassValue {:>> range = "20 .. 20";}
+                feature mass: ISQ::MassValue {:>> range = 20 .. 20 [kg];}
             }
 
             // We calculate the sum inside the specific elements
@@ -145,8 +143,7 @@ class TutorialExamples {
             class WinterWheel :> Wheel {
                 feature tire: WinterTire;
             }
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
         val summerWheel = solver.getVariable("SummerWheel::totalMass") !!
         val winterWheel = solver.getVariable("WinterWheel::totalMass") !!

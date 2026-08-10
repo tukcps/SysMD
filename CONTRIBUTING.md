@@ -18,13 +18,27 @@ Thanks for your interest in contributing to SysMD Notebook.
 ## Overall architecture of project 
 
 ### File system 
+
 The project is structured in the following directories 
-- doc : complementary documentation to SysMD. 
-- gradle : in particular the version catalog `libs.versions.toml`.
-- install : files that will be copied by SysMD Notebook into its start folder when started.
-- src : the source code 
-- build.gradle.kts (main build file for Gradle)
-- settings.gradle.kts 
+
+- `doc` - complementary documentation to SysMD. 
+- `gradle` - in particular the version catalog `libs.versions.toml`.
+- `install` - files that will be copied by SysMD Notebook into its start folder when started.
+- `src` - all the sources ...  
+  - `generator` - generator for the Metamodel and Metamodel factory classes. Reads XMI from OMG. 
+  - `generatorTest` - some tests for the generator
+  - `main` - SysMD Notebook 
+    - `antlr` - ANTLR parser, generated from OMG EBNF.  
+      - `kotlin` - Kotlin sources 
+        - configuration
+        - compiler 
+        - model 
+        - solver
+        - ui 
+        - ...
+  - `test` - Tests for the SysMD Notebook classes
+- `build.gradle.kts` (main build file for Gradle)
+- `settings.gradle.kts` 
 
 ### Source packages 
 

@@ -3,7 +3,8 @@ package com.github.tukcps.sysmd.services.inheritance
 import com.github.tukcps.sysmd.compiler.semantics.Identification
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureTypingImplementation
-
+import com.github.tukcps.sysmd.model.util.Unresolved
+import com.github.tukcps.sysmd.model.datamodel.toElementData
 
 /**
  * Topologically iterates over all types in the model, ensuring supertypes are evaluated
@@ -11,7 +12,6 @@ import com.github.tukcps.sysmd.model.kerml.implementation.FeatureTypingImplement
  * @param calls kept for backwards compatibility but unused
  */
 fun Type.addInheritedToSubtypes(@Suppress("unused") calls: Int = 0) {
-    val session = this.model ?: return
     val processed = mutableSetOf<Type>()
 
     fun process(type: Type) {
@@ -33,7 +33,13 @@ fun Type.addInheritedToSubtypes(@Suppress("unused") calls: Int = 0) {
         processed.add(type)
     }
 
-    session.get().filterIsInstance<Type>().forEach { process(it) }
+    model.get().filterIsInstance<Type>().forEach {
+        try {
+            process(it)
+        } catch (ex: Exception) {
+            model.status.error("Problem type ${it.escapedName()}", it.toElementData(), cause =  ex)
+        }
+    }
 }
 
 /**
@@ -44,10 +50,8 @@ fun Type.addInheritedToSubtypes(@Suppress("unused") calls: Int = 0) {
 private fun Type.addInheritedFeaturesFromGeneral() {
     // "Clone" features of superclass iff not there!
     // Type element must be part of the model
-    require(model != null)
-
     // Nothing to do for anything
-    if (this is Anything) return
+    if (this.generalization.isEmpty()) return
 
     // Nothing to do for references
     if (this is Feature && (referencedFeature != null || isDerived)) return
@@ -92,13 +96,13 @@ private fun Type.addInheritedFeaturesFromGeneral() {
 
         if (redefiningExpr?.isNotBlank() == true && feature.redefining?.isDefaultValue == false && !isBySpecializations && !hasIdenticalExpression) {
             if (feature.expression?.isNotBlank() == true) {
-                model?.status?.error("Cannot override a non-default feature value. Redefined: ${feature.redefining?.qualifiedName} ('${feature.redefining?.expression}'), Feature: ${feature.qualifiedName} ('${feature.expression}')", element = feature)
+                model.status.error("Cannot override a non-default feature value. Redefined: ${feature.redefining?.qualifiedName} ('${feature.redefining?.expression}'), Feature: ${feature.qualifiedName} ('${feature.expression}')", element = feature.toElementData())
             }
         }
 
         // Clone the features from redefined class, except multiplicity and ValueDomain (range, unit)
         // Clone stops cloning if in the model a feature already exists.
-        feature.redefining!!.features().filter { it !is Multiplicity && it.name != "range" && it.name != "unit" }.forEach {
+        feature.redefining!!.feature.filter { it !is Multiplicity && it.name != "range" && it.name != "unit" }.forEach {
             it.deepCloneWithInheritedFeature(feature)
         }
 
@@ -107,17 +111,19 @@ private fun Type.addInheritedFeaturesFromGeneral() {
             feature.redefining?.type?.forEach { type ->
                 // Add all types of refined property
                 val typing = FeatureTypingImplementation(
+                    model,
                     typedFeature = feature,
                     type = type
                 ).also {
-                    it.isImplied
+                    it.isImpliedIncluded = true
+                    it.isStandard = feature.isStandard
                 }
-                model!!.addOwnedRelationship(typing, feature)
+                model.addOwnedRelationship(typing, feature)
             }
 
         // get Multiplicity from redefining feature iff not defined
         if (feature.redefining?.multiplicity() != null && feature.multiplicity() == null)
-            model?.addOwnedMember(feature.redefining!!.multiplicity()!!.clone(), feature)
+            model.addOwnedMember(feature.redefining!!.multiplicity()!!.clone(), feature)
 
         // ... ValueDomain ... with unit and range
         if (feature.redefining?.resolveLocal("range") != null && feature.resolveLocal("range") == null) {
@@ -138,12 +144,17 @@ private fun Type.addInheritedFeaturesFromGeneral() {
 
         // Below here is "hack".
         if (feature.name == "range" || feature.name == "spec") { //range for Integer, Real, spec for Boolean
-            if (feature.owner is Feature) {
+            val o = feature.owner
+
+            if(o is Feature) {
+                o.typeConstraint.clear()
                 // remove """ and " " from the string
-                val specString = feature.expression!!.trim('"', ' ')
-                // set the type constraint to the list of specs split by "," (vectors)
-                (feature.owner as Feature).typeConstraint.clear()
-                (feature.owner as Feature).typeConstraint.addAll(specString.split(","))
+                val specString = feature.expression?.trim('"', ' ')
+
+                if(specString !== null) // set the type constraint to the list of specs split by "," (vectors)
+                    o.typeConstraint.addAll(specString.split(","))
+                else
+                    model.status.warn(message = ("Range feature ${feature.path()} has no value"), element = feature.toElementData())
             }
         }
     }
@@ -165,16 +176,20 @@ private fun Type.addInheritedFeaturesFromGeneral() {
             superTypeFeature.deepCloneWithInheritedFeature(this)
         } else {
             if (existingFeature.multiplicity() == null && superTypeFeature.multiplicity() != null) {
-                model?.addOwnedMember(superTypeFeature.multiplicity()!!.clone(), existingFeature)
+                model.addOwnedMember(superTypeFeature.multiplicity()!!.clone(), existingFeature)
             }
 
             if (existingFeature.type.isEmpty() && superTypeFeature.type.isNotEmpty()) {
                 superTypeFeature.type.forEach { type ->
                     val typing = FeatureTypingImplementation(
+                        model,
                         typedFeature = existingFeature,
                         type = type
-                    ).also { it.isImplied }
-                    model!!.addOwnedRelationship(typing, existingFeature)
+                    ).also {
+                        it.isImpliedIncluded = true
+                        it.isStandard = existingFeature.isStandard
+                    }
+                    model.addOwnedRelationship(typing, existingFeature)
                 }
             }
 

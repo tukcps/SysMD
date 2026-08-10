@@ -2,25 +2,13 @@ package com.github.tukcps.sysmd.model.sysml.implementation
 
 import com.github.tukcps.sysmd.model.kerml.implementation.StructureImplementation
 import com.github.tukcps.sysmd.model.sysml.PortDefinition
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
-class PortDefinitionImplementation(
-    declaredName: String? = null,
-    declaredShortName: String? = null,
-    elementType: String = "PortDefinition"
-): PortDefinition, StructureImplementation(
-    declaredName = declaredName,
-    declaredShortName = declaredShortName,
-    elementType = elementType
-) {
+open class PortDefinitionImplementation(model : Session,elementId : Uuid = Uuid.random())
+    : PortDefinition, StructureImplementation(model,elementId = elementId) {
 
-    override fun clone(): PortDefinitionImplementation {
-        val klon = PortDefinitionImplementation(
-            declaredName = declaredName,
-            declaredShortName = declaredShortName,
-        ).also { klon ->
-            klon.model = model
-            klon.updated = updated
-        }
-        return klon
+    override fun clone(): PortDefinitionImplementation = PortDefinitionImplementation(model).also { klon ->
+        klon.updateFrom(this)
     }
 }

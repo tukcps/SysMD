@@ -5,25 +5,26 @@ import com.github.tukcps.sysmd.model.expression.Expression
 import com.github.tukcps.sysmd.model.expression.InstantiationExpression
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.Function
-import com.github.tukcps.sysmd.model.kerml.implementation.SpecializationImplementation
-import com.github.tukcps.sysmd.model.kerml.implementation.TypeImplementation
 import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.model.util.SimpleName
 import com.github.tukcps.sysmd.quantities.VectorQuantity
+import com.github.tukcps.sysmd.services.session.Session
+import java.util.BitSet
 import kotlin.properties.Delegates.observable
+import kotlin.uuid.Uuid
 
 abstract class InstantiationExpressionImplementation(
+	model : Session,
+	elementId : Uuid = Uuid.random(),
     declaredName: SimpleName? = null,
     declaredShortName: SimpleName? = null,
-    typeConstraint: MutableList<String> = mutableListOf(),
     expression: String? = null,
-    elementType: String = "InstantiationExpression"
 ) : InstantiationExpression, ExpressionImplementation(
+    model,
+    elementId = elementId,
     declaredName = declaredName,
     declaredShortName = declaredShortName,
-    typeConstraint = typeConstraint,
     expression = expression,
-    elementType = elementType
 )
 {
 	/** The specific function actually evaluated for this expression, i.e. the proper overload */
@@ -35,9 +36,12 @@ abstract class InstantiationExpressionImplementation(
 			.filter { it.parameterDirection == Feature.FeatureDirectionKind.IN } // TODO
 			.sortedBy { it.parameterIndex }
 
-    override val argument: List<Expression> get() = argumentMembership
-			.map { it.ownedMemberParameter }
-		    .filterIsInstance<Expression>()
+    @Deprecated("Not well-defined by standard. Do not use.", replaceWith = ReplaceWith("positionalArguments"))
+    override val argument: List<Expression> get() = positionalArguments.mapNotNull {
+		it as? Expression ?: it.featureValue
+	}.ifEmpty {
+		namedArguments.map { it.second }
+	}
 
 	override var functionName : QualifiedName? by observable(null) { _, _, _ ->
 		function = null
@@ -48,35 +52,36 @@ abstract class InstantiationExpressionImplementation(
 
 	/** The most general overload of the instantiated function, i.e. exactly the function named by `functionName` */
 	val rootFunction : Function? get() = functionName?.let {
-		(owningNamespace ?: model?.global)?.resolve(it)?.member<Function>()
+		(owningNamespace ?: model.global).resolve(it)?.member<Function>()
 	}
 
-	var instantiatedType: Type = this //FIXME: Hack
+	override var instantiatedType: Type = this //FIXME: Hack
 
 	/** reorders and renames the argument list to conform with the given function */
 	private fun fixArguments(f : Function)
 	{
 		val args = argumentMembership
-		val wanted = f.parameterMembership
+		val wanted = f.parameter
 
 		if(args.isEmpty())
 			return
 
 		if(args.first().parameterIndex < 0)
 		{ // named args, have to populate indices
-			val visited = HashSet<ParameterMembership>()
+			val visited = BitSet(wanted.size)
 
 			for(a in args)
 			{
 				val id = Identification(a.memberShortName, a.memberName)
-				val w = wanted.firstOrNull { Identification(it.memberShortName, it.memberName) == id }
+				val ix = wanted.indexOfFirst { Identification(it) == id }
 
-				if(w === null)
+				if(ix < 0)
 					TODO("No argument named '${a.name}' in '${f.qualifiedName}'")
-				if(! visited.add(w))
+				if(visited.get(ix))
 					TODO("Duplicate named argument '${a.name}'")
 
-				a.parameterIndex = w.parameterIndex
+				visited.set(ix)
+				a.parameterIndex = ix
 			}
 		}
 	}
@@ -86,7 +91,7 @@ abstract class InstantiationExpressionImplementation(
 	 */
 	override fun learnType() : List<Type>
 	{
-		val model = model ?: throw IllegalStateException("model not set")
+		// val model = model ?: throw IllegalStateException("model not set")
 		assert(function === null)
 
 		var f = rootFunction ?: run {
@@ -94,8 +99,16 @@ abstract class InstantiationExpressionImplementation(
 			// throw IllegalStateException("Cannot resolve function name '$functionName'")
 			return emptyList()
 		}
-		try { fixArguments(f) } catch(_ : Exception) { return emptyList() }
-		val args = argument
+
+		val positional = positionalArguments
+
+		if(positional.isEmpty() && namedArguments.isNotEmpty())
+			TODO("Named arguments not supported yet")
+
+		val args = positional.map {
+			(it as? Expression) ?: it.featureValue ?: TODO("Complicated feature arguments not supported yet")
+		}
+
 
 		if(! f.accepts(args))
 		{
@@ -133,28 +146,19 @@ abstract class InstantiationExpressionImplementation(
 		}*/
 	}
 
-	open fun instantiatedType(): Type? = this //FIXME: Should be self?
-
-    //FIXME: Necessary to also implement TypeImplementation via composition or is this covered by the fact that expression already implements type?
-    var internalType: TypeImplementation = this as TypeImplementation
+	override fun instantiatedType(): Type? = this //FIXME: Should be self?
 
 	override fun updateFrom(template : Element)
 	{
 		super.updateFrom(template)
 
-		if(template is InstantiationExpressionImplementation)
-		{
+		if(template is InstantiationExpression)
 			functionName = template.functionName
-
-			for(rel in template.ownedRelationship.filterIsInstance<ParameterMembership>())
-				model!!.addOwnedMember(rel.ownedMemberParameter.clone(), this)
-		}
 	}
 
 	final override fun initialize()
 	{
 		initType()
-		val model = this.model ?: throw IllegalStateException("model not initialized")
 		val function = this.function ?: throw IllegalStateException("function '${functionName}' not found")
 
 		for(a in argument)
@@ -241,7 +245,7 @@ abstract class InstantiationExpressionImplementation(
 	{
 		evalDown()
 
-		for(a in argument)
+		for(a in ownedElement.filterIsInstance<Expression>())
 			a.evalDownRec()
 	}
 

@@ -103,7 +103,6 @@ interface Connector: Relationship, Feature {
         get() = source.firstOrNull() as Feature?
         set(value) { source = if(value == null) mutableListOf() else mutableListOf(value) }
 
-
     @Suppress("UNCHECKED_CAST")
     var targetFeature: MutableList<Feature>
         get() = target as MutableList<Feature>

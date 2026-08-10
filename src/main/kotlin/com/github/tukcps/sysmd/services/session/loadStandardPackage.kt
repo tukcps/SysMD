@@ -2,29 +2,64 @@ package com.github.tukcps.sysmd.services.session
 
 import com.github.tukcps.sysmd.compiler.KerML
 import com.github.tukcps.sysmd.logger
-import com.github.tukcps.sysmd.model.expression.implementation.BuiltinFunctions
-import com.github.tukcps.sysmd.model.kerml.Package
-import com.github.tukcps.sysmd.model.kerml.implementation.FunctionImplementation
-import com.github.tukcps.sysmd.model.kerml.implementation.getOwned
-import com.github.tukcps.sysmd.services.Runlevel
-import com.github.tukcps.sysmd.services.check.checkLibraryElementIds
-import com.github.tukcps.sysmd.services.check.checkOwnership
-import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.session.LibraryRepository.loadLibraryFromResources
-import com.github.tukcps.sysmd.services.session.implementation.SessionImplementation
-import io.github.tukcps.sysmlv2.api.entities.ElementDAO
+import com.github.tukcps.sysmd.model.generated.ElementDataIF
+import com.github.tukcps.sysmd.model.datamodel.ElementData
 import java.util.concurrent.ConcurrentHashMap
-
 
 /**
  * The library repository maintains standard libraries that are read from the file.
  * They are pre-compiled.
  */
 object LibraryRepository {
-    private val libraries : ConcurrentHashMap<String, List<ElementDAO>> = ConcurrentHashMap()
 
+    /**
+     * Single, pre-compiled libraries.
+     */
+    private val arrangement : ConcurrentHashMap<String, List<ElementData>> = ConcurrentHashMap()
+
+    /**
+     * Pre-compiled arrangement of libraries for testing.
+     */
+    private val library: ConcurrentHashMap<String, List<ElementData>> = ConcurrentHashMap()
+
+    /**
+     * Loads all libraries into map of pre-compiled data elements.
+     * @param status Status via which issues are reported.
+     */
+    fun cacheAllLibraries(status: SessionStatus = SessionStatus()) {
+        logger.info("Loading all libraries from resources/libraries/index.txt into cache")
+
+        val index = javaClass.getResourceAsStream("/libraries/index.txt")
+            ?.bufferedReader().use { input -> input?.readText() }
+            ?.lines()
+            ?.filter(String::isNotBlank)?:emptyList()
+
+        for (fileName in index) {
+            // logger.info("Loading library $fileName")
+
+            val text = javaClass.getResourceAsStream("/libraries/$fileName")
+                ?.bufferedReader().use { input -> input?.readText() }
+                ?: ""
+
+            val thisStatus = SessionStatus()
+            thisStatus.issues.forEach { issue ->
+                logger.info("Issue $issue in library $fileName")
+            }
+            val elements = KerML(status = thisStatus).parse(text)
+
+            status.issues.addAll(thisStatus.issues)
+
+            library[fileName.removeSuffix(".kerml")] = elements
+        }
+    }
+
+    /**
+     * Clears all cached libraries.
+     * They are refreshed lazy when getting them.
+     */
     fun reset() {
-        libraries.clear()
+        library.clear()
+        arrangement.clear()
     }
 
     /**
@@ -32,45 +67,62 @@ object LibraryRepository {
      * The library is cached.
      * @param key name of a standard library package
      */
-    fun get(key: String): List<ElementDAO>? { return libraries[key] }
-
+    fun getArrangementFromCache(key: String): List<ElementDataIF>? { return arrangement[key] }
 
     /**
-     * Loads a standard library directly from the resources.
-     * @param packageNames Name of the standard package. Must be in resources/library.
+     * Gets the elements of a library. If not in cache, it will be put into the cache.
+     * @param name Name of the library
+     * @param status Status object for reporting issues
+     * @return List with elements in the library.
      */
-    fun loadLibraryFromResources(key: String, packageNames: List<String>): List<ElementDAO> {
-        logger.info("Loading libraries ($key) - $packageNames")
+    fun getLibrary(name: String, status: SessionStatus): List<ElementData> {
+
+        if (library.containsKey(name)) return library[name]?: emptyList()
+
+        var result: List<ElementData>? = null
+        val inputStream = javaClass.getResourceAsStream("/libraries/$name.kerml")
+        val inputString = inputStream?.bufferedReader().use { input -> input?.readText() }
+        if (inputStream == null) {
+            logger.error("Could not load library '/libraries/$name.kerml' from resources")
+            return emptyList()
+        } else {
+            result = KerML(status = status)
+                .settings {
+                    addDefaultMultiplicity = false
+                    addConstraints = false
+                }
+                .parse(inputString!!)
+        }
+        if (status.issues.isNotEmpty()) {
+            logger.error("Issue while compiling library '$name': ${status.issues.joinToString(", ")}")
+        } else {
+            library[name] = result
+            logger.info("Loaded library $name into cache")
+        }
+        return result
+    }
+
+    /**
+     * Loads a library arrangement from the resources, and saves it into this repository.
+     * @param libraryNames Name of the standard package. Must be in resources/library.
+     * @param status For reporting issues.
+     */
+    fun getArrangement(key: String, libraryNames: List<String>, status: SessionStatus = SessionStatus()): List<ElementData> {
+        logger.info("Loading arrangement ($key) - $libraryNames")
+
+        if (arrangement.containsKey(key)) return arrangement[key]!!
+
         try {
-            val session = SessionImplementation(libraries = mutableListOf())
-
-            packageNames.forEach {
-                val inputStream = javaClass.getResourceAsStream("/libraries/$it.kerml")
-                val inputString = inputStream?.bufferedReader().use { input -> input?.readText() }
-                if (inputStream == null) {
-                    logger.error("Could not load library '/libraries/$it.kerml' from resources")
-                    return emptyList()
-                }
-                else
-                    KerML(session).parse(inputString!!)
-                if (session.status.issues.isNotEmpty()) {
-                    logger.error("Issue while compiling library '$it': ${session.status.issues.joinToString(", ")}")
-                }
-            }
-            session.initialize(Runlevel.MODEL) // resolve and inherit, but no setup of constraint system
-
-            session.checkOwnership()
-            session.checkLibraryElementIds()
-
-            if (session.status.issues.isNotEmpty()) {
-                logger.error("Issue while compiling arrangement '$packageNames': ${session.status.issues.joinToString(", ")}")
+            val export = mutableListOf<ElementData>()
+            libraryNames.forEach {
+                export.addAll( getLibrary(it, status) )
             }
 
-            val elementDAO = session.export().map { it.payloadElementSnapshot!! }
-            libraries[key] = elementDAO
-            return elementDAO
+            // Cache compiled arrangement
+            arrangement[key] = export
+            return export
         } catch (e: Exception) {
-            logger.error("Error while loading standard library '$packageNames'", e)
+            logger.error("Error while loading standard library  arrangement'$libraryNames'", e)
             return emptyList()
         }
     }
@@ -94,10 +146,10 @@ val Arrangements = hashMapOf(
     "Ports"         to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Ports"),
     "Items"         to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Items"),
     "Parts"         to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Items", "Parts"),
-    "Calculations"  to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Items", "Actions", "Calculations"),
+    "Calculations"  to listOf("Base", "ScalarValues", "Ranges", "Links", "Occurrences", "Objects", "Items", "Actions", "Attributes", "Calculations"),
     "Connections"   to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Connections"),
     "Interfaces"    to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Connections", "Interfaces"),
-    "Attributes"    to listOf("Base", "ScalarValues", "Links", "Occurrences", "Attributes"),
+    "Attributes"    to listOf("Base", "ScalarValues", "Ranges", "Links", "Occurrences", "Attributes"),
     "Allocations"   to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Connections", "Allocations"),
     "Math"          to listOf("Base", "ScalarValues", "ISQ", "Ranges", "Math", "Quantities"),
     "Constraints"   to listOf("Base", "ScalarValues", "ISQ", "Ranges", "Constraints", "Quantities"),
@@ -106,77 +158,11 @@ val Arrangements = hashMapOf(
     "States"        to listOf("Base", "ScalarValues", "Links", "Occurrences", "Actions", "States"),
     "Context"       to listOf("Base", "ScalarValues", "Context"),
     "KerML"         to listOf("Base", "ScalarValues", "Links", "Occurrences", "Objects", "Ranges", "KerML"),
-    "KerMLLibraries" to listOf("Base", "ScalarValues", "Ranges", "Objects", "Links", "Occurrences", "Performances", "Ranges", "ISQ", "Quantities"),
-    "SysMLLibraries" to listOf("Base", "ScalarValues", "Ranges", "Objects", "Links", "Occurrences", "Performances", "Items", "Ranges",
-        "Ports", "Parts",  "Actions", "Calculations", "Constraints", "Requirements", "Interfaces", "States", "Connections", "Signals", "ISQ", "Quantities", "VerificationCases"),
+    "KerMLLibraries" to listOf("Base", "ScalarValues", "Ranges", "ISQ", "Objects", "Links", "Occurrences", "Performances", "Quantities"),
+    "SysMLLibraries" to listOf("Base", "ScalarValues", "Ranges", "ISQ", "Objects", "Links", "Occurrences", "Performances", "Items",
+        "Ports", "Parts", "Actions", "Calculations", "Attributes", "Constraints", "Requirements", "Interfaces", "States", "Connections", "Signals", "Quantities", "VerificationCases"),
     "ISO26262"      to listOf("Base", "ScalarValues", "Ranges", "Objects", "Links", "Occurrences", "ISO26262", "Quantities"),
     "Signals"       to listOf("Base", "ScalarValues", "Links", "Occurrences", "Signals"),
     "SysMD"         to listOf("Base", "ScalarValues", "SysMD"),
     "DataFunctions" to listOf("Base", "ScalarValues", "DataFunctions"), // FIXME: +BaseFunctions
 )
-
-/**
- * Loads a standard library into the session.
- * This is done directly from the resources, or from the repository, if available.
- * @param library the name of the standard package.
- */
-fun Session.loadLibrary(library: String) {
-
-    val daoOfLibrary: List<ElementDAO> = if (library !in Arrangements.keys)
-        LibraryRepository.get(library)
-            ?: loadLibraryFromResources(library, listOf(library))
-    else
-        LibraryRepository.get(library)
-            ?: loadLibraryFromResources(library, Arrangements[library]!!)
-
-    this.import(daoOfLibrary)
-
-	if(library == "DataFunctions")
-	{
-		fun initArithmetic(pkg : Package?)
-		{
-			if(pkg === null)
-				return
-
-			for(func in pkg.ownedElement.filterIsInstance<FunctionImplementation>())
-			{
-				func.builtin = when(func.name) {
-					"+" -> BuiltinFunctions.PLUS
-					"-" -> BuiltinFunctions.MINUS
-					"*" -> BuiltinFunctions.TIMES
-					"/" -> BuiltinFunctions.DIV
-					"**", "^" -> BuiltinFunctions.EXP
-					"<" -> BuiltinFunctions.LT
-					">" -> BuiltinFunctions.GT
-					"<=" -> BuiltinFunctions.LE
-					">=" -> BuiltinFunctions.GE
-					"==" -> BuiltinFunctions.EE
-					"if" -> BuiltinFunctions.ITE
-					else -> continue
-				}.f
-			}
-		}
-
-		// TODO: unary operators
-		// FIXME: there are more undefined functions in these packages
-		initArithmetic(global.getOwned<Package>("IntegerFunctions"))
-		initArithmetic(global.getOwned<Package>("RealFunctions"))
-		initArithmetic(global.getOwned<Package>("RationalFunctions"))
-		initArithmetic(global.getOwned<Package>("NaturalFunctions"))
-
-		global.getOwned<Package>("BooleanFunctions")?.let { bf ->
-			for(func in bf.ownedElement.filterIsInstance<FunctionImplementation>())
-			{
-				func.builtin = when(func.name) {
-					"not" -> BuiltinFunctions.NOT
-					"&" -> BuiltinFunctions.AND
-					"|" -> BuiltinFunctions.OR
-					"==" -> BuiltinFunctions.EE
-					else -> continue
-				}.f
-			}
-		}
-
-		global.resolve("")
-	}
-}

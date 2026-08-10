@@ -9,6 +9,7 @@ import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.kerml.getOwnedElementsOfType
 import com.github.tukcps.sysmd.quantities.Quantity
+import com.github.tukcps.sysmd.model.datamodel.toElementData
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.session.Session
 import io.github.tukcps.aadd.AADD
@@ -41,12 +42,12 @@ internal class AstProductOverSubclasses(
         upQuantity = Quantity(model.builder.Reals, "?")
         downQuantity = upQuantity
         if (propertyAst.size != 1)
-            model.status.error(message = "function 'productOverSubclasses' expects one parameter", kind = Issue.Kind.ERROR_SEMANTIC, element = namespace)
+            model.status.error(message = "function 'productOverSubclasses' expects one parameter", kind = Issue.Kind.ERROR_SEMANTIC, element = namespace.toElementData())
         if (namespace is Type)
             generatedAst = model.initProductSubclasses(namespace, propertyAst.first(), transitive)
         else {
             generatedAst = null
-            model.status.error("function 'productOverSubclasses' must be called from type", kind = Issue.Kind.ERROR_SEMANTIC, element = namespace)
+            model.status.error("function 'productOverSubclasses' must be called from type", kind = Issue.Kind.ERROR_SEMANTIC, element = namespace.toElementData())
         }
         generatedAst?.evalUpRec()
         evalUpRec()
@@ -95,7 +96,7 @@ internal class AstProductOverSubclasses(
             generatedAst!!.evalDownRec()
             // Iterate through all leafs of the generatedAST and update downQuantity of the associated ValueFeature
             for (leaf in generatedAst!!.getLeaves().filter { it.qualifiedName != null }) {
-                val valueFeature = model.global.resolveVar(leaf.qualifiedName!!)
+                val valueFeature = model.solver.getVariable(leaf.qualifiedName!!)
                 when (leaf.downQuantity.values[0]) {
                     is AADD -> valueFeature!!.vectorQuantity = valueFeature.vectorQuantity.constrain(leaf.downQuantity)
                     is IDD -> valueFeature!!.vectorQuantity = valueFeature.vectorQuantity.constrain(leaf.downQuantity)
@@ -106,7 +107,7 @@ internal class AstProductOverSubclasses(
     }
 
     override fun getDependentPropertyStrings(): Set<String> {
-        return getPartDependencies(namespace as Type, propertyAst.first())
+        return getPartDependencies(namespace as Type, propertyAst.first(), transitive)
     }
 
     override fun clone(): AstProductOverSubclasses {
@@ -136,7 +137,7 @@ fun Session.initProductSubclasses(
         for (leaf in newAstNode.getLeaves().filter { it.qualifiedName != null }) {
             // Find property with propertyName owned by element ...
             //TODO Could cause problems with inheritance or imports
-            val variable = global.resolveVar(subclass.qualifiedName + "::" + leaf.qualifiedName)
+            val variable = solver.getVariable(subclass.qualifiedName + "::" + leaf.qualifiedName)
             if (variable != null) {
                 leaf.upQuantity = variable.vectorQuantity
                 leaf.downQuantity = variable.vectorQuantity
@@ -166,12 +167,22 @@ fun Session.initProductSubclasses(
     return buildBalancedTree(operands, TIMES)
 }
 
-fun getPartDependencies(element: Type, propertyAST: AstNode): Set<String> {
+fun getPartDependencies(element: Type, propertyAST: AstNode, transitive : Boolean): Set<String> {
     val result = mutableSetOf<String>()
-    element.subtypes.forEach { subclass ->
-        for (leaf in propertyAST.getLeaves().filter { it.qualifiedName != null }) {
-            result.add(leaf.qualifiedName as String)
+    val todo = element.subtypes.toMutableList()
+
+    while(todo.isNotEmpty()) {
+        val subclass = todo.removeFirst()
+
+        propertyAST.getLeaves().filter { it.qualifiedName != null }.forEach { leaf ->
+            (subclass.resolve(leaf.qualifiedName!!)?.memberElement as? Feature)?.variable?.let {
+                result.add(it.path)
+            }
         }
+
+        if(transitive)
+            todo.addAll(0, subclass.subtypes)
     }
+
     return result
 }

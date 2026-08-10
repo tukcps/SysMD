@@ -1,18 +1,26 @@
 package com.github.tukcps.sysmd.model.kerml.implementation
 
-import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.model.kerml.Feature
+import com.github.tukcps.sysmd.model.kerml.FeatureTyping
+import com.github.tukcps.sysmd.model.kerml.Type
+import com.github.tukcps.sysmd.model.util.UnresolvedFeature
+import com.github.tukcps.sysmd.model.util.UnresolvedType
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
 /**
  * Feature typing relationship.
  */
-class FeatureTypingImplementation(
-    typedFeature: Feature = UnresolvedFeature("Base::things"),
-    type: Type = UnresolvedType("Base::Anything"),
-    elementType: String = "FeatureTyping"
+open class FeatureTypingImplementation(
+    model : Session,
+    elementId : Uuid = Uuid.random(),
+    typedFeature: Feature = UnresolvedFeature(model, "Base::things"),
+    type: Type = UnresolvedType(model, "Base::Anything"),
 ): FeatureTyping, SpecializationImplementation(
+    model,
+    elementId = elementId,
     specific = typedFeature,
     general = type,
-    elementType = elementType
 ) {
     @Suppress("UNCHECKED_CAST")
     override val owningFeature: Feature
@@ -28,11 +36,11 @@ class FeatureTypingImplementation(
     @Suppress("UNCHECKED_CAST")
     override fun clone(): FeatureTyping {
         return FeatureTypingImplementation(
+            model,
             typedFeature = typedFeature,
             type = type,
         ).also { klon ->
             klon.isTransient = isTransient
-            klon.model = model
         }
     }
 }

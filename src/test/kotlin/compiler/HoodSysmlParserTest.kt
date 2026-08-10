@@ -5,6 +5,7 @@ import com.github.tukcps.sysmd.model.kerml.getOwnedElementsOfType
 import com.github.tukcps.sysmd.model.sysml.PartUsage
 import com.github.tukcps.sysmd.model.sysml.StateUsage
 import com.github.tukcps.sysmd.model.sysml.TransitionUsage
+import com.github.tukcps.sysmd.services.Runlevel
 import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
@@ -78,15 +79,14 @@ class HoodSysmlParserTest {
     @Test
     fun parsesEntryAction() = testSession("SysMLLibraries") {
         loadSysMLv2("""
-                package testPackage{
-                    part part1{
-                        state status{
-                            entry action initial;
-                        }
-                     }
-                }
-                """)
-
+            package testPackage{
+                part part1{
+                    state status{
+                        entry action initial;
+                    }
+                 }
+            }
+        """)
         assertNoIssues()
         val owningPackage = global.resolve("testPackage")?.member<Package>()
         val parts = owningPackage!!.getOwnedElementsOfType<PartUsage>()
@@ -98,7 +98,7 @@ class HoodSysmlParserTest {
     }
 
     @Test
-    fun parsesOneTransitionFromEntryActionToState() = testSession("Parts") {
+    fun parsesOneTransitionFromEntryActionToState() = testSession("SysMLLibraries") {
         loadSysMLv2("""
             package testPackage{
                 part part1{
@@ -109,7 +109,8 @@ class HoodSysmlParserTest {
                     }
                  }
             }
-        """)
+        """, Runlevel.MODEL)
+        assertNoIssues()
         val owningPackage = global.resolve("testPackage")?.member<Package>()
         val parts = owningPackage!!.getOwnedElementsOfType<PartUsage>()
         val part1 = parts[0]
@@ -156,23 +157,26 @@ class HoodSysmlParserTest {
     @Test
     fun parsesTwoTransitionsFromStateToState() = testSession("SysMLLibraries") {
         loadSysMLv2("""
-                package testPackage{
-                    part part1{
-                        state status{
-                            state state1;
-                            state state2;
-                            transition first state1 then state2;
-                            transition first state2 then state1;
-                        }
-                     }
+            package testPackage {
+                part part1 {
+                    state status {
+                        state state1;
+                        state state2;
+                        // No names, problem with UUID?
+                        transition first state1 then state2;
+                        transition first state2 then state1;
+                    }
                 }
-            """)
+            }
+        """, Runlevel.MODEL)
         assertNoIssues()
         val owningPackage = global.resolve("testPackage")?.member<Package>()
         val parts = owningPackage!!.getOwnedElementsOfType<PartUsage>()
         val part1 = parts[0]
         val status = part1.getOwnedElementsOfType<StateUsage>()[0]
         val transitions = status.getOwnedElementsOfType<TransitionUsage>()
+
+        assertEquals(2, transitions.size)
 
         val transition1 = transitions[0]
         assertEquals("state1", transition1.source.name)
@@ -201,7 +205,7 @@ class HoodSysmlParserTest {
                     }
                  }
             }
-        """)
+        """, Runlevel.MODEL)
 	    assertNoIssues()
 
         val owningPackage = global.resolve("testPackage")?.member<Package>()

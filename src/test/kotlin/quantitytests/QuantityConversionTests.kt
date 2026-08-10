@@ -2,12 +2,16 @@ package quantitytests
 
 import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.quantities.Unit
-import com.github.tukcps.sysmd.services.resolve.resolveVar
-import io.github.tukcps.aadd.*
+import com.github.tukcps.sysmd.services.Runlevel
+import io.github.tukcps.aadd.AADD
+import io.github.tukcps.aadd.DDBuilder
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
-import kotlin.test.*
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 
 class QuantityConversionTests {
     private lateinit var ddDummy0: AADD
@@ -509,39 +513,35 @@ class QuantityConversionTests {
 
     @Test
     fun year() = testSession("ISQ") {
-        loadKerML("""feature date1: ISQ::TimeValue [Year] = Year("2021").""")
+        loadKerML("""feature date1: ISQ::TimeValue(* [Year]) = Year("2021"); """)
         solver.propagate()
         assertEquals(1609459200.0,
-            global.resolveVar("date1")!!.vectorQuantity.value.asAadd().getRange().max, 0.00001)
+            solver.getVariable("date1")!!.vectorQuantity.value.asAadd().getRange().max, 0.00001)
         assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
     fun year2() = testSession("ISQ") {
-        loadKerML(
-            """
-            feature year: ISQ::TimeValue [Year] = Year("2022").
-            feature time: ISQ::DurationValue [a] = 200.0 a.
-            feature yearResult: ISQ::TimeValue [Year] = year + time."""
-        )
+        loadKerML("""
+            feature year: ISQ::TimeValue(* [Year]) = Year("2022"); 
+            feature time: ISQ::DurationValue(* [a]) = 200.0 a; 
+            feature yearResult: ISQ::TimeValue(* [Year]) = year + time; 
+        """, Runlevel.ALL)
 
-        solver.propagate()
-        assertEquals("2022", global.resolveVar("year")!!.vectorQuantity.toString())
-        assertEquals("2222", global.resolveVar("yearResult")!!.vectorQuantity.toString())
+        assertEquals("2022", solver.getVariable("year")!!.vectorQuantity.toString())
+        assertEquals("2222", solver.getVariable("yearResult")!!.vectorQuantity.toString())
         assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
     fun year3() = testSession("ISQ") {
-        loadKerML(
-            """
-            feature year: ISQ::TimeValue [Year] = Year("2021");
-            feature year2: ISQ::TimeValue [Year] = Year("2023");
-            feature result: ISQ::DurationValue [a] = year2 - year;"""
-        )
+        loadKerML("""
+            feature year: ISQ::TimeValue(* [Year]) = Year("2021");
+            feature year2: ISQ::TimeValue(* [Year]) = Year("2023");
+            feature result: ISQ::DurationValue(* [a]) = year2 - year;
+        """, Runlevel.ALL)
 
-        solver.propagate()
-        assertEquals(2.0, global.resolveVar("result")!!.vectorQuantity.valuesIn("a")[0].asAadd().min, 0.001)
+        assertEquals(2.0, solver.getVariable("result")!!.vectorQuantity.valuesIn("a")[0].asAadd().min, 0.001)
         assertEquals(0, status.issues.size, status.issues.toString())
     }
 
@@ -550,52 +550,48 @@ class QuantityConversionTests {
         loadKerML("""feature date1: ISQ::TimeValue = DateTime("2021-10-30T13:00:01+02:00");""")
         solver.propagate()
         assertEquals(1635591601.0,
-            global.resolveVar("date1")!!.vectorQuantity.value.asAadd().getRange().max, 0.00001)
+            solver.getVariable("date1")!!.vectorQuantity.value.asAadd().getRange().max, 0.00001)
         assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
     fun dateTime2() = testSession("ISQ") {
-        loadKerML("""feature date: ISQ::TimeValue [DateTime] = DateTime("2021-10-10T00:00");""")
+        loadKerML("""feature date: ISQ::TimeValue(* [DateTime]) = DateTime("2021-10-10T00:00");""")
         solver.propagate()
-        assertEquals("2021-10-10T00:00", global.resolveVar("date")!!.vectorQuantity.toString())
+        assertEquals("2021-10-10T00:00", solver.getVariable("date")!!.vectorQuantity.toString())
         assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
     fun dateTimeDiff1() = testSession("ISQ") {
-        loadKerML(
-            """
+        loadKerML("""
             feature date1: ISQ::TimeValue = DateTime("2021-10-30T13:00:01+02:00");
             feature date2: ISQ::TimeValue = DateTime("2021-10-30T13:01:01+02:00");
-            feature datediff: ISQ::DurationValue [s] = date2-date1;"""
-        )
+            feature datediff: ISQ::DurationValue(* [s]) = date2-date1;
+        """, Runlevel.ALL)
 
-        solver.propagate()
         assertEquals(1635591601.0,
-            global.resolveVar("date1")!!.vectorQuantity.value.asAadd().getRange().max, 0.00001)
+            solver.getVariable("date1")!!.vectorQuantity.value.asAadd().getRange().max, 0.00001)
         assertEquals(1635591661.0,
-            global.resolveVar("date2")!!.vectorQuantity.value.asAadd().getRange().max, 0.00001)
+            solver.getVariable("date2")!!.vectorQuantity.value.asAadd().getRange().max, 0.00001)
         assertEquals(60.0,
-            global.resolveVar("datediff")!!.vectorQuantity.value.asAadd().getRange().max, 0.00001)
+            solver.getVariable("datediff")!!.vectorQuantity.value.asAadd().getRange().max, 0.00001)
         assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
     fun dateTimeDiff2() = testSession("ISQ") {
-        loadKerML(
-            """
+        loadKerML("""
             feature date1: ISQ::TimeValue = DateTime("2021-10-10T03:00:00+02:00");
             feature date2: ISQ::TimeValue = DateTime("2021-10-11T03:00:00+02:00");
-            feature datediff: ISQ::DurationValue [h] = date2-date1;"""
-        )
+            feature datediff: ISQ::DurationValue(* [h]) = date2-date1;""")
 
         solver.propagate()
         assertEquals(1633827600.0,
-            global.resolveVar("date1")!!.vectorQuantity.value.asAadd().getRange().max, 0.00001)
+            solver.getVariable("date1")!!.vectorQuantity.value.asAadd().getRange().max, 0.00001)
         assertEquals(1633914000.0,
-            global.resolveVar("date2")!!.vectorQuantity.value.asAadd().getRange().max, 0.00001)
-        assertEquals("24 h", global.resolveVar("datediff")!!.vectorQuantity.toString())
+            solver.getVariable("date2")!!.vectorQuantity.value.asAadd().getRange().max, 0.00001)
+        assertEquals("24 h", solver.getVariable("datediff")!!.vectorQuantity.toString())
         assertEquals(0, status.issues.size, status.issues.toString())
     }
 
@@ -603,79 +599,73 @@ class QuantityConversionTests {
     fun dateTimeSum() = testSession("ISQ") {
         loadKerML("""
             feature date: ISQ::TimeValue = DateTime("2021-10-10T03:00:00");
-            feature time: ISQ::DurationValue [a] = 1.0 a;
-            feature dateResult: ISQ::TimeValue [DateTime] = date + time;"""
+            feature time: ISQ::DurationValue(* [a]) = 1.0 a;
+            feature dateResult: ISQ::TimeValue(* [DateTime]) = date + time;"""
         )
         solver.propagate()
-        assertEquals("2022-10-10T03:00", global.resolveVar("dateResult")!!.vectorQuantity.toString())
+        assertEquals("2022-10-10T03:00", solver.getVariable("dateResult")!!.vectorQuantity.toString())
         assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
     fun date() = testSession("ISQ") {
         loadKerML("""
-            feature date: ISQ::TimeValue [Date] = Date("2022-10-10");
-            feature time: ISQ::DurationValue [d] = 0.5 d;
-            feature dateResult: ISQ::TimeValue [Date] = date + time;"""
-        )
-
-        solver.propagate()
-        assertEquals("2022-10-10", global.resolveVar("date")!!.vectorQuantity.toString())
-        assertEquals("2022-10-11", global.resolveVar("dateResult")!!.vectorQuantity.toString())
+            feature date: ISQ::TimeValue(* [Date]) = Date("2022-10-10");
+            feature time: ISQ::DurationValue(* [d]) = 0.5 d;
+            feature dateResult: ISQ::TimeValue(* [Date]) = date + time;
+        """, Runlevel.ALL)
+        assertEquals("2022-10-10", solver.getVariable("date")!!.vectorQuantity.toString())
+        assertEquals("2022-10-11", solver.getVariable("dateResult")!!.vectorQuantity.toString())
         assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
     fun month() = testSession("ISQ") {
         loadKerML("""
-            feature month: ISQ::TimeValue [Month] = Month("2022-10");
-            feature time: ISQ::DurationValue [d] = 20.0 d;
-            feature monthResult: ISQ::TimeValue [Month] = month + time;"""
-        )
-        solver.propagate()
-        assertEquals("2022-10", global.resolveVar("month")!!.vectorQuantity.toString())
-        assertEquals("2022-11", global.resolveVar("monthResult")!!.vectorQuantity.toString())
+            feature month: ISQ::TimeValue(* [Month]) = Month("2022-10");
+            feature time: ISQ::DurationValue(* [d]) = 20.0 d;
+            feature monthResult: ISQ::TimeValue(* [Month]) = month + time;
+        """, Runlevel.ALL)
+        assertEquals("2022-10", solver.getVariable("month")!!.vectorQuantity.toString())
+        assertEquals("2022-11", solver.getVariable("monthResult")!!.vectorQuantity.toString())
         assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
     fun month2() = testSession("ISQ") {
-        loadKerML(
-            """
-            feature month: ISQ::TimeValue [Month] = Month("2022-10");
-            feature time: ISQ::DurationValue [a] = 30.0 a;
-            feature monthResult: ISQ::TimeValue [Month] = month + time;"""
+        loadKerML("""
+            feature month: ISQ::TimeValue(* [Month]) = Month("2022-10");
+            feature time: ISQ::DurationValue(* [a]) = 30.0 a;
+            feature monthResult: ISQ::TimeValue(* [Month]) = month + time;"""
         )
         solver.propagate()
         assertEquals(0, status.issues.size, status.issues.toString())
-        assertEquals("2022-10", global.resolveVar("month")!!.vectorQuantity.toString())
-        assertEquals("2052-10", global.resolveVar("monthResult")!!.vectorQuantity.toString())
+        assertEquals("2022-10", solver.getVariable("month")!!.vectorQuantity.toString())
+        assertEquals("2052-10", solver.getVariable("monthResult")!!.vectorQuantity.toString())
     }
 
     @Test
     fun month3() = testSession("ISQ") {
         loadKerML("""
-            feature month1: ISQ::TimeValue [Month] = Month("2021-10");
-            feature month2: ISQ::TimeValue [Month] = Month("2023-10");
-            feature time: ISQ::DurationValue [a] = month2 - month1;"""
-        )
-        solver.propagate()
-        assertEquals("2021-10", global.resolveVar("month1")!!.vectorQuantity.toString())
-        assertEquals("2023-10", global.resolveVar("month2")!!.vectorQuantity.toString())
-        assertEquals("2 a", global.resolveVar("time")!!.vectorQuantity.toString())
+            feature month1: ISQ::TimeValue(* [Month]) = Month("2021-10");
+            feature month2: ISQ::TimeValue(* [Month]) = Month("2023-10");
+            feature time: ISQ::DurationValue(* [a]) = month2 - month1;
+        """, Runlevel.ALL)
+        assertEquals("2021-10", solver.getVariable("month1")!!.vectorQuantity.toString())
+        assertEquals("2023-10", solver.getVariable("month2")!!.vectorQuantity.toString())
+        assertEquals("2 a", solver.getVariable("time")!!.vectorQuantity.toString())
         assertEquals(0, status.issues.size, status.issues.toString())
     }
 
     @Test
     fun missingUnits() = testSession("ISQ") {
         loadKerML(input = """
-                feature test1: ISQ::ThermodynamicTemperatureValue {:>> unit ="°C";}
-                feature test2: ISQ::ThermodynamicTemperatureValue {:>> unit ="°F";}
+                feature test1: ISQ::ThermodynamicTemperatureValue {:>> range = * [°C];}
+                feature test2: ISQ::ThermodynamicTemperatureValue {:>> range = * [°F];}
                 feature test3: ISQ::MassValue ;
-                feature percentage: Quantities::ScalarQuantityValue[%].
-            """)
-        solver.propagate()
-        assertEquals(0, status.issues.size, status.issues.toString())
+                feature percentage: Quantities::ScalarQuantityValue( * [%]).
+            """, Runlevel.ALL)
+        assertNoIssues()
     }
 
     @Test

@@ -24,6 +24,7 @@ SysMD supports:
 - SysMD (for interactive modification of a compiled model)
 
 ## Packages
+
 It is a good practice to avoid a hierarchically flat model.
 Structure a projects into different packages.
 For the kickstart we put everything in the package ```kickstart```.
@@ -105,12 +106,11 @@ dependency ```volume = height*width*length```, click on the calculator symbol le
 To display the values, click on the i in a circle left of the cell._
 ```SysML::kickstart
 part rangeExample {
-    attribute height:  LengthValue = oneOf(10.0 .. 100.0 [cm]);
-    attribute width:   LengthValue = oneOf(1.0 .. 1.1 [m]);
-    attribute length:  LengthValue = oneOf(1.0 .. 1.1 [m]);
-    attribute volume:  VolumeValue = height * width * length {
-        :>> range = "1000.0 .. 2000.0";
-        :>> unit =  "l";  
+    attribute height:  ISQ::LengthValue = oneOf(10.0 .. 100.0 [cm]);
+    attribute width:   ISQ::LengthValue = oneOf(1.0 .. 1.1 [m]);
+    attribute length:  ISQ::LengthValue = oneOf(1.0 .. 1.1 [m]);
+    attribute volume:  ISQ::VolumeValue = height * width * length {
+        :>> range = 1000.0 .. 2000.0 [l];
     }
 }
 ```
@@ -178,7 +178,7 @@ For date and time, the ISO format is supported.
 We can add and subtract times in this format.
 ```SysML::kickstart::units_datetime
 attribute date: TimeValue = DateTime("2021-10-10T03:00:00");
-attribute time: TimeValue = 1.0 a {:>> unit="a";}
+attribute time: TimeValue = 1.0 a { :>> range = (* .. *) [a];}
 attribute dateResult: TimeValue = date + time;
 ```
 
@@ -192,27 +192,35 @@ Below is an example for defining vectors:
 ```SysML::kickstart::vectors
 attribute a: CartesianPosition3dVector = (0.5, 1.5, 2.5) m;
 attribute b: CartesianPosition3dVector = (0.5, 1.5, 0.5) m; 
-attribute c: CartesianPosition3dVector = a + b { :>> range="-5.0..2.0, -1.0..4.0, 2.0..4.0"; }
+attribute c: CartesianPosition3dVector = a + b { 
+    :>> range = (-5.0..2.0, -1.0..4.0, 2.0..4.0) [m]; // We only accept results in this range. 
+}
 ```
 
 In the next example, there is a calculation with Vectors with the cross-product and angle.
 ```SysML::kickstart::vectorfunctions
-attribute a2: CartesianForce3dVector { :>> range="1..1,5..5, 10..10";}
-attribute b2: CartesianPosition3dVector { :>> range="5..5,1..1, 10..10";}
+attribute a2: CartesianForce3dVector = (1.0, 5.0, 10.0) [N]; 
+attribute b2: CartesianPosition3dVector = (5.0, 1.0, 10.0) [m];
 attribute c2: CartesianMomentOfForce3dVector  = a2 cross b2;
-attribute d2: DimensionOneValue = angle(a2,b2) {:>>unit="°";} 
+attribute d2: DimensionOneValue = angle(a2, b2) { 
+    :>> range = (-180 .. 360) [°];  // We want results in Degree, not Rad, and in this range. 
+} 
 ```
 
 ## Types and Functions in Expressions
-SysMD supports the following types:
 
-- ```ScalarValues::Real```
-- ```ScalarValues::Integer```
-- ```ScalarValues::Boolean```
-- ```ScalarValues::String```
+SysMD Notebook supports currently no operator overloading; operators for the following types
+in expressions are pre-defined:
 
-For Quantities with units, Domains from the ISQ package must be used as a type (see doc/AvailableUnits.md). If no domain is
-known, ```Quantities::ScalarQuantityValue``` should be used
+- ```ScalarValues::Real```, 
+- ```ScalarValues::Integer```, 
+- ```ScalarValues::Boolean```,
+- ```ScalarValues::String```, 
+- the Quantities (Real with Unit), as defined in the package ISQ,
+- Vectors thereof. 
+
+For Quantities with units, Domains from the ISQ package must be used as a type (see doc/AvailableUnits.md). 
+If no domain is known, ```Quantities::ScalarQuantityValue``` should be used
 
 In expressions, the following functions can be used:
 
@@ -226,10 +234,10 @@ In expressions, the following functions can be used:
 - ```sqrt(x)``` - square root of x
 - ```linearInterpolation(a, b, c, d, …)``` – linear interpolation through pairs of values specifying (x, y).
 - ```ITE(condition, if, else)``` – ITE function; if Condition then if-value, else then-value
-- ```sum_i(...)``` Iteration over i – Not for IRIS.
-- ```not(x)```
-- ```a and b```
-- ```a or b```
+- ```sum_i(...)``` Iteration over i. 
+- ```not(x)``` - Boolean operation. 
+- ```a and b``` - Boolean operation. 
+- ```a or b``` - Boolean operation. 
 
 *Additional functions are available that permit computing over collections of values.*
 
@@ -282,13 +290,13 @@ vehicles via its path as shown in the example below.
 ```SysML::kickstart
 package carParts {
     part def Body {
-        attribute mass: MassValue {:>> range="300.0"; :>> unit = "kg"; }
+        attribute mass: MassValue {:>> range = 300.0 [kg]; }
     }
     part def Engine {
-        attribute mass: MassValue {:>> range="300.0"; :>> unit = "kg"; }
+        attribute mass: MassValue {:>> range = 300.0 [kg]; }
     }
     part def Wheel {
-        attribute mass: MassValue {:>> range="50.0"; :>> unit = "kg"; }
+        attribute mass: MassValue {:>> range = 50.0 [kg]; }
     }
 }
 ```
@@ -326,14 +334,14 @@ Specializations inherit features.
 // We consider a vehicle to be anything that has at least one wheel. 
 // The bySubclasses determines a consistent value for mass with min diameter. 
 part def Vehicle {
-  attribute mass: MassValue = bySpecializations(mass) {:>> range ="0..1000";}
+  attribute mass: MassValue = bySpecializations(mass) {:>> range =0..1000 [kg];}
   part wheels: carParts::Wheel[1 .. *];        
 }
 
 // A car is a vehicle with Body and Engine. 
 // the sumOverParts determines a consistent minimal range consistent with parts.
 part def Car  :> Vehicle {
-   attribute redefines mass: MassValue = sumOverParts(mass) {:>> range ="0 .. 1000";}
+   attribute redefines mass: MassValue = sumOverParts(mass) {:>> range = 0 .. 1000 [kg];}
    part wheels: carParts::Wheel[4 .. 10]; 
    part body:   carParts::Body;
    part engine: carParts::Engine;
@@ -406,13 +414,13 @@ Assume, we model the power of Cars and its subclasses as follows:
 
 ```SysML::kickstart::vehicles
 part def Car { 
-    attribute power: PowerValue(10..1000) [kW]; 
+    attribute power: PowerValue(10..1000 [kW]); 
 }
 part def VW :> Car { 
-    :>> power: PowerValue(20..100) [kW]; 
+    :>> power: PowerValue(20..100 [kW]); 
 }
 part def BMW :> Car { 
-    :>> power: PowerValue(150..1100) [kW]; 
+    :>> power: PowerValue(150..1100 [kW]); 
 }
 ```
 
@@ -435,12 +443,12 @@ The below example demonstrates this behavior.
 ```SysML::kickstart
     package inheritanceExample {
         part def Coin {
-            attribute diameter: ISQ::LengthValue default oneOf(5.0 ..200.0 [mm]) { :>> unit = "mm"; }
-            attribute circumference: ISQ::LengthValue = diameter*3.141 { :>> unit = "mm"; } // 15.7 .. 628.2 mm 
+            attribute diameter: ISQ::LengthValue default oneOf(5.0 ..200.0 [mm]) { :>> range := (0..*) [mm]; }
+            attribute circumference: ISQ::LengthValue = diameter*3.141 { :>> range := (0..*) [mm]; } // 15.7 .. 628.2 mm 
         }
         
         part oneEuroCoin : Coin { 
-            :>> diameter = 23.25 [mm]; 
+            :>> diameter := 23.25 [mm]; 
             // circumference is inherited. Must be re-evaluated with correct diameter.
             // Expected behavior:  re-evaluate dependency in new scope, but without changing diameter of Coin. 
         }

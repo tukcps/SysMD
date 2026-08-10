@@ -1,8 +1,8 @@
 package com.github.tukcps.sysmd.services.session
 
+import com.github.tukcps.sysmd.model.generated.ElementDataIF
 import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.initialize
-import io.github.tukcps.sysmlv2.api.entities.ElementDAO
 
 /**
  * Loads a complete project usage from the repository into the session.
@@ -17,9 +17,10 @@ fun ProjectSession.loadProject(
     maxRunlevel: Runlevel = Runlevel.NAMES_RESOLVED,
 ) {
 
-    val loaded = SessionManager.projectService.getProjects().firstOrNull { it.name == projectName }?: return
+    val loaded = SessionManager.projectService.getProjects().firstOrNull { it.name == projectName }
+        ?: return
 
-    val elementData: Collection<ElementDAO> =
+    val elementData: Collection<ElementDataIF> =
         loaded.data.filter { it.payloadElementSnapshot != null }.mapNotNull { it.payloadElementSnapshot }
     import(elementData)
     initialize(Runlevel.minRunlevel(settings.runlevel, maxRunlevel))

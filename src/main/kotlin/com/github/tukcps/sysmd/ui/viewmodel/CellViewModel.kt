@@ -7,13 +7,14 @@ import androidx.compose.ui.text.input.TextFieldValue
 import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.exceptions.SysMDException
 import com.github.tukcps.sysmd.imports.ResultAnnotation
+import com.github.tukcps.sysmd.model.generated.elementType
 import com.github.tukcps.sysmd.model.kerml.Classifier
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Multiplicity
 import com.github.tukcps.sysmd.model.sysml.implementation.CalculationDefinitionImplementation
 import com.github.tukcps.sysmd.services.Runlevel
-import com.github.tukcps.sysmd.services.repositories.local.ElementData
+import com.github.tukcps.sysmd.model.datamodel.ElementData
 import com.github.tukcps.sysmd.services.repositories.local.Language
 import com.github.tukcps.sysmd.services.session.Session
 import com.github.tukcps.sysmd.services.session.SessionManager.sessionService
@@ -134,7 +135,7 @@ open class CellViewModel(
             // 1. Process Classifiers first
             elements.filterIsInstance<Classifier>().forEach { element ->
                 if (element !is CalculationDefinitionImplementation){
-                    displayItems.add(TextFieldValue("${element.elementType} ${element.path()} created or updated "))
+                    displayItems.add(TextFieldValue("${element.elementType().name} ${element.path()} created or updated "))
 
                     val hasLocalFeatures = element.visibleMemberships().any {
                         val member = it.memberElement

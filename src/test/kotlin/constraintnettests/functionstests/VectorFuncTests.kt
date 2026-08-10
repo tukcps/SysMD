@@ -1,9 +1,10 @@
 package constraintnettests.functionstests
 
-import kotlin.test.Test
+import com.github.tukcps.sysmd.services.Runlevel
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
+import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class VectorFuncTests {
@@ -11,10 +12,9 @@ class VectorFuncTests {
     @Test
     fun sizeTest() = testSession("Ranges") {
         loadKerML("""
-            feature a: Ranges::IntegerInRange {:>> range = "0..6, 6..12, 4..20";}
+            feature a: Ranges::IntegerInRange {:>> range = (0..6, 6..12, 4..20);}
             feature b: ScalarValues::Integer = size(a);
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
         val b = solver.getVariable("b")!!
         assertEquals(3L, b.min())
@@ -24,7 +24,7 @@ class VectorFuncTests {
     @Test
     fun normTest() = testSession("Ranges") {
         loadKerML("""
-            feature a: Ranges::RealInRange {:>> range = "3.0..3.0, 4.0..4.0";}
+            feature a: Ranges::RealInRange {:>> range = (3.0..3.0, 4.0..4.0);}
             feature b: ScalarValues::Real = norm(a);
         """)
         solver.propagate()
@@ -39,7 +39,7 @@ class VectorFuncTests {
     @Test
     fun quantityOfVectorAtPositionTest() = testSession("Ranges") {
         loadKerML("""
-            feature a: Ranges::RealInRange {:>> range = "10.0..10.0, 20.0..20.0, 30.0..30.0";}
+            feature a: Ranges::RealInRange { :>> range = (10.0..10.0, 20.0..20.0, 30.0..30.0);}
             feature b: ScalarValues::Real = quantityOfVectorAtPosition(a, 1);
         """)
         solver.propagate()

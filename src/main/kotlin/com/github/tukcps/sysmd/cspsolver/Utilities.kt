@@ -1,9 +1,9 @@
 package com.github.tukcps.sysmd.cspsolver
 
+import com.github.tukcps.sysmd.cspsolver.analyzer.SetOfSolutions
 import io.github.tukcps.aadd.DD
 import io.github.tukcps.aadd.DDBuilder
 import io.github.tukcps.aadd.values.XBool
-import com.github.tukcps.sysmd.cspsolver.analyzer.SetOfSolutions
 
 
 open class UnitMap(private val builder: DDBuilder) {
@@ -45,7 +45,6 @@ open class UnitMap(private val builder: DDBuilder) {
     override fun toString(): String {
         return unitMap.toString()
     }
-
 }
 
 

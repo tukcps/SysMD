@@ -4,7 +4,6 @@ import com.github.tukcps.sysmd.rest.entities.interchange.ProjectBase
 import kotlinx.datetime.Instant
 import kotlin.uuid.Uuid
 
-
 /**
  *  Basic interface of a Project.
  *  The SysML v2 fields that are no basic types or where there are potential

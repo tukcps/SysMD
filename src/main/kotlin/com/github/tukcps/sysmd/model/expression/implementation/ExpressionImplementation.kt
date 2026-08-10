@@ -1,25 +1,31 @@
 package com.github.tukcps.sysmd.model.expression.implementation
 
-import com.github.tukcps.sysmd.model.expression.*
+import com.github.tukcps.sysmd.model.expression.AstNode
+import com.github.tukcps.sysmd.model.expression.Expression
+import com.github.tukcps.sysmd.model.generated.elementType
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.Function
-import com.github.tukcps.sysmd.model.kerml.implementation.*
+import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
+import com.github.tukcps.sysmd.model.kerml.implementation.FeatureTypingImplementation
 import com.github.tukcps.sysmd.model.util.SimpleName
+import com.github.tukcps.sysmd.model.util.Unresolved
 import com.github.tukcps.sysmd.quantities.VectorQuantity
+import com.github.tukcps.sysmd.services.session.Session
 import io.github.tukcps.aadd.DD
+import kotlin.uuid.Uuid
 
 sealed class ExpressionImplementation(
-    declaredName: SimpleName? = null,
-    declaredShortName: SimpleName? = null,
-    typeConstraint: MutableList<String> = mutableListOf(),
-    expression: String? = null,
-    elementType: String = "Expression",
+	model: Session,
+	elementId : Uuid = Uuid.random(),
+	declaredName: SimpleName? = null,
+	declaredShortName: SimpleName? = null,
+	expression: String? = null,
 ): Expression, FeatureImplementation(
+	model,
+	elementId = elementId,
     declaredName = declaredName,
     declaredShortName = declaredShortName,
-    typeConstraint = typeConstraint,
     expression = expression,
-    elementType = elementType,
 ) {
 	/** Quantity produced by upwards evaluation.
 	 * The current "value" of this expression
@@ -31,9 +37,9 @@ sealed class ExpressionImplementation(
     override val isModelLevelEvaluable: Boolean = false //When in doubt set it to false first
 
 	override val astString by lazy {
-		StringBuilder().also {
-			toAstString(it, 0)
-		}.toString()
+		buildString {
+			toAstString(this, 0)
+		}
 	}
 
     override fun checkCondition(target: Element): Boolean {
@@ -83,7 +89,8 @@ sealed class ExpressionImplementation(
 
 	final override fun initType()
 	{
-		if(this.type.isNotEmpty())
+		// fixme: Needs to handle implicit anything correctly
+		if(this.type != listOf(model.repo.anything))
 			return
 
 		for(o in membership.flatMap { it.ownedElement }.filterIsInstance<Expression>())
@@ -91,21 +98,22 @@ sealed class ExpressionImplementation(
 
 		learnType().ifEmpty {
 			// TODO: report error
-			listOf(model!!.global.resolve("Base::Anything")!!.member<Type>()!!)
+			listOf(model.global.resolve("Base::Anything")!!.member<Type>()!!)
 			// TODO: figure out why initialize won't resolve this type:
 			// listOf(UnresolvedType("Base::Anything"))
 		}.forEach {
 			// FIXME: attach these to results, not the expressions themselves
-			model!!.addOwnedRelationship(FeatureTypingImplementation(
-				this,
-				it
+			model.addOwnedRelationship(FeatureTypingImplementation(
+				model,
+				typedFeature = this,
+				type = it
 			).apply {
 				isTransient = true
 			})
 		}
 	}
 
-    /** Non Standard **/
+    /** Non-Standard **/
     open var internalValue: AstNode? = null
 
     //For solvers
@@ -114,16 +122,8 @@ sealed class ExpressionImplementation(
 	override fun updateFrom(template: Element) {
 		super.updateFrom(template)
 
-		// copy type information
-		template.ownedRelationship.filterIsInstance<FeatureTyping>().forEach { typing ->
-			model!!.addOwnedRelationship(FeatureTypingImplementation(
-				this,
-				typing.type
-			).apply {
-				isTransient = true
-			})
-
-		}
+		if(template is ExpressionImplementation)
+			this.internalValue = template.internalValue
 	}
 
 	protected fun localIdentifier(x : Element?)
@@ -131,5 +131,5 @@ sealed class ExpressionImplementation(
 
 	abstract override fun clone() : ExpressionImplementation
 
-	override fun toString(): String = "[$elementType] $astString"
+	override fun toString(): String = "[${elementType().name}] $astString"
 }

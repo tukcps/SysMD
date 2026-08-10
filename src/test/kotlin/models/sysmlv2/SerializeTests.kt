@@ -1,30 +1,29 @@
 package models.sysmlv2
 
-import com.github.tukcps.sysmd.model.sysml.implementation.CalculationDefinitionImplementation
+import com.github.tukcps.sysmd.model.datamodel.toElement
+import com.github.tukcps.sysmd.model.datamodel.toElementData
 import com.github.tukcps.sysmd.model.sysml.implementation.*
-import com.github.tukcps.sysmd.services.repositories.local.toDAO
-import com.github.tukcps.sysmd.services.repositories.local.toElement
-import java.util.*
+import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class SerializeTests {
 
-    private val uuid = UUID.randomUUID()
-
     @Test
-    fun serializePartUsage() {
+    fun serializePartUsage() = testSession {
         val element = PartUsageImplementation(
+            this,
             declaredName = "name",
             declaredShortName = "shortName"
-        ).also { it.elementId = uuid }
-        val serializedElement = element.toDAO()
+        )
+        val uuid = element.elementId
+        val serializedElement = element.toElementData()
         assertEquals(uuid, serializedElement.elementId)
         assertEquals("name", serializedElement.declaredName)
         assertEquals("shortName", serializedElement.declaredShortName)
-        assertEquals("PartUsage", serializedElement.type)
-        val deserializedElement = serializedElement.toElement()
+        assertEquals("PartUsage", serializedElement.type.name)
+        val deserializedElement = serializedElement.toElement(this)
         assertEquals(uuid, deserializedElement.elementId)
         assertEquals("name", deserializedElement.declaredName)
         assertEquals("shortName", deserializedElement.declaredShortName)
@@ -32,17 +31,18 @@ class SerializeTests {
     }
 
     @Test
-    fun serializePartDefinition() {
-        val element = PartDefinitionImplementation(
-            declaredName = "name",
-            declaredShortName = "shortName"
-        ).also { it.elementId = uuid }
-        val serializedElement = element.toDAO()
+    fun serializePartDefinition() = testSession {
+        val element = PartDefinitionImplementation(this).also {
+            it.declaredName = "name"
+            it.declaredShortName = "shortName"
+        }
+        val uuid = element.elementId
+        val serializedElement = element.toElementData()
         assertEquals(uuid, serializedElement.elementId)
         assertEquals("name", serializedElement.declaredName)
         assertEquals("shortName", serializedElement.declaredShortName)
-        assertEquals("PartDefinition", serializedElement.type)
-        val deserializedElement = serializedElement.toElement()
+        assertEquals("PartDefinition", serializedElement.type.name)
+        val deserializedElement = serializedElement.toElement(this)
         assertEquals(uuid, deserializedElement.elementId)
         assertEquals("name", deserializedElement.declaredName)
         assertEquals("shortName", deserializedElement.declaredShortName)
@@ -50,17 +50,18 @@ class SerializeTests {
     }
 
     @Test
-    fun serializePortDefinition() {
-        val element = PortDefinitionImplementation(
-            declaredName = "name",
-            declaredShortName = "shortName"
-        ).also { it.elementId = uuid }
-        val serializedElement = element.toDAO()
+    fun serializePortDefinition() = testSession {
+        val element = PortDefinitionImplementation(this).also {
+            it.declaredName = "name"
+            it.declaredShortName = "shortName"
+        }
+        val uuid = element.elementId
+        val serializedElement = element.toElementData()
         assertEquals(uuid, serializedElement.elementId)
         assertEquals("name", serializedElement.declaredName)
         assertEquals("shortName", serializedElement.declaredShortName)
-        assertEquals("PortDefinition", serializedElement.type)
-        val deserializedElement = serializedElement.toElement()
+        assertEquals("PortDefinition", serializedElement.type.name)
+        val deserializedElement = serializedElement.toElement(this)
         assertEquals(uuid, deserializedElement.elementId)
         assertEquals("name", deserializedElement.declaredName)
         assertEquals("shortName", deserializedElement.declaredShortName)
@@ -69,17 +70,19 @@ class SerializeTests {
 
 
     @Test
-    fun serializePortUsage() {
+    fun serializePortUsage() = testSession {
         val element = PortUsageImplementation(
+            this,
             declaredName = "name",
             declaredShortName = "shortName"
-        ).also { it.elementId = uuid }
-        val serializedElement = element.toDAO()
+        )
+        val uuid = element.elementId
+        val serializedElement = element.toElementData()
         assertEquals(uuid, serializedElement.elementId)
         assertEquals("name", serializedElement.declaredName)
         assertEquals("shortName", serializedElement.declaredShortName)
-        assertEquals("PortUsage", serializedElement.type)
-        val deserializedElement = serializedElement.toElement()
+        assertEquals("PortUsage", serializedElement.type.name)
+        val deserializedElement = serializedElement.toElement(this)
         assertEquals(uuid, deserializedElement.elementId)
         assertEquals("name", deserializedElement.declaredName)
         assertEquals("shortName", deserializedElement.declaredShortName)
@@ -88,17 +91,19 @@ class SerializeTests {
 
 
     @Test
-    fun serializeRequirementUsage() {
+    fun serializeRequirementUsage() = testSession {
         val element = RequirementUsageImplementation(
+            this,
             declaredName = "name",
             declaredShortName = "shortName"
-        ).also { it.elementId = uuid }
-        val serializedElement = element.toDAO()
+        )
+        val uuid = element.elementId
+        val serializedElement = element.toElementData()
         assertEquals(uuid, serializedElement.elementId)
         assertEquals("name", serializedElement.declaredName)
         assertEquals("shortName", serializedElement.declaredShortName)
-        assertEquals("RequirementUsage", serializedElement.type)
-        val deserializedElement = serializedElement.toElement()
+        assertEquals("RequirementUsage", serializedElement.type.name)
+        val deserializedElement = serializedElement.toElement(this)
         assertEquals(uuid, deserializedElement.elementId)
         assertEquals("name", deserializedElement.declaredName)
         assertEquals("shortName", deserializedElement.declaredShortName)
@@ -108,17 +113,19 @@ class SerializeTests {
 
 
     @Test
-    fun serializeConnectionDefinition() {
+    fun serializeConnectionDefinition() = testSession {
         val element = ConnectionDefinitionImplementation(
+            this,
             declaredName = "name",
             declaredShortName = "shortName"
-        ).also { it.elementId = uuid }
-        val serializedElement = element.toDAO()
+        )
+        val uuid = element.elementId
+        val serializedElement = element.toElementData()
         assertEquals(uuid, serializedElement.elementId)
         assertEquals("name", serializedElement.declaredName)
         assertEquals("shortName", serializedElement.declaredShortName)
-        assertEquals("ConnectionDefinition", serializedElement.type)
-        val deserializedElement = serializedElement.toElement()
+        assertEquals("ConnectionDefinition", serializedElement.type.name)
+        val deserializedElement = serializedElement.toElement(this)
         assertEquals(uuid, deserializedElement.elementId)
         assertEquals("name", deserializedElement.declaredName)
         assertEquals("shortName", deserializedElement.declaredShortName)
@@ -127,17 +134,18 @@ class SerializeTests {
 
 
     @Test
-    fun serializeConnectionUsage() {
-        val element = ConnectionUsageImplementation(
-            declaredName = "name",
-            declaredShortName = "shortName"
-        ).also { it.elementId = uuid }
-        val serializedElement = element.toDAO()
+    fun serializeConnectionUsage() = testSession {
+        val element = ConnectionUsageImplementation(this).also {
+            it.declaredName = "name"
+            it.declaredShortName = "shortName"
+        }
+        val uuid = element.elementId
+        val serializedElement = element.toElementData()
         assertEquals(uuid, serializedElement.elementId)
         assertEquals("name", serializedElement.declaredName)
         assertEquals("shortName", serializedElement.declaredShortName)
-        assertEquals("ConnectionUsage", serializedElement.type)
-        val deserializedElement = serializedElement.toElement()
+        assertEquals("ConnectionUsage", serializedElement.type.name)
+        val deserializedElement = serializedElement.toElement(this)
         assertEquals(uuid, deserializedElement.elementId)
         assertEquals("name", deserializedElement.declaredName)
         assertEquals("shortName", deserializedElement.declaredShortName)
@@ -145,17 +153,18 @@ class SerializeTests {
     }
 
     @Test
-    fun serializeInterfaceDefinition() {
-        val element = InterfaceDefinitionImplementation(
-            declaredName = "name",
-            declaredShortName = "shortName"
-        ).also { it.elementId = uuid }
-        val serializedElement = element.toDAO()
+    fun serializeInterfaceDefinition() = testSession {
+        val element = InterfaceDefinitionImplementation(this).also {
+            it.declaredName = "name"
+            it.declaredShortName = "shortName"
+        }
+        val uuid = element.elementId
+        val serializedElement = element.toElementData()
         assertEquals(uuid, serializedElement.elementId)
         assertEquals("name", serializedElement.declaredName)
         assertEquals("shortName", serializedElement.declaredShortName)
-        assertEquals("InterfaceDefinition", serializedElement.type)
-        val deserializedElement = serializedElement.toElement()
+        assertEquals("InterfaceDefinition", serializedElement.type.name)
+        val deserializedElement = serializedElement.toElement(this)
         assertEquals(uuid, deserializedElement.elementId)
         assertEquals("name", deserializedElement.declaredName)
         assertEquals("shortName", deserializedElement.declaredShortName)
@@ -164,17 +173,18 @@ class SerializeTests {
 
 
     @Test
-    fun serializeInterfaceUsage() {
-        val element = InterfaceUsageImplementation(
-            declaredName = "name",
-            declaredShortName = "shortName"
-        ).also { it.elementId = uuid }
-        val serializedElement = element.toDAO()
+    fun serializeInterfaceUsage() = testSession {
+        val element = InterfaceUsageImplementation(this).also {
+            it.declaredName = "name"
+            it.declaredShortName = "shortName"
+        }
+        val uuid = element.elementId
+        val serializedElement = element.toElementData()
         assertEquals(uuid, serializedElement.elementId)
         assertEquals("name", serializedElement.declaredName)
         assertEquals("shortName", serializedElement.declaredShortName)
-        assertEquals("InterfaceUsage", serializedElement.type)
-        val deserializedElement = serializedElement.toElement()
+        assertEquals("InterfaceUsage", serializedElement.type.name)
+        val deserializedElement = serializedElement.toElement(this)
         assertEquals(uuid, deserializedElement.elementId)
         assertEquals("name", deserializedElement.declaredName)
         assertEquals("shortName", deserializedElement.declaredShortName)
@@ -183,17 +193,19 @@ class SerializeTests {
 
 
     @Test
-    fun serializeAllocationDefinition() {
+    fun serializeAllocationDefinition() = testSession {
         val element = AllocationDefinitionImplementation(
+            this,
             declaredName = "name",
             declaredShortName = "shortName"
-        ).also { it.elementId = uuid }
-        val serializedElement = element.toDAO()
+        )
+        val uuid = element.elementId
+        val serializedElement = element.toElementData()
         assertEquals(uuid, serializedElement.elementId)
         assertEquals("name", serializedElement.declaredName)
         assertEquals("shortName", serializedElement.declaredShortName)
-        assertEquals("AllocationDefinition", serializedElement.type)
-        val deserializedElement = serializedElement.toElement()
+        assertEquals("AllocationDefinition", serializedElement.type.name)
+        val deserializedElement = serializedElement.toElement(this)
         assertEquals(uuid, deserializedElement.elementId)
         assertEquals("name", deserializedElement.declaredName)
         assertEquals("shortName", deserializedElement.declaredShortName)
@@ -202,37 +214,37 @@ class SerializeTests {
 
 
     @Test
-    fun serializeAllocationUsage() {
-        val element = AllocationUsageImplementation(
-            declaredName = "name",
-            declaredShortName = "shortName"
-        ).also { it.elementId = uuid }
-        val serializedElement = element.toDAO()
+    fun serializeAllocationUsage() = testSession {
+        val element = AllocationUsageImplementation(this).also {
+            it.declaredName = "name"
+            it.declaredShortName = "shortName"
+        }
+        val uuid = element.elementId
+        val serializedElement = element.toElementData()
         assertEquals(uuid, serializedElement.elementId)
         assertEquals("name", serializedElement.declaredName)
         assertEquals("shortName", serializedElement.declaredShortName)
-        assertEquals("AllocationUsage", serializedElement.type)
-        val deserializedElement = serializedElement.toElement()
+        assertEquals("AllocationUsage", serializedElement.type.name)
+        val deserializedElement = serializedElement.toElement(this)
         assertEquals(uuid, deserializedElement.elementId)
         assertEquals("name", deserializedElement.declaredName)
         assertEquals("shortName", deserializedElement.declaredShortName)
         assertTrue(deserializedElement is AllocationUsageImplementation)
     }
 
-
-
     @Test
-    fun serializeCalculationDefinition() {
-        val element = CalculationDefinitionImplementation(
-            declaredName = "name",
-            declaredShortName = "shortName"
-        ).also { it.elementId = uuid }
-        val serializedElement = element.toDAO()
+    fun serializeCalculationDefinition() = testSession {
+        val element = CalculationDefinitionImplementation(this).also {
+            it.declaredName = "name"
+            it.declaredShortName = "shortName"
+        }
+        val uuid = element.elementId
+        val serializedElement = element.toElementData()
         assertEquals(uuid, serializedElement.elementId)
         assertEquals("name", serializedElement.declaredName)
         assertEquals("shortName", serializedElement.declaredShortName)
-        assertEquals("CalculationDefinition", serializedElement.type)
-        val deserializedElement = serializedElement.toElement()
+        assertEquals("CalculationDefinition", serializedElement.type.name)
+        val deserializedElement = serializedElement.toElement(this)
         assertEquals(uuid, deserializedElement.elementId)
         assertEquals("name", deserializedElement.declaredName)
         assertEquals("shortName", deserializedElement.declaredShortName)

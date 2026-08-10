@@ -1,9 +1,7 @@
 package com.github.tukcps.sysmd.services.session
 
-import com.github.tukcps.sysmd.model.kerml.Element
-import com.github.tukcps.sysmd.model.kerml.Relationship
-import com.github.tukcps.sysmd.model.kerml.Type
-import java.util.*
+import com.github.tukcps.sysmd.model.kerml.*
+import kotlin.uuid.Uuid
 
 /**
  * An in-memory model repository that allows us
@@ -14,20 +12,12 @@ import java.util.*
  */
 class Repository {
 
-    /** The in-memory representation uses hash-maps for efficient search. */
-    val elements: LinkedHashMap<UUID, Element> = LinkedHashMap()
-
-    /** Map that permits finding incoming relationships of an element */
-    val targetOfRelationship: LinkedHashMap<Element, MutableSet<Relationship>> = LinkedHashMap()
-
-    /** Map that permits finding outgoing relationships of an element */
-    val sourceOfRelationship: LinkedHashMap<Element, MutableSet<Relationship>> = LinkedHashMap()
-
-    /** Caches of important types */
+    // Caches of other elements, filled during initialization
+    var anything: Classifier? = null
     var scalarType: Type? = null
-    var numberType: Type? = null
-    var realType: Type? = null
-    var booleanType: Type? = null
+    var numberType: DataType? = null
+    var realType: DataType? = null
+    var booleanType: DataType? = null
     var integerType: Type? = null
     var naturalType: Type? = null
     var stringType: Type? = null
@@ -37,25 +27,37 @@ class Repository {
     var links: Type? = null
     var range: Type? = null
 
+    /** The in-memory representation uses hash-maps for efficient search. */
+    private val elements: LinkedHashMap<Uuid, Element> = LinkedHashMap()
+
+    /** Access to the elements via [] */
+    operator fun get(uuid: Uuid?) = elements[uuid]
+
+    /** Access to the elements via []; existing keys are not overwritten. */
+    operator fun set(uuid: Uuid, element: Element): Element = elements.compute(uuid) { _, existing ->
+        existing?.also {
+            if (element is Namespace)
+                existing.updateFrom(element)
+            // handle e.g. changed specializations
+            if(existing is Relationship && existing.ownedRelatedElement.isEmpty() && existing.ownedRelationship.isEmpty())
+                existing.updateFrom(element)
+        } ?: element
+    }!!
+
+    fun remove(uuid: Uuid?) {
+        if (uuid != anything) elements.remove(uuid)
+    }
+
+    fun elements() = elements.values
+    fun keys() = elements.keys
+
+    /** Map that permits finding incoming relationships of an element */
+    val targetOfRelationship: LinkedHashMap<Element, MutableSet<Relationship>> = LinkedHashMap()
+
+    /** Map that permits finding outgoing relationships of an element */
+    val sourceOfRelationship: LinkedHashMap<Element, MutableSet<Relationship>> = LinkedHashMap()
 
     /** Projects that have been loaded into the session; as of now identified by name, not ID (!!!) */
     val loadedProjects: MutableSet<String> = mutableSetOf()
 
-    fun reset() {
-        elements.clear()
-        targetOfRelationship.clear()
-        sourceOfRelationship.clear()
-        loadedProjects.clear()
-        scalarType = null
-        numberType = null
-        realType = null
-        booleanType = null
-        integerType = null
-        stringType = null
-        inRangeType = null
-        occurrence = null
-        links= null
-        range = null
-        quantity = null
-    }
 }

@@ -3,13 +3,13 @@
 
 package com.github.tukcps.sysmd.services.session
 
+import com.github.tukcps.sysmd.rest.entities.api.services.ElementNavigationService
+import com.github.tukcps.sysmd.rest.entities.api.services.ProjectDataVersioningService
+import com.github.tukcps.sysmd.rest.entities.api.services.ProjectUsageService
 import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.repositories.local.*
 import com.github.tukcps.sysmd.services.session.implementation.ProjectSessionImplementation
 import com.github.tukcps.sysmd.services.session.implementation.SessionServiceImplementation
-import io.github.tukcps.sysmlv2.api.services.ElementNavigationService
-import io.github.tukcps.sysmlv2.api.services.ProjectDataVersioningService
-import io.github.tukcps.sysmlv2.api.services.ProjectUsageService
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -60,10 +60,14 @@ object SessionManager {
      */
     fun createSession(
         project: ProjectData,
-        libraries: MutableList<String> = mutableListOf("SysMLLibraries"),
+        vararg libraries: String,
         runlevel: Runlevel = Runlevel.NAMES_RESOLVED,
     ): ProjectSession {
-        val session = ProjectSessionImplementation(project = project, libraries = libraries, runlevel = runlevel)
+        val session = ProjectSessionImplementation(
+            project = project,
+            libraries = libraries,
+            runlevel = runlevel
+        )
         sessions[session.id] = session
         return session
     }
@@ -75,4 +79,14 @@ object SessionManager {
      * @param id UId of the session.
      */
     fun kill(id: Uuid) = sessions.remove(id)
+
+    /** Libraries for KerML sessions */
+    val KERML_LIBRARIES = listOf("Base", "ScalarValues", "Ranges", "ISQ", "Quantities",
+        "Objects", "Links", "Occurrences", "Performances").toTypedArray()
+
+    /** Libraries for SysML (and KerML) sessions */
+    val SYSML_LIBRARIES = KERML_LIBRARIES + listOf("Items", "Ports", "Parts", "Actions", "Calculations",
+        "Attributes", "Constraints", "Requirements", "Interfaces", "States", "Connections", "Signals",
+        "VerificationCases").toTypedArray()
+
 }

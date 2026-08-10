@@ -1,26 +1,27 @@
 package com.github.tukcps.sysmd.model.sysml.implementation
 
-import com.github.tukcps.sysmd.model.expression.Expression
-import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.model.kerml.Element
+import com.github.tukcps.sysmd.model.kerml.Feature
+import com.github.tukcps.sysmd.model.kerml.Multiplicity
+import com.github.tukcps.sysmd.model.kerml.getOwnedElementOfType
 import com.github.tukcps.sysmd.model.sysml.*
-import com.github.tukcps.sysmd.model.util.SimpleName
+import com.github.tukcps.sysmd.model.util.ErrorElement
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
-class TransitionUsageImplementation(
-    declaredName: SimpleName? = null,
-    declaredShortName: SimpleName? = null,
-    elementType: String = "TransitionUsage"
-): TransitionUsage, OccurrenceUsageImplementation(
-    declaredName=declaredName,
-    declaredShortName=declaredShortName,
-    elementType=elementType
-) {
+class TransitionUsageImplementation(model : Session,elementId : Uuid = Uuid.random()) :
+    TransitionUsage,
+    OccurrenceUsageImplementation(model,elementId = elementId)
+{
     override val source : Element
-        get() = getOwnedElementOfType<SuccessionAsUsage>()!!.source[0]
+        get() = getOwnedElementOfType<SuccessionAsUsage>()?.source?.firstOrNull()
+            ?: ErrorElement(model, null)
     override val target : Element
-        get() = getOwnedElementOfType<SuccessionAsUsage>()!!.target[0]
+        get() = getOwnedElementOfType<SuccessionAsUsage>()?.target?.firstOrNull()
+            ?: ErrorElement(model, null)
 
     override val guardCondition : Feature? // fixme: replace with Expression once implemented
-        get() = member.firstOrNull { it !is Usage && it is Feature } as? Feature
+        get() = member.find { it !is Usage && it !is Multiplicity && it is Feature } as? Feature
 
     override val triggerPayloadParameter: ReferenceUsage?
         get() {
@@ -28,15 +29,8 @@ class TransitionUsageImplementation(
             return actionUsage?.payloadParameter
         }
 
-    override fun clone(): TransitionUsage {
-        val klon = TransitionUsageImplementation(
-            declaredName = declaredName,
-            declaredShortName = declaredShortName,
-        ).also { klon ->
-            klon.model = model
-            klon.updated = updated
-            klon.isComposite = isComposite
-        }
-        return klon
-    }
+    override fun clone(): TransitionUsage = TransitionUsageImplementation(model).also { klon ->
+        klon.updateFrom(this)
+        klon.isComposite = isComposite
+     }
 }

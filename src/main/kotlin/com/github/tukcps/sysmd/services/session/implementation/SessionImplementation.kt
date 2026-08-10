@@ -1,128 +1,106 @@
 package com.github.tukcps.sysmd.services.session.implementation
 
-import com.fasterxml.uuid.Generators
+import com.github.tukcps.sysmd.compiler.semantics.UuidPolicies
 import com.github.tukcps.sysmd.cspsolver.Solver
-import com.github.tukcps.sysmd.exceptions.Issue.Kind.ERROR_UNRESOLVED_NAME
+import com.github.tukcps.sysmd.exceptions.InternalError
+import com.github.tukcps.sysmd.exceptions.Issue
+import com.github.tukcps.sysmd.exceptions.SysMDException
 import com.github.tukcps.sysmd.logger
+import com.github.tukcps.sysmd.model.datamodel.ElementData
+import com.github.tukcps.sysmd.model.datamodel.toElement
+import com.github.tukcps.sysmd.model.datamodel.toElementData
 import com.github.tukcps.sysmd.model.expression.InstantiationExpression
+import com.github.tukcps.sysmd.model.generated.ElementDataIF
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.Function
 import com.github.tukcps.sysmd.model.kerml.implementation.*
+import com.github.tukcps.sysmd.model.util.HandledAsElement
+import com.github.tukcps.sysmd.model.util.QualifiedName
+import com.github.tukcps.sysmd.model.util.Unresolved
+import com.github.tukcps.sysmd.model.util.UnresolvedElement
+import com.github.tukcps.sysmd.rest.entities.api.entities.CommitDataObject
 import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.check.checkConsistency
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.repositories.local.Data
-import com.github.tukcps.sysmd.services.repositories.local.toDAO
-import com.github.tukcps.sysmd.services.repositories.local.toElement
 import com.github.tukcps.sysmd.services.session.*
 import io.github.tukcps.aadd.DDBuilder
-import io.github.tukcps.sysmlv2.api.entities.CommitDataObject
-import io.github.tukcps.sysmlv2.api.entities.ElementDAO
 import java.util.*
 import kotlin.reflect.full.isSubclassOf
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
-import kotlin.uuid.toJavaUuid
-
-/** Merges two lists, ensuring some indices are preserved.
- * @param filter A filter predicate to apply to `other` (indices are taken beforehand)
- * @param preserveIndex Predicate under which an element's index mustn't change,
- *                      regardless of which list it originates from.
- * @return The first index that two elements are in conflict for, or null if the lists have been merged successfully
- */
-private inline fun<T> MutableList<T>.mergeWith(other : List<T>, filter : (T) -> Boolean, preserveIndex : (T) -> Boolean) : Int?
-{
-    // the set of fixed indices
-    val fixed = this.withIndex().filter { (_,x) ->
-        preserveIndex(x)
-    }.map {
-        it.index
-    }.toSet()
-
-    for((ix,x) in other.withIndex())
-    {
-        when {
-            !filter(x) -> continue
-            !preserveIndex(x) || ix == size -> addLast(x)
-            ix in fixed -> return ix
-            ix !in indices -> throw IllegalStateException() // impossible by pigeonhole
-            else -> addLast(set(ix, x))
-        }
-    }
-
-    return null
-}
+import kotlin.uuid.toKotlinUuid
 
 /**
  * This class implements a model representation for use in the frontend SysMD compiler.
  * The model class holds all information read from a SysMD file.
  * It should be more or less a subset of the backend repository and lower-level service functionality.
+ * @param libraries standard libraries that are loaded
+ * @param status a status object in which issues etc. are reported
+ * @param settings a settings object via which settings are given
+ *
  */
 open class SessionImplementation(
-    override val id: Uuid = Uuid.random(),
-    override val libraries: List<String> = mutableListOf("SysMLLibraries"),
+    vararg libraries: String,
     override val status: SessionStatus = SessionStatus(),
     override var settings: SessionSettings = SessionSettings(),
-    override var builder: DDBuilder = DDBuilder(),
-    override val repo: Repository = Repository(),
-    override var runlevel: Runlevel = Runlevel.NONE
+    runlevel: Runlevel = Runlevel.NONE
 ): Session {
 
+    /**
+     * Unique id of the session.
+     */
+    override val id: Uuid = Uuid.random()
+    override var librariesLoaded: LinkedHashSet<String> = linkedSetOf()
+    override val repo: Repository = Repository()
     override var solver = Solver(this)
+    override var builder: DDBuilder = DDBuilder()
 
     init {
         settings.runlevel = runlevel
     }
 
     /**
-     * We have one special package "Global" that is the highest level package.
+     * We have one special package "Global" that is the root namespace.
      * It can be accessed by the reference global.
      */
     override val global = NamespaceImplementation(
-        declaredShortName = "Global",   // TODO --> Refactor both names to null or ""?
-        declaredName="Global").also {
+        this,   // TODO --> Refactor both names to null or ""?
+        elementId = UuidPolicies.uuid5("Global"),
+        declaredName="Global",
+        declaredShortName = "Global"
+    ).also {
         it.owningRelationship = null
-        it.model = this
-        it.elementId = Generators.nameBasedGenerator().generate("Global")
     }
 
     /**
-     * We have a single element "Any" that is the root of the inheritance tree.
-     * It can be accessed by the reference anyElement.
+     * Loads the specified libraries into the model.
+     * The libraries must be in the libraries folder in the resources folder.
+     * @param libraries list of libraries to be loaded.
      */
-    override val anything = Anything(model = this).also {
-        it.elementId = Generators.nameBasedGenerator().generate("Base::Anything")
-    }
+    fun loadLibraries(libraries: List<String>) =
+        libraries.forEach { loadLibrary(it) }
 
     /**
-     * Loads all KerML libraries into the model.
+     * Loads a single library from resources into the session.
+     * @param library name of the library
      */
-    private fun loadLibraries() {
-        libraries.forEach {
-            loadLibrary(it)
+    fun loadLibrary(library: String) {
+        if (library !in librariesLoaded) {
+            librariesLoaded.add(library)
+            val elements = LibraryRepository.getLibrary(library, status)
+            this.import(elements)
         }
     }
 
     init {
-        initialize()
+        initialize(libraries.toList())
     }
 
     /** We set up initial libraries of KerML */
-    private fun initialize() {
-        // global, Base, and Anything are always present, even without loading a library.
-        repo.elements[global.elementId!!] = global
-        val baseLibrary = addOwnedMember(PackageImplementation(declaredName = "Base", isStandard = true, isLibraryElement = true).also {
-            it.elementId = Generators.nameBasedGenerator().generate("Base")
-        }, global)
-        addOwnedMember(anything, baseLibrary)
-
-        require(global === this[global.elementId!!])
-        require(baseLibrary.ownedElement.size == 1)
-        require(anything.owner == baseLibrary)
-
-        status.updatedValues.clear()
-        loadLibraries()
-
+    private fun initialize(libraries: List<String>) {
+        repo[global.elementId] = global
+        loadLibraries(libraries)
         initialize(settings.runlevel)
     }
 
@@ -132,13 +110,13 @@ open class SessionImplementation(
      * @param element the element to be added.
      */
     fun <T: Element> addElement(element: T): T {
-        element.model = this
+        assert(element.model === this) { "Foreign element" }
 
-        val id = element.elementId ?: throw IllegalArgumentException("Attempt to add Element without elementId")
+        val id = element.elementId
 
-        repo.elements[id]?.also { conflict ->
-            if(! conflict::class.isSubclassOf(element::class))
-                throw IllegalArgumentException("Attempt to update existing, incompatible element ${element.qualifiedName}")
+        repo[id]?.also { conflict ->
+            if( ! conflict::class.isSubclassOf(element::class) )
+                throw SysMDException("Attempt to update existing, incompatible element ${element.qualifiedName}", element = element)
 
             conflict.updateFrom(element)
             status.updatedValues[element.path()] = "updated: '${element.qualifiedName}'"
@@ -147,15 +125,15 @@ open class SessionImplementation(
             return conflict as T // this cast is checked via reflection
         }
 
-        repo.elements[id] = element
+        repo[id] = element
 
         return element
     }
 
-    override fun get(): Collection<Element> = repo.elements.values
-    override fun get(elementId: UUID): Element? = repo.elements[elementId]
+    override fun get(): Collection<Element> = repo.elements()
+    override fun get(elementId: UUID): Element? = repo[elementId.toKotlinUuid()]
     @OptIn(ExperimentalUuidApi::class)
-    override fun get(elementId: Uuid): Element? = repo.elements[elementId.toJavaUuid()]
+    override fun get(elementId: Uuid): Element? = repo[elementId]
 
     /**
      * Adds an owned member to a namespace.
@@ -168,12 +146,19 @@ open class SessionImplementation(
         require(element is Namespace || element is Annotation || element is Dependency || element !is Relationship)
         check(element !== namespace)
         check(element !== global)
-        element.model = this
-        namespace.model = this
+        assert(element.model === this) { "Foreign element" }
+        assert(namespace.model === this) { "Foreign namespace" }
 
         (element.name ?: element.shortName)?.let { namespace.getOwned<Element>(it) }?.let { existing ->
             if (existing::class.isSubclassOf(element::class)) {
                 existing.updateFrom(element)
+                element.ownedRelationship.toList().forEach { rel ->
+                    rel.owningRelatedElement = existing
+                    if (rel is Specialization && existing is Type) {
+                        rel.specific = existing
+                    }
+                    addOwnedRelationship(rel, existing)
+                }
                 status.updatedValues[existing.path()] = "updated: '${existing.qualifiedName}'"
                 return existing as T
             } else {
@@ -185,12 +170,14 @@ open class SessionImplementation(
             is Feature if namespace is Function -> when {
                 // FIXME: Distinguish unnamed out and return parameters
                 element.direction == Feature.FeatureDirectionKind.OUT && element.name === null -> ReturnParameterMembershipImplementation(
+                    this,
                     ownedMemberParameter = element,
                     owningType = namespace,
                     parameterIndex = namespace.parameter.size
                 )
 
                 else -> ParameterMembershipImplementation(
+                    this,
                     ownedMemberParameter = element,
                     owningType = namespace,
                     parameterIndex = namespace.parameter.size,
@@ -198,17 +185,18 @@ open class SessionImplementation(
             }
 
             is Feature if namespace is InstantiationExpression -> ParameterMembershipImplementation(
+                this,
                 ownedMemberParameter = element,
                 owningType = namespace,
                 parameterIndex = namespace.parameter.size
             )
 
             is Feature if namespace is Type -> if (element.isEnd)
-                EndFeatureMembershipImplementation(namespace, element)
+                EndFeatureMembershipImplementation(this, ownedMemberFeature = element, owningType = namespace)
             else
-                FeatureMembershipImplementation(ownedMemberFeature = element, owningType = namespace)
+                FeatureMembershipImplementation(this, ownedMemberFeature = element, owningType = namespace)
 
-            else -> OwningMembershipImplementation(membershipOwningNamespace = namespace, memberElement = element)
+            else -> OwningMembershipImplementation(this, membershipOwningNamespace = namespace, memberElement = element)
         }
         owningMembership.visibility = visibility
 
@@ -228,15 +216,10 @@ open class SessionImplementation(
     @Suppress("UNCHECKED_CAST")
     override fun <T: Relationship> addOwnedRelationship(relationship: T, owningElement: Element?): T {
         val owningElement = owningElement ?: relationship.source.first()
+        assert(relationship.model === this) { "Foreign relationship" }
+        assert((relationship.source + relationship.target).all { it.model === this })
 
-        relationship.model = this
         relationship.owningRelatedElement = owningElement
-
-        for(e in (relationship.source + relationship.target))
-        {
-            check(e.model === null || e.model === this)
-            e.model = this
-        }
 
         if (relationship is OwningMembership) {
             relationship.ownedElement.add(relationship.target.first())
@@ -248,42 +231,40 @@ open class SessionImplementation(
 
             member.owningRelationship = relationship
 
-            if(member.elementId === null)
-                member.generateUUID()
-
             addElement(member).also {
                 if(it !== member)
                     return it.owningRelationship as T
             }
         }
-        if (owningElement.isLibraryElement)
-            relationship.isLibraryElement = true
-
-        if (relationship.elementId == null)
-            relationship.generateUUID()
 
         // Specializations and subclasses thereof; updates if a similar specialization exists
         // As several specialization elements might exist, we check if there are some that are similar, i.e.
         // - have the same qualified name for the general class
         // - have the same id for the general class.
         if (relationship is Specialization) {
-            relationship.model = this
             @Suppress("UNCHECKED_CAST")
             val foundSpecializations = owningElement.ownedRelationship.filter { it.javaClass == relationship.javaClass } as List<Specialization>
             foundSpecializations.forEach { found ->
                 @Suppress("UNCHECKED_CAST")
-                if (relationship.general == found.general )  // id is equal after name resolution/loading
+                if (relationship.general == found.general ) { // id is equal after name resolution/loading
+                    if (owningElement is Type) found.specific = owningElement
                     return found as T
+                }
                 if (relationship.general is Unresolved) {
                     val resolved = if (relationship !is Redefinition)
                         (relationship.owningNamespace?.resolve((relationship.general as Unresolved).relativeName!!) )?.member<Type>()
                     else
                         (relationship.owningNamespace as Type).resolve((relationship.general as Unresolved).relativeName!!)?.member<Feature>()
 
-                    if ( resolved?.escapedName() == found.general.escapedName() )
+                    if ( resolved?.escapedName() == found.general.escapedName() ) {
+                        if (owningElement is Type) found.specific = owningElement
                         @Suppress("UNCHECKED_CAST")
                         return found as T
+                    }
                 }
+            }
+            if (owningElement is Type) {
+                relationship.specific = owningElement
             }
         }
 
@@ -297,118 +278,157 @@ open class SessionImplementation(
         return relationship
     }
 
+    /**
+     * Method that adds an element to a package or the root namespace.
+     * @param element the element to be added.
+     * @param namespace the namespace where to add the element.
+     */
+    fun addOwnershipToGivenNamespace(element: Element, namespace: Namespace) {
+        check(element != namespace)
+        check(element != global)
+
+        val names = namespace.member.map { it.name }
+        if (element.declaredName in names) return
+
+        val owningMembership = when(element) {
+            is Feature -> FeatureMembershipImplementation(this)
+            else -> OwningMembershipImplementation(this)
+        }
+        element.owningRelationship = owningMembership
+        owningMembership.membershipOwningNamespace = namespace
+        owningMembership.owningRelatedElement = namespace
+        owningMembership.ownedElement.add(element)
+        owningMembership.source = mutableListOf(namespace)
+        owningMembership.target = mutableListOf(element)
+        namespace.ownedRelationship.add(owningMembership)
+        repo[element.elementId] = element
+        repo[owningMembership.elementId] = owningMembership
+    }
+
+
+    // Created packages, if not existing, random Uuid is Ok
+    private fun resolveOrCreate(name: QualifiedName?): Namespace {
+        if (name.isNullOrBlank() || name == "Global") return global
+        val segments = name.split("::")
+        var where: Namespace = global
+        segments.forEach { segment ->
+            val resolved = where.resolveLocal(segment)?.member<Namespace>()
+            where = resolved ?: addOwnedMember(PackageImplementation(this, declaredName = segment), where)
+        }
+        return where
+    }
 
     /**
      * Adds new elements to the session. The elements are organized under the
-     * root given as the second parameter. The existing root is maintained,
-     * the root passed as the given parameter is just for easier analysis.
-     * @param newElements collection of elements that will be cloned and added.
+     * root given as the second parameter.
+     * @param newElements collection of elements that will be added.
+     * @param namespaceQualifiedName where the new elements will be added; root as default.
      */
-    override fun import(newElements: Collection<ElementDAO>) {
-        /** Resolves every Unresolved item in a list via its id */
-        fun resolveUUIDs(xs : MutableList<Element>)
-        {
-            val iter = xs.listIterator()
-            while(iter.hasNext()) {
-                val cur = iter.next()
-
-                if(cur !is Unresolved)
-                    continue
-
-                assert(cur is UnresolvedElement) // the other types aren't applicable
-
-                val id = cur.id
-                val res = if(id === null) global else get(id)
-
-                if(res === null)
-                {
-                    status.error("Import contains reference to undefined element ID '$id'", kind = ERROR_UNRESOLVED_NAME)
-                    iter.remove()
-                    continue
-                }
-
-                iter.set(res)
-            }
-        }
-        data class NewElement(val existing : Boolean, val data : ElementDAO, val element : Element)
-
-        // 1. add elements to model
-        val added = newElements.map { dao ->
-            val id = dao.elementId
-            val existing = get(id)
-            NewElement(existing !== null, dao, existing ?: dao.toElement().also {
-                repo.elements[id] = it
-                it.model = this
-            })
-        }
-
-        // 2. fix relationships (and set ownING relations)
-        added.filter { !it.existing }.forEach { (_,dao,rel) ->
-            if(rel !is Relationship)
-                return@forEach
-
-            // initialized by toElement()
-            resolveUUIDs(rel.source)
-            resolveUUIDs(rel.target)
-
-            // fix ownership of relation itself
-            if(rel.owningRelatedElement is Unresolved)
-            {
-                // have to read ID from DAO
-                assert((rel.owningRelatedElement as Unresolved).id === null)
-                val id = (dao.owningNamespace ?: TODO("Invalid DAO")).id
-                // should never clobber source, except on invalid DAO (unresolved ID)
-                rel.owningRelatedElement = if(id === null) global else get(id) ?: run {
-                    status.error("Owner of element has undefined element id '$id'", kind = ERROR_UNRESOLVED_NAME)
-                    global
-                }
-            }
-
-            // fix ownership of actually owned elements
-            if(rel is OwningMembership)
-            {
-                assert(rel.memberElement.owningRelationship === null)
-                rel.memberElement.owningRelationship = rel
-            }
-        }
-
-        // 3. fix ownED relations
-        for((_,dao,element) in added)
-        {
-            if(element is Relationship && element.owner === global && element !in global.ownedRelationship)
-            {
-                // this element mustn't be index-sensitive
-                global.ownedRelationship.add(element)
-            }
-
-            val toAdd = dao.ownedRelationship.map { get(it.id!!) as Relationship }
-
-            // only need to reconcile indices for path-based UUIDs
-            if(element.isTransient || !element.isLibraryElement || element.ownedRelationship.isEmpty())
-            {
-                element.ownedRelationship.addAll(toAdd)
-                continue
-            }
-
-            // the set of already included UUIDs
-            val present = element.ownedRelationship.mapNotNull { it.elementId }.toHashSet()
-
-            val conflict = element.ownedRelationship.mergeWith(toAdd, {
-                // import only new elements
-                it.elementId!! !in present
-            }, {
-                // only preserve indices when relevant to path
-                it !is OwningMembership || (it.target.firstOrNull()?.escapedName() !== null)
-            })
-
-            if(conflict !== null)
-            {
-                throw IllegalStateException("Conflicting elements for path ${element.path()}/$conflict; " +
-                        "imported ${toAdd[conflict]} but already have ${element.ownedRelationship[conflict]}")
-            }
-        }
+    override fun import(newElements: Collection<ElementDataIF>, namespaceQualifiedName: QualifiedName?) {
+        val namespace = if (namespaceQualifiedName != null) resolveOrCreate(namespaceQualifiedName) else global
+        // check(namespace == global || namespace is Package)
+        import(newElements, namespace)
     }
 
+    /**
+     * Adds new elements to the session. The elements are organized under the
+     * root given as the second parameter.
+     * @param newElements collection of elements that will be added.
+     * @param namespace where the new elements will be added; root as default.
+     */
+    override fun import(newElements: Collection<ElementDataIF>, namespace: Namespace) {
+        try {
+            fun resolveUuids(elements: MutableList<Element>) {
+                val iterator = elements.listIterator()
+                while (iterator.hasNext()) {
+                    val unresolved = iterator.next() as? UnresolvedElement ?: continue
+
+                    // 1. Resolve element based on availability (ID has priority over namespace/global context)
+                    val resolved = when {
+                        unresolved.id != null -> get(unresolved.id!!)
+                        unresolved.relativeName == null -> namespace
+                        else -> null // Pure relative names cannot be resolved in this pass
+                    }
+
+                    // 2. Apply resolved element or log error and remove the unresolved one
+                    if (resolved != null) {
+                        iterator.set(resolved)
+                    } else {
+                        if (unresolved.relativeName == null) {
+                            val missingIdentifier = unresolved.id ?: unresolved.relativeName ?: "unknown"
+                            status.error(
+                                "Import of elements has reference to undefined element '$missingIdentifier'",
+                                kind = Issue.Kind.ERROR_UNRESOLVED_NAME
+                            )
+                            iterator.remove()
+                        }
+                    }
+                }
+            }
+
+            if(settings.reportDoubleNames)
+            {
+                newElements.groupBy { it.elementId }.filter { it.value.size > 1 }.forEach { (id, hits) ->
+                    val existing = get(id)
+                    val names = hits.mapNotNull {
+                        it.declaredName ?: it.declaredShortName
+                    }.toSet().joinToString("/").let {
+                        if(it.isEmpty()) it else " ($it)"
+                    }
+
+                    val desc = existing?.path() ?: "$id$names"
+
+                    status.warn(
+                        message = "Duplicate element $desc is present ${hits.size} times in import",
+                        element = hits.first() as? ElementData
+                    )
+                }
+            }
+
+            // 1. Add all created/updated elements to model
+            val added = newElements.map { dao ->
+                val element = dao.toElement(this)
+                repo.set(dao.elementId, element) // potentially returns existing, updated element
+            }
+            // Now, there exists an element for each new elementId in the repository.
+
+            // 2. Resolve IDs of all new relationships, elements
+            added.forEach { addedElement ->
+
+                val owningRelationship = addedElement.owningRelationship
+                if (owningRelationship is Unresolved) {
+                    if (owningRelationship.id === null) // && (addedElement is HandledAsElement)
+                        addOwnershipToGivenNamespace(addedElement, namespace)
+                    else
+                        addedElement.owningRelationship = repo[owningRelationship.id] as? OwningMembership
+                            ?: throw InternalError("In import: id of owning membership of element '${addedElement.declaredName ?: addedElement.declaredShortName}' not found", element = addedElement)
+                }
+
+                if (addedElement is Relationship) {
+                    if (addedElement !is Namespace && addedElement !is Dependency && addedElement !is AnnotatingElement) {
+                        val owningRelatedElement = addedElement.owningRelatedElement // owner just is a getter ...
+                        if (owningRelatedElement is Unresolved)
+                            if (owningRelatedElement.id != null) {
+                                addedElement.owningRelatedElement = repo[owningRelatedElement.id]
+                                    ?: throw InternalError("Inconsistent data in import (id of owning element not found)")
+                                repo[owningRelatedElement.id]?.ownedRelationship?.add(addedElement)
+                            } else {
+                                addedElement.owningRelatedElement = namespace
+                                namespace.ownedRelationship.add(addedElement)
+                            }
+                        resolveUuids(addedElement.ownedRelatedElement)
+                    }
+                    resolveUuids(addedElement.source)
+                    resolveUuids(addedElement.target)
+                }
+            }
+        } catch (ex: Exception) {
+            if (ex !is SysMDException)
+                status.fatal("Error during import", cause = ex )
+            else
+                status.fatal("Error during import", element = ex.element, cause = ex)
+        }
+    }
 
     /**
      * The function export creates a list of elements where
@@ -419,32 +439,44 @@ open class SessionImplementation(
      *    @return A pair of InterchangeProject data and a list of all Elements as DAO
      */
     override fun export(): Collection<CommitDataObject> {
-        checkConsistency(repo.elements.values, checkForNoTransients = false)
-        val exportCollection = mutableListOf<ElementDAO>()
+        checkConsistency(repo.elements(), checkForNoTransients = false)
+        val exportCollection = mutableListOf<ElementDataIF>()
 
         // create a collection for export, leaving out global and any
-        repo.elements.values.forEach { element ->
+        repo.elements().forEach { element ->
 
+            // We might pass unresolved elements later to allow resolution after importing other
+            // libraries/usages
             if (element is Unresolved)
-                logger.error("Unresolved source ${element.qualifiedName?:element.path()} in export; the export will contain null pointers.")
+                logger.error("Unresolved element ${element.qualifiedName?:element.path()} in export.")
 
             if (element is Relationship) {
-                element.source.filter { it is Unresolved}.forEach {
-                    logger.error("Unresolved source ${(it as Unresolved).relativeName} in export; the export will contain null pointers.")
+                element.source.filterIsInstance<Unresolved>().forEach {
+                    logger.warn("Unresolved source ${it.relativeName} in export.")
                 }
-                element.target.filter { it is Unresolved}.forEach {
-                    logger.error("Unresolved target ${(it as Unresolved).relativeName} in export; the export will contain null pointers.")
+                element.target.filterIsInstance<Unresolved>().forEach {
+                    logger.warn("Unresolved target ${it.relativeName} in export.")
                 }
             }
 
-            if (element != global)
-                exportCollection.add(element.toDAO())
+            if (element is HandledAsElement) {
+                if (element.owner == global) {
+                    element.owningRelationship = null
+                }
+            }
+
+            if (element != global) // && (element as? OwningMembership)?.membershipOwningNamespace != global
+                exportCollection.add(element.toElementData())
         }
 
         for (element in exportCollection) {
             if (element.owner?.id == global.elementId) element.owner = null
         }
         return exportCollection.map { Data(payloadElementSnapshot = it) }
+    }
+
+    override fun toString(): String {
+        return "$status, ${repo.elements().size} elements"
     }
 }
 

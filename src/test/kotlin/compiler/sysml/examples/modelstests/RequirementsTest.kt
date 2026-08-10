@@ -9,7 +9,8 @@ import kotlin.test.assertNotNull
 
 class RequirementsTest {
 
-    //  @Ignore // satisfy is not yet implemented
+    // FIXME: assume is saved in requirement membership ...
+    // Parser actions needs fix to generate membership correctly.
     @Test
     fun testRequirements() = testSession("Requirements", "Parts") {
         loadSysMLv2("""
@@ -42,8 +43,8 @@ class RequirementsTest {
                 assert not satisfy r1 by q;
             }
         """)
+        assertNoIssues()
         val r = global.resolve("RequirementTest::R")?.memberElement
         assertNotNull(r)
-        assertNoIssues()
     }
 }

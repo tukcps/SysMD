@@ -6,16 +6,12 @@ import com.github.tukcps.sysmd.compiler.SysMLv2
 import com.github.tukcps.sysmd.compiler.parser.kerml.*
 import com.github.tukcps.sysmd.compiler.parser.util.Unsupported
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
-import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
-import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.ActionDefinitionActions
-import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.ActionUsageActions
+import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureAction
+import com.github.tukcps.sysmd.compiler.semantics.kerml.parse
+import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.ActionDefinitionAction
+import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.ActionUsageAction
 import com.github.tukcps.sysmd.exceptions.throwSyntaxError
-import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
-import com.github.tukcps.sysmd.model.kerml.implementation.ParameterMembershipImplementation
-import com.github.tukcps.sysmd.model.sysml.implementation.ActionDefinitionImplementation
-import com.github.tukcps.sysmd.model.sysml.implementation.ActionUsageImplementation
-
+import com.github.tukcps.sysmd.model.generated.ElementType
 
 /**
  * 8.2.2.16.1 Action Definitions
@@ -23,7 +19,7 @@ import com.github.tukcps.sysmd.model.sysml.implementation.ActionUsageImplementat
  *      ActionDefinition = OccurrenceDefinitionPrefix 'action' 'def'
  *          DefinitionDeclaration ActionBody
  */
-fun SysMLv2.ActionDefinition() = ActionDefinitionActions(semantics, ::ActionDefinitionImplementation, "Actions::Action" ).parse {
+fun SysMLv2.ActionDefinition() = ActionDefinitionAction(semantics).parse {
     ACTION.consume()
     DEF.consume()
     DefinitionDeclaration()
@@ -146,7 +142,7 @@ fun SysMLv2.initialNodeMemberStarts() = match(FIRST, NAME_LIT, DPDP) or match(FI
  *
  *      ActionUsage = OccurrenceUsagePrefix 'action' ActionUsageDeclaration ActionBody
  */
-fun SysMLv2.ActionUsage() = ActionUsageActions(semantics, ::ActionUsageImplementation).parse {
+fun SysMLv2.ActionUsage() = ActionUsageAction(semantics).parse {
     ACTION.consume()
     ActionUsageDeclaration()
     ActionBody()
@@ -165,7 +161,7 @@ fun SysMLv2.ActionUsageDeclaration() {
 /**
  *      PerformActionUsage = OccurrenceUsagePrefix 'perform' PerformActionUsageDeclaration ActionBody
  */
-fun SysMLv2.PerformActionUsage() = FeatureActions<Feature>(semantics, ::FeatureImplementation, "Actions::Action").parse {
+fun SysMLv2.PerformActionUsage() = FeatureAction(semantics, ElementType.Feature, "Actions::Action").parse {
     PERFORM.consume()
     PerformActionUsageDeclaration()
     ActionBody()
@@ -182,7 +178,6 @@ fun SysMLv2.PerformActionUsageDeclaration() {
         NAME_LIT starts {
             OwnedReferenceSubsetting()
             featureSpecializationPartStart.optional { FeatureSpecializationPart() }
-            semantics.create(null)
         }
         ACTION starts {
             ACTION.consume()
@@ -222,13 +217,7 @@ fun SysMLv2.actionNodeStarts() = token.kind in controlNodeStart + setOf(WHILE, L
  */
 fun SysMLv2.IfNode() {
     IF.consume()
-    OwnedExpression()
-    Expression().also {
-        model.addOwnedRelationship(ParameterMembershipImplementation(
-            ownedMemberParameter = it,
-            owningType = semantics.element()
-        ))
-    }
+    semantics.addOwnedElement(OwnedExpression(), ElementType.ParameterMembership)
     ActionBodyParameter()
     ELSE.optional {
         ActionBodyItem()
@@ -239,7 +228,7 @@ fun SysMLv2.IfNode() {
  *      ActionBodyParameter = ( 'action' UsageDeclaration? )?
  *          '{' ActionBodyItem* '}'
  */
-fun SysMLv2.ActionBodyParameter() = FeatureActions<Feature>(semantics, ::FeatureImplementation, "Actions::Action" ).parse {
+fun SysMLv2.ActionBodyParameter() = FeatureAction(semantics, ElementType.Feature, "Actions::Action" ).parse {
     ACTION.optional {
         UsageDeclaration()
     }
@@ -323,12 +312,18 @@ fun SysMLv2.AcceptParameterPart() {
  */
 fun SysMLv2.WhileLoopNode() {
     when(token.kind) {
-        WHILE   -> { WHILE.consume(); Expression() }
+        WHILE   -> {
+            WHILE.consume()
+            semantics.addOwnedElement(OwnedExpression(), ElementType.ParameterMembership)
+        }
         LOOP    -> { LOOP.consume() }
         else    -> { throwSyntaxError("While loop node: ${token.kind}, expect 'while' or 'loop'") }
     }
     ActionBodyParameter()
-    optional(UNTIL, consume = true) { Expression(); SEMICOLON.consume() }
+    optional(UNTIL, consume = true) {
+        semantics.addOwnedElement(OwnedExpression(), ElementType.ParameterMembership)
+        SEMICOLON.consume()
+    }
 }
 
 /**
@@ -353,7 +348,8 @@ fun SysMLv2.AssignmentNodeDeclaration() {
     ASSIGN.consume()
     NAME_LIT.consume()
     DPEQ.consume()
-    Expression()
+    // fixme: Missing NodeParameterMember and NodeParameter?
+    semantics.addOwnedElement(OwnedExpression(), ElementType.FeatureValue)
 }
 
 /**

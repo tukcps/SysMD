@@ -199,7 +199,7 @@ class SystemCTemplatesTests {
     }
 
     @Test
-    fun connectionsInMainAndModules() = testSession("ISQ", "Signals", "Parts", "Ports", "Connections", runlevel = Runlevel.MODEL) {
+    fun connectionsInMainAndModules() = testSession("ISQ", "Signals", "Parts", "Ports", "Connections") {
         loadSysMLv2("""
             package test {
                 private import ScalarValues::*; 
@@ -226,7 +226,7 @@ class SystemCTemplatesTests {
                 connection wire_b_c : Signals::Signal connect a.b.b_out to a.c.c_in;
                 connection wire_x_y : Signals::Signal connect x.x_out to y.y_in; 
             }
-        """)
+        """, Runlevel.MODEL)
         assertNoIssues()
 
         val testDirectory = File("src/test/resources/toSystemC")
@@ -515,8 +515,7 @@ class SystemCTemplatesTests {
             //Therefore only one input can be connected and the remaining should be commented out
             interface if4 : Signals::Signal connect test::X::output to test::Y::input;
         }
-        """)
-        solver.propagate()
+        """, Runlevel.MODEL)
         val if1 = global.resolve("test::if1")?.memberElement
         val d = global.resolve("test::D")?.memberElement
         assertNoIssues()

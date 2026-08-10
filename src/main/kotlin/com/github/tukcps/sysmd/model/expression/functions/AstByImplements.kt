@@ -3,10 +3,14 @@ package com.github.tukcps.sysmd.model.expression.functions
 import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.model.expression.AstLeaf
 import com.github.tukcps.sysmd.model.expression.AstNode
-import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.model.kerml.Association
+import com.github.tukcps.sysmd.model.kerml.Connector
+import com.github.tukcps.sysmd.model.kerml.Membership
+import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.services.getRelationshipsTo
+import com.github.tukcps.sysmd.model.datamodel.toElementData
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.session.Session
 import io.github.tukcps.aadd.AADD
@@ -32,15 +36,15 @@ class AstByImplements(model: Session, namespace: Namespace, args: ArrayList<AstN
         propertyName = (getParam(0) as AstLeaf).qualifiedName!!
 
         membership = inNameSpace.resolve(propertyName!!)
-        if (membership == null) model.status.error( "Could not resolve name '$propertyName'", element = membership, kind = Issue.Kind.ERROR_UNRESOLVED_NAME)
+        if (membership == null) model.status.error( "Could not resolve name '$propertyName'", element = membership?.toElementData(), kind = Issue.Kind.ERROR_UNRESOLVED_NAME)
 
         implementsAssociation = model.global.resolve("ISO26262::implements")?.member()
         if (implementsAssociation == null)
-            model.status.error("Could not find Association 'ISO26262::implements'", element = membership)
+            model.status.error("Could not find Association 'ISO26262::implements'", element = membership?.toElementData())
 
         implements = model.getRelationshipsTo(membership?.owningNamespace!!, "*", implementsAssociation).firstOrNull() as Connector?
         if (implements == null)
-            model.status.error("Could not find suitable connector typed by 'implements'", element = membership)
+            model.status.error("Could not find suitable connector typed by 'implements'", element = membership?.toElementData())
 
         component = implements!!.source.firstOrNull() as Namespace
         function = implements!!.target.firstOrNull() as Namespace

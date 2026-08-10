@@ -1,9 +1,12 @@
 package ui
 
+import com.github.tukcps.sysmd.model.kerml.Class
+import com.github.tukcps.sysmd.model.kerml.Classifier
+import com.github.tukcps.sysmd.model.util.Unresolved
 import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.session.SessionManager.sessionService
 import com.github.tukcps.sysmd.ui.viewmodel.SysMDViewModel
+import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testProjectSession
 import kotlin.test.*
@@ -54,7 +57,7 @@ class BoardViewModelTest {
         ui.sessionId = this.id
         loadKerML("""type A :> B; """)
         solver.propagate()
-
+        assertEquals(1, status.issues.size, status.issues.toString())
         ui.boardViewModel.update()
 
         assertEquals(1, ui.boardViewModel.size())
@@ -65,11 +68,18 @@ class BoardViewModelTest {
 
         loadKerML("""type A :> C; """)
         solver.propagate()
-
+        assertEquals(1, status.issues.size, status.issues.toString())
         ui.boardViewModel.update()
 
-        assertEquals(2, ui.boardViewModel.size())
-        // assertEquals(true, agenda.contains("A"))
+        /* The previous implementation merged both specializations into `type A :> B, C`.
+            This is impractical, e.g. if the user types `A :> Int`, and then corrects themselves to `A :> Integer`,
+            a sane tool should accept that new supertype instead of continuously producing errors related to the `Int` typo.
+
+            The new implementation makes the later specialization overwrite the previous specialization entirely.
+            Case like `A :> B, C` edited to `A :> B` still need to be investigated.
+         */
+        //assertEquals(2, ui.boardViewModel.size())
+        assertEquals(1, ui.boardViewModel.size())
     }
 
     @Test
@@ -128,10 +138,12 @@ class BoardViewModelTest {
         ui.boardViewModel.update()
 
         val issues = ui.boardViewModel.issues()
+        val aId = global.resolve("A")?.member<Class>()?.elementId
+        val cId = global.resolve("C")?.member<Class>()?.elementId
 
         assertEquals(2, ui.boardViewModel.size())
-        assertEquals("A", issues.find { it.qualifiedName == "A" }!!.qualifiedName)
-        assertEquals("C", issues.find { it.qualifiedName == "C" }!!.qualifiedName)
+        assertNotNull(issues.find { it.element == aId})
+        assertNotNull(issues.find { it.element == cId })
     }
 
     @Test
@@ -190,44 +202,45 @@ class BoardViewModelTest {
         assertEquals(true, ui.boardViewModel.isEmpty())
     }
 
-
     @Test
-    fun issue235elementReclassification() = testProjectSession("Occurrences") {
+    fun issue235elementReclassification() = testProjectSession {
         val ui = SysMDViewModel()
         ui.sessionIdState.value = this.id
         loadKerML("""
-            class A :> B; 
-            class B; 
-            class A :> C; 
+            classifier A :> B; 
+            classifier B; 
         """, Runlevel.MODEL)
-        assertEquals(1, status.issues.size, status.issues.toString())
-        assertTrue(status.issues.any { it.message.contains("C") }, "Error message is expected reporting C as undefined")
+        assertNoIssues()
+
+        fun classifier(name : String) = global.resolve(name).let {
+            assertNotNull(it, "classifier '$name' got deleted")
+        }.memberElement.let {
+            assertIs<Classifier>(it, "'$name' was assigned the wrong type")
+        }
+
+        assertEquals(listOf(classifier("B")), classifier("A").supertypes(excludeImplied = true))
+
+        loadKerML("""
+            classifier A :> C;
+        """.trimIndent())
+
+        classifier("A").supertypes(excludeImplied = true).filterIsInstance<Unresolved>().let {
+            assertNotEquals(emptyList(), it, "new specialization was not respected")
+            assertEquals("C", it.single().relativeName)
+        }
+
+        assertNoIssues {
+            "C" !in it.message
+        }
+
+        val expected = status.issues.filter { "C" in it.message }
+        assertNotEquals(emptyList(), expected, "C should be reported as undefined")
+        assertEquals(1, expected.size, "Duplicate errors:\n${expected.joinToString("\n")}")
+
         ui.boardViewModel.update()
 
         //The Board must not be empty as the reassignment of "A" to an unknown
         // superclass is recognized as error
         assertFalse(ui.boardViewModel.isEmpty())
-    }
-
-    @Ignore
-    @Test
-    fun removeElement() = with(SysMDViewModel()) {
-        val session = sessionService.getSession(sessionId) !!
-
-        session.loadKerML("""
-            type C :> D; 
-            type A :> B;
-        """)
-        session.solver.propagate()
-
-        boardViewModel.update()
-        assertEquals(2, boardViewModel.size())
-        boardViewModel.removeElement(qualifiedName = "A")
-        assertEquals(1, boardViewModel.size())
-       // val error = agenda.issues().first()
-        // agenda.removeElement(error.qualifiedName, error.textualRepresentation, error.line)
-        assertEquals(0, boardViewModel.size())
-        boardViewModel.update()
-        assertEquals(2, boardViewModel.size())
     }
 }

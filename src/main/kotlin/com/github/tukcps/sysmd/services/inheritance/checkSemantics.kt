@@ -4,27 +4,27 @@ import com.github.tukcps.sysmd.exceptions.CyclicDependency
 import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Type
+import com.github.tukcps.sysmd.model.datamodel.toElementData
 
 
 /**
  * Detects and fixes cyclic dependencies such that analysis can continue.
  */
 fun Type.checkForCycles() {
-    require(model != null)
-
     generalization.forEach { general ->
         if (general === this) {
-            ownedSpecialization.forEach { it.target = mutableListOf(model!!.anything) }
+            ownedSpecialization.forEach { it.target = mutableListOf(model.repo.anything!!) }
             if (!isLibraryElement) {
-                model!!.status.error("Type ${general.qualifiedName} of '${qualifiedName} cannot be itself; replaced by Anything.", element = this)
+                model.status.error("Type ${general.qualifiedName} of '${qualifiedName} cannot be itself; replaced by Anything.",
+                    element = this.toElementData())
             }
         }
 
         if (general.isCyclic()) {
-            ownedSpecialization.forEach { it.target = mutableListOf(model!!.anything) }
-            model!!.status.error(
+            ownedSpecialization.forEach { it.target = mutableListOf(model.repo.anything!!) }
+            model.status.error(
                 message = "Cyclic definition: '$general' cannot be type of '${qualifiedName}'; replacing type with Base::Anything",
-                element = this,
+                element = this.toElementData(),
                 cause = CyclicDependency(),
                 kind = Issue.Kind.ERROR_CYCLIC_DEPENDENCY
             )

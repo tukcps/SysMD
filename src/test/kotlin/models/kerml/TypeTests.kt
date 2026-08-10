@@ -16,36 +16,36 @@ import kotlin.test.assertNotNull
 class TypeTests {
 
     @Test fun specializesTest() = testSession {
-        val a = addOwnedMember(TypeImplementation(declaredName="a"), global)
-        addOwnedRelationship(SpecializationImplementation(a, anything), a)
-        val b = addOwnedMember(TypeImplementation(declaredName="b"), global)
-        addOwnedRelationship(SpecializationImplementation(b, a), b)
-        val c = addOwnedMember(TypeImplementation(declaredName="c"), global)
-        addOwnedRelationship(SpecializationImplementation(c, b), c)
+        val a = addOwnedMember(TypeImplementation(this, declaredName="a"), global)
+        addOwnedRelationship(SpecializationImplementation(this, specific = a, general = repo.anything!!), a)
+        val b = addOwnedMember(TypeImplementation(this, declaredName="b"), global)
+        addOwnedRelationship(SpecializationImplementation(this, specific = b, general = a), b)
+        val c = addOwnedMember(TypeImplementation(this, declaredName="c"), global)
+        addOwnedRelationship(SpecializationImplementation(this, specific = c, general = b), c)
         initialize(Runlevel.MODEL)
         assertEquals(true, c.specializes(b))
         assertEquals(false, a.specializes(b))
     }
 
     @Test fun isSubtypeTest() = testSession {
-        val a = addOwnedMember(TypeImplementation( declaredName="a"), global)
-        addOwnedRelationship(SpecializationImplementation(a, anything), a)
-        val b = addOwnedMember(TypeImplementation(declaredName="b"), global)
-        addOwnedRelationship(SpecializationImplementation(b, a), b)
-        val c = addOwnedMember(TypeImplementation(declaredName="c"), global)
-        addOwnedRelationship(SpecializationImplementation(c, b), c)
+        val a = addOwnedMember(TypeImplementation(this, declaredName="a"), global)
+        addOwnedRelationship(SpecializationImplementation(this, specific = a, general = repo.anything!!), a)
+        val b = addOwnedMember(TypeImplementation(this, declaredName="b"), global)
+        addOwnedRelationship(SpecializationImplementation(this, specific = b, general = a), b)
+        val c = addOwnedMember(TypeImplementation(this, declaredName="c"), global)
+        addOwnedRelationship(SpecializationImplementation(this, specific = c, general = b), c)
         initialize(Runlevel.MODEL)
         assertEquals(false, b.specializes(c))
         assertEquals(true, b.specializes(a))
     }
 
     @Test fun getSubclassesTest() = testSession {
-        val a = addOwnedMember(TypeImplementation(declaredName="a"), global)
-        addOwnedRelationship(SpecializationImplementation(a, anything), a)
-        val b = addOwnedMember(TypeImplementation(declaredName="b"), global)
-        addOwnedRelationship(SpecializationImplementation(b, a), b)
-        val c = addOwnedMember(TypeImplementation(declaredName="c"), global)
-        addOwnedRelationship(SpecializationImplementation(c, b), c)
+        val a = addOwnedMember(TypeImplementation(this, declaredName="a"), global)
+        addOwnedRelationship(SpecializationImplementation(this, specific = a, general = repo.anything!!), a)
+        val b = addOwnedMember(TypeImplementation(this, declaredName="b"), global)
+        addOwnedRelationship(SpecializationImplementation(this, specific = b, general = a), b)
+        val c = addOwnedMember(TypeImplementation(this, declaredName="c"), global)
+        addOwnedRelationship(SpecializationImplementation(this, specific = c, general = b), c)
         initialize(Runlevel.MODEL)
         val aSubtype = a.subtypes
         assertEquals("b", aSubtype.first().declaredName)

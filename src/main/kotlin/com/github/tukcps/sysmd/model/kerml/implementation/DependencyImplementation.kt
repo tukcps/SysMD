@@ -2,22 +2,26 @@ package com.github.tukcps.sysmd.model.kerml.implementation
 
 import com.github.tukcps.sysmd.model.kerml.Dependency
 import com.github.tukcps.sysmd.model.kerml.Element
-import com.github.tukcps.sysmd.model.kerml.UnresolvedElement
+import com.github.tukcps.sysmd.model.util.UnresolvedElement
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
 class DependencyImplementation(
+    model: Session,
+    elementId : Uuid = Uuid.random(),
     declaredName: String? = null,
     declaredShortName: String? = null,
-    owningRelatedElement: Element = UnresolvedElement(),
+    owningRelatedElement: Element = UnresolvedElement(model),
     client: MutableList<Element> = mutableListOf(),
     supplier: MutableList<Element> = mutableListOf(),
-    elementType: String = "Dependency"
 ): Dependency, RelationshipImplementation(
+    model,
+    elementId = elementId,
     declaredName=declaredName,
     declaredShortName=declaredShortName,
     owningRelatedElement = owningRelatedElement,
     source = client,
     target = supplier,
-    elementType = elementType
 ) {
     override var client: MutableList<Element>
         get() = source
@@ -34,15 +38,12 @@ class DependencyImplementation(
         supplier.addAll(supplier)
     }
 
-    override fun clone(): Dependency{
-        return DependencyImplementation(
-            declaredName =declaredName,
-            declaredShortName =declaredShortName,
-            owningRelatedElement = owningRelatedElement,
-            client = client.toMutableList(),
-            supplier = supplier.toMutableList(),
-        ).also{
-            it.model = model
-        }
-    }
+    override fun clone(): Dependency = DependencyImplementation(
+        model,
+        declaredName =declaredName,
+        declaredShortName =declaredShortName,
+        owningRelatedElement = owningRelatedElement,
+        client = client.toMutableList(),
+        supplier = supplier.toMutableList(),
+    )
 }

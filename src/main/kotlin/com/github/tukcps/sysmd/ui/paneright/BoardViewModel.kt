@@ -3,7 +3,6 @@ package com.github.tukcps.sysmd.ui.paneright
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateListOf
 import com.github.tukcps.sysmd.exceptions.Issue
-import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.services.session.SessionManager
 import com.github.tukcps.sysmd.services.session.SessionStatus
 import kotlin.uuid.Uuid
@@ -69,9 +68,8 @@ class BoardViewModel(
         return agenda.isEmpty()
     }
 
-
-    fun removeElement(qualifiedName: QualifiedName) {
-        agenda.removeIf { it.qualifiedName == qualifiedName }
+    fun removeElement(element: Uuid) {
+        agenda.removeIf { it.element == element }
     }
 
     /**

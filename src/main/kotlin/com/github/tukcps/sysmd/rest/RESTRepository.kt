@@ -5,27 +5,31 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.ObjectWriter
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.github.tukcps.sysmd.model.datamodel.ElementData
+import com.github.tukcps.sysmd.model.datamodel.IdentifiedImplementation
+import com.github.tukcps.sysmd.model.datamodel.createFrom
+import com.github.tukcps.sysmd.model.generated.ElementDataIF
+import com.github.tukcps.sysmd.model.generated.ElementType
 import com.github.tukcps.sysmd.model.kerml.Relationship
-import com.github.tukcps.sysmd.rest.entities.BranchImplementation
-import com.github.tukcps.sysmd.rest.entities.ProjectImplementation
-import com.github.tukcps.sysmd.services.repositories.local.ElementData
+import com.github.tukcps.sysmd.rest.entities.api.entities.*
+import com.github.tukcps.sysmd.rest.entities.api.entities.requestModels.BranchRequest
+import com.github.tukcps.sysmd.rest.entities.api.entities.requestModels.CommitRequest
+import com.github.tukcps.sysmd.rest.entities.api.entities.requestModels.DataVersionRequest
+import com.github.tukcps.sysmd.rest.entities.api.entities.requestModels.ProjectRequest
+import com.github.tukcps.sysmd.rest.entities.api.entities.requestModels.commitData.ElementCommitData
+import com.github.tukcps.sysmd.rest.entities.api.entities.responseModels.BranchResponse
+import com.github.tukcps.sysmd.rest.entities.api.entities.responseModels.CommitResponse
+import com.github.tukcps.sysmd.rest.entities.api.entities.responseModels.ElementResponse
+import com.github.tukcps.sysmd.rest.entities.api.entities.responseModels.ProjectResponse
+import com.github.tukcps.sysmd.rest.entities.api.services.ChangeType
+import com.github.tukcps.sysmd.rest.entities.api.services.SysMLv2Services
+import com.github.tukcps.sysmd.rest.entities.interchange.InterchangeProject
 import com.github.tukcps.sysmd.services.repositories.local.ProjectUsageData
-import com.github.tukcps.sysmd.services.repositories.local.toElementData
 import com.github.tukcps.sysmd.settings
-import io.github.tukcps.sysmlv2.api.entities.*
-import io.github.tukcps.sysmlv2.api.entities.requestModels.*
-import io.github.tukcps.sysmlv2.api.entities.requestModels.commitData.ElementCommitData
-import io.github.tukcps.sysmlv2.api.entities.responseModels.BranchResponse
-import io.github.tukcps.sysmlv2.api.entities.responseModels.CommitResponse
-import io.github.tukcps.sysmlv2.api.entities.responseModels.ElementResponse
-import io.github.tukcps.sysmlv2.api.entities.responseModels.ProjectResponse
-import io.github.tukcps.sysmlv2.api.services.ChangeType
-import io.github.tukcps.sysmlv2.api.services.SysMLv2Services
-import io.github.tukcps.sysmlv2.interchange.InterchangeProject
 import org.apache.logging.log4j.LogManager
 import java.io.File
 import java.io.FileWriter
-import java.util.*
+import kotlin.uuid.Uuid
 
 
 /**
@@ -46,7 +50,7 @@ object RESTRepository: SysMLv2Services {
     val onlineState = mutableStateOf(false)
     private val filesAreAvailable = mutableStateOf(false)
     val saveElementsLocally = mutableStateOf(false)
-    private val projectsLoaded= hashMapOf<String, Triple<InterchangeProject, MutableList<ElementDAO>, MutableList<ProjectUsageData>>>()
+    private val projectsLoaded= hashMapOf<String, Triple<InterchangeProject, MutableList<ElementDataIF>, MutableList<ProjectUsageData>>>()
     override fun createBranch(project: Project, branchName: String, head: Commit): Branch {
         TODO("Not yet implemented")
     }
@@ -68,13 +72,14 @@ object RESTRepository: SysMLv2Services {
      * ID of the session working with the REST API;
      * Must be set by the Session Manager at client side prior first use of the backend.
      */
-    var internalSessionId: UUID = UUID.randomUUID()
-    var serverSessionId:UUID? = null
+    var internalSessionId: Uuid = Uuid.random()
+    var serverSessionId:Uuid? = null
 
     private var projectsState: MutableList<ProjectImplementation> = mutableListOf()
 
     init {
         objectMapper.registerModule(JavaTimeModule())
+        objectMapper.registerModule(com.github.tukcps.sysmd.configuration.JacksonKotlinUuidConfig.createModule())
         writer = objectMapper.writer().withDefaultPrettyPrinter()
         loadDataFromCache()
     }
@@ -132,14 +137,14 @@ object RESTRepository: SysMLv2Services {
      * @param projectId projectId of the project
      * @return the Project
      */
-    override fun getProjectById(projectId: UUID): ProjectImplementation {
+    override fun getProjectById(projectId: Uuid): ProjectImplementation {
         Rest.login("/users/login", USER_KEY, username, PASSWORD_KEY, password)
         val response = Rest.get("/projects/${projectId}", null)
         val responseObject = objectMapper.readValue(response.body, ProjectResponse::class.java)
         return ProjectImplementation(responseObject)
     }
 
-    override fun updateProject(projectId: UUID, name: String?, description: String?, defaultBranch: Branch?): Project { TODO("Not yet implemented") }
+    override fun updateProject(projectId: Uuid, name: String?, description: String?, defaultBranch: Branch?): Project { TODO("Not yet implemented") }
 
     /**
      * Gets a list of projects.
@@ -174,9 +179,9 @@ object RESTRepository: SysMLv2Services {
     override fun getRelationshipsByRelatedElement(
         project: Project,
         commit: Commit,
-        elementId: UUID,
+        elementId: Uuid,
         direction: String
-    ): Collection<ElementDAO> {
+    ): Collection<ElementDataIF> {
         TODO("Not yet implemented")
     }
 
@@ -206,7 +211,7 @@ object RESTRepository: SysMLv2Services {
         return mutableListOf()    }
 
 
-    override fun getCommitById(project: Project, commitId: UUID): CommitImplementation {
+    override fun getCommitById(project: Project, commitId: Uuid): CommitImplementation {
         Rest.login("/users/login", USER_KEY, username, PASSWORD_KEY, password)
         val commitResponse = Rest.get("/projects/${project.id}/commits/$commitId", internalSessionId.toString())
         val commit = objectMapper.readValue(commitResponse.body, CommitResponse().javaClass)
@@ -221,7 +226,7 @@ object RESTRepository: SysMLv2Services {
         TODO("Not yet implemented")
     }
 
-    override fun getCommitChangeById(project: Project, commit: Commit, changeId: UUID): DataVersion {
+    override fun getCommitChangeById(project: Project, commit: Commit, changeId: Uuid): DataVersion {
         TODO("Not yet implemented")
     }
 
@@ -230,13 +235,13 @@ object RESTRepository: SysMLv2Services {
     }
 
 
-    fun postBranch(project: Project, name: String?, headOfBranch:UUID): Branch? {
+    fun postBranch(project: Project, name: String?, headOfBranch:Uuid): Branch? {
         var branch : Branch? = null
         val branchId : String
 
         try {
             Rest.login("/users/login", USER_KEY, username, PASSWORD_KEY, password)
-            val branchReq= BranchRequest(name=name, head = Identified(headOfBranch))
+            val branchReq= BranchRequest(name = name, head = IdentifiedImplementation(headOfBranch))
 
             val postProjectResponse = Rest.post("/projects/${project.id}/branches", writer.writeValueAsString(branchReq), null)
 
@@ -245,11 +250,11 @@ object RESTRepository: SysMLv2Services {
             when (postProjectResponse.statusCode.value()) {
                 200 -> {
                     branchId = Rest.extractEntityIdFromBody(resultBody).toString()
-                    branch = getBranchById(project, UUID.fromString(branchId))
+                    branch = getBranchById(project, Uuid.parse(branchId))
                 }
                 201 -> {
                     branchId = Rest.extractEntityIdFromBody(resultBody).toString()
-                    branch = getBranchById(project, UUID.fromString(branchId))
+                    branch = getBranchById(project, Uuid.parse(branchId))
 
                     // Update the projectState variable with a new list of projects
                     val newProjectsState= getProjects()
@@ -271,11 +276,11 @@ object RESTRepository: SysMLv2Services {
      * @param project the project
      * @param branchId id of the branch
      */
-    override fun getBranchById(project: Project, branchId: UUID) : BranchImplementation? {
+    override fun getBranchById(project: Project, branchId: Uuid) : Branch? {
         if(onlineState.value) {
             Rest.login("/users/login", USER_KEY, username, PASSWORD_KEY, password)
             val branchResponse = Rest.get("/projects/${project.id}/branches/${branchId}", null)
-            val branch = objectMapper.readValue(branchResponse.body!!, BranchResponse(id=UUID.randomUUID()).javaClass)
+            val branch = objectMapper.readValue(branchResponse.body!!, BranchResponse(id = Uuid.random()).javaClass)
             return BranchImplementation(branch)
         } else {
             for (local in projectsState) {
@@ -290,7 +295,7 @@ object RESTRepository: SysMLv2Services {
         return null
     }
 
-    override fun deleteBranch(project: Project, branchId: UUID): Branch? {
+    override fun deleteBranch(project: Project, branchId: Uuid): Branch? {
         try {
             Rest.login("/users/login", USER_KEY, username, PASSWORD_KEY, password)
             // TODO(Check the Value of payload?)
@@ -325,11 +330,11 @@ object RESTRepository: SysMLv2Services {
         TODO("Not yet implemented")
     }
 
-    override fun deleteProjectUsage(project: Project, branch: Branch?, projectUsageId: UUID): Commit {
+    override fun deleteProjectUsage(project: Project, branch: Branch?, projectUsageId: Uuid): Commit {
         TODO("Not yet implemented")
     }
 
-    override fun deleteTag(project: Project, tagId: UUID): Tag? {
+    override fun deleteTag(project: Project, tagId: Uuid): Tag? {
         TODO("Not yet implemented")
     }
 
@@ -353,7 +358,7 @@ object RESTRepository: SysMLv2Services {
         }
     }
 
-    override fun getElements(project: Project, commit: Commit?): MutableList<ElementDAO> {
+    override fun getElements(project: Project, commit: Commit?): MutableList<ElementDataIF> {
         if (onlineState.value) {
             Rest.login("/users/login", USER_KEY, username, PASSWORD_KEY, password)
 
@@ -363,10 +368,10 @@ object RESTRepository: SysMLv2Services {
 
             if (elementResponse.statusCode.value() == 200) {
                 val elements = objectMapper.readValue<MutableList<ElementResponse>>(elementResponse.body!!)
-                val returnValue = mutableListOf<ElementDAO>()
+                val returnValue = mutableListOf<ElementDataIF>()
 
                 for (element in elements)
-                    returnValue.add(element.toElementData())
+                    returnValue.add(element.createFrom())
 
                 // TODO: Get list of usages!!
                 commit?.id?.let { projectsLoaded.put(it.toString(), Triple(InterchangeProject(name=""), returnValue, mutableListOf())) }
@@ -413,11 +418,11 @@ object RESTRepository: SysMLv2Services {
         return mutableListOf()
     }
 
-    override fun getRootElements(project: Project, commit: Commit): Collection<ElementDAO> { TODO("Not yet implemented") }
-    override fun getTagById(project: Project, tagId: UUID): Tag { TODO("Not yet implemented") }
+    override fun getRootElements(project: Project, commit: Commit): Collection<ElementDataIF> { TODO("Not yet implemented") }
+    override fun getTagById(project: Project, tagId: Uuid): Tag { TODO("Not yet implemented") }
     override fun getTaggedCommit(project: Project, tag: Tag): Commit { TODO("Not yet implemented") }
     override fun getTags(project: Project): Collection<Tag> { TODO("Not yet implemented") }
-    override fun setDefaultBranch(project: Project, branchId: UUID): Project { TODO("Not yet implemented") }
+    override fun setDefaultBranch(project: Project, branchId: Uuid): Project { TODO("Not yet implemented") }
 
     override fun getHeadCommit(project: Project, branch: Branch?): Commit {
         Rest.login("/users/login", USER_KEY, username, PASSWORD_KEY, password)
@@ -439,13 +444,13 @@ object RESTRepository: SysMLv2Services {
      * @param elementId ID of the element
      * @return An element by project, commit and its ID
      */
-    override fun getElementById(project: Project, commit: Commit?, elementId: UUID): ElementDAO {
+    override fun getElementById(project: Project, commit: Commit?, elementId: Uuid): ElementDataIF {
         if(onlineState.value) {
             Rest.login("/users/login", USER_KEY, username, PASSWORD_KEY, password)
             val elementResponse = Rest.get("/projects/${project.id}/commits/${commit!!.id}/elements/$elementId", null)
 
             val element = objectMapper.readValue<ElementResponse>(elementResponse.body?:"")
-            return element.toElementData()
+            return element.createFrom()
         } else {
             if((saveElementsLocally.value)&&(projectsLoaded[commit?.id.toString()]!=null)) {
                 for(element in projectsLoaded[commit?.id?.toString()]!!.second) {
@@ -454,19 +459,19 @@ object RESTRepository: SysMLv2Services {
                 }
             }
         }
-        return ElementData(elementId = UUID.randomUUID(), type = "t.b.d.")
+        return ElementData(elementId = Uuid.random(), type = ElementType.Element)
     }
 
-    fun getCellsForUi(project: Project, commit: Commit): MutableList<UUID> {
+    fun getCellsForUi(project: Project, commit: Commit): MutableList<Uuid> {
 
-        val cellList : MutableList<UUID> = mutableListOf()
+        val cellList : MutableList<Uuid> = mutableListOf()
         val elementsDAO = getElements(project, commit)
 
         for (elementDAO in elementsDAO){
-            if (elementDAO.type == "TextualRepresentation"){
+            if (elementDAO.type == ElementType.TextualRepresentation){
                 cellList.add(elementDAO.elementId)
-                for (elementUUID in elementDAO.ownedElement) {
-                    cellList.add(elementUUID.id!!)
+                for (elementUuid in elementDAO.ownedElement) {
+                    cellList.add(elementUuid.id!!)
                 }
             }
         }
@@ -474,7 +479,7 @@ object RESTRepository: SysMLv2Services {
     }
 
     @Suppress("unused", "unused_parameter")
-    fun getRelationships(projectId: UUID, commitId: UUID? = null): MutableList<Relationship> {
+    fun getRelationships(projectId: Uuid, commitId: Uuid? = null): MutableList<Relationship> {
         Rest.login("/users/login", USER_KEY, username, PASSWORD_KEY, password)
         TODO()
     }
@@ -490,7 +495,8 @@ object RESTRepository: SysMLv2Services {
 
         try {
             Rest.login("/users/login", USER_KEY, username, PASSWORD_KEY, password)
-            val projectReq = ProjectRequest(name=projectName,description = description,defaultBranchName = defaultBranchName)
+            val projectReq =
+                ProjectRequest(name = projectName, description = description, defaultBranchName = defaultBranchName)
 
             val postProjectResponse = Rest.post("/libraries/", writer.writeValueAsString(projectReq), null)
 
@@ -500,12 +506,12 @@ object RESTRepository: SysMLv2Services {
                 200 -> {
 //                    logger.error("--- " + postProjectResponse.statusCode.value() + " ---" + resultBody)
                     projectId = Rest.extractEntityIdFromBody(resultBody).toString()
-                    project = getProjectById(UUID.fromString(projectId))
+                    project = getProjectById(Uuid.parse(projectId))
                 }
                 201 -> {
 //                    logger.error("---" + postProjectResponse.statusCode.value() + " ---" + resultBody)
                     projectId = Rest.extractEntityIdFromBody(resultBody).toString()
-                    project = getProjectById(UUID.fromString(projectId))
+                    project = getProjectById(Uuid.parse(projectId))
 
                     // Update the projectState variable with a new list of projects
                     val newProjectsState= getProjects()
@@ -525,7 +531,7 @@ object RESTRepository: SysMLv2Services {
      * @param projectId
      * @return true or false, if the deletion was successful or not
      */
-    override fun deleteProject(projectId: UUID): Project? {
+    override fun deleteProject(projectId: Uuid): Project? {
         try {
             Rest.login("/users/login", USER_KEY, username, PASSWORD_KEY, password)
 
@@ -562,8 +568,8 @@ object RESTRepository: SysMLv2Services {
         commitName: String,
         commitDescription: String,
         project: Project,
-        elementsDAOList: MutableList<ElementDAO>? = mutableListOf(),
-        branchId: UUID?
+        elementsDAOList: MutableList<ElementDataIF>? = mutableListOf(),
+        branchId: Uuid?
     ): Commit {
 
         Rest.login("/users/login", USER_KEY, username, PASSWORD_KEY, password)
@@ -576,19 +582,14 @@ object RESTRepository: SysMLv2Services {
                     val commitData = ElementCommitData(
                         id = element.elementId,
                         type = element.type,
-                        name = element.name,
-                        shortName = element.shortName,
-                        ownedElement = element.ownedElement.map { Identified(id = it.id) }.toMutableList(),
-                        owner = Identified(id = element.owner?.id),
+                        declaredName = element.declaredName,
+                        declaredShortName = element.declaredShortName,
+                        ownedElement = element.ownedElement.map { IdentifiedImplementation(id = it.id) }.toMutableList(),
+                        owner = IdentifiedImplementation(id = element.owner?.id),
                         language = element.language,
-                        textualRepresentation = element.textualRepresentation!!,
                         aliasIds = TODO(),
-                        declaredName = TODO(),
-                        declaredShortName = TODO(),
-                        documentation = TODO(),
                         elementId = TODO(),
                         isImpliedIncluded = TODO(),
-                        isLibraryElement = TODO(),
                         ownedAnnotation = TODO(),
                         ownedRelationship = TODO(),
                         owningMembership = TODO(),
@@ -611,16 +612,16 @@ object RESTRepository: SysMLv2Services {
                                  else Rest.post("/projects/${project.id}/commits", dataString, sessionId = null)
 
         val resultBody: String = postCommitResponse.body ?: throw Exception("empty result body")
-        val commitId : UUID?
+        val commitId : Uuid?
         var commit : Commit? = null
 
         when (postCommitResponse.statusCode.value()) {
             200 -> {
-                commitId = UUID.fromString(Rest.extractEntityIdFromBody(resultBody))
+                commitId = Uuid.parse(Rest.extractEntityIdFromBody(resultBody)!!)
                 commit = this.getCommitById(project, commitId)
             }
             201 -> {
-                commitId = UUID.fromString(Rest.extractEntityIdFromBody(resultBody))
+                commitId = Uuid.parse(Rest.extractEntityIdFromBody(resultBody)!!)
                 commit = this.getCommitById(project, commitId)
 
             }
@@ -638,10 +639,10 @@ object RESTRepository: SysMLv2Services {
     /**
      * Implements method from interface
      */
-    fun getElements(projectName: String): List<ElementDAO> { TODO() }
+    fun getElements(projectName: String): List<ElementDataIF> { TODO() }
 
 
-    fun postSession() : UUID? {
+    fun postSession() : Uuid? {
         Rest.login("/users/login", USER_KEY, username, PASSWORD_KEY, password)
 
         val postCommitResponse = Rest.post("/sessions", null, null)
@@ -652,17 +653,16 @@ object RESTRepository: SysMLv2Services {
         when (postCommitResponse.statusCode.value()) {
             200 -> {
 //                logger.error("--- " + postCommitResponse.statusCode.value() + " ---" + resultBody)
-//                commitId = UUID.fromString(Rest.extractEntityIdFromBody(resultBody))
+//                commitId = Uuid.fromString(Rest.extractEntityIdFromBody(resultBody))
 //                commit = getCommit(projectId, commitId)
             }
             201 -> {
-//                logger.error("---" + postCommitResponse.statusCode.value() + " ---" + resultBody)
-                val uuidString = Rest.extractEntityUUIDFromBody(resultBody)
-                if(uuidString!=null)
-                    return UUID.fromString(uuidString)
+//              logger.error("---" + postCommitResponse.statusCode.value() + " ---" + resultBody)
+                val uuidString = Rest.extractEntityUuidFromBody(resultBody)
+                if(uuidString!=null) return Uuid.parse(uuidString)
 
 
-//                commitId = UUID.fromString(Rest.extractEntityIdFromBody(resultBody))
+//                commitId = Uuid.fromString(Rest.extractEntityIdFromBody(resultBody))
 //                commit = getCommit(projectId, commitId)
 //
 //                if (elementsDAOList != null) {
@@ -681,7 +681,7 @@ object RESTRepository: SysMLv2Services {
 
 
     @Suppress("UNUSED_PARAMETER")
-    fun branch(projectId: UUID, branchName: String, headCommit: Commit): UUID {
+    fun branch(projectId: Uuid, branchName: String, headCommit: Commit): Uuid {
         TODO("Not yet implemented")
     }
 
@@ -697,7 +697,7 @@ object RESTRepository: SysMLv2Services {
     }
 
     @Suppress("UNUSED_PARAMETER")
-    fun postMerge(projectId: UUID,mainBranch:UUID,mutableList: MutableList<UUID>){
+    fun postMerge(projectId: Uuid,mainBranch:Uuid,mutableList: MutableList<Uuid>){
 
     }
 

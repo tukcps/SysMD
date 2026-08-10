@@ -7,14 +7,20 @@ import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.repositories.local.ProjectData
 import com.github.tukcps.sysmd.services.repositories.local.ProjectUsageData
 import com.github.tukcps.sysmd.services.session.ProjectSession
+import com.github.tukcps.sysmd.services.session.SessionSettings
+import com.github.tukcps.sysmd.services.session.SessionStatus
 import com.github.tukcps.sysmd.services.session.loadProject
 
 class ProjectSessionImplementation(
     override val project: ProjectData,
-    libraries: MutableList<String> = mutableListOf("SysMLLibraries"),
+    vararg libraries: String,
+    settings: SessionSettings = SessionSettings(),
+    status: SessionStatus = SessionStatus(),
     runlevel: Runlevel
 ): ProjectSession, SessionImplementation(
     libraries = libraries,
+    settings = settings,
+    status = status,
     runlevel = runlevel
 ) {
 
@@ -58,7 +64,6 @@ class ProjectSessionImplementation(
 
         when (element) {
             global -> return null
-            anything -> return null
             is Relationship if (element !is Namespace) -> {
                 for (r in element.ownedRelatedElement.toMutableList()) {
                     delete(r)
@@ -72,7 +77,7 @@ class ProjectSessionImplementation(
         }
         element.owningRelationship?.ownedElement?.remove(element)
         element.owningNamespace?.ownedRelationship?.remove(element)
-        repo.elements.remove(element.elementId!!)
+        repo.remove(element.elementId)
         return null
     }
 

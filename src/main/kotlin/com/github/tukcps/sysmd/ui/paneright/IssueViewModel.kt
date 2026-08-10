@@ -3,10 +3,10 @@ package com.github.tukcps.sysmd.ui.paneright
 import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.ui.styles.AppTheme
 import com.github.tukcps.sysmd.ui.viewmodel.EditorTabsViewModel
+import kotlin.uuid.Uuid
 
 /**
- * This class stores additional information to the qualified names of the
- * elements on which an error occurred
+ * This class stores additional information to the element on which an error occurred
  */
 class IssueViewModel(
     val issue: Issue? = null,
@@ -14,7 +14,7 @@ class IssueViewModel(
     /**
      * Link to wiki
      */
-    val qualifiedName: String? = issue?.path?.substringBefore("/")
+    val element: Uuid? = issue?.element
 
     fun getTitle() = when (issue?.kind) {
         Issue.Kind.TRACE -> "Trace"
@@ -41,7 +41,6 @@ class IssueViewModel(
     fun getMessage(): String {
         val where = when {
             issue == null -> ""
-            (issue.token != null) -> "at '${issue.token}':"
             (issue.input != null && issue.indices != null) -> "at '${issue.input.substring(issue.indices)}'"
             else -> ""
         }
@@ -115,9 +114,8 @@ class IssueViewModel(
         null ->  "https://github.com/tukcps/SysMD/wiki/Error-messages#error-messages-and-its-classification"
     }
 
-
     override fun toString(): String {
-        return "BoardElement: (QualifiedName: $qualifiedName, ErrorMessage: ${issue?.message}, Line: ${issue?.token?.lineNo})"
+        return "BoardElement: (QualifiedName: , ErrorMessage: ${issue?.message}, Line: ${issue?.line()})"
     }
 
     override fun equals(other: Any?): Boolean {

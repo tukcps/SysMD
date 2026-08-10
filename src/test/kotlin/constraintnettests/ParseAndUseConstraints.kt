@@ -18,8 +18,8 @@ class ParseAndUseConstraintsTests {
     @Test
     fun constraintTestReal() = testSession("Ranges") {
         loadKerML("""
-            feature a: Ranges::RealInRange {:>> range = "1 .. 2";}
-            feature b: Ranges::RealInRange {:>> range = "1.0 .. 2.0";}
+            feature a: Ranges::RealInRange {:>> range = 1 .. 2;}
+            feature b: Ranges::RealInRange {:>> range = 1.0 .. 2.0;}
         """, Runlevel.VARIABLES)
         val a = solver.getVariable("a")!!
         val b = solver.getVariable("b")!!
@@ -34,8 +34,8 @@ class ParseAndUseConstraintsTests {
     @Test
     fun constraintTestRealStars() = testSession("Ranges") {
         loadKerML("""
-            feature a: Ranges::RealInRange {:>> range = "1 .. *";}
-            feature b: Ranges::RealInRange {:>> range = "* .. 2.0";}
+            feature a: Ranges::RealInRange { :>> range = (1 .. *);}
+            feature b: Ranges::RealInRange { :>> range = (* .. 2.0);}
         """, Runlevel.ALL)
         assertNoIssues()
         val a = solver.getVariable("a")!!
@@ -49,7 +49,7 @@ class ParseAndUseConstraintsTests {
     @Test
     fun constraintTestInteger() = testSession("Ranges") {
         loadKerML("""
-            feature a: Ranges::IntegerInRange { :>> range = "1 .. 2"; } 
+            feature a: Ranges::IntegerInRange { :>> range = 1 .. 2; } 
         """)
         solver.propagate()
         val a = solver.getVariable("a")
@@ -78,7 +78,7 @@ class ParseAndUseConstraintsTests {
     fun boolSpecTestBoolean() = testSession("ScalarValues") {
         loadKerML("""
             inv a;
-            inv b false;
+            inv false b;
         """, Runlevel.ALL)
         val a = solver.getVariable("a")!!
         val b = solver.getVariable("b")!!
@@ -90,10 +90,10 @@ class ParseAndUseConstraintsTests {
 
     // Definition of variables initializes its value based on a Boolean expression.
     @Test
-    fun boolDefExprCheck() = testSession("ScalarValues", "Ranges") {
+    fun boolDefExprCheck() = testSession("Ranges") {
         loadKerML("""
-            feature a: Ranges::RealInRange { :>> range = "1"; } 
-            feature b: Ranges::RealInRange { :>> range = "2"; } 
+            feature a: Ranges::RealInRange { :>> range = 1; } 
+            feature b: Ranges::RealInRange { :>> range = 2; } 
             feature d: ScalarValues::Boolean = (a > b) & false; 
         """, Runlevel.ALL)
         assertNoIssues()
@@ -115,7 +115,7 @@ class ParseAndUseConstraintsTests {
     @Test
     fun partsAttributeWithRangeTest() = testSession("Ranges") {
         loadKerML("""
-            feature b: Ranges::RealInRange { :>> range = "2.0 .. 3.0"; }
+            feature b: Ranges::RealInRange { :>> range = 2.0 .. 3.0; }
         """, Runlevel.VARIABLES)
         assertNoIssues()
         val b = solver.getVariable("b")
@@ -129,9 +129,9 @@ class ParseAndUseConstraintsTests {
     @Test
     fun changeVarCheck() = testSession("Ranges") {
         loadKerML("""
-            feature a: Ranges::RealInRange { :>> range = "1"; }
-            feature b: Ranges::RealInRange { :>> range = "2"; }
-            feature c: Ranges::RealInRange { :>> range = "3"; }
+            feature a: Ranges::RealInRange { :>> range = 1; }
+            feature b: Ranges::RealInRange { :>> range = 2; }
+            feature c: Ranges::RealInRange { :>> range = 3; }
             feature d: ScalarValues::Real = a+b*c;
         """, Runlevel.ALL)
         assertNoIssues()
@@ -141,7 +141,7 @@ class ParseAndUseConstraintsTests {
         letVar("d", builder.Reals)
         assertEquals(10.0, solver.getVariable("a")!!.min(), 0.0000001)
         // A new evaluation must again change d to now 16.
-        runlevel = Runlevel.VARIANCE_CHECKED
+        settings.runlevel = Runlevel.VARIANCE_CHECKED
         solver.propagate()
         val d = solver.getVariable("d")!!.vectorQuantity.value as AADD.Leaf
         assertEquals(16.0, d.central)
@@ -221,9 +221,9 @@ class ParseAndUseConstraintsTests {
     fun iteFunctionTest() = testSession("ScalarValues", "Ranges", runlevel = Runlevel.VARIABLES) {
         loadKerML("""
             feature y: ScalarValues::Real= ITE(a>c, d, 3.14); 
-            feature a: Ranges::RealInRange { :>> range = "1.0..1.0"; }
-            feature c: Ranges::RealInRange { :>> range = "0.0..100.0"; }; 
-            feature d: Ranges::RealInRange {:>> range = "3.0";}
+            feature a: Ranges::RealInRange { :>> range = 1.0..1.0; }
+            feature c: Ranges::RealInRange { :>> range = 0.0..100.0; }; 
+            feature d: Ranges::RealInRange {:>> range = 3.0;}
             feature unknown: ScalarValues::Boolean; 
         """, Runlevel.VARIABLES)
         assertEquals(1, solver.getVariable("y")!!.aadd().height())
@@ -316,10 +316,9 @@ class ParseAndUseConstraintsTests {
     @Test
     fun constraintTestRealNegative() = testSession("Ranges") {
         loadKerML("""
-            feature a: Ranges::RealInRange {:>> range = "-2.0 .. -1.0";}
-        """, Runlevel.VARIABLES)
+            feature a: Ranges::RealInRange {:>> range = -2.0 .. -1.0;}
+        """, Runlevel.ALL)
         val a = solver.getVariable("a")!!
-        solver.propagate()
         assertNoIssues()
         assertEquals(-2.0, a.min())
         assertEquals(-1.0, a.max())
@@ -328,11 +327,10 @@ class ParseAndUseConstraintsTests {
     @Test
     fun constraintTestIntegerNegative() = testSession("Ranges") {
         loadKerML("""
-            feature a: Ranges::IntegerInRange { :>> range = "-2 .. -1"; } 
-        """)
-        solver.propagate()
-        val a = solver.getVariable("a")!!
+            feature a: Ranges::IntegerInRange { :>> range = -2 .. -1; } 
+        """, Runlevel.ALL)
         assertNoIssues()
+        val a = solver.getVariable("a")!!
         assertEquals(-2L, a.min())
         assertEquals(-1L, a.max())
     }

@@ -12,10 +12,14 @@ import com.github.tukcps.sysmd.compiler.parser.sysmlv2.RequirementDefinition
 import com.github.tukcps.sysmd.compiler.parser.sysmlv2.RequirementUsage
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.COMMA
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.EOF
+import com.github.tukcps.sysmd.exceptions.Issue
+import com.github.tukcps.sysmd.model.generated.ElementType
 import com.github.tukcps.sysmd.services.session.implementation.SessionImplementation
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import util.assertNoIssues
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 
@@ -26,7 +30,7 @@ import kotlin.test.assertTrue
 class ProductionsTests {
 
     private fun kerMLParser(): KerML {
-        val model = SessionImplementation( )
+        val model = SessionImplementation()
         return KerML(model = model)
     }
 
@@ -254,7 +258,7 @@ class ProductionsTests {
             class      c :> Base::Anything; 
         """
         ElementList()
-        val elements = model.repo.elements.size
+        val elements = semantics.elementsBuilt.size
         assertTrue(18 <= elements)
     }
 
@@ -328,5 +332,22 @@ class ProductionsTests {
         """.trimIndent()
         RequirementDefinition()
         model.assertNoIssues()
+    }
+
+    @Test
+    fun simpleProduction() {
+        val k = KerML()
+        val e = k.parse("""
+            package foo;
+        """)
+        assertEquals(emptySet<Issue>(), k.status.issues)
+        val nr = if (k.settings.includeOwningRelationshipsToRoot) 2 else 1
+        assertEquals(nr, e.size)
+        val foo = e.single { it.type == ElementType.Package }
+
+        if (k.settings.includeOwningRelationshipsToRoot)
+            assertNotNull(foo.owningMembership?.id)
+        else
+            assertNull(foo.owningMembership?.id)
     }
 }

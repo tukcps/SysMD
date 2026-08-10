@@ -26,11 +26,13 @@ standard library package BaseFunctions {
         /*abstract*/ in feature 'type': Anything;
         return : Boolean[1];
     }
+
     abstract function 'hastype'{
         in seq: Anything[0..*];
         /*abstract*/ in feature 'type': Anything;
         return : Boolean;
     }
+
     abstract function '@'{
         in seq: Anything[0..*];
         /*abstract*/ in feature 'type': Anything;
@@ -354,7 +356,7 @@ standard library package StringFunctions {
     function '==' specializes DataFunctions::'=='
         { in x: String[0..1]; in y: String[0..1]; return : Boolean[1]; }
     function ToString specializes BaseFunctions::ToString
-        { in x: String[1]; }
+        { in x: String[1]; return : String[1] = x;}
 
     abstract function 'if' specializes ScalarFunctions::'if' // non-standard
         { in test: Boolean[1]; in thenValue[1] : String; in elseValue[1] : String; return : String[1]; }

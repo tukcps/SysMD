@@ -14,12 +14,10 @@ import kotlin.test.assertTrue
 class AttributeTests {
     @Test
     fun booleanAttributeTest() = testSession("Attributes") {
-        loadSysMLv2(
-            """
+        loadSysMLv2("""
             attribute a: ScalarValues::Boolean;
             attribute b: ScalarValues::Boolean; 
-        """, Runlevel.ALL
-        )
+        """, Runlevel.ALL)
         assertNoIssues()
         solver.propagate()
         val a = solver.getVariable("a")
@@ -30,13 +28,11 @@ class AttributeTests {
     }
 
     @Test
-    fun booleanAttributeTest2() = testSession("Attributes", "Ranges") {
-        loadSysMLv2(
-            """
-            attribute a: Ranges::BooleanInSpec{:>> range="true";}
-            attribute b: Ranges::BooleanInSpec{:>> range="false";}
-        """, Runlevel.ALL
-        )
+    fun booleanAttributeTest2() = testSession("Attributes") {
+        loadSysMLv2("""
+            attribute a: Ranges::BooleanInSpec{ :>> range=true;}
+            attribute b: Ranges::BooleanInSpec{ :>> range=false;}
+        """, Runlevel.ALL)
         assertNoIssues()
         val a = solver.getVariable("a")
         val b = solver.getVariable("b")
@@ -46,12 +42,10 @@ class AttributeTests {
 
     @Test
     fun booleanAttributeTest3() = testSession("Attributes") {
-        loadSysMLv2(
-            """
+        loadSysMLv2("""
             attribute a: ScalarValues::Boolean;
             attribute b: ScalarValues::Boolean = a;
-        """
-        )
+        """)
         solver.propagate()
         val a = solver.getVariable("a")
         val b = solver.getVariable("b")
@@ -64,31 +58,25 @@ class AttributeTests {
 
     @Test
     fun nestedAttributesTest() = testSession("Attributes") {
-        loadSysMLv2(
-            """
-                attribute def a{
-                    attribute b: ScalarValues::Boolean;
-                    attribute c: ScalarValues::Boolean;
-                }
-        """
-        )
-        solver.propagate()
+        loadSysMLv2("""
+            attribute def a{
+                attribute b: ScalarValues::Boolean;
+                attribute c: ScalarValues::Boolean;
+            }
+        """, Runlevel.MODEL)
         assertNoIssues()
     }
 
     @Test
     fun redefinesTest() = testSession("Parts", "Ranges") {
-        loadSysMLv2(
-            """
+        loadSysMLv2("""
             part def P1 {
-                attribute a: Ranges::RealInRange {:>> range="0..20";}
+                attribute a: Ranges::RealInRange {:>> range=0..20;}
             }
             part def P2 :> P1 {
                 :>> a = 3.0;
             }
-        """
-        )
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
         assertEquals(0.0, solver.getVariable("P1::a")!!.vectorQuantity.aadd().getRange().min, 0.000001)
         assertEquals(20.0, solver.getVariable("P1::a")!!.vectorQuantity.aadd().getRange().max, 0.000001)
@@ -99,18 +87,15 @@ class AttributeTests {
 
     @Test
     fun redefinesTestOtherSyntax() = testSession("Parts", "Ranges") {
-        loadSysMLv2(
-            """
+        loadSysMLv2("""
             part def P1 {
-                attribute a: Ranges::RealInRange {:>> range="0..20";}
+                attribute a: Ranges::RealInRange {:>> range=0..20;}
             }
             part def P2 :> P1 {
                 attribute :>> a = 3.0; 
             }
             part def P3 :> P1; 
-        """
-        )
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
         assertEquals(0.0, solver.getVariable("P1::a")!!.vectorQuantity.aadd().getRange().min, 0.000001)
         assertEquals(20.0, solver.getVariable("P1::a")!!.vectorQuantity.aadd().getRange().max, 0.000001)
@@ -123,17 +108,14 @@ class AttributeTests {
     @Test  // In some executions property of P2: 'a' is written to P1:a, which is not correct.
     // Issue 289
     fun redefinesTestOtherSyntax2() = testSession("Parts", "Ranges") {
-        loadSysMLv2(
-            """
+        loadSysMLv2("""
             part def P1 {
-                attribute a: Ranges::RealInRange { :>> range="0..20"; }
+                attribute a: Ranges::RealInRange { :>> range=0..20; }
             }
             part def P2 :> P1 {
-                :>> a: Ranges::RealInRange = 3.0 { :>> range="0..10"; }
+                :>> a: Ranges::RealInRange = 3.0 { :>> range=0..10; }
             }
-        """
-        )
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
         val p1a = global.resolve("P1::a")
         val p2a = global.resolve("P2::a")
@@ -148,33 +130,28 @@ class AttributeTests {
     }
 
     @Test
-    fun nestedAttributeTest() = testSession("Occurrences", "Ranges") {
-        loadSysMLv2(
-            """
+    fun nestedAttributeTest() = testSession("Attributes") {
+        loadSysMLv2("""
             attribute def a {
-                attribute b: Ranges::RealInRange {:>> range="0..20";}
-                attribute c: Ranges::RealInRange {:>> range="0..40";}
+                attribute b: Ranges::RealInRange {:>> range=0..20;}
+                attribute c: Ranges::RealInRange {:>> range=0..40;}
             }
             attribute aa : a {
                 :>> b = 10.0;
                 :>> c = 20.0; 
             }
-        """
-        )
-        solver.propagate()
-        assertNoIssues()
+        """, Runlevel.ALL)
         assertNoIssues()
         assertEquals("Real", solver.getVariable("aa::b")!!.baseType.name)
         assertEquals("Real", solver.getVariable("aa::c")!!.baseType.name)
     }
 
     @Test
-    fun nestedAttributeTest2() = testSession("Attributes", "Ranges") {
-        loadSysMLv2(
-            """
+    fun nestedAttributeTest2() = testSession("Attributes") {
+        loadSysMLv2("""
             package test{
-                 attribute def QuantityPowerFactor {
-                    attribute quantity: Ranges::RealInRange {:>> range="0.0..5.0";}
+                attribute def QuantityPowerFactor {
+                    attribute quantity: Ranges::RealInRange {:>> range=0.0..5.0;}
                 }
                 attribute def QuantityDimension {
                     attribute quantityPowerFactors: QuantityPowerFactor;
@@ -183,16 +160,13 @@ class AttributeTests {
                 attribute massPF: QuantityPowerFactor { :>> quantity = 1.0; }
                 attribute quantityDimension: QuantityDimension { :>> quantityPowerFactors = lengthPF; }
             }
-        """
-        )
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
-        assertEquals(
-            "Real",
+        val q = global.resolve("test::quantityDimension::quantityPowerFactors::quantity")
+        assertEquals("Real",
             solver.getVariable("test::quantityDimension::quantityPowerFactors::quantity")!!.baseType.name
         )
-        assertEquals(
-            3.0,
+        assertEquals(3.0,
             solver.getVariable("test::quantityDimension::quantityPowerFactors::quantity")!!.vectorQuantity.aadd()
                 .getRange().max,
             0.000001
@@ -203,10 +177,10 @@ class AttributeTests {
      * Note: There is also a redefinition test in KerML tests.
      */
     @Test
-    fun nestedAttributeTest2b() = testSession("Attributes", "Ranges") {
+    fun nestedAttributeTest2b() = testSession("Attributes") {
         loadSysMLv2("""
             attribute def QuantityPowerFactor {
-                attribute exponent: Ranges::IntegerInRange {:>> range="-10..10";}
+                attribute exponent: Ranges::IntegerInRange {:>> range=-10..10;}
             }
             attribute def QuantityDimension {
                 attribute quantityPowerFactors: QuantityPowerFactor;
@@ -230,28 +204,24 @@ class AttributeTests {
 
     @Test
     fun nestedAttributeTest3() = testSession("Attributes") {
-        loadSysMLv2(
-            """
+        loadSysMLv2("""
             attribute def Old     { attribute a: ScalarValues::String default "old"; }
             attribute def OwnsOld { attribute ownedOld: Old; }
             attribute redefinedOld: Old { :>> a default "new"; }
             attribute ownsOld: OwnsOld  { :>> ownedOld default redefinedOld; }
-        """
-        )
+        """, Runlevel.ALL)
         assertNoIssues()
         val redefinedOldA = global.resolve("redefinedOld::a")
         assertNotNull(redefinedOldA)
-        solver.propagate()
         assertEquals("new", solver.getVariable("ownsOld::ownedOld::a")!!.vectorQuantity.value.asStrDD().toString())
     }
 
     @Test
-    fun nestedAttributeTestWithListOfElements() = testSession("Attributes", "Ranges") {
-        loadSysMLv2(
-            """
+    fun nestedAttributeTestWithListOfElements() = testSession("Attributes") {
+        loadSysMLv2("""
             attribute def QuantityPowerFactor {
                 attribute unit: ScalarValues::String;
-                attribute exponent: Ranges::IntegerInRange {:>> range="-10..10";}
+                attribute exponent: Ranges::IntegerInRange {:>> range=-10..10;}
             }
             attribute def QuantityDimension {
                 attribute quantityPowerFactors: QuantityPowerFactor;
@@ -285,40 +255,31 @@ class AttributeTests {
 
     // In ISQ::Mass, there is not the right type stored for unit and range (Base::Anything instead of String
     @Test
-    fun newRangeSpec() = testSession("Attributes", "Ranges") {
-        loadSysMLv2(
-            """
+    fun newRangeSpec() = testSession("Attributes", "ISQ") {
+        loadSysMLv2("""
             attribute a: ISQ::MassValue {
-                :>> range = "1..100";
-                :>> unit = "kg";
+                :>> range = 1..100 [kg];
             }
-        """
-        )
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
         val a = global.resolve("a")
         assertNotNull(a)
-        // assertEquals("String",solver.getVariable("a::range")!!.baseType.name)
-        // assertEquals("String",solver.getVariable("a::unit")!!.baseType.name)
-        // assertEquals("kg",(solver.getVariable("a") as Variable).unitSpec)
         assertEquals(1.0, (solver.getVariable("a") as Variable).aadd().getRange().min, 0.00001)
         assertEquals(100.0, (solver.getVariable("a") as Variable).aadd().getRange().max, 0.00001)
     }
 
     @Test
-    fun assertAttribute1() = testSession("Attributes", "Calculations", "Ranges") {
-        loadSysMLv2(
-            """
-            attribute a: Ranges::RealInRange {:>> range="0..2";}
-            attribute b: Ranges::RealInRange {:>> range="1..2";}
+    fun assertAttribute1() = testSession("Calculations") {
+        loadSysMLv2("""
+            attribute a: Ranges::RealInRange {:>> range=0..2;}
+            attribute b: Ranges::RealInRange {:>> range=1..2;}
             assert constraint Test {isIn(a, b)}
             calc def isIn {
                 in attribute a: ScalarValues::Real;
                 in attribute b: ScalarValues::Real;
                 return result: ScalarValues::Boolean = (a <= max(b)) and (a >= min(b));
             }
-        """
-        )
+        """)
         solver.propagate()
         assertNoIssues()
         assertEquals(1.0, solver.getVariable("a")!!.aadd().min, 0.000001)
@@ -326,38 +287,33 @@ class AttributeTests {
 
 
     @Test
-    fun assertAttribute2() = testSession("Calculations", "Ranges") {
+    fun assertAttribute2() = testSession("Calculations") {
         loadSysMLv2(
             """
-            attribute a: Ranges::RealInRange {:>> range="0..2";}
+            attribute a: Ranges::RealInRange {:>> range=0..2;}
             assert constraint Test { isIn(a, 1.0..2.0) }
             calc def isIn {
                 in attribute a: ScalarValues::Real;
                 in attribute b: ScalarValues::Real;
                 return result: ScalarValues::Boolean = (a <= max(b)) and (a >= min(b));
             }
-        """
-        )
+        """, Runlevel.ALL)
         solver.propagate()
         assertNoIssues()
         assertEquals(1.0, solver.getVariable("a")!!.aadd().min, 0.000001)
     }
 
-
     @Test
-    fun assertAttribute3() = testSession("ISQ", "Calculations", "Ranges") {
-        loadSysMLv2(
-            """
-            attribute a: ISQ::MassValue { :>> range = "0..2"; :>> unit = "kg";}
+    fun assertAttribute3() = testSession("Calculations", "ISQ") {
+        loadSysMLv2("""
+            attribute a: ISQ::MassValue { :>> range = 0..2 [kg];}
             assert constraint Test { isIn(a, 1000.0..2000.0 [g]) }
             calc def isIn {
                 in attribute a: ISQ::MassValue;
                 in attribute b: ISQ::MassValue;
                 return result: ScalarValues::Boolean = (a <= max(b)) and (a >= min(b));
             }
-        """
-        )
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
         assertEquals(1.0, solver.getVariable("a")!!.aadd().min, 0.000001)
     }

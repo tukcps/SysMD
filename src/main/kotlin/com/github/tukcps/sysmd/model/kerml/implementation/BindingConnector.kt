@@ -3,19 +3,23 @@ package com.github.tukcps.sysmd.model.kerml.implementation
 import com.github.tukcps.sysmd.model.kerml.BindingConnector
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Relationship
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
 class BindingConnectorImplementation(
+    model : Session,
+    elementId : Uuid = Uuid.random(),
     declaredName: String? = null,
     declaredShortName: String? = null,
-    elementType: String = "BindingConnector",
 ): BindingConnector, ConnectorImplementation(
-        declaredName = declaredName,
-        declaredShortName = declaredShortName,
-        elementType = elementType
-    ) {
-
-    override fun clone(): BindingConnector =
-        BindingConnectorImplementation().also { klon -> klon.updateFrom(this) }
+    model,
+    elementId = elementId,
+    declaredName = declaredName,
+    declaredShortName = declaredShortName,
+) {
+    override fun clone(): BindingConnector = BindingConnectorImplementation(model).also { klon ->
+        klon.updateFrom(this)
+    }
 
     override fun updateFrom(template: Element) {
         super.updateFrom(template)

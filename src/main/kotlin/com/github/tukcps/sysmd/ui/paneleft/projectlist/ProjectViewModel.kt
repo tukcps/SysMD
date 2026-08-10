@@ -2,21 +2,21 @@ package com.github.tukcps.sysmd.ui.paneleft.projectlist
 
 import androidx.compose.runtime.*
 import com.github.tukcps.sysmd.logger
+import com.github.tukcps.sysmd.model.datamodel.ElementData
+import com.github.tukcps.sysmd.model.generated.ElementType
+import com.github.tukcps.sysmd.rest.entities.interchange.InterchangeProject
 import com.github.tukcps.sysmd.services.Runlevel
-import com.github.tukcps.sysmd.services.repositories.local.ElementData
 import com.github.tukcps.sysmd.services.repositories.local.Language
 import com.github.tukcps.sysmd.services.repositories.local.ProjectData
 import com.github.tukcps.sysmd.services.session.SessionManager.sessionService
 import com.github.tukcps.sysmd.ui.syntaxhighlighting.indexerScope
 import com.github.tukcps.sysmd.ui.viewmodel.EditorTabsViewModel
-import io.github.tukcps.sysmlv2.interchange.InterchangeProject
+import io.ktor.http.*
 import kotlinx.coroutines.cancel
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
 import java.awt.Desktop
 import java.io.File
-import java.net.URI
-import java.util.*
 import kotlin.uuid.Uuid
 
 
@@ -50,7 +50,7 @@ data class ProjectViewModel(
     /** State of all filenames that are displayed in Project and possibly Tabs */
     val filesState = mutableStateListOf<String>()
     val maintainerState = mutableStateListOf<String>()
-    val websiteState: MutableState<URI?> = mutableStateOf(null)
+    val websiteState: MutableState<Url?> = mutableStateOf(null)
 
     /** Controls the dialog for deleting a file */
     val showSaveProjectDialog: MutableState<Boolean> = mutableStateOf(false)
@@ -58,7 +58,7 @@ data class ProjectViewModel(
 
     var name: String by nameState
     var description: String by descriptionState
-    private var website: URI? by websiteState
+    private var website: Url? by websiteState
 
     init {
         // Get view model's state from project information from repository data
@@ -128,7 +128,11 @@ data class ProjectViewModel(
             hasChangesState.value = false
 
             // Start a new session with the project
-            sessionIdState.value = sessionService.createSession(project!!).id
+            val session = sessionService.createSession(project!!)
+
+            // Just hot fix until done nicer
+            session.settings.includeOwningRelationshipsToRoot = false
+            sessionIdState.value = session.id
             loadProjectFromRepository()
 
             fileData.cellData.forEach { (name, _) ->
@@ -196,8 +200,8 @@ data class ProjectViewModel(
         editorTabsViewModel().editorTabs.forEach { cellList ->
             fileData.cellData[cellList.nameState.value] = cellList.cells .map { cell ->
                 ElementData(
-                    UUID.randomUUID(),
-                    type = "TextualRepresentation",
+                    Uuid.random(),
+                    type = ElementType.TextualRepresentation,
                     language = Language.languageWithNamespace(cell.language.value, cell.namespace.value),
                     body = cell.body.text
                 )
@@ -308,8 +312,8 @@ data class ProjectViewModel(
         // Add some cells
         fileData.cellData[fileName] = mutableListOf(
             ElementData(
-                elementId = UUID.randomUUID(),
-                type = "TextualRepresentation",
+                elementId = Uuid.random(),
+                type = ElementType.TextualRepresentation,
                 body = """
             ---
             title: New file "$fileName"
@@ -320,8 +324,8 @@ data class ProjectViewModel(
                 language = "YAML"
             ),
             ElementData(
-                elementId = UUID.randomUUID(),
-                type = "TextualRepresentation",
+                elementId = Uuid.random(),
+                type = ElementType.TextualRepresentation,
                 body = """
                 - The file is (unless you use the Web-UI) in the folder `$path`. 
                 - You can **rename** or **delete** the file via the left pane in the respective project. 
@@ -402,7 +406,7 @@ data class ProjectViewModel(
                 if (language?.isCompilable() == true) {
                     val namespace = Language.toNamespace(cell.language ?: "")
                     val body = cell.body ?: return@forEach
-                    sessionService.updateModel(sessionIdState.value, body, language = language, namespace = namespace, Runlevel.NONE)
+                    sessionService.updateModel(sessionIdState.value, body, language = language, namespace = namespace, Runlevel.NAMES_RESOLVED)
                 }
             }
         }

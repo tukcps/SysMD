@@ -1,7 +1,11 @@
 package com.github.tukcps.sysmd.model.kerml.implementation
 
 import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.model.util.ErrorElement
 import com.github.tukcps.sysmd.model.util.SimpleName
+import com.github.tukcps.sysmd.model.util.UnresolvedNamespace
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
 
 /**
@@ -16,22 +20,24 @@ import com.github.tukcps.sysmd.model.util.SimpleName
  * memberElement is a Namespace, then visible Memberships are also recursively imported from that Namespace and
  * its owned sub-Namespaces.
  */
-class NamespaceImportImplementation(
+open class NamespaceImportImplementation(
+    model : Session,
+    elementId : Uuid = Uuid.random(),
     declaredName: SimpleName? = null,
     declaredShortName: SimpleName? = null,
-    importingNamespace: Namespace = UnresolvedNamespace(),
-    importedNamespace: Namespace = UnresolvedNamespace(),
-    elementType: String = "NamespaceImport"
+    importingNamespace: Namespace = UnresolvedNamespace(model),
+    importedNamespace: Namespace = UnresolvedNamespace(model),
 ): NamespaceImport, RelationshipImplementation(
+    model,
+    elementId = elementId,
     declaredName=declaredName,
     declaredShortName = declaredShortName,
     owningRelatedElement = importingNamespace,
     source = mutableListOf(importingNamespace),
     target = mutableListOf(importedNamespace),
-    elementType = elementType
 ) {
     override var visibility: Import.VisibilityKind = Import.VisibilityKind.Public
-    override var isRecursive: Boolean = false  // False by default in SysMLv2
+    override var isRecursive: Boolean = false  // False by default in SysML v2
     override var isImportAll: Boolean = false
 
     override val importedElement: Namespace
@@ -56,7 +62,7 @@ class NamespaceImportImplementation(
 
     @Suppress("UNCHECKED_CAST")
     override var importedNamespace: Namespace
-        get() = target.first() as Namespace
+        get() = target.firstOrNull() as? Namespace ?: ErrorElement(model, target.firstOrNull())
         set(value) { target = mutableListOf(value) }
 
     override fun toString(): String = super.toString() +
@@ -65,8 +71,9 @@ class NamespaceImportImplementation(
             if (isImportAll) ", importAll" else ""
 
     override fun clone() : NamespaceImport = NamespaceImportImplementation(
-            importedNamespace = importedNamespace,
-        ).also { it.updateFrom(this) }
+        model,
+        importedNamespace = importedNamespace,
+    ).also { it.updateFrom(this) }
 
 
     override fun updateFrom(template: Element) {

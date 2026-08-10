@@ -9,6 +9,7 @@ import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.kerml.getOwnedElementsOfType
 import com.github.tukcps.sysmd.quantities.Quantity
+import com.github.tukcps.sysmd.model.datamodel.toElementData
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.session.Session
 import io.github.tukcps.aadd.AADD
@@ -44,7 +45,7 @@ internal class AstSumOverSubclasses(
         generatedAst = if (namespace is Type)
             model.initAstSumSubclasses(namespace, propertyAst.first(), transitive)
         else {
-            model.status.error("function 'sumOverSubclasses' can only be used in type", element = namespace)
+            model.status.error("function 'sumOverSubclasses' can only be used in type", element = namespace.toElementData())
             null
         }
 
@@ -95,7 +96,7 @@ internal class AstSumOverSubclasses(
             generatedAst!!.evalDownRec()
             // Iterate through all leafs of the generatedAST and update downQuantity of the associated ValueFeature
             for (leaf in generatedAst!!.getLeaves().filter { it.qualifiedName != null }) {
-                val valueFeature = model.global.resolveVar(leaf.qualifiedName!!)
+                val valueFeature = model.solver.getVariable(leaf.qualifiedName!!)
 
                 when (leaf.downQuantity.values[0]) {
                     is AADD -> valueFeature!!.vectorQuantity = valueFeature.vectorQuantity.constrain(leaf.downQuantity)
@@ -107,7 +108,7 @@ internal class AstSumOverSubclasses(
     }
 
     override fun getDependentPropertyStrings(): Set<String> {
-        return getPartDependencies(namespace as Type, propertyAst.first())
+        return getPartDependencies(namespace as Type, propertyAst.first(), transitive)
     }
 
     override fun clone(): AstFunction {
@@ -137,7 +138,7 @@ fun Session.initAstSumSubclasses(
         for (leaf in newAstNode.getLeaves().filter { it.qualifiedName != null }) {
             // Find property with propertyName owned by element ...
             //TODO Could cause problems with inheritance or imports
-            val variable = global.resolveVar(subtype.qualifiedName + "::" + leaf.qualifiedName)
+            val variable = solver.getVariable(subtype.qualifiedName + "::" + leaf.qualifiedName)
             if (variable != null) {
                 leaf.upQuantity = variable.vectorQuantity
                 leaf.downQuantity = variable.vectorQuantity

@@ -1,24 +1,22 @@
 package constraintnettests.functionstests
 
-import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.services.Runlevel
-import io.github.tukcps.aadd.IDD
-import kotlin.test.Test
-import kotlin.test.Ignore
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.mockup.loadSysMLv2
 import util.testSession
-import kotlin.math.*
-import kotlin.test.*
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class StepInterpolationTests {
 
         @Test
         fun assertTestStepInterpolationEvalDOwn() = testSession("Calculations", "ISQ", "Parts", "Ranges") {
             loadSysMLv2("""
-                attribute Avail : Quantities::ScalarQuantityValue {:>> unit = "%"; :>> range = "0.0..100.0";} 
-                attribute level: Ranges::IntegerInRange = stepInterpolation(Avail, 0.0, 2, 0.9, 3, 0.95, 4, 1.0, 5) { :>> range = "4..4"; }
+                attribute Avail : Quantities::ScalarQuantityValue { :>> range = 0.0..100.0 [%];} 
+                attribute level: Ranges::IntegerInRange = stepInterpolation(Avail, 0.0, 2, 0.9, 3, 0.95, 4, 1.0, 5) { :>> range = 4..4; }
             """, Runlevel.ALL)
             assertNoIssues()
             val test2 = solver.getVariable("Avail")
@@ -29,8 +27,8 @@ class StepInterpolationTests {
         @Test
         fun assertTestStepInterpolationEvalDOwn2() = testSession("Calculations", "ISQ", "Parts", "Ranges") {
             loadSysMLv2("""
-                attribute reliability: Quantities::ScalarQuantityValue {:>> unit = "%"; :>> range = "0.0..100.0";}
-                attribute ASIlFromReliability: Ranges::IntegerInRange = stepInterpolation(reliability, 0.0, 1, 0.99, 2, 0.995, 3, 0.999, 4) {:>> range = "3..4";} 
+                attribute reliability: Quantities::ScalarQuantityValue { :>> range = 0.0..100.0 [%];}
+                attribute ASIlFromReliability: Ranges::IntegerInRange = stepInterpolation(reliability, 0.0, 1, 0.99, 2, 0.995, 3, 0.999, 4) {:>> range = 3..4;} 
             """, Runlevel.ALL)
             assertNoIssues()
             val test2 = solver.getVariable("reliability")
@@ -43,8 +41,8 @@ class StepInterpolationTests {
         @Test
         fun assertTestStepInterpolationEvalDOwnInteger() = testSession("Calculations", "ISQ", "Parts", "Ranges") {
             loadSysMLv2("""
-                attribute Avail : Ranges::IntegerInRange {:>> range = "0..100";} 
-                attribute level: Ranges::IntegerInRange = stepInterpolation(Avail, 0, 2, 90, 3, 95, 4, 100, 5) { :>> range = "5..5"; }
+                attribute Avail : Ranges::IntegerInRange {:>> range = 0..100;} 
+                attribute level: Ranges::IntegerInRange = stepInterpolation(Avail, 0, 2, 90, 3, 95, 4, 100, 5) { :>> range = 5; }
             """, Runlevel.ALL)
             assertNoIssues()
             val test2 = solver.getVariable("Avail")

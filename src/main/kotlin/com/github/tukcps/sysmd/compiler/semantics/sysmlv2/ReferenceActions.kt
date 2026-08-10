@@ -3,19 +3,19 @@
 package com.github.tukcps.sysmd.compiler.semantics.sysmlv2
 
 import com.github.tukcps.sysmd.compiler.semantics.ActionsContext
-import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
-import com.github.tukcps.sysmd.model.sysml.implementation.ReferenceUsageImplementation
+import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureAction
+import com.github.tukcps.sysmd.model.generated.ElementType
 
 
-abstract class ReferenceUsageActions(
+abstract class ReferenceUsageAction(
     context: ActionsContext,
-) : FeatureActions<ReferenceUsageImplementation>(
+) : FeatureAction(
     context,
-    creator = ::ReferenceUsageImplementation,
+    type = ElementType.ReferenceUsage,
 )
 
 class PayloadParameterActions(
     context: ActionsContext,
-) : ReferenceUsageActions(
-    context,
+) : ReferenceUsageAction(
+    context
 )

@@ -1,5 +1,6 @@
 package compiler.kerml.examples
 
+import com.github.tukcps.sysmd.services.Runlevel
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
@@ -37,7 +38,7 @@ class AnnotationsTests {
                 comment C /* This is a comment about N. */
                 /* This is also a comment about N. */
             }
-        """.trimIndent())
+        """, Runlevel.MODEL)
         assertNoIssues()
     }
 }

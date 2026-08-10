@@ -3,25 +3,22 @@
 package com.github.tukcps.sysmd.compiler.semantics.sysmlv2
 
 import com.github.tukcps.sysmd.compiler.semantics.ActionsContext
-import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
-import com.github.tukcps.sysmd.compiler.semantics.kerml.TypeActions
-import com.github.tukcps.sysmd.model.sysml.implementation.ItemDefinitionImplementation
-import com.github.tukcps.sysmd.model.sysml.implementation.ItemUsageImplementation
+import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureAction
+import com.github.tukcps.sysmd.compiler.semantics.kerml.TypeAction
+import com.github.tukcps.sysmd.model.generated.ElementType
 
-
-class ItemDefinitionActions(
+class ItemDefinitionAction(
     context: ActionsContext,
-): TypeActions<ItemDefinitionImplementation>(
+): TypeAction(
     context,
-    creator = ::ItemDefinitionImplementation,
+    type = ElementType.ItemDefinition,
     isImplicit = "Items::Item",
 )
 
-
-class ItemUsageActions(
+class ItemUsageAction(
     context: ActionsContext,
-): FeatureActions<ItemUsageImplementation>(
+): FeatureAction(
     context,
-    creator = ::ItemUsageImplementation,
-    defaultType = "Items::Item",
+    type = ElementType.ItemUsage,
+    isImplicit = "Items::Item",
 )

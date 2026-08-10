@@ -1,24 +1,17 @@
 package com.github.tukcps.sysmd.model.sysml.implementation
 
 import com.github.tukcps.sysmd.model.sysml.InterfaceDefinition
+import com.github.tukcps.sysmd.model.sysml.Usage
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
-class InterfaceDefinitionImplementation(
-    declaredName: String? = null,
-    declaredShortName: String? = null,
-    elementType: String = "InterfaceDefinition"
-) : InterfaceDefinition, ConnectionDefinitionImplementation(
-    declaredName = declaredName,
-    declaredShortName = declaredShortName,
-    elementType =elementType
-){
-    override fun clone(): InterfaceDefinition {
-        return InterfaceDefinitionImplementation(
-            declaredName = this.declaredName,
-            declaredShortName = this.declaredShortName,
-        ).also {
-            it.model = model
-            source = source.toMutableList()
-            target = target.toMutableList()
-        }
+class InterfaceDefinitionImplementation(model : Session,elementId : Uuid = Uuid.random())
+    : InterfaceDefinition, ConnectionDefinitionImplementation(model,elementId = elementId)
+{
+    override fun clone(): InterfaceDefinition = InterfaceDefinitionImplementation(model).also {
+        it.updateFrom(this)
     }
+
+    override val connectionEnd: MutableList<Usage>
+        get() = TODO("Not yet implemented")
 }

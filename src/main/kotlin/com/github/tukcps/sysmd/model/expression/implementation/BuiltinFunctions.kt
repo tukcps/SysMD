@@ -119,7 +119,7 @@ private abstract class AbelianOperator() : BinaryFunction()
 }
 
 private fun<T> List<T>.put(ix : Int, y : T)
-= if(ix !in indices) throw IndexOutOfBoundsException(ix)
+= if(ix !in this@put.indices) throw IndexOutOfBoundsException(ix)
 	else mapIndexed { j, x -> if(ix == j) y else x }
 
 /** Predefined primitive functions that cannot be expressed in SysML or KerML syntax.

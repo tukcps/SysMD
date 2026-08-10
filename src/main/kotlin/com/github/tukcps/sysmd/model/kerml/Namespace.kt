@@ -6,7 +6,6 @@ import com.github.tukcps.sysmd.model.util.SimpleName
 import com.github.tukcps.sysmd.model.util.qualification
 import com.github.tukcps.sysmd.model.util.unqualifiedName
 
-
 /**
  * KerML foresees a namespace that is an element.
  * "Namespaces can assign unique names to Namespace members, but support multiple aliases per Element.
@@ -102,7 +101,6 @@ interface Namespace: Element {
      * @return the membership of an element to which the parameter resolves
      */
     fun resolveLocal(name: SimpleName): Membership?
-
 
     /**
      * Following standard. Requires work in visible memberships of

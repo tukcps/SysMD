@@ -1,5 +1,6 @@
 package constraintnettests
 
+import com.github.tukcps.sysmd.services.Runlevel
 import io.github.tukcps.aadd.BDD
 import io.github.tukcps.aadd.functions.numInternalNodes
 import util.assertNoIssues
@@ -19,8 +20,7 @@ class PropagatorTests {
             feature c: ScalarValues::Boolean;
             feature y: ScalarValues::Boolean = (a and c) or (not(b) and not(a));
             feature z: ScalarValues::Boolean(true) ;
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
     }
 
@@ -29,13 +29,11 @@ class PropagatorTests {
     fun propagationByPropagatorsDontCareTest()  = testSession("ScalarValues") {
         loadKerML("""
             feature a: ScalarValues::Boolean;
-            inv b false;
+            inv false b;
             inv c; 
-            feature y: ScalarValues::Boolean(true)  = (a and c) or (not(b) and not(a)); 
+            inv y = (a and c) or (not(b) and not(a)); 
             inv z; 
-        """)
-        assertNoIssues()
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
         assertEquals(1, solver.getVariable("a")!!.vectorQuantity.value.numInternalNodes())
     }
@@ -49,11 +47,8 @@ class PropagatorTests {
             feature d: ScalarValues::Boolean;
             feature f: ScalarValues::Boolean;
             feature g: ScalarValues::Boolean(true) = (a or b or c or d) and f; 
-        """).run {
-            solver.propagate()
-            assertNoIssues()
-            assertEquals(true, solver.getVariable("f")!!.vectorQuantity.value is BDD.Leaf)
-        }
+        """, Runlevel.ALL)
+        assertNoIssues()
+        assertEquals(true, solver.getVariable("f")!!.vectorQuantity.value is BDD.Leaf)
     }
-
 }

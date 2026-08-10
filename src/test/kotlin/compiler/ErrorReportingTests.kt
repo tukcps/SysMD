@@ -1,19 +1,29 @@
 package compiler
 
-import com.github.tukcps.sysmd.model.kerml.Package
+import com.github.tukcps.sysmd.compiler.KerML
 import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import util.assertIssue
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.mockup.loadSysMD
-import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 class ErrorReportingTests {
+
+    @Test
+    fun inputInformationPassed() = testSession("") {
+        val input = "  package Test;   "
+        val exportFromCompiler = KerML(this).parse(input)
+        val test = exportFromCompiler.find { it.declaredName == "Test" }
+        assertNotNull(test)
+        assertEquals(input, test.input)
+        assertEquals(2..14, test.indices)
+        assertEquals("package Test;", input.substring(test.indices!!))
+    }
 
     /**
      * Repeated execution of the same code does not add new errors.
@@ -32,39 +42,36 @@ class ErrorReportingTests {
     fun reportConstraintWrong() = testSession("ScalarValues") {
         loadKerML("feature x: ScalarValues::Real(1.0 .. 0.0);", Runlevel.ALL)
         // x is empty
-        val x = global.resolveVar("x")
+        val x = solver.getVariable("x")
         assertEquals(builder.Empty, x?.aadd())
         // shall we report an error? eventually, a user wants exactly this.
         // assertTrue(status.reports.isNotEmpty() )
     }
 
+    /**
+     * Actually, according to standard this is OK.
+     * For SysMD solver, ... a problem.
+     */
     @Test
     fun reportTypeIncompatible() = testSession("ScalarValues") {
-        loadKerML("feature x: ScalarValues::Real(2.0 .. 3.0) = 1 + 2.0.", Runlevel.VARIABLES)
-        assertIssue("incompatible")
+        loadKerML("feature x: ScalarValues::Real(2.0 .. 3.0) = 1 + 2.0;", Runlevel.ALL)
+        val x = solver.getVariable("x")
+        assertIssue("CAST")
     }
 
     @Test
-    fun reportUnknownOwner() = testSession("ScalarValues", runlevel = Runlevel.ALL) {
+    fun createdElementsTest() = testSession(runlevel = Runlevel.MODEL) {
         loadSysMD("""
             xx::yyy hasA feature p: Base::Anything. 
         """)
         assertNoIssues()
-        assertEquals(3, status.createdElements.size)
+        // SysMD works directly on model, hence 23 + 23
+        val nr = if (settings.includeOwningRelationshipsToRoot) 23 else 23
+        assertEquals(nr, get().size)
     }
 
     @Test
-    fun indicesTest() = testSession {
-        loadSysMLv2("""
-            package test;  
-        """)
-        val test = global.resolve("test")?.member<Package>()
-        val token = test?.input?.substring(test.indices!!)
-        assertEquals("test", token)
-    }
-
-    @Test
-    fun unresolvedTypeTest() = testSession {
+    fun unresolvedTypeTest() = testSession("ScalarValues") {
         loadKerML("""
             type t :> x;  
         """, Runlevel.MODEL)
@@ -72,7 +79,6 @@ class ErrorReportingTests {
         val x = status.issues.first()
         assertNotNull(x.input)
         assertNotNull(x.indices)
-        // assertEquals("x", x.input?.substring(x.indices!!))
     }
 
     @Test

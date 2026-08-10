@@ -4,8 +4,6 @@ import com.github.tukcps.sysmd.model.expression.functions.*
 import com.github.tukcps.sysmd.model.expression.implementation.OperatorInformation
 
 interface OperatorExpression: InvocationExpression {
-    var operatorPrecedence: Array<String>?
-
     var operator: String? //According to standard
         get() = functionName?.split("::")?.lastOrNull()
         set(value) {
@@ -14,6 +12,7 @@ interface OperatorExpression: InvocationExpression {
             functionName = "$ns::$value"
         }
 
+    /** Non-Standard. Mapping to legacy AST representation */
     var operatorAst: AstFunction? //Operator as Instance of ASTFunction to execute - necessary?
 
     override fun clone(): OperatorExpression

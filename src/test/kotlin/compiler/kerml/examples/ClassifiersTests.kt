@@ -1,11 +1,11 @@
 package compiler.kerml.examples
 
+import com.github.tukcps.sysmd.services.Runlevel
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Ignore
 import kotlin.test.Test
-import kotlin.test.assertTrue
 
 class ClassifiersTests {
 
@@ -16,7 +16,7 @@ class ClassifiersTests {
      */
     @Test
     fun testClassifierDeclaration() =
-        testSession("Occurrences") {
+        testSession {
             loadKerML("""
                 classifier Person { // Default superclassifier is Base::Anything.
                     feature age : ScalarValues::Integer;
@@ -34,7 +34,7 @@ class ClassifiersTests {
     @Ignore
     @Test
     fun testSubclassification() =
-        testSession("Occurrences") {
+        testSession {
             loadKerML("""
                 classifier A;
                 classifier B;
@@ -50,15 +50,12 @@ class ClassifiersTests {
      * Kernel Modeling Language: https://www.omg.org/spec/KerML/1.0/Beta2/PDF/changebar
      */
     @Test
-    fun testSubclassificationWithSpecialization() =
-        testSession("Occurrences") {
-            loadKerML(
-                """
-                classifier A;
-                classifier B;
-                classifier C specializes A, B;
-            """)
-            assertNoIssues()
-        }
-
+    fun testSubclassificationWithSpecialization() = testSession("ScalarValues") {
+        loadKerML("""
+            classifier A;
+            classifier B;
+            classifier C specializes A, B;
+        """, Runlevel.MODEL)
+        assertNoIssues()
+    }
 }

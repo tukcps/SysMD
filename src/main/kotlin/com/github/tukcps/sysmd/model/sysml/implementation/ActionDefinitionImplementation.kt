@@ -1,18 +1,16 @@
 package com.github.tukcps.sysmd.model.sysml.implementation
 
-import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.sysml.ActionDefinition
-import com.github.tukcps.sysmd.model.util.SimpleName
+import com.github.tukcps.sysmd.model.sysml.Definition
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
 open class ActionDefinitionImplementation(
-    declaredName: SimpleName? = null,
-    declaredShortName: SimpleName? = null,
-    elementType: String = "ActionDefinition",
-): ActionDefinition, DefinitionImplementation(
-    declaredName=declaredName,
-    declaredShortName=declaredShortName,
-    elementType = elementType,
-){
-    override fun clone(): ActionDefinition =
-        ActionDefinitionImplementation().also { klon -> klon.updateFrom(this) }
+    model : Session,
+    elementId : Uuid = Uuid.random()
+): ActionDefinition, DefinitionImplementation(model,elementId = elementId)
+{
+    override fun clone(): Definition =ActionDefinitionImplementation(model).also { klon ->
+        klon.updateFrom(this)
+    }
 }

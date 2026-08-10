@@ -20,11 +20,11 @@ class UpdateNotificationsTests {
      */
     @Test
     @Ignore //TODO: Fix updated variables
-    fun updateNotificationTest() = testSession("ScalarValues", "Ranges") {
+    fun updateNotificationTest() = testSession("Ranges") {
         loadKerML(""" 
-                feature p1: Ranges::RealInRange {:>> range = "1.0 ..6.0";}
-                feature p2: Ranges::RealInRange {:>> range = "7.0";}
-                feature p3: ScalarValues::Real = p1+p2;
+            feature p1: Ranges::RealInRange {:>> range = "1.0 ..6.0";}
+            feature p2: Ranges::RealInRange {:>> range = "7.0";}
+            feature p3: ScalarValues::Real = p1+p2;
         """)
         initialize(Runlevel.ALL)
         // Just collect the "updates" without calling the method propagate.
@@ -50,15 +50,15 @@ class UpdateNotificationsTests {
         loadKerML("""
             feature p: ScalarValues::Real = 1.0 + Math::pi + Math::e;
             feature x: ScalarValues::Real; 
-            feature y: Ranges::RealInRange = x + p {:>> range = "2.0";}
+            feature y: Ranges::RealInRange = x + p {:>> range = 2.0;}
         """, Runlevel.VARIABLES)
 
-        assertEquals(true, global.resolveVar("x")?.updated)
-        assertEquals(true, global.resolveVar("p")?.updated)
-        assertEquals(true, global.resolveVar("y")?.updated)
+        assertEquals(true, solver.getVariable("x")?.updated)
+        assertEquals(true, solver.getVariable("p")?.updated)
+        assertEquals(true, solver.getVariable("y")?.updated)
 
         solver.propagate()
-        assertEquals(true, global.resolveVar("x")?.updated)
-        assertTrue(global.resolveVar("x")!!.vectorQuantity.values.first().asAadd().getRange() in Range(-4.87..-4.85))
+        assertEquals(true, solver.getVariable("x")?.updated)
+        assertTrue(solver.getVariable("x")!!.vectorQuantity.values.first().asAadd().getRange() in Range(-4.87..-4.85))
     }
 }

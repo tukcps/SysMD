@@ -6,10 +6,7 @@ import com.github.tukcps.sysmd.model.kerml.getOwnedElementOfType
 import com.github.tukcps.sysmd.model.sysml.ConnectionDefinition
 import com.github.tukcps.sysmd.model.sysml.ConnectionUsage
 import com.github.tukcps.sysmd.model.sysml.PartUsage
-import com.github.tukcps.sysmd.services.Runlevel
-import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolveVar
-import io.github.tukcps.aadd.values.XBool
 import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
@@ -21,17 +18,15 @@ class ConnectionTests {
      */
     @Test
     fun connectionTestMultipleTargets() = testSession("Parts", "Connections") {
-        loadSysMLv2(
-            """
+        loadSysMLv2("""
             part a; 
             part b; 
             part c;
             connect(a, b, c); 
-        """
-        )
+        """)
+        assertNoIssues()
         val con = global.getOwnedElementOfType<ConnectionUsage>()
         assertNotNull(con)
-        assertNoIssues()
     }
 
     /**
@@ -39,13 +34,11 @@ class ConnectionTests {
      */
     @Test
     fun testSyntax2() = testSession("Parts", "Connections") {
-        loadSysMLv2(
-            """
+        loadSysMLv2("""
             part a; 
             part b;
             connect a to b; 
-        """
-        )
+        """)
         assertNoIssues()
         val c = global.getOwnedElementOfType<ConnectionUsage>()
         assertTrue(c != null)
@@ -55,13 +48,11 @@ class ConnectionTests {
 
     @Test
     fun testSyntax3() = testSession("Parts", "Connections") {
-        loadSysMLv2(
-            """
+        loadSysMLv2("""
             part a;
             part b;
             connection c connect a to b; 
-        """
-        )
+        """)
         assertNoIssues()
         val c = global.resolve("c")?.member<ConnectionUsage>()
         assertTrue(c != null)
@@ -71,14 +62,12 @@ class ConnectionTests {
 
     @Test
     fun testConnectThree() = testSession("Parts", "Connections") {
-        loadSysMLv2(
-            """
+        loadSysMLv2("""
             part a;
             part b;
             part c;
             connection d connect (a, b, c); 
-        """
-        )
+        """)
         assertNoIssues()
         val d = global.resolve("d")?.member<ConnectionUsage>()
         assertTrue(d != null)
@@ -87,14 +76,12 @@ class ConnectionTests {
 
     @Test
     fun testConnectionDefinition() = testSession("Parts", "Connections") {
-        loadSysMLv2(
-            """
+        loadSysMLv2("""
             connection def C; 
             part a;
             part b;
             connection c : C connect a to b;  
-        """
-        )
+        """)
         assertNoIssues()
         val c = global.resolve("C")?.member<ConnectionDefinition>()
         assertNotNull(c)
@@ -138,15 +125,13 @@ class ConnectionTests {
 
     @Test
     fun testInterfaceDefinition2() = testSession("Parts", "Connections", "Interfaces") {
-        loadSysMLv2(
-            """
+        loadSysMLv2("""
             part a;
             part b;
             interface def C1; 
             interface def C :> C1; 
             interface c : C connect a to b;  
-        """
-        )
+        """)
         assertNoIssues()
         val c = global.resolve("C")?.member<ConnectionDefinition>()
         assertNotNull(c)
@@ -195,19 +180,6 @@ class ConnectionTests {
         assertNoIssues()
     }
 
-
-    /**
-     * Check if Signals is correctly restored from the project.
-     * If previous test runs, this is eventually the problem.
-     */
-    @Test
-    fun testSignalsPkg() = testSession("Signals") {
-        assertTrue(status.issues.isEmpty(), "Errors: ${status.issues}")
-        initialize(Runlevel.ALL)
-        val effectChain = global.resolveVar("Signals::EffectChain::inoutIsEqual")!!
-        assertEquals(XBool.True, effectChain.boolSpecs.first())
-    }
-
     @Test
     @Ignore
     fun testConnectEffectChainPropagation() = testSession("Signals", "Parts", "Ports", "Ranges") {
@@ -238,8 +210,8 @@ class ConnectionTests {
         assertNotNull(source2)
         solver.propagate()
         assertNoIssues()
-        assertEquals(3.0, global.resolveVar("a::x")!!.min(), 0.00001)
-        assertEquals(3.0, global.resolveVar("b::y")!!.min(), 0.00001)
-        assertEquals(3.0, global.resolveVar("b::y")!!.max(), 0.00001)
+        assertEquals(3.0, solver.getVariable("a::x")!!.min(), 0.00001)
+        assertEquals(3.0, solver.getVariable("b::y")!!.min(), 0.00001)
+        assertEquals(3.0, solver.getVariable("b::y")!!.max(), 0.00001)
     }
 }

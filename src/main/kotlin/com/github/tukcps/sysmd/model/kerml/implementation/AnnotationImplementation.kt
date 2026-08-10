@@ -2,7 +2,9 @@ package com.github.tukcps.sysmd.model.kerml.implementation
 
 import com.github.tukcps.sysmd.model.kerml.Annotation
 import com.github.tukcps.sysmd.model.kerml.Element
-import com.github.tukcps.sysmd.model.kerml.UnresolvedElement
+import com.github.tukcps.sysmd.model.util.UnresolvedElement
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
 
 /**
@@ -16,34 +18,35 @@ import com.github.tukcps.sysmd.model.kerml.UnresolvedElement
  * The annotatedElement of this Annotation, when it is also its owningRelatedElement.
  */
 open class AnnotationImplementation(
+    model: Session,
+    elementId : Uuid = Uuid.random(),
     declaredName: String? = null,
     declaredShortName: String? = null,
-    owningRelatedElement: Element = UnresolvedElement(),
-    annotatingElement: Element = UnresolvedElement(),
-    annotatedElement:  Element = UnresolvedElement(),
-    elementType: String = "Annotation"
+    owningRelatedElement: Element = UnresolvedElement(model),
+    annotatingElement: Element = UnresolvedElement(model),
+    annotatedElement: Element = UnresolvedElement(model),
 ): Annotation, RelationshipImplementation(
+    model,
+    elementId = elementId,
     declaredName=declaredName,
     declaredShortName=declaredShortName,
     owningRelatedElement=owningRelatedElement,
     source = mutableListOf(annotatingElement),
     target = mutableListOf(annotatedElement),
-    elementType = elementType
 ) {
     @Suppress("UNCHECKED_CAST")
     override val annotatingElement: Element
         get() = source.first()
 
     override val annotatedElement: Element
-        get() = target.firstOrNull() as Element
+        get() = target.first()
 
-    override fun clone(): Annotation {
-        return AnnotationImplementation(
-            declaredName=declaredName,
-            declaredShortName=declaredShortName,
-            owningRelatedElement=owningRelatedElement,
-            annotatedElement = annotatedElement,
-            annotatingElement = annotatingElement,
-        )
-    }
+    override fun clone(): Annotation = AnnotationImplementation(
+        model,
+        declaredName=declaredName,
+        declaredShortName=declaredShortName,
+        owningRelatedElement=owningRelatedElement,
+        annotatingElement = annotatingElement,
+        annotatedElement = annotatedElement,
+    ).also { it.updateFrom(this) }
 }

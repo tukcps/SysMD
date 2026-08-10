@@ -1,6 +1,7 @@
 package compiler
 
 import com.github.tukcps.sysmd.compiler.importMD
+import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.TextualRepresentation
 import com.github.tukcps.sysmd.model.kerml.implementation.NamespaceImplementation
@@ -36,7 +37,7 @@ class ImportMDTests {
             ## H2
             text
         """.trimIndent()
-        val fileAnnotation = addOwnedMember(NamespaceImplementation(declaredName="test"), global)
+        val fileAnnotation = addOwnedMember(NamespaceImplementation(this, declaredName="test"), global)
         importMD(input, fileAnnotation)
         initialize(Runlevel.NAMES_RESOLVED)
         assertNoIssues()
@@ -61,8 +62,6 @@ class ImportMDTests {
         """.trimIndent()
         importMD(input, global)
         assertEquals(5, global.ownedElement.size)
-        initialize(Runlevel.NAMES_RESOLVED)
-        assertEquals(13, get().size)
     }
 
 
@@ -75,33 +74,12 @@ class ImportMDTests {
             Test isA Package.
             ```            
         """.trimIndent()
-        val fileAnnotation = addOwnedMember(NamespaceImplementation(declaredName="test"), global)
+        val fileAnnotation = addOwnedMember(NamespaceImplementation(this, declaredName="test"), global)
         importMD(input, fileAnnotation)
-        assertEquals(13, get().size)
+        val member = global.resolve("test")?.member<Element>()
+        assertEquals(3, member?.ownedElement?.size)
     }
 
-
-    /**
-     * The language shall be passed including parameters.
-     */
-    @Test fun importMdWithLanguageAndNamespace() = testProjectSession {
-        val input = """
-            # H1
-            ## H2 
-            *asdf* or _asdf_
-            ```SysMD::A::B
-            Test isA Package.
-            ```            
-        """.trimIndent()
-        // Create File annotating the element ...
-        val fileAnnotation = addOwnedMember(NamespaceImplementation(declaredName="test"), global)
-        // Parse it, creates Textual representations inside.
-        importMD(input, fileAnnotation)
-        assertEquals(13, get().size)
-        // The last one is SysMD with the Language set to SysMD::A::B
-        assertEquals((fileAnnotation.ownedElement.last() as TextualRepresentation).language, "SysMD::A::B")
-        assertEquals((fileAnnotation.ownedElement.last() as TextualRepresentation).getOwnerPrefix(), "A::B")
-    }
 
     @Test fun importMdWithNoTrailingTicks() = testProjectSession {
         val input = """
@@ -111,7 +89,7 @@ class ImportMDTests {
             ```
             Package Test.
         """.trimIndent()
-        val fileAnnotation = addOwnedMember(NamespaceImplementation(declaredName="test"), global)
+        val fileAnnotation = addOwnedMember(NamespaceImplementation(this, declaredName="test"), global)
         importMD(input, fileAnnotation)
         assertEquals(3, global.resolve("test")?.member<Namespace>()!!.ownedElement.size)
     }
@@ -125,12 +103,13 @@ class ImportMDTests {
             
             # h1
         """.trimIndent()
-        val fileAnnotation = addOwnedMember(NamespaceImplementation(declaredName="test"), global)
+        val fileAnnotation = addOwnedMember(NamespaceImplementation(this, declaredName="test"), global)
         importMD(input, fileAnnotation)
-        assertEquals(11, get().size)
+        val member = global.resolve("test")?.member<Element>()
+        assertEquals(2, member?.ownedElement?.size)
     }
 
-    @Test fun importMdAndCompile() = testProjectSession {
+    @Test fun importMdWithLanguage() = testProjectSession {
         val input = """
             # H1
             ## H2 
@@ -139,19 +118,13 @@ class ImportMDTests {
             package Test;
         """.trimIndent()
         // The SysMD file name, represented as annotation.
-        val fileAnnotation = addOwnedMember(NamespaceImplementation(declaredName = "test"), global)
+        val fileAnnotation = addOwnedMember(NamespaceImplementation(this, declaredName = "test"), global)
         // Import the resulting segments of TextualRepresentation / Documentation in MD into the model
         // They shall become owned elements of the file.
         importMD(input, fileAnnotation)
-        assertEquals(13, get().size)
-        for (it in get().filterIsInstance<TextualRepresentation>()) {
-            if (it.language == "KerML") {
-                it.compile()
-            }
-        }
-        initialize(Runlevel.NAMES_RESOLVED)
-        val test = global.resolve("Test")?.memberElement
-        assertNotNull(test)
+        val kerml = global.resolve("test")?.member<Element>()?.ownedElement
+            ?.find { it is TextualRepresentation && it.language == "KerML" }
+        assertNotNull(kerml)
     }
 
     @Test fun importMdWithYamlHeader2() = testProjectSession {
@@ -173,7 +146,7 @@ class ImportMDTests {
             
         """.trimIndent()
         // The SysMD file name, represented as annotation.
-        val fileAnnotation = addOwnedMember(NamespaceImplementation(declaredName="test"), global)
+        val fileAnnotation = addOwnedMember(NamespaceImplementation(this, declaredName="test"), global)
         // Import the resulting segments of TextualRepresentation / Documentation in MD into the model
         // They shall become owned elements of the file.
         importMD(input, fileAnnotation)

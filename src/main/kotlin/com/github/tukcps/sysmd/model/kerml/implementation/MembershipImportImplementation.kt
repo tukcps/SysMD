@@ -4,10 +4,11 @@ import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Membership
 import com.github.tukcps.sysmd.model.kerml.MembershipImport
 import com.github.tukcps.sysmd.model.kerml.Namespace
-import com.github.tukcps.sysmd.model.kerml.Unresolved
-import com.github.tukcps.sysmd.model.kerml.UnresolvedMembership
-import com.github.tukcps.sysmd.model.kerml.UnresolvedNamespace
-import com.github.tukcps.sysmd.model.util.SimpleName
+import com.github.tukcps.sysmd.model.util.Unresolved
+import com.github.tukcps.sysmd.model.util.UnresolvedMembership
+import com.github.tukcps.sysmd.model.util.UnresolvedNamespace
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
 
 /**
@@ -22,15 +23,12 @@ import com.github.tukcps.sysmd.model.util.SimpleName
  * memberElement is a Namespace, then visible Memberships are also recursively imported from that Namespace and
  * its owned sub-Namespaces.
  */
-class MembershipImportImplementation(
-    name: String? = null,
-    shortName: String? = null,
-    elementType: String = "MembershipImport",
-): MembershipImport, ImportImplementation(elementType) {
-
+class MembershipImportImplementation(model : Session,elementId : Uuid = Uuid.random())
+    : MembershipImport, ImportImplementation(model, elementId = elementId)
+{
     init {
-        source = mutableListOf(UnresolvedNamespace())
-        target = mutableListOf(UnresolvedMembership())
+        source = mutableListOf(UnresolvedNamespace(model))
+        target = mutableListOf(UnresolvedMembership(model))
     }
 
     override val importedElement: Element
@@ -62,7 +60,7 @@ class MembershipImportImplementation(
         }
     }
 
-    override fun clone() : MembershipImport =
-        MembershipImportImplementation().also { it.updateFrom(this) }
-
+    override fun clone() : MembershipImport = MembershipImportImplementation(model).also {
+        it.updateFrom(this)
+    }
 }

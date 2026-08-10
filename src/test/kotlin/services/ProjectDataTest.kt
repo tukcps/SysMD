@@ -1,9 +1,9 @@
 package services
 
+import com.github.tukcps.sysmd.rest.entities.interchange.InterchangeProject
 import com.github.tukcps.sysmd.rest.entities.interchange.Meta
 import com.github.tukcps.sysmd.services.repositories.local.ProjectData
 import com.github.tukcps.sysmd.services.repositories.local.getCells
-import io.github.tukcps.sysmlv2.interchange.InterchangeProject
 import kotlinx.datetime.Instant
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
@@ -94,5 +94,35 @@ class ProjectDataTest {
             assertEquals(5, cells["file1.md"]?.size)
             assertEquals("YAML", cells["file1.md"]?.first()?.language)
         }
+    }
+
+    @Test
+    fun loadLegacyObjectUuidTest() {
+        val dir = (javaClass.getResource("saveAndLoadProjectData/project")?.toURI()?.toPath())
+            ?: javaClass.classLoader.getResource("saveAndLoadProjectData/project")?.toURI()?.toPath()
+            ?: throw Exception("Could not load project from saveAndLoadProjectData")
+
+        dir.resolve(".project.json").writeText("""
+            {
+                "name" : "name",
+                "version" : "*",
+                "description" : "description",
+                "license" : null,
+                "maintainer" : null,
+                "website" : null,
+                "topic" : null,
+                "usage" : [ ],
+                "id" : {
+                    "mostSignificantBits" : 1180091352349625126,
+                    "leastSignificantBits" : -6991388618554527646
+                }
+            }
+            """.trimIndent()
+        )
+
+        val projectData = ProjectData.fromInterchangeFiles(Path(dir.toString()))
+        assertNotNull(projectData)
+        assertEquals("name", projectData.name)
+        assertEquals("106086d5-234f-4b26-9ef9-9917e8593062", projectData.project.id.toString())
     }
 }

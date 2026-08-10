@@ -17,6 +17,11 @@ import org.springframework.boot.builder.SpringApplicationBuilder
 var settings: Settings = Settings()
 val logger: Logger = LoggerFactory.getLogger("SysMD Notebook")
 
+/**
+ * The main function. Can be called with argument `headless`.
+ * Then, the UI will not be started, and only a service for the REST API will be started.
+ * This allows attaching a Web-Based UI via the service controller.
+ */
 suspend fun main(args: Array<String>) {
 
     val headless = "headless" in args
@@ -28,7 +33,7 @@ suspend fun main(args: Array<String>) {
             .run(*args)
     }
 
-    // Launches SysMD Notebook
+    // Launches SysMD Notebook, if not headless
     if (!headless)
         SysMDNotebook.showUI(args)
     else

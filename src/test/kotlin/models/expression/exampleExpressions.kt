@@ -1,34 +1,36 @@
 package models.expression
 
-import com.github.tukcps.sysmd.model.expression.*
+import com.github.tukcps.sysmd.model.expression.Expression
+import com.github.tukcps.sysmd.model.expression.FeatureReferenceExpression
+import com.github.tukcps.sysmd.model.expression.LiteralInteger
+import com.github.tukcps.sysmd.model.expression.OperatorExpression
 import com.github.tukcps.sysmd.model.expression.implementation.*
-import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.model.kerml.Feature.FeatureDirectionKind.*
+import com.github.tukcps.sysmd.model.kerml.Element
+import com.github.tukcps.sysmd.model.kerml.Feature.FeatureDirectionKind.IN
 import com.github.tukcps.sysmd.model.util.QualifiedName
-import com.github.tukcps.sysmd.services.session.*
-import kotlin.test.*
+import com.github.tukcps.sysmd.model.util.UnresolvedFeature
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
+import kotlin.test.assertNotEquals
 
 fun Session.literalExpression(value : Long) = literalExpression(value.toString(), value)
 fun Session.literalExpression(value : Int) = literalExpression(value.toLong())
 fun Session.literalExpression(value : Boolean) = literalExpression(value.toString(), value)
 
-fun Session.featureReferenceExpression(name : QualifiedName, resolve : Boolean = true) : FeatureReferenceExpression = FeatureReferenceExpressionImplementation().also {
-	it.generateUUID()
+fun Session.featureReferenceExpression(name : QualifiedName, resolve : Boolean = true) : FeatureReferenceExpression = FeatureReferenceExpressionImplementation(this).also {
 	it.declaredName = it.elementId.toString()
 	it.declaredShortName = it.declaredName
 	it.direction = IN
-	it.model = this
 
-	it.referent = if(resolve) global.resolve(name)!!.member()!! else UnresolvedFeature(name)
+	it.referent = if(resolve) global.resolve(name)!!.member()!! else UnresolvedFeature(this, name)
 }
 
-fun Session.operatorExpression(op : String, vararg operands : Expression) : OperatorExpression = OperatorExpressionImplementation().also {
-	it.generateUUID()
+fun Session.operatorExpression(op : String, vararg operands : Expression) : OperatorExpression = OperatorExpressionImplementation(this).also {
 	it.declaredName = it.elementId.toString()
 	it.declaredShortName = it.declaredName
 	it.operator = op
 	it.direction = IN
-	it.model = this
 
 	for(op in operands)
 		addOwnedMember(op, it)
@@ -41,29 +43,23 @@ fun Session.operatorExpression(op : String, name : String, vararg operands : Exp
 }
 
 fun Session.literalExpression(name : String?, value : Long) = LiteralIntegerImplementation(
-	name, name
+	this, declaredName = name
 ).also {
-	it.model = this
 	it.value = value
-	it.generateUUID()
 	it.direction = IN
 }
 
 fun Session.literalExpression(name : String?, value : String) = LiteralStringImplementation(
-	name, name
+	this, declaredName = name
 ).also {
-	it.model = this
 	it.value = value
-	it.generateUUID()
 	it.direction = IN
 }
 
 fun Session.literalExpression(name : String?, value : Boolean) = LiteralBooleanImplementation(
-	name, name
+	this, declaredName = name
 ).also {
-	it.model = this
 	it.value = value
-	it.generateUUID()
 	it.direction = IN
 }
 

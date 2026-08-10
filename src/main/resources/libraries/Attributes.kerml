@@ -1,4 +1,5 @@
 
 standard library package Attributes {
-    class Attribute; 
+    class AttributeValue;                  // for types
+    feature attributeValues :> AttributeValue;  // for subsetting of features
 }

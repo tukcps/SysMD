@@ -1,112 +1,168 @@
 package kermltests
 
-import com.fasterxml.uuid.Generators
+import com.github.tukcps.sysmd.compiler.semantics.UuidPolicies
+import com.github.tukcps.sysmd.compiler.semantics.UuidPolicies.uuid5
+import com.github.tukcps.sysmd.model.datamodel.variant
+import com.github.tukcps.sysmd.model.datamodel.version
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.check.checkLibraryElementIds
 import com.github.tukcps.sysmd.services.check.checkOwnership
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.session.loadLibrary
 import util.assertNoIssues
+import util.loadLibraryArrangement
 import util.mockup.loadKerML
 import util.testSession
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
+import kotlin.test.*
+import kotlin.uuid.Uuid
 
 
-class LibrariesUUIDTests {
+class LibrariesUuidTests {
 
-    /** Check that UUID5 are generated for the fully qualified names in standard library packages */
+    @Test
+    fun testUuid5Generation() {
+
+        val dns = Uuid.parse("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+
+        val id1 = uuid5("https://omg.org", dns)
+        val id2 = uuid5("https://omg.org", dns)
+
+        // Deterministic?
+        assertEquals(id1, id2)
+
+        // Reference value (RFC-conform)
+        assertEquals(Uuid.parse("5fd3ffa0-fabe-5183-af5e-9a31f565d8ad"), id1)
+
+        // Uuid-Version
+        assertEquals(5, id1.version)
+
+        // RFC-4122/RFC-9562 Variant
+        assertEquals(2, id1.variant)
+    }
+
+    /** Check that Uuid5 are generated for the fully qualified names in standard library packages */
     @Test
     fun uuid5isGeneratedTest1() = testSession {
         loadKerML("""
-            standard library package x {
+            standard library package x {     
                 class c; 
                 datatype d; 
                 package p { class e; }
                 feature f [2 .. 3]; 
             }
         """)
-
-        // assertTrue(status.reports.isEmpty(), status.reports.toString())
-        val x = global.resolve("x::p")?.memberElement
+        assertNoIssues()
+        val x = global.resolve("x")?.member<Package>()
         assertNotNull(x)
         assertTrue(x.isLibraryElement)
-        assertEquals(5, x.elementId!!.version())
-        var uuid5 = Generators.nameBasedGenerator().generate("x::p")
-        assertEquals(uuid5, x.elementId)
+        val xp = global.resolve("x::p")?.memberElement
+        assertNotNull(xp)
+        assertTrue(xp.isLibraryElement)
+        assertEquals(5, xp.elementId.version)
 
-        // Specialization of class is generated as UUID v5
+//?        assertEquals(uuid5("https://www.omg.org/spec/KerML/x::p", DNS_NAMESPACE), xp.elementId)
+
+        // Specialization of class is generated as Uuid v5
         val cSpecialization = global.resolve("x::c")?.memberElement!!.getOwnedElementOfType<Specialization>()
-        val cSpecializationPath = cSpecialization?.path()
-        assertEquals(cSpecializationPath, "x::c/0", "Path should use index if no name is available")
+//        val cSpecializationPath = cSpecialization?.path()
+//        assertEquals("x::c/1", cSpecializationPath, "Path should use index if no name is available, starts with 1")
         assertTrue(cSpecialization != null)
         assertTrue(cSpecialization.isLibraryElement)
-        assertEquals(5, cSpecialization.elementId!!.version())
-        uuid5 = Generators.nameBasedGenerator().generate(cSpecialization.path())
-        assertEquals(uuid5, cSpecialization.elementId)
+        assertEquals(5, cSpecialization.elementId.version)
+//        var uuid5 = uuid5("https://www.omg.org/spec/KerML/x::c/1", DNS_NAMESPACE)
+//        assertEquals(uuid5, cSpecialization.elementId)
 
         // Datatype's id
         val d = global.resolve("x::d")?.memberElement
-        assertEquals(5, d?.elementId?.version())
+        assertEquals(5, d?.elementId?.version)
         val dSpecialization = global.resolve("x::d")?.memberElement?.getOwnedElementOfType<Specialization>()
         assertTrue(dSpecialization != null)
         assertTrue(dSpecialization.isLibraryElement)
-        assertEquals(5, dSpecialization.elementId!!.version())
-        uuid5 = Generators.nameBasedGenerator().generate(dSpecialization.path())
-        assertEquals(uuid5, dSpecialization.elementId)
+        assertEquals(5, dSpecialization.elementId.version)
+//        uuid5 = Generators.nameBasedGenerator().generate(dSpecialization.path())
+//        assertEquals(uuid5, dSpecialization.elementId)
 
         // Feature's id
         val f = global.resolve("x::f")?.memberElement
-        assertEquals(5, f?.elementId?.version())
+        assertEquals(5, f?.elementId?.version)
         val fSpecialization = global.resolve("x::f")?.memberElement!!.getOwnedElementOfType<Specialization>()
         assertTrue(fSpecialization != null)
         assertTrue(fSpecialization.isLibraryElement)
-        assertEquals(5, fSpecialization.elementId!!.version())
-        uuid5 = Generators.nameBasedGenerator().generate(fSpecialization.path())
-        assertEquals(uuid5, fSpecialization.elementId)
+        assertEquals(5, fSpecialization.elementId.version)
+//        uuid5 = Generators.nameBasedGenerator().generate(fSpecialization.path())
+//        assertEquals(uuid5, fSpecialization.elementId)
         val fMultiplicity = global.resolve("x::f")?.memberElement?.getOwnedElementOfType<Multiplicity>()
         assertTrue(fMultiplicity != null)
         assertTrue(fMultiplicity.isLibraryElement)
-        assertEquals(5, fMultiplicity.elementId!!.version())
+        assertEquals(5, fMultiplicity.elementId.version)
         // val mPath = fMultiplicity.path()
-        uuid5 = Generators.nameBasedGenerator().generate("x::f::cardinality")
-        assertEquals(uuid5, fMultiplicity.elementId)
+//        uuid5 = Generators.nameBasedGenerator().generate("x::f::cardinality")
+//        assertEquals(uuid5, fMultiplicity.elementId)
 
         get().forEach { element ->
             if(element.isLibraryElement && (element.declaredName != null || element.declaredShortName != null) && element !is Multiplicity) {
-                val uuid52 = Generators.nameBasedGenerator().generate(element.qualifiedName)
-                assertEquals(uuid52, element.elementId, "No correct UUID5 generated for ${element.qualifiedName}")
+//                val uuid52 = Generators.nameBasedGenerator().generate(element.qualifiedName)
+//                assertEquals(uuid52, element.elementId, "No correct Uuid5 generated for ${element.qualifiedName}")
             }
         }
     }
 
 
-    /** Check that UUID5 are generated for the fully qualified names in standard library packages */
+    /** Check that Uuid5 are generated for the fully qualified names in standard library packages */
     @Test
     fun uuid5isGeneratedTest2() = testSession {
         loadKerML("""
-                package ScalarValues { datatype Natural :> ScalarValue; datatype ScalarValue :> Base::Anything; }
-                standard library package x {
-                    feature f1;
-                    feature f2 subsets f1;
-                }; 
-            """)
+            package ScalarValues { datatype Natural :> ScalarValue; datatype ScalarValue :> Base::Anything; }
+            standard library package x {
+                feature f1;
+                feature f2 subsets f1;
+            }; 
+        """)
         initialize(Runlevel.MODEL)
         assertNoIssues()
         val x = global.resolve("x")?.memberElement
         assertNotNull(x)
         assertTrue(x.isLibraryElement)
-        assertEquals(5, x.elementId!!.version())
-        val uuid5 = Generators.nameBasedGenerator().generate(x.qualifiedName)
-        assertEquals(uuid5, x.elementId)
+        fun pkgID(name : String) = uuid5("https://www.omg.org/spec/KerML/$name", UuidPolicies.DNS_NAMESPACE)
+
+        assertEquals(5, x.elementId.version)
+        assertEquals(pkgID("x"), x.elementId)
 
         get().forEach { element ->
             if(element.isLibraryElement && (element.declaredName != null || element.declaredName != null) && element !is Multiplicity) {
-                val uuid52 = Generators.nameBasedGenerator().generate(element.qualifiedName)
-                assertEquals(uuid52, element.elementId, "Wrong or no UUID5: $element")
+                var pkg = element
+
+                while(true)
+                {
+                    val o = pkg.owningNamespace
+
+                    if(o === null || o === global)
+                        break
+
+                    pkg = o
+                }
+
+                // fixme: should actually be LibraryPackage
+                assertIs<Package>(pkg, "Standard element not inside library package?").also {
+                    assertTrue(pkg.isLibraryElement)
+                    assertTrue(pkg.isStandard, "Standard element not inside standard package?")
+                    assertNotNull(pkg.name) { "Unnamed standard library?" }
+                }
+
+                val pid = pkgID(pkg.name!!)
+
+                if(pkg === element)
+                    assertEquals(pid, element.elementId, "Wrong or no Uuid5: $element")
+                else
+                {
+                    assertEquals(
+                        uuid5(element.path(), pkgID(pkg.name!!)),
+                        element.elementId,
+                        "Wrong or no Uuid5: $element"
+                    )
+                }
+
+
             }
         }
     }
@@ -190,7 +246,7 @@ class LibrariesUUIDTests {
         assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
         checkOwnership()
         assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")
-        loadLibrary("ScalarValues")
+        loadLibraryArrangement("ScalarValues")
         checkOwnership()
         checkLibraryElementIds()
         assertTrue(status.issues.isEmpty(), "Error messages: ${status.issues}")

@@ -10,6 +10,7 @@ import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.quantities.VectorDimensionError
 import com.github.tukcps.sysmd.quantities.VectorQuantity
+import com.github.tukcps.sysmd.model.datamodel.toElementData
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.session.Session
 import io.github.tukcps.aadd.DD
@@ -43,7 +44,7 @@ class  AstByParts(model: Session, namespace: Namespace, args: ArrayList<AstNode>
                 val newPartProperty = part.resolveVar(propertyName)
                     ?: throw SemanticError("Missing value $propertyName in ${part.qualifiedName}")
                 if (newPartProperty.vectorQuantity.unit != quantity.unit)
-                    model.status.error( "Different units in different subclasses", element = inNameSpace)
+                    model.status.error( "Different units in different subclasses", element = inNameSpace.toElementData())
                 result = chooser.ite(result.clone(), newPartProperty.vectorQuantity.values[0])
             }
             this.upQuantity = VectorQuantity(result, quantity.unit.clone())
@@ -61,7 +62,7 @@ class  AstByParts(model: Session, namespace: Namespace, args: ArrayList<AstNode>
             throw VectorDimensionError("BySubclasses is not possible with Vectors")
         val type = inNameSpace.resolve(propertyName)?.member<Feature>()?.type?.firstOrNull()
 
-        if (type != null && type.model?.builder != model.builder)
+        if (type != null && type.model.builder != model.builder)
             throw Exception("Internal error -- Mix of two models?")
 
         upQuantity = when {

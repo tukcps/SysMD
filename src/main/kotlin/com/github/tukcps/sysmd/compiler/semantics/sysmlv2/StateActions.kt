@@ -3,21 +3,19 @@
 package com.github.tukcps.sysmd.compiler.semantics.sysmlv2
 
 import com.github.tukcps.sysmd.compiler.semantics.ActionsContext
-import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
-import com.github.tukcps.sysmd.model.sysml.StateUsage
-import com.github.tukcps.sysmd.model.sysml.implementation.StateUsageImplementation
-import com.github.tukcps.sysmd.model.sysml.implementation.TransitionUsageImplementation
+import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureAction
+import com.github.tukcps.sysmd.model.generated.ElementType
 
 
-open class StateUsageActions(context: ActionsContext ): FeatureActions<StateUsage>(
+open class StateUsageAction(context: ActionsContext ): FeatureAction(
     context = context,
-    creator = ::StateUsageImplementation,
-    defaultType = "States::StateAction"
+    type = ElementType.StateUsage,
+    isImplicit = "States::StateAction"
 )
 
 
-class TransitionUsageActions(context: ActionsContext): FeatureActions<TransitionUsageImplementation>(
+class TransitionUsageAction(context: ActionsContext): FeatureAction(
     context = context,
-    creator = ::TransitionUsageImplementation,
-    defaultType = "Occurrences::Occurrence",
+    type = ElementType.TransitionUsage,
+    isImplicit = "Occurrences::Occurrence",
 )

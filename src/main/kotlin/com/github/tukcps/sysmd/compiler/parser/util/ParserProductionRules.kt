@@ -37,17 +37,37 @@ abstract class ParserProductionRules(
     keywords: Map<String, Token.Kind>
 ): Scanner(indices = indices, keywords = keywords) {
 
-    open var error: (message: String) -> Unit = fun (message: String){ throw Exception(message) }
+    /**
+     * Default error method; reads a token to guarantee progress, and throws an exception.
+     */
+    open fun error(message: String, exception: Exception) : Unit
+    {
+        nextToken()
+        throw Exception(message)
+    }
 
     /**
      * Just consumes a token and moves forward.
+     * A semantic action 'block' can be given as parameter.
+     * @param block Semantic action executed before the token is consumed.
      */
-    fun consume() {
+    inline fun consume(block: () -> Unit = {}) {
+        block()
         nextToken()
     }
 
+    /**
+     * Extension function that consumes a token, and reports an error if the current token is not correct.
+     * If correct, a semantic action is executed that is passed as lambda.
+     * @param Token.Kind  The token to be consumed.
+     * @param block Lambda that is executed.
+     */
     @JvmName("consumeInfix")
-    fun Token.Kind.consume(): Token.Kind = consume(this)
+    inline fun Token.Kind.consume(block: () -> Unit = {}): Token.Kind {
+        val result = consume(this)
+        block()
+        return result
+    }
 
     @JvmName("consumeInfix")
     fun Set<Token.Kind>.consume(): Token.Kind = consume(this)
@@ -55,7 +75,7 @@ abstract class ParserProductionRules(
     @JvmName("optionalInfixNoLambda")
     fun Token.Kind.optional() {
         if (token.kind == this)
-            nextToken()
+            consume()
     }
 
     fun Token.Kind.isNext(): Boolean = nextToken.kind == this
@@ -67,11 +87,10 @@ abstract class ParserProductionRules(
      */
     fun Token.Kind.optional(ifAccepted: () -> Unit) {
         if (token.kind == this) {
-            nextToken()
+            consume()
             ifAccepted()
         }
     }
-
 
     /**
      * Checks for an expected token.
@@ -174,9 +193,9 @@ abstract class ParserProductionRules(
                             nextToken(); } else token = t1
                         match1?.let { it() }
                     } catch(le : LexicalError) {
-                        error(le.message)
-                    } catch (_: Exception) {
-                        error("error in production after $t1")
+                        error(le.message, le)
+                    } catch (e: Exception) {
+                        error("error in production after $t1", e)
                     }
                 }
                 others != null -> others?.let { it() } // no match ...
@@ -324,7 +343,7 @@ abstract class ParserProductionRules(
             try {
                 production()
             } catch (e: Exception) {
-                error(e.message ?: "no message")
+                error(e.message ?: "no message", e)
                 while (token.kind !in recover && token.kind != Token.Kind.EOF) {
                     if (end?.invoke() == true) break
                     nextToken()
@@ -424,4 +443,3 @@ abstract class ParserProductionRules(
         }
     }
 }
-

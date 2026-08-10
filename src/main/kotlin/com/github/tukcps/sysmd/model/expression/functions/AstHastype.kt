@@ -4,6 +4,7 @@ import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.quantities.Quantity
+import com.github.tukcps.sysmd.model.datamodel.toElementData
 import com.github.tukcps.sysmd.services.session.Session
 
 
@@ -32,7 +33,7 @@ class AstHasType(
         if (subtype is Type && supertype is Type) {
             evalUp()
         } else
-            model.status.error("Evaluation of hasType not possible as parameters are no types.", element = owningNamespace)
+            model.status.error("Evaluation of hasType not possible as parameters are no types.", element = owningNamespace.toElementData())
         downQuantity = upQuantity.clone()
     }
 

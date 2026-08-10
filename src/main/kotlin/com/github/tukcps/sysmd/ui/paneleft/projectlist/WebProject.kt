@@ -3,16 +3,16 @@
 package com.github.tukcps.sysmd.ui.paneleft.projectlist
 
 import androidx.compose.runtime.mutableStateOf
+import com.github.tukcps.sysmd.model.generated.ElementDataIF
+import com.github.tukcps.sysmd.rest.entities.api.entities.Commit
+import com.github.tukcps.sysmd.rest.entities.api.entities.Project
 import com.github.tukcps.sysmd.services.session.Session
 import com.github.tukcps.sysmd.ui.viewmodel.CellListViewModel
-import io.github.tukcps.sysmlv2.api.entities.Commit
-import io.github.tukcps.sysmlv2.api.entities.ElementDAO
-import io.github.tukcps.sysmlv2.api.entities.Project
 
 class WebProject {
     private var commitList = mutableListOf<Commit>()
-    private var oldCommitElementsDAOList = mutableListOf<ElementDAO>()
-    private var newCommitElementsDaoList = mutableListOf<ElementDAO>()
+    private var oldCommitElementsDAOList = mutableListOf<ElementDataIF>()
+    private var newCommitElementsDaoList = mutableListOf<ElementDataIF>()
     private var doPostCommit = mutableStateOf(false)
     /**
      * Reads Commit directly into the view-model. It creates annotation elements that

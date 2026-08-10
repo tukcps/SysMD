@@ -2,20 +2,24 @@ package com.github.tukcps.sysmd.model.kerml.implementation
 
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Subsetting
-import com.github.tukcps.sysmd.model.kerml.UnresolvedFeature
+import com.github.tukcps.sysmd.model.util.UnresolvedFeature
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
 /**
  * Like a Specialization, but a relationship between Features that are a subset of a superset.
  */
 @Suppress("UNCHECKED_CAST")
 open class SubsettingImplementation(
-    subsettingFeature: Feature = UnresolvedFeature("Base::things"), // "that"
-    subsettedFeature: Feature = UnresolvedFeature("Base::things"),
-    elementType: String = "Subsetting"
+    model : Session,
+    elementId : Uuid = Uuid.random(),
+    subsettingFeature: Feature = UnresolvedFeature(model, "Base::things"), // "that"
+    subsettedFeature: Feature = UnresolvedFeature(model, "Base::things"),
 ): Subsetting, SpecializationImplementation(
+    model,
+    elementId = elementId,
     specific = subsettingFeature,
     general = subsettedFeature,
-    elementType = elementType
 ) {
     override var subsettedFeature: Feature
         get() = when (val gen = general) {
@@ -31,10 +35,9 @@ open class SubsettingImplementation(
         get() = specific as Feature
         set(value) { specific = value }
 
-    override fun clone(): Subsetting {
-        return SubsettingImplementation(
-            subsettingFeature = subsettingFeature,
-            subsettedFeature = subsettedFeature
-        )
-    }
+    override fun clone(): Subsetting = SubsettingImplementation(
+        model,
+        subsettingFeature = subsettingFeature,
+        subsettedFeature = subsettedFeature
+    )
 }

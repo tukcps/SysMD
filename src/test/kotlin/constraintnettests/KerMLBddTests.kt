@@ -2,7 +2,6 @@ package constraintnettests
 
 import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.letVar
-import com.github.tukcps.sysmd.services.resolve.resolveVar
 import io.github.tukcps.aadd.BDD
 import util.assertNoIssues
 import util.mockup.loadKerML
@@ -28,7 +27,7 @@ class KerMLBddTests {
         assertEquals(1, solver.getVariable("x")!!.bdd().height())
         assertTrue((solver.getVariable("a")!!.bdd().height() == 1))
         val aAndB = solver.getVariable("a")!!.bdd() and solver.getVariable("b")!!.bdd()
-        runlevel = Runlevel.VARIANCE_CHECKED
+        settings.runlevel = Runlevel.VARIANCE_CHECKED
         assertEquals(
             builder.False,
             solver.getVariable("a")!!.bdd() and solver.getVariable("b")!!.bdd()
@@ -84,8 +83,8 @@ class KerMLBddTests {
         loadKerML("""
             feature a: ScalarValues::Boolean; 
             feature b: ScalarValues::Boolean;
-            feature c: ScalarValues::Boolean(false);
-            feature bdd: ScalarValues::Boolean(true) = a and (b or c);
+            inv false c;
+            inv bdd = a and (b or c);
         """)
         assertNoIssues()
         solver.propagate()
@@ -105,10 +104,10 @@ class KerMLBddTests {
             """
             feature a: ScalarValues::Boolean;
             feature b: ScalarValues::Boolean;
-            feature c: ScalarValues::Boolean(true);
-            feature bdd: ScalarValues::Boolean(false) = a and (b or c);"""
-        )
-        solver.propagate()
+            inv c;
+            inv false bdd = a and (b or c);
+        """, Runlevel.ALL)
+        assertNoIssues()
         val result = solver.getVariable("bdd")!!.ast!!.solveAst()
         assertSame(result as BDD, builder.False)
         assertSame(builder.conds.getCondition(1), builder.False)
@@ -124,17 +123,17 @@ class KerMLBddTests {
      * Remaining: Infeasible paths are not reduced; converted to True/False in toString.
      */
     @Test
-    fun fail4() = testSession("ScalarValues", "Ranges") {
+    fun fail4() = testSession("Ranges") {
         loadKerML("""
-            feature p:  Ranges::RealInRange {:>> range = "2 .. 4";}
+            feature p:  Ranges::RealInRange {:>> range = 2 .. 4;}
             feature p2: ScalarValues::Real = p + 1.0;
             feature p3: ScalarValues::Boolean = ( p > p2 ).
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
+        assertNoIssues()
 
-        val p = global.resolveVar("p")!!.vectorQuantity.aadd()
-        val p2 = global.resolveVar("p2")!!.vectorQuantity.aadd()
-        val p3 = global.resolveVar("p3")!!.vectorQuantity.bdd()
+        val p = solver.getVariable("p")!!.vectorQuantity.aadd()
+        val p2 = solver.getVariable("p2")!!.vectorQuantity.aadd()
+        val p3 = solver.getVariable("p3")!!.vectorQuantity.bdd()
 
         assertEquals(2.0, p.min, 0.00001)
         assertEquals(3.0, p2.min, 0.00001)

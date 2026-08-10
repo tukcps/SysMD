@@ -1,4 +1,4 @@
-package ISO26262 {
+library package ISO26262 {
     class Element;
     class Function :> Element;
     class Component :> Element {

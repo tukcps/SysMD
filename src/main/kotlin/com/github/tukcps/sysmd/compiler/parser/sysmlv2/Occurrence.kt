@@ -6,11 +6,11 @@ import com.github.tukcps.sysmd.compiler.SysMLv2
 import com.github.tukcps.sysmd.compiler.parser.kerml.FeatureSpecializationPart
 import com.github.tukcps.sysmd.compiler.parser.kerml.OwnedReferenceSubsetting
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
-import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureActions
-import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.OccurrenceDefinitionActions
-import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.OccurrenceUsageActions
-import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
+import com.github.tukcps.sysmd.compiler.semantics.kerml.FeatureAction
+import com.github.tukcps.sysmd.compiler.semantics.kerml.parse
+import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.OccurrenceDefinitionAction
+import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.OccurrenceUsageAction
+import com.github.tukcps.sysmd.model.generated.ElementType
 
 /**
  * In this file we collect parser production implementations for
@@ -23,7 +23,7 @@ import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
   *     OccurrenceDefinition = OccurrenceDefinitionPrefix 'occurrence' 'def' Definition
  *
  */
-fun SysMLv2.OccurrenceDefinition() = OccurrenceDefinitionActions(semantics).parse {
+fun SysMLv2.OccurrenceDefinition() = OccurrenceDefinitionAction(semantics).parse {
     INDIVIDUAL.optional()
     // DefinitionExtensionKeyword
     OCCURRENCE.consume()
@@ -34,7 +34,7 @@ fun SysMLv2.OccurrenceDefinition() = OccurrenceDefinitionActions(semantics).pars
 /**
  *      IndividualDefinition = BasicDefinitionPrefix? 'individual' DefinitionExtensionKeyword* 'def' Definition
  */
-fun SysMLv2.IndividualDefinition() = OccurrenceDefinitionActions(semantics).parse {
+fun SysMLv2.IndividualDefinition() = OccurrenceDefinitionAction(semantics).parse {
     INDIVIDUAL.consume()
     // DefinitionExtensionKeyword
     DEF.consume()
@@ -63,7 +63,7 @@ fun SysMLv2.OccurrenceUsagePrefix() {
 /**
  *      OccurrenceUsage = OccurrenceUsagePrefix 'occurrence' Usage
  */
-fun SysMLv2.OccurrenceUsage() = OccurrenceUsageActions(semantics).parse {
+fun SysMLv2.OccurrenceUsage() = OccurrenceUsageAction(semantics).parse {
     OCCURRENCE.optional() // Optional in informal description, not optional in metamodel (Bug in Spec?)
     Usage()
 }
@@ -73,7 +73,7 @@ fun SysMLv2.OccurrenceUsage() = OccurrenceUsageActions(semantics).parse {
  *          BasicUsagePrefix ('individual')? PortionKind
  *          UsageExtensionKeyword* Usage
  */
-fun SysMLv2.PortionUsage() = FeatureActions<Feature>(semantics, defaultType = "Occurrences::Occurrence", creator = ::FeatureImplementation).parse {
+fun SysMLv2.PortionUsage() = FeatureAction(semantics, isImplicit = "Occurrences::Occurrence", type = ElementType.Feature).parse {
     INDIVIDUAL.optional()
     when(token.kind) { // PortionKind
         SNAPSHOT  -> { consume(); }
@@ -91,7 +91,7 @@ fun SysMLv2.PortionUsage() = FeatureActions<Feature>(semantics, defaultType = "O
  *            | 'occurrence' UsageDeclaration? )
  *          UsageCompletion
  */
-fun SysMLv2.EventOccurrenceUsage() = FeatureActions<Feature>(semantics, ::FeatureImplementation, "Occurrences::Occurrence").parse {
+fun SysMLv2.EventOccurrenceUsage() = FeatureAction(semantics, ElementType.Feature, isImplicit = "Occurrences::Occurrence").parse {
     EVENT.consume()
     when(token.kind) {
         OCCURRENCE -> {

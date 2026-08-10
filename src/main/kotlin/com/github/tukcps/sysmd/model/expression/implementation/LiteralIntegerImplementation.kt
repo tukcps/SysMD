@@ -5,36 +5,37 @@ import com.github.tukcps.sysmd.model.expression.LiteralInteger
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.util.SimpleName
 import com.github.tukcps.sysmd.quantities.VectorQuantity
+import com.github.tukcps.sysmd.services.session.Session
+import kotlin.uuid.Uuid
 
 class LiteralIntegerImplementation(
+    model : Session,
+    elementId : Uuid = Uuid.random(),
     declaredName: SimpleName? = null,
     declaredShortName: SimpleName? = null,
-    typeConstraint: MutableList<String> = mutableListOf(),
-    expression: String? = null,
-    elementType: String = "LiteralInteger"
+    expression: String? = null
 ) : LiteralInteger, LiteralExpressionImplementation(
+    model,
+    elementId = elementId,
     declaredName = declaredName,
     declaredShortName = declaredShortName,
-    typeConstraint = typeConstraint,
-    expression = expression,
-    elementType = elementType
+    expression = expression
 ) {
     override var value: Long? = null
 
     override val literalValue : AstLeaf?
         get() {
             val v = value ?: return null
-            val m = model ?: return null
-            return AstLeaf(m, VectorQuantity(m.builder.integer(v)))
+            return AstLeaf(model, VectorQuantity(model.builder.integer(v)))
         }
 
-    override val cachedType get() = model?.repo?.integerType
+    override val cachedType get() = model.repo.integerType
     override val typeName = "ScalarValues::Integer"
 
     override fun clone() = LiteralIntegerImplementation(
+        model,
         declaredName = declaredName,
         declaredShortName = declaredShortName,
-        typeConstraint = typeConstraint,
         expression = expression
     ).also {
         it.updateFrom(this)
@@ -42,6 +43,7 @@ class LiteralIntegerImplementation(
 
     override fun updateFrom(template: Element) {
         super.updateFrom(template)
+
         if (template is LiteralIntegerImplementation)
             value = template.value
     }

@@ -5,12 +5,15 @@ import com.github.tukcps.sysmd.exceptions.SysMDException
 import com.github.tukcps.sysmd.model.expression.Expression
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.ReferenceSubsettingImplementation
-import com.github.tukcps.sysmd.model.util.QualifiedName
+import com.github.tukcps.sysmd.model.util.*
 import com.github.tukcps.sysmd.services.check.checkConsistencyOfInheritance
 import com.github.tukcps.sysmd.services.check.checkNameResolutionSuccessful
+import com.github.tukcps.sysmd.services.check.reportDoubleNamesInNamespace
+import com.github.tukcps.sysmd.services.check.reportErrorElementsExist
 import com.github.tukcps.sysmd.services.inheritance.addInheritedToSubtypes
 import com.github.tukcps.sysmd.services.inheritance.checkForCycles
 import com.github.tukcps.sysmd.services.inheritance.checkIsNotTypedByOwner
+import com.github.tukcps.sysmd.model.datamodel.toElementData
 import com.github.tukcps.sysmd.services.resolve.resolveFeatureChain
 import com.github.tukcps.sysmd.services.session.Session
 import com.github.tukcps.sysmd.services.session.implementation.getAllOfClass
@@ -19,29 +22,19 @@ import kotlin.math.min
 
 private fun Session.fillCache() {
     // Cache frequently used types for use in semantic checks
-    repo.numberType = global.resolve("ScalarValues::Number")?.member<DataType>()
+    repo.anything = global.resolve("Base::Anything")?.member()
+    repo.numberType = global.resolve("ScalarValues::Number")?.member()
     repo.scalarType = global.resolve("ScalarValues::ScalarValue")?.member<DataType>()
-    repo.realType = global.resolve("ScalarValues::Real")?.member<DataType>()
+    repo.realType = global.resolve("ScalarValues::Real")?.member()
     repo.integerType = global.resolve("ScalarValues::Integer")?.member<DataType>()
     repo.naturalType = global.resolve("ScalarValues::Natural")?.member<DataType>()
-    repo.booleanType = global.resolve("ScalarValues::Boolean")?.member<DataType>()
+    repo.booleanType = global.resolve("ScalarValues::Boolean")?.member()
     repo.stringType = global.resolve("ScalarValues::String")?.memberElement as Type?
     repo.inRangeType = global.resolve("Ranges::InRange")?.memberElement as Type?
     repo.occurrence = global.resolve("Occurrences::Occurrence")?.memberElement as Type?
     repo.links      = global.resolve("Links::Link")?.memberElement as Association?
     repo.quantity   = global.resolve("Ranges::QuantityInRange")?.memberElement as Type?
     repo.range      = global.resolve("Ranges::InRange")?.memberElement as Type?
-}
-
-private fun Session.giveUUID5(){
-    get().filter { it.isLibraryElement || it.isStandard }. forEach {
-        val old = it.elementId
-        it.generateUUID()
-        if (old != it.elementId) {
-            repo.elements.remove(old)
-            repo.elements[it.elementId!!] = it
-        }
-    }
 }
 
 private fun Session.solveExpressionTypes() {
@@ -57,14 +50,14 @@ private fun Session.solveExpressionTypes() {
  */
 private fun Session.addEndFeatureReferences() {
     get().filterIsInstance<Connector>().forEach { connector ->
-        val ends = connector.ownedMembership.filter { it.memberElement is Feature && (it.memberElement as Feature).isEnd  }.map { it.memberElement }
+        val ends = connector.feature.filter { it.isEnd }
         // TODO: consider multiplicity.
         if (connector.source.isNotEmpty() && connector.target.isNotEmpty() && ends.size >= 2) {
-            val sourceEnd = ends[0] as Feature
-            val targetEnd = ends[1] as Feature
-            val ref = ReferenceSubsettingImplementation(sourceEnd, connector.source.first() as Feature)
+            val sourceEnd = ends[0]
+            val targetEnd = ends[1]
+            val ref = ReferenceSubsettingImplementation(this, referencingFeature = sourceEnd, referencedFeature = connector.source.first() as Feature)
             addOwnedRelationship(ref, sourceEnd)
-            val refT = ReferenceSubsettingImplementation(targetEnd, connector.target.first() as Feature)
+            val refT = ReferenceSubsettingImplementation(this, referencingFeature = targetEnd, referencedFeature = connector.target.first() as Feature)
             addOwnedRelationship(refT, targetEnd)
         }
     }
@@ -130,8 +123,8 @@ fun Session.initialize(runlevel: Runlevel) {
             solveExpressionTypes()
         }
         if (runlevel >= Runlevel.TYPES_INHERITED) {  // Inheritance and redefinition
-            anything.addInheritedToSubtypes() // Calls 'initialize' of types that will add inherited properties.
-            anything.addInheritedToSubtypes()
+            repo.anything!!.addInheritedToSubtypes() // Calls 'initialize' of types that will add inherited properties.
+            repo.anything!!.addInheritedToSubtypes()
             resolveRedefinitions()
         }
 
@@ -139,11 +132,16 @@ fun Session.initialize(runlevel: Runlevel) {
             addEndFeatureReferences()
             resolveAllNames()
             resolveAllFeatureChains()
-            giveUUID5()
         }
 
         if (runlevel >= Runlevel.MODEL) {
+            reportErrorElementsExist()
             checkNameResolutionSuccessful()
+
+            // Fixme: Explicit duplicates are removed by UUID Policy + import deduplication,
+            //  and inheritance is checked separately, so there should be no case where this reports an error (??)
+            if (settings.reportDoubleNames) reportDoubleNamesInNamespace()
+
             // We do static semantic checks ...
             getAllOfClass<Type>().asSequence().forEach { type ->
                 type.checkForCycles()
@@ -167,7 +165,8 @@ fun Session.initialize(runlevel: Runlevel) {
         if (error is SysMDException)
             status.error(message = error.message, cause = error)
         else
-            status.error(message = "Semantic analysis failed (${error}) ", cause = SysMDException("Initialization failed", cause = error))
+            status.error(message = "Semantic analysis failed (${error}) ",
+                cause = SysMDException("Initialization failed", cause = error))
     }
 }
 
@@ -184,18 +183,16 @@ internal fun Session.resolveAllNames() {
      * @param elements - a mutable list of elements in which unresolved elements are replaced by model elements.
      * @return Whether any change was made to the list
      */
-    fun resolveQualifiedName(namespace : Namespace, elements: MutableList<Element>) : Boolean
-    {
+    fun resolveQualifiedName(namespace : Namespace, elements: MutableList<Element>) : Boolean {
         val iter = elements.listIterator()
         var delta = false
 
-        while(iter.hasNext())
-        {
+        while(iter.hasNext()) {
             val unresolved = iter.next()
             if(unresolved !is Unresolved)
                 continue
             val relativeName = unresolved.relativeName ?: run {
-                status.warn(Issue.Kind.ERROR_UNRESOLVED_NAME, "Unresolved element with no name", element = namespace)
+                status.warn(Issue.Kind.ERROR_UNRESOLVED_NAME, "Unresolved element with no name", element = namespace.toElementData())
                 iter.remove()
                 delta = true
                 continue
@@ -204,11 +201,16 @@ internal fun Session.resolveAllNames() {
             val resolved = namespace.resolve(relativeName) ?: continue
             val target = if(unresolved is UnresolvedMembership) resolved else resolved.memberElement
 
-            if(checkType(unresolved, target, namespace))
-            {
+            if(checkType(unresolved, target, namespace)) {
                 iter.set(target)
                 delta = true
-            } // should we remove invalid references?
+            } // should we remove invalid references? No, replace with report, dummy element .
+              // neither delete nor keep will fix inconsistency.
+            else {
+                val errorElement = ErrorElement(this,target) // generic element that is fail-safe.
+                iter.set(target) // TODO: error, test
+                delta = true
+            }
         }
 
         return delta
@@ -218,7 +220,7 @@ internal fun Session.resolveAllNames() {
         var delta = false
 
         get().asSequence().filterIsInstance<Relationship>().filter { it !is Redefinition }.forEach {
-            val ns = it.owningNamespace!!
+            val ns = it.owningNamespace?:global
             val s = resolveQualifiedName(ns, it.source)
             val t = resolveQualifiedName(ns, it.target)
             delta = delta || s || t
@@ -242,7 +244,7 @@ internal fun Session.resolveAllFeatureChains() {
         for (index in elements.indices) {
             if (elements[index] is UnresolvedFeatureChain) {
                 if ( (elements[index] as Unresolved).relativeName == null)
-                    status.warn(Issue.Kind.ERROR_UNRESOLVED_NAME, "Unresolved feature chain with no name", element = elements[index].owningNamespace)
+                    status.warn(Issue.Kind.ERROR_UNRESOLVED_NAME, "Unresolved feature chain with no name", element = elements[index].owningNamespace?.toElementData())
                 else {
                     val unresolvedFeature = elements[index] as Unresolved
                     val resolvedFeature = namespace.resolveFeatureChain(unresolvedFeature.relativeName!!)
@@ -286,7 +288,7 @@ fun getVarNames(namespace: QualifiedName, membership: Membership): List<String> 
     val elementName = (if (namespace.isNotEmpty()) "$namespace::" else "") + element.escapedName()
     val result = mutableListOf<String>()
 
-    if (element is Type && element.specializes(element.model!!.repo.scalarType)) {
+    if (element is Type && element.specializes(element.model.repo.scalarType)) {
         result.add(elementName)
     }
 
@@ -321,7 +323,7 @@ internal fun Session.resolveRedefinitions() {
                         val hasIdenticalExpression = resolvedElement.expression?.trim() ==
                                                    redefinition.redefiningFeature.expression?.trim()
                         if (hasIdenticalExpression) elements[index] = resolvedElement
-                        else status.error("Feature cannot redefine itself: ${element.relativeName}", element = redefinition)
+                        else status.error("Feature cannot redefine itself: ${element.relativeName}", element = redefinition.toElementData())
                     } else if (resolvedElement === redefinition.owningRelatedElement) {
                         // Resolved to the owning element itself — this would create a self-referential cycle.
                         // This can happen for inherited Redefinition clones where the local namespace contains
@@ -340,7 +342,8 @@ internal fun Session.resolveRedefinitions() {
                     } else {
                         elements[index] = resolvedElement
                     }
-                } ?: status.warn(Issue.Kind.ERROR_UNRESOLVED_NAME, "Unresolved element with no name", element = namespace)
+                }
+                    ?: status.warn(Issue.Kind.ERROR_UNRESOLVED_NAME, "Redefined feature not found", element = namespace.toElementData())
             }
         }
     }

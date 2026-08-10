@@ -212,8 +212,7 @@ package vehicles {
     
     part def Vehicle {
         attribute mass: ISQ::MassValue = sumOverParts(mass) {
-            :>> range = "0..100000"; 
-            :>> unit  = "kg"; 
+            :>> range = 0..100000 [kg]; 
         }
         part wheels [1 .. *]: carParts::Wheel;   
         part engine [0 .. 2]: carParts::Engine; 
@@ -321,10 +320,11 @@ part Box {
 
 // Requirement, mostly human-readable documentation. 
 requirement def volumeRequirement {
-    doc /* 
-      The box (typed by Boy) shall have minimum volume.
-      The volume dependes on with w, height h, length l. 
-    */
+    doc 
+    /* 
+     * The box (typed by Boy) shall have minimum volume.
+     * The volume dependes on with w, height h, length l. 
+     */
     subject box references Box; 
     attribute volume: ISQ::VolumeValue = box::w*box::h*box::l; 
 }    

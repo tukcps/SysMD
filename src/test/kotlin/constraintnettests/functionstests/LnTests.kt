@@ -1,141 +1,298 @@
 package constraintnettests.functionstests
 
-import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.services.Runlevel
-import io.github.tukcps.aadd.IDD
-import kotlin.test.Test
-import kotlin.test.Ignore
 import util.assertNoIssues
 import util.mockup.loadKerML
-import util.mockup.loadSysMLv2
 import util.testSession
-import kotlin.math.*
-import kotlin.test.*
+import kotlin.test.Ignore
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class LnTests {
 
-        /** ConstNet shall compute bottom-up with ln in real and model.builder.range */
-        @Test
-        fun evalUpWithLog_real_range() = testSession("Ranges") {
-            loadKerML("""
-                feature a: Ranges::RealInRange {:>> range = "1.0 .. 5.0";}
-                feature b: ScalarValues::Real = ln(a);"""
-            )
-            solver.propagate()
-            assertEquals(ln(1.0), solver.getVariable("b")!!.min(), 0.00001)
-            assertEquals(ln(5.0), solver.getVariable("b")!!.max(), 0.00001)
-            assertEquals("1", solver.getVariable("b")!!.vectorQuantity.unit.toString())
-            assertNoIssues()
-        }
-
-        /** ConstNet shall compute bottom-up with ln in real and value */
-        @Test
-        fun evalUpWithLog_real_value() = testSession("Ranges") {
-            loadKerML("""
-                feature a: Ranges::RealInRange = 3.0 {:>> range = "1.0 .. 5.0";}
-                feature b: ScalarValues::Real = ln(a);
+    @Test
+    fun minTest1() = testSession("Ranges") {
+        loadKerML(input = """
+            feature a: Ranges::RealInRange {:>> range = 0.. 1;}
+            feature b: Ranges::RealInRange {:>> range = 1.. 2;}
+            feature c: ScalarValues::Real = min(a,b);
             """)
-            solver.propagate()
-            assertEquals(ln(3.0), solver.getVariable("b")!!.min(), 0.00001)
-            assertEquals(ln(3.0), solver.getVariable("b")!!.max(), 0.00001)
-            assertEquals("1", solver.getVariable("b")!!.vectorQuantity.unit.toString())
-            assertNoIssues()
-        }
+        solver.propagate()
+        assertNoIssues()
+        val result = solver.getVariable("c")
+        assertEquals(0.0, result!!.min(), 0.000001)
+        assertEquals(1.0, result.max(), 0.000001)
+        assertNoIssues()
+    }
 
-        /** ConstNet shall compute bottom-up with ln in real and negative numbers => not possible */
-        @Test
-        fun evalUpWithLog_real_negative() = testSession("Ranges") {
-            loadKerML("""
-                feature a: Ranges::RealInRange {:>> range = "-10.0 .. -5.0";}
-                feature b: ScalarValues::Real = ln(a);
+    @Test
+    fun minTest1EvalDown() = testSession("Ranges") {
+        loadKerML("""
+            feature a: Ranges::RealInRange {:>> range = 1..8;}
+            feature b: Ranges::RealInRange = min(8.0,a) {:>> range = 6.0..6.0;}
+        """, Runlevel.ALL)
+        assertNoIssues()
+        val result = solver.getVariable("a")
+        assertEquals(6.0, result!!.min(), 0.000001)
+        assertEquals(6.0, result.max(), 0.000001)
+        assertNoIssues()
+    }
+
+    @Test
+    fun minTest2() = testSession("Ranges") {
+        loadKerML("""
+            feature a: Ranges::RealInRange = sqrt(9.0) {:>> range = 0..5;}
+            feature b: Ranges::RealInRange = sqrt(4.0) {:>> range = 1.. 6;}
+            feature c: Ranges::RealInRange = min(a,b);
+            """)
+        solver.propagate()
+        assertNoIssues()
+        val result = solver.getVariable("c")
+        assertEquals(2.0, result!!.min(), 0.000001)
+        assertEquals(2.0, result.max(), 0.000001)
+        assertNoIssues()
+    }
+
+    @Test
+    fun minTest2EvalDown() = testSession("Ranges") {
+        loadKerML("""
+            feature a: Ranges::RealInRange = 3.0 {:>> range = 0.. 6;}
+            feature b: Ranges::RealInRange {:>> range = 1.. 6;}
+            feature c: Ranges::RealInRange = min(a,b) {:>> range = 3.0..3.0;}
+        """)
+        solver.propagate()
+        assertNoIssues()
+        val result = solver.getVariable("b")
+        assertEquals(3.0, result!!.min(), 0.000001)
+        assertEquals(6.0, result.max(), 0.000001)
+        assertNoIssues()
+    }
+
+    @Test
+    fun minTest3() = testSession("Ranges") {
+        loadKerML("""
+            feature a: Ranges::RealInRange = 4.0 {:>> range = 0..5;}
+            feature b: Ranges::RealInRange = 6.0 {:>> range = 1.. 6;}
+            feature c: Ranges::RealInRange = min(sqrt(9.0)+a,sqrt(4.0)+b);
+        """)
+        solver.propagate()
+        assertNoIssues()
+        val result = solver.getVariable("c")
+        assertEquals(7.0, result!!.min(), 0.000001)
+        assertEquals(7.0, result.max(), 0.000001)
+        assertNoIssues()
+    }
+
+
+    @Test
+    fun minTest4() = testSession("ScalarValues") {
+        loadKerML("""
+            feature c: ScalarValues::Real = min(sqrt(9.0)+3.0,sqrt(4.0)+5.0);
+        """)
+        solver.propagate()
+        assertNoIssues()
+        val result = solver.getVariable("c")
+        assertEquals(6.0, result!!.min(), 0.000001)
+        assertEquals(6.0, result.max(), 0.000001)
+        assertNoIssues()
+    }
+
+    @Test
+    fun minTestMultipleParams1() = testSession("Ranges") {
+        loadKerML("""
+            feature a: Ranges::RealInRange { :>> range = 0..1;}
+            feature b: Ranges::RealInRange { :>> range = 1..2;}
+            feature c: Ranges::RealInRange { :>> range = 3..4;}
+            feature d: Ranges::RealInRange { :>> range = 4..5;}
+            feature e: ScalarValues::Real = min(a,b,c,d);
+        """, Runlevel.ALL)
+        assertNoIssues()
+        val result = solver.getVariable("e")
+        assertEquals(0.0, result!!.min(), 0.000001)
+        assertEquals(1.0, result.max(), 0.000001)
+        assertNoIssues()
+    }
+    @Test
+    fun minTestMultipleParamsRealNegative() = testSession("Ranges") {
+        loadKerML("""
+            feature a: Ranges::RealInRange {:>> range = -4.5..-3.0;}
+            feature b: Ranges::RealInRange {:>> range = -5.5..-4.5;}
+            feature c: Ranges::RealInRange {:>> range = -6.5..-3.5;}
+            feature d: Ranges::RealInRange {:>> range = -3.5..-2.0;}
+            feature e: ScalarValues::Real = min(a,b,c,d);
+        """, Runlevel.ALL)
+        assertNoIssues()
+        val result = solver.getVariable("e")
+        assertEquals(-6.5, result!!.min(), 0.000001)
+        assertEquals(-4.5, result.max(), 0.000001)
+        assertNoIssues()
+    }
+
+    @Test
+    fun minTestMultipleParamsInt1() = testSession("Ranges") {
+        loadKerML("""
+            feature a: Ranges::IntegerInRange {:>> range = 0 .. 1; }
+            feature b: Ranges::IntegerInRange {:>> range = 1 .. 2; }
+            feature c: Ranges::IntegerInRange {:>> range = 3 .. 4; }
+            feature d: Ranges::IntegerInRange {:>> range = 4 ..5; }
+            feature e: ScalarValues::Integer = min(a,b,c,d);
             """, Runlevel.ALL)
-            val b = solver.getVariable("b")
-            assertTrue(b!!.vectorQuantity.value.asAadd().isEmpty())
-            assertEquals(1, status.issues.size)
-        }
+        assertNoIssues()
+        val result = solver.getVariable("e")
+        assertEquals(0, result!!.vectorQuantity.value.asIdd().min)
+        assertEquals(1, result.vectorQuantity.value.asIdd().max)
+        assertNoIssues()
+    }
+    @Test
+    fun minTestMultipleParamsIntNegative() = testSession("Ranges") {
+        loadKerML(
+            input = """
+            feature a: Ranges::IntegerInRange {:>> range = -3..-1;}
+            feature b: Ranges::IntegerInRange {:>> range = -4..-2;}
+            feature c: Ranges::IntegerInRange {:>> range = -7..-4;}
+            feature d: Ranges::IntegerInRange {:>> range = -8..-5;}
+            feature e: ScalarValues::Integer = min(a,b,c,d);
+            """, Runlevel.ALL
+        )
+        assertNoIssues()
+        val result = solver.getVariable("e")
+        assertEquals(-8, result!!.vectorQuantity.value.asIdd().min)
+        assertEquals(-5, result.vectorQuantity.value.asIdd().max)
+        assertNoIssues()
+    }
 
-        /** ConstNet shall compute bottom-up with ln in int and model.builder.range */
-        @Test
-        fun evalUpWithLog_int_range() = testSession("Ranges") {
-            loadKerML("""
-                feature a: Ranges::IntegerInRange {:>> range = "1 .. 5";}
-                feature b: ScalarValues::Integer = ln(a);""")
-            solver.propagate()
-            assertEquals(floor(ln(1.0)).toLong(), solver.getVariable("b")!!.idd().getRange().min)
-            assertEquals(ceil(ln(5.0)).toLong(), solver.getVariable("b")!!.idd().getRange().max)
-            assertEquals("1", solver.getVariable("b")!!.vectorQuantity.unit.toString())
-            assertNoIssues()
-        }
+    @Test
+    fun minTestMultipleParams2() = testSession("Ranges") {
+        loadKerML(
+            input = """
+            feature a: Ranges::RealInRange {:>> range = -3..1;}
+            feature b: Ranges::RealInRange {:>> range = 1.. 2;}
+            feature c: Ranges::RealInRange {:>> range = 2.. 3;}
+            feature d: Ranges::RealInRange {:>> range = 3.. 7;}
+            feature e: Ranges::RealInRange = min(a,b,c,d) {:>> range = 0..0;}
+        """, Runlevel.ALL)
+        assertNoIssues()
+        val result = solver.getVariable("a")
+        assertEquals(0.0, result!!.min(), 0.000001)
+        assertEquals(0.0, result.max(), 0.000001)
+        assertNoIssues()
+    }
 
-        @Test
-        fun evalDownWithLog_int() = testSession("Ranges") {
-            loadKerML("""
-                feature a: Ranges::IntegerInRange {:>> range = "1 .. 8";}
-                feature b: Ranges::IntegerInRange = ln(a) {:>> range = "1 .. 2";}""")
-            solver.propagate()
-            assertEquals(floor(Math.E.pow(1)).toLong(), solver.getVariable("a")!!.idd().getRange().min)
-            assertEquals(ceil(Math.E.pow(2)).toLong(), solver.getVariable("a")!!.idd().getRange().max)
-            assertEquals("1", solver.getVariable("a")!!.vectorQuantity.unit.toString())
-            assertNoIssues()
-        }
+    @Test
+    fun minTestMultipleParams2Integer() = testSession("Ranges") {
+        loadKerML("""
+            feature a: Ranges::IntegerInRange {:>> range = -3..1;}
+            feature b: Ranges::IntegerInRange {:>> range = 1..2;}
+            feature c: Ranges::IntegerInRange {:>> range = 2..3;}
+            feature d: Ranges::IntegerInRange {:>> range = 3..7;}
+            feature e: Ranges::IntegerInRange = min(a,b,c,d) {:>> range = 0..0;}
+        """, Runlevel.ALL)
+        assertNoIssues()
+        val result = solver.getVariable("a")
+        assertEquals(0, result!!.vectorQuantity.value.asIdd().min)
+        assertEquals(0, result.vectorQuantity.value.asIdd().max)
+        assertNoIssues()
+    }
 
-        @Test
-        fun evalUpWithLog_int() = testSession("Ranges") {
-            loadKerML("""
-                feature a: Ranges::IntegerInRange {:>> range = "1 .. 1";}
-                feature b: ScalarValues::Integer = ln(a);""")
-            solver.propagate()
-            assertEquals(floor(ln(1.0)).toLong(), solver.getVariable("b")!!.idd().getRange().min)
-            assertEquals(ceil(ln(1.0)).toLong(), solver.getVariable("b")!!.idd().getRange().max)
-            assertEquals("1", solver.getVariable("b")!!.vectorQuantity.unit.toString())
-            assertNoIssues()
-        }
+    @Test
+    fun minTestMultipleParams3() = testSession("Ranges") {
+        loadKerML("""
+            feature a: Ranges::RealInRange {:>> range = 0.. 7;}
+            feature b: Ranges::RealInRange {:>> range = 1.. 6;}
+            feature c: Ranges::RealInRange {:>> range = 2..5;}
+            feature d: Ranges::RealInRange {:>> range = 3.. 4;}
+            feature e: Ranges::RealInRange = min(a,b,c,d) {:>> range = 4..5;}
+        """, Runlevel.VARIABLES)
+        val e = solver.getVariable("e")!!
+        assertEquals(4.0, e.min(), 0.000001)
+        assertEquals(4.0, e.min(), 0.000001)
+        solver.propagate()
+        assertNoIssues()
+        val result = solver.getVariable("a")
+        assertEquals(4.0, result!!.min(), 0.000001)
+        assertEquals(7.0, result.max(), 0.000001)
+        val result1 = solver.getVariable("b")
+        assertEquals(4.0, result1!!.min(), 0.000001)
+        assertEquals(6.0, result1.max(), 0.000001)
+        val result2 = solver.getVariable("c")
+        assertEquals(4.0, result2!!.min(), 0.000001)
+        assertEquals(5.0, result2.max(), 0.000001)
+        val result3 = solver.getVariable("d")
+        assertEquals(4.0, result3!!.min(), 0.000001)
+        assertEquals(4.0, result3.max(), 0.000001)
+        assertNoIssues()
+    }
 
-        /** ConstNet shall compute bottom-up with ln in int and value */
-        @Test
-        fun evalUpWithLog_int_value() = testSession("Ranges") {
-            loadKerML("""
-                feature a: Ranges::IntegerInRange = 3 {:>> range = "1 .. 5";}
-                feature b: ScalarValues::Integer = ln(a);"""
-            )
-            solver.propagate()
-            assertEquals(floor(ln(3.0)).toLong(), solver.getVariable("b")!!.idd().getRange().min)
-            assertEquals(ceil(ln(3.0)).toLong(), solver.getVariable("b")!!.idd().getRange().max)
-            assertEquals("1", solver.getVariable("b")!!.vectorQuantity.unit.toString())
-            assertNoIssues()
-        }
 
-        @Test
-        fun evalUpWithLog_real_zero_range() = testSession("Ranges") {
-            loadKerML("""
-                feature a: Ranges::RealInRange {:>> range = "0.0 .. 5.0";}
-                feature b: ScalarValues::Real = ln(a);
-            """)
-            solver.propagate()
-            // ln(0.0) is Double.NEGATIVE_INFINITY
-            assertEquals(Double.NEGATIVE_INFINITY, solver.getVariable("b")!!.min())
-            assertEquals(ln(5.0), solver.getVariable("b")!!.max(), 0.00001)
-        }
+    @Test @Ignore
+    fun minTestMultipleParams3Integer() = testSession("Ranges") {
+        loadKerML("""
+            feature a: Ranges::IntegerInRange {:>> range = 0.. 7;}
+            feature b: Ranges::IntegerInRange {:>> range = 1.. 6;}
+            feature c: Ranges::IntegerInRange {:>> range = 2..5;}
+            feature d: Ranges::IntegerInRange {:>> range = 3.. 4;}
+            feature e: ScalarValues::Integer = min(a,b,c,d) {:>> range = 4..5;}
+        """, Runlevel.SOLVED)
+        assertNoIssues()
+        val result = solver.getVariable("a")
+        assertEquals(4, result!!.vectorQuantity.value.asIdd().min)
+        assertEquals(7, result.vectorQuantity.value.asIdd().max)
+        val result1 = solver.getVariable("b")
+        assertEquals(4, result1!!.vectorQuantity.value.asIdd().min)
+        assertEquals(6, result1.vectorQuantity.value.asIdd().max)
+        val result2 = solver.getVariable("c")
+        assertEquals(4, result2!!.vectorQuantity.value.asIdd().min)
+        assertEquals(5, result2.vectorQuantity.value.asIdd().max)
+        val result3 = solver.getVariable("d")
+        assertEquals(4, result3!!.vectorQuantity.value.asIdd().min)
+        assertEquals(4, result3.vectorQuantity.value.asIdd().max)
+        assertNoIssues()
+    }
 
-        @Test
-        fun evalUpWithLog_real_mixed() = testSession("Ranges") {
-            loadKerML("""
-                feature a: Ranges::RealInRange {:>> range = "-2.0 .. 5.0";}
-                feature b: ScalarValues::Real = ln(a);
-            """)
-            solver.propagate()
-            assertEquals(Double.NEGATIVE_INFINITY, solver.getVariable("b")!!.min())
-            assertEquals(ln(5.0), solver.getVariable("b")!!.max(), 0.00001)
-        }
 
-        @Test
-        fun evalUpWithLog_int_mixed() = testSession("Ranges") {
-            loadKerML("""
-                feature a: Ranges::IntegerInRange {:>> range = "-2 .. 5";}
-                feature b: ScalarValues::Integer = ln(a);
-            """)
-            solver.propagate()
-            assertEquals(0L, solver.getVariable("b")!!.idd().getRange().min)
-            assertEquals(2L, solver.getVariable("b")!!.idd().getRange().max)
-        }
+
+    @Test
+    fun minTestOneValue1() = testSession("Ranges") {
+        loadKerML("""
+            feature a: Ranges::RealInRange {:>> range = 0.5.. 1;}
+            feature c: ScalarValues::Real = min(a);
+        """)
+        solver.propagate()
+        assertNoIssues()
+        val result = solver.getVariable("c")
+        assertEquals(0.5, result!!.min(), 0.000001)
+        assertEquals(0.5, result.max(), 0.000001)
+        assertEquals(1, result.vectorQuantity.values.size )
+        assertNoIssues()
+    }
+
+    @Test
+    fun maxTestOneValue1() = testSession("Ranges") {
+        loadKerML(
+            input ="""
+            feature a: Ranges::RealInRange {:>> range = 0..1.5;}
+            feature c: ScalarValues::Real = max(a);
+        """)
+        solver.propagate()
+        assertNoIssues()
+        val result = solver.getVariable("c")
+        assertEquals(1.5, result!!.min(), 0.000001)
+        assertEquals(1.5, result.max(), 0.000001)
+        assertEquals(1, result.vectorQuantity.values.size )
+        assertNoIssues()
+    }
+
+    @Test
+    fun minTestOneValueInt1() = testSession("Ranges") {
+        loadKerML(input = """
+            feature a: Ranges::IntegerInRange {:>> range = 0.. 1;}
+            feature c: ScalarValues::Integer = min(a);
+        """, Runlevel.ALL)
+        assertNoIssues()
+        val result = solver.getVariable("c")
+        assertEquals(0L, result!!.min())
+        assertEquals(0L, result.max())
+        assertEquals(1, result.vectorQuantity.values.size )
+        assertNoIssues()
+    }
 }

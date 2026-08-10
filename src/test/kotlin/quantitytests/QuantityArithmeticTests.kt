@@ -7,19 +7,22 @@ import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.MembershipImplementation
 import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.quantities.Unit
+import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.session.implementation.SessionImplementation
 import io.github.tukcps.aadd.AADD
 import io.github.tukcps.aadd.DDBuilder
 import io.github.tukcps.aadd.IDD
-import io.github.tukcps.aadd.values.Range
 import io.github.tukcps.aadd.values.IntegerRange
+import io.github.tukcps.aadd.values.Range
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.math.ln
 import kotlin.math.pow
-import kotlin.test.*
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class QuantityArithmeticTests {
     private lateinit var ddDummy0: AADD
@@ -315,10 +318,10 @@ class QuantityArithmeticTests {
 
     @Test
     fun intersect() {
-        val model = SessionImplementation(libraries = mutableListOf())
+        val model = SessionImplementation()
         val solver = Solver(model)
         val p = VariableImplementation(
-            MembershipImplementation(memberElement = FeatureImplementation()),
+            MembershipImplementation(model, memberElement = FeatureImplementation(model)),
             baseType = Variable.BaseType.Real,
             solver = solver,
             path = "p",
@@ -331,10 +334,10 @@ class QuantityArithmeticTests {
 
     @Test
     fun intersectInt() {
-        val model = SessionImplementation(libraries = mutableListOf())
+        val model = SessionImplementation()
         val solver = Solver(model)
         val p = VariableImplementation(
-            MembershipImplementation(memberElement = FeatureImplementation()),
+            MembershipImplementation(model, memberElement = FeatureImplementation(model)),
             solver=solver,
             path = "p",
             baseType = Variable.BaseType.Real
@@ -347,10 +350,10 @@ class QuantityArithmeticTests {
 
     @Test
     fun constraint() {
-        val model = SessionImplementation(libraries = mutableListOf())
+        val model = SessionImplementation()
         val solver = Solver(model)
         val p = VariableImplementation(
-            MembershipImplementation(memberElement = FeatureImplementation()),
+            MembershipImplementation(model, memberElement = FeatureImplementation(model)),
             solver = solver, path = "p", baseType = Variable.BaseType.Real
         )
         p.rangeSpec(Range("-0.5..2"))
@@ -369,10 +372,10 @@ class QuantityArithmeticTests {
 
     @Test
     fun constraintInt() {
-        val model = SessionImplementation(libraries = mutableListOf())
+        val model = SessionImplementation()
         val solver = Solver(model)
         val p = VariableImplementation(
-            MembershipImplementation(memberElement = FeatureImplementation()),
+            MembershipImplementation(model, memberElement = FeatureImplementation(model)),
             solver=solver, path = "p", baseType = Variable.BaseType.Real)
         p.vectorQuantity = Quantity(iddDummy1)
         p.intSpec(IntegerRange("0..2"))
@@ -392,25 +395,24 @@ class QuantityArithmeticTests {
     @Test
     fun unitsMixed() = testSession("ISQ") {
         loadKerML("""
-                feature percentage: Quantities::ScalarQuantityValue [%] = 10.0 [%];
+                feature percentage: Quantities::ScalarQuantityValue(* [%]) = 10.0 [%];
                 feature number: ScalarValues::Real = 1.0;
                 feature result: ScalarValues::Real = percentage + number;
-                feature ratio: Quantities::ScalarQuantityValue [dB] = 10.0 [dB];
+                feature ratio: Quantities::ScalarQuantityValue(* [dB]) = 10.0 [dB];
                 feature result2: ScalarValues::Real[1] = ln(ratio)/ln(10.0);
                 feature result3: ScalarValues::Real = power2(ratio);
-        """)
+        """, Runlevel.ALL)
         assertNoIssues()
-        solver.propagate()
-        assertEquals(0.1, global.resolveVar("percentage")!!.vectorQuantity.getMinAsDouble(), 0.0000001)
-        assertEquals(1.0, global.resolveVar("number")!!.vectorQuantity.getMinAsDouble(), 0.0000001)
-        assertEquals(1.1, global.resolveVar("result")!!.vectorQuantity.getMinAsDouble(), 0.0000001)
+        assertEquals(0.1, solver.getVariable("percentage")!!.vectorQuantity.getMinAsDouble(), 0.0000001)
+        assertEquals(1.0, solver.getVariable("number")!!.vectorQuantity.getMinAsDouble(), 0.0000001)
+        assertEquals(1.1, solver.getVariable("result")!!.vectorQuantity.getMinAsDouble(), 0.0000001)
         assertEquals(
             10.0,
-            global.resolveVar("ratio")!!.vectorQuantity.valuesIn("dB")[0].asAadd().getRange().min,
+            solver.getVariable("ratio")!!.vectorQuantity.valuesIn("dB")[0].asAadd().getRange().min,
             0.0000001
         )
-        assertEquals(1.0, global.resolveVar("result2")!!.vectorQuantity.getMinAsDouble(), 0.0000001)
-        assertEquals(1024.0, global.resolveVar("result3")!!.vectorQuantity.getMinAsDouble(), 0.0000001)
+        assertEquals(1.0, solver.getVariable("result2")!!.vectorQuantity.getMinAsDouble(), 0.0000001)
+        assertEquals(1024.0, solver.getVariable("result3")!!.vectorQuantity.getMinAsDouble(), 0.0000001)
         assertEquals(0, status.issues.size, status.issues.toString())
     }
 

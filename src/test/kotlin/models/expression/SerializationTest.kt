@@ -3,8 +3,8 @@ package models.expression
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tukcps.sysmd.model.expression.OperatorExpression
 import com.github.tukcps.sysmd.model.kerml.Element
-import com.github.tukcps.sysmd.services.repositories.local.ElementData
-import com.github.tukcps.sysmd.services.repositories.local.toDAO
+import com.github.tukcps.sysmd.model.datamodel.ElementData
+import com.github.tukcps.sysmd.model.datamodel.toElementData
 import org.junit.jupiter.api.RepeatedTest
 import util.testProjectSession
 import kotlin.test.Ignore
@@ -15,8 +15,8 @@ class SerializationTest
 	/** Serialized an element and makes sure the original object wasn't mutated */
 	fun checkSerialization(f : Element) : ElementData
 	{
-		val dao = f.toDAO()
-		val alsoDao = f.toDAO()
+		val dao = f.toElementData()
+		val alsoDao = f.toElementData()
 
 		val mapper = ObjectMapper()
 		val json = mapper.writeValueAsString(dao)
@@ -69,6 +69,6 @@ class SerializationTest
 			println("$id -> $v")
 		// */
 
-		assertIsTwoPlusTwo(repo.elements.values.single { it is OperatorExpression })
+		assertIsTwoPlusTwo(repo.elements().single { it is OperatorExpression })
 	}
 }

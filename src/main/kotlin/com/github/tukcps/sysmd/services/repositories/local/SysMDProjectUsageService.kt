@@ -1,8 +1,8 @@
 package com.github.tukcps.sysmd.services.repositories.local
 
-import io.github.tukcps.sysmlv2.api.services.ProjectUsageService
-import io.github.tukcps.sysmlv2.api.entities.*
-import java.util.*
+import com.github.tukcps.sysmd.rest.entities.api.entities.*
+import com.github.tukcps.sysmd.rest.entities.api.services.ProjectUsageService
+import kotlin.uuid.Uuid
 
 
 object SysMDProjectUsageService: ProjectUsageService {
@@ -17,5 +17,7 @@ object SysMDProjectUsageService: ProjectUsageService {
         return emptyList()
     }
 
-    override fun deleteProjectUsage(project: Project, branch: Branch?, projectUsageId: UUID): Commit { TODO("Not yet implemented") }
+    override fun deleteProjectUsage(project: Project, branch: Branch?, projectUsageId: Uuid): Commit {
+        TODO("Not yet implemented")
+    }
 }

@@ -4,9 +4,9 @@ package com.github.tukcps.sysmd.compiler.parser.sysmlv2
 
 import com.github.tukcps.sysmd.compiler.SysMLv2
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
-import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.AllocationDefinitionActions
-import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.AllocationUsageActions
-import com.github.tukcps.sysmd.model.sysml.implementation.AllocationUsageImplementation
+import com.github.tukcps.sysmd.compiler.semantics.kerml.parse
+import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.AllocationDefinitionAction
+import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.AllocationUsageAction
 
 /**
  * 8.2.2.15 Allocations Textual Notation
@@ -14,13 +14,12 @@ import com.github.tukcps.sysmd.model.sysml.implementation.AllocationUsageImpleme
  *      AllocationDefinition = OccurrenceDefinitionPrefix 'allocation' 'def' Definition
  */
 
-fun SysMLv2.AllocationDefinition() = AllocationDefinitionActions(semantics).parse {
+fun SysMLv2.AllocationDefinition() = AllocationDefinitionAction(semantics).parse {
     ALLOCATION.consume()
     DEF.consume()
     DefinitionDeclaration()
     UsageBody()
 }
-
 
 /**
  * 8.2.2.15 Allocations Textual Notation
@@ -31,7 +30,7 @@ fun SysMLv2.AllocationDefinition() = AllocationDefinitionActions(semantics).pars
  *          | 'allocate' ConnectorPart
  *
  */
-fun SysMLv2.AllocationUsage() = AllocationUsageActions(semantics, ::AllocationUsageImplementation, "Allocations::Allocation").parse {
+fun SysMLv2.AllocationUsage() = AllocationUsageAction(semantics).parse {
     alternatives {
         ALLOCATION starts {
             ALLOCATION.consume()
@@ -42,7 +41,6 @@ fun SysMLv2.AllocationUsage() = AllocationUsageActions(semantics, ::AllocationUs
             }
         }
         ALLOCATE starts {
-            semantics.create(null)
             ALLOCATE.consume()
             ConnectorPart()
         }

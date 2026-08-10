@@ -148,6 +148,6 @@ class ActionTests {
             
         }
         """)
-        assertNoIssues({ !it.message.contains("could not be resolved") })
+        assertNoIssues { !it.message.contains("could not be resolved") }
     }
 }

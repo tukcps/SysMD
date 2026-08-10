@@ -6,10 +6,10 @@ import com.github.tukcps.sysmd.compiler.SysMLv2
 import com.github.tukcps.sysmd.compiler.parser.kerml.*
 import com.github.tukcps.sysmd.compiler.parser.util.Unsupported
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
-import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.ConnectionDefinitionActions
-import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.InterfaceUsageActions
-import com.github.tukcps.sysmd.model.sysml.implementation.InterfaceDefinitionImplementation
-import com.github.tukcps.sysmd.model.sysml.implementation.InterfaceUsageImplementation
+import com.github.tukcps.sysmd.compiler.semantics.kerml.parse
+import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.ConnectionDefinitionAction
+import com.github.tukcps.sysmd.compiler.semantics.sysmlv2.InterfaceUsageAction
+import com.github.tukcps.sysmd.model.generated.ElementType
 
 
 /**
@@ -18,7 +18,9 @@ import com.github.tukcps.sysmd.model.sysml.implementation.InterfaceUsageImplemen
  *
  *      InterfaceDefinition = OccurrenceDefinitionPrefix 'interface' 'def' DefinitionDeclaration InterfaceBody
  */
-fun SysMLv2.InterfaceDefinition() = ConnectionDefinitionActions(semantics, ::InterfaceDefinitionImplementation, specializes = "Interfaces::Interface").parse {
+fun SysMLv2.InterfaceDefinition() = ConnectionDefinitionAction(
+    semantics, ElementType.InterfaceDefinition, "Interfaces::Interface"
+).parse {
     // OccurrenceDefinitionPrefix is handled by owning body and results are in prefixes
     INTERFACE.consume()
     DEF.consume()
@@ -110,8 +112,7 @@ fun SysMLv2.interfaceOccurrenceUsageStarts() = structureUsageElementStarts() || 
  *      InterfaceUsage = OccurrenceUsagePrefix 'interface'
  *              InterfaceUsageDeclaration InterfaceBody
  */
-fun SysMLv2.InterfaceUsage() = InterfaceUsageActions(context = semantics, creator=::InterfaceUsageImplementation, defaultType = "Interfaces::Interface").parse {
-
+fun SysMLv2.InterfaceUsage() = InterfaceUsageAction(context = semantics).parse {
     INTERFACE.consume()
     InterfaceUsageDeclaration()
     InterfaceBody()
@@ -126,9 +127,9 @@ fun SysMLv2.InterfaceUsage() = InterfaceUsageActions(context = semantics, creato
 fun SysMLv2.InterfaceUsageDeclaration() {
 
     alternatives {
-        LBRACE            starts { semantics.create(null); InterfacePart() }
-        NAME_LIT then DOT starts { semantics.create(null); InterfacePart() }
-        NAME_LIT then TO  starts { semantics.create(null); InterfacePart() }
+        LBRACE            starts { InterfacePart() }
+        NAME_LIT then DOT starts { InterfacePart() }
+        NAME_LIT then TO  starts { InterfacePart() }
 
         others {
             UsageDeclaration()
@@ -157,9 +158,9 @@ fun SysMLv2.InterfacePart() {
  *      BinaryInterfacePart = InterfaceEndMember 'to' InterfaceEndMember
  */
 fun SysMLv2.BinaryInterfacePart() {
-    ConnectorEndMember()  .also { semantics.setSourceEnd(it) }
+    ConnectorEnd()  .also { semantics.setSourceEnd(it) }
     TO.consume()
-    ConnectorEndMember()  .also { semantics.setTargetEnd(it) }
+    ConnectorEnd()  .also { semantics.setTargetEnd(it) }
 }
 
 
@@ -170,12 +171,12 @@ fun SysMLv2.BinaryInterfacePart() {
  */
 fun SysMLv2.NaryInterfacePart() {
     LBRACE.consume()
-    ConnectorEndMember()  .also { semantics.setTargetEnd(it) }
+    ConnectorEnd()  .also { semantics.setTargetEnd(it) }
     COMMA.consume()
-    ConnectorEndMember()  .also { semantics.addTargetEnd(it) }
+    ConnectorEnd()  .also { semantics.addTargetEnd(it) }
     noOrMore (COMMA) {
         COMMA.consume()
-        ConnectorEndMember()  .also { semantics.addTargetEnd(it) }
+        ConnectorEnd()  .also { semantics.addTargetEnd(it) }
     }
     RBRACE.consume()
 }

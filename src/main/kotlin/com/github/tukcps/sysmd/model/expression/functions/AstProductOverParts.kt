@@ -97,7 +97,7 @@ internal class AstProductOverParts(
             generatedAst!!.evalDownRec()
             //Iterate through all leafs of the generatedAST and update downQuantity of the associated ValueFeature
             for (leaf in generatedAst!!.getLeaves().filter { it.qualifiedName != null }) {
-                val valueFeature = model.global.resolveVar(leaf.qualifiedName!!)
+                val valueFeature = model.solver.getVariable(leaf.qualifiedName!!)
                 if (valueFeature != null) {
                     when (leaf.downQuantity.values[0]) {
                         is AADD -> valueFeature.vectorQuantity =

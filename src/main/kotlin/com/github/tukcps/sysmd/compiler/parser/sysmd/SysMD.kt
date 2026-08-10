@@ -24,24 +24,26 @@ import com.github.tukcps.sysmd.exceptions.SyntaxError
  * For implementation, we consider the special relations IS_A, HAS_A, IMPORTS, DEFINES separately.
  */
 fun SysMD.Triple() {
-    val owners = semantics.ownerName()
 
+    var namespace: String? = null
     QualifiedName().also {
-        semantics.addOwningNamespaces(it.removePrefix("Global"))
+        semantics.initOwningNamespaces(it.removePrefix("Global"))
+        namespace = it.removePrefix("Global")
     }
 
     alternatives {
         HAS_A then { ElementList() }
         DEFINES then { DefinitionList() }
         others {
-            semantics.initOwningNamespaces("Global")
             throw SyntaxError(this@Triple,
                 "Expecting a SysMD triple with isA, hasA - but read $consumedToken"
             )
         }
     }
 
-    semantics.initOwningNamespaces(owners)
+    model.import(semantics.elementsBuilt, namespace)
+    semantics.elementsBuilt.clear()
+
 }
 
 

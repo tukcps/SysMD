@@ -1064,7 +1064,10 @@ override fun toString(): String {
         val resultingValues = mutableListOf<DD<*>>()
         if (values.size == rangeSpecs.size)
             values.indices.forEach {
-                resultingValues.add(values[it].asAadd() constrainTo Quantity(value.builder.real(rangeSpecs[it]), Unit(unitSpec)).getRange())
+                if (rangeSpecs[it] == Range.Reals)
+                    resultingValues.add(values[it].asAadd())
+                else
+                    resultingValues.add(values[it].asAadd() constrainTo Quantity(value.builder.real(rangeSpecs[it]), Unit(unitSpec)).getRange())
             }
         else
             if (rangeSpecs.size == 1 && rangeSpecs[0] == Range.Reals) // Special case, if there is no definition of rangeSpecs, use always rangeSpecs[0]
@@ -1073,8 +1076,11 @@ override fun toString(): String {
                 throw VectorDimensionError("Vector size of ${values.size} does not match Constraint size of ${rangeSpecs.size}")
 
         for (i in values.indices) {
-            if (q.values[i].isFeasible && !(q.values[i] as Real).isEmpty()) {
-                resultingValues[i] = resultingValues[i].asAadd() constrainTo q.values[i].asAadd()
+            val qVal = q.values[i]
+            if (qVal.isFeasible && qVal is Real && !qVal.isEmpty()) {
+                if (! (qVal.minIsInf && qVal.maxIsInf) ) {
+                    resultingValues[i] = resultingValues[i].asAadd() constrainTo qVal
+                }
             }
         }
         return VectorQuantity(resultingValues, unit, unitSpec)
