@@ -54,7 +54,7 @@ class SessionServiceImplementation : SessionService {
      * @return The session created for working with the project.
      */
     override fun createSession(project: ProjectData): ProjectSession =
-        SessionManager.createSession(project = project)
+        SessionManager.createSession(project = project, libraries = SessionManager.SYSML_LIBRARIES)
 
     /**
      * Returns the .meta.json, i.e., in particular the index of the source-files of the project.
