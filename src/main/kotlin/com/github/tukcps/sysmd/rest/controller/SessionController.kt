@@ -8,6 +8,7 @@ import com.github.tukcps.sysmd.rest.entities.requests.ProjectMetaRequest
 import com.github.tukcps.sysmd.rest.entities.response.*
 import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.repositories.local.Language
+import com.github.tukcps.sysmd.services.session.SessionManager
 import com.github.tukcps.sysmd.services.session.SessionManager.projectService
 import com.github.tukcps.sysmd.services.session.SessionManager.sessionService
 import com.github.tukcps.sysmd.ui.readText
@@ -116,6 +117,23 @@ class SessionController {
         val session = project.let {  sessionService.createSession(project) }
         logger.info("Accessed endpoint POST /session")
         return ResponseEntity(session.id.toString(), HttpStatus.CREATED)
+    }
+
+    /**
+     * **Killing a session**
+     * - `DELETE /session`
+     * - Disposes of the session (and the models and standard libraries it holds). A session cannot otherwise be released over REST.
+     */
+    @CrossOrigin(allowedHeaders = ["SessionId"])
+    @ResponseStatus(HttpStatus.OK)
+    @Operation(summary = "Kills a session and frees its memory.")
+    @DeleteMapping(path = ["/session"])
+    fun killSession(
+        @RequestHeader(value = "SessionId", required = true) sessionId: Uuid,
+    ): ResponseEntity<Void> {
+        logger.info("Accessed endpoint DELETE /session")
+        return if (SessionManager.kill(sessionId) != null) ResponseEntity.ok().build()
+        else ResponseEntity.notFound().build()
     }
 
     /**
