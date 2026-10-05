@@ -49,7 +49,10 @@ open class BaseUnit(
             is ThermodynamicTemperature -> setOf(ThermodynamicTemperature.Kelvin.copy())
             is Duration -> setOf(Duration.Second.copy())
             is EmptyUnit -> setOf(EmptyUnit.Empty.copy())
-            is AmountOfMoney -> setOf(AmountOfMoney.Euro.copy())
+            // Each currency is its own base unit: there is no fixed exchange rate, so USD must not
+            // canonicalize to EUR (which silently made 1 USD == 1 EUR == 1 GBP and allowed
+            // 100 USD + 100 EUR = 200 EUR). Mixing currencies now fails like any other unit mismatch.
+            is AmountOfMoney -> setOf(AmountOfMoney(name, symbol, NoPrefix))
             else -> throw UnknownUnitError("$this should be a base unit, but it is not defined")
         }
     }

@@ -1,3 +1,9 @@
+// Gradle 9 needs an explicit toolchain repository; without it `jvmToolchain(25)` (build.gradle.kts)
+// cannot be auto-provisioned and the build fails on machines that only have a JRE or an older JDK.
+plugins {
+    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+}
+
 rootProject.name = "sysmd"
 
 //
