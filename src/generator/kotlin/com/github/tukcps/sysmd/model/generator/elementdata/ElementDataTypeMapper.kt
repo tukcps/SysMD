@@ -3,6 +3,7 @@ package com.github.tukcps.sysmd.model.generator.elementdata
 import com.github.tukcps.sysmd.model.generator.GeneratorConfiguration
 import com.github.tukcps.sysmd.model.generator.kotlin.KotlinTypeMapper
 import com.github.tukcps.sysmd.model.generator.mof.MOFAttribute
+import com.github.tukcps.sysmd.model.generator.mof.MOFClass
 import com.github.tukcps.sysmd.model.generator.mof.MOFMetaModel
 
 /**
@@ -40,11 +41,13 @@ class ElementDataTypeMapper(
     /**
      * Returns the Kotlin type of the generated property.
      *
+     * @param clazz Declaring metaclass.
      * @param attribute MOF attribute.
      * @param isReference Whether the attribute is a structural reference.
      * @return Kotlin property type.
      */
     fun type(
+        clazz: MOFClass,
         attribute: MOFAttribute,
         isReference: Boolean,
     ): String {
@@ -54,6 +57,8 @@ class ElementDataTypeMapper(
 
         val kotlinType =
             GeneratorConfiguration.ELEMENT_DATA_TYPE_OVERRIDES[
+                "${clazz.name}.${attribute.name}"
+            ] ?: GeneratorConfiguration.ELEMENT_DATA_TYPE_OVERRIDES[
                 attribute.name
             ] ?: KotlinTypeMapper.type(
                 model,
@@ -84,9 +89,9 @@ class ElementDataTypeMapper(
         attribute: MOFAttribute,
     ): String =
         if (isMultiValued(attribute))
-            "MutableList<Identified>"
+            "MutableList<ElementReference>"
         else
-            "Identified?"
+            "ElementReference?"
 
     /**
      * Returns whether an attribute is multi-valued.

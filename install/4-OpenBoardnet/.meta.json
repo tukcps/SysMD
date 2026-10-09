@@ -1,0 +1,27 @@
+{
+  "index" : {
+    "1" : "OpenBoardnet_Framework.md",
+    "2" : "BaseTypes.md",
+    "3" : "Requirements.md",
+    "4" : "FeaturesAndFunctions.md",
+    "5" : "LogicalArchitecture.md",
+    "6" : "TechnicalArchitecture.md",
+    "7" : "Allocations.md",
+    "8" : "ComputeUnit.md",
+    "9" : "Software.md",
+    "10" : "Hardware.md",
+    "11" : "NeuralNetwork.md",
+    "12" : "Sensors.md",
+    "13" : "Actuators.md",
+    "14" : "network.md",
+    "15" : "LocationsAndBuildingSpaces.md",
+    "16" : "topology.md",
+    "17" : "safety.md",
+    "18" : "reliability.md"
+  },
+  "created" : "2026-10-09T12:10:00.000Z",
+  "metamodel" : null,
+  "includesDerived" : null,
+  "includesImplied" : null,
+  "checkSum" : null
+}

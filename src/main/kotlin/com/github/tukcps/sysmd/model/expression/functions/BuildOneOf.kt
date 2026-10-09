@@ -4,7 +4,7 @@ import com.github.tukcps.sysmd.compiler.semantics.ActionsContext
 import com.github.tukcps.sysmd.compiler.semantics.kerml.ConditionalExpressionActions
 import com.github.tukcps.sysmd.model.expression.AstLeaf
 import com.github.tukcps.sysmd.model.expression.AstNode
-import com.github.tukcps.sysmd.quantities.Quantity
+import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
 import java.util.*
 import java.util.UUID.randomUUID
@@ -24,7 +24,7 @@ fun buildOneOfAst(
         if (s2 != s1 ) {
             val cond = AstLeaf(
                 model,
-                Quantity(
+                VectorQuantity(
                     model.builder.variable(
                         "${id}::EnumDecision-$decVarCounter",
                         id.toString(),

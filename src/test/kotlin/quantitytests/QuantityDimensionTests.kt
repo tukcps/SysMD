@@ -1,5 +1,7 @@
 package quantitytests
 
+import util.variable
+import util.assertBounds
 import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import util.assertIssue
@@ -21,11 +23,11 @@ class QuantityDimensionTests {
             feature s: ISQ::LengthValue  = v*t;"""
         )
         solver.propagate()
-        assertEquals("m", solver.getVariable("s")!!.vectorQuantity.unit.toString())
-        assertEquals(10.0, solver.getVariable("s")!!.max(), 0.00001)
-        assertEquals("Duration", solver.getVariable("t")!!.vectorQuantity.getDomain())
-        assertEquals("Speed", solver.getVariable("v")!!.vectorQuantity.getDomain())
-        assertEquals("Length", solver.getVariable("s")!!.vectorQuantity.getDomain())
+        assertEquals("m", solver.variable("s").vectorQuantity.unit.toString())
+        assertBounds(10.0, solver.variable("s"))
+        assertEquals("Duration", solver.variable("t").vectorQuantity.getDomain())
+        assertEquals("Speed", solver.variable("v").vectorQuantity.getDomain())
+        assertEquals("Length", solver.variable("s").vectorQuantity.getDomain())
         assertNoIssues()
     }
 
@@ -38,13 +40,13 @@ class QuantityDimensionTests {
                 feature s: ISQ::LengthValue  = v2*t;"""
         )
         solver.propagate()
-        assertEquals("m / s", solver.getVariable("v2")!!.vectorQuantity.unit.toString())
-        assertEquals(10.0, solver.getVariable("v2")!!.min(), 0.00001)
-        assertEquals(20.0, solver.getVariable("s")!!.max(), 0.00001)
-        assertEquals("Duration", solver.getVariable("t")!!.vectorQuantity.getDomain())
-        assertEquals("Speed", solver.getVariable("v")!!.vectorQuantity.getDomain())
-        assertEquals("Speed", solver.getVariable("v2")!!.vectorQuantity.getDomain())
-        assertEquals("Length", solver.getVariable("s")!!.vectorQuantity.getDomain())
+        assertEquals("m / s", solver.variable("v2").vectorQuantity.unit.toString())
+        assertBounds(10.0, solver.variable("v2"))
+        assertBounds(20.0, solver.variable("s"))
+        assertEquals("Duration", solver.variable("t").vectorQuantity.getDomain())
+        assertEquals("Speed", solver.variable("v").vectorQuantity.getDomain())
+        assertEquals("Speed", solver.variable("v2").vectorQuantity.getDomain())
+        assertEquals("Length", solver.variable("s").vectorQuantity.getDomain())
         assertNoIssues()
     }
 
@@ -57,13 +59,13 @@ class QuantityDimensionTests {
             feature s: ISQ::LengthValue  = v*t;"""
         )
         solver.propagate()
-        assertEquals("m / s", solver.getVariable("v")!!.vectorQuantity.unit.toString())
-        assertEquals(2.0, solver.getVariable("t")!!.min(), 0.00001)
-        assertEquals(10.0, solver.getVariable("v")!!.max(), 0.00001)
-        assertEquals(20.0, solver.getVariable("s")!!.min(), 0.00001)
-        assertEquals("Duration", solver.getVariable("t")!!.vectorQuantity.getDomain())
-        assertEquals("Speed", solver.getVariable("v")!!.vectorQuantity.getDomain())
-        assertEquals("Length", solver.getVariable("s")!!.vectorQuantity.getDomain())
+        assertEquals("m / s", solver.variable("v").vectorQuantity.unit.toString())
+        assertBounds(2.0, solver.variable("t"))
+        assertBounds(10.0, solver.variable("v"))
+        assertBounds(20.0, solver.variable("s"))
+        assertEquals("Duration", solver.variable("t").vectorQuantity.getDomain())
+        assertEquals("Speed", solver.variable("v").vectorQuantity.getDomain())
+        assertEquals("Length", solver.variable("s").vectorQuantity.getDomain())
         assertNoIssues()
     }
 
@@ -76,12 +78,12 @@ class QuantityDimensionTests {
                 feature s: ISQ::LengthValue  = 0.5*a*sqr(t)+v0*t;"""
         )
         solver.propagate()
-        assertEquals("m / s", solver.getVariable("v0")!!.vectorQuantity.unit.toString())
-        assertEquals(4.0, solver.getVariable("s")!!.min(), 0.00001)
-        assertEquals("Duration", solver.getVariable("t")!!.vectorQuantity.getDomain())
-        assertEquals("Speed", solver.getVariable("v0")!!.vectorQuantity.getDomain())
-        assertEquals("Acceleration", solver.getVariable("a")!!.vectorQuantity.getDomain())
-        assertEquals("Length", solver.getVariable("s")!!.vectorQuantity.getDomain())
+        assertEquals("m / s", solver.variable("v0").vectorQuantity.unit.toString())
+        assertBounds(4.0, solver.variable("s"))
+        assertEquals("Duration", solver.variable("t").vectorQuantity.getDomain())
+        assertEquals("Speed", solver.variable("v0").vectorQuantity.getDomain())
+        assertEquals("Acceleration", solver.variable("a").vectorQuantity.getDomain())
+        assertEquals("Length", solver.variable("s").vectorQuantity.getDomain())
         assertNoIssues()
     }
 
@@ -95,11 +97,11 @@ class QuantityDimensionTests {
         )
         solver.propagate()
         assertNoIssues()
-        assertEquals(5.0, solver.getVariable("s")!!.min(), 0.00001)
-        assertEquals("Duration", solver.getVariable("t")!!.vectorQuantity.getDomain())
-        assertEquals("Speed", solver.getVariable("v")!!.vectorQuantity.getDomain())
-        assertEquals("Acceleration", solver.getVariable("g")!!.vectorQuantity.getDomain())
-        assertEquals("Speed", solver.getVariable("s")!!.vectorQuantity.getDomain())
+        assertBounds(5.0, solver.variable("s"))
+        assertEquals("Duration", solver.variable("t").vectorQuantity.getDomain())
+        assertEquals("Speed", solver.variable("v").vectorQuantity.getDomain())
+        assertEquals("Acceleration", solver.variable("g").vectorQuantity.getDomain())
+        assertEquals("Speed", solver.variable("s").vectorQuantity.getDomain())
     }
 
     @Test
@@ -112,11 +114,11 @@ class QuantityDimensionTests {
         )
         solver.propagate()
         assertNoIssues()
-        assertEquals(6.0, solver.getVariable("s")!!.min(), 0.00001)
-        assertEquals("Length", solver.getVariable("h")!!.vectorQuantity.getDomain())
-        assertEquals("Speed", solver.getVariable("v0")!!.vectorQuantity.getDomain())
-        assertEquals("Acceleration", solver.getVariable("g")!!.vectorQuantity.getDomain())
-        assertEquals("Length", solver.getVariable("s")!!.vectorQuantity.getDomain())
+        assertBounds(6.0, solver.variable("s"))
+        assertEquals("Length", solver.variable("h").vectorQuantity.getDomain())
+        assertEquals("Speed", solver.variable("v0").vectorQuantity.getDomain())
+        assertEquals("Acceleration", solver.variable("g").vectorQuantity.getDomain())
+        assertEquals("Length", solver.variable("s").vectorQuantity.getDomain())
     }
 
     @Test
@@ -129,11 +131,11 @@ class QuantityDimensionTests {
         )
         solver.propagate()
         assertNoIssues()
-        assertEquals(45.0, solver.getVariable("Fz")!!.min(), 0.00001)
-        assertEquals("Length", solver.getVariable("r")!!.vectorQuantity.getDomain())
-        assertEquals("Frequency", solver.getVariable("Omega")!!.vectorQuantity.getDomain())
-        assertEquals("Mass", solver.getVariable("m")!!.vectorQuantity.getDomain())
-        assertEquals("Force", solver.getVariable("Fz")!!.vectorQuantity.getDomain())
+        assertBounds(45.0, solver.variable("Fz"))
+        assertEquals("Length", solver.variable("r").vectorQuantity.getDomain())
+        assertEquals("Frequency", solver.variable("Omega").vectorQuantity.getDomain())
+        assertEquals("Mass", solver.variable("m").vectorQuantity.getDomain())
+        assertEquals("Force", solver.variable("Fz").vectorQuantity.getDomain())
         assertNoIssues()
     }
 
@@ -147,11 +149,11 @@ class QuantityDimensionTests {
         """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(45.0, solver.getVariable("Fz")!!.min(), 0.00001)
-        assertEquals("Length", solver.getVariable("r")!!.vectorQuantity.getDomain())
-        assertEquals("Frequency", solver.getVariable("Omega")!!.vectorQuantity.getDomain())
-        assertEquals("Mass", solver.getVariable("m")!!.vectorQuantity.getDomain())
-        assertEquals("Force", solver.getVariable("Fz")!!.vectorQuantity.getDomain())
+        assertBounds(45.0, solver.variable("Fz"))
+        assertEquals("Length", solver.variable("r").vectorQuantity.getDomain())
+        assertEquals("Frequency", solver.variable("Omega").vectorQuantity.getDomain())
+        assertEquals("Mass", solver.variable("m").vectorQuantity.getDomain())
+        assertEquals("Force", solver.variable("Fz").vectorQuantity.getDomain())
         assertNoIssues()
     }
 
@@ -165,10 +167,10 @@ class QuantityDimensionTests {
         """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(45.0, solver.getVariable("E")!!.min(), 0.00001)
-        assertEquals("Force", solver.getVariable("F")!!.vectorQuantity.getDomain())
-        assertEquals("Length", solver.getVariable("s")!!.vectorQuantity.getDomain())
-        assertEquals("Energy", solver.getVariable("E")!!.vectorQuantity.getDomain())
+        assertBounds(45.0, solver.variable("E"))
+        assertEquals("Force", solver.variable("F").vectorQuantity.getDomain())
+        assertEquals("Length", solver.variable("s").vectorQuantity.getDomain())
+        assertEquals("Energy", solver.variable("E").vectorQuantity.getDomain())
         assertNoIssues()
     }
 
@@ -182,10 +184,10 @@ class QuantityDimensionTests {
         )
         solver.propagate()
         assertNoIssues()
-        assertEquals(45.0, solver.getVariable("p")!!.min(), 0.00001)
-        assertEquals("Mass", solver.getVariable("m")!!.vectorQuantity.getDomain())
-        assertEquals("Speed", solver.getVariable("v")!!.vectorQuantity.getDomain())
-        assertEquals("Momentum", solver.getVariable("p")!!.vectorQuantity.getDomain())
+        assertBounds(45.0, solver.variable("p"))
+        assertEquals("Mass", solver.variable("m").vectorQuantity.getDomain())
+        assertEquals("Speed", solver.variable("v").vectorQuantity.getDomain())
+        assertEquals("Momentum", solver.variable("p").vectorQuantity.getDomain())
     }
 
     /**Units with gravitation**/
@@ -201,12 +203,12 @@ class QuantityDimensionTests {
         )
         solver.propagate()
         assertNoIssues()
-        assertEquals(18.0, solver.getVariable("Epot")!!.min(), 0.00001)
-        assertEquals("Mass", solver.getVariable("m1")!!.vectorQuantity.getDomain())
-        assertEquals("Mass", solver.getVariable("m2")!!.vectorQuantity.getDomain())
-        assertEquals("Length", solver.getVariable("r1")!!.vectorQuantity.getDomain())
-        assertEquals("Length", solver.getVariable("r2")!!.vectorQuantity.getDomain())
-        assertEquals("Energy", solver.getVariable("Epot")!!.vectorQuantity.getDomain())
+        assertBounds(18.0, solver.variable("Epot"))
+        assertEquals("Mass", solver.variable("m1").vectorQuantity.getDomain())
+        assertEquals("Mass", solver.variable("m2").vectorQuantity.getDomain())
+        assertEquals("Length", solver.variable("r1").vectorQuantity.getDomain())
+        assertEquals("Length", solver.variable("r2").vectorQuantity.getDomain())
+        assertEquals("Energy", solver.variable("Epot").vectorQuantity.getDomain())
     }
 
     /**Units with electricity**/
@@ -219,10 +221,10 @@ class QuantityDimensionTests {
             feature E: ISQ::ElectricFieldStrengthValue = 1.0/(4.0 * 3.14159*epsilon0) * Q/sqr(r); 
         """)
         solver.propagate()
-        assertEquals(26.5258, solver.getVariable("E")!!.min(), 0.0001)
-        assertEquals("ElectricCharge", solver.getVariable("Q")!!.vectorQuantity.getDomain())
-        assertEquals("Length", solver.getVariable("r")!!.vectorQuantity.getDomain())
-        assertEquals("ElectricFieldStrength", solver.getVariable("E")!!.vectorQuantity.getDomain())
+        assertBounds(26.5258462540730, solver.variable("E"))
+        assertEquals("ElectricCharge", solver.variable("Q").vectorQuantity.getDomain())
+        assertEquals("Length", solver.variable("r").vectorQuantity.getDomain())
+        assertEquals("ElectricFieldStrength", solver.variable("E").vectorQuantity.getDomain())
         assertNoIssues()
     }
 
@@ -238,11 +240,11 @@ class QuantityDimensionTests {
         )
         solver.propagate()
         assertNoIssues()
-        assertEquals(26.5258, solver.getVariable("F")!!.min(), 0.0001)
-        assertEquals("ElectricCharge", solver.getVariable("Q1")!!.vectorQuantity.getDomain())
-        assertEquals("ElectricCharge", solver.getVariable("Q2")!!.vectorQuantity.getDomain())
-        assertEquals("Length", solver.getVariable("r")!!.vectorQuantity.getDomain())
-        assertEquals("Force", solver.getVariable("F")!!.vectorQuantity.getDomain())
+        assertBounds(26.525846254073027..26.525846254073066, solver.variable("F"))
+        assertEquals("ElectricCharge", solver.variable("Q1").vectorQuantity.getDomain())
+        assertEquals("ElectricCharge", solver.variable("Q2").vectorQuantity.getDomain())
+        assertEquals("Length", solver.variable("r").vectorQuantity.getDomain())
+        assertEquals("Force", solver.variable("F").vectorQuantity.getDomain())
     }
 
     @Test
@@ -254,12 +256,13 @@ class QuantityDimensionTests {
             feature s: ISQ::LengthValue = 0.2 [m];
             feature W: ISQ::EnergyValue = E*q*s ;
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals("ElectricFieldStrength", solver.getVariable("E")!!.vectorQuantity.getDomain())
-        assertEquals("ElectricCharge", solver.getVariable("q")!!.vectorQuantity.getDomain())
-        assertEquals("Length", solver.getVariable("s")!!.vectorQuantity.getDomain())
-        assertEquals("Energy", solver.getVariable("W")!!.vectorQuantity.getDomain())
-        assertEquals(2.0, solver.getVariable("W")!!.min(), 0.0001)
+        assertEquals("ElectricFieldStrength", solver.variable("E").vectorQuantity.getDomain())
+        assertEquals("ElectricCharge", solver.variable("q").vectorQuantity.getDomain())
+        assertEquals("Length", solver.variable("s").vectorQuantity.getDomain())
+        assertEquals("Energy", solver.variable("W").vectorQuantity.getDomain())
+        assertBounds(2.0, solver.variable("W"))
     }
 
     @Test
@@ -270,11 +273,12 @@ class QuantityDimensionTests {
             feature d: ISQ::LengthValue = 0.2 [m];
             feature U: ISQ::ElectricPotentialDifferenceValue= E*d; 
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(0.4, solver.getVariable("U")!!.min(), 0.0001)
-        assertEquals("ElectricFieldStrength", solver.getVariable("E")!!.vectorQuantity.getDomain())
-        assertEquals("Length", solver.getVariable("d")!!.vectorQuantity.getDomain())
-        assertEquals("ElectricPotentialDifference", solver.getVariable("U")!!.vectorQuantity.getDomain())
+        assertBounds(0.4, solver.variable("U"))
+        assertEquals("ElectricFieldStrength", solver.variable("E").vectorQuantity.getDomain())
+        assertEquals("Length", solver.variable("d").vectorQuantity.getDomain())
+        assertEquals("ElectricPotentialDifference", solver.variable("U").vectorQuantity.getDomain())
     }
 
     @Test
@@ -287,11 +291,12 @@ class QuantityDimensionTests {
             feature r2: ISQ::LengthValue  = 50.0 [cm];
             feature W: ISQ::EnergyValue  = (Q1*Q2)/(3.0*3.14159*epsilon0)*(1.0/r1+1.0/r2); 
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(1.0, solver.getVariable("W")!!.min(), 0.0001)
-        assertEquals("ElectricCharge", solver.getVariable("Q1")!!.vectorQuantity.getDomain())
-        assertEquals("Length", solver.getVariable("r1")!!.vectorQuantity.getDomain())
-        assertEquals("Energy", solver.getVariable("W")!!.vectorQuantity.getDomain())
+        assertBounds(1.0, solver.variable("W"))
+        assertEquals("ElectricCharge", solver.variable("Q1").vectorQuantity.getDomain())
+        assertEquals("Length", solver.variable("r1").vectorQuantity.getDomain())
+        assertEquals("Energy", solver.variable("W").vectorQuantity.getDomain())
     }
 
 
@@ -304,9 +309,9 @@ class QuantityDimensionTests {
             """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(0.2, solver.getVariable("G")!!.min(), 0.0001)
-        assertEquals("m^2 / s^2", solver.getVariable("G")!!.vectorQuantity.unit.toString())
-        assertEquals("AbsorbedDose", solver.getVariable("G")!!.vectorQuantity.getDomain())
+        assertBounds(0.2, solver.variable("G"))
+        assertEquals("m^2 / s^2", solver.variable("G").vectorQuantity.unit.toString())
+        assertEquals("AbsorbedDose", solver.variable("G").vectorQuantity.getDomain())
     }
 
     @Test
@@ -317,10 +322,10 @@ class QuantityDimensionTests {
             """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(1.0, solver.getVariable("A")!!.min(), 0.0001)
-        assertEquals("1 / s", solver.getVariable("A")!!.vectorQuantity.unit.toString())
-        assertEquals("NuclearActivity", solver.getVariable("A")!!.vectorQuantity.getDomain())
-        assertEquals("Duration", solver.getVariable("t1")!!.vectorQuantity.getDomain())
+        assertBounds(1.0, solver.variable("A"))
+        assertEquals("1 / s", solver.variable("A").vectorQuantity.unit.toString())
+        assertEquals("NuclearActivity", solver.variable("A").vectorQuantity.getDomain())
+        assertEquals("Duration", solver.variable("t1").vectorQuantity.getDomain())
     }
 
     @Test
@@ -332,9 +337,9 @@ class QuantityDimensionTests {
             """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(0.5, solver.getVariable("A")!!.min(), 0.0001)
-        assertEquals("m^2", solver.getVariable("A")!!.vectorQuantity.unit.toString())
-        assertEquals("Area", solver.getVariable("A")!!.vectorQuantity.getDomain())
+        assertBounds(0.5, solver.variable("A"))
+        assertEquals("m^2", solver.variable("A").vectorQuantity.unit.toString())
+        assertEquals("Area", solver.variable("A").vectorQuantity.getDomain())
     }
 
     @Test
@@ -346,11 +351,11 @@ class QuantityDimensionTests {
             """ )
         solver.propagate()
         assertNoIssues()
-        assertEquals(2.0, solver.getVariable("C")!!.min(), 0.0001)
-        assertEquals("A^2 s^4 / kg m^2", solver.getVariable("C")!!.vectorQuantity.unit.toString())
-        assertEquals("Capacitance", solver.getVariable("C")!!.vectorQuantity.getDomain())
-        assertEquals("ElectricCharge", solver.getVariable("Q")!!.vectorQuantity.getDomain())
-        assertEquals("ElectricPotentialDifference", solver.getVariable("U")!!.vectorQuantity.getDomain())
+        assertBounds(2.0, solver.variable("C"))
+        assertEquals("A^2 s^4 / kg m^2", solver.variable("C").vectorQuantity.unit.toString())
+        assertEquals("Capacitance", solver.variable("C").vectorQuantity.getDomain())
+        assertEquals("ElectricCharge", solver.variable("Q").vectorQuantity.getDomain())
+        assertEquals("ElectricPotentialDifference", solver.variable("U").vectorQuantity.getDomain())
     }
 
     @Test
@@ -363,11 +368,11 @@ class QuantityDimensionTests {
         )
         solver.propagate()
         assertNoIssues()
-        assertEquals(2.0, solver.getVariable("d")!!.min(), 0.0001)
-        assertEquals("kg / m^3", solver.getVariable("d")!!.vectorQuantity.unit.toString())
-        assertEquals("MassDensity", solver.getVariable("d")!!.vectorQuantity.getDomain())
-        assertEquals("Volume", solver.getVariable("V")!!.vectorQuantity.getDomain())
-        assertEquals("Mass", solver.getVariable("m")!!.vectorQuantity.getDomain())
+        assertBounds(2.0, solver.variable("d"))
+        assertEquals("kg / m^3", solver.variable("d").vectorQuantity.unit.toString())
+        assertEquals("MassDensity", solver.variable("d").vectorQuantity.getDomain())
+        assertEquals("Volume", solver.variable("V").vectorQuantity.getDomain())
+        assertEquals("Mass", solver.variable("m").vectorQuantity.getDomain())
     }
 
     @Test
@@ -379,11 +384,11 @@ class QuantityDimensionTests {
         )
         solver.propagate()
         assertNoIssues()
-        assertEquals(1.0, solver.getVariable("G")!!.min(), 0.0001)
-        assertEquals("A^2 s^3 / kg m^2", solver.getVariable("G")!!.vectorQuantity.unit.toString())
-        assertEquals("Conductance", solver.getVariable("G")!!.vectorQuantity.getDomain())
-        assertEquals("ElectricPotentialDifference", solver.getVariable("V")!!.vectorQuantity.getDomain())
-        assertEquals("ElectricCurrent", solver.getVariable("I")!!.vectorQuantity.getDomain())
+        assertBounds(1.0, solver.variable("G"))
+        assertEquals("A^2 s^3 / kg m^2", solver.variable("G").vectorQuantity.unit.toString())
+        assertEquals("Conductance", solver.variable("G").vectorQuantity.getDomain())
+        assertEquals("ElectricPotentialDifference", solver.variable("V").vectorQuantity.getDomain())
+        assertEquals("ElectricCurrent", solver.variable("I").vectorQuantity.getDomain())
     }
 
     @Test
@@ -396,11 +401,11 @@ class QuantityDimensionTests {
         )
         solver.propagate()
         assertNoIssues()
-        assertEquals(1.0, solver.getVariable("R")!!.min(), 0.0001)
-        assertEquals("kg m^2 / A^2 s^3", solver.getVariable("R")!!.vectorQuantity.unit.toString())
-        assertEquals("Resistance", solver.getVariable("R")!!.vectorQuantity.getDomain())
-        assertEquals("ElectricPotentialDifference", solver.getVariable("U")!!.vectorQuantity.getDomain())
-        assertEquals("ElectricCurrent", solver.getVariable("I")!!.vectorQuantity.getDomain())
+        assertBounds(1.0, solver.variable("R"))
+        assertEquals("kg m^2 / A^2 s^3", solver.variable("R").vectorQuantity.unit.toString())
+        assertEquals("Resistance", solver.variable("R").vectorQuantity.getDomain())
+        assertEquals("ElectricPotentialDifference", solver.variable("U").vectorQuantity.getDomain())
+        assertEquals("ElectricCurrent", solver.variable("I").vectorQuantity.getDomain())
     }
 
     @Test
@@ -412,11 +417,11 @@ class QuantityDimensionTests {
         )
         solver.propagate()
         assertNoIssues()
-        assertEquals(1.0, solver.getVariable("Q")!!.min(), 0.0001)
-        assertEquals("A s", solver.getVariable("Q")!!.vectorQuantity.unit.toString())
-        assertEquals("ElectricCharge", solver.getVariable("Q")!!.vectorQuantity.getDomain())
-        assertEquals("Duration", solver.getVariable("t")!!.vectorQuantity.getDomain())
-        assertEquals("ElectricCurrent", solver.getVariable("I")!!.vectorQuantity.getDomain())
+        assertBounds(1.0, solver.variable("Q"))
+        assertEquals("A s", solver.variable("Q").vectorQuantity.unit.toString())
+        assertEquals("ElectricCharge", solver.variable("Q").vectorQuantity.getDomain())
+        assertEquals("Duration", solver.variable("t").vectorQuantity.getDomain())
+        assertEquals("ElectricCurrent", solver.variable("I").vectorQuantity.getDomain())
     }
 
     @Test
@@ -429,11 +434,11 @@ class QuantityDimensionTests {
         )
         solver.propagate()
         assertNoIssues()
-        assertEquals(1.0, solver.getVariable("U")!!.min(), 0.0001)
-        assertEquals("kg m^2 / A s^3", solver.getVariable("U")!!.vectorQuantity.unit.toString())
-        assertEquals("ElectricPotentialDifference", solver.getVariable("U")!!.vectorQuantity.getDomain())
-        assertEquals("Power", solver.getVariable("P")!!.vectorQuantity.getDomain())
-        assertEquals("ElectricCurrent", solver.getVariable("I")!!.vectorQuantity.getDomain())
+        assertBounds(1.0, solver.variable("U"))
+        assertEquals("kg m^2 / A s^3", solver.variable("U").vectorQuantity.unit.toString())
+        assertEquals("ElectricPotentialDifference", solver.variable("U").vectorQuantity.getDomain())
+        assertEquals("Power", solver.variable("P").vectorQuantity.getDomain())
+        assertEquals("ElectricCurrent", solver.variable("I").vectorQuantity.getDomain())
     }
 
     @Test
@@ -445,11 +450,11 @@ class QuantityDimensionTests {
         """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(1.0, solver.getVariable("E")!!.min(), 0.0001)
-        assertEquals("kg m^2 / s^2", solver.getVariable("E")!!.vectorQuantity.unit.toString())
-        assertEquals("Energy", solver.getVariable("E")!!.vectorQuantity.getDomain())
-        assertEquals("Length", solver.getVariable("l")!!.vectorQuantity.getDomain())
-        assertEquals("Force", solver.getVariable("F")!!.vectorQuantity.getDomain())
+        assertBounds(1.0, solver.variable("E"))
+        assertEquals("kg m^2 / s^2", solver.variable("E").vectorQuantity.unit.toString())
+        assertEquals("Energy", solver.variable("E").vectorQuantity.getDomain())
+        assertEquals("Length", solver.variable("l").vectorQuantity.getDomain())
+        assertEquals("Force", solver.variable("F").vectorQuantity.getDomain())
     }
 
     @Test
@@ -461,11 +466,11 @@ class QuantityDimensionTests {
         """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(1.0, solver.getVariable("ED")!!.min(), 0.0001)
-        assertEquals("kg / m s^2", solver.getVariable("ED")!!.vectorQuantity.unit.toString())
-        assertEquals("EnergyDensity", solver.getVariable("ED")!!.vectorQuantity.getDomain())
-        assertEquals("Energy", solver.getVariable("E")!!.vectorQuantity.getDomain())
-        assertEquals("Volume", solver.getVariable("V")!!.vectorQuantity.getDomain())
+        assertBounds(1.0, solver.variable("ED"))
+        assertEquals("kg / m s^2", solver.variable("ED").vectorQuantity.unit.toString())
+        assertEquals("EnergyDensity", solver.variable("ED").vectorQuantity.getDomain())
+        assertEquals("Energy", solver.variable("E").vectorQuantity.getDomain())
+        assertEquals("Volume", solver.variable("V").vectorQuantity.getDomain())
     }
 
     @Test
@@ -477,11 +482,11 @@ class QuantityDimensionTests {
         """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(1.0, solver.getVariable("S")!!.min(), 0.0001)
-        assertEquals("kg m^2 / K s^2", solver.getVariable("S")!!.vectorQuantity.unit.toString())
-        assertEquals("Entropy", solver.getVariable("S")!!.vectorQuantity.getDomain())
-        assertEquals("ThermodynamicTemperature", solver.getVariable("T")!!.vectorQuantity.getDomain())
-        assertEquals("Energy", solver.getVariable("E")!!.vectorQuantity.getDomain())
+        assertBounds(1.0, solver.variable("S"))
+        assertEquals("kg m^2 / K s^2", solver.variable("S").vectorQuantity.unit.toString())
+        assertEquals("Entropy", solver.variable("S").vectorQuantity.getDomain())
+        assertEquals("ThermodynamicTemperature", solver.variable("T").vectorQuantity.getDomain())
+        assertEquals("Energy", solver.variable("E").vectorQuantity.getDomain())
     }
 
     @Test
@@ -493,11 +498,11 @@ class QuantityDimensionTests {
         """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(1.0, solver.getVariable("F")!!.min(), 0.0001)
-        assertEquals("kg m / s^2", solver.getVariable("F")!!.vectorQuantity.unit.toString())
-        assertEquals("Force", solver.getVariable("F")!!.vectorQuantity.getDomain())
-        assertEquals("Acceleration", solver.getVariable("a")!!.vectorQuantity.getDomain())
-        assertEquals("Mass", solver.getVariable("m")!!.vectorQuantity.getDomain())
+        assertBounds(1.0, solver.variable("F"))
+        assertEquals("kg m / s^2", solver.variable("F").vectorQuantity.unit.toString())
+        assertEquals("Force", solver.variable("F").vectorQuantity.getDomain())
+        assertEquals("Acceleration", solver.variable("a").vectorQuantity.getDomain())
+        assertEquals("Mass", solver.variable("m").vectorQuantity.getDomain())
     }
 
     @Test
@@ -508,10 +513,10 @@ class QuantityDimensionTests {
         """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(1.0, solver.getVariable("f")!!.min(), 0.0001)
-        assertEquals("1 / s", solver.getVariable("f")!!.vectorQuantity.unit.toString())
-        assertEquals("Frequency", solver.getVariable("f")!!.vectorQuantity.getDomain())
-        assertEquals("Duration", solver.getVariable("t")!!.vectorQuantity.getDomain())
+        assertBounds(1.0, solver.variable("f"))
+        assertEquals("1 / s", solver.variable("f").vectorQuantity.unit.toString())
+        assertEquals("Frequency", solver.variable("f").vectorQuantity.getDomain())
+        assertEquals("Duration", solver.variable("t").vectorQuantity.getDomain())
     }
 
     @Test
@@ -523,9 +528,9 @@ class QuantityDimensionTests {
             """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(1000.0, solver.getVariable("flops")!!.min(), 0.0001)
-        assertEquals("1 / s", solver.getVariable("flops")!!.vectorQuantity.unit.toString())
-        assertEquals("Frequency", solver.getVariable("flops")!!.vectorQuantity.getDomain())
+        assertBounds(1000.0, solver.variable("flops"))
+        assertEquals("1 / s", solver.variable("flops").vectorQuantity.unit.toString())
+        assertEquals("Frequency", solver.variable("flops").vectorQuantity.getDomain())
     }
 
     @Test
@@ -537,11 +542,11 @@ class QuantityDimensionTests {
         """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(1.0, solver.getVariable("E")!!.min(), 0.0001)
-        assertEquals("cd / m^2", solver.getVariable("E")!!.vectorQuantity.unit.toString())
-        assertEquals("Illuminance", solver.getVariable("E")!!.vectorQuantity.getDomain())
-        assertEquals("Area", solver.getVariable("A")!!.vectorQuantity.getDomain())
-        assertEquals("LuminousIntensity", solver.getVariable("I")!!.vectorQuantity.getDomain())
+        assertBounds(1.0, solver.variable("E"))
+        assertEquals("cd / m^2", solver.variable("E").vectorQuantity.unit.toString())
+        assertEquals("Illuminance", solver.variable("E").vectorQuantity.getDomain())
+        assertEquals("Area", solver.variable("A").vectorQuantity.getDomain())
+        assertEquals("LuminousIntensity", solver.variable("I").vectorQuantity.getDomain())
     }
 
     @Test
@@ -553,11 +558,11 @@ class QuantityDimensionTests {
         """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(1.0, solver.getVariable("L")!!.min(), 0.0001)
-        assertEquals("kg m^2 / A^2 s^2", solver.getVariable("L")!!.vectorQuantity.unit.toString())
-        assertEquals("Inductance", solver.getVariable("L")!!.vectorQuantity.getDomain())
-        assertEquals("ElectricCurrent", solver.getVariable("I")!!.vectorQuantity.getDomain())
-        assertEquals("MagneticFlux", solver.getVariable("W")!!.vectorQuantity.getDomain())
+        assertBounds(1.0, solver.variable("L"))
+        assertEquals("kg m^2 / A^2 s^2", solver.variable("L").vectorQuantity.unit.toString())
+        assertEquals("Inductance", solver.variable("L").vectorQuantity.getDomain())
+        assertEquals("ElectricCurrent", solver.variable("I").vectorQuantity.getDomain())
+        assertEquals("MagneticFlux", solver.variable("W").vectorQuantity.getDomain())
     }
 
     @Test
@@ -569,11 +574,11 @@ class QuantityDimensionTests {
         """ )
         solver.propagate()
         assertNoIssues()
-        assertEquals(10000.0, solver.getVariable("v")!!.min(), 0.0001)
-        assertEquals("m^2 / s", solver.getVariable("v")!!.vectorQuantity.unit.toString())
-        assertEquals("KinematicViscosity", solver.getVariable("v")!!.vectorQuantity.getDomain())
-        assertEquals("Duration", solver.getVariable("t")!!.vectorQuantity.getDomain())
-        assertEquals("Area", solver.getVariable("A")!!.vectorQuantity.getDomain())
+        assertBounds(10000.0, solver.variable("v"), unit = "St")
+        assertEquals("m^2 / s", solver.variable("v").vectorQuantity.unit.toString())
+        assertEquals("KinematicViscosity", solver.variable("v").vectorQuantity.getDomain())
+        assertEquals("Duration", solver.variable("t").vectorQuantity.getDomain())
+        assertEquals("Area", solver.variable("A").vectorQuantity.getDomain())
     }
 
     @Test
@@ -585,11 +590,11 @@ class QuantityDimensionTests {
         """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(1.0, solver.getVariable("I")!!.min(), 0.0001)
-        assertEquals("cd", solver.getVariable("I")!!.vectorQuantity.unit.toString())
-        assertEquals("Luminance", solver.getVariable("v")!!.vectorQuantity.getDomain())
-        assertEquals("Area", solver.getVariable("A")!!.vectorQuantity.getDomain())
-        assertEquals("LuminousIntensity", solver.getVariable("I")!!.vectorQuantity.getDomain())
+        assertBounds(1.0, solver.variable("I"))
+        assertEquals("cd", solver.variable("I").vectorQuantity.unit.toString())
+        assertEquals("Luminance", solver.variable("v").vectorQuantity.getDomain())
+        assertEquals("Area", solver.variable("A").vectorQuantity.getDomain())
+        assertEquals("LuminousIntensity", solver.variable("I").vectorQuantity.getDomain())
     }
 
     @Test
@@ -601,11 +606,11 @@ class QuantityDimensionTests {
         """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(1.0, solver.getVariable("K")!!.min(), 0.0001)
-        assertEquals("cd s^3 / kg m^2", solver.getVariable("K")!!.vectorQuantity.unit.toString())
-        assertEquals("LuminousEfficacy", solver.getVariable("K")!!.vectorQuantity.getDomain())
-        assertEquals("LuminousFlux", solver.getVariable("A")!!.vectorQuantity.getDomain())
-        assertEquals("Power", solver.getVariable("P")!!.vectorQuantity.getDomain())
+        assertBounds(1.0, solver.variable("K"))
+        assertEquals("cd s^3 / kg m^2", solver.variable("K").vectorQuantity.unit.toString())
+        assertEquals("LuminousEfficacy", solver.variable("K").vectorQuantity.getDomain())
+        assertEquals("LuminousFlux", solver.variable("A").vectorQuantity.getDomain())
+        assertEquals("Power", solver.variable("P").vectorQuantity.getDomain())
     }
 
     @Test
@@ -617,11 +622,11 @@ class QuantityDimensionTests {
         """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(1.0, solver.getVariable("Q")!!.min(), 0.0001)
-        assertEquals("cd s", solver.getVariable("Q")!!.vectorQuantity.unit.toString())
-        assertEquals("LuminousEnergy", solver.getVariable("Q")!!.vectorQuantity.getDomain())
-        assertEquals("LuminousFlux", solver.getVariable("A")!!.vectorQuantity.getDomain())
-        assertEquals("Duration", solver.getVariable("t")!!.vectorQuantity.getDomain())
+        assertBounds(1.0, solver.variable("Q"))
+        assertEquals("cd s", solver.variable("Q").vectorQuantity.unit.toString())
+        assertEquals("LuminousEnergy", solver.variable("Q").vectorQuantity.getDomain())
+        assertEquals("LuminousFlux", solver.variable("A").vectorQuantity.getDomain())
+        assertEquals("Duration", solver.variable("t").vectorQuantity.getDomain())
     }
 
     @Test
@@ -629,9 +634,9 @@ class QuantityDimensionTests {
         loadKerML("feature t: ISQ::LuminousFluxValue = 1.0 [lm];")
         solver.propagate()
         assertNoIssues()
-        assertEquals(1.0, solver.getVariable("t")!!.min(), 0.0001)
-        assertEquals("cd", solver.getVariable("t")!!.vectorQuantity.unit.toString())
-        assertEquals("LuminousFlux", solver.getVariable("t")!!.vectorQuantity.getDomain())
+        assertBounds(1.0, solver.variable("t"))
+        assertEquals("cd", solver.variable("t").vectorQuantity.unit.toString())
+        assertEquals("LuminousFlux", solver.variable("t").vectorQuantity.getDomain())
     }
 
     @Test
@@ -642,11 +647,11 @@ class QuantityDimensionTests {
             feature Phi: ISQ::MagneticFluxValue = U*t;""")
         solver.propagate()
         assertNoIssues()
-        assertEquals(1.0, solver.getVariable("Phi")!!.min(), 0.0001)
-        assertEquals("kg m^2 / A s^2", solver.getVariable("Phi")!!.vectorQuantity.unit.toString())
-        assertEquals("MagneticFlux", solver.getVariable("Phi")!!.vectorQuantity.getDomain())
-        assertEquals("ElectricPotentialDifference", solver.getVariable("U")!!.vectorQuantity.getDomain())
-        assertEquals("Duration", solver.getVariable("t")!!.vectorQuantity.getDomain())
+        assertBounds(1.0, solver.variable("Phi"))
+        assertEquals("kg m^2 / A s^2", solver.variable("Phi").vectorQuantity.unit.toString())
+        assertEquals("MagneticFlux", solver.variable("Phi").vectorQuantity.getDomain())
+        assertEquals("ElectricPotentialDifference", solver.variable("U").vectorQuantity.getDomain())
+        assertEquals("Duration", solver.variable("t").vectorQuantity.getDomain())
     }
 
     @Test
@@ -657,11 +662,11 @@ class QuantityDimensionTests {
             feature B: ISQ::MagneticFluxDensityValue = Phi/t;""")
         solver.propagate()
         assertNoIssues()
-        assertEquals(1.0, solver.getVariable("B")!!.min(), 0.0001)
-        assertEquals("kg / A s^2", solver.getVariable("B")!!.vectorQuantity.unit.toString())
-        assertEquals("MagneticFluxDensity", solver.getVariable("B")!!.vectorQuantity.getDomain())
-        assertEquals("Area", solver.getVariable("t")!!.vectorQuantity.getDomain())
-        assertEquals("MagneticFlux", solver.getVariable("Phi")!!.vectorQuantity.getDomain())
+        assertBounds(1.0, solver.variable("B"))
+        assertEquals("kg / A s^2", solver.variable("B").vectorQuantity.unit.toString())
+        assertEquals("MagneticFluxDensity", solver.variable("B").vectorQuantity.getDomain())
+        assertEquals("Area", solver.variable("t").vectorQuantity.getDomain())
+        assertEquals("MagneticFlux", solver.variable("Phi").vectorQuantity.getDomain())
     }
 
     @Test
@@ -673,11 +678,11 @@ class QuantityDimensionTests {
         """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(1.0, solver.getVariable("B")!!.min(), 0.0001)
-        assertEquals("kg / s", solver.getVariable("B")!!.vectorQuantity.unit.toString())
-        assertEquals("MassFlow", solver.getVariable("B")!!.vectorQuantity.getDomain())
-        assertEquals("Duration", solver.getVariable("t")!!.vectorQuantity.getDomain())
-        assertEquals("Mass", solver.getVariable("m")!!.vectorQuantity.getDomain())
+        assertBounds(1.0, solver.variable("B"))
+        assertEquals("kg / s", solver.variable("B").vectorQuantity.unit.toString())
+        assertEquals("MassFlow", solver.variable("B").vectorQuantity.getDomain())
+        assertEquals("Duration", solver.variable("t").vectorQuantity.getDomain())
+        assertEquals("Mass", solver.variable("m").vectorQuantity.getDomain())
     }
 
     @Test
@@ -690,11 +695,11 @@ class QuantityDimensionTests {
         """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(1.0, solver.getVariable("B")!!.min(), 0.0001)
-        assertEquals("kg m^2 / s^2", solver.getVariable("B")!!.vectorQuantity.unit.toString())
-        assertEquals("MomentOfForce", solver.getVariable("B")!!.vectorQuantity.getDomain())
-        assertEquals("Force", solver.getVariable("F")!!.vectorQuantity.getDomain())
-        assertEquals("Length", solver.getVariable("l")!!.vectorQuantity.getDomain())
+        assertBounds(1.0, solver.variable("B"))
+        assertEquals("kg m^2 / s^2", solver.variable("B").vectorQuantity.unit.toString())
+        assertEquals("MomentOfForce", solver.variable("B").vectorQuantity.getDomain())
+        assertEquals("Force", solver.variable("F").vectorQuantity.getDomain())
+        assertEquals("Length", solver.variable("l").vectorQuantity.getDomain())
     }
 
     @Test
@@ -707,11 +712,11 @@ class QuantityDimensionTests {
         """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(1.0, solver.getVariable("I")!!.min(), 0.0001)
-        assertEquals("kg m^2", solver.getVariable("I")!!.vectorQuantity.unit.toString())
-        assertEquals("MomentOfInertia", solver.getVariable("I")!!.vectorQuantity.getDomain())
-        assertEquals("Area", solver.getVariable("A")!!.vectorQuantity.getDomain())
-        assertEquals("Mass", solver.getVariable("m")!!.vectorQuantity.getDomain())
+        assertBounds(1.0, solver.variable("I"))
+        assertEquals("kg m^2", solver.variable("I").vectorQuantity.unit.toString())
+        assertEquals("MomentOfInertia", solver.variable("I").vectorQuantity.getDomain())
+        assertEquals("Area", solver.variable("A").vectorQuantity.getDomain())
+        assertEquals("Mass", solver.variable("m").vectorQuantity.getDomain())
     }
 
     @Test
@@ -724,11 +729,11 @@ class QuantityDimensionTests {
         )
         solver.propagate()
         assertNoIssues()
-        assertEquals(1.0, solver.getVariable("p")!!.min(), 0.0001)
-        assertEquals("kg m / s", solver.getVariable("p")!!.vectorQuantity.unit.toString())
-        assertEquals("Momentum", solver.getVariable("p")!!.vectorQuantity.getDomain())
-        assertEquals("Speed", solver.getVariable("v")!!.vectorQuantity.getDomain())
-        assertEquals("Mass", solver.getVariable("m")!!.vectorQuantity.getDomain())
+        assertBounds(1.0, solver.variable("p"))
+        assertEquals("kg m / s", solver.variable("p").vectorQuantity.unit.toString())
+        assertEquals("Momentum", solver.variable("p").vectorQuantity.getDomain())
+        assertEquals("Speed", solver.variable("v").vectorQuantity.getDomain())
+        assertEquals("Mass", solver.variable("m").vectorQuantity.getDomain())
     }
 
     @Test
@@ -741,11 +746,11 @@ class QuantityDimensionTests {
         )
         solver.propagate()
         assertNoIssues()
-        assertEquals(1.0, solver.getVariable("epsilon")!!.min(), 0.0001)
-        assertEquals("A^2 s^4 / kg m^3", solver.getVariable("epsilon")!!.vectorQuantity.unit.toString())
-        assertEquals("Permittivity", solver.getVariable("epsilon")!!.vectorQuantity.getDomain())
-        assertEquals("Length", solver.getVariable("l")!!.vectorQuantity.getDomain())
-        assertEquals("Capacitance", solver.getVariable("I")!!.vectorQuantity.getDomain())
+        assertBounds(1.0, solver.variable("epsilon"))
+        assertEquals("A^2 s^4 / kg m^3", solver.variable("epsilon").vectorQuantity.unit.toString())
+        assertEquals("Permittivity", solver.variable("epsilon").vectorQuantity.getDomain())
+        assertEquals("Length", solver.variable("l").vectorQuantity.getDomain())
+        assertEquals("Capacitance", solver.variable("I").vectorQuantity.getDomain())
     }
 
     @Test
@@ -758,11 +763,11 @@ class QuantityDimensionTests {
             """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(1.0, solver.getVariable("P")!!.min(), 0.0001)
-        assertEquals("kg m^2 / s^3", solver.getVariable("P")!!.vectorQuantity.unit.toString())
-        assertEquals("Power", solver.getVariable("P")!!.vectorQuantity.getDomain())
-        assertEquals("Duration", solver.getVariable("t")!!.vectorQuantity.getDomain())
-        assertEquals("Energy", solver.getVariable("E")!!.vectorQuantity.getDomain())
+        assertBounds(1.0, solver.variable("P"))
+        assertEquals("kg m^2 / s^3", solver.variable("P").vectorQuantity.unit.toString())
+        assertEquals("Power", solver.variable("P").vectorQuantity.getDomain())
+        assertEquals("Duration", solver.variable("t").vectorQuantity.getDomain())
+        assertEquals("Energy", solver.variable("E").vectorQuantity.getDomain())
     }
 
     @Test
@@ -774,11 +779,11 @@ class QuantityDimensionTests {
         """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(1.0, solver.getVariable("p")!!.min(), 0.0001)
-        assertEquals("kg / m s^2", solver.getVariable("p")!!.vectorQuantity.unit.toString())
-        assertEquals("Pressure", solver.getVariable("p")!!.vectorQuantity.getDomain())
-        assertEquals("Area", solver.getVariable("A")!!.vectorQuantity.getDomain())
-        assertEquals("Force", solver.getVariable("F")!!.vectorQuantity.getDomain())
+        assertBounds(1.0, solver.variable("p"))
+        assertEquals("kg / m s^2", solver.variable("p").vectorQuantity.unit.toString())
+        assertEquals("Pressure", solver.variable("p").vectorQuantity.getDomain())
+        assertEquals("Area", solver.variable("A").vectorQuantity.getDomain())
+        assertEquals("Force", solver.variable("F").vectorQuantity.getDomain())
     }
 
     @Test
@@ -791,12 +796,12 @@ class QuantityDimensionTests {
         )
         solver.propagate()
         assertNoIssues()
-        assertEquals(1.0, solver.getVariable("p2")!!.min(), 0.0001)
-        assertEquals(0.01, solver.getVariable("p")!!.min(), 0.0001)
-        assertEquals("kg / m s^2", solver.getVariable("p")!!.vectorQuantity.unit.toString())
-        assertEquals("Pressure", solver.getVariable("p")!!.vectorQuantity.getDomain())
-        assertEquals("Area", solver.getVariable("A")!!.vectorQuantity.getDomain())
-        assertEquals("Force", solver.getVariable("F")!!.vectorQuantity.getDomain())
+        assertBounds(1.0, solver.variable("p2"))
+        assertBounds(0.01, solver.variable("p"), unit = "mbar")
+        assertEquals("kg / m s^2", solver.variable("p").vectorQuantity.unit.toString())
+        assertEquals("Pressure", solver.variable("p").vectorQuantity.getDomain())
+        assertEquals("Area", solver.variable("A").vectorQuantity.getDomain())
+        assertEquals("Force", solver.variable("F").vectorQuantity.getDomain())
     }
 
     @Test
@@ -809,14 +814,14 @@ class QuantityDimensionTests {
             """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(10000.0, solver.getVariable("p")!!.min(), 0.0001)
-        assertEquals(20.0, solver.getVariable("f")!!.min(), 0.0001)
-        assertEquals(100.0, solver.getVariable("E2")!!.min(), 0.0001)
-        assertEquals("1", solver.getVariable("p")!!.vectorQuantity.unit.toString())
-        assertEquals("DimensionOne", solver.getVariable("p")!!.vectorQuantity.getDomain())
-        assertEquals("DimensionOne", solver.getVariable("E")!!.vectorQuantity.getDomain())
-        assertEquals("DimensionOne", solver.getVariable("E2")!!.vectorQuantity.getDomain())
-        assertEquals("DimensionOne", solver.getVariable("f")!!.vectorQuantity.getDomain())
+        assertBounds(10000.0, solver.variable("p"), unit = "%")
+        assertBounds(20.0, solver.variable("f"), unit = "dB")
+        assertBounds(100.0, solver.variable("E2"))
+        assertEquals("1", solver.variable("p").vectorQuantity.unit.toString())
+        assertEquals("DimensionOne", solver.variable("p").vectorQuantity.getDomain())
+        assertEquals("DimensionOne", solver.variable("E").vectorQuantity.getDomain())
+        assertEquals("DimensionOne", solver.variable("E2").vectorQuantity.getDomain())
+        assertEquals("DimensionOne", solver.variable("f").vectorQuantity.getDomain())
     }
 
     @Test
@@ -827,9 +832,9 @@ class QuantityDimensionTests {
             """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(1000.0, solver.getVariable("flops")!!.min(), 0.0001)
-        assertEquals("1", solver.getVariable("flops")!!.vectorQuantity.unit.toString())
-        assertEquals("DimensionOne", solver.getVariable("flops")!!.vectorQuantity.getDomain())
+        assertBounds(1000.0, solver.variable("flops"))
+        assertEquals("1", solver.variable("flops").vectorQuantity.unit.toString())
+        assertEquals("DimensionOne", solver.variable("flops").vectorQuantity.getDomain())
     }
 
     @Test
@@ -842,13 +847,13 @@ class QuantityDimensionTests {
             """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(10.0, solver.getVariable("v1")!!.min(), 0.0001)
-        assertEquals(36.0, solver.getVariable("v2")!!.min(), 0.0001)
-        assertEquals("m / s", solver.getVariable("v1")!!.vectorQuantity.unit.toString())
-        assertEquals("Speed", solver.getVariable("v1")!!.vectorQuantity.getDomain())
-        assertEquals("Speed", solver.getVariable("v2")!!.vectorQuantity.getDomain())
-        assertEquals("Duration", solver.getVariable("t")!!.vectorQuantity.getDomain())
-        assertEquals("Length", solver.getVariable("l")!!.vectorQuantity.getDomain())
+        assertBounds(10.0, solver.variable("v1"))
+        assertBounds(36.0, solver.variable("v2"), unit = "km/h")
+        assertEquals("m / s", solver.variable("v1").vectorQuantity.unit.toString())
+        assertEquals("Speed", solver.variable("v1").vectorQuantity.getDomain())
+        assertEquals("Speed", solver.variable("v2").vectorQuantity.getDomain())
+        assertEquals("Duration", solver.variable("t").vectorQuantity.getDomain())
+        assertEquals("Length", solver.variable("l").vectorQuantity.getDomain())
     }
 
     @Test
@@ -862,14 +867,14 @@ class QuantityDimensionTests {
         """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(1.0, solver.getVariable("V1")!!.min(), 0.0001)
-        assertEquals(1000.0, solver.getVariable("V2")!!.min(), 0.0001)
-        assertEquals("m^3", solver.getVariable("V1")!!.vectorQuantity.unit.toString())
-        assertEquals("Volume", solver.getVariable("V1")!!.vectorQuantity.getDomain())
-        assertEquals("Volume", solver.getVariable("V2")!!.vectorQuantity.getDomain())
-        assertEquals("Length", solver.getVariable("l1")!!.vectorQuantity.getDomain())
-        assertEquals("Length", solver.getVariable("l2")!!.vectorQuantity.getDomain())
-        assertEquals("Length", solver.getVariable("l3")!!.vectorQuantity.getDomain())
+        assertBounds(1.0, solver.variable("V1"))
+        assertBounds(1000.0, solver.variable("V2"), unit = "l")
+        assertEquals("m^3", solver.variable("V1").vectorQuantity.unit.toString())
+        assertEquals("Volume", solver.variable("V1").vectorQuantity.getDomain())
+        assertEquals("Volume", solver.variable("V2").vectorQuantity.getDomain())
+        assertEquals("Length", solver.variable("l1").vectorQuantity.getDomain())
+        assertEquals("Length", solver.variable("l2").vectorQuantity.getDomain())
+        assertEquals("Length", solver.variable("l3").vectorQuantity.getDomain())
     }
 
     @Test
@@ -881,14 +886,15 @@ class QuantityDimensionTests {
             feature BR1: ISQ::BitRateValue = i1/t { :>> range = (*..*) [Mbps];}
             feature BR2: ISQ::BitRateValue = i2/t { :>> range = (*..*) [kB/s];}
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(0.5, solver.getVariable("BR1")!!.min(), 0.0001)
-        assertEquals(3.0, solver.getVariable("BR2")!!.min(), 0.0001)
-        assertEquals("StorageCapacity", solver.getVariable("i1")!!.vectorQuantity.getDomain())
-        assertEquals("StorageCapacity", solver.getVariable("i2")!!.vectorQuantity.getDomain())
-        assertEquals("Duration", solver.getVariable("t")!!.vectorQuantity.getDomain())
-        assertEquals("BitRate", solver.getVariable("BR1")!!.vectorQuantity.getDomain())
-        assertEquals("BitRate", solver.getVariable("BR2")!!.vectorQuantity.getDomain())
+        assertBounds(0.5, solver.variable("BR1"), unit = "Mbps")
+        assertBounds(3.0, solver.variable("BR2"), unit = "kB/s")
+        assertEquals("StorageCapacity", solver.variable("i1").vectorQuantity.getDomain())
+        assertEquals("StorageCapacity", solver.variable("i2").vectorQuantity.getDomain())
+        assertEquals("Duration", solver.variable("t").vectorQuantity.getDomain())
+        assertEquals("BitRate", solver.variable("BR1").vectorQuantity.getDomain())
+        assertEquals("BitRate", solver.variable("BR2").vectorQuantity.getDomain())
     }
 
     @Test
@@ -908,7 +914,7 @@ class QuantityDimensionTests {
         """)
         solver.propagate()
         assertNoIssues()
-        assertEquals("Mass", solver.getVariable("Mass")!!.vectorQuantity.unit.unitDomain)
+        assertEquals("Mass", solver.variable("Mass").vectorQuantity.unit.unitDomain)
     }
 
     @Test
@@ -918,7 +924,7 @@ class QuantityDimensionTests {
         """)
         solver.propagate()
         assertNoIssues()
-        assertEquals("kg", solver.getVariable("Mass")!!.vectorQuantity.unit.toString())
+        assertEquals("kg", solver.variable("Mass").vectorQuantity.unit.toString())
     }
 
     @Test

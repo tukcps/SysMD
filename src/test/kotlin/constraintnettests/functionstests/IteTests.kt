@@ -1,5 +1,6 @@
 package constraintnettests.functionstests
 
+import util.variable
 import com.github.tukcps.sysmd.services.Runlevel
 import util.assertNoIssues
 import util.mockup.loadKerML
@@ -114,8 +115,7 @@ class IteTests {
             feature cond: Boolean = if x <= 0.3 ? true else false;
             feature res: Real = if cond? 2.0 else 0.0.
         """, Runlevel.ALL)
-        val x = solver.getVariable("x")
-        assertNotNull(x)
+        val x = solver.variable("x")
         val cond = solver.getVariable("cond")
         val res = solver.getVariable("res")
         assertTrue(cond!!.bdd().height() < 2)

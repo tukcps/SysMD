@@ -5,14 +5,14 @@ import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.cspsolver.Variable.BaseType
 import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.exceptions.SolverError
+import com.github.tukcps.sysmd.model.datamodel.toElementData
 import com.github.tukcps.sysmd.quantities.VectorDimensionError
 import com.github.tukcps.sysmd.quantities.VectorQuantity
-import com.github.tukcps.sysmd.model.datamodel.toElementData
 import com.github.tukcps.sysmd.services.session.Session
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.DD
-import io.github.tukcps.aadd.IDD
-import io.github.tukcps.aadd.values.XBool
+import io.github.tukcps.aadd.dd.AADD
+import io.github.tukcps.aadd.dd.DD
+import io.github.tukcps.aadd.dd.IDD
+import io.github.tukcps.aadd.values.bool.XBool
 
 typealias DDLeaf=DD.Leaf<*>
 typealias DDInternal=DD.Internal<*>
@@ -35,6 +35,7 @@ class AstRoot(
 
     /** initialization */
     init {
+        dependency.parent = this
         dependency.root = this // recursion in setter methods will set it down to leaves.
     }
 
@@ -43,10 +44,9 @@ class AstRoot(
         downQuantity = dependency.upQuantity.clone()
         leaves = dependency.getLeaves()
         variable.ast = this
-        if(variable.baseType == BaseType.Real && variable.vectorQuantity.unit.clone().toSI() != upQuantity.unit.clone().toSI())
+        if(variable.baseType == BaseType.Real && !variable.vectorQuantity.unit.isCompatibleWith(upQuantity.unit))
             model.status.inconsistency(message = "Unit of ${variable.path} (${variable.vectorQuantity.unit}) does not match the unit of the expression (${upQuantity.unit})")
-        variable.vectorQuantity.values = upQuantity.values
-        variable.vectorQuantity.unit = upQuantity.unit
+        variable.vectorQuantity = variable.vectorQuantity.copy(values = upQuantity.values, unit = upQuantity.unit)
     }
 
     /**
@@ -58,15 +58,17 @@ class AstRoot(
             this.dependency.isReal -> {
                 if (variable.baseType == BaseType.Real && !variable.satisfyAll) {
                     val quantityWithTransformedUnit = dependency.upQuantity.clone()
-                    upQuantity = VectorQuantity(
+                    // Preserve user-specified unit and propagate userWantedUnitSpec
+                    upQuantity = VectorQuantity.fromCanonical(
                         quantityWithTransformedUnit.values,
                         quantityWithTransformedUnit.unit,
-                        variable.vectorQuantity.unitSpec
+                        if (variable.vectorQuantity.userWantedUnitSpec) variable.vectorQuantity.unitSpec else quantityWithTransformedUnit.unitSpec,
+                        userWantedUnitSpec = variable.vectorQuantity.userWantedUnitSpec || quantityWithTransformedUnit.userWantedUnitSpec
                     )
                     variable.vectorQuantity = upQuantity.constrain(variable.vectorQuantity, variable.rangeSpecs, variable.unitSpec)
                     if(variable.rangeSpecs.size!=dependency.upQuantity.values.size && variable.rangeSpecs.size!=1)
                         throw VectorDimensionError("Vector size of ${dependency.upQuantity.values.size} does not match constraint size of ${variable.rangeSpecs.size}")
-                    if (variable.vectorQuantity.values.any { it == model.builder.Empty })
+                    if (variable.vectorQuantity.values.any { it == model.builder.Reals.Empty })
                         model.status.inconsistency(message = "dependency of ${variable.path} is not satisfiable", element = model[variable.relatedElement ?: model.global.elementId]?.toElementData())
                 } else if (variable.baseType == BaseType.Real && variable.satisfyAll) {
                     // Convert the rangeSpecs to a VectorQuantity
@@ -135,6 +137,12 @@ class AstRoot(
                 dependency.downQuantity = downQuantity
             } // Nothing to be done for booleans
 
+            this.isString -> {
+                variable.vectorQuantity = variable.vectorQuantity.constrainString(variable.stringSpecs)
+                downQuantity = variable.vectorQuantity.clone()
+                dependency.downQuantity = downQuantity
+            }
+
             // Units do not support the IDD datatype
             this.isInt -> {
                 variable.vectorQuantity = variable.vectorQuantity.constrain(variable.intSpecs)
@@ -162,14 +170,14 @@ class AstRoot(
         val conditions = if (this.isBool) this.bdd.evaluate() else if (this.isReal) this.aadd.evaluate() else this.idd.evaluate()
 
         if (conditions is DD.Leaf<*>) return conditions
-        if (conditions.isInfeasible) return model.builder.Infeasible //TODO: InfeasibleB?
+        if (conditions.isInfeasible()) return model.builder.Reals.Infeasible
 
         //Find the shortest path!
         val path = findShortestPath(conditions, variable.boolSpecs[0])
 
         for (index in path) {
             if (model.builder.conds.getCondition(index.key) is AADD) continue
-            val cond = if (index.value) model.builder.True else model.builder.False
+            val cond = if (index.value) model.builder.Bool.True else model.builder.Bool.False
             model.builder.conds.setVariable(index.key, cond) //TODO: What if cond != boolSpec?
         }
 
@@ -179,8 +187,8 @@ class AstRoot(
 
     private fun findShortestPath(dd: DD<*>, target: XBool = XBool.True, path: MutableMap<Int, Boolean> = mutableMapOf()): MutableMap<Int, Boolean> {
         val targetLeaf = when (target) {
-            XBool.True, XBool.X -> model.builder.True //default case: if not specified => make it true
-            XBool.False -> model.builder.False
+            XBool.True, XBool.XBool -> model.builder.Bool.True //default case: if not specified => make it true
+            XBool.False -> model.builder.Bool.False
             else -> {
                 throw Exception("findShortestPath: XBool-case not yet implemented: $target")
             }
@@ -227,8 +235,8 @@ class AstRoot(
         paths: MutableList<MutableMap<Int, Boolean>> = mutableListOf()
     ): MutableList<MutableMap<Int, Boolean>> {
         val targetLeaf = when (target) {
-            XBool.True, XBool.X -> model.builder.True //default case: if not specified => make it true
-            XBool.False -> model.builder.False
+            XBool.True, XBool.XBool -> model.builder.Bool.True //default case: if not specified => make it true
+            XBool.False -> model.builder.Bool.False
             else -> {
                 throw Exception("findAllPaths: XBool-case not yet implemented: $target")
             }
@@ -259,11 +267,12 @@ class AstRoot(
 
     /** Executes a block of statements on each AstNode in an Ast */
     override fun <R> withDepthFirst(receiver: AstNode, block: AstNode.() -> R): R {
-        return withDepthFirst(dependency, block)
+        dependency.withDepthFirst(dependency, block)
+        return receiver.block()
     }
 
     /** Clone method, creates deep copy */
     override fun clone(): AstRoot =
-        AstRoot(model, variable, dependency.clone())
+        AstRoot(model, variable, dependency.clone()).also { it.leaves = it.dependency.getLeaves() }
 
 }

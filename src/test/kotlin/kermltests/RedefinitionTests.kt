@@ -1,19 +1,12 @@
 package kermltests
 
-import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.kerml.Multiplicity
-import com.github.tukcps.sysmd.model.kerml.Type
+import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.services.Runlevel
-import com.github.tukcps.sysmd.services.resolve.resolveVar
-import util.assertIssue
-import util.assertNoIssues
+import util.*
 import util.mockup.loadKerML
 import util.mockup.loadSysMLv2
-import util.testSession
-import kotlin.test.Test
+import kotlin.test.*
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 
 class RedefinitionTests {
 
@@ -31,19 +24,18 @@ class RedefinitionTests {
                 :>> f: ScalarValues::Real; 
             }
         """, Runlevel.MODEL)
+        solver.propagate()
         assertNoIssues()
 
         val bf: Feature? = global.resolve("b::f")?.member()
         val af: Feature? = global.resolve("a::f")?.member()
 
         assertNotNull(af)
-        assertEquals(1L, af.multiplicityRange.min)
-        assertEquals(4L, af.multiplicityRange.max)
+        assertBounds(1L..4L, af.multiplicityRange)
         assertEquals(repo.anything!!, af.generalization.first())
 
         assertNotNull(bf)
-        assertEquals(1L, bf.multiplicityRange.min)
-        assertEquals(4L, bf.multiplicityRange.max)
+        assertBounds(1L..4L, bf.multiplicityRange)
         assertTrue(repo.realType as Type in bf.generalization)
         assertTrue(af in bf.generalization)
     }
@@ -61,16 +53,15 @@ class RedefinitionTests {
             }
         """, Runlevel.MODEL)
         val af: Feature? = global.resolve("a::f")?.member()
+        solver.propagate()
+        assertNoIssues()
         assertNotNull(af)
-        assertEquals(1L, af.multiplicityRange.min)
-        assertEquals(4L, af.multiplicityRange.max)
+        assertBounds(1L..4L, af.multiplicityRange)
         assertTrue(repo.realType as Type in af.generalization)
 
-        assertNoIssues()
         val bf = global.resolve("b::f")?.memberElement as Feature
         assertNotNull(bf)
-        assertEquals(2L, bf.multiplicityRange.min)
-        assertEquals(3L, bf.multiplicityRange.max)
+        assertBounds(2L..3L, bf.multiplicityRange)
         assertTrue(repo.realType as Type in bf.generalization)
     }
 
@@ -110,18 +101,17 @@ class RedefinitionTests {
             }
         """, Runlevel.VARIABLES)
 
+        solver.propagate()
         assertNoIssues()
         val bf = global.resolve("b::f")?.memberElement as Feature
 
         assertNotNull(bf)
-        assertEquals(2L, bf.ownedElement.filterIsInstance<Multiplicity>().first().variable!!.min())
-        assertEquals(3L, bf.ownedElement.filterIsInstance<Multiplicity>().first().variable!!.max())
+        assertBounds(2L .. 3L, bf.ownedElement.filterIsInstance<Multiplicity>().first().variable!!)
         assertTrue(repo.realType as Type in bf.typing.map { it.type })
 
         val af = global.resolve("a::f")?.memberElement as Type?
         assertNotNull(af)
-        assertEquals(1L, af.ownedElement.filterIsInstance<Multiplicity>().first().variable!!.min())
-        assertEquals(4L, af.ownedElement.filterIsInstance<Multiplicity>().first().variable!!.max())
+        assertBounds(1L .. 4L, af.ownedElement.filterIsInstance<Multiplicity>().first().variable!!)
         assertEquals(repo.anything!!, af.generalization.first())
     }
 
@@ -148,11 +138,12 @@ class RedefinitionTests {
                 :>> quantityPowerFactors = lengthPF; 
             }
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(1L, solver.getVariable("quantityDimension::quantityPowerFactors::exponent")!!.max() )
-        assertEquals("m", solver.getVariable("quantityDimension::quantityPowerFactors::unit")!!.vectorQuantity.value.asStrDD().toString())
-        assertEquals("m", solver.getVariable("lengthPF::unit")!!.vectorQuantity.value.asStrDD().toString())
-        assertEquals(1L, solver.getVariable("lengthPF::exponent")!!.min())
+        assertBounds(1L, solver.variable("quantityDimension::quantityPowerFactors::exponent"))
+        assertEquals("m", solver.variable("quantityDimension::quantityPowerFactors::unit").vectorQuantity.value.asStrDD().toString())
+        assertEquals("m", solver.variable("lengthPF::unit").vectorQuantity.value.asStrDD().toString())
+        assertBounds(1L, solver.variable("lengthPF::exponent"))
     }
 
     // The types are not set as expected in addInheritedFeatures (the function should be right but not correctly called for the elements),
@@ -173,8 +164,8 @@ class RedefinitionTests {
         solver.propagate()
         // val ownsOld = global.resolve<Feature>("ownsOld")
         // val redefinedOld = global.resolve<Feature>("redefinedOld")
-        // val new = solver.getVariable("ownsOld::ownedOld::a")!!.ast!!.evalUpRec()
-        assertEquals("new", solver.getVariable("ownsOld::ownedOld::a")!!.vectorQuantity.value.asStrDD().toString())
+        // val new = solver.variable("ownsOld::ownedOld::a").ast!!.evalUpRec()
+        assertEquals("new", solver.variable("ownsOld::ownedOld::a").vectorQuantity.value.asStrDD().toString())
     }
 
 
@@ -201,15 +192,13 @@ class RedefinitionTests {
                 :>> precision : Float16;
             }
         """, Runlevel.ALL)
+solver.propagate()
+assertNoIssues()
 
         // Verify that the redefined values are correctly set (in bits, since 1 B = 8 bits)
-        assertEquals(32.0, solver.getVariable("Float32::value")!!.vectorQuantity.value.asAadd().min, 0.001)
-        assertEquals(32.0, solver.getVariable("Float32::value")!!.vectorQuantity.value.asAadd().max, 0.001)
-        assertEquals(16.0, solver.getVariable("Float16::value")!!.vectorQuantity.value.asAadd().min, 0.001)
-        assertEquals(16.0, solver.getVariable("Float16::value")!!.vectorQuantity.value.asAadd().max, 0.001)
-        assertEquals(8.0, solver.getVariable("Int8::value")!!.vectorQuantity.value.asAadd().min, 0.001)
-        assertEquals(8.0, solver.getVariable("Int8::value")!!.vectorQuantity.value.asAadd().max, 0.001)
-
+        assertBounds(32.0 .. 32.0, solver.variable("Float32::value"), unit = "bit")
+        assertBounds(16.0 .. 16.0, solver.variable("Float16::value"), unit = "bit")
+        assertBounds(8.0 .. 8.0, solver.variable("Int8::value"), unit = "bit")
     }
 
     @Test
@@ -223,14 +212,13 @@ class RedefinitionTests {
                 attribute :>> value {:>> range = 3..40 [kg]; }
             }
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
         
         // Verify that the redefined range is used, not the superclass range
-        val specificWeightValue = solver.getVariable("specificWeight::value")
-        assertNotNull(specificWeightValue)
+        val specificWeightValue = solver.variable("specificWeight::value")
         // The redefined range should be 3..40, not 1..100
-        assertEquals(3.0, specificWeightValue.min(), 0.001)
-        assertEquals(40.0, specificWeightValue.max(), 0.001)
+        assertBounds(3.0 .. 40.0, specificWeightValue)
     }
 
     @Test
@@ -255,22 +243,16 @@ class RedefinitionTests {
         assertNoIssues()
         
         // Verify base part definition
-        val baseTemp = solver.getVariable("TemperatureSensor::temperature")
-        assertNotNull(baseTemp)
-        assertEquals(0.0, baseTemp.min(), 0.001)
-        assertEquals(100.0, baseTemp.max(), 0.001)
+        val baseTemp = solver.variable("TemperatureSensor::temperature")
+        assertBounds(0.0 .. 100.0, baseTemp, unit = "°C")
         
         // Verify narrow range sensor redefinition (same unit, refined range)
-        val narrowRangeTemp = solver.getVariable("NarrowRangeSensor::temperature")
-        assertNotNull(narrowRangeTemp)
-        assertEquals(20.0, narrowRangeTemp.min(), 0.001)
-        assertEquals(80.0, narrowRangeTemp.max(), 0.001)
+        val narrowRangeTemp = solver.variable("NarrowRangeSensor::temperature")
+        assertBounds(20.0 .. 80.0, narrowRangeTemp, unit = "°C")
         
         // Verify kelvin sensor redefinition (different unit, corresponding range)
-        val kelvinTemp = solver.getVariable("KelvinSensor::temperature")
-        assertNotNull(kelvinTemp)
-        assertEquals(293.0, kelvinTemp.min(), 0.001)
-        assertEquals(353.0, kelvinTemp.max(), 0.001)
+        val kelvinTemp = solver.variable("KelvinSensor::temperature")
+        assertBounds(293.0 .. 353.0, kelvinTemp, unit = "K")
     }
 
     @Test

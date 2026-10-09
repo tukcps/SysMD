@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import com.github.tukcps.sysmd.compiler.scanner.Scanner
 import com.github.tukcps.sysmd.compiler.scanner.Token
+import com.github.tukcps.sysmd.services.session.SessionStatus
 import com.github.tukcps.sysmd.ui.styles.AppTheme
 import com.github.tukcps.sysmd.ui.styles.Fonts
 import com.github.tukcps.sysmd.ui.syntaxhighlighting.globalComponentsIndex
@@ -240,7 +241,8 @@ fun checkSuggestionsInit(
     sg : MutableState<SuggestionsData>
 ) : Boolean{
 
-    val sc = Scanner(keywords = Token.sysMLv2Keywords+Token.kerMLKeywords).also { it.input = tfv.value.text } //Feed total textField text to Scanner
+    // fixme: status ugly?
+    val sc = Scanner(keywords = Token.sysMLv2Keywords+Token.kerMLKeywords, status = SessionStatus()).also { it.input = tfv.value.text } //Feed total textField text to Scanner
 
     //Scan through the text until reaching a token whose last index is the current cursor position
     do{

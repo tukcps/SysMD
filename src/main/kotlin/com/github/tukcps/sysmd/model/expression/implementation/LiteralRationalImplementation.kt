@@ -4,8 +4,10 @@ import com.github.tukcps.sysmd.model.expression.AstLeaf
 import com.github.tukcps.sysmd.model.expression.LiteralRational
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.util.SimpleName
+import com.github.tukcps.sysmd.quantities.Unit
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
+import io.github.tukcps.aadd.values.real.ia.RealRange
 import kotlin.uuid.Uuid
 
 class LiteralRationalImplementation(
@@ -21,7 +23,7 @@ class LiteralRationalImplementation(
     declaredShortName = declaredShortName,
     expression = expression
 ) {
-    override var value: Double? = null //Real? Or Float/double?
+    override var value: RealRange? = null
 
     override val literalValue : AstLeaf?
         get() {
@@ -30,7 +32,7 @@ class LiteralRationalImplementation(
             // Unit should be best handled as a second feature typed by string? as in standard?
             // We map it only ot a variable where we per variable use value/unit and multiple dimensions in one variable
             // for efficiency and ease-of-debug
-            return AstLeaf(model, VectorQuantity( listOf(model.builder.real(v)), "?" ))
+            return AstLeaf(model, VectorQuantity.fromCanonical( listOf(model.builder.real(v)), Unit("?"), "?" ))
         }
 
     override val cachedType get() = model.repo.realType

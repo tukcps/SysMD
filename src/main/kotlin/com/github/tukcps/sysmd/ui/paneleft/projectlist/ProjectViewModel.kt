@@ -6,10 +6,13 @@ import com.github.tukcps.sysmd.model.datamodel.ElementData
 import com.github.tukcps.sysmd.model.generated.ElementType
 import com.github.tukcps.sysmd.rest.entities.interchange.InterchangeProject
 import com.github.tukcps.sysmd.services.Runlevel
+import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.repositories.local.Language
 import com.github.tukcps.sysmd.services.repositories.local.ProjectData
+import com.github.tukcps.sysmd.services.session.SessionManager.SYSML_LIBRARIES
 import com.github.tukcps.sysmd.services.session.SessionManager.sessionService
 import com.github.tukcps.sysmd.ui.syntaxhighlighting.indexerScope
+import com.github.tukcps.sysmd.ui.viewmodel.CompileProgress
 import com.github.tukcps.sysmd.ui.viewmodel.EditorTabsViewModel
 import io.ktor.http.*
 import kotlinx.coroutines.cancel
@@ -127,8 +130,8 @@ data class ProjectViewModel(
             isExpanded.value = true
             hasChangesState.value = false
 
-            // Start a new session with the project
-            val session = sessionService.createSession(project!!)
+            // Start a new session with the project; no libraries are loaded.
+            val session = sessionService.createSession(project!!, libraries = SYSML_LIBRARIES)
 
             // Just hot fix until done nicer
             session.settings.includeOwningRelationshipsToRoot = false
@@ -399,23 +402,54 @@ data class ProjectViewModel(
     fun compile(runLevel: Runlevel) {
         // Get the changes from editor tabs first
         getChangesFromEditor()
-        // First, compile all files of the project, no analysis (would report errors)
-        fileData.cellData.values.forEach { cellData ->
-            cellData.forEach { cell ->
-                val language = Language.toLanguage(cell.language?:"")
-                if (language?.isCompilable() == true) {
-                    val namespace = Language.toNamespace(cell.language ?: "")
-                    val body = cell.body ?: return@forEach
-                    sessionService.updateModel(sessionIdState.value, body, language = language, namespace = namespace, Runlevel.NAMES_RESOLVED)
-                }
-            }
+        compileCells(sessionIdState.value, compilableCells(), runLevel)
+        showResults()
+    }
+
+    /**
+     * The cells of all files of the project that can be compiled, in the order in which they are compiled.
+     * Call [getChangesFromEditor] before to include the changes made in the editor.
+     */
+    fun compilableCells(): List<CompilableCell> = fileData.cellData.values.flatMap { cellData ->
+        cellData.mapNotNull { cell ->
+            val language = Language.toLanguage(cell.language ?: "")
+            val body = cell.body
+            if (language?.isCompilable() == true && body != null)
+                CompilableCell(language, Language.toNamespace(cell.language ?: ""), body)
+            else null
+        }
+    }
+
+    /**
+     * Compiles cells into the model of a session and analyzes the model.
+     * The method only works on the session and does not touch the UI; it can run on a background thread
+     * as long as nothing else uses the session.
+     * @param sessionId The session into which the cells are compiled.
+     * @param cells The cells to compile, see [compilableCells].
+     * @param runLevel To what extent do the compile run, e.g., NONE (compile), MODEL (builds model), ALL (solver)
+     * @param onProgress Is told what is currently done.
+     */
+    fun compileCells(sessionId: Uuid, cells: List<CompilableCell>, runLevel: Runlevel, onProgress: (CompileProgress) -> Unit = {}) {
+        // First, compile all files of the project into the model, no analysis (would report errors).
+        // Names are resolved once for all cells by the final analysis below, not again after each cell.
+        cells.forEachIndexed { index, cell ->
+            onProgress(CompileProgress.compiling(index, cells.size, runLevel))
+            sessionService.updateModel(sessionId, cell.body, language = cell.language, namespace = cell.namespace, Runlevel.NONE)
         }
         // Finally, do analysis as requested by runlevel
-        sessionService.updateModel(sessionIdState.value, "", language = Language.SYS_ML, namespace = null, runlevel = runLevel)
-        // Update the variable to display in shown tabs
+        sessionService.updateModel(sessionId, "", language = Language.SYS_ML, namespace = null, runlevel = Runlevel.NONE)
+        sessionService.getSession(sessionId)?.initialize(runLevel) { stage -> onProgress(CompileProgress.analyzing(stage, runLevel)) }
+    }
+
+    /**
+     * Shows the results of the session in the open tabs, the tree views and the board.
+     */
+    fun showResults() {
+        // Update the variable to display in shown tabs; the elements are grouped once for all cells.
+        val elementsByInput = sessionService.getSession(sessionIdState.value)?.get()?.groupBy { it.input }
         editorTabsViewModel().editorTabs.forEach { tab ->
             tab.cells.forEach { cell ->
-                cell.collectVariablesToDisplay() }
+                cell.collectVariablesToDisplay(elementsByInput) }
         }
         // Enforce update of UI, as session's elements are not states in UI.
         refreshTrees()

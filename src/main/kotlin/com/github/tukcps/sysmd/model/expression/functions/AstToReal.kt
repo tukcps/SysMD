@@ -1,11 +1,12 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.BDD
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.model.expression.AstNode
+import com.github.tukcps.sysmd.quantities.Unit
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
+import io.github.tukcps.aadd.Bool
+import io.github.tukcps.aadd.dd.AADD
 
 
 /**
@@ -23,7 +24,7 @@ internal class AstToReal(model: Session, args: ArrayList<AstNode>) :
     override fun initialize() {
         if (!parameters[0].isBool)
             throw SemanticError("Parameter of toReal function must be of type Bool")
-        upQuantity = VectorQuantity(mutableListOf(model.builder.Reals), "")
+        upQuantity = VectorQuantity(mutableListOf(model.builder.Reals.All))
         evalUp()
         downQuantity = upQuantity.clone()
     }
@@ -36,7 +37,7 @@ internal class AstToReal(model: Session, args: ArrayList<AstNode>) :
         getParam(0).bdds.forEach {
             results.add(it.asBdd().ite(model.builder.real(1.0..1.0), model.builder.real(0.0..0.0)))
         }
-        upQuantity = VectorQuantity(results, "1")
+        upQuantity = VectorQuantity.fromCanonical(results, Unit("1"), "1")
     }
 
     /**
@@ -44,21 +45,17 @@ internal class AstToReal(model: Session, args: ArrayList<AstNode>) :
      * To be perfectly robust, we just check if 0 or 1 is in the range.
      */
     override fun evalDown() {
-        val results = mutableListOf<BDD>()
+        val results = mutableListOf<Bool>()
         downQuantity.aadds().forEach {
             when {
-                0.0 in it && 1.0 !in it -> results.add(model.builder.False)
-                1.0 in it && 0.0 !in it -> results.add(model.builder.True)
-                0.0 in it && 1.0 in it -> results.add(model.builder.Bool)
-                0.0 !in it && 1.0 !in it -> results.add(model.builder.NaB)
+                0.0 in it && 1.0 !in it -> results.add(model.builder.Bool.False)
+                1.0 in it && 0.0 !in it -> results.add(model.builder.Bool.True)
+                0.0 in it && 1.0 in it -> results.add(model.builder.Bool.All)
+                0.0 !in it && 1.0 !in it -> results.add(model.builder.Bool.Empty)
             }
         }
-        getParam(0).downQuantity = VectorQuantity(results)
+        getParam(0).downQuantity = getParam(0).downQuantity.intersect(VectorQuantity(results))
     }
 
-    override fun clone(): AstToReal {
-        val parClone = ArrayList<AstNode>()
-        for (p in parameters) parClone.add(p.clone())
-        return AstToReal(model, parClone)
-    }
+    override fun clone() = AstToReal(model, cloneParameters())
 }

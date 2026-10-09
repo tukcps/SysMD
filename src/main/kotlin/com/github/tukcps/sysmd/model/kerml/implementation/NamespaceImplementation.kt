@@ -82,13 +82,16 @@ open class NamespaceImplementation(
      * @return the membership of an element to which the parameter resolves
      */
     override fun resolveLocal(name: SimpleName): Membership? {
-        return visibleMemberships(isRecursive = false, includeAll = false) {
+        val matches: Membership.() -> Boolean = {
             if(this.name !== null || this.shortName !== null)
                 // membership name overrides member name (e.g. for aliases)
                 this.name == name || this.shortName == name
             else
                memberName == name || memberShortName == name
-        }.firstOrNull()
+        }
+        // Owned memberships come first in visibleMemberships; if one matches, imports need not be computed.
+        ownedMembership.firstOrNull { it.visibility == Import.VisibilityKind.Public && it.matches() }?.let { return it }
+        return visibleMemberships(isRecursive = false, includeAll = false, filter = matches).firstOrNull()
     }
 
     override fun clone(): Namespace = NamespaceImplementation(model).also { it.updateFrom(this) }

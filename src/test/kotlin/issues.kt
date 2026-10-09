@@ -1,30 +1,27 @@
 
+import util.variable
 import com.github.tukcps.sysmd.exceptions.ElementNotFoundException
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.Function
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.SpecializationImplementation
-import com.github.tukcps.sysmd.model.util.MultiplicityRange
 import com.github.tukcps.sysmd.model.util.UnresolvedType
 import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolveVar
-import io.github.tukcps.aadd.functions.numInternalNodes
-import io.github.tukcps.aadd.values.XBool
-import io.github.tukcps.aadd.values.XBool.Companion.True
+import io.github.tukcps.aadd.dd.numInternalNodes
+import io.github.tukcps.aadd.values.integer.IntegerRange
 import org.junit.jupiter.api.assertAll
 import util.assertIssue
 import util.assertNoIssues
+import util.assertBounds
 import util.findDifferenceById
-import util.mockup.loadKerML
-import util.mockup.loadSysMD
-import util.mockup.loadSysMLv2
+import util.mockup.*
 import util.testSession
 import kotlin.test.*
 
 class IssuesAndRegressions {
     @Test
-    @Ignore // IDD do not use solver so far, and finding the solution requires the LP solver
     fun minTestMultipleParams3Integer() = testSession("Ranges") {
         loadKerML("""
             feature a: Ranges::IntegerInRange {:>> range = 0..7;}
@@ -36,17 +33,13 @@ class IssuesAndRegressions {
         solver.propagate()
         assertNoIssues()
         val result = solver.getVariable("a")
-        assertEquals(4, result!!.vectorQuantity.value.asIdd().min)
-        assertEquals(7, result.vectorQuantity.value.asIdd().max)
+        assertBounds(4L .. 7L, result!!)
         val result1 = solver.getVariable("b")
-        assertEquals(4, result1!!.vectorQuantity.value.asIdd().min)
-        assertEquals(6, result1.vectorQuantity.value.asIdd().max)
+        assertBounds(4L .. 6L, result1!!)
         val result2 = solver.getVariable("c")
-        assertEquals(4, result2!!.vectorQuantity.value.asIdd().min)
-        assertEquals(5, result2.vectorQuantity.value.asIdd().max)
+        assertBounds(4L .. 5L, result2!!)
         val result3 = solver.getVariable("d")
-        assertEquals(4, result3!!.vectorQuantity.value.asIdd().min)
-        assertEquals(4, result3.vectorQuantity.value.asIdd().max)
+        assertBounds(4L .. 4L, result3!!)
         assertNoIssues()
     }
 
@@ -87,10 +80,10 @@ class IssuesAndRegressions {
                 feature carPrice: Ranges::RealInRange = sumOverParts(price);
             }
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        val price = solver.getVariable("Car::carPrice")!!
-        assertEquals(3.0, price.min(), 0.000001)
-        assertEquals(3.0, price.max(), 0.000001)
+        val price = solver.variable("Car::carPrice")
+        assertBounds(3.0 .. 3.0, price)
     }
 
     /**
@@ -158,8 +151,7 @@ class IssuesAndRegressions {
         assertNoIssues()
         val vehicle: Class? = global.resolve("Vehicle")!!.member()
         val mass =vehicle?.resolveVar("mass")!!
-        assertTrue(mass.vectorQuantity.getMinAsDouble() in 9.99..10.01)
-        assertTrue(mass.vectorQuantity.getMaxAsDouble() in 99.99..100.01)
+        assertBounds(10.0..100.0, mass)
         assertEquals("kg", mass.vectorQuantity.unit.toString())
     }
 
@@ -179,7 +171,7 @@ class IssuesAndRegressions {
         val test = global.resolve("Test")?.member<Type>()
         val comp = test!!.resolve("comp")?.member<Feature>()!!
         assertEquals(1, comp.getOwnedElementsOfType<Multiplicity>().size) // Just the multiplicity
-        assertEquals(MultiplicityRange(1, 2), comp.multiplicityRange)
+        assertEquals(IntegerRange(1, 2), comp.multiplicityRange)
     }
 
     @Test
@@ -206,11 +198,10 @@ class IssuesAndRegressions {
                 }
             }
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        val multi = solver.getVariable("ExampleDesign::Chassis::wheels::multiplicity")!!
-        assertNotNull(multi)
-        assertEquals(2L, multi.min())
-        assertEquals(6L, multi.max())
+        val multi = solver.variable("ExampleDesign::Chassis::wheels::multiplicity")
+        assertBounds(2L .. 6L, multi)
     }
 
     @Test
@@ -245,9 +236,9 @@ class IssuesAndRegressions {
         assertNotEquals(s1, s2)
         assertNotEquals(s1, s3)
         assertNotEquals(s2, s3)
-        assertEquals(MultiplicityRange(4, 5), global.resolve("Device::sensor")?.member<Feature>()?.multiplicityRange)
-        assertEquals(MultiplicityRange(4,4), global.resolve("DeviceB::sensor")?.member<Feature>()?.multiplicityRange)
-        assertEquals(MultiplicityRange(5,5), global.resolve("DeviceA::sensor")?.member<Feature>()?.multiplicityRange)
+        assertEquals(IntegerRange(4, 5), global.resolve("Device::sensor")?.member<Feature>()?.multiplicityRange)
+        assertEquals(IntegerRange(4,4), global.resolve("DeviceB::sensor")?.member<Feature>()?.multiplicityRange)
+        assertEquals(IntegerRange(5,5), global.resolve("DeviceA::sensor")?.member<Feature>()?.multiplicityRange)
     }
 
     @Test
@@ -328,10 +319,10 @@ class IssuesAndRegressions {
                 feature x: RealInRange { :>> range = 10.0..20.0;}
             }
         """)
+        solver.propagate()
         assertNoIssues()
-        val x = solver.getVariable("X::x")
-        assertNotNull(x)
-        assertEquals(10.0, x.min(), 0.0001)
+        val x = solver.variable("X::x")
+        assertBounds(10.0..20.0, x)
     }
 
 
@@ -363,7 +354,7 @@ class IssuesAndRegressions {
 
         val x = solver.getVariable("X::Z::x")
         assertNoIssues()
-        assertEquals(10.0, x?.vectorQuantity?.getMinAsDouble()!!, 0.0001)
+        assertBounds(10.0, x!!)
     }
 
     @Test
@@ -383,8 +374,7 @@ class IssuesAndRegressions {
             general = UnresolvedType(this, "ScalarValues::String")
         ), created)
         initialize(Runlevel.VARIABLES)
-        val str = solver.getVariable("testPropertyString")
-        assertNotNull(str)
+        val str = solver.variable("testPropertyString")
     }
 
 
@@ -395,11 +385,10 @@ class IssuesAndRegressions {
             feature b: Ranges::RealInRange {:>> range = 0..5;}
             feature c: Ranges::RealInRange = a*b {:>> range = 2..2;}
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(2.0, solver.getVariable("b")!!.vectorQuantity.getMinAsDouble(), 0.0001)
-        assertEquals(2.0, solver.getVariable("b")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
-        assertEquals(1.0, solver.getVariable("a")!!.vectorQuantity.getMinAsDouble(), 0.0001)
-        assertEquals(1.0, solver.getVariable("a")!!.vectorQuantity.getMaxAsDouble(), 0.0001)
+        assertBounds(2.0 .. 2.0, solver.variable("b"))
+        assertBounds(1.0 .. 1.0, solver.variable("a"))
     }
 
 
@@ -410,10 +399,10 @@ class IssuesAndRegressions {
             feature b: Ranges::RealInRange {:>> range = 0..5;}
             feature c: Ranges::RealInRange = max(a,b) {:>> range = 2..2;}
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
         val result = solver.getVariable("b")
-        assertEquals(2.0,result!!.vectorQuantity.getMinAsDouble(),0.000001)
-        assertEquals(2.0,result.vectorQuantity.getMaxAsDouble(),0.000001)
+        assertBounds(2.0 .. 2.0, result!!)
         assertNoIssues()
     }
 
@@ -434,21 +423,17 @@ class IssuesAndRegressions {
          """
         loadKerML(model, Runlevel.VARIABLES)
         assertNoIssues()
-        var volume = solver.getVariable("PartWithVolume::volume")!!
-        val height = solver.getVariable("PartWithVolume::height")!!
-        assertNotNull(height)
-        assertEquals(1.0, volume.min(), 0.000001)
-        assertEquals(1.21, volume.max(), 0.001)
+        var volume = solver.variable("PartWithVolume::volume")
+        val height = solver.variable("PartWithVolume::height")
         solver.propagate()
+        assertBounds(1.0 .. 1.21, volume)
         initialize(Runlevel.ALL)
         initialize(Runlevel.ALL)
-        volume = solver.getVariable("PartWithVolume::volume")!!
-        assertEquals(1.0, volume.min(), 0.000001)
-        assertEquals(1.21, volume.max(), 0.001)
+        volume = solver.variable("PartWithVolume::volume")
+        assertBounds(1.0 .. 1.21, volume)
         loadKerML(model, Runlevel.ALL)
         assertNoIssues() // fixme: the Memberships in FeatureReferenceExpression are duplicated because their owners revert to UnresolvedElements
-        assertEquals(1.0, volume.min(), 0.000001)
-        assertEquals(1.21, volume.max(), 0.001)
+        assertBounds(1.0 .. 1.21, volume)
     }
 
     @Test
@@ -485,8 +470,8 @@ class IssuesAndRegressions {
             }
         """)
         assertNoIssues()
-        val result = solver.getVariable("Car::property")!!
-        assertEquals(4.0, result.vectorQuantity.getMinAsDouble(), 0.000001)
+        val result = solver.variable("Car::property")
+        assertBounds(4.0, result)
     }
 
 
@@ -525,13 +510,11 @@ class IssuesAndRegressions {
         """)
         solver.propagate()
         assertNoIssues()
-        val wb1 = solver.getVariable("weightBoundary1")!!
-        val wb2 = solver.getVariable("weightBoundary2")!!
+        val wb1 = solver.variable("weightBoundary1")
+        val wb2 = solver.variable("weightBoundary2")
 
-        assertEquals(15, wb1.vectorQuantity.value.asIdd().getRange().min)
-        assertEquals(15, wb1.vectorQuantity.value.asIdd().getRange().max)
-        assertEquals(15, wb2.vectorQuantity.value.asIdd().getRange().min)
-        assertEquals(15, wb2.vectorQuantity.value.asIdd().getRange().max)
+        assertBounds(15L .. 15L, wb1)
+        assertBounds(15L .. 15L, wb2)
     }
 
     @Test fun issue189nameResolutionIncorrect() = testSession {
@@ -596,13 +579,13 @@ class IssuesAndRegressions {
         """, Runlevel.ALL)
         assertNoIssues()
         val drive = global.resolve("archExample::drive")?.member<Feature>()
-        assertNotNull(drive)
         solver.propagate()
         assertNoIssues()
+        assertNotNull(drive)
         // val engine = global.resolveName<Type>("archExample::Engine")
         // val power = global.resolveName<Expression>("archExample::drive::power")
         val enoughPower = solver.getVariable("archExample::enoughPower")
-        assertEquals(True, enoughPower?.vectorQuantity?.value as XBool)
+        assertEquals(builder.Bool.True, enoughPower?.vectorQuantity?.value)
     }
 
     /**
@@ -642,15 +625,15 @@ class IssuesAndRegressions {
                 }
                 feature s1: Real = sumOverParts(s);
         }""", Runlevel.SOLVED)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(5.0, solver.getVariable("p::s1")!!.min(), 0.0001)
+        assertBounds(5.0, solver.variable("p::s1"))
     }
 
     //Tests for Issue #243
-    @Test // @Ignore
+    @Test
     fun issue243indexExplosionBiggerModelTest() = testSession("ScalarValues") {
-        loadSysMLv2(
-            input = """
+        loadSysMLv2(input = """
             attribute x1: ScalarValues::Real(1.0..3.0);
             attribute y1: ScalarValues::Real(1.0..3.0);
             attribute r1: ScalarValues::Boolean = x1 <= y1;
@@ -666,22 +649,20 @@ class IssuesAndRegressions {
             attribute x4: ScalarValues::Real = 1.0;
             attribute y4: ScalarValues::Real = [1.0..3.0];
             attribute r4: ScalarValues::Boolean = x4 <= y4;
-        """, Runlevel.VARIABLES)
+        """, Runlevel.ALL)
         assertNoIssues()
-        solver.propagate()
-        assertNoIssues()
-        solver.getVariable("x1")!!
-        solver.getVariable("y1")!!
-        val r1 = solver.getVariable("r1")!!
-        solver.getVariable("x2")!!
-        solver.getVariable("y2")!!
-        val r2 = solver.getVariable("r2")!!
-        solver.getVariable("x3")!!
-        solver.getVariable("y3")!!
-        val r3 = solver.getVariable("r3")!!
-        solver.getVariable("x4")!!
-        solver.getVariable("y4")!!
-        val r4 = solver.getVariable("r4")!!
+        solver.variable("x1")
+        solver.variable("y1")
+        val r1 = solver.variable("r1")
+        solver.variable("x2")
+        solver.variable("y2")
+        val r2 = solver.variable("r2")
+        solver.variable("x3")
+        solver.variable("y3")
+        val r3 = solver.variable("r3")
+        solver.variable("x4")
+        solver.variable("y4")
+        val r4 = solver.variable("r4")
 
         println(r1.vectorQuantity.bdd().toIteString())
         println("r1 depth: ${r1.vectorQuantity.bdd().height()}")
@@ -701,159 +682,34 @@ class IssuesAndRegressions {
         println("r4 bdd: ${r4.vectorQuantity.bdd().toIteString()}")
     }
 
-    @Test @Ignore
-    fun issue243indexExplosionSmallModelTest() = testSession("ScalarValues") {
-        loadKerML(
+    @Test
+    fun issue243indexExplosionSmallModelTest() = testSession("Ranges") {
+        loadSysMLv2(
             input = """
-            attribute x1: ScalarValues::Real(1.0..3.0);
-            attribute y1: ScalarValues::Real(1.0..3.0);
+            attribute x1: Ranges::RealInRange(1.0..3.0);
+            attribute y1: Ranges::RealInRange(1.0..3.0);
             attribute r1: ScalarValues::Boolean = x1 <= y1;
             """
         )
         assertNoIssues()
         solver.propagate()
         assertNoIssues()
-        solver.getVariable("x1")!!
-        solver.getVariable("y1")!!
-        val r1 = solver.getVariable("r1")!!
-        println("r1 depth: ${r1.vectorQuantity.bdd().height()}")
-        println("r1 #nodes: ${r1.vectorQuantity.bdd().numInternalNodes()}")
-        println("r1 bdd: ${r1.vectorQuantity.bdd().toIteString()}")
     }
 
-    @Test // @Ignore
+    @Test
     fun issue243indexExplosionDuplicateComparisonTest() = testSession("ScalarValues") {
-        loadSysMLv2(input = """
+        loadSysMLv2(
+            input = """
             attribute x1: ScalarValues::Real(1.0..3.0);
             attribute y1: ScalarValues::Real(1.0..3.0);
             attribute r1: ScalarValues::Boolean = x1 <= y1;
             attribute r2: ScalarValues::Boolean = x1 <= y1;
             attribute r3: ScalarValues::Boolean = r1 and r2;
-        """, Runlevel.SOLVED)
-        assertNoIssues()
-        solver.getVariable("x1")!!
-        solver.getVariable("y1")!!
-        val r1 = solver.getVariable("r1")!!
-        val r2 = solver.getVariable("r2")!!
-        println("r1 depth: ${r1.vectorQuantity.bdd().height()}")
-        println("r1 #nodes: ${r1.vectorQuantity.bdd().numInternalNodes()}")
-        println("r1 bdd: ${r1.vectorQuantity.bdd().toIteString()}")
-
-        println("r2 depth: ${r2.vectorQuantity.bdd().height()}")
-        println("r2 #nodes: ${r2.vectorQuantity.bdd().numInternalNodes()}")
-        println("r2 bdd: ${r2.vectorQuantity.bdd().toIteString()}")
-
-        //println("r3: ${r3.vectorQuantity.bdd().toIteString()}")
-    }
-
-    @Test @Ignore
-    fun issue243indexExplosionSmallModelDeltaTest() = testSession("ScalarValues") {
-        loadKerML(
-            input = """
-            attribute x1: ScalarValues::Real(1.0..3.0);
-            attribute y1: ScalarValues::Real(1.5..2.5);
-            //attribute y1: ScalarValues::Real = 3.0;
-            attribute r1: ScalarValues::Boolean = x1 <= y1;
-            attribute r2: ScalarValues::Boolean = x1 <= y1;
-            attribute r3: ScalarValues::Boolean = x1 <= y1;
-            attribute r4: ScalarValues::Boolean = x1 <= y1;
-            """
+        """, Runlevel.SOLVED
         )
         assertNoIssues()
-        solver.propagate()
-        assertNoIssues()
-        solver.getVariable("x1")!!
-        solver.getVariable("y1")!!
-        val r1 = solver.getVariable("r1")!!
-        val r2 = solver.getVariable("r2")!!
-        val r3 = solver.getVariable("r3")!!
-        val r4 = solver.getVariable("r4")!!
-
-
-
-        //println(r1.vectorQuantity.bdd().toIteString())
-        println("r1 depth: ${r1.vectorQuantity.bdd().height()}")
-        println("r1 #nodes: ${r1.vectorQuantity.bdd().numInternalNodes()}")
-        println("r1 bdd: ${r1.vectorQuantity.bdd().toIteString()}")
-
-        println("r2 depth: ${r2.vectorQuantity.bdd().height()}")
-        println("r2 #nodes: ${r2.vectorQuantity.bdd().numInternalNodes()}")
-        //println("r2 bdd: ${r2.vectorQuantity.bdd().toIteString()}")
-
-        println("r3 depth: ${r3.vectorQuantity.bdd().height()}")
-        println("r3 #nodes: ${r3.vectorQuantity.bdd().numInternalNodes()}")
-        //println("r3 bdd: ${r3.vectorQuantity.bdd().toIteString()}")
-
-        println("r4 depth: ${r4.vectorQuantity.bdd().height()}")
-        println("r4 #nodes: ${r4.vectorQuantity.bdd().numInternalNodes()}")
-        //println("r4 bdd: ${r4.vectorQuantity.bdd().toIteString()}")
-    }
-
-    @Test @Ignore
-    fun issue243indexExplosionSmallModelAADDTest() = testSession {
-        loadSysMLv2(input = """
-            attribute x1: ScalarValues::Real(1.0..3.0);
-            attribute y1: ScalarValues::Real(1.0..3.0);
-            //attribute z1: ScalarValues::Real(2.0..6.0) = x1 + y1;
-            attribute r1: ScalarValues::Boolean = x1 <= y1;
-            //attribute r2: ScalarValues::Boolean = x1 <= y1;
-            //attribute rn: ScalarValues::Boolean = z1 > x1;
-            """
-        )
-        assertNoIssues()
-        solver.propagate()
-        assertNoIssues()
-        val x1 = solver.getVariable("x1")!!
-        val y1 = solver.getVariable("y1")!!
-        //val r1 = global.resolveName<Expression>("r1")!!
-
-
-
-        //println("r1 depth: ${r1.vectorQuantity.bdd().height()}")
-        //println("r1 #nodes: ${r1.vectorQuantity.bdd().numInternalNodes()}")
-        //println("r1 bdd: ${r1.vectorQuantity.bdd().toIteString()}")
-        println("x1 depth: ${x1.vectorQuantity.aadd().height()}")
-        println("x1 #nodes: ${x1.vectorQuantity.aadd().numInternalNodes()}")
-        println("x1 depth: ${y1.vectorQuantity.aadd().height()}")
-        println("x1 #nodes: ${y1.vectorQuantity.aadd().numInternalNodes()}")
-
-        println("Builder status:")
-        println("Conditions:")
-        builder.conds.x.forEach { println("Index: ${it.key}, attribute: ${it.value}") }
-    }
-
-    @Test @Ignore
-    fun issue243indexExplosionSmallModelUnrelatedVarsAADDTest() = testSession("ScalarValues") {
-        loadKerML(
-            input = """
-            attribute x1: ScalarValues::Real(1.0..3.0);
-            attribute y1: ScalarValues::Real(1.0..3.0);
-            attribute x2: ScalarValues::Real(5.0..10.0);
-            attribute y2: ScalarValues::Real(5.0..10.0);
-            attribute r1: ScalarValues::Boolean = x1 <= y1;
-            attribute r2: ScalarValues::Boolean = x1 <= y1;
-            attribute rn: ScalarValues::Boolean = x2 <= y2;
-            """
-        )
-        assertNoIssues()
-        solver.propagate()
-        assertNoIssues()
-        val x1 = solver.getVariable("x1")!!
-        val y1 = solver.getVariable("y1")!!
-        val r1 = solver.getVariable("r1")!!
-        val rn = solver.getVariable("rn")!!
-
-
-        println("r1 depth: ${r1.vectorQuantity.bdd().height()}")
-        println("r1 #nodes: ${r1.vectorQuantity.bdd().numInternalNodes()}")
-        println("rn depth: ${rn.vectorQuantity.bdd().height()}")
-        println("rn #nodes: ${rn.vectorQuantity.bdd().numInternalNodes()}")
-        //println("r1 bdd: ${r1.vectorQuantity.bdd().toIteString()}")
-        println("x1 depth: ${x1.vectorQuantity.aadd().height()}")
-        println("x1 #nodes: ${x1.vectorQuantity.aadd().numInternalNodes()}")
-        println("x1 depth: ${y1.vectorQuantity.aadd().height()}")
-        println("x1 #nodes: ${y1.vectorQuantity.aadd().numInternalNodes()}")
-
+        solver.variable("x1")
+        solver.variable("y1")
     }
 
     @Test
@@ -872,31 +728,31 @@ class IssuesAndRegressions {
         loadKerML("""
             feature x: ScalarValues::Real = 2.0 ^ 2.0 ^ 3.0;
         """, Runlevel.ALL)
+        solver.propagate()
+        assertNoIssues()
         val x = solver.getVariable("x")
-        assertEquals(256.0, x!!.min(), 0.0001)
+        assertBounds(256.0, x!!)
     }
 
-    @Test @Ignore //TODO: Problem in Parser: After or only Product possible, but EE is not in Product
-    fun booleanExpression() = testSession {
+    @Test
+    fun booleanExpression() =  testSession("ScalarValues") {
         loadSysMLv2(input = """
             attribute c: ScalarValues::Integer = 1;
             attribute b: ScalarValues::Integer = 2;
-            attribute a: ScalarValues::Boolean = c == 0 or b == 0.
+            attribute a: ScalarValues::Boolean = c == 0 or b == 0;
         """, Runlevel.ALL)
         assertNoIssues()
     }
 
-    /**
-     * Goes into infinite loop --> BUG in IDD * IDD !
-     */
-    @Test @Ignore
-    fun iddTimesLoopIssue267() = testSession("ScalarValues") {
+
+    @Test
+    fun iddTimesLoopIssue267() = testSession("Ranges") {
         loadKerML("""
             package safety {
                 function calcASIL{
-                    in feature severity : Ranges::IntegerInRange {:>> range = "0..3";}
-                    in feature exposure : Ranges::IntegerInRange {:>> range = "0..4";}
-                    in feature controllability: Ranges::IntegerInRange {:>> range = "0..3";}
+                    in feature severity : Ranges::IntegerInRange {:>> range = 0..3;}
+                    in feature exposure : Ranges::IntegerInRange {:>> range = 0..4;}
+                    in feature controllability: Ranges::IntegerInRange {:>> range = 0..3;}
                     feature sum: ScalarValues::Integer = severity + exposure + controllability;
                     feature sumAdapted : ScalarValues::Integer = if (severity == 0) or (controllability == 0) ? 0 else sum; //special case for S0 and C0 the ASIL is always QM (0)
                     return result: ScalarValues::Integer = max(sum-6,0).
@@ -907,7 +763,9 @@ class IssuesAndRegressions {
                 feature ASIL: ScalarValues::Integer = calcASIL(S,E,C).
             }
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
+        assertBounds(2L..2L, solver.variable("safety::ASIL"))
     }
 
     /**
@@ -960,33 +818,34 @@ class IssuesAndRegressions {
             attribute f: ScalarValues::Real = oneOf(1.0 .. 4.0); 
             assert constraint ass { 2.0 * f < 4.0 } 
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(1.0, solver.getVariable("f")!!.min(), 0.00001)
-        assertEquals(2.0, solver.getVariable("f")!!.aadd().getRange().max, 0.00001)
+        assertBounds(1.0 .. 2.0, solver.variable("f"))
     }
 
-    @Ignore
+
     @Test
     fun assertTestRealDiv() = testSession("ScalarValues", "ISQ", "Ranges") {
         loadSysMLv2("""
             attribute f: ScalarValues::Real = oneOf(1.0 .. 4.0); 
             assert constraint ass {  1.0 < 2.0 / f } 
         """, Runlevel.SOLVED)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(1.0, solver.getVariable("f")!!.min(), 0.00001)
-        assertEquals(2.0, solver.getVariable("f")!!.max(), 0.00001)
+        assertBounds(1.0 .. 2.0, solver.variable("f"))
     }
 
-    @Ignore
+
     @Test
     fun assertTestRealAdd() = testSession("ScalarValues") {
         loadSysMLv2("""
             attribute f: ScalarValues::Real; 
             assert constraint ass { 6.0 + f < 8.0 } 
         """, Runlevel.SOLVED)
+        solver.propagate()
         assertNoIssues()
-        //assertEquals(-2.0, solver.getVariable("f")!!.min(), 0.00001)
-        assertEquals(2.0, solver.getVariable("f")!!.aadd().getRange().max, 0.00001)
+        //assertEquals(-2.0, solver.variable("f").min(), 0.00001)
+        assertBounds(Double.NEGATIVE_INFINITY..2.0, solver.variable("f").aadd())
     }
 
     @Test
@@ -995,9 +854,9 @@ class IssuesAndRegressions {
             attribute f: ScalarValues::Real = oneOf(1.0 .. 4.0); 
             assert constraint ass { 6.0 - f < 4.0 } 
         """, Runlevel.SOLVED)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(2.0, solver.getVariable("f")!!.min(), 0.00001)
-        assertEquals(4.0, solver.getVariable("f")!!.aadd().getRange().max, 0.00001)
+        assertBounds(2.0 .. 4.0, solver.variable("f"))
     }
 
     @Test
@@ -1006,9 +865,9 @@ class IssuesAndRegressions {
             attribute f: ScalarValues::Real = oneOf(1.0 .. 8.0); 
             assert constraint ass {  8.0/f > 4.0 } 
         """, Runlevel.SOLVED)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(1.0, solver.getVariable("f")!!.min(), 0.00001)
-        assertEquals(2.0, solver.getVariable("f")!!.max(), 0.00001)
+        assertBounds(1.0 .. 2.0, solver.variable("f"))
     }
 
     @Test
@@ -1027,8 +886,7 @@ class IssuesAndRegressions {
             attribute a: ScalarValues::Real;
             attribute b: ScalarValues::Real;
             assert constraint {  a < b }
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
     }
 

@@ -1,5 +1,6 @@
 package compiler.sysmd
 
+import com.github.tukcps.sysmd.model.datamodel.ElementReference
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.MembershipImport
 import com.github.tukcps.sysmd.model.util.Unresolved
@@ -65,8 +66,12 @@ class SysMDTests {
 
         val i = get().filterIsInstance<MembershipImport>().single()
         assertSame(global, i.owningRelatedElement)
-        val space = assertIs<Unresolved>(i.importedElement).also {
-            assertEquals("space", it.relativeName)
+        val space = assertIs<Unresolved>(i.importedElement)
+
+        space.let {
+            assertIs<ElementReference.ByName>(it.reference)
+        }.let {
+            assertEquals("space", it.name)
         }
 
         assertEquals(2, i.relatedElements.size)

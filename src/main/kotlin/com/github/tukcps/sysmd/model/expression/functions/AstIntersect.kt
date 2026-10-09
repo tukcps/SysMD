@@ -1,13 +1,14 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.BDD
-import io.github.tukcps.aadd.DD
-import io.github.tukcps.aadd.IDD
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.model.expression.AstNode
+import com.github.tukcps.sysmd.quantities.Unit
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
+import io.github.tukcps.aadd.dd.AADD
+import io.github.tukcps.aadd.dd.BDD
+import io.github.tukcps.aadd.dd.DD
+import io.github.tukcps.aadd.dd.IDD
 
 
 /**
@@ -26,12 +27,12 @@ internal class AstIntersect(model: Session, args: ArrayList<AstNode>) :
         if ((getParam(1).upQuantity.values[0] !is AADD) && (getParam(1).upQuantity.values[0] !is IDD))
             throw SemanticError("Intersect only takes Real or Integer parameters")
         if (getParam(0).upQuantity.values[0] is AADD) {
-            upQuantity = VectorQuantity(mutableListOf(model.builder.Reals), "?")
+            upQuantity = VectorQuantity.fromCanonical(mutableListOf(model.builder.Reals.All), Unit("?"), "?")
             if (getParam(1).upQuantity.values[0] !is AADD)
                 throw SemanticError("Intersect requires both parameters of same type")
         }
         if (getParam(0).upQuantity.values[0] is IDD) {
-            upQuantity = VectorQuantity(mutableListOf(model.builder.Integers))
+            upQuantity = VectorQuantity(mutableListOf(model.builder.Integers.All))
             if (getParam(1).upQuantity.values[0] !is IDD)
                 throw SemanticError("Intersect requires both parameters of same type")
         }
@@ -57,22 +58,17 @@ internal class AstIntersect(model: Session, args: ArrayList<AstNode>) :
                 }
             )
         }
-        upQuantity = VectorQuantity(results, getParam(0).upQuantity.unit, getParam(0).upQuantity.unitSpec)
+        upQuantity = VectorQuantity.fromCanonical(results, getParam(0).upQuantity.unit, getParam(0).upQuantity.unitSpec, getParam(0).upQuantity.userWantedUnitSpec)
     }
 
     /**
      * Implementation of inverse function of y = intersect(a, b):
-     * we maintain very optimistically the downwards result y for a and b.
-     * (could be more precise).
+     * The result only tells that its range is contained in the ranges of a and b. The parts of a outside the result
+     * may still be valid when b does not cover them, so neither parameter can be narrowed soundly.
      */
     override fun evalDown() {
-        getParam(0).downQuantity = downQuantity.clone()
-        getParam(1).downQuantity = downQuantity.clone()
+        // nothing to propagate
     }
 
-    override fun clone(): AstIntersect {
-        val parClone = ArrayList<AstNode>()
-        for (p in parameters) parClone.add(p.clone())
-        return AstIntersect(model, parClone)
-    }
+    override fun clone() = AstIntersect(model, cloneParameters())
 }

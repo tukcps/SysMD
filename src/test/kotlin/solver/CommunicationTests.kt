@@ -1,7 +1,9 @@
 package solver
 
+import util.variable
+import util.assertBounds
 import com.github.tukcps.sysmd.services.Runlevel
-import io.github.tukcps.aadd.values.Range
+import io.github.tukcps.aadd.values.real.ia.RealRange
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
@@ -32,8 +34,8 @@ class CommunicationTests {
             }
         """, Runlevel.ALL)
         assertNoIssues()
-        assertEquals(Range(2.0..2.0), solver.getVariable("a::x")!!.range())
-        assertEquals(Range(2.0..2.0), solver.getVariable("b::y")!!.range())
+        assertBounds(2.0, solver.variable("a::x"))
+        assertBounds(2.0, solver.variable("b::y"))
     }
 
 
@@ -66,8 +68,8 @@ class CommunicationTests {
                 }
             """, Runlevel.ALL)
             assertNoIssues()
-            assertTrue(solver.getVariable("b::y")!!.aadd().getRange() in Range(1.99..2.01))
-            assertTrue(solver.getVariable("c::z")!!.aadd().getRange() in Range(1.99..2.01))
+            assertBounds(2.0, solver.variable("b::y"))
+            assertBounds(2.0, solver.variable("c::z"))
         }
     }
 
@@ -94,7 +96,7 @@ class CommunicationTests {
             }
         """, Runlevel.ALL)
         assertNoIssues()
-        assertEquals(Range(2.0..2.0), solver.getVariable("a::x")!!.range())
-        assertEquals(Range(2.0..2.0), solver.getVariable("b::y")!!.range())
+        assertBounds(2.0, solver.variable("a::x"))
+        assertBounds(2.0, solver.variable("b::y"))
     }
 }

@@ -9,10 +9,10 @@ import com.github.tukcps.sysmd.model.util.SimpleName
 import com.github.tukcps.sysmd.quantities.VectorDimensionError
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.BDD
-import io.github.tukcps.aadd.IDD
-import io.github.tukcps.aadd.StrDD
+import io.github.tukcps.aadd.dd.AADD
+import io.github.tukcps.aadd.dd.BDD
+import io.github.tukcps.aadd.dd.IDD
+import io.github.tukcps.aadd.dd.StrDD
 import kotlin.uuid.Uuid
 
 class FeatureReferenceExpressionImplementation(
@@ -59,7 +59,7 @@ class FeatureReferenceExpressionImplementation(
 	override fun initialize()
 	{
 		// FIXME: fallback only in place for testing; throw IllegalStateException instead
-		upQuantity = referent?.variable?.vectorQuantity ?: VectorQuantity(model.builder.Integers)
+		upQuantity = referent?.variable?.vectorQuantity ?: VectorQuantity(model.builder.Integers.All)
 
 		downQuantity = upQuantity
 	}
@@ -78,7 +78,7 @@ class FeatureReferenceExpressionImplementation(
 		{
 			is AADD -> {
 				// TODO: check is only hot fix ... (?)
-				if (! (downQuantity.value.asAadd().maxIsInf && downQuantity.value.asAadd().minIsInf) ) {
+				if (! (downQuantity.value.asAadd().isFinite()) ) {
 					v.vectorQuantity = downQuantity.constrain(
 						v.vectorQuantity,
 						v.rangeSpecs,
@@ -132,7 +132,6 @@ class FeatureReferenceExpressionImplementation(
 				v.vectorQuantity = downQuantity.constrainString(v.vectorQuantity)
 				v.checkEvent()
 			}
-			else -> throw IllegalStateException("Unexpected DD type ${downQuantity.value.javaClass}")
 		}
 	}
 

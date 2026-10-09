@@ -1,15 +1,16 @@
 package solver
 
-import com.github.tukcps.sysmd.model.kerml.DataType
+import util.variable
+import util.assertBounds
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.services.Runlevel
-import io.github.tukcps.aadd.values.IntegerRange
+import io.github.tukcps.aadd.util.Assertions.assertEquals
+import io.github.tukcps.aadd.values.bounds.DoubleBound
+import io.github.tukcps.aadd.values.integer.IntegerRange
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
+import kotlin.test.*
 
 class FeatureTests {
 
@@ -18,7 +19,7 @@ class FeatureTests {
         loadKerML("feature f: ScalarValues::Real = 1.0;", Runlevel.VARIABLES)
         assertNoIssues()
         val f = solver.getVariable("f")
-        assertEquals(1.0, f?.max())
+        assertBounds(1.0, f!!)
     }
 
     @Test
@@ -32,19 +33,17 @@ class FeatureTests {
         assertNotNull(f)
         val g: Feature? = global.resolve("g")?.member()
         assertNotNull(g)
-        val gvar = solver.getVariable("g")
-        assertEquals(2.0, solver.getVariable("g")?.max()!!, 0.000001)
+        assertBounds(2.0, solver.variable("g"))
     }
 
     @Test
     fun testFeatureWithTypeAndUnitConstraint() = testSession("ISQ") {
-        val l = global.resolve("ISQ::LengthValue")?.member<DataType>()
         loadKerML("""
             feature f: ISQ::LengthValue = 1.0 m { :>> range = 1..2000 [mm];}
         """, Runlevel.VARIABLES)
         assertNoIssues()
         val f = solver.getVariable("f")
-        assertEquals(1000.0, f!!.max(), 0.000001)
+        assertBounds(1000.0, f!!, unit = "mm")
         assertEquals("m", f.vectorQuantity.unit.toString())
     }
 
@@ -58,6 +57,6 @@ class FeatureTests {
         assertEquals("1", f.expression)
         assertEquals(IntegerRange(0, 2), f.variable?.intSpecs?.firstOrNull())
         assertNotNull(f.variable?.ast)
-        assertEquals(IntegerRange(1, 1), f.variable?.vectorQuantity?.values?.first()?.asIdd()?.getRange())
+        assertBounds(1L, f.variable!!)
     }
 }

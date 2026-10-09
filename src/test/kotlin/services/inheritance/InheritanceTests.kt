@@ -2,17 +2,18 @@
 
 package services.inheritance
 
+import util.variable
+import util.assertIssue
 import com.github.tukcps.sysmd.cspsolver.getVariableInfo
 import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.model.util.MultiplicityRange
 import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.check.checkOwnership
 import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.resolve.resolveVar
-import io.github.tukcps.aadd.values.IntegerRange
-import io.github.tukcps.aadd.values.Range
+import io.github.tukcps.aadd.values.integer.IntegerRange
 import util.assertNoIssues
+import util.assertBounds
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.*
@@ -36,10 +37,10 @@ class InheritanceTests {
         assertEquals(1, ax.ownedRelationship.filterIsInstance<Specialization>().size)
         assertEquals(2, ax.ownedElement.size)
         assertEquals(1, ax.ownedElement.filterIsInstance<Multiplicity>().size)
-        assertEquals(MultiplicityRange(1, 2), ax.multiplicityRange)
+        assertEquals(IntegerRange(1, 2), ax.multiplicityRange)
 
         assertEquals(1, bx.ownedElement.filterIsInstance<Multiplicity>().size)
-        assertEquals(MultiplicityRange(1, 2), bx.multiplicityRange)
+        assertEquals(IntegerRange(1, 2), bx.multiplicityRange)
         assertEquals(1, bx.ownedRelationship.filterIsInstance<Specialization>().size)
         assertEquals(2, bx.ownedElement.size)
         // assertTrue(bx.getOwnedElementOfType<Multiplicity>()!!.isImpliedIncluded)
@@ -73,7 +74,7 @@ class InheritanceTests {
         assertNotNull(t2features)
         val t2f = global.resolve("t2::f")?.member<Feature>()!!
         assertNotNull(t2f)
-        assertEquals(MultiplicityRange(2, 2), t2f.multiplicityRange)
+        assertEquals(IntegerRange(2, 2), t2f.multiplicityRange)
         assertEquals("ScalarValues::Natural", t2f.type.firstOrNull()?.qualifiedName)
     }
 
@@ -97,7 +98,7 @@ class InheritanceTests {
         assertNotNull(t2features)
         val t2f = global.resolve("t2::f")!!.member<Feature>()
         assertNotNull(t2f)
-        assertEquals(MultiplicityRange(2, 2), t2f.multiplicityRange)
+        assertEquals(IntegerRange(2, 2), t2f.multiplicityRange)
         assertEquals("ScalarValues::Integer", t2f.type.firstOrNull()?.qualifiedName)
 
         val t3 = global.resolve("t3")?.member<Type>()
@@ -107,7 +108,7 @@ class InheritanceTests {
         val t3f = global.resolve("t3::f")?.member<Feature>()
         assertNotNull(t3f)
         assertNotEquals(t2f, t3f) // they shall have at least different id
-        assertEquals(MultiplicityRange(2, 2), t3f.multiplicityRange)
+        assertEquals(IntegerRange(2, 2), t3f.multiplicityRange)
         assertEquals("ScalarValues::Integer", t3f.type.firstOrNull()?.qualifiedName)
     }
 
@@ -140,14 +141,13 @@ class InheritanceTests {
                 feature f: Ranges::RealInRange {:>> range = 1 .. 1.5;}
             }
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        val t1 = global.resolve("t1")?.member<Type>()
-        val t1f = t1?.resolve("f")?.member<Type>()
-        val t2 = global.resolve("t2")?.member<Type>()
-        val t2f = t2?.resolve("f")
-        /*
-        assertEquals(Range(1.0 .. 1.5), t2?.rangeSpecs[0]  )
-        assertEquals(Range(1.0 .. 2.0), element?.getOwned<Feature>(   "p")?.variable?.rangeSpecs?.get(0) ) */
+        val t1f = global.resolve("t1::f")!!.member<Feature>()!!
+        val t2f = global.resolve("t2::f")!!.member<Feature>()!!
+
+        assertBounds(1.0 .. 2.0, t1f.variable!!.rangeSpecs.single())
+        assertBounds(1.0 .. 1.5, t2f.variable!!.rangeSpecs.single())
     }
 
 
@@ -192,9 +192,10 @@ class InheritanceTests {
                 }
             }
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
         val elem2 = global.resolve("lib::elem2")?.member<Type>()
-        assertTrue(elem2!!.resolveVar("p2")!!.aadd().getRange() in Range(1.499..2.001))
+        assertBounds(1.5..2.0, elem2!!.resolveVar("p2")!!)
     }
 
     /**
@@ -213,7 +214,7 @@ class InheritanceTests {
         val e2 = global.resolve("e2")?.member<Type>()
         assertNotNull(e2)
         val e = e2.resolveVar("p")
-        assertEquals(1.0, e?.rangeSpecs?.get(0)?.min)
+        assertBounds(1.0..2.0, e!!)
     }
 
 
@@ -424,6 +425,7 @@ class InheritanceTests {
         assertNotEquals(aax, bax)
         assertNotEquals(aax, cax)
         assertNotEquals(bax, cax)
+
         assertEquals(IntegerRange(2, 8), baxm?.intSpecs!!.first())
         assertEquals(IntegerRange(3, 4), caxm?.intSpecs!!.first())
     }
@@ -443,14 +445,14 @@ class InheritanceTests {
             }
         """, Runlevel.ALL)
         assertNoIssues()
-        val oneEuroCircumference = solver.getVariable("oneEuroCoin::circumference")!!
-        val oneEuroDiameter = solver.getVariable("oneEuroCoin::diameter")!!
-        val coinCircumference = solver.getVariable("Coin::circumference")!!
-        val coinDiameter = solver.getVariable("Coin::diameter")!!
-        assertEquals(73.03, oneEuroCircumference.vectorQuantity.getMinAsDouble() * 1000.0, 0.01)
-        assertEquals(23.25, oneEuroDiameter.vectorQuantity.getMinAsDouble() * 1000.0, 0.01)
-        assertEquals(15.7, coinCircumference.vectorQuantity.getMinAsDouble() * 1000.0, 0.01)
-        assertEquals(5.0, coinDiameter.vectorQuantity.getMinAsDouble() * 1000.0, 0.001)
+        val oneEuroCircumference = solver.variable("oneEuroCoin::circumference")
+        val oneEuroDiameter = solver.variable("oneEuroCoin::diameter")
+        val coinCircumference = solver.variable("Coin::circumference")
+        val coinDiameter = solver.variable("Coin::diameter")
+        assertBounds(73.02825, oneEuroCircumference, unit = "mm")
+        assertBounds(23.25, oneEuroDiameter, unit = "mm")
+        assertBounds(15.704999999999995..628.2000000000003, coinCircumference, unit = "mm")
+        assertBounds(5.0..200.0, coinDiameter, unit = "mm")
     }
 
 
@@ -476,14 +478,14 @@ class InheritanceTests {
         """)
         assertNoIssues()
         solver.propagate()
-        val oneEuroCircumference = solver.getVariable("OneEuroCoin::circumference")!!
-        val oneEuroDiameter = solver.getVariable("OneEuroCoin::diameter")!!
-        val coinCircumference = solver.getVariable("Coin::circumference")!!
-        val coinDiameter = solver.getVariable("Coin::diameter")!!
-        assertEquals(46.0, oneEuroCircumference.vectorQuantity.getMinAsDouble(), 0.00000001)
-        assertEquals(23.0, oneEuroDiameter.vectorQuantity.getMinAsDouble(), 0.00000001)
-        assertEquals(2.0, coinCircumference.vectorQuantity.getMinAsDouble(), 0.00000001)
-        assertEquals(2.0, coinDiameter.vectorQuantity.getMinAsDouble(), 0.00000001)
+        val oneEuroCircumference = solver.variable("OneEuroCoin::circumference")
+        val oneEuroDiameter = solver.variable("OneEuroCoin::diameter")
+        val coinCircumference = solver.variable("Coin::circumference")
+        val coinDiameter = solver.variable("Coin::diameter")
+        assertBounds(46.0, oneEuroCircumference)
+        assertBounds(23.0, oneEuroDiameter)
+        assertBounds(2.0..100.0, coinCircumference)
+        assertBounds(2.0..100.0, coinDiameter)
     }
 
     /**
@@ -499,9 +501,11 @@ class InheritanceTests {
                 feature p: Ranges::RealInRange  {:>> range = 2;}
             }
         """, Runlevel.ALL)
+        solver.propagate()
+        assertNoIssues()
         // b shall be 2, a remains Real.
-        assertEquals(2.0, solver.getVariable("b::p")?.min())
-        assertEquals(builder.Reals.getRange(), solver.getVariable("a::p")?.vectorQuantity?.value?.asAadd()?.getRange())
+        assertBounds(2.0, solver.variable("b::p"))
+        assertBounds(Double.NEGATIVE_INFINITY..Double.POSITIVE_INFINITY, solver.variable("a::p"))
     }
 
 
@@ -512,17 +516,12 @@ class InheritanceTests {
     fun inheritanceConstraintTestFromSuperclass() = testSession("ScalarValues", "Ranges") {
         loadKerML("""
             type a :> Base::Anything { feature p: Ranges::RealInRange  {:>> range = 2;}}
-            type b :> a { feature p: ScalarValues::Real; }
+            type b :> a { feature p: Ranges::RealInRange; }
         """, Runlevel.ALL)
+        solver.propagate()
         // b shall be constrained to 2, a remains 2.
-        assertEquals(
-            Range(2.0..2.0),
-            solver.getVariable("a::p")?.vectorQuantity?.value?.asAadd()?.getRange()
-        )
-        assertEquals(
-            Range(2.0..2.0),
-            solver.getVariable("a::p")?.vectorQuantity?.value?.asAadd()?.getRange()
-        )
+        assertBounds(2.0..2.0, solver.variable("a::p"))
+        assertBounds(2.0..2.0, solver.variable("b::p"))
     }
 
     /**
@@ -541,10 +540,9 @@ class InheritanceTests {
         """
         )
         solver.propagate()
-        assertEquals(1.0, solver.getVariable("a::p")!!.min())
-        assertEquals(1.0, solver.getVariable("a::p")!!.max())
-        assertEquals(2.0, solver.getVariable("b::p")!!.min())
-        assertEquals(2.0, solver.getVariable("b::p")!!.max())
+        assertIssue("must be refinement")
+        assertBounds(1.0..1.0, solver.variable("a::p"))
+        assertBounds(2.0..2.0, solver.variable("b::p"))
         assertEquals(status.issues.firstOrNull()?.kind, Issue.Kind.WARN_INCONSISTENCY)
     }
 
@@ -567,12 +565,12 @@ class InheritanceTests {
         // Hence:
         // - b::p = 2.0.
         // - a::p = Reals.
-        val xa = solver.getVariable("x::a")!!
-        val bp = solver.getVariable("b::p")!!
-        val ap = solver.getVariable("a::p")!!
-        assertEquals(Range(2.0, 2.0), xa.range()) // directly via eval-up
-        assertEquals(Range(2.0, 2.0), bp.range()) // must go here
-        assertEquals(builder.Reals.getRange(), ap.range())   // and not here
+        val xa = solver.variable("x::a")
+        val bp = solver.variable("b::p")
+        val ap = solver.variable("a::p")
+        assertBounds(2.0 .. 2.0, xa) // directly via eval-up
+        assertBounds(2.0 .. 2.0, bp) // must go here
+        assertBounds(Double.NEGATIVE_INFINITY..Double.POSITIVE_INFINITY, ap)   // and not here
     }
 
 
@@ -598,7 +596,7 @@ class InheritanceTests {
             }
         """, Runlevel.ALL)
         // The inconsistency / violation of Liskov Principle must be reported.
-        assertEquals(0, status.issues.size)
+        assertNoIssues()
     }
 
 
@@ -611,8 +609,9 @@ class InheritanceTests {
             }
         """, Runlevel.ALL)
         // The inconsistency / violation of Liskov Principle must be reported.
-        assertEquals(0, status.issues.size)
-        assertEquals(Range(1.5, 1.5), solver.getVariable("Test::sub::v")?.vectorQuantity?.value?.asAadd()?.getRange())
+        solver.propagate()
+        assertNoIssues()
+        assertBounds(1.5 .. 1.5, solver.variable("Test::sub::v"))
     }
 
 
@@ -624,10 +623,11 @@ class InheritanceTests {
                 type n :> m {feature v: Ranges::IntegerInRange {:>> range = 6..6;} }; 
             }
         """, Runlevel.ALL)
+        solver.propagate()
+        assertIssue("must be refinement")
         // The inconsistency / violation of Liskov Principle must be reported.
         assertEquals(status.issues.firstOrNull()?.kind, Issue.Kind.WARN_INCONSISTENCY)
-        val v = solver.getVariable("Test::n::v")?.range<Long>()
-        assertEquals(IntegerRange(6, 6), v)
+        assertBounds(6L..6, solver.variable("Test::n::v"))
     }
 
     @Test
@@ -640,8 +640,9 @@ class InheritanceTests {
                 feature v: Ranges::IntegerInRange {:>> range = 2;}
             }
         """, Runlevel.VARIANCE_CHECKED)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(IntegerRange(2, 2), solver.getVariable("n::v")?.vectorQuantity?.value?.asIdd()?.getRange())
+        assertBounds(2L..2L, solver.variable("n::v"))
     }
 
 
@@ -678,7 +679,7 @@ class InheritanceTests {
         assertNoIssues()
         val vwWheels: Feature? = global.resolve("VW::wheels")?.member()
         assertNotNull(vwWheels)
-        assertEquals(MultiplicityRange(1, 4), vwWheels.multiplicityRange)
+        assertEquals(IntegerRange(1, 4), vwWheels.multiplicityRange)
     }
 
 
@@ -694,7 +695,7 @@ class InheritanceTests {
         solver.propagate()
         assertEquals(status.issues.firstOrNull()?.kind, Issue.Kind.WARN_INCONSISTENCY) // Inconsistency !!!
         val audiWheels: Feature? = global.resolve("Audi::wheels")?.member()
-        assertEquals(MultiplicityRange(2, 5), audiWheels?.multiplicityRange)
+        assertEquals(IntegerRange(2, 5), audiWheels?.multiplicityRange)
     }
 
 
@@ -714,9 +715,9 @@ class InheritanceTests {
         val vwWheels: Feature? = global.resolve("VW::wheels")?.member()
         val carWheels: Feature?  = global.resolve("Car::wheels")?.member()
 
-        assertEquals(MultiplicityRange(2, 4), audiWheels?.multiplicityRange)
-        assertEquals(MultiplicityRange(2, 3), vwWheels?.multiplicityRange)
-        assertEquals(MultiplicityRange(1, 4), carWheels?.multiplicityRange)
+        assertEquals(IntegerRange(2, 4), audiWheels?.multiplicityRange)
+        assertEquals(IntegerRange(2, 3), vwWheels?.multiplicityRange)
+        assertEquals(IntegerRange(1, 4), carWheels?.multiplicityRange)
     }
 
     @Test

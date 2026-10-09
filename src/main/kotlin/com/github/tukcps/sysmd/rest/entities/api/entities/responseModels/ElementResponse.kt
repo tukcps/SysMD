@@ -1,12 +1,13 @@
 package com.github.tukcps.sysmd.rest.entities.api.entities.responseModels
 
-import com.github.tukcps.sysmd.model.datamodel.IntRangeSerializer
+import com.github.tukcps.sysmd.model.datamodel.*
 import com.github.tukcps.sysmd.model.generated.ElementDataIF
 import com.github.tukcps.sysmd.model.generated.ElementType
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Import
 import com.github.tukcps.sysmd.model.sysml.*
-import com.github.tukcps.sysmd.rest.entities.api.entities.Identified
+import io.github.tukcps.aadd.values.bounds.LongBound
+import io.github.tukcps.aadd.values.real.ia.RealRange
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.uuid.Uuid
@@ -24,11 +25,11 @@ class ElementResponse(
 
     override var declaredName: String? = null,
     override var declaredShortName: String? = null,
-    override var ownedElement: MutableList<Identified> = mutableListOf(),     // The IDs of the owned elements.
-    override var owner: Identified? = null,
-    override var owningMembership: Identified? = null,
-    override var owningNamespace: Identified? = null,
-    override var owningRelationship: Identified? = null,
+    override var ownedElement: MutableList<ElementReference> = mutableListOf(),     // The IDs of the owned elements.
+    override var owner: ElementReference? = null,
+    override var owningMembership: ElementReference? = null,
+    override var owningNamespace: ElementReference? = null,
+    override var owningRelationship: ElementReference? = null,
 
     // For type = Feature
     override var direction: Feature.FeatureDirectionKind? = null,
@@ -42,8 +43,8 @@ class ElementResponse(
     override var body: String? = null,                           // Documentation
 
     // For type = Relationship and subtypes thereof
-    override var source: MutableList<Identified> = mutableListOf(),
-    override var target: MutableList<Identified> = mutableListOf(),
+    override var source: MutableList<ElementReference> = mutableListOf(),
+    override var target: MutableList<ElementReference> = mutableListOf(),
     override var isStandard: Boolean? = null,
     override var isImplied: Boolean? = null,
     override var isImpliedIncluded: Boolean? = null,
@@ -73,16 +74,18 @@ class ElementResponse(
     override var isIndividual: Boolean? = null,
     override var portionKind: OccurrenceUsage.PortionKind? = null,
     override var literalStringValue: String? = null,
-    override var literalIntegerValue: Long? = null,
-    override var literalRationalValue: Double? = null,
+    @Serializable(with = LongBoundSerializer::class)
+    override var literalIntegerValue: LongBound? = null,
+    @Serializable(with = RealRangeSerializer::class)
+    override var literalRationalValue: RealRange? = null,
     override var literalBooleanValue: Boolean? = null,
     override var isNegated: Boolean? = null,
     override var isParallel: Boolean? = null,
     override var operator: String? = null,
     override var reqId: String? = null,
     override var triggerInvocationExpressionKind: TriggerInvocationExpression.TriggerKind? = null,
-    override var ownedRelatedElement: MutableList<Identified> = mutableListOf(),
-    override var owningRelatedElement: Identified? = null,
+    override var ownedRelatedElement: MutableList<ElementReference> = mutableListOf(),
+    override var owningRelatedElement: ElementReference? = null,
 ): ElementDataIF {
     /**
      * `indices` declared by `./.`.
@@ -101,5 +104,5 @@ class ElementResponse(
         get() = id
         set(value) { id = value }
     override var aliasIds: MutableList<String> = mutableListOf()
-    override var ownedRelationship: MutableList<Identified> = mutableListOf()
+    override var ownedRelationship: MutableList<ElementReference> = mutableListOf()
 }

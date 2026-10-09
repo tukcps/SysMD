@@ -1,15 +1,8 @@
 package constraintnettests.functionstests
 
-import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.services.Runlevel
-import io.github.tukcps.aadd.IDD
-import kotlin.test.Test
-import kotlin.test.Ignore
-import util.assertNoIssues
+import util.*
 import util.mockup.loadKerML
-import util.mockup.loadSysMLv2
-import util.testSession
-import kotlin.math.*
 import kotlin.test.*
 
 class ToRealTests {
@@ -27,17 +20,15 @@ class ToRealTests {
                     feature e: ScalarValues::Boolean;
                     feature f: ScalarValues::Real = toReal(e);
             """, Runlevel.ALL)
+            solver.propagate()
             assertNoIssues()
-            val b = solver.getVariable("b")!!
-            val d = solver.getVariable("d")!!
-            val f = solver.getVariable("f")!!
-            assertEquals(1.0, b.aadd().min, 0.00000001)
-            assertEquals(1.0, b.aadd().max, 0.00000001)
-            assertEquals(0.0, d.aadd().min, 0.00000001)
-            assertEquals(0.0, d.aadd().max, 0.00000001)
+            val b = solver.variable("b")
+            val d = solver.variable("d")
+            val f = solver.variable("f")
+            assertBounds(1.0 .. 1.0, b)
+            assertBounds(0.0 .. 0.0, d)
             assertEquals(0, d.vectorQuantity.value.height())
-            assertEquals(0.0, f.aadd().min, 0.00000001)
-            assertEquals(1.0, f.aadd().max, 0.00000001)
+            assertBounds(0.0 .. 1.0, f)
             assertEquals(1, f.vectorQuantity.value.height())
         }
 
@@ -49,7 +40,7 @@ class ToRealTests {
             """)
             assertNoIssues()
             val a = solver.getVariable("a")
-            assertTrue((a!!.vectorQuantity.value === builder.True))
+            assertTrue((a!!.vectorQuantity.value === builder.Bool.True))
 
         }
 
@@ -61,9 +52,38 @@ class ToRealTests {
                 feature r: ScalarValues::Real = ToReal(i).
                 """)
             solver.propagate()
-            val r = solver.getVariable("r")!!
+            val r = solver.variable("r")
             assertNoIssues()
-            assertEquals(2.0, r.min(), 0.00001)
-            assertEquals(3.0, r.vectorQuantity.getMaxAsDouble(), 0.00001)
+            assertBounds(2.0 .. 3.0, r)
+        }
+
+        /**
+         * Regression test for AstReal evalDown:
+         * ToReal(i) constrained to [2.1 .. 4.9] means integer i must be in [3 .. 4] (ceil(2.1)..floor(4.9)).
+         */
+        @Test
+        fun realFunctionEvalDownRegressionTest() = testSession("Ranges") {
+            loadKerML("""
+                feature i: Ranges::IntegerInRange {:>> range = 0 .. 10;}
+                feature r: Ranges::RealInRange = ToReal(i) {:>> range = 2.1 .. 4.9;}
+            """, Runlevel.ALL)
+            solver.propagate()
+            assertNoIssues()
+            val i = solver.variable("i")
+            assertBounds(3L .. 4L, i)
+        }
+
+        /**
+         * Regression test for AstReal evalDown when no integers exist in the real range:
+         * ToReal(i) in [2.1 .. 2.8] has ceil(2.1)=3 > floor(2.8)=2 -> Empty integer set.
+         */
+        @Test
+        fun realFunctionEvalDownEmptyIntervalRegressionTest() = testSession("Ranges") {
+            loadKerML("""
+                feature i: Ranges::IntegerInRange {:>> range = 0 .. 10;}
+                feature r: Ranges::RealInRange = ToReal(i) {:>> range = 2.1 .. 2.8;}
+            """, Runlevel.ALL)
+            val i = solver.variable("i")
+            assertEmpty(i, "Expected empty integer set when range contains no integer")
         }
 }

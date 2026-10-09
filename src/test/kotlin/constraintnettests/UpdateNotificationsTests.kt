@@ -1,16 +1,16 @@
 package constraintnettests
 
+import util.variable
+import util.assertBounds
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.resolve.resolveVar
-import io.github.tukcps.aadd.values.Range
+import io.github.tukcps.aadd.util.Assertions.assertEquals
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class UpdateNotificationsTests {
 
@@ -50,7 +50,7 @@ class UpdateNotificationsTests {
         loadKerML("""
             feature p: ScalarValues::Real = 1.0 + Math::pi + Math::e;
             feature x: ScalarValues::Real; 
-            feature y: Ranges::RealInRange = x + p {:>> range = 2.0;}
+            feature y: Ranges::RealInRange = x + p { :>> range = 2.0; }
         """, Runlevel.VARIABLES)
 
         assertEquals(true, solver.getVariable("x")?.updated)
@@ -59,6 +59,6 @@ class UpdateNotificationsTests {
 
         solver.propagate()
         assertEquals(true, solver.getVariable("x")?.updated)
-        assertTrue(solver.getVariable("x")!!.vectorQuantity.values.first().asAadd().getRange() in Range(-4.87..-4.85))
+        assertBounds(-4.859874482048839 .. -4.859874482048838, solver.variable("x"))
     }
 }

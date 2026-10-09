@@ -3,7 +3,6 @@ package solver
 import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.services.Runlevel
-import com.github.tukcps.sysmd.services.resolve.resolveVar
 import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
@@ -27,7 +26,7 @@ class SolveRequireAssumeTests {
         """, Runlevel.ALL)
         assertNoIssues()
         val ass = solver.getVariable("test::ass")
-        assertEquals(builder.NaB, ass!!.vectorQuantity.value)
+        assertEquals(builder.Bool.Empty, ass!!.vectorQuantity.value)
     }
 
     @Test
@@ -44,7 +43,7 @@ class SolveRequireAssumeTests {
         """, Runlevel.ALL)
         assertNoIssues()
         val ass = solver.getVariable("test::ass")
-        assertEquals(builder.True, ass!!.vectorQuantity.value)
+        assertEquals(builder.Bool.True, ass!!.vectorQuantity.value)
     }
 
     @Test
@@ -62,7 +61,7 @@ class SolveRequireAssumeTests {
         solver.propagate()
         assertNoIssues()
         val r = solver.getVariable("test::r")
-        assertEquals(builder.True, r!!.bool())
+        assertEquals(builder.Bool.True, r!!.bool())
         assertEquals(Variable.BaseType.Bool, r.baseType)
     }
 
@@ -80,7 +79,7 @@ class SolveRequireAssumeTests {
         """, Runlevel.ALL)
         assertNoIssues()
         val r = global.resolve("test::r")?.member<Feature>()
-        assertEquals(builder.True, r!!.variable!!.bool())
+        assertEquals(builder.Bool.True, r!!.variable!!.bool())
         assertTrue(r.specializes(global.resolve("ScalarValues::Boolean")?.member()))
         // assertTrue(r.specializes(global.resolve("Constraints::ConstraintUsage")?.member()))
     }

@@ -287,7 +287,6 @@ class SessionTests {
 
 
     /** Re-creation of a feature shall not lead to duplications, e.g., after a re-load. */
-    @Ignore // TODO: Adapt to SysMD interactive
     @Test
     fun featuresAndMultiplicitiesNotAppearTwice1() = testSession {
         loadKerML("package ScalarValues { datatype Natural :> Base::Any;  }; feature x; ")

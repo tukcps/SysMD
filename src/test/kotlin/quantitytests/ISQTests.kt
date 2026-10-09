@@ -1,5 +1,7 @@
 package quantitytests
 
+import util.variable
+import util.assertBounds
 import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import util.assertIssue
@@ -38,10 +40,10 @@ class ISQTests {
         loadKerML("""
             feature x: ISQ::VolumeValue = 1000.0 [cm^3]; 
         """, Runlevel.VARIABLES)
+        solver.propagate()
         assertNoIssues()
-        val x = solver.getVariable("x")
-        assertNotNull(x)
-        assertEquals(0.001, x.min(), 0.000000000001)
+        val x = solver.variable("x")
+        assertBounds(0.001, x)
     }
 
     @Test
@@ -54,9 +56,9 @@ class ISQTests {
                 :>> power: ISQ::PowerValue(20..100 [kW]) ; 
             }
         """, Runlevel.VARIABLES)
+        solver.propagate()
         assertNoIssues()
-        val vw = solver.getVariable("VW::power")
-        assertNotNull(vw)
-        assertEquals(20.0, vw.min(), 0.000001)
+        val vw = solver.variable("VW::power")
+        assertBounds(20.0..100.0, vw, unit = "kW")
     }
 }

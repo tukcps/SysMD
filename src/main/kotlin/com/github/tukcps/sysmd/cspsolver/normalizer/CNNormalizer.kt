@@ -7,8 +7,10 @@ import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.model.expression.functions.AstNot
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.services.session.Session
-import io.github.tukcps.aadd.BDD
-import io.github.tukcps.aadd.values.XBool
+import io.github.tukcps.aadd.DDBuilder.BoolMath.and
+import io.github.tukcps.aadd.dd.BDD
+import io.github.tukcps.aadd.values.bool.XBool
+import io.github.tukcps.aadd.values.bool.XBoolImpl
 
 /**
  * Class to normalize constraints, i.e., for each combination of variables at maximum one constraint exists.
@@ -39,7 +41,7 @@ class CNNormalizer {
         // find the properties that need normalization and store them in a map with the leaves as a key
         val propertiesToNormalize : MutableMap<Collection<AstLeaf>,List<Variable>> = propertiesToBeNormalized(originalProperties)
 
-        var normalizedProperties : MutableList<SimpleProperty<XBool>> = mutableListOf()
+        var normalizedProperties : MutableList<SimpleProperty<XBoolImpl>> = mutableListOf()
 
         // check if there are properties to be normalized
         if (propertiesToNormalize.isNotEmpty()) {
@@ -60,7 +62,7 @@ class CNNormalizer {
         }
 
         // add the properties that need no normalization
-        var simpleProp : SimpleProperty<XBool>
+        var simpleProp : SimpleProperty<XBoolImpl>
         for(prop in originalProperties) {
              simpleProp = SimpleProperty(name = prop.path, expression = prop.expression?:"", dd = prop.bdd(), simpleAst = prop.ast?.let {
                  SimpleAstRoot(it.dependency)
@@ -69,7 +71,7 @@ class CNNormalizer {
         }
 
         val notNegatedProps = normalizedProperties as ArrayList
-        val props = arrayListOf<SimpleProperty<XBool>>()//normalizedProperties.properties as ArrayList
+        val props = arrayListOf<SimpleProperty<XBoolImpl>>()//normalizedProperties.properties as ArrayList
 
         notNegatedProps.forEach {
             if (it.boolSpec.firstOrNull() == XBool.False) {
@@ -126,12 +128,12 @@ class CNNormalizer {
      * @param propertiesToNormalize map containing leaves as key and mapped properties as value
      * @return list of normalized properties
      */
-    private fun normalizationBoolean(propertiesToNormalize: MutableMap<Collection<AstLeaf>, List<Variable>>): MutableList<SimpleProperty<XBool>> {
+    private fun normalizationBoolean(propertiesToNormalize: MutableMap<Collection<AstLeaf>, List<Variable>>): MutableList<SimpleProperty<XBoolImpl>> {
 
-        val normalizedProperties : MutableList<SimpleProperty<XBool>> = mutableListOf()
+        val normalizedProperties : MutableList<SimpleProperty<XBoolImpl>> = mutableListOf()
 
         var propertiesForVarSet : List<Variable>
-        var normalizedProperty : SimpleProperty<XBool>
+        var normalizedProperty : SimpleProperty<XBoolImpl>
 
         for(entry in propertiesToNormalize) {
             propertiesForVarSet = entry.value
@@ -148,7 +150,7 @@ class CNNormalizer {
      * @param propertiesForVarSet the list of the properties containing the same set of variables
      * @return the property which results from the normalization of the given properties
      */
-    private fun normalizedBooleanProperty(propertiesForVarSet: List<Variable>): SimpleProperty<XBool> {
+    private fun normalizedBooleanProperty(propertiesForVarSet: List<Variable>): SimpleProperty<XBoolImpl> {
 
         var currentBDD: BDD = propertiesForVarSet.first().ast?.bdd ?: throw RuntimeException("Property has no AST/BDD")
         var lastBDD: BDD? = null
@@ -166,7 +168,7 @@ class CNNormalizer {
             // apply "and" on the BDDs
             currentBDD = property.ast!!.bdd
             if (lastBDD != null) {
-                currentBDD = currentBDD.and(lastBDD)
+                currentBDD = currentBDD and lastBDD
             }
             lastBDD = currentBDD
 
@@ -183,7 +185,7 @@ class CNNormalizer {
         counter++
         //val currentQuantity = Quantity(currentBDD)
 
-        return SimpleProperty(name = name, expression = currentAst.toExpressionString(), dd = currentBDD, simpleAst = SimpleAstRoot(currentAst), valueSpecs = mutableListOf(XBool.X))
+        return SimpleProperty(name = name, expression = currentAst.toExpressionString(), dd = currentBDD, simpleAst = SimpleAstRoot(currentAst), valueSpecs = mutableListOf(XBool.XBool))
     }
 
     /**
@@ -251,7 +253,7 @@ class CNNormalizer {
         return propertiesToNormalize
     }
 
-    private fun negate(property: SimpleProperty<XBool>, model: Session): SimpleProperty<XBool> {
+    private fun negate(property: SimpleProperty<XBoolImpl>, model: Session): SimpleProperty<XBoolImpl> {
 
         val originalAST = property.simpleAst
         val negatedAST = AstNot(model, arrayListOf(originalAST!!.originalAst))
@@ -263,7 +265,7 @@ class CNNormalizer {
             expression = negatedExpression,
             dd = negatedAST.bdd,
             simpleAst = SimpleAstRoot(negatedAST),
-            valueSpecs = mutableListOf(model.builder.True)
+            valueSpecs = mutableListOf(model.builder.Bool.True)
         )
     }
 

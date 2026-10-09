@@ -4,25 +4,19 @@ package com.github.tukcps.sysmd.compiler
 
 import com.github.tukcps.sysmd.compiler.parser.kerml.NamespaceBodyElement
 import com.github.tukcps.sysmd.compiler.parser.kerml.QualifiedName
-import com.github.tukcps.sysmd.compiler.parser.kerml.legacy.ConstInt
-import com.github.tukcps.sysmd.compiler.parser.kerml.legacy.ConstReal
+import com.github.tukcps.sysmd.compiler.parser.kerml.legacy.ConstRange
 import com.github.tukcps.sysmd.compiler.parser.util.ParserProductionRules
 import com.github.tukcps.sysmd.compiler.scanner.Token
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
-import com.github.tukcps.sysmd.compiler.semantics.ActionsContext
-import com.github.tukcps.sysmd.compiler.semantics.UuidPolicies
-import com.github.tukcps.sysmd.compiler.semantics.UuidPolicy
-import com.github.tukcps.sysmd.compiler.semantics.fixIDs
+import com.github.tukcps.sysmd.compiler.semantics.*
 import com.github.tukcps.sysmd.exceptions.Issue
-import com.github.tukcps.sysmd.exceptions.SyntaxError
 import com.github.tukcps.sysmd.exceptions.SysMDException
 import com.github.tukcps.sysmd.model.datamodel.ElementData
 import com.github.tukcps.sysmd.model.util.QualifiedName
-import com.github.tukcps.sysmd.quantities.Quantity
+import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.*
 import com.github.tukcps.sysmd.services.session.implementation.SessionImplementation
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.IDD
+
 
 /**
  * This class provides a parser for the language SysML v2 and SysMD.
@@ -47,11 +41,11 @@ import io.github.tukcps.aadd.IDD
 open class KerML(
     @Deprecated("dont use ")
     val model: Session = SessionImplementation(), // Just for transition.
-    val status: SessionStatus = model.status,
+    status: SessionStatus = model.status,
     val settings: SessionSettings = model.settings,
     val uuidPolicy : UuidPolicy = UuidPolicies.NewSysMD,
     keywords: Map<String, Token.Kind> = Token.kerMLKeywords
-) : ParserProductionRules(keywords = keywords) {
+) : ParserProductionRules(keywords = keywords, status = status) {
 
     /**
      *  For setting options by .settings { ... }
@@ -139,45 +133,10 @@ open class KerML(
     /**
      * ValueRange :- [-] ValueLiteral [.. [-] ValueLiteral]
      **/
-    fun parseValueRange(): Quantity {
-        var result: Quantity
-        var minus = false
-        optional(MINUS, consume = true) { minus = true  }
-        if (tokenIs(INTEGER_LIT)) {
-            ConstInt().also { result = Quantity(model.builder.integer((if (minus) -it else it)..if (minus) -it else it)) }
-        } else if (tokenIs(FLOAT_LIT)) {
-            ConstReal().also { result = Quantity(model.builder.real((if (minus) -it else it)..if (minus) -it else it),"?") }
-        } else
-            throw SyntaxError(this, "expect value-range of form number literal .. number literal")
-
-        if (!tokenIs(DOTDOT)) {
-            return result
-        }
-        else { // ".." [-] ValueLiteral
-            DOTDOT.consume()
-            var minusUb = false
-            optional(MINUS, consume = true) { minusUb = true}
-            alternatives {
-                INTEGER_LIT starts {
-                    ConstInt().also {
-                        result = when (result.value) {
-                            is AADD -> Quantity(model.builder.real(result.aadd().getRange().min..if (minusUb) -it.toDouble() else it.toDouble()), "?")
-                            is IDD -> Quantity(model.builder.integer(result.idd().getRange().min..if (minusUb) -it else it))
-                            else -> throw SyntaxError(this@KerML, "expect range of form [number .. number]")
-                        }
-                    }
-                }
-                FLOAT_LIT starts {
-                    ConstReal().also {
-                        result = when (result.value) {
-                            is AADD -> Quantity(model.builder.real(result.aadd().getRange().min..if (minusUb) -it else it), "?")
-                            is IDD -> Quantity(model.builder.real(result.idd().getRange().min.toDouble()..if (minusUb) -it else it), "?")
-                            else -> throw SyntaxError(this@KerML, "expect range of form [number .. number]")
-                        }
-                    }
-                }
-            }
-            return result
+    fun parseValueRange(): VectorQuantity = ConstRange().run {
+        when {
+            int !== null -> VectorQuantity(model.builder.integer(int))
+            else -> VectorQuantity(model.builder.real(real), "?")
         }
     }
 

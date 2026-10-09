@@ -15,9 +15,9 @@ For Quantities without a domain, the following types from the **Quantities** pac
 # Basic units
 | Domain                       | Unit                      |    Symbol     |
 |:-----------------------------|:--------------------------|:-------------:|
-| **AmountOfMoneyValue**       | Euro                      |      EUR      |
-|                              | US Dollar                 |      USD      |
-|                              | Pound                     |      GBP      |
+| **AmountOfMoneyValue**       | Euro (base currency)      |      EUR      |
+|                              | US Dollar (live rate)     |      USD      |
+|                              | Pound Sterling (live rate) |     GBP      |
 | **AreaValue**                | Square Meter              |      m^2      |
 |                              | Acre                      |      ac       |
 |                              | Hectare                   |      ha       |
@@ -58,7 +58,7 @@ For Quantities without a domain, the following types from the **Quantities** pac
 |                              | Pint                      |      pt       |
 |                              | Quart                     |      qt       |
 |                              | Gallon                    |      gal      |
-|                              | Barrel                    |      bbl      |
+|                              | Barrel (US oil, 42 gal)   |      bbl      |
 
 # Atomic units
 
@@ -86,7 +86,8 @@ For Quantities without a domain, the following types from the **Quantities** pac
 | **MomentOfInertiaValue**    | Kilogram Meter squared    |   kg m^2   |
 | **MomentumValue**           | Kilogram Meter per Second |   kg m/s   |
 | **PowerValue**              | Watt                      |     W      |
-|                             | Horsepower                |     HP     |
+|                             | Horsepower (mechanical, 745.7 W) | HP |
+|                             | Metric horsepower (PS, 735.49875 W) | PS |
 | **PressureValue**           | Pascal                    |     Pa     |
 |                             | Bar                       |    bar     |
 |                             | pounds per square inch    |    psi     |
@@ -110,7 +111,7 @@ For Quantities without a domain, the following types from the **Quantities** pac
 | **MagneticFluxValue**                | Weber              |     Wb     |
 | **MagneticFluxDensityValue**         | Tesla              |     T      |
 | **ResistanceValue**                  | Ohm                |  Ohm or Ω  |
-| **PermittivityValue**                | Farad per Second   |    F/s     |
+| **PermittivityValue**                | Farad per Meter    |    F/m     |
 
 # Photometry units
 
@@ -131,6 +132,11 @@ For Quantities without a domain, the following types from the **Quantities** pac
 |                                   | Degree Celsius    |     °C     |
 |                                   | Degree Fahrenheit |     °F     |
 | **EntropyValue**                  | Joule per kelvin  |    J/K     |
+
+**Notes**
+- Currency rates: EUR is the base currency. USD and GBP are converted with the ECB reference rates, which are fetched live at application start-up (frankfurter.dev). If the fetch fails (e.g. offline), built-in fallback rates are used (2026-10-02: 1 EUR = 1.1225 USD = 0.85033 GBP).
+- `PS` is the unit metric horsepower. Consequently, petasiemens cannot be written as `PS`.
+- `Pi` (also `pi`, `π`) is the dimensionless factor π, whereas `rad` is 1.
 
 Further units can be derived by multiplication, division and exponentiation of
 the above units and by adding a prefix directly to the above units.

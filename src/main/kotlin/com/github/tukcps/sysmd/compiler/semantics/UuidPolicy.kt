@@ -4,11 +4,10 @@ import com.github.tukcps.sysmd.compiler.parser.util.DataModelWithEdges
 import com.github.tukcps.sysmd.compiler.parser.util.DataModelWithEdges.Path
 import com.github.tukcps.sysmd.compiler.semantics.UuidPolicies.SYSML_ROOT_NAMESPACE
 import com.github.tukcps.sysmd.model.datamodel.ElementData
-import com.github.tukcps.sysmd.model.datamodel.IdentifiedImplementation
+import com.github.tukcps.sysmd.model.datamodel.ElementReference
 import com.github.tukcps.sysmd.model.generated.ElementType
 import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.model.util.mapInPlace
-import com.github.tukcps.sysmd.rest.entities.api.entities.Identified
 import java.nio.ByteBuffer
 import java.security.MessageDigest
 import kotlin.reflect.KMutableProperty0
@@ -74,20 +73,20 @@ fun UuidPolicy.fixIDs(model : DataModelWithEdges)
 	for(p in model.rootPaths)
 		assignUuids(p, model, changes)
 
-	fun fix(refs : MutableList<Identified>?) {
+	fun fix(refs : MutableList<ElementReference>?) {
 		if(refs === null)
 			return
 
 		refs.mapInPlace { ref ->
-			ref.id?.let(changes::get)?.let { IdentifiedImplementation(it) } ?: ref
+			ref.id?.let(changes::get)?.let { ElementReference.ByID(it) } ?: ref
 		}
 	}
 
-	fun fix(prop : KMutableProperty0<Identified?>) {
+	fun fix(prop : KMutableProperty0<ElementReference?>) {
 		val cur = prop.get()?.id ?: return
 
 		changes[cur]?.let {
-			prop.set(IdentifiedImplementation(it))
+			prop.set(ElementReference.ByID(it))
 		}
 	}
 

@@ -6,19 +6,11 @@ import com.github.tukcps.sysmd.exports.systemCElements.DataType
 import com.github.tukcps.sysmd.model.expression.AstBinOp
 import com.github.tukcps.sysmd.model.expression.implementation.InvariantImplementation
 import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.model.kerml.implementation.ClassImplementation
-import com.github.tukcps.sysmd.model.kerml.implementation.ConnectorImplementation
-import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
-import com.github.tukcps.sysmd.model.kerml.implementation.PackageImplementation
-import com.github.tukcps.sysmd.model.sysml.implementation.PartUsageImplementation
-import com.github.tukcps.sysmd.model.sysml.implementation.PortUsageImplementation
-import com.github.tukcps.sysmd.model.sysml.implementation.RequirementUsageImplementation
+import com.github.tukcps.sysmd.model.kerml.implementation.*
+import com.github.tukcps.sysmd.model.sysml.implementation.*
 import java.io.File
 import java.io.IOException
-import java.nio.file.FileSystems
-import java.nio.file.Files
-import java.nio.file.NoSuchFileException
-import java.nio.file.Path
+import java.nio.file.*
 import kotlin.io.path.Path
 import kotlin.reflect.KFunction1
 
@@ -586,7 +578,7 @@ class Exporter {
                                         unit = element.variable!!.ast!!.leaves.toList()[0].variable!!.unitSpec,
                                         statement = element.expression!!,
                                         operator = (element.variable!!.ast!!.dependency as AstBinOp).op.name,
-                                        referenceValue = (element.variable!!.ast!!.dependency as AstBinOp).r.upQuantity.let { it.valuesIn(it.unitSpec)[0].asAadd().max },
+                                        referenceValue = (element.variable!!.ast!!.dependency as AstBinOp).r.upQuantity.let { it.valuesInUnitSpec()[0].asAadd().max.finiteValue },
                                         referenceUnit = (element.variable!!.ast!!.dependency as AstBinOp).r.upQuantity.unitSpec
                                     )
                             ) ?: mainExpressions.add(element)
@@ -673,7 +665,7 @@ class Exporter {
                 usage = Usage(
                     instanceName = element.escapedName().toString(),
                     className = "", //The class name is set down in the apply{} scope
-                    amount = (element.multiplicityRange.max?: Long.MAX_VALUE).toInt(),
+                    amount = element.multiplicityRange.max.toIntOrNull() ?: throw IllegalStateException("Overflow on multiplicity"),
                     module = allModules[element.qualifiedName + "_CLASS"].let { mod1 ->
                         (if(mod1?.useSuperClass == true) mod1.superClassModule else mod1) ?:allModules[element.type.first().qualifiedName].let { mod2 ->
                             mod2 ?: allModules[element.type.first().qualifiedName + "_CLASS"].let { mod3 ->
@@ -690,7 +682,7 @@ class Exporter {
                 usage = Usage(
                     instanceName = element.escapedName().toString(),
                     className = element.name.toString() + "_CLASS",
-                    amount = (element.multiplicityRange.max?: Long.MAX_VALUE).toInt(),
+                    amount = element.multiplicityRange.max.toIntOrNull() ?: throw IllegalStateException("Overflow on multiplicity"),
                     module = allModules[element.qualifiedName + "_CLASS"].let { mod1 ->
                             mod1 ?: throw SysMDFatalInternalError("No Module found for Usage: ${element.declaredName}")
                         }

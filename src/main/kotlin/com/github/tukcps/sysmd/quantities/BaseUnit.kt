@@ -26,12 +26,24 @@ open class BaseUnit(
 ) :
     UnitOfMeasurement(name, symbol, prefix, domain, convFac, exponent, isDifference = isDifference, alternativeDomain = alternativeDomain), Cloneable {
 
-    override fun clone(): BaseUnit = copy()
+    override fun clone(): BaseUnit = this
 
-    open fun copy(exponentValue: Int = exponent): BaseUnit {
-        return BaseUnit(name, symbol, prefix, domain, convFac, exponentValue, isDifference = isDifference,
-            this@BaseUnit.alternativeDomain
-        )
+    open fun copy(exponentValue: Int = exponent): BaseUnit = copyWith(exponent = exponentValue)
+
+    override fun copyWith(prefix: Prefix, exponent: Int): BaseUnit {
+        return when (this) {
+            is AmountOfMoney -> AmountOfMoney(name, symbol, prefix, convFac, exponent)
+            is AmountOfSubstance -> AmountOfSubstance(name, symbol, prefix, convFac, exponent)
+            is Duration -> Duration(name, symbol, prefix, convFac, exponent)
+            is ElectricCurrent -> ElectricCurrent(name, symbol, prefix, convFac, exponent)
+            is EmptyUnit -> EmptyUnit(name, symbol, prefix, convFac, exponent)
+            is Length -> Length(name, symbol, prefix, convFac, exponent)
+            is LuminousIntensity -> LuminousIntensity(name, symbol, prefix, convFac, exponent)
+            is Mass -> Mass(name, symbol, prefix, convFac, exponent)
+            is StorageCapacity -> StorageCapacity(name, symbol, prefix, convFac, exponent)
+            is ThermodynamicTemperature -> ThermodynamicTemperature(name, symbol, prefix, convFac, exponent)
+            else -> BaseUnit(name, symbol, prefix, domain, convFac, exponent, isDifference, alternativeDomain)
+        }
     }
 
     /**

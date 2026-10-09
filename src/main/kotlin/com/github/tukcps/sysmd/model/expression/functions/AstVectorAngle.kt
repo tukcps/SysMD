@@ -1,11 +1,11 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.IDD
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
+import io.github.tukcps.aadd.dd.AADD
+import io.github.tukcps.aadd.dd.IDD
 
 /**
  * Normalize a vector to length 1
@@ -18,8 +18,8 @@ internal class AstVectorAngle(model: Session, args: ArrayList<AstNode>) : AstFun
 
     override fun initialize() {
         upQuantity = when (getParam(0).upQuantity.values[0]) {
-            is AADD -> VectorQuantity(mutableListOf(model.builder.Reals), "?")
-            is IDD -> VectorQuantity(mutableListOf(model.builder.Integers))
+            is AADD -> VectorQuantity(mutableListOf(model.builder.Reals.All), "?")
+            is IDD -> VectorQuantity(mutableListOf(model.builder.Integers.All))
             else -> throw SemanticError("Parameters of Angle function must be Reals or Integers")
         }
         evalUp()
@@ -40,9 +40,5 @@ internal class AstVectorAngle(model: Session, args: ArrayList<AstNode>) : AstFun
         return block()
     }
 
-    override fun clone(): AstVectorAngle {
-        val parClone = ArrayList<AstNode>()
-        for (p in parameters) parClone.add(p.clone())
-        return AstVectorAngle(model, parClone)
-    }
+    override fun clone() = AstVectorAngle(model, cloneParameters())
 }

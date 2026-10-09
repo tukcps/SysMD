@@ -7,14 +7,13 @@ import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Function
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.getOwnedElementsOfType
-import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.quantities.Unit
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.BDD
-import io.github.tukcps.aadd.IDD
-import io.github.tukcps.aadd.StrDD
+import io.github.tukcps.aadd.dd.AADD
+import io.github.tukcps.aadd.dd.BDD
+import io.github.tukcps.aadd.dd.IDD
+import io.github.tukcps.aadd.dd.StrDD
 
 /**
  *  A user defined function call.
@@ -43,11 +42,10 @@ internal class AstUserDefinedFunction(
 
         // BUG? shouldn't the return feature define the return type?
         upQuantity = when (getParam(0).upQuantity.values[0]) {
-            is AADD -> VectorQuantity(mutableListOf(model.builder.Reals), "?")
-            is IDD -> VectorQuantity(mutableListOf(model.builder.Integers))
-            is BDD -> VectorQuantity(mutableListOf(model.builder.Bool))
-            is StrDD -> VectorQuantity(mutableListOf(model.builder.Strings))
-            else -> throw SemanticError("UserDefinedFunction must have Real, Boolean or Integer result")
+            is AADD -> VectorQuantity(mutableListOf(model.builder.Reals.All), "?")
+            is IDD -> VectorQuantity(mutableListOf(model.builder.Integers.All))
+            is BDD -> VectorQuantity(mutableListOf(model.builder.Bool.All))
+            is StrDD -> VectorQuantity(mutableListOf(model.builder.Strings.All))
         }
         // Get Function with given name
         val resultResolvingFunctionName = namespace.resolve(name)?.memberElement as Function?
@@ -69,8 +67,8 @@ internal class AstUserDefinedFunction(
             // create Quantity, to make Unit of expectedFunctionInputs canonical.
             // After that it can be compared with the unit of the parameter
             //if(expectedFunctionInputs[it].subUnitConstraint!=null)
-            val expectedUnit = Quantity(model.builder.real(1.0), Unit(expectedFunctionInputs[it].variable?.vectorQuantity?.unit.toString())).unit
-            if (expectedUnit != parameters[it].upQuantity.unit)
+            val expectedUnit = VectorQuantity(model.builder.real(1.0), Unit(expectedFunctionInputs[it].variable?.vectorQuantity?.unit.toString())).unit
+            if (!expectedUnit.isCompatibleWith(parameters[it].upQuantity.unit))
                 throw SemanticError("Unit error for function $name: for the ${it + 1}. parameter the unit ${expectedFunctionInputs[it].unitConstraint} was expected, but the unit is ${parameters[it].upQuantity.unit}")
             functionInputs[expectedFunctionInputs[it].escapedName()!!] = parameters[it].upQuantity
             inputParamPositions[expectedFunctionInputs[it].escapedName()!!] = it
@@ -147,6 +145,7 @@ internal class AstUserDefinedFunction(
                     "exp" -> return AstExp(model, parameters)
                     "sqr" -> return AstSqr(model, parameters)
                     "sqrt" -> return AstSqrt(model, parameters)
+                    "inverseSqr" -> return AstInverseSqr(model, parameters)
                     "ceil" -> return AstCeil(model, parameters)
                     "floor" -> return AstFloor(model, parameters)
                     "power2" -> return AstPower2(model, parameters)
@@ -205,9 +204,5 @@ internal class AstUserDefinedFunction(
             getParam(inputParamPositions[input]!!).downQuantity = astToInputConnection[input]!!.downQuantity.clone()
     }
 
-    override fun clone(): AstUserDefinedFunction {
-        val parClone = ArrayList<AstNode>()
-        for (p in parameters) parClone.add(p.clone())
-        return AstUserDefinedFunction(model, namespace, parClone, name)
-    }
+    override fun clone() = AstUserDefinedFunction(model, namespace, cloneParameters(), name)
 }

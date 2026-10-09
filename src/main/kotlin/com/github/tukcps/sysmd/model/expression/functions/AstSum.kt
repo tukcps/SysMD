@@ -1,13 +1,16 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.IDD
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.model.kerml.Namespace
-import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
+import io.github.tukcps.aadd.dd.AADD
+import io.github.tukcps.aadd.dd.IDD
+import io.github.tukcps.aadd.DDBuilder.RealMath.plus
+import io.github.tukcps.aadd.DDBuilder.RealMath.minus
+import io.github.tukcps.aadd.DDBuilder.IntMath.plus
+import io.github.tukcps.aadd.DDBuilder.IntMath.minus
 
 /**
  * Calculates Sum of all values of a vector
@@ -24,8 +27,8 @@ internal class AstSum(
         if (parameters.size!=1)
             throw SemanticError("Sum function expected exactly one parameter, got: ${parameters.size}")
         upQuantity = when (value.upQuantity.values[0]) {
-            is AADD -> VectorQuantity(mutableListOf(model.builder.Reals), value.upQuantity.unit, value.upQuantity.unitSpec)
-            is IDD -> VectorQuantity(mutableListOf(model.builder.Integers))
+            is AADD -> VectorQuantity.fromCanonical(mutableListOf(model.builder.Reals.All), value.upQuantity.unit, value.upQuantity.unitSpec, value.upQuantity.userWantedUnitSpec)
+            is IDD -> VectorQuantity(mutableListOf(model.builder.Integers.All))
             else -> throw SemanticError("Sum must have a Real or Integer parameter")
         }
         downQuantity = upQuantity.clone()
@@ -33,17 +36,17 @@ internal class AstSum(
 
 
     override fun evalUp() {
-        when (value.upQuantity.value) {
+        when (value.upQuantity.values[0]) {
             is AADD -> {
                 var sum = model.builder.real(0.0)
                 value.upQuantity.values.forEach { sum += it.asAadd() }
-                upQuantity = Quantity(sum, value.upQuantity.unit, value.upQuantity.unitSpec)
+                upQuantity = VectorQuantity.fromCanonical(sum, value.upQuantity.unit, value.upQuantity.unitSpec, value.upQuantity.userWantedUnitSpec)
             }
 
             is IDD -> {
                 var sum = model.builder.integer(0)
                 value.upQuantity.values.forEach { sum += it.asIdd() }
-                upQuantity = Quantity(sum)
+                upQuantity = VectorQuantity(sum)
             }
             else -> {} //not possible, case already in initialize
         }
@@ -54,7 +57,7 @@ internal class AstSum(
      */
     override fun evalDown() {
 
-        when (getParam(0).downQuantity.value) {
+        when (getParam(0).downQuantity.values[0]) {
             is AADD -> {
                 val resultingSum = downQuantity.value.asAadd()
                 val resultingValues = mutableListOf<AADD>()
@@ -66,7 +69,8 @@ internal class AstSum(
                     }
                     resultingValues.add(currentResult)
                 }
-                getParam(0).downQuantity = VectorQuantity(resultingValues, getParam(0).downQuantity.unit, getParam(0).downQuantity.unitSpec)
+                val newParam = VectorQuantity.fromCanonical(resultingValues, getParam(0).downQuantity.unit, getParam(0).downQuantity.unitSpec, getParam(0).downQuantity.userWantedUnitSpec)
+                getParam(0).downQuantity = getParam(0).downQuantity.constrain(newParam)
             }
             is IDD -> {
                 val resultingSum = downQuantity.value.asIdd()
@@ -79,7 +83,8 @@ internal class AstSum(
                     }
                     resultingValues.add(currentResult)
                 }
-                getParam(0).downQuantity = VectorQuantity(resultingValues)
+                val newParam = VectorQuantity(resultingValues)
+                getParam(0).downQuantity = getParam(0).downQuantity.constrain(newParam)
             }
             else -> {} //not possible, case already in initialize
         }
@@ -91,9 +96,5 @@ internal class AstSum(
         return block()
     }
 
-    override fun clone(): AstSum {
-        val parClone = ArrayList<AstNode>()
-        for (p in parameters) parClone.add(p.clone())
-        return AstSum(namespace, model, parClone)
-    }
+    override fun clone() = AstSum(namespace, model, cloneParameters())
 }

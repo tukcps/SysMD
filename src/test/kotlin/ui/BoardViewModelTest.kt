@@ -1,5 +1,6 @@
 package ui
 
+import com.github.tukcps.sysmd.model.datamodel.ElementReference
 import com.github.tukcps.sysmd.model.kerml.Class
 import com.github.tukcps.sysmd.model.kerml.Classifier
 import com.github.tukcps.sysmd.model.util.Unresolved
@@ -224,9 +225,14 @@ class BoardViewModelTest {
             classifier A :> C;
         """.trimIndent())
 
-        classifier("A").supertypes(excludeImplied = true).filterIsInstance<Unresolved>().let {
+        classifier("A").supertypes(excludeImplied = true).filterIsInstance<Unresolved>().also {
             assertNotEquals(emptyList(), it, "new specialization was not respected")
-            assertEquals("C", it.single().relativeName)
+        }.let {
+            assertIs<Unresolved>(it.single())
+        }.let {
+            assertIs<ElementReference.ByName>(it.reference)
+        }.let {
+            assertEquals("C", it.name)
         }
 
         assertNoIssues {

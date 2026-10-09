@@ -1,5 +1,7 @@
 package constraintnettests
 
+import util.variable
+import util.assertBounds
 import com.github.tukcps.sysmd.services.Runlevel
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTimeoutPreemptively
@@ -28,10 +30,8 @@ class ConstraintNetConvergence {
                 feature density: ScalarValues::Real = 1.0; 
              """, Runlevel.ALL)
             assertNoIssues()
-            assertEquals(4.0/3.0*PI*1E9,
-                solver.getVariable("volume")!!.vectorQuantity.getMinAsDouble(), 10000.0)
-            assertEquals(4.0/3.0*PI*1E9,
-                solver.getVariable("mass")!!.vectorQuantity.getMinAsDouble(), 10000.0)
+            assertBounds(4.1887902047866654E9..4.1887902047866683E9, solver.variable("volume"))
+            assertBounds(4.1887902047866654E9..4.1887902047866683E9, solver.variable("mass"))
         }
     }
 
@@ -65,7 +65,7 @@ class ConstraintNetConvergence {
             """)
             solver.propagate()
             assertNoIssues()
-            assertEquals(41.88749E5, solver.getVariable("volume")!!.vectorQuantity.getMinAsDouble(), 0.01E5)
+            assertBounds(4187999.9999999977..4188000.0000000005, solver.variable("volume"))
         }
     }
 }

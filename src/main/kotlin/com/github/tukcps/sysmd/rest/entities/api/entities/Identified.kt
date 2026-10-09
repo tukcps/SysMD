@@ -8,6 +8,6 @@ import kotlin.uuid.Uuid
  */
 interface Identified: Cloneable {
     @SerialName("@id")
-    var id: Uuid?
+    val id: Uuid?
     public override fun clone(): Identified
 }

@@ -4,11 +4,11 @@ import com.github.tukcps.sysmd.model.expression.Invariant
 import com.github.tukcps.sysmd.model.kerml.getOwnedElementOfType
 import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.resolve.resolveVar
-import io.github.tukcps.aadd.values.XBool
-import util.assertNoIssues
+import io.github.tukcps.aadd.values.bool.XBool
+import io.github.tukcps.aadd.values.bounds.LongBound
+import util.*
 import util.mockup.loadKerML
 import util.mockup.loadSysMLv2
-import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -71,8 +71,8 @@ class VariableTests {
             feature y: ScalarValues::Boolean = if x ? true else false;
         """, Runlevel.VARIABLES)
         assertNoIssues()
-        val y = solver.getVariable("y")!!
-        assertEquals(XBool.X, y.bool())
+        val y = solver.variable("y")
+        assertEquals(XBool.All, y.bool().value)
     }
 
     @Test
@@ -82,8 +82,8 @@ class VariableTests {
             feature y: ScalarValues::Boolean = if x ? true else false;
         """, Runlevel.VARIABLES)
         assertNoIssues()
-        val y = solver.getVariable("y")!!
-        assertEquals(XBool.False, y.bool())
+        val y = solver.variable("y")
+        assertEquals(XBool.False, y.bool().value)
     }
 
     @Test
@@ -92,10 +92,10 @@ class VariableTests {
                feature x: ScalarValues::Boolean;
                feature y: ScalarValues::Real = if x ? 1.0 else 2.0;
         """, Runlevel.VARIABLES)
+        solver.propagate()
         assertNoIssues()
-        val y = solver.getVariable("y")!!
-        assertEquals(1.0, y.min(), 0.00001)
-        assertEquals(2.0, y.max(), 0.00001)
+        val y = solver.variable("y")
+        assertBounds(1.0 .. 2.0, y)
     }
 
     @Test
@@ -104,10 +104,10 @@ class VariableTests {
            feature x: ScalarValues::Boolean;
            feature y: ScalarValues::Integer = if x ? 1 else 2;
         """, Runlevel.VARIABLES)
+        solver.propagate()
         assertNoIssues()
-        val y = solver.getVariable("y")!!
-        assertEquals(1.0, y.min(), 0.00001)
-        assertEquals(2.0, y.max(), 0.00001)
+        val y = solver.variable("y")
+        assertBounds(1L .. 2L, y)
     }
 
     @Test
@@ -117,10 +117,10 @@ class VariableTests {
             inv { f::cardinality < 10 }
         """, Runlevel.ALL)
         assertNoIssues()
-        val f = solver.getVariable("f")!!
+        val f = solver.variable("f")
         val inv = global.getOwnedElementOfType<Invariant>()
-        val multiplicity = solver.getVariable("f::multiplicity")!!
-        assertEquals(9L, multiplicity.max())
+        val multiplicity = solver.variable("f::multiplicity")
+        assertBounds(1L..9L, multiplicity)
     }
 
     @Test
@@ -130,9 +130,9 @@ class VariableTests {
             assert { f::cardinality < 10 }
         """, Runlevel.ALL)
         assertNoIssues()
-        val f = solver.getVariable("f")!!
+        val f = solver.variable("f")
         val inv = global.getOwnedElementOfType<Invariant>()
-        val multiplicity = solver.getVariable("f::multiplicity")!!
-        assertEquals(9L, multiplicity.max())
+        val multiplicity = solver.variable("f::multiplicity")
+        assertBounds(1L..9L, multiplicity)
     }
 }

@@ -1,16 +1,15 @@
 package constraintnettests
 
+import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.Runlevel
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.values.Range
-import util.assertNoIssues
+import io.github.tukcps.aadd.dd.AADD
+import io.github.tukcps.aadd.util.Assertions.assertSafeInclusion
+import util.*
 import util.mockup.loadKerML
-import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-
 
 class ConstraintPropagationTests {
 
@@ -25,13 +24,11 @@ class ConstraintPropagationTests {
             loadKerML("feature d: ISQ::LengthValue  { :>> range = 10.0..10 [m]; }")
             loadKerML("feature a: ISQ::LengthValue  = b+c+d {:>> range = -30.0 .. 50.0 [m];}")
             solver.propagate()
-            assertEquals("m", solver.getVariable("a")!!.vectorQuantity.unit.toString())
+            assertEquals("m", solver.variable("a").vectorQuantity.unit.toString())
             // println(resolveName<Expression>("b")!!.quantity)
             // println(resolveName<Expression>("b")!!.quantity.valueIn("mm"))
-            assertEquals(-1000.0, solver.getVariable("b")!!.vectorQuantity.valuesIn("cm")[0].asAadd().getRange().min, 0.00001)
-            assertEquals(2000.0, solver.getVariable("b")!!.vectorQuantity.valuesIn("cm")[0].asAadd().getRange().max, 0.00001)
-            assertEquals(-10.0, solver.getVariable("c")!!.min(), 0.00001)
-            assertEquals(30.0, solver.getVariable("c")!!.max(), 0.00001)
+            assertBounds(-1000.0 .. 2000.0, solver.variable("b"), unit = "cm")
+            assertBounds(-10.0 .. 30.0, solver.variable("c"))
             assertNoIssues()
         }
     }
@@ -41,11 +38,12 @@ class ConstraintPropagationTests {
     fun evalUpNoOperation() {
         testSession("ISQ") {
             loadKerML("feature a: ISQ::LengthValue = 1.0 m;", Runlevel.VARIABLES)
+            solver.propagate()
             assertNoIssues()
             val a = solver.getVariable("a") !!
             a.ast!!.evalUpRec()
-            assertEquals("m", solver.getVariable("a")!!.vectorQuantity.unit.toString())
-            assertEquals(0.001, solver.getVariable("a")!!.vectorQuantity.valuesIn("km")[0].asAadd().getRange().min, 0.00001)
+            assertEquals("m", solver.variable("a").vectorQuantity.unit.toString())
+            assertBounds(0.001, solver.variable("a").vectorQuantity.valuesIn("km")[0].asAadd())
         }
     }
 
@@ -53,10 +51,10 @@ class ConstraintPropagationTests {
     @Test
     fun evalDownWithRange()  = testSession("ISQ", runlevel = Runlevel.ALL) {
         loadKerML("feature a: ISQ::ElectricPotentialDifferenceValue { :>> range = 1..20 [mV]; }")
-        val a = solver.getVariable("a")
-        assertNotNull(a)
-        assertEquals("1..20 mV", a.vectorQuantity.toString())
+        val a = solver.variable("a")
+        solver.propagate()
         assertNoIssues()
+        assertBounds(1.0..20.0, a, unit = "mV")
     }
 
     /**
@@ -69,11 +67,10 @@ class ConstraintPropagationTests {
             feature c: Ranges::RealInRange  {:>> range = 2.0 .. 20.0;} // 2..10
             feature a: Ranges::RealInRange  = b*c {:>> range = 9.0 .. 10.0;}
         """, Runlevel.ALL)
-        assertEquals(1.0, solver.getVariable("b")!!.min(), 0.00001)
-        assertEquals(5.0, solver.getVariable("b")!!.max(), 0.00001)
-        assertEquals(2.0, solver.getVariable("c")!!.min(), 0.00001)
-        assertEquals(10.0, solver.getVariable("c")!!.max(), 0.00001)
+        solver.propagate()
         assertNoIssues()
+        assertBounds(1.0 .. 5.0, solver.variable("b"))
+        assertBounds(2.0 .. 10.0, solver.variable("c"))
     }
 
     /**
@@ -87,12 +84,11 @@ class ConstraintPropagationTests {
             feature c: ISQ::LengthValue  {:>> range = 100 .. 200 [cm]; }    // 1..2 m
             feature a: Ranges::RealInRange  = b/c { :>> range = 1.0 .. 2.0; } 
         """, Runlevel.ALL)
-        assertEquals("1", solver.getVariable("a")!!.vectorQuantity.unit.toString())
-        assertEquals(1.0, solver.getVariable("b")!!.min(), 0.00001)
-        assertEquals(4.0, solver.getVariable("b")!!.max(), 0.00001)
-        assertEquals(100.0, solver.getVariable("c")!!.min(), 0.00001)
-        assertEquals(200.0, solver.getVariable("c")!!.max(), 0.00001)
+        solver.propagate()
         assertNoIssues()
+        assertEquals("1", solver.variable("a").vectorQuantity.unit.toString())
+        assertBounds(1.0 .. 4.0, solver.variable("b"), unit = "m")
+        assertBounds(100.0 .. 200.0, solver.variable("c"), unit = "cm")
     }
 
 
@@ -108,9 +104,9 @@ class ConstraintPropagationTests {
                 feature d: ScalarValues::Real = 3.0;
                 feature a: Ranges::RealInRange  = b+c*d {:>> range = 7.0 .. 7.0;} 
             """, Runlevel.ALL)
-            assertEquals(1.0, solver.getVariable("b")!!.min(), 0.00001)
-            assertEquals(1.0, solver.getVariable("b")!!.max(), 0.00001)
+            solver.propagate()
             assertNoIssues()
+            assertBounds(1.0, solver.variable("b"))
         }
     }
 
@@ -124,8 +120,8 @@ class ConstraintPropagationTests {
             }
         """, Runlevel.ALL)
         assertNoIssues()
-        assertEquals(0.26666, solver.getVariable("Baseplate::depth")!!.vectorQuantity.getMinAsDouble(), 0.001)
-        assertEquals(0.26666, solver.getVariable("Baseplate::width")!!.vectorQuantity.getMinAsDouble(), 0.001)
+        assertBounds(0.2666666666666666..0.30000000000000004, solver.variable("Baseplate::depth"))
+        assertBounds(0.2666666666666666..0.30000000000000004, solver.variable("Baseplate::width"))
         assertNoIssues()
     }
 
@@ -142,9 +138,10 @@ class ConstraintPropagationTests {
             feature a: Ranges::RealInRange  = b+c*d {:>> range = 7 .. 14;} 
         """, Runlevel.VARIABLES) // b hence can only be from -5 to 8.
         val a = solver.getVariable("a") !!
-        a.ast!!.evalDown()
-        assertTrue(Range(-5.0..8.0) in (solver.getVariable("b")!!.vectorQuantity.values[0] as AADD).getRange())
+        a.ast!!.evalDownRec()
+        solver.propagate()
         assertNoIssues()
+        assertBounds(-5.0..8.0, solver.variable("b"))
     }
 
 
@@ -157,14 +154,12 @@ class ConstraintPropagationTests {
             feature d: Quantities::ScalarQuantityValue { :>> range = 10.0 [s^2];} 
             feature a: ISQ::ForceValue = b*c/d { :>> range = *..* [kN];}
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
 
-        // Bug: The unit Kg is saved as g, but the value is kept in the original value.
-        // Hence, 2..5 kg becomes 2..5 g.
-        // In the SI unit system, kg would even be the correct base unit (?).
-        assertEquals("0.002..0.05 kN", (solver.getVariable("a")!!.vectorQuantity.toString()))
-        assertEquals(0.002, (solver.getVariable("a")!!.min()), 0.000001)
-        assertEquals(0.05, (solver.getVariable("a")!!.max()), 0.000001)
+        // a = b * c / d = (10..100 m) * (2..5 kg) / 10 s^2 = 2..50 N = 0.002..0.05 kN
+        assertEquals("0.002..0.05 kN", (solver.variable("a").vectorQuantity.toString()))
+        assertBounds(2.0 .. 50.0, solver.variable("a"))
         assertNoIssues()
     }
 
@@ -177,13 +172,14 @@ class ConstraintPropagationTests {
             feature d: Quantities::ScalarQuantityValue { :>> range = 10.0 [s^2];}
             feature a: ISQ::ForceValue = b*c/d;
         """, Runlevel.ALL)
+        solver.propagate()
+        assertNoIssues()
         // Bug: The unit Kg is saved as g, but the value is kept in the original value.
         // Hence, 2..5 kg becomes 2..5 g.
         // In the SI unit system, kg would even be the correct base unit (?).
-        assertEquals(2.0, solver.getVariable("a")!!.min(), 0.0001)
-        assertEquals(50.0, solver.getVariable("a")!!.max(), 0.0001)
-        assertEquals("kg m / s^2", solver.getVariable("a")!!.vectorQuantity.unit.toString())
-        assertEquals(0, status.issues.size, "${status.issues}")
+        assertBounds(2.0 .. 50.0, solver.variable("a"))
+        assertEquals("kg m / s^2", solver.variable("a").vectorQuantity.unit.toString())
+        assertNoIssues()
     }
 
     /*  ################### EVAL DOWN SECTION ################### */
@@ -202,10 +198,10 @@ class ConstraintPropagationTests {
         """, Runlevel.SOLVED)
         val a = solver.getVariable("a") !!
         a.ast!!.evalDownRec()
-        assertEquals(Range(-10.0..20.0), solver.getVariable("b")!!.rangeSpecs[0])
-        assertEquals(7.0, solver.getVariable("b")!!.min(), 0.00001)
-        assertEquals(8.0, solver.getVariable("b")!!.max(), 0.00001)
-        assertEquals(0, status.issues.size, "${status.issues}")
+        solver.propagate()
+        assertNoIssues()
+        assertBounds(-10.0..20.0, solver.variable("b").rangeSpecs.single())
+        assertBounds(7.0..8.0, solver.variable("b"))
     }
 
     /**
@@ -220,10 +216,10 @@ class ConstraintPropagationTests {
             feature c: Ranges::RealInRange {:>> range = 2..2;}
             feature a: Ranges::RealInRange = b+c {:>> range = 7.0 .. 7.0;}
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        solver.getVariable("a")!!.ast!!.evalDownRec()
-        assertEquals(5.0, solver.getVariable("b")!!.min(), 0.00001)
-        assertEquals(5.0, solver.getVariable("b")!!.max(), 0.00001)
+        solver.variable("a").ast!!.evalDownRec()
+        assertBounds(5.0 .. 5.0, solver.variable("b"))
         assertNoIssues()
     }
 
@@ -238,8 +234,8 @@ class ConstraintPropagationTests {
             feature d: ScalarValues::Real;
             feature a: ScalarValues::Real = b+c*d.
         """, Runlevel.SOLVED)
-        val a = solver.getVariable("a")!!
-        assertTrue(a.aadd().getRange().isReals())
+        val a = solver.variable("a")
+        assertBounds(Double.NEGATIVE_INFINITY..Double.POSITIVE_INFINITY, a)
     }
 
     @Test
@@ -250,14 +246,13 @@ class ConstraintPropagationTests {
             feature d: Ranges::RealInRange { :>> range=3.0; }
             feature a: Ranges::RealInRange = b+c*d.
         """, Runlevel.ALL)
-        val a = solver.getVariable("a")
-        assertNotNull(a)
-        assertEquals(7.0, (solver.getVariable("a")!!.aadd() as AADD.Leaf).central)
-        assertEquals(7.0, solver.getVariable("a")!!.max(), 0.0001)
-        assertEquals(1.0, solver.getVariable("b")!!.max(), 0.0001)
-        assertEquals(2.0, solver.getVariable("c")!!.max(), 0.0001)
-        assertEquals(3.0, solver.getVariable("d")!!.max(), 0.0001)
+        val a = solver.variable("a")
+        solver.propagate()
         assertNoIssues()
+        assertBounds(7.0, solver.variable("a"))
+        assertBounds(1.0, solver.variable("b"))
+        assertBounds(2.0, solver.variable("c"))
+        assertBounds(3.0, solver.variable("d"))
     }
 
     /** ConstNet shall compute top-down with scalars. */
@@ -271,9 +266,9 @@ class ConstraintPropagationTests {
         """, Runlevel.SOLVED)
         val a = solver.getVariable("a") !!
         a.ast!!.evalDownRec()
-        assertEquals(1.0, solver.getVariable("b")!!.min(), 0.00001)
-        assertEquals(1.0, solver.getVariable("b")!!.max(), 0.00001)
+        solver.propagate()
         assertNoIssues()
+        assertBounds(1.0 .. 1.0, solver.variable("b"))
     }
 
     /** ConstNet shall compute top-down with scalars. */
@@ -284,14 +279,12 @@ class ConstraintPropagationTests {
             feature c: ISQ::LengthValue { :>> range = -10..30 [m];}
             feature a: ISQ::LengthValue = b-c {:>> range = -30.0 .. 60.0 [m];}
         """, Runlevel.ALL)
-        assertEquals("m", solver.getVariable("a")!!.vectorQuantity.unit.toString())
-        assertEquals(-30.0, solver.getVariable("a")!!.min(), 0.000001)
-        assertEquals(12.0, solver.getVariable("a")!!.max(), 0.000001)
-        assertEquals(-100.0, solver.getVariable("b")!!.min(), 0.00001)
-        assertEquals(200.0, solver.getVariable("b")!!.max(), 0.00001)
-        assertEquals(-10.0, solver.getVariable("c")!!.min(), 0.00001)
-        assertEquals(30.0, solver.getVariable("c")!!.max(), 0.00001)
+        solver.propagate()
         assertNoIssues()
+        assertEquals("m", solver.variable("a").vectorQuantity.unit.toString())
+        assertBounds(-30.0 .. 12.0, solver.variable("a"))
+        assertBounds(-100.0 .. 200.0, solver.variable("b"), unit = "cm")
+        assertBounds(-10.0 .. 30.0, solver.variable("c"))
     }
 
     /** ConstNet shall compute bottom-up with ranges. */
@@ -301,15 +294,13 @@ class ConstraintPropagationTests {
         loadKerML("feature c: Ranges::RealInRange {:>> range =2.0..3.0;}")
         loadKerML("feature d: Ranges::RealInRange {:>> range =3.0..4.0;}")
         loadKerML("feature a: Ranges::RealInRange = b+c*d;")
-        val a = solver.getVariable("a")
-        assertNotNull(a)
-        assertEquals(7.0, solver.getVariable("a")!!.min(), 0.00001)
-        assertEquals(14.0, solver.getVariable("a")!!.max(), 0.00001)
+        val a = solver.variable("a")
+        solver.propagate()
+        assertNoIssues()
+        assertBounds(7.0 .. 14.0, solver.variable("a"))
         // central value depends on approximation schemes; might cause incorrect fault iff changed.
         // only outside tests display((displayTree("a", p.getVar("a").value)))
         // println(resolveName<Expression>("a")!!.quantity.value.toIteString())
-        assertTrue( (solver.getVariable("a")!!.aadd() as AADD.Leaf).value.central in 10.0..12.0)
-        assertNoIssues()
     }
 
     /** ConstNet shall compute bottom-up with ranges and units. */
@@ -321,9 +312,8 @@ class ConstraintPropagationTests {
             loadKerML("feature d: ISQ::DurationValue {:>> range = 5.0..10.0 [s];}")
             loadKerML("feature a: ISQ::FrequencyValue = b/c/d;")
             solver.propagate()
-            assertEquals(33.33333333333334, solver.getVariable("a")!!.vectorQuantity.getMinAsDouble(), 0.00000001)
-            assertEquals(200.0, solver.getVariable("a")!!.vectorQuantity.getMaxAsDouble(), 0.00000001)
-            assertEquals("1 / s", solver.getVariable("a")!!.vectorQuantity.unit.toString())
+            assertBounds(33.33333333333334..200.0, solver.variable("a"))
+            assertEquals("1 / s", solver.variable("a").vectorQuantity.unit.toString())
             assertNoIssues()
         }
     }
@@ -337,9 +327,10 @@ class ConstraintPropagationTests {
             feature b: ISQ::LengthValue { :>> range = 1.0 .. 2.0 [km];}
             feature a: ISQ::VolumeValue = b*c*d;
         """, Runlevel.ALL)
-        assertEquals(20.0, solver.getVariable("a")!!.min(), 0.0001)
-        assertEquals(120.0, solver.getVariable("a")!!.max(), 0.0001)
-        assertEquals("m^3", solver.getVariable("a")!!.vectorQuantity.unit.toString())
+        solver.propagate()
+        assertNoIssues()
+        assertBounds(20.0 .. 120.0, solver.variable("a"))
+        assertEquals("m^3", solver.variable("a").vectorQuantity.unit.toString())
     }
 
     /** ConstNet shall compute buttom-up with ranges and units. */
@@ -351,9 +342,8 @@ class ConstraintPropagationTests {
             loadKerML("feature d: ISQ::LengthValue{ :>> range = 1.0..4.0 [km];}")
             loadKerML("feature a: ISQ::LengthValue = b+c+d;")
             solver.propagate()
-            assertEquals(4003.002, solver.getVariable("a")!!.max(), 0.0001)
-            assertEquals(1002.001, solver.getVariable("a")!!.min(), 0.0001)
-            assertEquals("m", solver.getVariable("a")!!.vectorQuantity.unit.toString())
+            assertBounds(1002.001..4003.002, solver.variable("a"), unit = "m")
+            assertEquals("m", solver.variable("a").vectorQuantity.unit.toString())
             assertNoIssues()
         }
     }
@@ -368,9 +358,8 @@ class ConstraintPropagationTests {
             loadKerML("feature a: ISQ::LengthValue = b-c-d;")
             assertNoIssues()
             solver.propagate()
-            assertEquals(-6.0, solver.getVariable("a")!!.min(), 0.00001)
-            assertEquals(-1.0, solver.getVariable("a")!!.max(), 0.00001)
-            assertEquals("m", solver.getVariable("a")!!.vectorQuantity.unit.toString())
+            assertBounds(-6.0 .. -1.0, solver.variable("a"))
+            assertEquals("m", solver.variable("a").vectorQuantity.unit.toString())
             assertNoIssues()
         }
     }
@@ -383,7 +372,7 @@ class ConstraintPropagationTests {
             loadKerML("feature d: ScalarValues::Boolean = c!=b;")
             assertNoIssues()
             solver.propagate()
-            assertEquals("True", solver.getVariable("d")!!.bool().toString())
+            assertEquals("True", solver.variable("d").bool().toString())
             assertNoIssues()
         }
     }
@@ -398,7 +387,7 @@ class ConstraintPropagationTests {
                 """)
             assertNoIssues()
             solver.propagate()
-            assertEquals("False", solver.getVariable("d")!!.bool().toString())
+            assertEquals("False", solver.variable("d").bool().toString())
             assertNoIssues()
         }
     }
@@ -413,7 +402,7 @@ class ConstraintPropagationTests {
             """)
             assertNoIssues()
             solver.propagate()
-            assertEquals("False", solver.getVariable("d")!!.bool().toString())
+            assertEquals("False", solver.variable("d").bool().toString())
             assertNoIssues()
         }
     }
@@ -426,7 +415,7 @@ class ConstraintPropagationTests {
             loadKerML("feature d: ScalarValues::Boolean = b==c;")
             assertNoIssues()
             solver.propagate()
-            assertEquals("True", solver.getVariable("d")!!.bool().toString())
+            assertEquals("True", solver.variable("d").bool().toString())
             assertNoIssues()
         }
     }
@@ -473,16 +462,10 @@ class ConstraintPropagationTests {
     @Test
     fun additionTrivial2() = testSession("Occurrences", "ISQ") {
         loadKerML(""" 
-            package p { 
-                class i {
-                    feature p: ISQ::LengthValue = 1.0 m + 1.0 km;
-                }
-            }
-        """)
-        // p::i::p is wrongly identified in initialization --> resolveName issue?
+            feature p: ISQ::LengthValue = 1.0 m + 1.0 km;
+        """, Runlevel.ALL)
         assertNoIssues()
-        solver.propagate()
-        assertEquals(1001.0, solver.getVariable("p::i::p")!!.vectorQuantity.getMaxAsDouble(), 0.00001)
+        assertBounds(1001.0, solver.variable("p"))
     }
 
     /**
@@ -495,11 +478,9 @@ class ConstraintPropagationTests {
             feature p: ISQ::LengthValue = 1.0 m;
             feature p2: ISQ::LengthValue = 1.0 km; 
             feature p3: ISQ::LengthValue = p + p2;
-        """)
+        """, Runlevel.ALL)
         assertNoIssues()
-        solver.propagate()
-        assertNoIssues()
-        assertEquals(1001.0, solver.getVariable("p3")!!.vectorQuantity.getMinAsDouble(), 0.001)
+        assertBounds(1001.0, solver.variable("p3"))
         assertNoIssues()
     }
 
@@ -520,7 +501,7 @@ class ConstraintPropagationTests {
             }
         """, Runlevel.ALL)
         assertNoIssues()
-        assertEquals(1001.0, solver.getVariable("p::a::p3")!!.vectorQuantity.getMinAsDouble(), 0.001)
+        assertBounds(1001.0, solver.variable("p::a::p3"))
     }
 
     /**
@@ -536,13 +517,11 @@ class ConstraintPropagationTests {
             feature V: ScalarValues::Real = I * R; 
             feature P: ScalarValues::Real = I * V; 
         """, Runlevel.ALL)
-        assertEquals(9.9*1.9, solver.getVariable("V")!!.min(), 0.00001)
-        assertEquals(10.1*2.1, solver.getVariable("V")!!.max(), 0.00001)
+        assertSafeInclusion(9.9 * 1.9..10.1 * 2.1, solver.variable("V").aadd(), 0.00001)
         assertNoIssues()
         solver.propagate()
         assertNoIssues()
-        assertEquals(9.9*1.9, solver.getVariable("V")!!.min(), 0.00001)
-        assertEquals(21.21, solver.getVariable("V")!!.max(), 0.00001)
+        assertSafeInclusion(9.9 * 1.9..21.21, solver.variable("V").aadd(), 0.00001)
     }
 
     @Test
@@ -552,9 +531,9 @@ class ConstraintPropagationTests {
             feature c: Ranges::RealInRange {:>> range = -3.0 .. -2.0;}
             feature a: ScalarValues::Real = b * c;
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(10.0, solver.getVariable("a")!!.min(), 0.00001)
-        assertEquals(30.0, solver.getVariable("a")!!.max(), 0.00001)
+        assertBounds(10.0 .. 30.0, solver.variable("a"))
     }
 
     @Test
@@ -563,11 +542,10 @@ class ConstraintPropagationTests {
             feature b: Ranges::RealInRange {:>> range = -2.0 .. 3.0;}
             feature c: Ranges::RealInRange {:>> range = -5.0 .. 1.0;}
             feature a: ScalarValues::Real = b * c;
-        """)
+        """, Runlevel.ALL)
         solver.propagate()
         assertNoIssues()
-        assertEquals(-15.0, solver.getVariable("a")!!.min(), 0.00001)
-        assertEquals(10.0, solver.getVariable("a")!!.max(), 0.00001)
+        assertBounds(-15.0 .. 10.0, solver.variable("a"))
     }
 
     @Test
@@ -576,12 +554,11 @@ class ConstraintPropagationTests {
             feature b: Ranges::RealInRange {:>> range = -3.0 .. 4.0;}
             feature c: Ranges::RealInRange {:>> range = 1.0 .. 2.0;}
             feature a: Ranges::RealInRange = b * c {:>> range = 2.0 .. 6.0;}
-        """)
+        """, Runlevel.ALL)
         solver.propagate()
         assertNoIssues()
-        val b = solver.getVariable("b")!!
-        assertEquals(1.0, b.min(), 0.00001)
-        assertEquals(4.0, b.max(), 0.00001)
+        val b = solver.variable("b")
+        assertBounds(1.0 .. 4.0, b)
     }
 
     @Test
@@ -590,11 +567,10 @@ class ConstraintPropagationTests {
             feature b: Ranges::RealInRange {:>> range = -20.0 .. -10.0;}
             feature c: Ranges::RealInRange {:>> range = -5.0 .. -2.0;}
             feature a: ScalarValues::Real = b / c;
-        """)
+        """, Runlevel.ALL)
         solver.propagate()
         assertNoIssues()
-        assertEquals(2.0, solver.getVariable("a")!!.min(), 0.00001)
-        assertEquals(10.0, solver.getVariable("a")!!.max(), 0.00001)
+        assertBounds(2.0 .. 10.0, solver.variable("a"))
     }
 
     @Test
@@ -603,12 +579,10 @@ class ConstraintPropagationTests {
             feature b: Ranges::RealInRange {:>> range = 1.0 .. 10.0;}
             feature c: Ranges::RealInRange {:>> range = -2.0 .. 5.0;}
             feature a: ScalarValues::Real = b / c;
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
-        val a = solver.getVariable("a")!!
-        assertEquals(Double.NEGATIVE_INFINITY, a.min(), 0.00001)
-        assertEquals(Double.POSITIVE_INFINITY, a.max(), 0.00001)
+        val a = solver.variable("a")
+        assertSafeInclusion(Double.NEGATIVE_INFINITY..Double.POSITIVE_INFINITY, a.aadd(), 0.00001)
     }
 
     @Test
@@ -618,11 +592,10 @@ class ConstraintPropagationTests {
             feature c: Ranges::RealInRange {:>> range = -10.0 .. -3.0;}
             feature d: Ranges::RealInRange {:>> range = -1.0 .. -1.0;}
             feature a: Ranges::RealInRange = b + c + d;
-        """)
+        """, Runlevel.ALL)
         solver.propagate()
         assertNoIssues()
-        assertEquals(-16.0, solver.getVariable("a")!!.min(), 0.00001)
-        assertEquals(-6.0, solver.getVariable("a")!!.max(), 0.00001)
+        assertBounds(-16.0 .. -6.0, solver.variable("a"))
     }
 
     @Test
@@ -633,8 +606,81 @@ class ConstraintPropagationTests {
             feature d: Ranges::RealInRange {:>> range = -1.0 .. -1.0;}
             feature a: Ranges::RealInRange = b - c - d;
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(-1.0, solver.getVariable("a")!!.min(), 0.00001)
-        assertEquals(9.0, solver.getVariable("a")!!.max(), 0.00001)
+        assertBounds(-1.0 .. 9.0, solver.variable("a"))
+    }
+
+    /**
+     * Regression tests for AstBinOp GT (>) evalDown false branch:
+     * (l > r) == false means l <= r.
+     * When l in [4..10], r in [2..6], and (l > r) is false:
+     * l must be <= 6, so l in [4..6], and r must be >= 4, so r in [4..6].
+     */
+    @Test
+    fun binOpGTFalseBranchRegressionTest() = testSession("Ranges") {
+        loadKerML("""
+            feature l: Ranges::IntegerInRange {:>> range = 4 .. 10;}
+            feature r: Ranges::IntegerInRange {:>> range = 2 .. 6;}
+            feature cmp: ScalarValues::Boolean = l > r;
+        """, Runlevel.ALL)
+        solver.propagate()
+        assertNoIssues()
+        val cmp = solver.variable("cmp")
+        cmp.boolSpecs = mutableListOf(io.github.tukcps.aadd.values.bool.XBool.False)
+        cmp.vectorQuantity = VectorQuantity(builder.Bool.False)
+        cmp.ast!!.evalDownRec()
+        val l = solver.variable("l")
+        val r = solver.variable("r")
+        assertBounds(4L .. 6L, l)
+        assertBounds(4L .. 6L, r)
+    }
+
+    /**
+     * Regression tests for AstBinOp GE (>=) evalDown false branch:
+     * (l >= r) == false means l < r, so l <= r - 1.
+     * When l in [1..10], r in [5..7], and (l >= r) is false:
+     * l must be < 7, so maxL = min(10, 7-1) = 6.
+     */
+    @Test
+    fun binOpGEFalseBranchStrictInequalityRegressionTest() = testSession("Ranges") {
+        loadKerML("""
+            feature l: Ranges::IntegerInRange {:>> range = 1 .. 10;}
+            feature r: Ranges::IntegerInRange {:>> range = 5 .. 7;}
+            feature cmp: ScalarValues::Boolean = l >= r;
+        """, Runlevel.ALL)
+        solver.propagate()
+        assertNoIssues()
+        val cmp = solver.variable("cmp")
+        cmp.boolSpecs = mutableListOf(io.github.tukcps.aadd.values.bool.XBool.False)
+        cmp.vectorQuantity = VectorQuantity(builder.Bool.False)
+        cmp.ast!!.evalDownRec()
+        val l = solver.variable("l")
+        val r = solver.variable("r")
+        assertBounds(1L .. 6L, l)
+        assertBounds(5L .. 7L, r)
+    }
+
+    /**
+     * Regression test for AstBinOp EE (==) evalDown with Reals:
+     * Intersecting two real ranges when equality is true.
+     */
+    @Test
+    fun binOpEERealIntersectionRegressionTest() = testSession("Ranges") {
+        loadKerML("""
+            feature a: Ranges::RealInRange {:>> range = 2.0 .. 8.0;}
+            feature b: Ranges::RealInRange {:>> range = 5.0 .. 12.0;}
+            feature eq: ScalarValues::Boolean = a == b;
+        """, Runlevel.ALL)
+        solver.propagate()
+        assertNoIssues()
+        val eq = solver.variable("eq")
+        eq.boolSpecs = mutableListOf(io.github.tukcps.aadd.values.bool.XBool.True)
+        eq.vectorQuantity = VectorQuantity(builder.Bool.True)
+        eq.ast!!.evalDownRec()
+        val a = solver.variable("a")
+        val b = solver.variable("b")
+        assertBounds(5.0 .. 8.0, a)
+        assertBounds(5.0 .. 8.0, b)
     }
 }

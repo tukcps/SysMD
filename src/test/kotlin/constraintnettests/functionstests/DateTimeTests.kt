@@ -1,17 +1,7 @@
 package constraintnettests.functionstests
 
-import com.github.tukcps.sysmd.exceptions.Issue
-import com.github.tukcps.sysmd.model.kerml.Association
-import com.github.tukcps.sysmd.model.kerml.Connector
-import com.github.tukcps.sysmd.services.Runlevel
-import io.github.tukcps.aadd.IDD
-import kotlin.test.Test
-import kotlin.test.Ignore
-import util.assertNoIssues
+import util.*
 import util.mockup.loadKerML
-import util.mockup.loadSysMLv2
-import util.testSession
-import kotlin.math.*
 import kotlin.test.*
 
 class DateTimeTests {
@@ -22,7 +12,7 @@ class DateTimeTests {
                 feature dt: ISQ::TimeValue = DateTime("2026-07-13T13:10:24Z");
             """)
             solver.propagate()
-            assertEquals(1783948224.0, solver.getVariable("dt")!!.min(), 0.0001)
+            assertBounds(1783948224.0, solver.variable("dt"))
             assertNoIssues()
         }
 
@@ -32,7 +22,7 @@ class DateTimeTests {
                 feature dt: ISQ::TimeValue = DateTime("1969-12-31T23:59:59Z");
             """)
             solver.propagate()
-            assertEquals(-1.0, solver.getVariable("dt")!!.min(), 0.0001)
+            assertBounds(-1.0, solver.variable("dt"))
             assertNoIssues()
         }
 
@@ -53,7 +43,7 @@ class DateTimeTests {
             solver.propagate()
             assertNoIssues()
             // unix timestamp for 2022-10-10T00:00:00Z is 1665360000.0
-            assertEquals(1665360000.0, solver.getVariable("dt")!!.min(), 0.0001)
+            assertBounds(1665360000.0, solver.variable("dt"))
         }
 
         @Test
@@ -64,7 +54,7 @@ class DateTimeTests {
             solver.propagate()
             assertNoIssues()
             // unix timestamp for 2022-10-01T00:00:00Z is 1664582400.0
-            assertEquals(1664582400.0, solver.getVariable("dt")!!.min(), 0.0001)
+            assertBounds(1664582400.0, solver.variable("dt"))
         }
 
         @Test
@@ -75,6 +65,6 @@ class DateTimeTests {
             solver.propagate()
             assertNoIssues()
             // unix timestamp for 2022-01-01T00:00:00Z is 1640995200.0
-            assertEquals(1640995200.0, solver.getVariable("dt")!!.min(), 0.0001)
+            assertBounds(1640995200.0, solver.variable("dt"))
         }
 }

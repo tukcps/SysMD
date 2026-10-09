@@ -2,13 +2,11 @@ package compiler.sysml
 
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Type
-import com.github.tukcps.sysmd.model.util.MultiplicityRange
+import io.github.tukcps.aadd.values.integer.IntegerRange
 import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
+import kotlin.test.*
 
 class AttributeTests {
     @Test
@@ -44,7 +42,7 @@ class AttributeTests {
         assertNoIssues()
         val a = global.resolve("a")?.member<Feature>()
         assertNotNull(a)
-        assertEquals(MultiplicityRange(1, 1), a.multiplicityRange)
+        assertEquals(IntegerRange(1, 1), a.multiplicityRange)
     }
 
     @Test
@@ -53,7 +51,7 @@ class AttributeTests {
         assertNoIssues()
         val a = global.resolve("a")?.member<Feature>()
         assertNotNull(a)
-        assertEquals(MultiplicityRange(1, 3), a.multiplicityRange)
+        assertEquals(IntegerRange(1, 3), a.multiplicityRange)
     }
 
     @Test

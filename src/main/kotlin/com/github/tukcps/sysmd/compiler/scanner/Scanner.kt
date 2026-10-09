@@ -2,7 +2,10 @@ package com.github.tukcps.sysmd.compiler.scanner
 
 import com.github.tukcps.sysmd.compiler.scanner.Token.Definitions.charTokens
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
-import kotlin.math.pow
+import com.github.tukcps.sysmd.services.session.SessionStatus
+import io.github.tukcps.aadd.util.toDoubleExact
+import io.github.tukcps.aadd.values.bounds.LongBound
+import io.github.tukcps.aadd.values.real.ia.RealRange
 
 
 /**
@@ -24,7 +27,8 @@ import kotlin.math.pow
 open class Scanner(
     protected var indices: IntRange?=null,
     val skip: Set<Token.Kind> = setOf(WHITESPACE, NOTE),
-    val keywords: Map<String, Token.Kind>
+    val keywords: Map<String, Token.Kind>,
+    val status: SessionStatus,
 ) {
     /**
      * The input as a String. Setting it will reset i, lineNo, columnNo, token, etc.:
@@ -184,22 +188,14 @@ open class Scanner(
             // Number, either INTEGER or REAL Literal
             in '0'..'9' -> {
                 var kind = INTEGER_LIT
-                var mantissa = 0.0
-                var fract = 0.0
-                var exponent = 0.0
-                var expSign = 1.0
                 while (curChar.isDigit()) {
-                    mantissa = mantissa * 10.0 + (curChar - '0').toDouble()
                     nextChar()
                 }
 
                 if ((curChar == '.') && (nextChar.isDigit())) {
                     kind = FLOAT_LIT
                     nextChar()
-                    var i = 1.0
                     while (curChar in '0'..'9') {
-                        i /= 10.0
-                        fract += (curChar - '0').toDouble() * i
                         nextChar()
                     }
                 }
@@ -208,17 +204,15 @@ open class Scanner(
                     kind = FLOAT_LIT
                     nextChar()
                     if (curChar == '-') {
-                        expSign = -1.0
                         nextChar()
                     }
                     if (curChar == '+')
                         nextChar()
                     while (curChar in '0'..'9') {
-                        exponent = exponent * 10.0 + (curChar - '0').toDouble()
                         nextChar()
                     }
                 }
-                nextNextToken = buildToken(kind, number = (mantissa + fract) * 10.0.pow(exponent * expSign))
+                nextNextToken = buildToken(kind)
             }
 
 
@@ -404,14 +398,31 @@ open class Scanner(
     /**
      * Builds a Token object with the context information line number, column number, and string that was used.
      * @param kind Kind of the token
-     * @param number value, represented as a Double (including integers)
+     * @param string Text of the token, defaults to the input scanned since the last token
      */
-    private fun buildToken(kind: Token.Kind, number: Double = 0.0, string: String? = null): Token {
+    private fun buildToken(kind: Token.Kind, string: String? = null): Token {
+
+        val resolvedString = string ?: input.subSequence(startPosition..<position).toString()
 
         val token = Token(
             kind = kind,
-            string = string ?: input.subSequence(startPosition..<position).toString(),
-            number = number,
+            string = resolvedString,
+            real = when (kind) {
+                FLOAT_LIT, INTEGER_LIT -> resolvedString.toDoubleExact().also {
+                    if(!it.isFinite())
+                        // FIXME: no way to report position?!
+                        status.warn(message = "Decimal value '$resolvedString' is outside the bounds of 64-bit double")
+                }
+                else -> RealRange.Empty
+            },
+            integer = when (kind) {
+                INTEGER_LIT -> LongBound.parse(resolvedString).also {
+                    if(it !is LongBound.Finite)
+                        // FIXME: no way to report position?!
+                        status.warn(message = "Integer value '$resolvedString' is outside the bounds of 64-bit long")
+                }
+                else -> LongBound.Finite(0)
+            },
             lineNo = currLineNo,
             indices = startPosition..<position
         )

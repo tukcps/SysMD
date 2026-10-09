@@ -16,7 +16,8 @@ open class Power(name: String, symbol: String, prefix: Prefix, convFac: Double, 
      * generate UnitObjects and add them to the UnitList
      */
     object Watt : Power("watt", "W", NoPrefix, 1.0)
-    object Horsepower : Power("horsepower", "HP", NoPrefix, 735.499)
+    object Horsepower : Power("horsepower", "HP", NoPrefix, 745.69987158227022)
+    object PferdeStaerke : Power("metric horsepower", "PS", NoPrefix, 735.49875)
 
     override fun copy(): Power {
         return Power(name, symbol, prefix, convFac, exponent, isLogarithmic)

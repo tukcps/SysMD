@@ -1,11 +1,13 @@
 package constraintnettests.functionstests
 
+import util.variable
+import util.assertEmpty
 import com.github.tukcps.sysmd.services.Runlevel
 import util.assertNoIssues
+import util.assertBounds
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
-import kotlin.test.assertEquals
 
 class AbsTests {
 
@@ -34,26 +36,16 @@ class AbsTests {
                 feature j: ScalarValues::Real = abs(qj);
             """)
             solver.propagate()
-            assertEquals(5.0, solver.getVariable("a")!!.min(), 0.00001)
-            assertEquals(5.0, solver.getVariable("a")!!.max(), 0.00001)
-            assertEquals(1.0, solver.getVariable("b")!!.min(), 0.00001)
-            assertEquals(5.0, solver.getVariable("b")!!.max(), 0.00001)
-            assertEquals(0.0, solver.getVariable("c")!!.min(), 0.00001)
-            assertEquals(1.0, solver.getVariable("c")!!.max(), 0.00001)
-            assertEquals(0.0, solver.getVariable("d")!!.min(), 0.00001)
-            assertEquals(0.0, solver.getVariable("d")!!.max(), 0.00001)
-            assertEquals(0.0, solver.getVariable("e")!!.min(), 0.00001)
-            assertEquals(5.0, solver.getVariable("e")!!.max(), 0.00001)
-            assertEquals(0.0, solver.getVariable("f")!!.min(), 0.00001)
-            assertEquals(5.0, solver.getVariable("f")!!.max(), 0.00001)
-            assertEquals(0.0, solver.getVariable("g")!!.min(), 0.00001)
-            assertEquals(5.0, solver.getVariable("g")!!.max(), 0.00001)
-            assertEquals(1.0, solver.getVariable("h")!!.min(), 0.00001)
-            assertEquals(5.0, solver.getVariable("h")!!.max(), 0.00001)
-            assertEquals(0.0, solver.getVariable("i")!!.min(), 0.00001)
-            assertEquals(5.0, solver.getVariable("i")!!.max(), 0.00001)
-            assertEquals(5.0, solver.getVariable("j")!!.min(), 0.00001)
-            assertEquals(5.0, solver.getVariable("j")!!.max(), 0.00001)
+            assertBounds(5.0 .. 5.0, solver.variable("a"))
+            assertBounds(1.0 .. 5.0, solver.variable("b"))
+            assertBounds(0.0 .. 1.0, solver.variable("c"))
+            assertBounds(0.0 .. 0.0, solver.variable("d"))
+            assertBounds(0.0 .. 5.0, solver.variable("e"))
+            assertBounds(0.0 .. 5.0, solver.variable("f"))
+            assertBounds(0.0 .. 5.0, solver.variable("g"))
+            assertBounds(1.0 .. 5.0, solver.variable("h"))
+            assertBounds(0.0 .. 5.0, solver.variable("i"))
+            assertBounds(5.0 .. 5.0, solver.variable("j"))
             assertNoIssues()
         }
 
@@ -63,9 +55,9 @@ class AbsTests {
                 feature qa: Ranges::IntegerInRange {:>> range = 5;}
                 feature a: ScalarValues::Integer = abs(qa);
             """, Runlevel.ALL)
+            solver.propagate()
             assertNoIssues()
-            assertEquals(5L, solver.getVariable("a")!!.min())
-            assertEquals(5L, solver.getVariable("a")!!.max())
+            assertBounds(5L .. 5L, solver.variable("a"))
         }
 
         @Test
@@ -77,8 +69,7 @@ class AbsTests {
             solver.propagate()
             assertNoIssues()
             val result = solver.getVariable("a")
-            assertEquals(2.0, result!!.min(), 0.000001)
-            assertEquals(6.0, result.max(), 0.000001)
+            assertBounds(2.0 .. 6.0, result!!)
             assertNoIssues()
         }
 
@@ -90,8 +81,7 @@ class AbsTests {
             """)
             solver.propagate()
             assertNoIssues()
-            assertEquals(3L, solver.getVariable("a")!!.min())
-            assertEquals(3L, solver.getVariable("a")!!.max())
+            assertBounds(3L .. 3L, solver.variable("a"))
         }
 
         @Test
@@ -99,11 +89,10 @@ class AbsTests {
             loadKerML("""
                 feature qa: Ranges::IntegerInRange {:>> range = -5 .. -3;}
                 feature a: ScalarValues::Integer = abs(qa);
-            """)
+            """, Runlevel.ALL)
             solver.propagate()
             assertNoIssues()
-            assertEquals(3, solver.getVariable("a")!!.idd().getRange().min)
-            assertEquals(5, solver.getVariable("a")!!.idd().getRange().max)
+            assertBounds(3L..5L, solver.variable("a"))
         }
 
         @Test
@@ -114,8 +103,7 @@ class AbsTests {
             """)
             solver.propagate()
             assertNoIssues()
-            assertEquals(0L, solver.getVariable("a")!!.min())
-            assertEquals(3L, solver.getVariable("a")!!.max())
+            assertBounds(0L..3L, solver.variable("a"))
         }
 
         @Test
@@ -124,9 +112,60 @@ class AbsTests {
                 feature a: Ranges::RealInRange {:>> range = -8.0..8.0;}
                 feature b: Ranges::RealInRange = abs(a) {:>> range = 6.0;}
             """, Runlevel.ALL)
+            solver.propagate()
             assertNoIssues()
-            val result = solver.getVariable("a")!!
-            assertEquals(-6.0, result.min(), 0.000001)
-            assertEquals(6.0, result.max(), 0.000001)
+            val result = solver.variable("a")
+            assertBounds(-6.0 .. 6.0, result)
+        }
+
+        @Test
+        fun absTestEvalDownNegative() = testSession("Ranges") {
+            loadKerML("""
+                feature a: Ranges::RealInRange {:>> range = -10.0 .. 10.0;}
+                feature b: Ranges::RealInRange = abs(a) {:>> range = -5.0 .. -1.0;}
+            """)
+            solver.propagate()
+            val b = solver.variable("b")
+            assertEmpty(b)
+        }
+
+        @Test
+        fun absTestEvalDownIntNegative() = testSession("Ranges") {
+            loadKerML("""
+                feature a: Ranges::IntegerInRange {:>> range = -10 .. 10;}
+                feature b: Ranges::IntegerInRange = abs(a) {:>> range = -5 .. -1;}
+            """)
+            solver.propagate()
+            val a = solver.variable("a")
+            assertEmpty(a)
+        }
+
+        /**
+         * Regression test for abs evalDown:
+         * abs(a) in [0..5] generates [-5..5].
+         * When 'a' is initially in [-10..-1], constraining with [-5..5] yields [-5..-1].
+         */
+        @Test
+        fun absEvalDownPreservesPriorSignConstraintReal() = testSession("Ranges") {
+            loadKerML("""
+                feature a: Ranges::RealInRange {:>> range = -10.0 .. -1.0;}
+                feature b: Ranges::RealInRange = abs(a) {:>> range = 0.0 .. 5.0;}
+            """, Runlevel.ALL)
+            solver.propagate()
+            assertNoIssues()
+            val a = solver.variable("a")
+            assertBounds(-5.0 .. -1.0, a)
+        }
+
+        @Test
+        fun absEvalDownPreservesPriorSignConstraintInt() = testSession("Ranges") {
+            loadKerML("""
+                feature a: Ranges::IntegerInRange {:>> range = 1 .. 10;}
+                feature b: Ranges::IntegerInRange = abs(a) {:>> range = 0 .. 5;}
+            """, Runlevel.ALL)
+            solver.propagate()
+            assertNoIssues()
+            val a = solver.variable("a")
+            assertBounds(1L .. 5L, a)
         }
 }

@@ -1,6 +1,6 @@
 package com.github.tukcps.sysmd.rest.entities.api.entities.responseModels
 
-import com.github.tukcps.sysmd.rest.entities.api.entities.Identified
+import com.github.tukcps.sysmd.model.datamodel.ElementReference
 import com.github.tukcps.sysmd.rest.entities.api.entities.Identity
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
@@ -17,7 +17,7 @@ class CommitResponse(
     @SerialName("@type")
     var type: String = "Commit",
     var description: String? = null,    // description text of the commit, optional
-    var previousCommit: List<Identified>? = ArrayList(), // Previous commit, optional
-    var owningProject: Identified? = null,
+    var previousCommit: List<ElementReference>? = ArrayList(), // Previous commit, optional
+    var owningProject: ElementReference? = null,
     var created: Instant? = null
 ): Identity

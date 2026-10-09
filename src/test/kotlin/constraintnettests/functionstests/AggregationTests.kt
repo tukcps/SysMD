@@ -3,15 +3,12 @@ package constraintnettests.functionstests
 import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.services.Runlevel
-import util.assertIssue
-import util.assertNoIssues
+import io.github.tukcps.aadd.util.Assertions.assertSafeInclusion
+import util.*
 import util.mockup.loadKerML
 import util.mockup.loadSysMLv2
 import util.testSession
-import kotlin.test.Ignore
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
+import kotlin.test.*
 
 class AggregationTests {
 
@@ -34,11 +31,10 @@ class AggregationTests {
             }
         }
     """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(0.01, solver.getVariable("l::c3::p3")!!.min(), 0.0001)
-        assertEquals(0.5, solver.getVariable("l::c3::p3")!!.max(), 0.0001)
-        assertEquals(0.01, solver.getVariable("l::c3::p4")!!.min(), 0.0001)
-        assertEquals(0.5, solver.getVariable("l::c3::p4")!!.max(), 0.0001)
+        assertBounds(0.01 .. 0.5, solver.variable("l::c3::p3"))
+        assertBounds(0.01 .. 0.5, solver.variable("l::c3::p4"))
     }
 
     @Test
@@ -57,11 +53,11 @@ class AggregationTests {
             }
     """)
         solver.propagate()
+        assertNoIssues()
         // val c3 = global.resolveName<Class>("l::c3")
         // val a = global.resolveName<Feature>("l::c3::a")
         assertTrue(status.issues.isEmpty(), "${status.issues}")
-        assertEquals(0.1, solver.getVariable("l::c3::a::p")!!.min(), 0.0001)
-        assertEquals(1.0, solver.getVariable("l::c3::a::p")!!.max(), 0.0001)
+        assertBounds(0.1 .. 1.0, solver.variable("l::c3::a::p"))
     }
 
     @Test
@@ -80,11 +76,10 @@ class AggregationTests {
             }
         }
     """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(1, solver.getVariable("l::c3::p3")!!.vectorQuantity.value.asIdd().getRange().min)
-        assertEquals(25, solver.getVariable("l::c3::p3")!!.vectorQuantity.value.asIdd().getRange().max)
-        assertEquals(1, solver.getVariable("l::c3::p4")!!.vectorQuantity.value.asIdd().getRange().min)
-        assertEquals(25, solver.getVariable("l::c3::p4")!!.vectorQuantity.value.asIdd().getRange().max)
+        assertBounds(1L .. 25L, solver.variable("l::c3::p3"))
+        assertBounds(1L .. 25L, solver.variable("l::c3::p4"))
     }
 
     @Test
@@ -104,8 +99,7 @@ class AggregationTests {
         )
         solver.propagate()
         assertNoIssues()
-        assertEquals(1, solver.getVariable("l::c3::a::p")!!.vectorQuantity.value.asIdd().getRange().min)
-        assertEquals(5, solver.getVariable("l::c3::a::p")!!.vectorQuantity.value.asIdd().getRange().max)
+        assertBounds(1L .. 5L, solver.variable("l::c3::a::p"))
     }
 
     @Test
@@ -126,11 +120,10 @@ class AggregationTests {
             }
         }
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(0.32, solver.getVariable("l::c3::p3")!!.min(), 0.0001)
-        assertEquals(0.32, solver.getVariable("l::c3::p3")!!.max(), 0.0001)
-        assertEquals(0.32, solver.getVariable("l::c3::p4")!!.min(), 0.0001)
-        assertEquals(0.32, solver.getVariable("l::c3::p4")!!.max(), 0.0001)
+        assertBounds(0.32 .. 0.32, solver.variable("l::c3::p3"))
+        assertBounds(0.32 .. 0.32, solver.variable("l::c3::p4"))
     }
 
     @Test
@@ -143,9 +136,9 @@ class AggregationTests {
             feature p2: c2 [1..1];
             feature p3: Ranges::RealInRange = productOverParts(p) {:>> range = 0.32..0.32;}
     }""", Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(0.5, solver.getVariable("c3::p2::p")!!.min(), 0.0001)
-        assertEquals(0.5, solver.getVariable("c3::p2::p")!!.max(), 0.0001)
+        assertBounds(0.5 .. 0.5, solver.variable("c3::p2::p"))
     }
 
     @Test
@@ -166,11 +159,10 @@ class AggregationTests {
             }
         }
     """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(0.10, solver.getVariable("l::c3::p3")!!.min(), 0.0001)
-        assertEquals(0.10, solver.getVariable("l::c3::p3")!!.max(), 0.0001)
-        assertEquals(0.10, solver.getVariable("l::c3::p4")!!.min(), 0.0001)
-        assertEquals(0.10, solver.getVariable("l::c3::p4")!!.max(), 0.0001)
+        assertBounds(0.10 .. 0.10, solver.variable("l::c3::p3"))
+        assertBounds(0.10 .. 0.10, solver.variable("l::c3::p4"))
 
     }
 
@@ -191,9 +183,9 @@ class AggregationTests {
                 }
             }
     """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(0.5, solver.getVariable("l::c3::p2::p")!!.min(), 0.0001)
-        assertEquals(0.5, solver.getVariable("l::c3::p2::p")!!.max(), 0.0001)
+        assertBounds(0.5 .. 0.5, solver.variable("l::c3::p2::p"))
 
     }
 
@@ -215,10 +207,8 @@ class AggregationTests {
     """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(1.0, solver.getVariable("c3::p3")!!.min(), 0.0001)
-        assertEquals(32.0, solver.getVariable("c3::p3")!!.max(), 0.0001)
-        assertEquals(1.0, solver.getVariable("c3::p4")!!.min(), 0.0001)
-        assertEquals(4.0, solver.getVariable("c3::p4")!!.max(), 0.0001)
+        assertBounds(1.0 .. 32.0, solver.variable("c3::p3"))
+        assertBounds(1.0 .. 4.0, solver.variable("c3::p4"))
     }
 
     @Test // Issue: #240
@@ -238,9 +228,9 @@ class AggregationTests {
         }
     """)
         solver.propagate()
+        assertNoIssues()
         assertTrue(status.issues.isEmpty(), "${status.issues}")
-        assertEquals(1.0, solver.getVariable("l::c2::c::p")!!.min(), 0.0001)
-        assertEquals(2.828427, solver.getVariable("l::c2::c::p")!!.max(), 0.0001)
+        assertBounds(1.0 .. 2.828427124746191, solver.variable("l::c2::c::p"))
     }
 
     @Test
@@ -267,10 +257,8 @@ class AggregationTests {
         """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(0.03125, solver.getVariable("l::c3::p3")!!.min(), 0.0001)
-        assertEquals(2.25, solver.getVariable("l::c3::p3")!!.max(), 0.0001)
-        assertEquals(0.25, solver.getVariable("l::c3::p4")!!.min(), 0.0001)
-        assertEquals(2.25, solver.getVariable("l::c3::p4")!!.max(), 0.0001)
+        assertBounds(0.03125 .. 2.25, solver.variable("l::c3::p3"))
+        assertBounds(0.25 .. 2.25, solver.variable("l::c3::p4"))
     }
 
     @Test @Ignore
@@ -297,8 +285,7 @@ class AggregationTests {
         """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(8.4852813742, solver.getVariable("l::c4::p")!!.min(), 0.0001)
-        assertEquals(144.0, solver.getVariable("l::c4::p")!!.max(), 0.0001)
+        assertBounds(8.4852813742 .. 144.0, solver.variable("l::c4::p"))
     }
 
     @Test // same test as astProductHasATest4, but with another model
@@ -327,10 +314,8 @@ class AggregationTests {
     """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(0.03125, solver.getVariable("l::c3::p3")!!.min(), 0.000001)
-        assertEquals(2.25, solver.getVariable("l::c3::p3")!!.max(), 0.0001)
-        assertEquals(0.25, solver.getVariable("l::c3::p4")!!.min(), 0.0001)
-        assertEquals(2.25, solver.getVariable("l::c3::p4")!!.max(), 0.0001)
+        assertBounds(0.03125 .. 2.25, solver.variable("l::c3::p3"))
+        assertBounds(0.25 .. 2.25, solver.variable("l::c3::p4"))
     }
 
 
@@ -359,8 +344,7 @@ class AggregationTests {
     """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(0.5, solver.getVariable("l::c3::c::q")!!.min(), 0.000001)
-        assertEquals(36.00, solver.getVariable("l::c3::c::q")!!.max(), 0.0001)
+        assertBounds(0.5 .. 36.00, solver.variable("l::c3::c::q"))
     }
 
     @Test
@@ -381,10 +365,8 @@ class AggregationTests {
     """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(0.1, solver.getVariable("l::c3::p3")!!.min(), 0.0001)
-        assertEquals(1.0, solver.getVariable("l::c3::p3")!!.max(), 0.0001)
-        assertEquals(0.1, solver.getVariable("l::c3::p4")!!.min(), 0.0001)
-        assertEquals(1.0, solver.getVariable("l::c3::p4")!!.max(), 0.0001)
+        assertBounds(0.1 .. 1.0, solver.variable("l::c3::p3"))
+        assertBounds(0.1 .. 1.0, solver.variable("l::c3::p4"))
     }
 
     @Test
@@ -402,9 +384,9 @@ class AggregationTests {
             }
         }
     """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(0.05, solver.getVariable("l::c3::a::p")!!.min(), 0.0001)
-        assertEquals(0.25, solver.getVariable("l::c3::a::p")!!.max(), 0.0001)
+        assertBounds(0.05 .. 0.25, solver.variable("l::c3::a::p"))
     }
 
     @Test
@@ -425,10 +407,8 @@ class AggregationTests {
     """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(1, solver.getVariable("l::c3::p3")!!.vectorQuantity.value.asIdd().min)
-        assertEquals(10, solver.getVariable("l::c3::p3")!!.vectorQuantity.value.asIdd().max)
-        assertEquals(1, solver.getVariable("l::c3::p4")!!.vectorQuantity.value.asIdd().min)
-        assertEquals(10, solver.getVariable("l::c3::p4")!!.vectorQuantity.value.asIdd().max)
+        assertBounds(1L .. 10, solver.variable("l::c3::p3"))
+        assertBounds(1L .. 10, solver.variable("l::c3::p4"))
     }
 
     @Test
@@ -448,8 +428,7 @@ class AggregationTests {
     """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(0, solver.getVariable("l::c3::a::p")!!.vectorQuantity.value.asIdd().min)
-        assertEquals(5, solver.getVariable("l::c3::a::p")!!.vectorQuantity.value.asIdd().max)
+        assertBounds(0L .. 5, solver.variable("l::c3::a::p"))
     }
 
     @Test
@@ -472,10 +451,8 @@ class AggregationTests {
     """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(2.1, solver.getVariable("l::c3::p3")!!.min(), 0.0001)
-        assertEquals(2.1, solver.getVariable("l::c3::p3")!!.max(), 0.0001)
-        assertEquals(2.1, solver.getVariable("l::c3::p4")!!.min(), 0.0001)
-        assertEquals(2.1, solver.getVariable("l::c3::p4")!!.max(), 0.0001)
+        assertBounds(2.1 .. 2.1, solver.variable("l::c3::p3"))
+        assertBounds(2.1 .. 2.1, solver.variable("l::c3::p4"))
     }
 
     @Test
@@ -497,8 +474,8 @@ class AggregationTests {
     """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(0.5, solver.getVariable("l::c3::p2::p")!!.min(), 0.0001)
-        assertEquals(0.5, solver.getVariable("l::c3::p2::p")!!.max(), 0.0001)
+        assertBounds(0.8, solver.variable("l::c3::p1::p"))
+        assertBounds(0.5, solver.variable("l::c3::p2::p"))
     }
 
     @Test
@@ -521,10 +498,8 @@ class AggregationTests {
     """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(0.7, solver.getVariable("l::c3::p3")!!.min(), 0.0001)
-        assertEquals(0.7, solver.getVariable("l::c3::p3")!!.max(), 0.0001)
-        assertEquals(0.7, solver.getVariable("l::c3::p4")!!.min(), 0.0001)
-        assertEquals(0.7, solver.getVariable("l::c3::p4")!!.max(), 0.0001)
+        assertBounds(0.7 .. 0.7, solver.variable("l::c3::p3"))
+        assertBounds(0.7 .. 0.7, solver.variable("l::c3::p4"))
     }
 
     @Test
@@ -546,8 +521,7 @@ class AggregationTests {
     """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(0.5, solver.getVariable("l::c3::p2::p")!!.min(), 0.0001)
-        assertEquals(0.5, solver.getVariable("l::c3::p2::p")!!.max(), 0.0001)
+        assertBounds(0.5 .. 0.5, solver.variable("l::c3::p2::p"))
     }
 
     @Test
@@ -567,11 +541,10 @@ class AggregationTests {
                 feature p4: ScalarValues::Real = sumOverPartsNotTransitive(p); 
             }
     """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(3.0, solver.getVariable("c3::p3")!!.min(), 0.0001)
-        assertEquals(10.0, solver.getVariable("c3::p3")!!.max(), 0.0001)
-        assertEquals(1.0, solver.getVariable("c3::p4")!!.min(), 0.0001)
-        assertEquals(4.0, solver.getVariable("c3::p4")!!.max(), 0.0001)
+        assertBounds(3.0 .. 10.0, solver.variable("c3::p3"))
+        assertBounds(1.0 .. 4.0, solver.variable("c3::p4"))
     }
 
     @Test
@@ -590,8 +563,7 @@ class AggregationTests {
     """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(4.0, solver.getVariable("c2::c::p")!!.min(), 0.0001)
-        assertEquals(6.0, solver.getVariable("c2::c::p")!!.max(), 0.0001)
+        assertBounds(4.0 .. 6.0, solver.variable("c2::c::p"))
     }
 
     @Test
@@ -616,10 +588,8 @@ class AggregationTests {
     """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(2.5, solver.getVariable("c3::p3")!!.min(), 0.0001)
-        assertEquals(8.0, solver.getVariable("c3::p3")!!.max(), 0.0001)
-        assertEquals(1.5, solver.getVariable("c3::p4")!!.min(), 0.0001)
-        assertEquals(5.0, solver.getVariable("c3::p4")!!.max(), 0.0001)
+        assertBounds(2.5 .. 8.0, solver.variable("c3::p3"))
+        assertBounds(1.5 .. 5.0, solver.variable("c3::p4"))
     }
 
     @Test
@@ -643,9 +613,9 @@ class AggregationTests {
             }
         }
     """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(3.0, solver.getVariable("l::c3::c::p")!!.min(), 0.0001)
-        assertEquals(13.0, solver.getVariable("l::c3::c::p")!!.max(), 0.0001)
+        assertBounds(3.0 .. 13.0, solver.variable("l::c3::c::p"))
     }
 
     @Test
@@ -674,10 +644,8 @@ class AggregationTests {
     """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(2.5, solver.getVariable("l::c3::p3")!!.min(), 0.0001)
-        assertEquals(8.0, solver.getVariable("l::c3::p3")!!.max(), 0.0001)
-        assertEquals(1.5, solver.getVariable("l::c3::p4")!!.min(), 0.0001)
-        assertEquals(5.0, solver.getVariable("l::c3::p4")!!.max(), 0.0001)
+        assertBounds(2.5 .. 8.0, solver.variable("l::c3::p3"))
+        assertBounds(1.5 .. 5.0, solver.variable("l::c3::p4"))
     }
 
     @Test
@@ -706,8 +674,7 @@ class AggregationTests {
     """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(3.0, solver.getVariable("l::c3::c::p")!!.min(), 0.0001)
-        assertEquals(13.0, solver.getVariable("l::c3::c::p")!!.max(), 0.0001)
+        assertBounds(3.0 .. 13.0, solver.variable("l::c3::c::p"))
     }
 
     @Test // c4 shadowed by c3, so no further transitive search (securityOfSupply in c3 and c4)
@@ -731,14 +698,8 @@ class AggregationTests {
     """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(0.06,
-            solver.getVariable("l::c1::securityOfSupply")!!.min(), 0.0001)
-        assertEquals(0.08,
-            solver.getVariable("l::c1::securityOfSupply")!!.max(), 0.0001)
-        assertEquals(0.06,
-            solver.getVariable("l::c1::securityOfSupply2")!!.min(), 0.0001)
-        assertEquals(0.08,
-            solver.getVariable("l::c1::securityOfSupply2")!!.max(), 0.0001)
+        assertBounds(0.06 .. 0.08, solver.variable("l::c1::securityOfSupply"))
+        assertBounds(0.06 .. 0.08, solver.variable("l::c1::securityOfSupply2"))
     }
 
     @Test // c4 shadowed by c3, so no further transitive search (securityOfSupply in c3 and c4)
@@ -760,11 +721,9 @@ class AggregationTests {
              }
     """)
         solver.propagate()
+        assertIssue("is not satisfiable")
         // assertNoIssues()
-        assertEquals(0.3,
-            solver.getVariable("l::c3::securityOfSupply")!!.min(), 0.0001)
-        assertEquals(0.3,
-            solver.getVariable("l::c3::securityOfSupply")!!.max(), 0.0001)
+        assertBounds(0.3 .. 0.3, solver.variable("l::c3::securityOfSupply"))
     }
 
     @Test // c4 shadowed by c3, so no further transitive search (securityOfSupply in c3 and c4)
@@ -787,8 +746,7 @@ class AggregationTests {
     """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(6, solver.getVariable("l::c1::securityOfSupply")!!.vectorQuantity.value.asIdd().min)
-        assertEquals(8, solver.getVariable("l::c1::securityOfSupply")!!.vectorQuantity.value.asIdd().max)
+        assertBounds(6L .. 8, solver.variable("l::c1::securityOfSupply"))
     }
 
     @Test @Ignore
@@ -812,8 +770,7 @@ class AggregationTests {
             feature result: Ranges::IntegerInRange  = productOverSubclasses(securityOfSupply) {:>> range = 6..6;}""")
         solver.propagate()
         assertNoIssues()
-        assertEquals(3, solver.getVariable("l::c3::securityOfSupply")!!.vectorQuantity.value.asIdd().max)
-        assertEquals(3, solver.getVariable("l::c3::securityOfSupply")!!.vectorQuantity.value.asIdd().min)
+        assertBounds(3L .. 3L, solver.variable("l::c3::securityOfSupply"))
     }
 
     @Test // c4 shadowed by c3, so no further transitive search
@@ -843,10 +800,8 @@ class AggregationTests {
     """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(0.48, solver.getVariable("l::c1::securityOfSupply1")!!.min(), 0.0001)
-        assertEquals(0.56, solver.getVariable("l::c1::securityOfSupply1")!!.max(), 0.0001)
-        assertEquals(0.48, solver.getVariable("l::c1::securityOfSupply2")!!.min(), 0.0001)
-        assertEquals(0.56, solver.getVariable("l::c1::securityOfSupply2")!!.max(), 0.0001)
+        assertBounds(0.48 .. 0.56, solver.variable("l::c1::securityOfSupply1"))
+        assertBounds(0.48 .. 0.56, solver.variable("l::c1::securityOfSupply2"))
     }
 
     @Test // c4 shadowed by c3, so no further transitive search
@@ -868,9 +823,12 @@ class AggregationTests {
         }
     """)
         solver.propagate()
+        assertIssue("is not satisfiable")
         // assertTrue(status.reports.isEmpty(), "Exceptions: ${status.reports}")
-        assertEquals(0.06666, solver.getVariable("l::c2::securityOfSupply")!!.min(), 0.0001)
-        assertEquals(0.2, solver.getVariable("l::c2::securityOfSupply")!!.max(), 0.0001)
+        assertBounds(
+            0.06666666666666667.. 0.2,
+            solver.variable("l::c2::securityOfSupply")
+        )
     }
 
     @Test
@@ -892,17 +850,11 @@ class AggregationTests {
                 feature securityOfSupply: Ranges::RealInRange  {:>> range = 0.4..0.4;}
             }
         }
-    """)
+        """, Runlevel.ALL)
         solver.propagate()
         assertNoIssues()
-        assertEquals(0.664,
-            solver.getVariable("l::c1::resultingSecurityOfSupply")!!.min(), 0.0001)
-        assertEquals(0.664,
-            solver.getVariable("l::c1::resultingSecurityOfSupply")!!.max(), 0.0001)
-        assertEquals(0.2,
-            solver.getVariable("l::c1::resultingSecurityOfSupply2")!!.min(), 0.0001)
-        assertEquals(0.2,
-            solver.getVariable("l::c1::resultingSecurityOfSupply2")!!.max(), 0.0001)
+        assertBounds(0.664 .. 0.664, solver.variable("l::c1::resultingSecurityOfSupply"))
+        assertBounds(0.2 .. 0.2, solver.variable("l::c1::resultingSecurityOfSupply2"))
     }
 
     @Test
@@ -940,6 +892,7 @@ class AggregationTests {
             In future, replace legacy *over* functions with SysMLv2-compliant alternative (e.g. subclasses : (t : Type) -> t[0..*] )
          */
         expected.forEach {
+            solver.propagate()
             assertIssue(it)
         }
 
@@ -947,8 +900,7 @@ class AggregationTests {
         assertNoIssues {
             it.message !in expected
         }
-        assertEquals(0.2, solver.getVariable("l::c2::securityOfSupply")!!.min(), 0.0001)
-        assertEquals(0.2, solver.getVariable("l::c2::securityOfSupply")!!.max(), 0.0001)
+        assertBounds(0.2 .. 0.2, solver.variable("l::c2::securityOfSupply"))
     }
 
     @Test
@@ -976,14 +928,8 @@ class AggregationTests {
     """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(0.042,
-            solver.getVariable("l::c1::resultingSecurityOfSupply")!!.min(), 0.0001)
-        assertEquals(0.042,
-            solver.getVariable("l::c1::resultingSecurityOfSupply")!!.max(), 0.0001)
-        assertEquals(0.4,
-            solver.getVariable("l::c1::resultingSecurityOfSupply2")!!.min(), 0.0001)
-        assertEquals(0.4,
-            solver.getVariable("l::c1::resultingSecurityOfSupply2")!!.max(), 0.0001)
+        assertBounds(0.042 .. 0.042, solver.variable("l::c1::resultingSecurityOfSupply"))
+        assertBounds(0.4 .. 0.4, solver.variable("l::c1::resultingSecurityOfSupply2"))
     }
 
     @Test
@@ -1009,10 +955,10 @@ class AggregationTests {
         }
     """)
         solver.propagate()
+        assertIssue("is not satisfiable")
         assertTrue(status.issues.any { it.kind.ordinal > Issue.Kind.WARN.ordinal }, "Reports: ${status.issues}")
         // assertTrue(status.reports.isEmpty(), "Exceptions: ${status.reports}")
-        assertEquals(0.8, solver.getVariable("l::c2::a")!!.min(), 0.0001)
-        assertEquals(0.8, solver.getVariable("l::c2::a")!!.max(), 0.0001)
+        assertBounds(0.8 .. 0.8, solver.variable("l::c2::a"))
     }
 
     @Test
@@ -1036,10 +982,8 @@ class AggregationTests {
     """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(0.5, solver.getVariable("l::c1::securityOfSupply")!!.min(), 0.0001)
-        assertEquals(0.6, solver.getVariable("l::c1::securityOfSupply")!!.max(), 0.0001)
-        assertEquals(0.5, solver.getVariable("l::c1::securityOfSupply2")!!.min(), 0.0001)
-        assertEquals(0.6, solver.getVariable("l::c1::securityOfSupply2")!!.max(), 0.0001)
+        assertBounds(0.5 .. 0.6, solver.variable("l::c1::securityOfSupply"))
+        assertBounds(0.5 .. 0.6, solver.variable("l::c1::securityOfSupply2"))
     }
 
     @Test
@@ -1061,10 +1005,10 @@ class AggregationTests {
         }
     """)
         solver.propagate()
+        assertIssue("is not satisfiable")
         assertTrue(status.issues.any { it.kind.ordinal >= Issue.Kind.WARN.ordinal }, "Reports: ${status.issues}")
         // assertTrue(status.reports.isEmpty(), "Exceptions: ${status.reports}")
-        assertEquals(0.3, solver.getVariable("l::c3::securityOfSupply")!!.min(), 0.0001)
-        assertEquals(0.3, solver.getVariable("l::c3::securityOfSupply")!!.max(), 0.0001)
+        assertBounds(0.3 .. 0.3, solver.variable("l::c3::securityOfSupply"))
     }
 
     @Test
@@ -1088,14 +1032,8 @@ class AggregationTests {
     """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(1.4,
-            solver.getVariable("l::c1::securityOfSupply")!!.min(), 0.0001)
-        assertEquals(1.5,
-            solver.getVariable("l::c1::securityOfSupply")!!.max(), 0.0001)
-        assertEquals(1.4,
-            solver.getVariable("l::c1::securityOfSupply2")!!.min(), 0.0001)
-        assertEquals(1.5,
-            solver.getVariable("l::c1::securityOfSupply2")!!.max(), 0.0001)
+        assertBounds(1.4 .. 1.5, solver.variable("l::c1::securityOfSupply"))
+        assertBounds(1.4 .. 1.5, solver.variable("l::c1::securityOfSupply2"))
     }
 
 
@@ -1120,10 +1058,8 @@ class AggregationTests {
     """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(1.4, solver.getVariable("l::c1::securityOfSupply")!!.min(), 0.0001)
-        assertEquals(1.5, solver.getVariable("l::c1::securityOfSupply")!!.max(), 0.0001)
-        assertEquals(1.4, solver.getVariable("l::c1::securityOfSupply2")!!.min(), 0.0001)
-        assertEquals(1.5, solver.getVariable("l::c1::securityOfSupply2")!!.max(), 0.0001)
+        assertBounds(1.4 .. 1.5, solver.variable("l::c1::securityOfSupply"))
+        assertBounds(1.4 .. 1.5, solver.variable("l::c1::securityOfSupply2"))
     }
 
     @Test
@@ -1146,8 +1082,7 @@ class AggregationTests {
     """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(5, solver.getVariable("l::c1::securityOfSupply")!!.vectorQuantity.idd().min)
-        assertEquals(6, solver.getVariable("l::c1::securityOfSupply")!!.vectorQuantity.idd().max)
+        assertBounds(5L .. 6, solver.variable("l::c1::securityOfSupply"))
     }
 
     @Test
@@ -1169,13 +1104,11 @@ class AggregationTests {
         }
     """)
         solver.propagate()
+        assertIssue("is not satisfiable")
         assertTrue(status.issues.any{ it.kind.ordinal >= Issue.Kind.WARN.ordinal }, "Reports: ${status.issues}")
         // there are, however, exceptions:
         // assertTrue(status.reports.isEmpty(), "Exceptions: ${status.reports}")
-        assertEquals(0.3,
-            solver.getVariable("l::c3::securityOfSupply")!!.min(), 0.0001)
-        assertEquals(0.3,
-            solver.getVariable("l::c3::securityOfSupply")!!.max(), 0.0001)
+        assertBounds(0.3 .. 0.3, solver.variable("l::c3::securityOfSupply"))
     }
 
     @Test
@@ -1201,10 +1134,8 @@ class AggregationTests {
         // print(resolveName<Expression>("l::c2::securityOfSupply"))
         solver.propagate()
         assertNoIssues()
-        assertEquals(0.9, solver.getVariable("l::c1::resultingSecurityOfSupply")!!.min(), 0.0001)
-        assertEquals(0.9, solver.getVariable("l::c1::resultingSecurityOfSupply")!!.max(), 0.0001)
-        assertEquals(2.2, solver.getVariable("l::c1::resultingSecurityOfSupply2")!!.min(), 0.0001)
-        assertEquals(2.2, solver.getVariable("l::c1::resultingSecurityOfSupply2")!!.max(), 0.0001)
+        assertBounds(0.9 .. 0.9, solver.variable("l::c1::resultingSecurityOfSupply"))
+        assertBounds(2.2 .. 2.2, solver.variable("l::c1::resultingSecurityOfSupply2"))
     }
 
     @Test
@@ -1227,9 +1158,9 @@ class AggregationTests {
         }
     """)
         solver.propagate()
+        assertIssue("is not satisfiable")
         assertTrue(status.issues.any { it.kind.ordinal == Issue.Kind.WARN_INCONSISTENCY.ordinal }, "${status.issues}")
-        assertEquals(0.3, solver.getVariable("l::c4::securityOfSupply")!!.min(), 0.0001)
-        assertEquals(0.3, solver.getVariable("l::c4::securityOfSupply")!!.max(), 0.0001)
+        assertBounds(0.3 .. 0.3, solver.variable("l::c4::securityOfSupply"))
     }
 
     @Test
@@ -1257,10 +1188,8 @@ class AggregationTests {
     """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(1.05, solver.getVariable("l::c1::resultingSecurityOfSupply")!!.min(), 0.0001)
-        assertEquals(1.05, solver.getVariable("l::c1::resultingSecurityOfSupply")!!.max(), 0.0001)
-        assertEquals(0.4, solver.getVariable("l::c1::resultingSecurityOfSupply2")!!.min(), 0.0001)
-        assertEquals(0.4, solver.getVariable("l::c1::resultingSecurityOfSupply2")!!.max(), 0.0001)
+        assertBounds(1.05 .. 1.05, solver.variable("l::c1::resultingSecurityOfSupply"))
+        assertBounds(0.4 .. 0.4, solver.variable("l::c1::resultingSecurityOfSupply2"))
     }
 
     @Test
@@ -1286,9 +1215,9 @@ class AggregationTests {
         }
     """)
         solver.propagate()
+        assertIssue("is not satisfiable")
         assertTrue(status.issues.any { it.kind.ordinal >= Issue.Kind.WARN.ordinal }, "Reports: ${status.issues}")
-        assertEquals(0.7, solver.getVariable("l::c4::a")!!.min(), 0.0001)
-        assertEquals(0.7, solver.getVariable("l::c4::a")!!.max(), 0.0001)
+        assertBounds(0.7 .. 0.7, solver.variable("l::c4::a"))
     }
 
     /**
@@ -1315,10 +1244,10 @@ class AggregationTests {
             }
          }
     """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(0.9, solver.getVariable("l::c1::securityOfSupply")!!.min(), 0.0001)
-        assertEquals(0.9, solver.getVariable("l::c1::securityOfSupply")!!.max(), 0.0001)
-        assertEquals("m", solver.getVariable("l::c1::securityOfSupply")!!.vectorQuantity.unit.toString())
+        assertBounds(0.9 .. 0.9, solver.variable("l::c1::securityOfSupply"))
+        assertEquals("m", solver.variable("l::c1::securityOfSupply").vectorQuantity.unit.toString())
     }
 
 
@@ -1373,40 +1302,34 @@ class AggregationTests {
     """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(0.57, solver.getVariable("RealizabilityMetric::value")!!.min(), 0.00001)
-        assertEquals(0.57, solver.getVariable("RealizabilityMetric::value")!!.max(), 0.00001)
-        assertEquals(1.00, solver.getVariable("RealizabilityMetric::weightsum")!!.max(), 0.00001)
-        assertEquals(builder.True, solver.getVariable("RealizabilityMetric::rightWeightSum")!!.vectorQuantity.value)
-        assertEquals(0.057, solver.getVariable("Realizability::weightedValue")!!.min(), 0.00001)
-        assertEquals(0.114, solver.getVariable("Realizability::weightedValue")!!.max(), 0.00001)
-        assertEquals(0.57, solver.getVariable("RealizabilityMetric::value2")!!.min(), 0.00001)
-        assertEquals(0.57, solver.getVariable("RealizabilityMetric::value2")!!.max(), 0.00001)
-        assertEquals(1.00, solver.getVariable("RealizabilityMetric::weightsum2")!!.max(), 0.00001)
-        assertEquals(0.057, solver.getVariable("Realizability::weightedValue2")!!.min(), 0.00001)
-        assertEquals(0.114, solver.getVariable("Realizability::weightedValue2")!!.max(), 0.00001)
+        assertBounds(0.57 .. 0.57, solver.variable("RealizabilityMetric::value"))
+        assertBounds(1.00, solver.variable("RealizabilityMetric::weightsum"))
+        assertEquals(builder.Bool.True, solver.variable("RealizabilityMetric::rightWeightSum").vectorQuantity.value)
+        assertBounds(0.057 .. 0.114, solver.variable("Realizability::weightedValue"))
+        assertBounds(0.57 .. 0.57, solver.variable("RealizabilityMetric::value2"))
+        assertBounds(1.00, solver.variable("RealizabilityMetric::weightsum2"))
+        assertBounds(0.057 .. 0.114, solver.variable("Realizability::weightedValue2"))
     }
 
     @Test
     fun kpiTest2() = testSession("Ranges") {
         loadKerML("""
-        type RealizabilityMetric :> Base::Anything {
-            feature values: ScalarValues::Real = 0.71;
-        }
-        
-        feature f: RealizabilityMetric; 
-
-        type Realizability :> Base::Anything {
-            feature RealizabilityMetrics: RealizabilityMetric;
-            feature value: Ranges::RealInRange  = 1.0 - sumOverParts(values) {:>> range = 0 .. 100;}
-            feature value2: Ranges::RealInRange  = 1.0 - sumOverPartsNotTransitive(values) {:>> range = 0 .. 100;}
-        }
-    """)
+            type RealizabilityMetric :> Base::Anything {
+                feature values: ScalarValues::Real = 0.71;
+            }
+            
+            feature f: RealizabilityMetric; 
+    
+            type Realizability :> Base::Anything {
+                feature RealizabilityMetrics: RealizabilityMetric;
+                feature value: Ranges::RealInRange  = 1.0 - sumOverParts(values) {:>> range = 0 .. 100;}
+                feature value2: Ranges::RealInRange  = 1.0 - sumOverPartsNotTransitive(values) {:>> range = 0 .. 100;}
+            }
+        """, Runlevel.ALL)
         solver.propagate()
         assertNoIssues()
-        assertEquals(0.29, solver.getVariable("Realizability::value")!!.min(), 0.00001)
-        assertEquals(0.29, solver.getVariable("Realizability::value")!!.max(), 0.00001)
-        assertEquals(0.29, solver.getVariable("Realizability::value2")!!.min(), 0.00001)
-        assertEquals(0.29, solver.getVariable("Realizability::value2")!!.max(), 0.00001)
+        assertBounds(0.29, solver.variable("Realizability::value"))
+        assertBounds(0.29, solver.variable("Realizability::value2"))
     }
 
     @Test

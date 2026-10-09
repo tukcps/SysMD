@@ -32,7 +32,7 @@ class Variable(
                     //If it is a Real or Int, we can actually access the min and max values
                     min = expression.variable!!.rangeSpecs[0].min.toString()
                     max = expression.variable!!.rangeSpecs[0].max.toString()
-                    center = (expression.variable!!.rangeSpecs[0].max - ((expression.variable!!.rangeSpecs[0].max-expression.variable!!.rangeSpecs[0].min)/2)).toString()
+                    center = (expression.variable!!.rangeSpecs[0].max.finiteValue - ((expression.variable!!.rangeSpecs[0].max.finiteValue-expression.variable!!.rangeSpecs[0].min.finiteValue)/2)).toString()
                 }else{
                     //Access values via dependency String
                     dependencyStringToMinMax(expression.expression?:"").let {
@@ -48,9 +48,9 @@ class Variable(
             DataType.INT -> {
                 if(!expression.variable!!.intSpecs[0].toString().contains("MAX")){
                     //If it is a Real or Int, we can actually access the min and max values
-                    min = expression.variable!!.intSpecs[0].min.toInt().toString()
-                    max = expression.variable!!.intSpecs[0].max.toInt().toString()
-                    center = (expression.variable!!.intSpecs[0].max - ((expression.variable!!.intSpecs[0].max-expression.variable!!.intSpecs[0].min)/2)).toDouble().roundToInt().toString()
+                    min = expression.variable!!.intSpecs[0].min.toString()
+                    max = expression.variable!!.intSpecs[0].max.toString()
+                    center = (expression.variable!!.intSpecs[0].max.finiteValue - ((expression.variable!!.intSpecs[0].max.finiteValue-expression.variable!!.intSpecs[0].min.finiteValue)/2)).toDouble().roundToInt().toString()
                 }else{
                     //Access values via dependency String
                     dependencyStringToMinMax(expression.expression?:"").let {

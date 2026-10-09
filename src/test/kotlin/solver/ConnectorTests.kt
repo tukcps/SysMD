@@ -1,9 +1,11 @@
 package solver
 
+import util.variable
 import com.github.tukcps.sysmd.model.kerml.Association
 import com.github.tukcps.sysmd.model.kerml.Connector
 import com.github.tukcps.sysmd.services.Runlevel
 import util.assertNoIssues
+import util.assertBounds
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
@@ -38,18 +40,16 @@ class ConnectorTests {
 
         val c = global.resolve("c")?.member<Connector>()
         assertNotNull(c)
-        val sa = solver.getVariable("c::source")
-        assertNotNull(sa)
-        val tb = solver.getVariable("c::target")
-        assertNotNull(tb)
+        val sa = solver.variable("c::source")
+        val tb = solver.variable("c::target")
         assertEquals(solver.getVariable("a"), sa)
         assertEquals(solver.getVariable("b"), tb)
 
         val effectChain = global.resolve("Signals::EffectChain::inoutIsEqual")?.memberElement
-        val b = solver.getVariable("b")!!
-        val a = solver.getVariable("a")!!
-        assertEquals(4.0, b.max(), 0.0000001)
-        assertEquals(2.0, a.min(), 0.0000001)
+        val b = solver.variable("b")
+        val a = solver.variable("a")
+        assertBounds(2.0..4.0, b)
+        assertBounds(2.0..4.0, a)
         assertNotNull(effectChain)
     }
 
@@ -66,25 +66,20 @@ class ConnectorTests {
             feature b: B;
             connector c: Signals::EffectChain from a.x to b.y;
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        val ax = solver.getVariable("a::x")
-        assertNotNull(ax)
-        val by = solver.getVariable("b::y")
-        assertNotNull(by)
-        val aax = solver.getVariable("A::x")
-        assertNotNull(aax)
-        val bby = solver.getVariable("B::y")
-        assertNotNull(bby)
+        val ax = solver.variable("a::x")
+        val by = solver.variable("b::y")
+        val aax = solver.variable("A::x")
+        val bby = solver.variable("B::y")
         val ec = global.resolve("Signals::EffectChain")?.member<Association>()
         assertNotNull(ec)
         val c = global.resolve("c")?.member<Connector>()
         assertNotNull(c)
         val cs = global.resolve("c::source")?.memberElement
         assertNotNull(cs)
-        assertEquals(3.0, ax.min(), 0.00001)
-        assertEquals(3.0, by.min(), 0.00001)
-        assertEquals(3.0, by.max(), 0.00001)
-        assertEquals(2.0, bby.min(), 0.00001)
-        assertEquals(4.0, bby.max(), 0.00001)
+        assertBounds(3.0, ax)
+        assertBounds(3.0 .. 3.0, by)
+        assertBounds(2.0 .. 4.0, bby)
     }
 }

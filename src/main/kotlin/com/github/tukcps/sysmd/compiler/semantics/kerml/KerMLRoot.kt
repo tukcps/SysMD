@@ -5,8 +5,8 @@ package com.github.tukcps.sysmd.compiler.semantics.kerml
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.LIBRARY
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.STANDARD
 import com.github.tukcps.sysmd.compiler.semantics.ActionsContext
+import com.github.tukcps.sysmd.model.datamodel.ElementReference
 import com.github.tukcps.sysmd.model.datamodel.IdentificationKind
-import com.github.tukcps.sysmd.model.datamodel.IdentifiedByName
 import com.github.tukcps.sysmd.model.generated.ElementType
 import com.github.tukcps.sysmd.model.kerml.Import
 import com.github.tukcps.sysmd.model.kerml.Namespace
@@ -104,7 +104,7 @@ class ImportAction(
 
     override fun afterProduction() {
         element.type = type
-        val ref = IdentifiedByName(importQualifiedName!!, when(element.type) {
+        val ref = ElementReference.ByName(importQualifiedName!!, when(element.type) {
             ElementType.NamespaceImport -> IdentificationKind.Namespace
             else -> IdentificationKind.Membership
         })

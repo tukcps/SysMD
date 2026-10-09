@@ -15,7 +15,7 @@ open class Area(name: String, symbol: String, prefix: Prefix, convFac: Double, e
      */
     object SquareMeters : Area("square meters", "m^2", NoPrefix, 1.0)
     object Hectare : Area("hectare", "ha", NoPrefix, 10000.0)
-    object Acre : Area("acre", "ac", NoPrefix, 4046.86)
+    object Acre : Area("acre", "ac", NoPrefix, 4046.8564224)
 
     override fun copy(): Area {
         return Area(name, symbol, prefix, convFac, exponent, isLogarithmic)

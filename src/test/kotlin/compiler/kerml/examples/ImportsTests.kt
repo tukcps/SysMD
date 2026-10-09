@@ -60,7 +60,6 @@ class ImportsTests {
      * Ref: Section 7.2.5.4 - Imports
      * Kernel Modeling Language: https://www.omg.org/spec/KerML/1.0/Beta2/PDF/changebar
      */
-    @Ignore
     @Test
     fun testRecursiveImport() = testSession("Occurrences") {
         loadKerML("""

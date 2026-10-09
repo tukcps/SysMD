@@ -1,7 +1,9 @@
 package constraintnettests
 
+import util.variable
 import com.github.tukcps.sysmd.services.Runlevel
 import util.assertNoIssues
+import util.assertBounds
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
@@ -18,10 +20,10 @@ class VariableInteractionTests {
     @Test
     fun evalUpPropertyDirectTest() = testSession("Ranges") {
         loadKerML("feature speed: Ranges::RealInRange = 5.0+6.0 {:>> range = 2.0 .. 22.0;}", Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
         val speed = solver.getVariable("speed")
-        assertEquals(11.0, speed!!.min(), 0.000001)
-        assertEquals(11.0, speed.max(), 0.000001)
+        assertBounds(11.0 .. 11.0, speed!!)
     }
 
     @Test
@@ -31,8 +33,7 @@ class VariableInteractionTests {
              feature speed:  Ranges::RealInRange = speed2 {:>> range = -100.0 ..200.0;}""")
         solver.propagate()
         assertNoIssues()
-        val speed = solver.getVariable("speed")!!.aadd().getRange()
-        assertEquals(10.0, speed.min, 0.0000001)
-        assertEquals(200.0, speed.max, 0.0000001)
+        val speed = solver.variable("speed")
+        assertBounds(10.0 .. 200.0, speed)
     }
 }

@@ -6,24 +6,42 @@ import com.github.tukcps.sysmd.model.sysml.AssertConstraintUsage
 import com.github.tukcps.sysmd.model.sysml.ConstraintUsage
 import com.github.tukcps.sysmd.model.sysml.OccurrenceDefinition
 import com.github.tukcps.sysmd.model.sysml.OccurrenceUsage
+import com.github.tukcps.sysmd.model.util.SimpleName
 import com.github.tukcps.sysmd.services.session.Session
 import kotlin.uuid.Uuid
 
 class AssertConstraintUsageImplementation(
-    model : Session,
-    elementId : Uuid = Uuid.random()
-) : AssertConstraintUsage, InvariantImplementation(model,elementId = elementId)
-{
-    val assertedConstraint: ConstraintUsage = TODO()
+    model: Session,
+    elementId: Uuid = Uuid.random(),
+    declaredName: SimpleName? = null,
+    declaredShortName: SimpleName? = null,
+    expression: String? = null,
+) : InvariantImplementation(
+    model,
+    elementId = elementId,
+    declaredName = declaredName,
+    declaredShortName = declaredShortName,
+    expression = expression,
+), AssertConstraintUsage {
+    override fun clone(): AssertConstraintUsageImplementation = AssertConstraintUsageImplementation(
+        model,
+        declaredName = declaredName,
+        declaredShortName = declaredShortName,
+        expression = expression,
+    ).also {
+        it.updateFrom(this)
+        it.isNegated = this.isNegated
+        it.isIndividual = this.isIndividual
+        it.portionKind = this.portionKind
+        it.occurrenceDefinition.addAll(this.occurrenceDefinition)
+    }
+
+    val assertedConstraint: ConstraintUsage?
+        get() = null
 
     override val individualDefinition: OccurrenceDefinition?
-        get() = TODO("Not yet implemented")
-    override var isIndividual: Boolean?
-        get() = TODO("Not yet implemented")
-        set(value) {}
-    override val occurrenceDefinition: MutableList<Class>
-        get() = TODO("Not yet implemented")
-    override var portionKind: OccurrenceUsage.PortionKind?
-        get() = TODO("Not yet implemented")
-        set(value) {}
+        get() = null
+    override var isIndividual: Boolean? = false
+    override val occurrenceDefinition: MutableList<Class> = mutableListOf()
+    override var portionKind: OccurrenceUsage.PortionKind? = null
 }

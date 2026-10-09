@@ -1,5 +1,6 @@
 package compiler.sysml
 
+import util.variable
 import com.github.tukcps.sysmd.model.kerml.Connector
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.getOwnedElementOfType
@@ -8,6 +9,7 @@ import com.github.tukcps.sysmd.model.sysml.ConnectionUsage
 import com.github.tukcps.sysmd.model.sysml.PartUsage
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import util.assertNoIssues
+import util.assertBounds
 import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.*
@@ -203,15 +205,14 @@ class ConnectionTests {
         val a = global.resolve("a")?.member<Feature>()
         val b = global.resolve("b")?.member<Feature>()
         val c = global.resolve("c")?.member<Connector>()
+        solver.propagate()
+        assertNoIssues()
         assertNotNull(a)
         assertNotNull(b)
         assertNotNull(c)
         val source2 = global.resolve("c::source")?.memberElement
         assertNotNull(source2)
-        solver.propagate()
-        assertNoIssues()
-        assertEquals(3.0, solver.getVariable("a::x")!!.min(), 0.00001)
-        assertEquals(3.0, solver.getVariable("b::y")!!.min(), 0.00001)
-        assertEquals(3.0, solver.getVariable("b::y")!!.max(), 0.00001)
+        assertBounds(3.0, solver.variable("a::x"))
+        assertBounds(3.0 .. 3.0, solver.variable("b::y"))
     }
 }

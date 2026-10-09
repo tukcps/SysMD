@@ -74,9 +74,8 @@ object GeneratorConfiguration {
      * Additional imports for the generated element data interface.
      */
     val ELEMENT_DATA_IMPORTS = setOf(
+        "com.github.tukcps.sysmd.model.datamodel.ElementReference",
         "com.github.tukcps.sysmd.model.generated.ElementType",
-        "kotlin.uuid.Uuid",
-        "com.github.tukcps.sysmd.rest.entities.api.entities.Identified",
         "com.github.tukcps.sysmd.model.kerml.Feature.FeatureDirectionKind",
         "com.github.tukcps.sysmd.model.kerml.Import.VisibilityKind",
         "com.github.tukcps.sysmd.model.sysml.OccurrenceUsage.PortionKind",
@@ -84,17 +83,29 @@ object GeneratorConfiguration {
         "com.github.tukcps.sysmd.model.sysml.StateSubactionMembership.StateSubactionKind",
         "com.github.tukcps.sysmd.model.sysml.TransitionFeatureMembership.TransitionFeatureKind",
         "com.github.tukcps.sysmd.model.sysml.TriggerInvocationExpression.TriggerKind",
-        "com.github.tukcps.sysmd.model.sysml.implementation.TransitionFeatureMembershipImplementation"
+        "com.github.tukcps.sysmd.model.sysml.implementation.TransitionFeatureMembershipImplementation",
+        "io.github.tukcps.aadd.values.bounds.LongBound",
+        "io.github.tukcps.aadd.values.real.ia.RealRange",
+        "kotlin.uuid.Uuid",
     )
 
     /**
      * Kotlin type overrides for generated element data properties.
+     *
+     * Keys are either an unqualified attribute name, applied wherever that
+     * attribute occurs, or a `<MetaclassName>.<attributeName>` qualified name,
+     * applied only to that attribute of that metaclass (qualified overrides
+     * take precedence).
      */
     val ELEMENT_DATA_TYPE_OVERRIDES = mapOf(
         "elementId" to "Uuid",
         "importedMemberName" to "String?", // For transition ... should be in relationship
         "importedNamespace" to "String?",  // s.above.
         "isNameLiteral" to "Boolean?", // for StringLiteral. Required for legacy functions.
+        // LiteralInteger/LiteralRational.value are represented as AADD value ranges
+        // rather than plain Kotlin numbers, to preserve input precision.
+        "LiteralInteger.value" to "LongBound?",
+        "LiteralRational.value" to "RealRange?",
     )
 
     /**

@@ -1,7 +1,7 @@
 package compiler.kerml.root
 
 import com.github.tukcps.sysmd.compiler.KerML
-import com.github.tukcps.sysmd.model.datamodel.IdentifiedByName
+import com.github.tukcps.sysmd.model.datamodel.ElementReference
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.services.Runlevel
 import util.assertNoIssues
@@ -22,7 +22,7 @@ class ImportTests {
         val import = elements.first()
         assertEquals("NamespaceImport", import.type.name)
         assertEquals(null, import.declaredName)
-        assertEquals("something", (import.target.firstOrNull() as? IdentifiedByName?)?.name)
+        assertEquals("something", (import.target.firstOrNull() as? ElementReference.ByName?)?.name)
     }
 
     @Test
@@ -34,7 +34,7 @@ class ImportTests {
         val import = elements.first()
         assertEquals("MembershipImport", import.type.name)
         assertEquals(null, import.declaredName)
-        assertEquals("x::something", (import.target.firstOrNull() as? IdentifiedByName?)?.name)
+        assertEquals("x::something", (import.target.firstOrNull() as? ElementReference.ByName?)?.name)
     }
 
     @Test

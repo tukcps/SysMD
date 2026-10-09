@@ -32,7 +32,7 @@ class Constant(expression: Feature, dataType: DataType, dependencyStringToMinMax
 
             DataType.INT -> {
                 value = if(!expression.variable!!.intSpecs[0].toString().contains("MAX")){
-                    expression.variable!!.intSpecs[0].max.toInt().toString()
+                    expression.variable!!.intSpecs[0].max.toString()
                 }else{
                     dependencyStringToMinMax(expression.expression!!).second.toInt().toString()
                 }

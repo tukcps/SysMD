@@ -1,13 +1,13 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import io.github.tukcps.aadd.AADD
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
-import io.github.tukcps.aadd.BDD
-import io.github.tukcps.aadd.IDD
-import io.github.tukcps.aadd.StrDD
+import io.github.tukcps.aadd.dd.AADD
+import io.github.tukcps.aadd.dd.BDD
+import io.github.tukcps.aadd.dd.IDD
+import io.github.tukcps.aadd.dd.StrDD
 
 /**
  * Normalize a vector to length 1
@@ -20,11 +20,10 @@ internal class AstVectorSize(model: Session, args: ArrayList<AstNode>) : AstFunc
 
     override fun initialize() {
         upQuantity = when (getParam(0).upQuantity.values[0]) {
-            is AADD -> VectorQuantity(mutableListOf(model.builder.Reals), "?")
-            is IDD -> VectorQuantity(mutableListOf(model.builder.Integers))
-            is StrDD -> VectorQuantity(mutableListOf(model.builder.Strings))
-            is BDD -> VectorQuantity(mutableListOf(model.builder.Bool))
-            else -> throw SemanticError("Vector length must have a Real/Bool/String/Int argument")
+            is AADD -> VectorQuantity(mutableListOf(model.builder.Reals.All), "?")
+            is IDD -> VectorQuantity(mutableListOf(model.builder.Integers.All))
+            is StrDD -> VectorQuantity(mutableListOf(model.builder.Strings.All))
+            is BDD -> VectorQuantity(mutableListOf(model.builder.Bool.All))
         }
         evalUp()
         downQuantity = upQuantity.clone()
@@ -44,9 +43,5 @@ internal class AstVectorSize(model: Session, args: ArrayList<AstNode>) : AstFunc
         return block()
     }
 
-    override fun clone(): AstVectorSize {
-        val parClone = ArrayList<AstNode>()
-        for (p in parameters) parClone.add(p.clone())
-        return AstVectorSize(model, parClone)
-    }
+    override fun clone() = AstVectorSize(model, cloneParameters())
 }

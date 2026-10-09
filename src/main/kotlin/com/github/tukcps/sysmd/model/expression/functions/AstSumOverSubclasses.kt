@@ -2,18 +2,17 @@ package com.github.tukcps.sysmd.model.expression.functions
 
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.PLUS
 import com.github.tukcps.sysmd.exceptions.SemanticError
+import com.github.tukcps.sysmd.model.datamodel.toElementData
 import com.github.tukcps.sysmd.model.expression.AstLeaf
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.kerml.getOwnedElementsOfType
-import com.github.tukcps.sysmd.quantities.Quantity
-import com.github.tukcps.sysmd.model.datamodel.toElementData
-import com.github.tukcps.sysmd.services.resolve.resolveVar
+import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.IDD
+import io.github.tukcps.aadd.dd.AADD
+import io.github.tukcps.aadd.dd.IDD
 
 /**
  * The sumOverSubclasses function with parameter propertyAST.
@@ -38,7 +37,7 @@ internal class AstSumOverSubclasses(
      * Initialization; starts from bottom-up
      */
     override fun initialize() {
-        upQuantity = Quantity(model.builder.Reals, "?")
+        upQuantity = VectorQuantity(model.builder.Reals.All, "?")
         downQuantity = upQuantity
         if (propertyAst.size != 1)
             throw SemanticError("function 'sumOverSubclasses' expects one parameter")
@@ -61,22 +60,7 @@ internal class AstSumOverSubclasses(
      **/
     override fun evalUp() {
         // upQuantity = model.getElement(elementUId).sumOverComposition(model, propertyName)!!
-        generatedAst!!.evalUpRec()
-        upQuantity = generatedAst!!.upQuantity
-    }
-
-
-    /**
-     * Evaluate the properties of all owned elements.
-     */
-    override fun evalUpRec() {
-        val ownedElements = namespace.getOwnedElementsOfType<Feature>().mapNotNull { it.variable }
-        for (elem in ownedElements) {
-            try {
-                elem.ast?.evalUp()
-            } catch (_: Exception) { }
-        }
-        evalUp()
+        evalUpGenerated(generatedAst!!)
     }
 
 
@@ -111,9 +95,7 @@ internal class AstSumOverSubclasses(
         return getPartDependencies(namespace as Type, propertyAst.first(), transitive)
     }
 
-    override fun clone(): AstFunction {
-        return AstSumOverSubclasses(model, namespace.clone() as Namespace, listOf(propertyAst.first().clone()), transitive)
-    }
+    override fun clone() = AstSumOverSubclasses(model, namespace.clone() as Namespace, listOf(propertyAst.first().clone()), transitive)
 }
 
 
@@ -160,9 +142,9 @@ fun Session.initAstSumSubclasses(
     // Build balanced binary tree from collected operands
     if (operands.isEmpty()) {
         return if (isRealSum)
-            AstLeaf(this, Quantity(builder.real(0.0), "?"))
+            AstLeaf(this, VectorQuantity(builder.real(0.0), "?"))
         else
-            AstLeaf(this, Quantity(builder.integer(0)))
+            AstLeaf(this, VectorQuantity(builder.integer(0)))
     }
     
     return buildBalancedTree(operands, PLUS)

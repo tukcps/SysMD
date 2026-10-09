@@ -180,18 +180,13 @@ fun Session.checkNameResolutionSuccessful() {
     // Also checks Feature types.
     val elements = get()
     elements.filterIsInstance<Relationship>().forEach { relationship ->
-        relationship.source.filterIsInstance<Unresolved>().forEach {
+        val relName = relationship.escapedName() ?: relationship.elementType().name
+
+        (relationship.source + relationship.target).filterIsInstance<Unresolved>().forEach {
             status.warn(
                 kind = Issue.Kind.ERROR_UNRESOLVED_NAME,
-                message = "The name '${it.relativeName}' could not be resolved",
-                element = if (relationship.escapedName() != null) relationship.toElementData() else relationship.owningNamespace?.toElementData()
-            )
-        }
-        relationship.target.filterIsInstance<Unresolved>().forEach {
-            status.warn(
-                kind = Issue.Kind.ERROR_UNRESOLVED_NAME,
-                message = "The name of target '${it.relativeName}' of ${relationship.escapedName()?:relationship.elementType().name} could not be resolved",
-                element = if (relationship.escapedName() != null) relationship.toElementData() else relationship.owningNamespace?.toElementData()
+                message = "Could not resolve related element of $relName: $it",
+                element = (if (relationship.escapedName() !== null) relationship else relationship.owningNamespace)?.toElementData()
             )
         }
     }

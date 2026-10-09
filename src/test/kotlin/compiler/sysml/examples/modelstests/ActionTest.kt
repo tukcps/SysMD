@@ -8,7 +8,7 @@ import kotlin.test.Test
 
 class ActionTest {
 
-    @Test // @Ignore
+    @Test
     fun testAction() = testSession("States", "Interfaces", "Parts") {
         loadSysMLv2("""
             package 'Action Decomposition' {

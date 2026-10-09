@@ -1,5 +1,6 @@
 package com.github.tukcps.sysmd.rest.entities.api.entities.requestModels.commitData
 
+import com.github.tukcps.sysmd.model.datamodel.ElementReference
 import com.github.tukcps.sysmd.model.generated.ElementDataIF
 import com.github.tukcps.sysmd.rest.entities.api.entities.Identified
 
@@ -9,5 +10,5 @@ import com.github.tukcps.sysmd.rest.entities.api.entities.Identified
  */
 interface CommitData : Identified, ElementDataIF {
     var qualifiedName: String?
-    var ownedAnnotation: MutableList<Identified>
+    var ownedAnnotation: MutableList<ElementReference>
 }

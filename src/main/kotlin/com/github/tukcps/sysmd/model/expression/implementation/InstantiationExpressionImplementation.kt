@@ -7,6 +7,7 @@ import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.Function
 import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.model.util.SimpleName
+import com.github.tukcps.sysmd.quantities.Unit
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
 import java.util.BitSet
@@ -52,7 +53,7 @@ abstract class InstantiationExpressionImplementation(
 
 	/** The most general overload of the instantiated function, i.e. exactly the function named by `functionName` */
 	val rootFunction : Function? get() = functionName?.let {
-		(owningNamespace ?: model.global).resolve(it)?.member<Function>()
+		(owningNamespace ?: model.global).resolve(it)?.member()
 	}
 
 	override var instantiatedType: Type = this //FIXME: Hack
@@ -168,11 +169,11 @@ abstract class InstantiationExpressionImplementation(
 
 		val q = when {
 			res === null -> TODO("Initialization without known function doesn't make sense")
-			res.specializes(model.repo.booleanType!!) -> VectorQuantity(listOf(model.builder.Bool))
-			res.specializes(model.repo.stringType!!) -> VectorQuantity(listOf(model.builder.Strings))
+			res.specializes(model.repo.booleanType!!) -> VectorQuantity(listOf(model.builder.Bool.All))
+			res.specializes(model.repo.stringType!!) -> VectorQuantity(listOf(model.builder.Strings.All))
 			// check integer before real because real :> integer
-			res.specializes(model.repo.integerType!!) -> VectorQuantity(listOf(model.builder.Integers))
-			res.specializes(model.repo.realType!!) -> VectorQuantity(listOf(model.builder.Reals), "?")
+			res.specializes(model.repo.integerType!!) -> VectorQuantity(listOf(model.builder.Integers.All))
+			res.specializes(model.repo.realType!!) -> VectorQuantity.fromCanonical(listOf(model.builder.Reals.All), Unit("?"), "?")
 			else -> TODO("Expression is not of simple type")
 		}
 

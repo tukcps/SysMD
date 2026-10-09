@@ -1,11 +1,12 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.IDD
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.model.expression.AstNode
+import com.github.tukcps.sysmd.quantities.Unit
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
+import io.github.tukcps.aadd.dd.AADD
+import io.github.tukcps.aadd.dd.IDD
 
 /**
  * Predefined functions: ln, natural logarithm.
@@ -15,8 +16,8 @@ internal class AstLn(model: Session, args: ArrayList<AstNode>) :
 
     override fun initialize() {
         upQuantity = when (getParam(0).upQuantity.values[0]) {
-            is AADD -> VectorQuantity(mutableListOf(model.builder.Reals), "?")
-            is IDD -> VectorQuantity(mutableListOf(model.builder.Integers))
+            is AADD -> VectorQuantity.fromCanonical(mutableListOf(model.builder.Reals.All), Unit("?"), "?")
+            is IDD -> VectorQuantity(mutableListOf(model.builder.Integers.All))
             else -> throw SemanticError("ln function must have one parameter of type Real")
         }
         evalUp()
@@ -28,12 +29,8 @@ internal class AstLn(model: Session, args: ArrayList<AstNode>) :
     }
 
     override fun evalDown() {
-        getParam(0).downQuantity = downQuantity.exp()
+        getParam(0).downQuantity = getParam(0).downQuantity.constrain(downQuantity.exp())
     }
 
-    override fun clone(): AstLn {
-        val parClone = ArrayList<AstNode>()
-        for (p in parameters) parClone.add(p.clone())
-        return AstLn(model, parClone)
-    }
+    override fun clone() = AstLn(model, cloneParameters())
 }

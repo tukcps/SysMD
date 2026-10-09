@@ -1,12 +1,10 @@
 package constraintnettests
 
 import com.github.tukcps.sysmd.cspsolver.Variable
-import com.github.tukcps.sysmd.cspsolver.normalizer.CNNormalizer
-import com.github.tukcps.sysmd.cspsolver.normalizer.NormalizedProperties
-import com.github.tukcps.sysmd.cspsolver.normalizer.SimpleProperty
+import com.github.tukcps.sysmd.cspsolver.normalizer.*
 import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.session.Session
-import io.github.tukcps.aadd.values.XBool
+import io.github.tukcps.aadd.values.bool.XBoolImpl
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
@@ -63,7 +61,7 @@ class ConstraintNetNormalizationTests {
             }
         }
         if(printNormalizedProperties) {
-            val normalizedProps : MutableList<SimpleProperty<XBool>> = normalizedProperties.properties
+            val normalizedProps : MutableList<SimpleProperty<XBoolImpl>> = normalizedProperties.properties
             println("Set of properties after normalization:")
             for(property in normalizedProps) {
                 println(property.toString())

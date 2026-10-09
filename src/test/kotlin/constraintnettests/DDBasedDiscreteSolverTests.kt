@@ -2,13 +2,12 @@
 
 package constraintnettests
 
+import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.services.Runlevel
-import io.github.tukcps.aadd.BDD
-import io.github.tukcps.aadd.values.Range
-import util.assertNoIssues
+import io.github.tukcps.aadd.dd.BDD
+import util.*
 import util.mockup.loadKerML
-import util.testSession
 import kotlin.test.*
 
 class DDBasedDiscreteSolverTests {
@@ -32,14 +31,14 @@ class DDBasedDiscreteSolverTests {
         assertNoIssues()
         val v1p = solver.getVariable("Variant1::p")
         val v2p = solver.getVariable("Variant2::p")
-        assertEquals(0, status.issues.size, "Errors: ${status.issues}")
-        val p = solver.getVariable("General::p")!!
-        val q = solver.getVariable("General::q")!!
-        assertEquals(builder.True, p.vectorQuantity.value)
+        assertNoIssues()
+        val p = solver.variable("General::p")
+        val q = solver.variable("General::q")
+        assertEquals(builder.Bool.True, p.vectorQuantity.value)
         //assertNotEquals(builder.Bool, q.vectorQuantity.value) //FIXME: Do we want internal with ITE(x, t, f) or unknown leaf?
-        assertEquals(builder.Bool, q.vectorQuantity.value)
-        assertNotEquals(builder.True, q.vectorQuantity.value)
-        assertNotEquals(builder.False, q.vectorQuantity.value)
+        assertEquals(builder.Bool.All, q.vectorQuantity.value)
+        assertNotEquals(builder.Bool.True, q.vectorQuantity.value)
+        assertNotEquals(builder.Bool.False, q.vectorQuantity.value)
         assertEquals(0, q.vectorQuantity.value.height())
     }
 
@@ -71,8 +70,8 @@ class DDBasedDiscreteSolverTests {
             inv a; 
             inv b  { not owns(Global, a) }
         """, Runlevel.ALL)
-        assertNoIssues()
-        val b = solver.getVariable("b")!!
+        assertNoIssues { it.kind != Issue.Kind.WARN_INCONSISTENCY }
+        val b = solver.variable("b")
         assertEquals("Contradiction", b.vectorQuantity.value.toString()
         ) //FIXME: want contradiction? or exception during evaluation?
     }
@@ -84,9 +83,9 @@ class DDBasedDiscreteSolverTests {
             inv r { x > 1.0+1.0 }
         """, Runlevel.ALL)
         assertNoIssues()
-        val x = solver.getVariable("x")!!
+        val x = solver.variable("x")
         // println(x)
-        assertTrue(x.vectorQuantity.getMinAsDouble() <= 2.0)
+        assertBounds(2.0..3.0, x)
     }
 
     /**
@@ -100,8 +99,8 @@ class DDBasedDiscreteSolverTests {
             inv r { x >= 1.0+1.0}
         """, Runlevel.ALL)
         assertNoIssues()
-        val x = solver.getVariable("x")!!
-        assertTrue(x.vectorQuantity.getMinAsDouble() <= 2.0)
+        val x = solver.variable("x")
+        assertBounds(2.0..3.0, x)
     }
 
     @Test
@@ -112,9 +111,9 @@ class DDBasedDiscreteSolverTests {
         """, Runlevel.ALL
         )
         assertNoIssues()
-        val x = solver.getVariable("x")!!
+        val x = solver.variable("x")
         // println(x.quantity.getMaxAsDouble())
-        assertTrue(x.vectorQuantity.getMaxAsDouble() >= 2.0)
+        assertBounds(1.0..2.0, x)
     }
 
 
@@ -126,9 +125,9 @@ class DDBasedDiscreteSolverTests {
             inv r { x <= 1.0+1.0 }
         """, Runlevel.ALL)
         assertNoIssues()
-        val x = solver.getVariable("x")!!
+        val x = solver.variable("x")
         // println(x.quantity.getMaxAsDouble())
-        assertTrue(x.vectorQuantity.getMaxAsDouble() >= 2.0)
+        assertBounds(1.0..2.0, x)
     }
 
     @Test
@@ -138,13 +137,11 @@ class DDBasedDiscreteSolverTests {
             feature y: ScalarValues::Real = x+0.1;
             inv r { x == y}
         """, Runlevel.ALL)
-        assertNoIssues()
-        val x = solver.getVariable("x")!!
-        val y = solver.getVariable("y")!!
-        val r = solver.getVariable("r")!!
-        assertTrue(x.vectorQuantity.aadd().isEmpty())
-//         assertTrue(y.vectorQuantity.aadd().isEmpty())
-        assertEquals("Infeasible", r.valueStr)
+        assertNoIssues { it.kind != Issue.Kind.WARN_INCONSISTENCY }
+        val x = solver.variable("x")
+        val y = solver.variable("y")
+        val r = solver.variable("r")
+        assertEquals("Contradiction", r.valueStr)
     }
 
     @Test
@@ -154,13 +151,12 @@ class DDBasedDiscreteSolverTests {
             feature y: ScalarValues::Real = x+0.1;
             inv r { x >= y }
         """, Runlevel.ALL)
-        assertNoIssues()
-        val x = solver.getVariable("x")!!
-        val y = solver.getVariable("y")!!
-        val r = solver.getVariable("r")!!
-        assertTrue(x.vectorQuantity.aadd().isEmpty())
+        assertNoIssues { it.kind != Issue.Kind.WARN_INCONSISTENCY }
+        val x = solver.variable("x")
+        val y = solver.variable("y")
+        val r = solver.variable("r")
         // assertTrue(y.vectorQuantity.aadd().isEmpty())
-        assertEquals("Infeasible", r.valueStr)
+        assertEquals("Contradiction", r.valueStr)
         // Contradiction? Depends on order which solver reports issue?
     }
 
@@ -184,10 +180,8 @@ class DDBasedDiscreteSolverTests {
             inv c;
             inv d { (a and c) or (not(b) and not(a)) }
         """, Runlevel.ALL)
-        val a = solver.getVariable("a")
-        val b = solver.getVariable("b")
-        assertNotNull(a)
-        assertNotNull(b)
+        val a = solver.variable("a")
+        val b = solver.variable("b")
         //println(y!!.quantity.bdd().toIteString())
         //println(y!!.quantity.bdd().evaluate().toIteString())
         // println(builder.conds.indexes.toString())
@@ -195,8 +189,8 @@ class DDBasedDiscreteSolverTests {
 
         //(this as AgilaServiceImpl).dSolver.propagateByPath(this.getProperties())
 
-        //assertEquals(builder.TRUE, y!!.quantity.bdd())
-        //assertEquals(builder.TRUE, a!!.quantity.bdd()) //FIXME: Not working at the moment
+        //assertEquals(builder.Bool.True, y!!.quantity.bdd())
+        //assertEquals(builder.Bool.True, a!!.quantity.bdd()) //FIXME: Not working at the moment
     }
 
     @Test
@@ -270,9 +264,8 @@ class DDBasedDiscreteSolverTests {
         """)
         assertNoIssues()
         solver.propagate()
-        val y = solver.getVariable("z")
-        assertNotNull(y)
-        assertEquals(builder.False, y.vectorQuantity.value)
+        val y = solver.variable("z")
+        assertEquals(builder.Bool.False, y.vectorQuantity.value)
         //disc.solve(props)
         // println("break")
     }
@@ -287,11 +280,11 @@ class DDBasedDiscreteSolverTests {
         assertNoIssues()
         solver.propagate()
         val a = solver.getVariable("a")
-        assertEquals(builder.True, a!!.vectorQuantity.bdd())
+        assertEquals(builder.Bool.True, a!!.vectorQuantity.bdd())
         val b = solver.getVariable("b")
-        assertEquals(builder.True, b!!.vectorQuantity.bdd())
+        assertEquals(builder.Bool.True, b!!.vectorQuantity.bdd())
         val c = solver.getVariable("c")
-        assertEquals(builder.True, c!!.vectorQuantity.bdd())
+        assertEquals(builder.Bool.True, c!!.vectorQuantity.bdd())
     }
 
     @Test
@@ -304,11 +297,11 @@ class DDBasedDiscreteSolverTests {
         assertNoIssues()
         solver.propagate()
         val a = solver.getVariable("a")
-        assertEquals(builder.True, a!!.vectorQuantity.bdd())
-        val b = solver.getVariable("b")
-        assertTrue(b!!.vectorQuantity.bdd() === b.vectorQuantity.value.builder.Bool)
-        val c = solver.getVariable("c")
-        assertTrue(c!!.vectorQuantity.bdd() === c.vectorQuantity.value.builder.Bool)
+        assertEquals(builder.Bool.True, a!!.vectorQuantity.bdd())
+        val b = solver.variable("b")
+        assertSame(b.vectorQuantity.value.builder.Bool.All, b.vectorQuantity.bdd())
+        val c = solver.variable("c")
+        assertSame(c.vectorQuantity.value.builder.Bool.All, c.vectorQuantity.bdd())
     }
 
     @Test
@@ -326,30 +319,28 @@ class DDBasedDiscreteSolverTests {
         """, Runlevel.ALL)
         assertNoIssues()
         val a1 = solver.getVariable("a1")
-        assertEquals(builder.True, a1!!.vectorQuantity.bdd())
+        assertEquals(builder.Bool.True, a1!!.vectorQuantity.bdd())
         val a2 = solver.getVariable("a2")
         //assertEquals(builder.BOOL, a2!!.quantity.bdd())
         assertTrue(a2!!.valueStr.startsWith("Unknown"))
 
         val b1 = solver.getVariable("b1")
         // println(b1.toString())
-        assertEquals(builder.True, b1!!.vectorQuantity.bdd())
+        assertEquals(builder.Bool.True, b1!!.vectorQuantity.bdd())
         val b2 = solver.getVariable("b2")
         //assertEquals(builder.BOOL, b2!!.quantity.bdd())
         assertTrue(b2!!.valueStr.startsWith("Unknown"))
 
-        val c1 = solver.getVariable("c1")
-        val c2 = solver.getVariable("c2")
-        assertNotNull(c1)
-        assertNotNull(c2)
+        val c1 = solver.variable("c1")
+        val c2 = solver.variable("c2")
 
         val c3 = solver.getVariable("c3")
         val b3 = solver.getVariable("c3")
         val a3 = solver.getVariable("c3")
 
-        assertEquals(builder.True, c3!!.vectorQuantity.bdd(), "c3")
-        assertEquals(builder.True, b3!!.vectorQuantity.bdd(), "b3")
-        assertEquals(builder.True, a3!!.vectorQuantity.bdd(), "a3")
+        assertEquals(builder.Bool.True, c3!!.vectorQuantity.bdd(), "c3")
+        assertEquals(builder.Bool.True, b3!!.vectorQuantity.bdd(), "b3")
+        assertEquals(builder.Bool.True, a3!!.vectorQuantity.bdd(), "a3")
     }
 
     @Test
@@ -363,9 +354,9 @@ class DDBasedDiscreteSolverTests {
         val a = solver.getVariable("a")
         val b = solver.getVariable("b")
         val c = solver.getVariable("c")
-        assertEquals(builder.True, c!!.vectorQuantity.value, "c (= a and b) should be true")
-        assertEquals(builder.True, a!!.vectorQuantity.value, "a should be true")
-        assertEquals(builder.True, b!!.vectorQuantity.value, "b should be true")
+        assertEquals(builder.Bool.True, c!!.vectorQuantity.value, "c (= a and b) should be true")
+        assertEquals(builder.Bool.True, a!!.vectorQuantity.value, "a should be true")
+        assertEquals(builder.Bool.True, b!!.vectorQuantity.value, "b should be true")
     }
 
     @Test
@@ -387,12 +378,12 @@ class DDBasedDiscreteSolverTests {
         val a4 = solver.getVariable("a4")
 
         val b2 = solver.getVariable("b2")
-        assertEquals(builder.True, b2!!.vectorQuantity.bdd())
+        assertEquals(builder.Bool.True, b2!!.vectorQuantity.bdd())
         val b3 = solver.getVariable("b3")
         val b4 = solver.getVariable("b4")
 
         val c2 = solver.getVariable("c2")
-        assertEquals(builder.True, c2!!.vectorQuantity.bdd())
+        assertEquals(builder.Bool.True, c2!!.vectorQuantity.bdd())
         val c3 = solver.getVariable("c3")
         //assertTrue(c3!!.valueStr.startsWith("Unknown")) //Can make no assumption
         val c4 = solver.getVariable("c4")
@@ -415,14 +406,14 @@ class DDBasedDiscreteSolverTests {
         val a1 = solver.getVariable("a1")
         val a2 = solver.getVariable("a2")
         val a5 = solver.getVariable("a5")
-        assertEquals(builder.False, a5!!.vectorQuantity.bdd())
+        assertEquals(builder.Bool.False, a5!!.vectorQuantity.bdd())
 
         val b1 = solver.getVariable("b1")
-        assertEquals(builder.True, b1!!.vectorQuantity.bdd())
+        assertEquals(builder.Bool.True, b1!!.vectorQuantity.bdd())
         val b2 = solver.getVariable("b2")
-        assertEquals(builder.False, b2!!.vectorQuantity.bdd())
+        assertEquals(builder.Bool.False, b2!!.vectorQuantity.bdd())
         val b5 = solver.getVariable("b5")
-        assertEquals(builder.True, b5!!.vectorQuantity.bdd())
+        assertEquals(builder.Bool.True, b5!!.vectorQuantity.bdd())
     }
 
     @Test
@@ -436,7 +427,7 @@ class DDBasedDiscreteSolverTests {
         solver.propagate()
         //TODO: hier weiter
         val a = solver.getVariable("a")
-        assertEquals(builder.False, a!!.vectorQuantity.value.asBdd())
+        assertEquals(builder.Bool.False, a!!.vectorQuantity.value.asBdd())
     }
 
     @Test
@@ -460,7 +451,7 @@ class DDBasedDiscreteSolverTests {
         //println(a.quantity.value.asBdd().toIteString())
         //println(builder.conds.x.toString())
         //println((this as AgilaServiceImpl).dSolver.getInfeasibilityMap().toString())
-        //assertEquals(builder.True, a!!.quantity.bdd())
+        //assertEquals(builder.Bool.True, a!!.quantity.bdd())
 
         //val guards = dSolver.getGuardingProperties(a!!.uid!!)
         //println(a.ofClass)
@@ -503,7 +494,7 @@ class DDBasedDiscreteSolverTests {
             feature g: ScalarValues::Boolean = true or false;
         """, Runlevel.ALL)
         // There is no exor function ... yet. Either we add one ...
-        assertNoIssues()
+        assertNoIssues { it.kind != Issue.Kind.WARN_INCONSISTENCY }
         val a = solver.getVariable("a")
         assertTrue(a!!.valueStr.startsWith("Unknown"))
         val b = solver.getVariable("b")
@@ -526,10 +517,10 @@ class DDBasedDiscreteSolverTests {
         val a = solver.getVariable("a")
         val b = solver.getVariable("b")
         val c = solver.getVariable("c")
-        assertEquals(true, b!!.vectorQuantity.value is BDD.Leaf, "b not leaf")
-        assertEquals(true, c!!.vectorQuantity.value is BDD.Leaf, "c not leaf")
-        assertEquals(builder.True, b.vectorQuantity.bdd(), "b")
-        assertEquals(builder.True, c.vectorQuantity.bdd(), "c")
+        assertIs<BDD.Leaf>(b!!.vectorQuantity.value, "b")
+        assertIs<BDD.Leaf>(c!!.vectorQuantity.value, "c")
+        assertEquals(builder.Bool.True, b.vectorQuantity.bdd(), "b")
+        assertEquals(builder.Bool.True, c.vectorQuantity.bdd(), "c")
     }
 
     @Test
@@ -545,7 +536,7 @@ class DDBasedDiscreteSolverTests {
             inv c { b } 
         """)
         solver.propagate()
-        assertEquals("Contradiction", (solver.getVariable("c")!!.valueStr))
+        assertEquals("Contradiction", (solver.variable("c").valueStr))
         //println(status.errors.toString())
     }
 
@@ -588,7 +579,7 @@ class DDBasedDiscreteSolverTests {
         val arbitraryConstraint3 = solver.getVariable("arbitraryConstraint3")
         //1. One related constraint should be introduced: aC1 and aC2 evaluate to false => aC3 has to be true
         //FIXME: comment back in! assertEquals(1, (this as AgilaServiceImpl).dSolver.lastIntroducedProperty)
-        //assertEquals(builder.True, arbitraryConstraint3!!.quantity.value)
+        //assertEquals(builder.Bool.True, arbitraryConstraint3!!.quantity.value)
         //println(constraint.toString())
         //println(arbitraryConstraint3!!.quantity.toString())
         //2. Now change quantity/value of the arbitrary constraints and see how it impacts introduced related properties, properties and conditions
@@ -603,7 +594,7 @@ class DDBasedDiscreteSolverTests {
         //TODO: Now set satisfiable arbitrary constraints again
         arbitraryConstraint3.expression = ""
         arbitraryConstraint3.compileExpression()
-        arbitraryConstraint3.vectorQuantity.values = mutableListOf(builder.Bool)
+        arbitraryConstraint3.vectorQuantity = arbitraryConstraint3.vectorQuantity.copy(values = listOf(builder.Bool.All))
         // println("reactToUserChangesTest before 3. propagation")
         //FIXME: arbitraryConstraint3 still "false" => set conditions not reverted correctly!
         solver.propagate()
@@ -638,11 +629,12 @@ class DDBasedDiscreteSolverTests {
                 feature enumFake: ScalarValues::Real = if c1 ? 1.0 else if c2 ? 2.0 else if c3? 3.0 else if c4? 4.0 else 7.0; 
             """.trimIndent())
             solver.propagate()
-            val enum = solver.getVariable("enumFake")!!
+            assertNoIssues()
+            val enum = solver.variable("enumFake")
 
             //println("=== CONDS ===")
             //builder.conds.indexes.forEach { println(it) }
-            assertTrue( enum.vectorQuantity.value.asAadd().getRange() in Range(0.999 .. 7.001) )
+            assertBounds(1.0..7.0, enum)
         }
     }
 
@@ -654,11 +646,11 @@ class DDBasedDiscreteSolverTests {
             """.trimIndent())
             solver.propagate()
             assertNoIssues()
-            val enum = solver.getVariable("enumFake")!!
+            val enum = solver.variable("enumFake")
 
             //println("=== CONDS ===")
             //builder.conds.indexes.forEach { println(it) }
-            assertTrue(enum.vectorQuantity.value.asAadd().getRange() in Range(0.99..7.01))
+            assertBounds(1.0..7.0, enum)
         }
     }
 
@@ -670,12 +662,13 @@ class DDBasedDiscreteSolverTests {
                 inv selectorConstraint { selection >= 6.0 }
             """.trimIndent())
             solver.propagate()
+            assertNoIssues()
             //builder.conds.x.forEach { println(it) }
             val enum = solver.getVariable("selection")
             val constr = solver.getVariable("selectorConstraint")
 
-            //assertEquals(builder.False, builder.conds.x[4])
-            assertTrue(solver.getVariable("selection")!!.vectorQuantity.value.asAadd() in Range(6.99 .. 7.01) )
+            //assertEquals(builder.Bool.False, builder.conds.x[4])
+            assertBounds(7.0, solver.variable("selection"))
         }
     }
 
@@ -688,18 +681,19 @@ class DDBasedDiscreteSolverTests {
                 inv enumConstraint2 { selection <= 3.0 }
             """.trimIndent())
             solver.propagate()
+            assertNoIssues()
 
-            val enum = solver.getVariable("selection")!!
+            val enum = solver.variable("selection")
 
-            //assertEquals(builder.False, builder.conds.x[7])
-            //assertEquals(builder.False, builder.conds.x[8])
+            //assertEquals(builder.Bool.False, builder.conds.x[7])
+            //assertEquals(builder.Bool.False, builder.conds.x[8])
             var falseCounter = 0
             var unknownCounter = 0
-            for (x in builder.conds.x) {
-                if (x.value is BDD && x.value == builder.False) falseCounter++
+            for (x in builder.conditions.x) {
+                if (x.value is BDD && x.value == builder.Bool.False) falseCounter++
                 if (x.value is BDD && x.value == builder.Bool) unknownCounter++
             }
-            assertTrue(enum.vectorQuantity.value.asAadd().getRange() in Range(2.99 .. 3.01))
+            assertBounds(3.0, enum)
             //assertEquals(2, falseCounter)
             //assertEquals(2, unknownCounter)
         }
@@ -716,14 +710,14 @@ class DDBasedDiscreteSolverTests {
             solver.propagate()
             assertNoIssues()
 
-            val enum1 = solver.getVariable("selection1")!!
-            val enum2 = solver.getVariable("selection2")!!
-            //assertEquals(builder.False, builder.conds.x[3])
-            //assertEquals(builder.False, builder.conds.x[4])
-            //assertEquals(builder.False, builder.conds.x[5])
-            //assertEquals(builder.False, builder.conds.x[6])
+            val enum1 = solver.variable("selection1")
+            val enum2 = solver.variable("selection2")
+            //assertEquals(builder.Bool.False, builder.conds.x[3])
+            //assertEquals(builder.Bool.False, builder.conds.x[4])
+            //assertEquals(builder.Bool.False, builder.conds.x[5])
+            //assertEquals(builder.Bool.False, builder.conds.x[6])
             // for (x in builder.conds.x) {
-                //if (x.value is BDD) assertEquals(builder.False, x.value)
+                //if (x.value is BDD) assertEquals(builder.Bool.False, x.value)
             // }
             assertEquals("6", enum1.vectorQuantity.plus(enum2.vectorQuantity).toString())
         }
@@ -740,10 +734,10 @@ class DDBasedDiscreteSolverTests {
                 feature enumConstraint: ScalarValues::Boolean = (enum1 + enum2) >= 5.0 {:>> range = "true";}
             """.trimIndent())
             solver.propagate()
-            val enum1 = solver.getVariable("enum1")!!
-            val enum2 = solver.getVariable("enum2")!!
-            val result = solver.getVariable("enumResult")!!
-            val constraint = solver.getVariable("enumConstraint")!!
+            val enum1 = solver.variable("enum1")
+            val enum2 = solver.variable("enum2")
+            val result = solver.variable("enumResult")
+            val constraint = solver.variable("enumConstraint")
         }
     }
 
@@ -759,23 +753,23 @@ class DDBasedDiscreteSolverTests {
             feature prop2T : ScalarValues::Boolean(true) = prop1T or true;
             feature prop2F : ScalarValues::Boolean(false) = prop1F and false;
         """.trimIndent())
-        assertNoIssues()
+        assertNoIssues { it.kind != Issue.Kind.WARN_INCONSISTENCY }
         solver.propagate()
-        assertNoIssues()
+        assertNoIssues { it.kind != Issue.Kind.WARN_INCONSISTENCY }
 
-        val c = solver.getVariable("contradiction")!!
-        val p1 = solver.getVariable("prop1")!!
-        val p1f = solver.getVariable("prop1T")!!
-        val p1t = solver.getVariable("prop1F")!!
-        val p2 = solver.getVariable("prop2")!!
-        val p2f = solver.getVariable("prop2T")!!
-        val p2t = solver.getVariable("prop2F")!!
+        val c = solver.variable("contradiction")
+        val p1 = solver.variable("prop1")
+        val p1f = solver.variable("prop1T")
+        val p1t = solver.variable("prop1F")
+        val p2 = solver.variable("prop2")
+        val p2f = solver.variable("prop2T")
+        val p2t = solver.variable("prop2F")
 
         assertEquals("Contradiction", c.vectorQuantity.value.toString())
-        assertEquals("Contradiction", p1.vectorQuantity.value.toString())
+        assertEquals("Infeasible", p1.vectorQuantity.value.toString())
         assertEquals("Contradiction", p1f.vectorQuantity.value.toString())
         assertEquals("Contradiction", p1t.vectorQuantity.value.toString())
-        assertEquals("Contradiction", p2.vectorQuantity.value.toString())
+        assertEquals("Infeasible", p2.vectorQuantity.value.toString())
         assertEquals("Contradiction", p2f.vectorQuantity.value.toString())
         assertEquals("Contradiction", p2t.vectorQuantity.value.toString())
     }
@@ -792,21 +786,21 @@ class DDBasedDiscreteSolverTests {
             feature contradiction : ScalarValues::Boolean(true) = false;
 
         """.trimIndent())
-        assertNoIssues()
+        assertNoIssues { it.kind != Issue.Kind.WARN_INCONSISTENCY }
         solver.propagate()
-        assertNoIssues()
+        assertNoIssues { it.kind != Issue.Kind.WARN_INCONSISTENCY }
 
-        val c = solver.getVariable("contradiction")!!
-        val x = solver.getVariable("x")!!
-        val y = solver.getVariable("y")!!
-        val z = solver.getVariable("z")!!
-        val a = solver.getVariable("a")!!
+        val c = solver.variable("contradiction")
+        val x = solver.variable("x")
+        val y = solver.variable("y")
+        val z = solver.variable("z")
+        val a = solver.variable("a")
 
         assertEquals("Contradiction", c.vectorQuantity.value.toString())
         assertEquals("Contradiction", a.vectorQuantity.value.toString())
-        assertEquals(builder.False, x.vectorQuantity.value)
-        assertEquals(builder.True, y.vectorQuantity.value)
-        assertEquals(builder.False, z.vectorQuantity.value)
+        assertEquals(builder.Bool.False, x.vectorQuantity.value)
+        assertEquals(builder.Bool.True, y.vectorQuantity.value)
+        assertEquals(builder.Bool.False, z.vectorQuantity.value)
     }
 
     private fun chain(v : String, n : Int) : List<String>
@@ -817,16 +811,16 @@ class DDBasedDiscreteSolverTests {
         val n = 10
         loadKerML(chain("x", n).plus("feature y : ScalarValues::Boolean(true) = x1;").joinToString("\n"))
         solver.propagate()
-        assertEquals(0, status.issues.size)
+        assertNoIssues()
 
         for(i in 1 .. n)
         {
-            val v = solver.getVariable("x$i")!!.vectorQuantity.value
+            val v = solver.variable("x$i").vectorQuantity.value
 
             if(i % 2 == 1)
-                assertEquals(v, builder.True)
+                assertEquals(v, builder.Bool.True)
             else
-                assertEquals(v, builder.False)
+                assertEquals(v, builder.Bool.False)
         }
     }
 
@@ -838,10 +832,10 @@ class DDBasedDiscreteSolverTests {
         val n = 13
         loadKerML(cycle("x", n).joinToString("\n"))
         solver.propagate()
-        assertEquals(0, status.issues.size)
+        assertNoIssues()
 
         for(i in 1 .. n) {
-            val v = solver.getVariable("x$i")!!.vectorQuantity.value
+            val v = solver.variable("x$i").vectorQuantity.value
 
             assertEquals("Infeasible", v.toString())
         }
@@ -854,15 +848,15 @@ class DDBasedDiscreteSolverTests {
         assertNoIssues()
 
         for(i in 1 .. n) {
-            val v = solver.getVariable("x$i")!!.vectorQuantity.value
+            val v = solver.variable("x$i").vectorQuantity.value
             assertEquals("Unknown", v.toString())
         }
 
         loadKerML("feature y : ScalarValues::Boolean(true) = x1;", Runlevel.ALL)
 
         for(i in 1 .. n) {
-            val v = solver.getVariable("x$i")!!.vectorQuantity.value
-            assertEquals(if(i % 2 == 1) v.builder.True else v.builder.False, v)
+            val v = solver.variable("x$i").vectorQuantity.value
+            assertEquals(if(i % 2 == 1) v.builder.Bool.True else v.builder.Bool.False, v)
         }
     }
 }

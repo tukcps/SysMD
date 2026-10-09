@@ -53,7 +53,7 @@ fun SysMLv2.ConstraintUsageDeclaration() {
  *          OccurrenceUsagePrefix 'constraint' ConstraintUsageDeclaration CalculationBody
  *
  */
-fun SysMLv2.ConstraintUsage() = FeatureAction(semantics, type = ElementType.Feature, isImplicit = "ScalarValues::Boolean").parse {
+fun SysMLv2.ConstraintUsage() = FeatureAction(semantics, type = ElementType.ConstraintUsage, isImplicit = "ScalarValues::Boolean").parse {
     OccurrenceDefinitionPrefix()
     CONSTRAINT.consume()
     ConstraintUsageDeclaration()

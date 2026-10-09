@@ -1,7 +1,7 @@
 package compiler.kerml.core
 
 import com.github.tukcps.sysmd.compiler.KerML
-import com.github.tukcps.sysmd.model.datamodel.IdentifiedByName
+import com.github.tukcps.sysmd.model.datamodel.ElementReference
 import com.github.tukcps.sysmd.model.generated.ElementType
 import com.github.tukcps.sysmd.model.kerml.Classifier
 import com.github.tukcps.sysmd.services.check.checkOwnership
@@ -59,7 +59,7 @@ class ClassifierTests {
         assertEquals("shortName", classifier.declaredShortName)
         assertEquals("longName", classifier.declaredName)
         // subclassifier OK?
-        assertEquals("classifier1", (subclassifier.target.first() as IdentifiedByName).name)
+        assertEquals("classifier1", (subclassifier.target.first() as ElementReference.ByName).name)
         // owningMembership OK?
         if ( compiler.settings.includeOwningRelationshipsToRoot ) {
             assertNotNull(classifier.owningRelationship?.id)

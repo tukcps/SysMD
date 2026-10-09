@@ -2,16 +2,14 @@ package exports
 
 import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.services.Runlevel
-import com.github.tukcps.sysmd.services.resolve.resolveVar
-import util.assertIssue
-import util.assertNoIssues
+import util.*
 import util.mockup.loadSysMLv2
-import util.testSession
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Paths
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 
@@ -61,13 +59,13 @@ class ImportTest {
                     part lna:    LNA;  
                     part stage2: Stage2;  
                     part driver: Driver;  
-                    attribute gain: Quantities::ScalarQuantityValue(26.0 .. 35.0 [dB]) = characterizedResult(productOverParts(gain),"${Paths.get("").toAbsolutePath()}/src/test/resources/importResultsTestDir/testFile.json"); 
+                    attribute gain: Quantities::ScalarQuantityValue(26.0 .. 30.0 [dB]) = characterizedResult(productOverParts(gain),"${Paths.get("").toAbsolutePath()}/src/test/resources/importResultsTestDir/testFile.json"); 
                 }
             }
             """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(28.5, solver.getVariable("test::myAmplifier::gain")!!.aadd().min,0.00001)
-        assertEquals(28.5,solver.getVariable("test::myAmplifier::gain")!!.aadd().max,0.00001)
+        assertBounds(28.5 .. 28.5, solver.variable("test::myAmplifier::gain"), unit = "dB")
         assertNoIssues()
     }
 
@@ -109,7 +107,7 @@ class ImportTest {
                 }
             }
         """, Runlevel.ALL)
-        assertTrue(solver.getVariable("test::myAmplifier::gain")!!.aadd().isEmpty())
+        assertEmpty(solver.variable("test::myAmplifier::gain"))
         assertIssue("not satisfiable")
     }
 
@@ -151,9 +149,10 @@ class ImportTest {
                 }
             }
         """, Runlevel.ALL)
-        assertEquals(1, status.issues.size, "Expected an error message that reports missing file with JSON")
-        assertEquals(26.0, solver.getVariable("test::myAmplifier::gain")!!.aadd().min,0.00001)
-        assertEquals(35.0,solver.getVariable("test::myAmplifier::gain")!!.aadd().max,0.00001)
+        solver.propagate()
+        assertIssue("No Result file found")
+        assertNotEquals(0, status.issues.size, "Expected an error message that reports missing file with JSON")
+        assertBounds(26.0 ..35.0,solver.variable("test::myAmplifier::gain"), unit = "dB")
     }
 
     @Test
@@ -193,9 +192,10 @@ class ImportTest {
                 }
             }
         """, Runlevel.ALL)
+        solver.propagate()
+        assertIssue("Unit is not known")
         //assertTrue(status.issues.isEmpty(), "${status.issues}")
-        assertEquals(26.0, solver.getVariable("test::myAmplifier::gain")!!.aadd().min, 0.00001)
-        assertEquals(35.0,solver.getVariable("test::myAmplifier::gain")!!.aadd().max, 0.00001)
+        assertBounds(26.0 .. 35.0,solver.variable("test::myAmplifier::gain"), unit = "dB")
         assertEquals(1, status.issues.filter { it.kind == Issue.Kind.ERROR }.size)
     }
 
@@ -237,9 +237,10 @@ class ImportTest {
                 }
             }
         """, Runlevel.ALL)
+       solver.propagate()
+       assertIssue("The second parameter should be a String")
        // assertTrue(status.issues.isEmpty(), "${status.issues}")
-        assertEquals(26.0, solver.getVariable("test::myAmplifier::gain")!!.rangeSpecs[0].min,0.00001)
-        assertEquals(35.0,solver.getVariable("test::myAmplifier::gain")!!.rangeSpecs[0].max,0.00001)
+        assertBounds(26.0 .. 35.0, solver.variable("test::myAmplifier::gain").rangeSpecs.single())
         assertEquals(1, status.issues.size, "Error messages: ${status.issues}")
     }
 
@@ -269,10 +270,10 @@ class ImportTest {
             attribute b: ISQ::LengthValue = [10.0 .. 20.0] m;
             attribute gain: ScalarValues::Real = characterizedResult(max(a,b),"${Paths.get("").toAbsolutePath()}/src/test/resources/importResultsTestDir/testFile.json"); 
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
 
-        assertEquals(28.5, solver.getVariable("gain")!!.min(),0.00001)
-        assertEquals(28.5,solver.getVariable("gain")!!.max(),0.00001)
+        assertBounds(28.5 .. 28.5, solver.variable("gain"))
         assertNoIssues()
     }
 

@@ -1,7 +1,8 @@
 package solver
 
+import util.variable
 import com.github.tukcps.sysmd.services.Runlevel
-import io.github.tukcps.aadd.values.Range
+import io.github.tukcps.aadd.util.Assertions.assertSafeInclusion
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
@@ -16,15 +17,12 @@ class BuiltInFunctionsTests {
      */
     @Test
     fun getLeavesTest() = testSession("ScalarValues") {
-        loadKerML(
-            """
+        loadKerML("""
             feature b: ScalarValues::Real = 2.0;
             feature c: ScalarValues::Real = 3.0;
             feature d: ScalarValues::Real = 4.0;
             feature a: ScalarValues::Real = b + c * d;
-        """
-        )
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
         val a = solver.getVariable("a")
         assertEquals(3, a!!.ast!!.getLeaves().size)
@@ -32,19 +30,16 @@ class BuiltInFunctionsTests {
 
     @Test
     fun hasAFunctionTest() = testSession("ScalarValues") {
-        loadKerML(
-            """
+        loadKerML("""
             namespace a;
             feature b: ScalarValues::Boolean = owns(Global, a);
-        """
-        )
-        solver.propagate()
+        """, Runlevel.ALL)
         // owns ist hier Funktionsaufruf und Global ein parameter, der kein Feature ist.
         // Wird versucht zu Feature zu Casten (Feature-Expression) --> Exception.
         // (Gibt es etwas gleichartiges in Standard? Wo wir ownership feststellen können?)
         assertNoIssues()
-        val b = solver.getVariable("b")!!
-        assertEquals(builder.True, b.vectorQuantity.value)
+        val b = solver.variable("b")
+        assertEquals(builder.Bool.True, b.vectorQuantity.value)
     }
 
     @Test
@@ -57,8 +52,8 @@ class BuiltInFunctionsTests {
         )
         solver.propagate()
         assertNoIssues()
-        val b = solver.getVariable("b")!!
-        assertEquals(builder.False, b.vectorQuantity.value)
+        val b = solver.variable("b")
+        assertEquals(builder.Bool.False, b.vectorQuantity.value)
     }
 
     @Test
@@ -71,8 +66,8 @@ class BuiltInFunctionsTests {
         )
         solver.propagate()
         assertNoIssues()
-        val b = solver.getVariable("b")!!
-        assertEquals(builder.True, b.vectorQuantity.value)
+        val b = solver.variable("b")
+        assertEquals(builder.Bool.True, b.vectorQuantity.value)
     }
 
     @Test
@@ -82,8 +77,8 @@ class BuiltInFunctionsTests {
             feature b: ScalarValues::Boolean = a hastype ScalarValues::Real;
         """, Runlevel.ALL)
         assertNoIssues()
-        val b = solver.getVariable("b")!!
-        assertEquals(builder.False, b.vectorQuantity.value)
+        val b = solver.variable("b")
+        assertEquals(builder.Bool.False, b.vectorQuantity.value)
     }
 
     @Test
@@ -93,8 +88,8 @@ class BuiltInFunctionsTests {
             feature b: ScalarValues::Boolean = a hastype ScalarValues::ScalarValue;
         """, Runlevel.ALL)
         assertNoIssues()
-        val b = solver.getVariable("b")!!
-        assertEquals(builder.True, b.vectorQuantity.value)
+        val b = solver.variable("b")
+        assertEquals(builder.Bool.True, b.vectorQuantity.value)
     }
 
     @Test
@@ -102,8 +97,8 @@ class BuiltInFunctionsTests {
         loadKerML("feature r: ScalarValues::Real = oneOf(1.0 .. 2.0);")
         solver.propagate()
         assertNoIssues()
-        val r = solver.getVariable("r")!!
-        assertEquals(Range(1.0..2.0), r.vectorQuantity.value.asAadd().getRange())
+        val r = solver.variable("r")
+        assertSafeInclusion(1.0..2.0, r.vectorQuantity.getRange())
     }
 
 
@@ -115,7 +110,7 @@ class BuiltInFunctionsTests {
         solver.propagate()
         assertNoIssues()
         val r = solver.getVariable("r")
-        assertEquals(Range(1.0..2.0), r!!.vectorQuantity.value.asAadd().getRange())
+        assertSafeInclusion(1.0..2.0, r!!.vectorQuantity.getRange(), 0.0)
     }
 
 
@@ -123,8 +118,8 @@ class BuiltInFunctionsTests {
     fun oneOfOperationTest() = testSession("Ranges") {
         loadKerML("feature r: Ranges::RealInRange = oneOf(1.0 .. 2.0) { :>> range = 1.0 ;}", Runlevel.ALL)
         assertNoIssues()
-        val r = solver.getVariable("r")!!
-        assertEquals(Range(1.0..1.0), r.vectorQuantity.value.asAadd().getRange())
+        val r = solver.variable("r")
+        assertSafeInclusion(1.0..1.0, r.vectorQuantity.getRange(), 0.0)
     }
 
     @Test
@@ -133,7 +128,7 @@ class BuiltInFunctionsTests {
         loadKerML("feature r: ScalarValues::Real = anyOf(1.0 .. 2.0);")
         solver.propagate()
         assertNoIssues()
-        val r = solver.getVariable("r")!!
-        assertEquals(Range(1.0..2.0), r.vectorQuantity.value.asAadd().getRange())
+        val r = solver.variable("r")
+        assertSafeInclusion(1.0..2.0, r.vectorQuantity.getRange(), 0.0)
     }
 }

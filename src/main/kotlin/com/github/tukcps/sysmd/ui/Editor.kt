@@ -172,9 +172,11 @@ fun Editor(
                     if (useHighlighting) {
                         lines.value
                         if (lines.value.text.contains("\t")) lines.value = lines.value.replaceTab()
-                        //Update the Syntax Highlighting
-                        lines.value
-                        oldTextFieldValue.value = SyntaxHighlighter.updateSyntaxHighlighting(newTFV = lines.value, oldTFV = oldTextFieldValue.value, colorScheme = sysMDColorScheme, replaceTabFunction = TextFieldValue::replaceTab)
+                        //Update the Syntax Highlighting, but only if text or selection have changed: writing the state
+                        //without need makes this composable recompose (and lay out the text again) with every frame.
+                        if (lines.value.text != oldTextFieldValue.value.text || lines.value.selection != oldTextFieldValue.value.selection) {
+                            oldTextFieldValue.value = SyntaxHighlighter.updateSyntaxHighlighting(newTFV = lines.value, oldTFV = oldTextFieldValue.value, colorScheme = sysMDColorScheme, replaceTabFunction = TextFieldValue::replaceTab)
+                        }
                         //oldTextFieldValue.value = SyntaxHighlighter.applyFullSyntaxHighlighting(tfv = lines.value, colorScheme = sysMDColorScheme)
                         //Output to be viewed by BasicTextField (oldTextFieldValue can be safely used here as to this point of time, it is up-to-date)
                         oldTextFieldValue.value

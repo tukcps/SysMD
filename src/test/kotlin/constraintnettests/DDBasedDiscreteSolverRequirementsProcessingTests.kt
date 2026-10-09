@@ -2,7 +2,7 @@ package constraintnettests
 
 import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.resolve.resolveVar
-import io.github.tukcps.aadd.values.XBool
+import io.github.tukcps.aadd.values.bool.XBool
 import kotlin.test.assertEquals
 import kotlin.test.Test
 import util.mockup.loadKerML

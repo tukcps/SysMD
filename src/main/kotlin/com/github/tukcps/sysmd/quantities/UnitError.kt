@@ -1,9 +1,6 @@
 package com.github.tukcps.sysmd.quantities
 
-class IsolationError internal constructor(msg: String) :
-    Exception("Invalid Prefix or Unit: $msg")
-
-class UnknownUnitError internal constructor(msg: String) :
+class UnknownUnitError(msg: String) :
     Exception("Unit is not known: $msg")
 
 class AdditionError internal constructor(msg: String) :

@@ -33,6 +33,6 @@ class MultiplicityTests {
         assertNotNull(f2m)
         val v2mrange = f2m.getOwned<Feature>("range")
         assertNotNull(v2mrange)
-        assertEquals("2 .. 3", v2mrange.expression)
+        assertEquals("2..3", v2mrange.expression)
     }
 }

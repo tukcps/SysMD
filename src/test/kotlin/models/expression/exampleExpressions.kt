@@ -1,18 +1,14 @@
 package models.expression
 
-import com.github.tukcps.sysmd.model.expression.Expression
-import com.github.tukcps.sysmd.model.expression.FeatureReferenceExpression
-import com.github.tukcps.sysmd.model.expression.LiteralInteger
-import com.github.tukcps.sysmd.model.expression.OperatorExpression
+import com.github.tukcps.sysmd.model.expression.*
 import com.github.tukcps.sysmd.model.expression.implementation.*
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Feature.FeatureDirectionKind.IN
 import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.model.util.UnresolvedFeature
 import com.github.tukcps.sysmd.services.session.Session
-import kotlin.test.assertEquals
-import kotlin.test.assertIs
-import kotlin.test.assertNotEquals
+import io.github.tukcps.aadd.values.bounds.LongBound
+import kotlin.test.*
 
 fun Session.literalExpression(value : Long) = literalExpression(value.toString(), value)
 fun Session.literalExpression(value : Int) = literalExpression(value.toLong())
@@ -45,7 +41,7 @@ fun Session.operatorExpression(op : String, name : String, vararg operands : Exp
 fun Session.literalExpression(name : String?, value : Long) = LiteralIntegerImplementation(
 	this, declaredName = name
 ).also {
-	it.value = value
+	it.value = LongBound.Finite(value)
 	it.direction = IN
 }
 

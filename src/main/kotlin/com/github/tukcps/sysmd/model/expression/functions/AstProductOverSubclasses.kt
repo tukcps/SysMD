@@ -2,18 +2,18 @@ package com.github.tukcps.sysmd.model.expression.functions
 
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.TIMES
 import com.github.tukcps.sysmd.exceptions.Issue
+import com.github.tukcps.sysmd.model.datamodel.toElementData
 import com.github.tukcps.sysmd.model.expression.AstLeaf
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.kerml.getOwnedElementsOfType
-import com.github.tukcps.sysmd.quantities.Quantity
-import com.github.tukcps.sysmd.model.datamodel.toElementData
-import com.github.tukcps.sysmd.services.resolve.resolveVar
+import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.IDD
+import io.github.tukcps.aadd.dd.AADD
+import io.github.tukcps.aadd.dd.IDD
+
 
 /**
  * The productOverSubclasses function with parameter propertyAST.
@@ -39,7 +39,7 @@ internal class AstProductOverSubclasses(
      * Initialization; starts from bottom-up
      */
     override fun initialize() {
-        upQuantity = Quantity(model.builder.Reals, "?")
+        upQuantity = VectorQuantity(model.builder.Reals.All, "?")
         downQuantity = upQuantity
         if (propertyAst.size != 1)
             model.status.error(message = "function 'productOverSubclasses' expects one parameter", kind = Issue.Kind.ERROR_SEMANTIC, element = namespace.toElementData())
@@ -60,23 +60,7 @@ internal class AstProductOverSubclasses(
      * Still, no support for integers, requires adding operators Real * Int on dD
      **/
     override fun evalUp() {
-        generatedAst!!.evalUpRec()
-        upQuantity = generatedAst!!.upQuantity
-    }
-
-
-    /**
-     * Evaluate the properties of all owned elements.
-     */
-    override fun evalUpRec() {
-        val ownedElements = namespace.getOwnedElementsOfType<Feature>().mapNotNull { it.variable }
-        for (elem in ownedElements) {
-            try {
-                elem.ast?.evalUp()
-            } catch (_: Exception) {
-            }
-        }
-        evalUp()
+        evalUpGenerated(generatedAst!!)
     }
 
 
@@ -110,9 +94,7 @@ internal class AstProductOverSubclasses(
         return getPartDependencies(namespace as Type, propertyAst.first(), transitive)
     }
 
-    override fun clone(): AstProductOverSubclasses {
-        return AstProductOverSubclasses(model, namespace, listOf(propertyAst.first().clone()), transitive)
-    }
+    override fun clone() = AstProductOverSubclasses(model, namespace, listOf(propertyAst.first().clone()), transitive)
 }
 
 
@@ -159,9 +141,9 @@ fun Session.initProductSubclasses(
     // Build balanced binary tree from collected operands
     if (operands.isEmpty()) {
         return if (isRealProduct)
-            AstLeaf(this, Quantity(builder.real(1.0), "?"))
+            AstLeaf(this, VectorQuantity(builder.real(1.0), "?"))
         else
-            AstLeaf(this, Quantity(builder.integer(1)))
+            AstLeaf(this, VectorQuantity(builder.integer(1)))
     }
     
     return buildBalancedTree(operands, TIMES)

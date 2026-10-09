@@ -1,21 +1,15 @@
 package solver
 
 import com.github.tukcps.sysmd.services.Runlevel
-import util.assertNoIssues
-import util.mockup.loadKerML
-import util.testSession
-import kotlin.math.exp
-import kotlin.math.ln
-import kotlin.math.sqrt
-import kotlin.test.Test
 import kotlin.test.assertEquals
+import util.*
+import util.mockup.loadKerML
+import kotlin.math.*
+import kotlin.test.Test
 import kotlin.test.assertTrue
 
 @Suppress("UNUSED_VARIABLE")
 class PredefinedFunctionsTests {
-
-    val tol = 0.0001
-
     // The operations exp, log, pow2, sqrt, ln ... are supported
     // also to test: ITE function
     @Test
@@ -26,14 +20,16 @@ class PredefinedFunctionsTests {
                 feature test2: ScalarValues::Real = sqrt(5.0);
                 feature test3: ScalarValues::Real = exp(5.0);
                 feature test4: ScalarValues::Real = power2(5.0);
+                feature test5: ScalarValues::Real = inverseSqr(5.0);
         """
         )
         solver.propagate()
         assertNoIssues()
-        assertEquals(ln(5.0), solver.getVariable("test1")!!.min(), 0.00001)
-        assertEquals(sqrt(5.0), solver.getVariable("test2")!!.min(), 0.00001)
-        assertEquals(exp(5.0), solver.getVariable("test3")!!.min(), 0.00001)
-        assertEquals(32.0, solver.getVariable("test4")!!.min(), 0.00001)
+        assertBounds(ln(5.0), solver.variable("test1"))
+        assertBounds(sqrt(5.0), solver.variable("test2"))
+        assertBounds(exp(5.0), solver.variable("test3"))
+        assertBounds(32.0, solver.variable("test4"))
+        assertBounds(-sqrt(5.0)..sqrt(5.0), solver.variable("test5"))
     }
 
 
@@ -46,7 +42,7 @@ class PredefinedFunctionsTests {
         )
         solver.propagate()
         assertNoIssues()
-        assertEquals(3.0, solver.getVariable("p")!!.min(), 0.001)
+        assertBounds(3.0 .. 4.0, solver.variable("p"))
     }
 
     /**
@@ -63,8 +59,7 @@ class PredefinedFunctionsTests {
             feature z: ScalarValues::Real = 9.0 * x^4.0 - y^4.0 + 2.0 * y^2.0
             """
         )
-        val z = solver.getVariable("z")!!.vectorQuantity.value.asAadd()
-        assertTrue(1.0 in z)
+        assertBounds(-9.392990800793E9..1.4007394881680021E9, solver.variable("z"))
         // assertEquals(-1.7976931348623157E308, resolveName<Expression>(global, "z")!!.quantity.value.asAadd().getRange().min, tol)
         // assertEquals(1.7976931348623157E308, resolveName<Expression>(global, "z")!!.quantity.value.asAadd().getRange().max, tol)
     }

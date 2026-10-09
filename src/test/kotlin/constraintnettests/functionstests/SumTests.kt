@@ -1,8 +1,10 @@
 package constraintnettests.functionstests
 
+import util.variable
 import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import util.assertNoIssues
+import util.assertBounds
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
@@ -15,10 +17,10 @@ class SumTests {
             feature a: ISQ::CartesianMomentum3dVector { :>> range = (0..6, 6..12, 4..20) [kg m/s];}
             feature b: ISQ::MomentumValue = sum(a);
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        val b = solver.getVariable("b")!!
-        assertEquals(10.0, b.min(), 0.000001)
-        assertEquals(38.0, b.max(), 0.000001)
+        val b = solver.variable("b")
+        assertBounds(10.0 .. 38.0, b)
     }
 
     @Test fun vectorSumInteger() = testSession("Ranges") {
@@ -28,9 +30,8 @@ class SumTests {
         """)
         solver.propagate()
         assertNoIssues()
-        val b = solver.getVariable("b")!!
-        assertEquals(10L, b.min())
-        assertEquals(38L, b.vectorQuantity.values[0].asIdd().max)
+        val b = solver.variable("b")
+        assertBounds(10L .. 38L, b)
     }
 
     @Test fun vectorSumIntegerEvalDown() = testSession("Ranges") {
@@ -40,13 +41,12 @@ class SumTests {
             """)
         solver.propagate()
         assertNoIssues()
-        val a = solver.getVariable("a")!!
-        assertEquals(6L, a.min())
-        assertEquals(6L, a.vectorQuantity.values[0].asIdd().max)
-        assertEquals(4L, a.vectorQuantity.values[1].asIdd().min)
-        assertEquals(4L, a.vectorQuantity.values[1].asIdd().max)
-        assertEquals(10L, a.vectorQuantity.values[2].asIdd().min)
-        assertEquals(10L, a.vectorQuantity.values[2].asIdd().max)
+        val a = solver.variable("a")
+        assertBounds(listOf(
+                6L..6L,
+                4L..4L,
+                10L..10L
+            ), a)
     }
 
     @Test fun vectorSumIntegerEvalDown2() = testSession("Ranges") {
@@ -56,13 +56,12 @@ class SumTests {
             """)
         solver.propagate()
         assertNoIssues()
-        val a = solver.getVariable("a")!!
-        assertEquals(5L, a.min())
-        assertEquals(10L, a.vectorQuantity.values[0].asIdd().max)
-        assertEquals(20L, a.vectorQuantity.values[1].asIdd().min)
-        assertEquals(55L, a.vectorQuantity.values[1].asIdd().max)
-        assertEquals(20L, a.vectorQuantity.values[2].asIdd().min)
-        assertEquals(30L, a.vectorQuantity.values[2].asIdd().max)
+        val a = solver.variable("a")
+        assertBounds(listOf(
+                5L..10L,
+                20L..55L,
+                20L..30L
+            ), a)
     }
 
     @Test fun vectorSum2() = testSession("ISQ", "Ranges") {
@@ -70,10 +69,10 @@ class SumTests {
             feature a: ISQ::CartesianElectricFieldStrength3dVector {:>> range = (5..8,-4..-3,4..5) [N/C];}
             feature b: ISQ::ElectricFieldStrengthValue = sum(a);
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        val b = solver.getVariable("b")!!
-        assertEquals(5.0, b.min(), 0.000001)
-        assertEquals(10.0, b.max(), 0.000001)
+        val b = solver.variable("b")
+        assertBounds(5.0 .. 10.0, b)
     }
 
     @Test fun vectorSumRealEvalDown() = testSession("Ranges") {
@@ -81,14 +80,10 @@ class SumTests {
             feature a: ISQ::CartesianElectricFieldStrength3dVector { :>> range = (6..6, 1..100, 10..10); }
             feature b: ISQ::ElectricFieldStrengthValue = sum(a) {:>> range = 20;}
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        val a = solver.getVariable("a")!!
-        assertEquals(6.0, a.min(), 0.000001)
-        assertEquals(6.0, a.max(), 0.000001)
-        assertEquals(4.0, a.min(1), 0.000001)
-        assertEquals(4.0, a.max(1), 0.000001)
-        assertEquals(10.0, a.min(2), 0.000001)
-        assertEquals(10.0, a.max(2), 0.000001)
+        val a = solver.variable("a")
+        assertBounds(listOf(6.0 .. 6.0, 4.0 .. 4.0, 10.0 .. 10.0), a)
     }
 
     @Test fun vectorSumRealEvalDown2() = testSession("Ranges") {
@@ -98,12 +93,7 @@ class SumTests {
         """)
         solver.propagate()
         assertNoIssues()
-        val a = solver.getVariable("a")!!
-        assertEquals(5.0, a.min(), 0.000001)
-        assertEquals(10.0, a.max(), 0.000001)
-        assertEquals(20.0, a.min(1), 0.000001)
-        assertEquals(55.0, a.max(1), 0.000001)
-        assertEquals(20.0, a.min(2), 0.000001)
-        assertEquals(30.0, a.max(2), 0.000001)
+        val a = solver.variable("a")
+        assertBounds(listOf(5.0 .. 10.0, 20.0 .. 55.0, 20.0 .. 30.0), a)
     }
 }

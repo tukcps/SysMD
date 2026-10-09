@@ -1,26 +1,30 @@
 package com.github.tukcps.sysmd.compiler.scanner
 
+import io.github.tukcps.aadd.values.bounds.LongBound
+import io.github.tukcps.aadd.values.real.ia.RealRange
+
 
 /**
  * We represent tokens by this enum. The enum also has properties sVal and nVal in
  * which the string or numeric value of literals is saved.
  * @param kind the kind of token, as defined below
  * @param string the text of the token
- * @param number the value of the token, if it is a number, as a Real
+ * @param real value range of a real-valued token. Not scalar for numbers that aren't exactly representable
+ * @param integer exact value of integer-numbered tokens
  * @param lineNo the line number in which the token started
  * @param indices the indices of the token in the input stream, as first .. last character range
  **/
 data class Token(
     val kind: Kind,
     val string: String,
-    val number: Double = 0.0,
+    val real: RealRange = RealRange.Empty,
+    val integer : LongBound = LongBound.Finite(0),
     val lineNo: Int = 0,
     val indices: IntRange = 0 .. 0
 ) {
 
     override fun toString(): String = when (kind) {
-        Kind.NAME_LIT -> string
-        Kind.INTEGER_LIT -> number.toString()
+        Kind.NAME_LIT, Kind.INTEGER_LIT, Kind.FLOAT_LIT -> string
         Kind.STRING_LIT -> "\"$string\""
         else -> kind.toString()
     }

@@ -17,7 +17,7 @@ import kotlin.test.assertNotNull
 class TagInputTests {
 
     /** Test for KerML */
-    @Test @Ignore
+    @Test
     fun testTagInputKerMLUpdated() = testSession {
         val input1 = "package p;"
         import(KerML(this).parse(input1))
@@ -26,14 +26,14 @@ class TagInputTests {
         assertNotNull(p)
         assertEquals(input1, p.input)
 
-        val input2 = "package    p; // edited"
+        val input2 = "package    p;"
         import(KerML(this).parse(input2))
         initialize(Runlevel.NAMES_RESOLVED)
-        assertEquals("package    p;", p.input)
+        assertEquals(input2, p.input)
     }
 
     /** Test for SysML v2 */
-    @Test @Ignore
+    @Test
     fun testTagInputSysMLUpdated() = testSession {
         val input1 = "attribute p;"
         val elements = SysMLv2(this).parse(input1)

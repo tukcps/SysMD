@@ -1,6 +1,7 @@
 package com.github.tukcps.sysmd.services.inheritance
 
 import com.github.tukcps.sysmd.compiler.semantics.Identification
+import com.github.tukcps.sysmd.model.datamodel.ElementReference
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureTypingImplementation
 import com.github.tukcps.sysmd.model.util.Unresolved
@@ -69,10 +70,10 @@ private fun Type.addInheritedFeaturesFromGeneral() {
 
     // For redefinitions, replace type, multiplicity, constraints from redefinition
     redefinitions.forEach { feature ->
-        // If redefining feature is unresolve, resolve it first
-        if(feature.redefining is Unresolved) {
+        // If redefining feature is unresolved, resolve it first
+        feature.redefining.let { it as? Unresolved }?.let { it.reference as? ElementReference.ByName }?.let { ref ->
             generalization.mapNotNull { supertype ->
-                supertype.resolve((feature.redefining as Unresolved).relativeName!!)
+                supertype.resolve(ref.name)
             }.lastOrNull {
                 it.memberElement !== feature && it.memberElement.owner !== this
             }?.let {

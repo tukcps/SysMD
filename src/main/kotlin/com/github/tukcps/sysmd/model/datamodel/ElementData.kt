@@ -1,22 +1,15 @@
 package com.github.tukcps.sysmd.model.datamodel
 
 import com.github.tukcps.sysmd.model.expression.*
-import com.github.tukcps.sysmd.model.expression.implementation.LiteralBooleanImplementation
-import com.github.tukcps.sysmd.model.expression.implementation.LiteralIntegerImplementation
-import com.github.tukcps.sysmd.model.expression.implementation.LiteralRationalImplementation
-import com.github.tukcps.sysmd.model.expression.implementation.LiteralStringImplementation
-import com.github.tukcps.sysmd.model.generated.ElementDataIF
-import com.github.tukcps.sysmd.model.generated.ElementType
-import com.github.tukcps.sysmd.model.generated.createElement
-import com.github.tukcps.sysmd.model.generated.elementType
+import com.github.tukcps.sysmd.model.expression.implementation.*
+import com.github.tukcps.sysmd.model.generated.*
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.Import.VisibilityKind
 import com.github.tukcps.sysmd.model.sysml.*
-import com.github.tukcps.sysmd.model.util.UnresolvedElement
 import com.github.tukcps.sysmd.model.util.UnresolvedOwningMembership
-import com.github.tukcps.sysmd.model.util.UnresolvedRelationship
-import com.github.tukcps.sysmd.rest.entities.api.entities.Identified
 import com.github.tukcps.sysmd.services.session.Session
+import io.github.tukcps.aadd.values.bounds.LongBound
+import io.github.tukcps.aadd.values.real.ia.RealRange
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.uuid.Uuid
@@ -37,11 +30,11 @@ data class ElementData(
     override var declaredName: String? = null,
     override var declaredShortName: String? = null,
 
-    override var ownedElement: MutableList<Identified> = mutableListOf(),
-    override var owner: Identified? = null,
-    override var owningMembership: Identified? = null, // TODO: remove, is derived from owningRelationship
-    override var owningNamespace: Identified? = null,
-    override var owningRelationship: Identified? = null,
+    override var ownedElement: MutableList<ElementReference> = mutableListOf(),
+    override var owner: ElementReference? = null,
+    override var owningMembership: ElementReference? = null, // TODO: remove, is derived from owningRelationship
+    override var owningNamespace: ElementReference? = null,
+    override var owningRelationship: ElementReference? = null,
 
     // For type = Feature
     override var direction: Feature.FeatureDirectionKind? = null,
@@ -94,12 +87,12 @@ data class ElementData(
     override var isImportAll: Boolean? = null,
 
     // For Relationship and subtypes thereof:
-    override var source: MutableList<Identified> = mutableListOf(),     // list of id or null (i.e., global, anything)
-    override var target: MutableList<Identified> = mutableListOf(),    // list of id or null (i.e., global, anything)
-    override var ownedRelatedElement: MutableList<Identified> = mutableListOf(),
-    override var owningRelatedElement: Identified? = null,
+    override var source: MutableList<ElementReference> = mutableListOf(),     // list of id or null (i.e., global, anything)
+    override var target: MutableList<ElementReference> = mutableListOf(),    // list of id or null (i.e., global, anything)
+    override var ownedRelatedElement: MutableList<ElementReference> = mutableListOf(),
+    override var owningRelatedElement: ElementReference? = null,
 
-    override var ownedRelationship: MutableList<Identified> = mutableListOf(),
+    override var ownedRelationship: MutableList<ElementReference> = mutableListOf(),
 
     @Deprecated("Is represented by Type, only computed property.")
     var isLibraryElement: Boolean? = null,
@@ -113,8 +106,10 @@ data class ElementData(
     override var isIndividual: Boolean? = null,
     override var portionKind: OccurrenceUsage.PortionKind? = null,
     override var literalStringValue: String? = null,
-    override var literalIntegerValue: Long? = null,
-    override var literalRationalValue: Double? = null,
+    @Serializable(with = LongBoundSerializer::class)
+    override var literalIntegerValue: LongBound? = null,
+    @Serializable(with = RealRangeSerializer::class)
+    override var literalRationalValue: RealRange? = null,
     override var literalBooleanValue: Boolean? = null,
     override var isParallel: Boolean? = null,
     override var reqId: String? = null,
@@ -132,8 +127,7 @@ data class ElementData(
 }
 
 /**
- * Extension methods; kept separately from ElementDAO to avoid any problem with
- * Spring ...
+ * Extension methods; kept separately from ElementDAO to avoid any problem with Spring ...
  */
 fun ElementDataIF.toElement(model : Session): Element {
     val element = createElement(type, model, elementId)
@@ -150,29 +144,22 @@ fun ElementDataIF.toElement(model : Session): Element {
 
     // Process source + target for all kind of Relationship
     if (element is Relationship) {
-        element.owningRelatedElement = owningRelatedElement.let {
-            if(it is IdentifiedByName)
-                UnresolvedElement(model, relativeName = it.name)
-            else
-                UnresolvedElement(model, id = owner?.id)
-        }
+        element.owningRelatedElement = (owningRelatedElement ?: ElementReference.ToRoot).toUnresolved(model)
 
         ownedRelatedElement.mapTo(element.ownedRelatedElement) {
-            UnresolvedElement(model, id = it.id)
+            it.toUnresolved(model)
         }
 
-        fun List<Identified>.toElements() = mapTo(mutableListOf<Element>()) {
-            if(it is IdentifiedByName)
-                it.toUnresolved(model) // can we handle every Unresolved* construction like this?
-            else
-                UnresolvedElement(model, id = it.id)
+        fun List<ElementReference>.toElements() = mapTo(mutableListOf<Element>()) {
+            it.toUnresolved(model)
         }
 
         element.source = source.toElements()
         element.target = target.toElements()
 
         if (this is ElementData)
-            if (element is NamespaceImport && target.firstOrNull() is IdentifiedByName) {
+            // why is this here??
+            if (element is NamespaceImport && target.firstOrNull() is ElementReference.ByName) {
                 element.isRecursive = isRecursive == true
                 element.isImportAll = isImportAll == true
             }
@@ -184,14 +171,10 @@ fun ElementDataIF.toElement(model : Session): Element {
     // Process elements that are not used as Relationships.
     if (element is Namespace || element is AnnotatingElement || element is Dependency) {
         // No relationship, with hierarchy of owned relationships/elements
-        element.owningRelationship = UnresolvedOwningMembership(model, id = owningRelationship?.id)
+        element.owningRelationship = owningRelationship?.toUnresolvedOwningMembership(model)
 
-        ownedRelationship.filterIsInstance<IdentifiedByName>().mapTo(element.ownedRelationship) {
-            UnresolvedRelationship(
-                model,
-                relativeName = it.name,
-                id = it.id
-            )
+        ownedRelationship.filterIsInstance<ElementReference.ByName>().mapTo(element.ownedRelationship) {
+            it.toUnresolvedRelationship(model)
         }
 
         if (element is AnnotatingElement) {
@@ -247,7 +230,7 @@ fun ElementDataIF.toElement(model : Session): Element {
     }
 
     if (element is Association)
-        element.owningRelationship = owningRelationship?.let { UnresolvedOwningMembership(model, id = it.id) }
+        element.owningRelationship = owningRelationship?.let { UnresolvedOwningMembership(model, it) }
 
     return element
 }
@@ -258,7 +241,10 @@ fun ElementDataIF.toElement(model : Session): Element {
  */
 fun Element.toElementData(): ElementData {
     /** Constructs a reference to a different element */
-    fun Element.toReference() : Identified = IdentifiedImplementation(if(this === model.global) null else elementId)
+    fun Element.toReference() = when {
+        this === model.global -> ElementReference.ToRoot
+        else -> ElementReference.ByID(elementId)
+    }
     fun List<Element>.toReferences() = mapTo(mutableListOf()) { it.toReference() }
 
     val dao = ElementData(

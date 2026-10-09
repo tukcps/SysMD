@@ -19,22 +19,18 @@ open class DerivedUnit(
     symbol: String,
     prefix: Prefix,
     domain: String,
-    var baseUnitSet: Set<BaseUnit>,
+    val baseUnitSet: Set<BaseUnit>,
     convFac: Double,
     exponent: Int = 1,
     isLogarithmic: Boolean = false,
     isDifference: Boolean = false,
     alternativeDomain: String = ""
 ) : UnitOfMeasurement(name, symbol, prefix, domain, convFac, exponent, isLogarithmic , isDifference, alternativeDomain), Cloneable {
-    open fun copy(): DerivedUnit {
-        val unitSet = mutableSetOf<BaseUnit>()
-        baseUnitSet.forEach {
-            unitSet.add(it.copy())
-        }
-        return DerivedUnit(name, symbol, prefix, domain, unitSet, convFac, exponent, isLogarithmic, isDifference, alternativeDomain)
-    }
+    open fun copy(): DerivedUnit = this
 
-    override fun clone(): UnitOfMeasurement {
-        return copy()
+    override fun clone(): DerivedUnit = this
+
+    override fun copyWith(prefix: Prefix, exponent: Int): DerivedUnit {
+        return DerivedUnit(name, symbol, prefix, domain, baseUnitSet, convFac, exponent, isLogarithmic, isDifference, alternativeDomain)
     }
 }

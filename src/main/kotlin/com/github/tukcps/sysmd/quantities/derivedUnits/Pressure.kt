@@ -17,7 +17,7 @@ open class Pressure(name: String, symbol: String, prefix: Prefix, convFac: Doubl
      */
     object Pascal : Pressure("pascal", "Pa", NoPrefix, 1.0)
     object Bar : Pressure("bar", "bar", NoPrefix, 100000.0)
-    object PoundPerSquareInch : Pressure("psi", "bar", NoPrefix, 6894.757293)
+    object PoundPerSquareInch : Pressure("psi", "psi", NoPrefix, 6894.757293)
 
     override fun copy(): Pressure {
         return Pressure(name, symbol, prefix, convFac, exponent, isLogarithmic)

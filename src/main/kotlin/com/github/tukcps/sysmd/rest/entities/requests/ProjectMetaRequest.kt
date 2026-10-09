@@ -1,5 +1,6 @@
 package com.github.tukcps.sysmd.rest.entities.requests
 
+import java.util.UUID
 import kotlin.uuid.Uuid
 
 data class IndexEntry(
@@ -11,7 +12,7 @@ data class IndexEntry(
  * A selection of the data from .project, .meta that is used.
  */
 data class ProjectMetaRequest (
-    var id: Uuid,
+    var id: UUID,
     var name: String,
     var description: String? = null,
     var website: String? = null,

@@ -21,6 +21,6 @@ open class ElectricPotentialDifferenceValue(name: String, symbol: String, prefix
     object Volt : ElectricPotentialDifferenceValue("volt", "V", NoPrefix, 1.0, isDifference = false)
 
     override fun copy(): ElectricPotentialDifferenceValue {
-        return ElectricPotentialDifferenceValue(name, symbol, prefix, convFac, exponent, isLogarithmic)
+        return ElectricPotentialDifferenceValue(name, symbol, prefix, convFac, exponent, isDifference)
     }
 }

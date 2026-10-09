@@ -7,6 +7,7 @@ import util.assertNoIssues
 import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 
 class ActionContextTests {
@@ -43,14 +44,11 @@ class ActionContextTests {
         assertEquals(bar.elementId, bar.elementId)
         assertNoIssues()
 
-        assertEquals(1, bar.ownedElement.size)
-        // TODO: fails because owning membership has same id for both runs (both have ../1/!) that must be different.
-        /*
-            METHOD:
-            - !! get owning relationship # as offset from model/session/notebook !!
-            - Use this as offset for generation of UUID of top-level owning memberships.
-            --> overall prefix then: prefix/offset+index/... (only top-level owning memberships.
-            --> others are unchanged, abut use path of owning prefix
-         */
+        // we expect both namespaces to be added
+        bar.ownedElement.let { owned ->
+            assertEquals(2, owned.size)
+            assertNotEquals(emptyList(), owned.filter { it.name == "n1" })
+            assertNotEquals(emptyList(), owned.filter { it.name == "n2" })
+        }
     }
 }

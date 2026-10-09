@@ -25,6 +25,7 @@ val logger: Logger = LoggerFactory.getLogger("SysMD Notebook")
 suspend fun main(args: Array<String>) {
 
     val headless = "headless" in args
+
     // Launches Spring Boot Backend
     val springJob = CoroutineScope(Dispatchers.IO).launch {
         SpringApplicationBuilder(

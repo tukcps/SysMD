@@ -500,6 +500,8 @@ standard library package RealFunctions {
         { in x: Real[0..1]; in y: Real[0..1]; return : Boolean[1]; }
     function sqrt
         { in x: Real[1]; return : Real[1]; }
+    function inverseSqr
+        { in x: Real[1]; return : Real[1]; }
     function floor
         { in x: Real[1]; return : Integer[1]; }
     function ceil // missing from standard?
@@ -781,6 +783,7 @@ library package SysMD
     function exp { in x : Real[1]; return : Real[1]; }
     public import RealFunctions::sqr;
     public import RealFunctions::sqrt;
+    public import RealFunctions::inverseSqr;
     public import RealFunctions::ceil;
     public import RealFunctions::floor;
     public import RealFunctions::power2;

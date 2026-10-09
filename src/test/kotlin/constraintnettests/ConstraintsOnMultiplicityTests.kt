@@ -1,9 +1,11 @@
 package constraintnettests
 
+import util.variable
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import util.assertNoIssues
+import util.assertBounds
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
@@ -20,13 +22,14 @@ class ConstraintsOnMultiplicityTests {
             feature  p [0 .. 2];
             feature v: ScalarValues::Integer(1) = p::cardinality;
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
         val p = global.resolve("p")?.member<Feature>()
         val multiplicity = p?.resolveVar("cardinality")
         val v = solver.getVariable("v")
-        assertEquals(1L, v?.min())
-        assertEquals(1L, multiplicity?.min())
-        assertEquals(1L, multiplicity?.min())
+        assertBounds(1L, v!!)
+        assertBounds(1L, multiplicity!!)
+        assertBounds(1L, multiplicity)
     }
 
     /**
@@ -43,9 +46,8 @@ class ConstraintsOnMultiplicityTests {
         val p = global.resolve("p")!!.member<Feature>()
         val m = p?.resolveVar("cardinality")
         val v = solver.getVariable("v")
-        assertEquals(2L, v?.min())
-        assertEquals(1L, m?.min())
-        assertEquals(1L, m?.max())
+        assertBounds(2L, v!!)
+        assertBounds(1L..1L, m!!)
     }
 
 
@@ -61,11 +63,10 @@ class ConstraintsOnMultiplicityTests {
                 feature j: ScalarValues::Real = 5.0; 
             }
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        val weight = solver.getVariable("b::weight")
-        assertNotNull(weight)
-        assertEquals(0L, solver.getVariable("b::partC::multiplicity")?.min())
-        assertEquals(7L, solver.getVariable("b::partC::multiplicity")?.max())
+        val weight = solver.variable("b::weight")
+        assertBounds(0L..6L, solver.variable("b::partC::multiplicity"))
     }
 
     @Test
@@ -81,11 +82,9 @@ class ConstraintsOnMultiplicityTests {
                 feature j: ScalarValues::Integer(5); 
             }
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        val w = solver.getVariable("b::weight")
-        assertNotNull(w)
-        assertEquals(0L, solver.getVariable("b::partC::multiplicity")!!.min())
-        // it is 7, why??
-        assertEquals(6L, solver.getVariable("b::partC::multiplicity")!!.max())
+        val w = solver.variable("b::weight")
+        assertBounds(0L .. 6L, solver.variable("b::partC::multiplicity"))
     }
 }

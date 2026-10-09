@@ -1,20 +1,20 @@
 package solver
 
+import util.variable
+import util.assertBounds
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.estimateFeature
 import com.github.tukcps.sysmd.services.resolve.resolveVar
-import io.github.tukcps.aadd.values.XBool
-import org.junit.jupiter.api.parallel.ResourceAccessMode
-import org.junit.jupiter.api.parallel.ResourceLock
-import org.junit.jupiter.api.parallel.Resources
+import io.github.tukcps.aadd.util.Assertions.assertEquals
+import io.github.tukcps.aadd.values.bool.XBool
+import io.github.tukcps.aadd.values.bounds.DoubleBound
+import org.junit.jupiter.api.parallel.*
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
-import kotlin.test.Ignore
-import kotlin.test.Test
-import kotlin.test.assertEquals
+import kotlin.test.*
 
 class AvailabilityTests {
 
@@ -39,7 +39,7 @@ class AvailabilityTests {
         assertNoIssues()
         solver.propagate()
         val availability = solver.getVariable("t::c1::Availability")
-        assertEquals(availability!!.bool(), XBool.X)
+        assertEquals(XBool.All,availability!!.bool().value)
     }
 
     /**
@@ -65,7 +65,7 @@ class AvailabilityTests {
         assertNoIssues()
         solver.propagate()
         val tc1 = global.resolve("c1")!!.member<Type>()!!
-        assertEquals(builder.True, estimateFeature(tc1, "Availability").bdd())
+        assertEquals(builder.Bool.True, estimateFeature(tc1, "Availability").bdd())
     }
 
 
@@ -84,7 +84,7 @@ class AvailabilityTests {
         """, Runlevel.ALL)
         assertNoIssues()
         val tc1 = global.resolve("t::c1")!!.member<Type>()!!
-        assertEquals(builder.True, estimateFeature(tc1, "Availability").bdd())
+        assertEquals(builder.Bool.True, estimateFeature(tc1, "Availability").bdd())
     }
 
     // Needs adaption to SysMD for interactive work.
@@ -106,20 +106,20 @@ class AvailabilityTests {
         assertNoIssues()
         val tc1 = global.resolve("c1")!!.member<Type>()!!
         global.resolve("c2")!!.member<Namespace>()
-        assertEquals(XBool.X, tc1.resolveVar("Availability")?.vectorQuantity?.value as XBool)
+        assertEquals(XBool.All, tc1.resolveVar("Availability")?.vectorQuantity?.value as XBool)
         loadKerML("feature T: ScalarValues::Real(2020) [1 ..1]; ")
-        assertEquals(2020.0, solver.getVariable("T")!!.min(), 0.01)
+        assertBounds(2020.0, solver.variable("T"))
         var tc1Availability = solver.getVariable("c1::Availability")?.bdd()
         assertEquals(XBool.False, tc1Availability as XBool)
         loadKerML("feature T: ScalarValues::Real(2050) [1 ..1]; ")
         assertNoIssues()
         tc1Availability = solver.getVariable("c1::Availability")?.bdd()
         assertEquals(XBool.True, tc1Availability as XBool)
-        assertEquals(2050.0, solver.getVariable("T")!!.min(), 0.01)
+        assertBounds(2050.0, solver.variable("T"))
     }
 
     @Test
-    @ResourceLock(value = Resources.SYSTEM_PROPERTIES, mode = ResourceAccessMode.READ_WRITE) @Ignore
+    @ResourceLock(value = Resources.SYSTEM_PROPERTIES, mode = ResourceAccessMode.READ_WRITE)
     fun computeCarOverTime() = testSession("ISO26262", "Context") {
         loadKerML(
             """

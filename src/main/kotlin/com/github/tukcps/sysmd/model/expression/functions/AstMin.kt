@@ -1,14 +1,14 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.DD
-import io.github.tukcps.aadd.IDD
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.model.expression.AstNode
-import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.quantities.min
 import com.github.tukcps.sysmd.services.session.Session
+import io.github.tukcps.aadd.dd.*
+import io.github.tukcps.aadd.values.bounds.DoubleBound
+import io.github.tukcps.aadd.values.bounds.DoubleBoundMath.toDouble
+import io.github.tukcps.aadd.values.bounds.LongBound
 
 /**
  * Predefined functions: min
@@ -31,7 +31,7 @@ internal class AstMin(model: Session, args: ArrayList<AstNode>) :
                 if ((getParam(0).upQuantity.values[0] !is AADD) && (getParam(0).upQuantity.values[0] !is IDD))
                     throw SemanticError("Min function only takes Real or Integer parameters")
                 if (getParam(0).upQuantity.values[0] is AADD) {
-                    upQuantity = VectorQuantity(mutableListOf(model.builder.Reals), "?")
+                    upQuantity = VectorQuantity(mutableListOf(model.builder.Reals.All), "?")
                     for(parameter in parameters){
                         if (parameter.upQuantity.value !is AADD)
                             throw SemanticError("Min function requires all parameters of same type (AADD)")
@@ -40,7 +40,7 @@ internal class AstMin(model: Session, args: ArrayList<AstNode>) :
                     }
                 }
                 if (getParam(0).upQuantity.values[0] is IDD) {
-                    upQuantity = VectorQuantity(mutableListOf(model.builder.Integers))
+                    upQuantity = VectorQuantity(mutableListOf(model.builder.Integers.All))
                     for(parameter in parameters){
                         if (parameter.upQuantity.value !is IDD)
                             throw SemanticError("Min function requires all parameters of same type (IDD)")
@@ -63,12 +63,16 @@ internal class AstMin(model: Session, args: ArrayList<AstNode>) :
                 val resultingValues = mutableListOf<DD<*>>()
                 for (value in getParam(0).upQuantity.values) {
                     when (getParam(0).upQuantity.values[0]) {
-                        is AADD -> resultingValues.add(model.builder.real((value as AADD).getRange().min))
+                        is AADD -> resultingValues.add(model.builder.real((value as AADD).getRange().min..(value as AADD).getRange().min))
                         is IDD -> resultingValues.add(model.builder.integer((value as IDD).getRange().min))
                         else -> {}//not possible
                     }
                 }
-                upQuantity = VectorQuantity(resultingValues, getParam(0).upQuantity.unit, getParam(0).upQuantity.unitSpec)
+                upQuantity = if (getParam(0).upQuantity.values[0] is AADD) {
+                    VectorQuantity.fromCanonical(resultingValues, getParam(0).upQuantity.unit, getParam(0).upQuantity.unitSpec, getParam(0).upQuantity.userWantedUnitSpec)
+                } else {
+                    VectorQuantity(resultingValues)
+                }
             }
             else -> {
                 var result =  min(getParam(0).upQuantity, getParam(1).upQuantity)
@@ -90,76 +94,52 @@ internal class AstMin(model: Session, args: ArrayList<AstNode>) :
                 val results = mutableListOf<DD<*>>()
                 downQuantity.values.indices.forEach {
                     when (downQuantity.values[0]) {
-                        is AADD -> results.add(model.builder.real((param1Down.values[it] as AADD).getRange().min..Double.POSITIVE_INFINITY))
-                        is IDD -> results.add(model.builder.integer((param1Down.values[it] as IDD).getRange().min..Long.MAX_VALUE))
+                        is AADD -> results.add(model.builder.real((downQuantity.values[it] as AADD).getRange().min..DoubleBound.PositiveInfinity))
+                        is IDD -> results.add(model.builder.integer((downQuantity.values[it] as IDD).getRange().min..LongBound.PositiveInfinity))
                         else -> {
                             throw SemanticError("Min only possible for IDD and AADD.")
                         }
                     }
                 }
-                getParam(0).downQuantity =
-                    getParam(0).downQuantity.constrain(VectorQuantity(results, param1Down.unit, param1Down.unitSpec))
+                val newParam = if (downQuantity.values[0] is AADD) {
+                    VectorQuantity.fromCanonical(results, param1Down.unit, param1Down.unitSpec, param1Down.userWantedUnitSpec)
+                } else {
+                    VectorQuantity(results)
+                }
+                getParam(0).downQuantity = getParam(0).downQuantity.constrain(newParam)
             }
 
             else -> {
+                // Every parameter is >= min. If only one parameter can still reach the upper bound of the result,
+                // that parameter must lie within the result's range. Existing narrowing is kept via constrain.
                 when (downQuantity.values[0]) {
                     is AADD -> {
-                        //if the downQuantity fits only in one of the downParams, this downParam must have the value of the downQuantity
-                        //store those positions in a list
-                        val includedPositions = mutableListOf<Int>()
-                        parameters.forEach{
-                            if(it.downQuantity.getMinAsDouble() < downQuantity.getMinAsDouble())
-                                it.downQuantity = Quantity(model.builder.real(downQuantity.getMinAsDouble() .. it.downQuantity.getMaxAsDouble()),it.downQuantity.unit,it.downQuantity.unitSpec)
-                            if(it.downQuantity.value.asAadd().contains(downQuantity.value.asAadd())){
-                                includedPositions.add(parameters.indexOf(it))
-                            }
-                        }
-                        if(includedPositions.size == 1){
-                            //if only one downParam fits the downQuantity, this downParam must have the value of the downQuantity
-                            parameters[includedPositions[0]].downQuantity = downQuantity
-                        } else if (includedPositions.size==2) {
-                            //bigger value than downQuantity Possible
-                            includedPositions.forEach {
-                                parameters[it].downQuantity =
-                                    Quantity(model.builder.real(downQuantity.value.asAadd().min..parameters[it].upQuantity.getMaxAsDouble()),downQuantity.unit,downQuantity.unitSpec)
-                            }
+                        val lo = downQuantity.aadd().getRange().min.toDouble()
+                        val hi = downQuantity.aadd().getRange().max.toDouble()
+                        val candidates = parameters.filter { it.downQuantity.getMinAsDouble() <= hi }
+                        for (p in parameters) {
+                            val high = if (candidates.size == 1 && p === candidates[0]) hi else Double.POSITIVE_INFINITY
+                            p.downQuantity = p.downQuantity.constrain(
+                                VectorQuantity.fromCanonical(model.builder.real(lo..high), p.downQuantity.unit, p.downQuantity.unitSpec, p.downQuantity.userWantedUnitSpec)
+                            )
                         }
                     }
-
                     is IDD -> {
-                        //if the downQuantity fits only in one of the downParams, this downParam must have the value of the downQuantity
-                        //store those positions in a list
-                        val includedPositions = mutableListOf<Int>()
-                        parameters.forEach{
-                            if(it.downQuantity.value.asIdd().min < downQuantity.value.asIdd().min)
-                                it.downQuantity = Quantity(model.builder.integer(downQuantity.value.asIdd()))
-                            if(it.downQuantity.value.asIdd().contains(downQuantity.value.asIdd())){
-                                includedPositions.add(parameters.indexOf(it))
-                            }
-                        }
-                        if(includedPositions.size == 1){
-                            //if only one downParam fits the downQuantity, this downParam must have the value of the downQuantity
-                            parameters[includedPositions[0]].downQuantity = downQuantity
-                        } else if (includedPositions.size==2) {
-                            //bigger value than downQuantity Possible
-                            includedPositions.forEach {
-                                parameters[it].downQuantity =
-                                    Quantity(model.builder.integer(downQuantity.value.asIdd().min..parameters[it].upQuantity.idd().max))
-                            }
+                        val lo = downQuantity.idd().getRange().min
+                        val hi = downQuantity.idd().getRange().max
+                        val candidates = parameters.filter { it.downQuantity.idd().getRange().min <= hi }
+                        for (p in parameters) {
+                            val high = if (candidates.size == 1 && p === candidates[0]) hi else LongBound.PositiveInfinity
+                            p.downQuantity = p.downQuantity.constrain(VectorQuantity(model.builder.integer(lo..high)))
                         }
                     }
-
                     else -> {
-                        throw SemanticError("Max only possible for IDD and AADD")
+                        throw SemanticError("Min only possible for IDD and AADD")
                     }
                 }
             }
         }
     }
 
-    override fun clone(): AstMin {
-        val parClone = ArrayList<AstNode>()
-        for (p in parameters) parClone.add(p.clone())
-        return AstMin(model, parClone)
-    }
+    override fun clone() = AstMin(model, cloneParameters())
 }

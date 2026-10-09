@@ -1,5 +1,6 @@
 package compiler
 
+import util.variable
 import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.cspsolver.VariableImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
@@ -33,7 +34,7 @@ class ErrorHandlingTests {
                 expression = p.expression,
             )
         )
-        solver.getVariable("XXX")!!.compileExpression()
+        solver.variable("XXX").compileExpression()
         assertIssue("rror in production")
     }
 

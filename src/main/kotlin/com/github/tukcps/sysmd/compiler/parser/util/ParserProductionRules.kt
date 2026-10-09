@@ -4,6 +4,7 @@ import com.github.tukcps.sysmd.compiler.KerML
 import com.github.tukcps.sysmd.compiler.scanner.Scanner
 import com.github.tukcps.sysmd.compiler.scanner.Token
 import com.github.tukcps.sysmd.exceptions.LexicalError
+import com.github.tukcps.sysmd.services.session.SessionStatus
 
 
 /**
@@ -34,8 +35,9 @@ import com.github.tukcps.sysmd.exceptions.LexicalError
 @Suppress("ClassName")
 abstract class ParserProductionRules(
     indices: IntRange?=null,
-    keywords: Map<String, Token.Kind>
-): Scanner(indices = indices, keywords = keywords) {
+    keywords: Map<String, Token.Kind>,
+    status : SessionStatus
+): Scanner(indices = indices, keywords = keywords, status = status) {
 
     /**
      * Default error method; reads a token to guarantee progress, and throws an exception.
@@ -209,7 +211,7 @@ abstract class ParserProductionRules(
          */
         infix fun Set<Token.Kind>.starts(production: () -> Unit) {
             if (t1.kind in this) { match1 = production }
-            else expected.add( toString() )
+            else expected.add(this@starts.toString())
         }
 
         /**
@@ -217,7 +219,7 @@ abstract class ParserProductionRules(
          */
         infix fun Set<Token.Kind>.then(production: () -> Unit) {
             if (t1.kind in this) { match1 = production }
-            else expected.add( toString() )
+            else expected.add(this@then.toString())
             consume1 = true
         }
 

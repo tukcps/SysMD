@@ -86,7 +86,8 @@ class ProjectListViewModel(
     }
 
     /**
-     * Starts a session of a project
+     * Starts a session of a project.
+     * The project's files are loaded into the view model, but no libraries are loaded, and nothing is compiled.
      * @param projectViewModel the project view model that shall be rendered. If necessary, a new session is started.
      */
     fun onOpenProject(projectViewModel: ProjectViewModel) {

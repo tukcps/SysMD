@@ -9,11 +9,11 @@ import com.github.tukcps.sysmd.model.expression.AstLeaf
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Namespace
-import com.github.tukcps.sysmd.quantities.Quantity
+import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.session.Session
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.IDD
+import io.github.tukcps.aadd.dd.AADD
+import io.github.tukcps.aadd.dd.IDD
 
 /**
  * The sumOverParts function with parameter propertyAST.
@@ -39,7 +39,7 @@ internal class AstSumOverParts(
      * Initialization; starts from bottom-up
      */
     override fun initialize() {
-        upQuantity = Quantity(model.builder.Reals, "?")
+        upQuantity = VectorQuantity(model.builder.Reals.All, "?")
         if (propertyAst.size != 1)
             throw SemanticError("function 'sumOverParts' expects one parameter")
         generatedAst = model.initSumOverComposition(namespace, propertyAst.first(), transitive)
@@ -55,25 +55,7 @@ internal class AstSumOverParts(
      * Still, no support for integers; that requires adding operator Real * Int on dD
      **/
     override fun evalUp() {
-        generatedAst!!.evalUpRec()
-        upQuantity = generatedAst!!.upQuantity
-    }
-
-
-    /**
-     * Evaluate the properties of all owned elements.
-     */
-    override fun evalUpRec() {
-        val ownedElements = namespace.visibleMemberships().mapNotNull { it.member<Feature>() }.filter { it.specializes( model.repo.scalarType) }
-        for (elem in ownedElements) {
-            try {
-                if (elem is Variable) {
-                    elem.ast?.evalUp()
-                } else
-                    elem.variable?.ast?.evalUp()
-            } catch (_: Exception) { }
-        }
-        evalUp()
+        evalUpGenerated(generatedAst!!)
     }
 
 
@@ -119,9 +101,7 @@ internal class AstSumOverParts(
         return getSubclassDependencyStrings(namespace, propertyAst.first())
     }
 
-    override fun clone(): AstSumOverParts {
-        return AstSumOverParts(model, namespace, listOf(propertyAst.first().clone()), transitive)
-    }
+    override fun clone() = AstSumOverParts(model, namespace, listOf(propertyAst.first().clone()), transitive)
 }
 
 
@@ -182,9 +162,9 @@ fun Session.initSumOverComposition(element: Namespace, propertyAST: AstNode, tra
     // Build balanced binary tree from collected operands
     if (operands.isEmpty()) {
         return if (isRealSum)
-            AstLeaf(this, Quantity(builder.real(0.0), "?"))
+            AstLeaf(this, VectorQuantity(builder.real(0.0), "?"))
         else
-            AstLeaf(this, Quantity(builder.integer(0)))
+            AstLeaf(this, VectorQuantity(builder.integer(0)))
     }
     
     return buildBalancedTree(operands, PLUS)

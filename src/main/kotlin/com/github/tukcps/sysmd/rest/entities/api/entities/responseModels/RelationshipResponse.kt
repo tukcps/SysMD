@@ -1,12 +1,14 @@
 package com.github.tukcps.sysmd.rest.entities.api.entities.responseModels
 
+import com.github.tukcps.sysmd.model.datamodel.ElementReference
 import com.github.tukcps.sysmd.model.datamodel.IntRangeSerializer
 import com.github.tukcps.sysmd.model.generated.ElementDataIF
 import com.github.tukcps.sysmd.model.generated.ElementType
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Import
 import com.github.tukcps.sysmd.model.sysml.*
-import com.github.tukcps.sysmd.rest.entities.api.entities.Identified
+import io.github.tukcps.aadd.values.bounds.LongBound
+import io.github.tukcps.aadd.values.real.ia.RealRange
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.uuid.Uuid
@@ -23,21 +25,21 @@ class RelationshipResponse(
     val effectiveName: String? = null,
     override var isImplied: Boolean? = null,
     override var isImpliedIncluded: Boolean? = null,
-    override var owner: Identified? = null,
-    override var ownedElement: MutableList<Identified> = mutableListOf(),
-    val ownedAnnotation: List<Identified> = mutableListOf(),
-    override var ownedRelatedElement: MutableList<Identified> = mutableListOf(),
-    override var ownedRelationship: MutableList<Identified> = mutableListOf(),
-    override var owningMembership: Identified? = null,
-    override var owningNamespace: Identified? = null,
-    override var owningRelatedElement: Identified? = null,
+    override var owner: ElementReference? = null,
+    override var ownedElement: MutableList<ElementReference> = mutableListOf(),
+    val ownedAnnotation: List<ElementReference> = mutableListOf(),
+    override var ownedRelatedElement: MutableList<ElementReference> = mutableListOf(),
+    override var ownedRelationship: MutableList<ElementReference> = mutableListOf(),
+    override var owningMembership: ElementReference? = null,
+    override var owningNamespace: ElementReference? = null,
+    override var owningRelatedElement: ElementReference? = null,
     val qualifiedName: String? = null,
-    val relatedElement: List<Identified>? = null,
-    override var source: MutableList<Identified> = mutableListOf(), // Id
-    override var target: MutableList<Identified> = mutableListOf(), // Id
+    val relatedElement: List<ElementReference>? = null,
+    override var source: MutableList<ElementReference> = mutableListOf(), // Id
+    override var target: MutableList<ElementReference> = mutableListOf(), // Id
     override var declaredName: String? = null,
     override var declaredShortName: String? = null,
-    override var owningRelationship: Identified? = null,
+    override var owningRelationship: ElementReference? = null,
     override var visibility: Import.VisibilityKind? = null,
     override var isAbstract: Boolean? = null,
     override var isSufficient: Boolean? = null,
@@ -202,7 +204,7 @@ class RelationshipResponse(
      * `value` declared by `LiteralInteger`.
      * MOF multiplicity: `0..1`.
      */
-    override var literalIntegerValue: Long?
+    override var literalIntegerValue: LongBound?
         get() = TODO("Not yet implemented")
         set(value) {}
 
@@ -210,7 +212,7 @@ class RelationshipResponse(
      * `value` declared by `LiteralRational`.
      * MOF multiplicity: `0..1`.
      */
-    override var literalRationalValue: Double?
+    override var literalRationalValue: RealRange?
         get() = TODO("Not yet implemented")
         set(value) {}
 

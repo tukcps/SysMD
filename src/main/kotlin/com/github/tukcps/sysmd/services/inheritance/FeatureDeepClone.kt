@@ -61,6 +61,22 @@ fun<T : Element> T.danglingDeepClone() : T
  */
 fun<T : Element> T.deepCloneWithInheritedFeature(addTo: Namespace): T {
     val clone = danglingDeepClone()
+    val targetInput = addTo.input ?: (addTo as? Element)?.owner?.input
+    val targetIndices = addTo.indices ?: (addTo as? Element)?.owner?.indices
+    if (targetInput != null) {
+        fun updateInputRecursively(element: Element) {
+            element.input = targetInput
+            element.indices = targetIndices
+            element.ownedRelationship.forEach { rel ->
+                rel.input = targetInput
+                rel.indices = targetIndices
+                if (rel is OwningMembership) {
+                    updateInputRecursively(rel.memberElement)
+                }
+            }
+        }
+        updateInputRecursively(clone)
+    }
     model.addOwnedMember(clone, addTo)
     return clone
 }

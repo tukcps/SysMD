@@ -2,8 +2,8 @@ package compiler.kerml.kernel
 
 import com.github.tukcps.sysmd.model.kerml.Association
 import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.util.MultiplicityRange
 import com.github.tukcps.sysmd.services.Runlevel
+import io.github.tukcps.aadd.values.integer.IntegerRange
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
@@ -54,8 +54,8 @@ class AssociationTest {
         assertTrue(b.isEnd)
         assertNull(a.referencedFeature)
         assertNull(b.referencedFeature)
-        assertEquals(MultiplicityRange(1, 2), a.multiplicityRange)
-        assertEquals(MultiplicityRange(3, 4), b.multiplicityRange)
+        assertEquals(IntegerRange(1, 2), a.multiplicityRange)
+        assertEquals(IntegerRange(3, 4), b.multiplicityRange)
         assertEquals(a, rel.sourceType)
         assertEquals(b, rel.targetType.first())
     }

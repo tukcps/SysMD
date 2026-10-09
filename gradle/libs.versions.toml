@@ -1,9 +1,22 @@
 [versions]
 kotlin = "2.4.10"
-compose-plugin = "1.11.1"
-compose = "1.11.1"
+compose-plugin = "1.12.0"
+compose = "1.12.0"
+ben-manes-versions = "0.53.0"
+spring-boot = "4.1.0"
+spring-dependency-management = "1.1.7"
+coroutines = "1.11.0"
 
 [plugins]
+versions = { id = "com.github.ben-manes.versions", version.ref = "ben-manes-versions" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+kotlin-spring = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+
+spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
+spring-dependency-management = { id = "io.spring.dependency-management", version.ref = "spring-dependency-management" }
+
 jetbrainsCompose = { id = "org.jetbrains.compose", version.ref = "compose-plugin" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 
@@ -11,3 +24,4 @@ compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "
 compose-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "compose" }
 compose-ui-test = { module = "org.jetbrains.compose.ui:ui-test", version.ref = "compose" }
 compose-ui-test-junit4 = { module = "org.jetbrains.compose.ui:ui-test-junit4", version.ref = "compose" }
+kotlinx-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }

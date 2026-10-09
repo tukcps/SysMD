@@ -1,12 +1,11 @@
 package constraintnettests.functionstests
 
 import com.github.tukcps.sysmd.services.Runlevel
-import util.assertNoIssues
+import kotlin.test.assertEquals
+import util.*
 import util.mockup.loadKerML
 import util.mockup.loadSysMLv2
-import util.testSession
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -18,10 +17,10 @@ class StepInterpolationTests {
                 attribute Avail : Quantities::ScalarQuantityValue { :>> range = 0.0..100.0 [%];} 
                 attribute level: Ranges::IntegerInRange = stepInterpolation(Avail, 0.0, 2, 0.9, 3, 0.95, 4, 1.0, 5) { :>> range = 4..4; }
             """, Runlevel.ALL)
+            solver.propagate()
             assertNoIssues()
-            val test2 = solver.getVariable("Avail")
-            assertEquals(0.95, test2!!.vectorQuantity.value.asAadd().min,0.0001)
-            assertEquals(1.0, test2.vectorQuantity.value.asAadd().max,0.0001)
+            val test2 = solver.variable("Avail")
+            assertBounds(0.95 .. 1.0, test2)
         }
 
         @Test
@@ -30,10 +29,10 @@ class StepInterpolationTests {
                 attribute reliability: Quantities::ScalarQuantityValue { :>> range = 0.0..100.0 [%];}
                 attribute ASIlFromReliability: Ranges::IntegerInRange = stepInterpolation(reliability, 0.0, 1, 0.99, 2, 0.995, 3, 0.999, 4) {:>> range = 3..4;} 
             """, Runlevel.ALL)
+            solver.propagate()
             assertNoIssues()
-            val test2 = solver.getVariable("reliability")
-            assertEquals(0.995, test2!!.vectorQuantity.value.asAadd().min,0.000001)
-            assertEquals(1.0, test2.vectorQuantity.value.asAadd().max,0.000001)
+            val test2 = solver.variable("reliability")
+            assertBounds(0.995 .. 1.0, test2)
             // val testr = solver.getVariable("Controller1::ASIlFromReliability")
             // assertEquals(1, testr!!.vectorQuantity.value.asIdd().min)
         }
@@ -44,11 +43,10 @@ class StepInterpolationTests {
                 attribute Avail : Ranges::IntegerInRange {:>> range = 0..100;} 
                 attribute level: Ranges::IntegerInRange = stepInterpolation(Avail, 0, 2, 90, 3, 95, 4, 100, 5) { :>> range = 5; }
             """, Runlevel.ALL)
+            solver.propagate()
             assertNoIssues()
-            val test2 = solver.getVariable("Avail")
-            assertNotNull(test2)
-            assertEquals(100L, test2.min() )
-            assertEquals(100L, test2.max() )
+            val test2 = solver.variable("Avail")
+            assertBounds(100L .. 100L, test2)
         }
 
 
@@ -60,10 +58,8 @@ class StepInterpolationTests {
             """)
             solver.propagate()
             assertNoIssues()
-            val p = solver.getVariable("p")
-            assertTrue(10.0 in p?.vectorQuantity?.aadd()?.getRange()!!)
-            assertTrue(p.min<Double>() > 9.9)
-            assertTrue(p.vectorQuantity.getMaxAsDouble() < 10.1)
+            val p = solver.variable("p")
+            assertBounds(10.0, p)
         }
 
         @Test
@@ -74,10 +70,8 @@ class StepInterpolationTests {
             """)
             solver.propagate()
             assertNoIssues()
-            val p = solver.getVariable("p")
-            assertTrue(10.0 in p?.vectorQuantity?.aadd()?.getRange()!!)
-            assertTrue(p.min<Double>() > 9.9)
-            assertTrue(p.vectorQuantity.getMaxAsDouble() < 10.1)
+            val p = solver.variable("p")
+            assertBounds(10.0, p)
         }
 
         @Test
@@ -88,10 +82,8 @@ class StepInterpolationTests {
             """)
             solver.propagate()
             assertNoIssues()
-            val p = solver.getVariable("p")
-            assertTrue(20.0 in p?.vectorQuantity?.aadd()?.getRange()!!)
-            assertTrue(p.min<Double>() > 19.9)
-            assertTrue(p.vectorQuantity.getMaxAsDouble() < 20.1)
+            val p = solver.variable("p")
+            assertBounds(20.0, p)
         }
 
         @Test
@@ -102,10 +94,8 @@ class StepInterpolationTests {
             """)
             solver.propagate()
             assertNoIssues()
-            val p = solver.getVariable("p")
-            assertTrue(20.0 in p?.vectorQuantity?.aadd()?.getRange()!!)
-            assertTrue(p.min<Double>() > 19.9)
-            assertTrue(p.vectorQuantity.getMaxAsDouble() < 20.1)
+            val p = solver.variable("p")
+            assertBounds(20.0, p)
         }
 
         @Test
@@ -116,10 +106,8 @@ class StepInterpolationTests {
             """)
             solver.propagate()
             assertNoIssues()
-            val p = solver.getVariable("p")
-            assertTrue(0.0 in p?.vectorQuantity?.aadd()?.getRange()!!)
-            assertTrue(p.min<Double>() > -0.1)
-            assertTrue(p.vectorQuantity.getMaxAsDouble() < 0.1)
+            val p = solver.variable("p")
+            assertBounds(0.0, p)
         }
 
         @Test
@@ -130,9 +118,8 @@ class StepInterpolationTests {
             """)
             solver.propagate()
             assertNoIssues()
-            val p = solver.getVariable("p")
-            assertEquals(0L, p?.min())
-            assertEquals(0L, p?.max())
+            val p = solver.variable("p")
+            assertBounds(0L .. 0L, p)
         }
 
         @Test
@@ -143,9 +130,8 @@ class StepInterpolationTests {
             """)
             solver.propagate()
             assertNoIssues()
-            val p = solver.getVariable("p")
-            assertEquals(10L, p?.min())
-            assertEquals(10L, p?.max())
+            val p = solver.variable("p")
+            assertBounds(10L .. 10L, p)
         }
 
         @Test
@@ -156,9 +142,8 @@ class StepInterpolationTests {
             """)
             solver.propagate()
             assertNoIssues()
-            val p = solver.getVariable("p")
-            assertEquals(10L, p?.min())
-            assertEquals(10L, p?.max())
+            val p = solver.variable("p")
+            assertBounds(10L .. 10L, p)
         }
 
         @Test
@@ -166,12 +151,11 @@ class StepInterpolationTests {
             loadKerML("""
                     feature T: ScalarValues::Integer = 2005;
                     feature p: ScalarValues::Integer = stepInterpolation(T, 2000, 10, 2010, 20, 2020, 0);
-            """)
+            """, Runlevel.ALL)
             solver.propagate()
             assertNoIssues()
-            val p = solver.getVariable("p")
-            assertEquals(10L, p?.min())
-            assertEquals(10L, p?.max())
+            val p = solver.variable("p")
+            assertBounds(10L .. 10L, p)
         }
 
         @Test
@@ -179,12 +163,11 @@ class StepInterpolationTests {
             loadKerML("""
                 feature T: ScalarValues::Integer = 2015;
                 feature p: ScalarValues::Integer = stepInterpolation(T, 2000, 10, 2010, 20, 2020, 0);
-            """)
+            """, Runlevel.ALL)
             solver.propagate()
             assertNoIssues()
-            val p = solver.getVariable("p")
-            assertEquals(20L, p?.min())
-            assertEquals(20L, p?.max())
+            val p = solver.variable("p")
+            assertBounds(20L .. 20L, p)
         }
 
         @Test
@@ -195,9 +178,8 @@ class StepInterpolationTests {
             """)
             solver.propagate()
             assertNoIssues()
-            val p = solver.getVariable("p")
-            assertEquals(20L, p?.min())
-            assertEquals(20L, p?.max())
+            val p = solver.variable("p")
+            assertBounds(20L .. 20L, p)
         }
 
         @Test
@@ -208,5 +190,59 @@ class StepInterpolationTests {
             """)
             solver.propagate()
             assertTrue(status.issues.isNotEmpty(), "Expected non-increasing x-values to report semantic error")
+        }
+
+        /**
+         * Regression test for parameter count validation (odd number >= 3).
+         * Even number of parameters or < 3 should report an issue.
+         */
+        @Test
+        fun stepFunctionTooFewOrEvenParametersTest() = testSession("ScalarValues") {
+            loadKerML("""
+                feature T: ScalarValues::Real = 2005.0;
+                feature p: ScalarValues::Real = stepInterpolation(T, 2000.0);
+            """)
+            solver.propagate()
+            assertTrue(status.issues.isNotEmpty(), "Expected error for invalid parameter count (<3 or even)")
+        }
+
+        /**
+         * Regression test: x below the first point also yields the first y-value, so the first region is open
+         * to the left instead of starting at x0.
+         */
+        @Test
+        fun stepEvalDownRegionBelowFirstPointRegressionTest() = testSession("Ranges") {
+            loadKerML("""
+                feature T: Ranges::RealInRange {:>> range = 0.0 .. 100.0;}
+                feature p: Ranges::IntegerInRange = stepInterpolation(T, 10.0, 1, 20.0, 2) {:>> range = 1 .. 1;}
+            """, Runlevel.ALL)
+            solver.propagate()
+            assertNoIssues()
+            assertBounds(0.0 .. 20.0, solver.variable("T"))
+        }
+
+        /** Regression test: the last region is open to the right. */
+        @Test
+        fun stepEvalDownRegionAboveLastPointRegressionTest() = testSession("Ranges") {
+            loadKerML("""
+                feature T: Ranges::RealInRange {:>> range = 0.0 .. 100.0;}
+                feature p: Ranges::IntegerInRange = stepInterpolation(T, 10.0, 1, 20.0, 2) {:>> range = 2 .. 2;}
+            """, Runlevel.ALL)
+            solver.propagate()
+            assertNoIssues()
+            assertBounds(20.0 .. 100.0, solver.variable("T"))
+        }
+
+        /** Regression test: a step value that only overlaps (but is not contained in) the result must not be dropped. */
+        @Test
+        fun stepEvalDownOverlapRegressionTest() = testSession("Ranges") {
+            loadKerML("""
+                feature a: Ranges::RealInRange {:>> range = 1.0 .. 3.0;}
+                feature T: Ranges::RealInRange {:>> range = 0.0 .. 100.0;}
+                feature p: Ranges::RealInRange = stepInterpolation(T, 0.0, a, 10.0, 20.0) {:>> range = 2.0 .. 2.0;}
+            """, Runlevel.ALL)
+            solver.propagate()
+            assertNoIssues()
+            assertBounds(0.0 .. 10.0, solver.variable("T"))
         }
 }

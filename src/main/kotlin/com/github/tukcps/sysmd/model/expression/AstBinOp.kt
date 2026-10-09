@@ -1,26 +1,22 @@
 package com.github.tukcps.sysmd.model.expression
 
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.BDD
-import io.github.tukcps.aadd.IDD
-import io.github.tukcps.aadd.values.Range
-import io.github.tukcps.aadd.values.XBool
-import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.compiler.scanner.Token
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
-import com.github.tukcps.sysmd.quantities.VectorQuantity
+import com.github.tukcps.sysmd.exceptions.SemanticError
+import com.github.tukcps.sysmd.quantities.*
+import com.github.tukcps.sysmd.quantities.Unit
 import com.github.tukcps.sysmd.quantities.contains
-import com.github.tukcps.sysmd.quantities.isZero
-import com.github.tukcps.sysmd.quantities.ite
-import kotlin.math.max
-import kotlin.math.min
+import io.github.tukcps.aadd.dd.*
+import io.github.tukcps.aadd.values.bool.XBool
+import io.github.tukcps.aadd.values.bounds.*
+import io.github.tukcps.aadd.values.bounds.LongMath.max
+import io.github.tukcps.aadd.values.bounds.LongMath.min
+import io.github.tukcps.aadd.values.real.ia.RealRange
 
 
 /**
  * @class AstBinOp
  * A binary operation.
- *
- * @author Christoph Grimm, Jack D. Martin
  */
 class AstBinOp(
     val l: AstNode,
@@ -36,10 +32,10 @@ class AstBinOp(
 
     /** Initialization; starts from bottom-up */
     override fun initialize() {
-        upQuantity = if (op in setOf(GE, LE, EE, GT, LT, AND, OR, NEQ)) VectorQuantity(mutableListOf(model.builder.Bool))
-        else if (l.isReal) VectorQuantity(mutableListOf(model.builder.Reals),"?")
-        else if (l.isInt) VectorQuantity(mutableListOf(model.builder.Integers))
-        else VectorQuantity(mutableListOf(model.builder.Reals),"?")
+        upQuantity = if (op in setOf(GE, LE, EE, GT, LT, AND, OR, NEQ)) VectorQuantity(mutableListOf(model.builder.Bool.All))
+        else if (l.isReal) VectorQuantity.fromCanonical(mutableListOf(model.builder.Reals.All), Unit("?"), "?")
+        else if (l.isInt) VectorQuantity(mutableListOf(model.builder.Integers.All))
+        else VectorQuantity.fromCanonical(mutableListOf(model.builder.Reals.All), Unit("?"), "?")
         evalUp()
         downQuantity = upQuantity.clone()
     }
@@ -72,7 +68,6 @@ class AstBinOp(
             LE -> l.upQuantity le r.upQuantity
             AND -> l.upQuantity and r.upQuantity
             OR -> l.upQuantity or r.upQuantity
-            EXP -> l.upQuantity pow r.upQuantity
             EE  -> l.upQuantity eq r.upQuantity
             NEQ -> l.upQuantity neq r.upQuantity
             else -> throw SemanticError("Operation $op resp. $op not supported here.")
@@ -87,30 +82,31 @@ class AstBinOp(
 
         when (op) {
             AND -> {
-                l.downQuantity = downQuantity and r.upQuantity
-                r.downQuantity = downQuantity and l.upQuantity
+                // result true: both operands true. result false: l must be false if r is true, else unknown.
+                val bool = model.builder.Bool
+                val resultsL = mutableListOf<BDD>()
+                val resultsR = mutableListOf<BDD>()
+                downQuantity.values.indices.forEach {
+                    val down = downQuantity.values[it].asBdd()
+                    resultsL.add(down.ite(bool.True, r.upQuantity.values[it].asBdd().ite(bool.False, bool.All)))
+                    resultsR.add(down.ite(bool.True, l.upQuantity.values[it].asBdd().ite(bool.False, bool.All)))
+                }
+                l.downQuantity = VectorQuantity(resultsL)
+                r.downQuantity = VectorQuantity(resultsR)
             }
 
             OR -> {
-                // 0 1 -> 1 resp. 0, 1 - 0
-                // 1 0 -> 1 resp. 0, 0,- 0
-                // 1 1 -> 1 resp. 1, 1, X
-                // 0 0 -> 0 resp. 1, 0, 1
-                val resultsR = mutableListOf<BDD>()
+                // result false: both operands false. result true: operand must be true if the other is false, else unknown.
+                val bool = model.builder.Bool
                 val resultsL = mutableListOf<BDD>()
+                val resultsR = mutableListOf<BDD>()
                 downQuantity.values.indices.forEach {
-                    resultsR.add( downQuantity.values[it].asBdd().ite(
-                        l.upQuantity.values[it].asBdd().ite(model.builder.Bool, model.builder.False),
-                        l.upQuantity.values[it].asBdd().ite(model.builder.False, model.builder.True)
-                    ))
-                    resultsL.add( downQuantity.values[it].asBdd().ite(
-                        r.upQuantity.values[it].asBdd().ite(model.builder.Bool, model.builder.False),
-                        r.upQuantity.values[it].asBdd().ite(model.builder.False, model.builder.True)
-                    ))
+                    val down = downQuantity.values[it].asBdd()
+                    resultsR.add(down.ite(l.upQuantity.values[it].asBdd().ite(bool.All, bool.True), bool.False))
+                    resultsL.add(down.ite(r.upQuantity.values[it].asBdd().ite(bool.All, bool.True), bool.False))
                 }
                 r.downQuantity = VectorQuantity(resultsR)
                 l.downQuantity = VectorQuantity(resultsL)
-
             }
 
             PLUS -> {
@@ -122,7 +118,7 @@ class AstBinOp(
                 r.downQuantity = prevL.upQuantity - downQuantity
             }
             /* In the case of e.g. `0 = x * 0`, x becomes a don't care, but AADD division will yield an infeasible value */
-            TIMES if !(downQuantity.values.all { 0 in it } && (prevL.upQuantity.value.isZero || prevR.upQuantity.value.isZero)) -> {
+            TIMES if !(downQuantity.values.all { 0 in it } && (prevL.upQuantity.values.any { it.isZero } || prevR.upQuantity.values.any { it.isZero })) -> {
                 l.downQuantity = downQuantity / prevR.upQuantity
                 r.downQuantity = downQuantity / prevL.upQuantity
             }
@@ -130,79 +126,46 @@ class AstBinOp(
                 l.downQuantity = downQuantity * prevR.upQuantity
                 r.downQuantity = prevL.upQuantity / downQuantity
             }
-            EXP -> {
-                l.downQuantity = when(prevR.upQuantity.values[0]){
-                    is AADD -> {
-                        val results = mutableListOf<AADD>()
-                        downQuantity.values.indices.forEach {
-                            results.add(downQuantity.values[it].asAadd() power model.builder.real(1.0).div(prevR.upQuantity.values[it] as AADD) )
-                        }
-                        VectorQuantity(results,downQuantity.unit,downQuantity.unitSpec)
-                    }
-                    is IDD ->{
-                        val results = mutableListOf<IDD>()
-                        downQuantity.values.indices.forEach { results.add(downQuantity.values[it].asIdd().root(prevR.upQuantity.values[it] as IDD) ) }
-                        VectorQuantity(results)
-                    }
-                    else -> throw SemanticError("Expect base of type Real or Integer")
-                }
-                r.downQuantity = when(prevL.upQuantity.values[0]){
-                    is AADD -> {
-                        val results = mutableListOf<AADD>()
-                        downQuantity.values.indices.forEach {
-                            if (prevL.aadds[it].min == 1.0 && prevL.aadds[it].max  == 1.0) //Log with 1 not possible. All resulting values allowed
-                                results.add(model.builder.Reals.clone())
-                            else
-                                results.add((downQuantity.values[it] as AADD).log()/prevL.aadds[it].log())
-                        }
-                        VectorQuantity(results,downQuantity.unit,downQuantity.unitSpec)
-                    }
-                    is IDD  -> {
-                        val results = mutableListOf<IDD>()
-                        downQuantity.values.indices.forEach {
-                            if (prevL.idds[it].min == 1L && prevL.idds[it].max  == 1L) //Log with 1 not possible. All resulting values allowed
-                                results.add(model.builder.Integers.clone())
-                            else
-                                results.add((downQuantity.values[it] as IDD).log(prevL.idds[it]))
-                        }
-                        VectorQuantity(results)
-                    }
-                    else -> throw SemanticError("Expect base of type Real or Integer")
-                }
-            }
             EE -> {
                 when {
                     prevL.isReal && prevR.isReal -> {
                         val resultsR = mutableListOf<AADD>()
                         val resultsL = mutableListOf<AADD>()
-                        prevR.aadds.indices.forEach { resultsR.add(downQuantity.values[it].asBdd().ite(prevR.aadds[it], prevR.aadd.builder.Reals)) }
-                        prevL.aadds.indices.forEach { resultsL.add(downQuantity.values[it].asBdd().ite(prevL.aadds[it], prevL.aadd.builder.Reals)) }
-                        l.downQuantity = VectorQuantity(resultsR, prevL.downQuantity.unit, prevL.downQuantity.unitSpec)
-                        r.downQuantity = VectorQuantity(resultsL, prevR.downQuantity.unit, prevR.downQuantity.unitSpec)
+                        prevR.aadds.indices.forEach {
+                            val down = downQuantity.values[it].asBdd()
+                            val intersect = prevL.aadds[it].clone() intersect prevR.aadds[it].clone()
+                            resultsL.add(down.ite(intersect, prevL.aadds[it]))
+                            resultsR.add(down.ite(intersect, prevR.aadds[it]))
+                        }
+                        l.downQuantity = VectorQuantity.fromCanonical(resultsL, prevL.upQuantity.unit, prevL.upQuantity.unitSpec, prevL.upQuantity.userWantedUnitSpec)
+                        r.downQuantity = VectorQuantity.fromCanonical(resultsR, prevR.upQuantity.unit, prevR.upQuantity.unitSpec, prevR.upQuantity.userWantedUnitSpec)
                     }
                     prevL.isInt && prevR.isInt -> {
-                        val results = mutableListOf<IDD>()
+                        val resultsL = mutableListOf<IDD>()
+                        val resultsR = mutableListOf<IDD>()
                         prevR.idds.indices.forEach {
                             val down = downQuantity.values[it].asBdd()
-                            val intersect = l.idds[it].clone() intersect r.idds[it].clone().clone()
-                            val result: IDD = if (down.value in setOf(XBool.True, XBool.X))
-                                intersect
-                            else
-                                this.model.builder.EmptyIntegerRange
-                            results.add(result)
+                            if (down.value in setOf(XBool.True, XBool.All)) {
+                                val intersect = prevL.idds[it].clone() intersect prevR.idds[it].clone()
+                                resultsL.add(intersect)
+                                resultsR.add(intersect)
+                            } else {
+                                // l != r gives no interval information; keep operands unchanged
+                                resultsL.add(prevL.idds[it])
+                                resultsR.add(prevR.idds[it])
+                            }
                         }
-                        l.downQuantity = VectorQuantity(results)
-                        r.downQuantity = VectorQuantity(results)
+                        l.downQuantity = VectorQuantity(resultsL)
+                        r.downQuantity = VectorQuantity(resultsR)
                     }
                     prevL.isBool && prevR.isBool -> {
                         // We leave Booleans for the discrete solver; no error!
                     }
                     prevL.isString && prevR.isString -> {
-                        l.downQuantity = downQuantity.value.asBdd().ite(prevR.upQuantity,VectorQuantity(prevR.upQuantity.value.builder.Strings))
-                        r.downQuantity = downQuantity.value.asBdd().ite(prevL.upQuantity,VectorQuantity(prevL.upQuantity.value.builder.Strings))
+                        l.downQuantity = downQuantity.values[0].asBdd().ite(prevR.upQuantity,VectorQuantity(prevR.upQuantity.values[0].builder.Strings.All))
+                        r.downQuantity = downQuantity.values[0].asBdd().ite(prevL.upQuantity,VectorQuantity(prevL.upQuantity.values[0].builder.Strings.All))
                     }
-                    else ->
-                        throw SemanticError("Comparison only defined between Integers, Reals, and Booleans.")
+                    else -> throw SemanticError("Comparison only defined between Integers, Reals, and Booleans.")
                 }
             }
             NEQ -> {
@@ -218,22 +181,22 @@ class AstBinOp(
                         downLs.add(
                             isTrue.ite(
                                 // When l > r must be true, constrain l to be > r
-                                l.aadds[it].constrainTo(Range(r.aadds[it].min, Double.POSITIVE_INFINITY)),
+                                l.aadds[it] intersect RealRange(r.aadds[it].min, DoubleBound.PositiveInfinity),
                                 // When l > r must be false, constrain l to be <= r  
-                                l.aadds[it].constrainTo(Range(Double.NEGATIVE_INFINITY, r.aadds[it].max))
+                                l.aadds[it] intersect RealRange(DoubleBound.NegativeInfinity, r.aadds[it].max)
                             )
                         )
                         downRs.add(
                             isTrue.ite(
                                 // When l > r must be true, constrain r to be < l
-                                r.aadds[it].constrainTo(Range(Double.NEGATIVE_INFINITY, l.aadds[it].max)),
+                                r.aadds[it] intersect RealRange(DoubleBound.NegativeInfinity, l.aadds[it].max),
                                 // When l > r must be false, constrain r to be >= l
-                                r.aadds[it].constrainTo(Range(l.aadds[it].min, Double.POSITIVE_INFINITY))
+                                r.aadds[it] intersect RealRange(l.aadds[it].min, DoubleBound.PositiveInfinity)
                             )
                         )
                     }
-                    l.downQuantity = VectorQuantity(downLs, prevL.upQuantity.unit,prevL.upQuantity.unitSpec)
-                    r.downQuantity = VectorQuantity(downRs, prevR.upQuantity.unit,prevR.upQuantity.unitSpec)
+                    l.downQuantity = VectorQuantity.fromCanonical(downLs, prevL.upQuantity.unit, prevL.upQuantity.unitSpec, prevL.upQuantity.userWantedUnitSpec)
+                    r.downQuantity = VectorQuantity.fromCanonical(downRs, prevR.upQuantity.unit, prevR.upQuantity.unitSpec, prevR.upQuantity.userWantedUnitSpec)
                 } else if (l.isInt && r.isInt) {
                     val downLs = mutableListOf<IDD>()
                     val downRs = mutableListOf<IDD>()
@@ -244,14 +207,14 @@ class AstBinOp(
                         val maxR = r.idds[it].max
                         downLs.add(
                             downQuantity.values[it].asBdd().ite(
-                                if (minR < maxL) l.idd.builder.integer(max(minL, minR+1) .. maxL) else l.idd.builder.EmptyIntegerRange,
-                                if (minL < maxR) l.idd.builder.integer( minL..min(maxL, maxR-1)) else l.idd.builder.EmptyIntegerRange
+                                if (minR < maxL) l.idd.builder.integer(max(minL, minR + 1L) .. maxL) else l.idd.builder.Integers.Empty,
+                                if (minL <= maxR) l.idd.builder.integer(minL..min(maxL, maxR)) else l.idd.builder.Integers.Empty
                             )
                         )
                         downRs.add(
                             downQuantity.values[it].asBdd().ite(
-                                if (minR < maxL) l.idd.builder.integer(minR..min(maxL-1, maxR)) else l.idd.builder.EmptyIntegerRange,
-                                if (minL < maxR) l.idd.builder.integer(max(minL+1, minR) .. maxR)  else l.idd.builder.EmptyIntegerRange
+                                if (minR < maxL) l.idd.builder.integer(minR..min(maxL-1L, maxR)) else l.idd.builder.Integers.Empty,
+                                if (minL <= maxR) l.idd.builder.integer(max(minL, minR) .. maxR)  else l.idd.builder.Integers.Empty
                             )
                         )
                     }
@@ -269,22 +232,22 @@ class AstBinOp(
                         downLs.add(
                             isTrue.ite(
                                 // When l >= r must be true, constrain l to be >= r
-                                l.aadds[it].constrainTo(Range(r.aadds[it].min, Double.POSITIVE_INFINITY)),
+                                l.aadds[it] intersect RealRange(r.aadds[it].min, DoubleBound.PositiveInfinity),
                                 // When l >= r must be false, constrain l to be < r  
-                                l.aadds[it].constrainTo(Range(Double.NEGATIVE_INFINITY, r.aadds[it].max ))
+                                l.aadds[it] intersect RealRange(DoubleBound.NegativeInfinity, r.aadds[it].max )
                             )
                         )
                         downRs.add(
                             isTrue.ite(
                                 // When l >= r must be true, constrain r to be <= l
-                                r.aadds[it].constrainTo(Range(Double.NEGATIVE_INFINITY, l.aadds[it].max)),
+                                r.aadds[it].constrainTo(RealRange(DoubleBound.NegativeInfinity, l.aadds[it].max)),
                                 // When l >= r must be false, constrain r to be > l
-                                r.aadds[it].constrainTo(Range(l.aadds[it].min, Double.POSITIVE_INFINITY))
+                                r.aadds[it].constrainTo(RealRange(l.aadds[it].min, DoubleBound.PositiveInfinity))
                             )
                         )
                     }
-                    l.downQuantity = VectorQuantity(downLs, prevL.upQuantity.unit,prevL.upQuantity.unitSpec)
-                    r.downQuantity = VectorQuantity(downRs, prevR.upQuantity.unit,prevR.upQuantity.unitSpec)
+                    l.downQuantity = VectorQuantity.fromCanonical(downLs, prevL.upQuantity.unit, prevL.upQuantity.unitSpec, prevL.upQuantity.userWantedUnitSpec)
+                    r.downQuantity = VectorQuantity.fromCanonical(downRs, prevR.upQuantity.unit, prevR.upQuantity.unitSpec, prevR.upQuantity.userWantedUnitSpec)
                 } else if (l.isInt && r.isInt) {
                     val downLs = mutableListOf<IDD>()
                     val downRs = mutableListOf<IDD>()
@@ -295,14 +258,14 @@ class AstBinOp(
                         val maxR = r.idds[it].max
                         downLs.add(
                             downQuantity.values[it].asBdd().ite(
-                                if (minR <= maxL) l.idd.builder.integer(max(minL, minR) .. maxL) else l.idd.builder.EmptyIntegerRange,
-                                if (minL <= maxR) l.idd.builder.integer( minL..min(maxL, maxR)) else l.idd.builder.EmptyIntegerRange
+                                if (minR <= maxL) l.idd.builder.integer(max(minL, minR) .. maxL) else l.idd.builder.Integers.Empty,
+                                if (minL < maxR) l.idd.builder.integer(minL..min(maxL, maxR - 1L)) else l.idd.builder.Integers.Empty
                             )
                         )
                         downRs.add(
                             downQuantity.values[it].asBdd().ite(
-                                if (minR <= maxL) l.idd.builder.integer(minR..min(maxL, maxR)) else l.idd.builder.EmptyIntegerRange,
-                                if (minL <= maxR) l.idd.builder.integer(max(minL, minR) .. maxR) else l.idd.builder.EmptyIntegerRange
+                                if (minR <= maxL) l.idd.builder.integer(minR..min(maxL, maxR)) else l.idd.builder.Integers.Empty,
+                                if (minL < maxR) l.idd.builder.integer(max(minL + 1L, minR) .. maxR) else l.idd.builder.Integers.Empty
                             )
                         )
                     }
@@ -320,22 +283,22 @@ class AstBinOp(
                         downLs.add(
                             isTrue.ite(
                                 // When l < r must be true, constrain l to be < r
-                                l.aadds[it].constrainTo(Range(Double.NEGATIVE_INFINITY, r.aadds[it].max )),
+                                l.aadds[it].constrainTo(RealRange(DoubleBound.NegativeInfinity, r.aadds[it].max )),
                                 // When l < r must be false, constrain l to be >= r  
-                                l.aadds[it].constrainTo(Range(r.aadds[it].min, Double.POSITIVE_INFINITY))
+                                l.aadds[it].constrainTo(RealRange(r.aadds[it].min, DoubleBound.PositiveInfinity)),
                             )
                         )
                         downRs.add(
                             isTrue.ite(
                                 // When l < r must be true, constrain r to be > l
-                                r.aadds[it].constrainTo(Range(l.aadds[it].min, Double.POSITIVE_INFINITY)),
+                                r.aadds[it] intersect RealRange(l.aadds[it].min, DoubleBound.PositiveInfinity),
                                 // When l < r must be false, constrain r to be <= l
-                                r.aadds[it].constrainTo(Range(Double.NEGATIVE_INFINITY, l.aadds[it].max))
+                                r.aadds[it] intersect RealRange(DoubleBound.NegativeInfinity, l.aadds[it].max)
                             )
                         )
                     }
-                    l.downQuantity = VectorQuantity(downLs, prevL.upQuantity.unit, prevL.upQuantity.unitSpec)
-                    r.downQuantity = VectorQuantity(downRs, prevR.upQuantity.unit, prevR.upQuantity.unitSpec)
+                    l.downQuantity = VectorQuantity.fromCanonical(downLs, prevL.upQuantity.unit, prevL.upQuantity.unitSpec, prevL.upQuantity.userWantedUnitSpec)
+                    r.downQuantity = VectorQuantity.fromCanonical(downRs, prevR.upQuantity.unit, prevR.upQuantity.unitSpec, prevR.upQuantity.userWantedUnitSpec)
                 } else if (l.isInt && r.isInt) {
                     val downLs = mutableListOf<IDD>()
                     val downRs = mutableListOf<IDD>()
@@ -346,14 +309,14 @@ class AstBinOp(
                         val maxR = r.idds[it].max
                         downLs.add(
                             downQuantity.values[it].asBdd().ite(
-                                if (minL < maxR) l.idd.builder.integer(minL..min(maxL, maxR-1)) else l.idd.builder.EmptyIntegerRange,
-                                if (minR < maxL) l.idd.builder.integer( max(minL, minR+1) .. maxL) else l.idd.builder.EmptyIntegerRange
+                                if (minL < maxR) l.idd.builder.integer(minL..min(maxL, maxR-1L)) else l.idd.builder.Integers.Empty,
+                                if (minR <= maxL) l.idd.builder.integer( max(minL, minR) .. maxL) else l.idd.builder.Integers.Empty
                             )
                         )
                         downRs.add(
                             downQuantity.values[it].asBdd().ite(
-                                if (minL < maxR) l.idd.builder.integer( max(minL+1, minR) .. maxR) else l.idd.builder.EmptyIntegerRange,
-                                if (minR < maxL) l.idd.builder.integer(minR..min(maxL-1, maxR)) else l.idd.builder.EmptyIntegerRange
+                                if (minL < maxR) l.idd.builder.integer( max(minL+1L, minR) .. maxR) else l.idd.builder.Integers.Empty,
+                                if (minR <= maxL) l.idd.builder.integer(minR..min(maxL, maxR)) else l.idd.builder.Integers.Empty
                             )
                         )
                     }
@@ -371,22 +334,22 @@ class AstBinOp(
                         downLs.add(
                             isTrue.ite(
                                 // When l <= r must be true, constrain l to be <= r
-                                l.aadds[it].constrainTo(Range(Double.NEGATIVE_INFINITY, r.aadds[it].max)),
+                                l.aadds[it].constrainTo(RealRange(DoubleBound.NegativeInfinity, r.aadds[it].max)),
                                 // When l <= r must be false, constrain l to be > r  
-                                l.aadds[it].constrainTo(Range(r.aadds[it].min, Double.POSITIVE_INFINITY))
+                                l.aadds[it].constrainTo(RealRange(r.aadds[it].min, DoubleBound.PositiveInfinity))
                             )
                         )
                         downRs.add(
                             isTrue.ite(
                                 // When l <= r must be true, constrain r to be >= l
-                                r.aadds[it].constrainTo(Range(l.aadds[it].min, Double.POSITIVE_INFINITY)),
+                                r.aadds[it].constrainTo(RealRange(l.aadds[it].min, DoubleBound.PositiveInfinity)),
                                 // When l <= r must be false, constrain r to be < l
-                                r.aadds[it].constrainTo(Range(Double.NEGATIVE_INFINITY, l.aadds[it].max ))
+                                r.aadds[it].constrainTo(RealRange(DoubleBound.NegativeInfinity, l.aadds[it].max ))
                             )
                         )
                     }
-                    l.downQuantity = VectorQuantity(downLs, prevL.upQuantity.unit, prevL.upQuantity.unitSpec)
-                    r.downQuantity = VectorQuantity(downRs, prevR.upQuantity.unit, prevR.upQuantity.unitSpec)
+                    l.downQuantity = VectorQuantity.fromCanonical(downLs, prevL.upQuantity.unit, prevL.upQuantity.unitSpec, prevL.upQuantity.userWantedUnitSpec)
+                    r.downQuantity = VectorQuantity.fromCanonical(downRs, prevR.upQuantity.unit, prevR.upQuantity.unitSpec, prevR.upQuantity.userWantedUnitSpec)
                 } else if (l.isInt && r.isInt) {
                     val downLs = mutableListOf<IDD>()
                     val downRs = mutableListOf<IDD>()
@@ -397,14 +360,14 @@ class AstBinOp(
                         val maxR = r.idds[it].max
                         downLs.add(
                             downQuantity.values[it].asBdd().ite(
-                                if (minL <= maxR) l.idd.builder.integer(minL..min(maxL, maxR)) else l.idd.builder.EmptyIntegerRange,
-                                if (minR <= maxL) l.idd.builder.integer( max(minL, minR) .. maxL) else l.idd.builder.EmptyIntegerRange
+                                if (minL <= maxR) l.idd.builder.integer(minL..min(maxL, maxR)) else l.idd.builder.Integers.Empty,
+                                if (minR < maxL) l.idd.builder.integer( max(minL, minR + 1L) .. maxL) else l.idd.builder.Integers.Empty
                             )
                         )
                         downRs.add(
                             downQuantity.values[it].asBdd().ite(
-                                if (minL <= maxR) l.idd.builder.integer( max(minL, minR) .. maxR) else l.idd.builder.EmptyIntegerRange,
-                                if (minR <= maxL) l.idd.builder.integer(minR..min(maxL, maxR)) else l.idd.builder.EmptyIntegerRange
+                                if (minL <= maxR) l.idd.builder.integer( max(minL, minR) .. maxR) else l.idd.builder.Integers.Empty,
+                                if (minR < maxL) l.idd.builder.integer(minR..min(maxL - 1L, maxR)) else l.idd.builder.Integers.Empty
                             )
                         )
                     }
@@ -438,10 +401,10 @@ class AstBinOp(
 
     /** Executes a lambda on each AstNode in an Ast and returns its result */
     override fun <R> withDepthFirst(receiver: AstNode, block: AstNode.() -> R): R =
-        with(receiver) {
-            withDepthFirst(l, block)
-            withDepthFirst(r, block)
-            return block()
+        run {
+            l.withDepthFirst(l, block)
+            r.withDepthFirst(r, block)
+            receiver.block()
         }
 
     override fun toString() = "AstBinOp($l $op $r)"

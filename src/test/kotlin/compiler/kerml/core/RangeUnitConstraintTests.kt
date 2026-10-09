@@ -17,7 +17,7 @@ class RangeUnitConstraintTests {
             feature f(1.0 .. 2.0): ScalarValues::Real; 
         """)
         val range = elements.first { it.declaredName == "range" }
-        assertEquals("1 .. 2", range.body)
+        assertEquals("1.0..2.0", range.body)
     }
 
     @Test

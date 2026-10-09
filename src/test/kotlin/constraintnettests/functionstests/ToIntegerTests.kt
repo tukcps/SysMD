@@ -1,9 +1,10 @@
 package constraintnettests.functionstests
 
 
+import util.variable
 import com.github.tukcps.sysmd.services.Runlevel
-import com.github.tukcps.sysmd.services.resolve.resolveVar
 import util.assertNoIssues
+import util.assertBounds
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
@@ -15,13 +16,12 @@ class ToIntegerTests {
     fun toInteger_evalUp() = testSession("Ranges") {
         loadKerML("""
             feature a: Ranges::RealInRange  = 3.0 {:>> range = 1.0 .. 5.0;}
-            feature b: Ranges::IntegerInRange = ToInteger(a);"""
-        )
+            feature b: Ranges::IntegerInRange = ToInteger(a);
+        """, Runlevel.ALL)
         solver.propagate()
         assertNoIssues()
-        assertEquals(3L, solver.getVariable("b")!!.min())
-        assertEquals(3L, solver.getVariable("b")!!.max())
-        assertEquals("1", solver.getVariable("b")!!.vectorQuantity.unit.toString())
+        assertBounds(3L .. 3L, solver.variable("b"))
+        assertEquals("1", solver.variable("b").vectorQuantity.unit.toString())
     }
 
     @Test
@@ -30,10 +30,10 @@ class ToIntegerTests {
             feature a: Ranges::RealInRange  {:>> range = 1.5 .. 5.5;}
             feature b: Ranges::IntegerInRange = ToInteger(a);
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(1L, solver.getVariable("b")!!.min())
-        assertEquals(6L, solver.getVariable("b")!!.max())
-        assertEquals("1", solver.getVariable("b")!!.vectorQuantity.unit.toString())
+        assertBounds(1L .. 6L, solver.variable("b"))
+        assertEquals("1", solver.variable("b").vectorQuantity.unit.toString())
     }
 
     @Test
@@ -44,9 +44,8 @@ class ToIntegerTests {
         )
         solver.propagate()
         assertNoIssues()
-        assertEquals(1.5, solver.getVariable("a")!!.min(), 0.00001)
-        assertEquals(4.0, solver.getVariable("a")!!.max(), 0.00001)
-        assertEquals("1", solver.getVariable("a")!!.vectorQuantity.unit.toString())
+        assertBounds(1.5 .. 4.0, solver.variable("a"))
+        assertEquals("1", solver.variable("a").vectorQuantity.unit.toString())
     }
 
 
@@ -58,12 +57,10 @@ class ToIntegerTests {
                 feature r: Integer = ToInteger(i); 
                 """)
             solver.propagate()
-            val i = solver.getVariable("i")
-            assertNotNull(i)
-            val r = solver.getVariable("r")!!
+            val i = solver.variable("i")
+            val r = solver.variable("r")
             assertNoIssues()
-            assertEquals(2L, r.vectorQuantity.value.asIdd().min)
-            assertEquals(3L, r.vectorQuantity.value.asIdd().max)
+            assertBounds(2L .. 3L, r)
         }
 
     @Test
@@ -75,7 +72,6 @@ class ToIntegerTests {
         solver.propagate()
         assertNoIssues()
         // floor(-2.5) is -3, ceil(-1.5) is -1
-        assertEquals(-3L, solver.getVariable("b")!!.min())
-        assertEquals(-1L, solver.getVariable("b")!!.max())
+        assertBounds(-3L .. -1L, solver.variable("b"))
     }
 }

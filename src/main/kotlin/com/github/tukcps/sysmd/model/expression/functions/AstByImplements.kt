@@ -1,6 +1,7 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
 import com.github.tukcps.sysmd.exceptions.Issue
+import com.github.tukcps.sysmd.model.datamodel.toElementData
 import com.github.tukcps.sysmd.model.expression.AstLeaf
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.model.kerml.Association
@@ -8,14 +9,13 @@ import com.github.tukcps.sysmd.model.kerml.Connector
 import com.github.tukcps.sysmd.model.kerml.Membership
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.util.QualifiedName
-import com.github.tukcps.sysmd.quantities.Quantity
+import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.getRelationshipsTo
-import com.github.tukcps.sysmd.model.datamodel.toElementData
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.session.Session
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.BDD
-import io.github.tukcps.aadd.IDD
+import io.github.tukcps.aadd.dd.AADD
+import io.github.tukcps.aadd.dd.BDD
+import io.github.tukcps.aadd.dd.IDD
 
 /**
  * The function basically works the same way as bySubclasses, but instead of subclass relationship it uses the
@@ -50,9 +50,9 @@ class AstByImplements(model: Session, namespace: Namespace, args: ArrayList<AstN
         function = implements!!.target.firstOrNull() as Namespace
 
         upQuantity = when (super.getParam(0).upQuantity.values[0]) {
-            is BDD -> Quantity(model.builder.Bool)
-            is IDD -> Quantity(model.builder.Integers)
-            is AADD -> Quantity(model.builder.Reals, "?")
+            is BDD -> VectorQuantity(model.builder.Bool.All)
+            is IDD -> VectorQuantity(model.builder.Integers.All)
+            is AADD -> VectorQuantity(model.builder.Reals.All, "?")
             else -> throw Exception("Unknown data type!")
         }
         evalUp()
@@ -88,4 +88,6 @@ class AstByImplements(model: Session, namespace: Namespace, args: ArrayList<AstN
      * Does nothing so far.
      */
     override fun evalDownRec() {}
+
+    override fun clone() = AstByImplements(model, inNameSpace, cloneParameters())
 }

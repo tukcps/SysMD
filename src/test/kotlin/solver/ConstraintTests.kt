@@ -1,15 +1,14 @@
 package solver
 
+import util.assertBounds
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.services.Runlevel
-import com.github.tukcps.sysmd.services.resolve.resolveVar
-import io.github.tukcps.aadd.values.XBool
+import io.github.tukcps.aadd.values.bool.XBool
+import io.github.tukcps.aadd.values.bounds.LongBound
 import util.assertNoIssues
 import util.mockup.loadSysMLv2
 import util.testSession
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
+import kotlin.test.*
 
 class ConstraintTests {
 
@@ -22,7 +21,7 @@ class ConstraintTests {
         """, Runlevel.ALL)
         assertNoIssues()
         val current = solver.getVariable("c")
-        assertEquals(XBool.True, current!!.vectorQuantity.value as XBool)
+        assertEquals(XBool.True, current!!.vectorQuantity.value.asBdd().value)
     }
 
     @Test
@@ -33,9 +32,9 @@ class ConstraintTests {
         """, Runlevel.VARIABLES)
         assertNoIssues()
         val testr = solver.getVariable("test")
-        assertEquals(builder.True, testr!!.vectorQuantity.value)
+        assertEquals(builder.Bool.True, testr!!.vectorQuantity.value)
         val testr2 = solver.getVariable("test2")
-        assertEquals(builder.True, testr2!!.vectorQuantity.value)
+        assertEquals(builder.Bool.True, testr2!!.vectorQuantity.value)
     }
 
     @Test
@@ -48,9 +47,9 @@ class ConstraintTests {
         """, Runlevel.ALL)
         assertNoIssues()
         val test2 = solver.getVariable("ASILCalculated")
-        assertEquals(1, test2!!.vectorQuantity.value.asIdd().min)
+        assertBounds(1L, test2!!)
         val testr = solver.getVariable("ASIlFromReliability")
-        assertEquals(1, testr!!.vectorQuantity.value.asIdd().min)
+        assertBounds(1L, testr!!)
     }
 
     @Test
@@ -62,9 +61,9 @@ class ConstraintTests {
         """, Runlevel.ALL)
         assertNoIssues()
         val test2 = solver.getVariable("ASILCalculated")
-        assertEquals(1, test2!!.vectorQuantity.value.asIdd().min)
+        assertBounds(1L, test2!!)
         val testr = solver.getVariable("ASIlFromReliability")
-        assertEquals(1, testr!!.vectorQuantity.value.asIdd().min)
+        assertBounds(1L, testr!!)
     }
 
     @Test
@@ -76,9 +75,9 @@ class ConstraintTests {
         """, Runlevel.ALL)
         assertNoIssues()
         val test2 = solver.getVariable("ASILCalculated")
-        assertEquals(1, test2!!.vectorQuantity.value.asIdd().min)
+        assertBounds(1L, test2!!)
         val testr = solver.getVariable("ASIlFromReliability")
-        assertEquals(1, testr!!.vectorQuantity.value.asIdd().min)
+        assertBounds(1L, testr!!)
     }
 
     @Test
@@ -102,6 +101,6 @@ class ConstraintTests {
         val testR = global.resolve("test::r")?.member<Feature>()
         assertNotNull(testR)
         val testRVar = solver.getVariable("test::r")
-        assertEquals(builder.True, testRVar!!.bool())
+        assertEquals(builder.Bool.True, testRVar!!.bool())
     }
 }

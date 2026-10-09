@@ -7,12 +7,12 @@ import com.github.tukcps.sysmd.model.kerml.Classifier
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.SpecializationImplementation
-import com.github.tukcps.sysmd.quantities.Quantity
+import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.BDD
-import io.github.tukcps.aadd.DD
-import io.github.tukcps.aadd.IDD
+import io.github.tukcps.aadd.dd.AADD
+import io.github.tukcps.aadd.dd.BDD
+import io.github.tukcps.aadd.dd.DD
+import io.github.tukcps.aadd.dd.IDD
 
 
 /**
@@ -25,15 +25,15 @@ fun Session.letVar(value: Variable, dd: DD<*>): Variable { //TODO not for Vector
 
     when (dd) {
         is AADD -> value.rangeSpecs = mutableListOf(dd.getRange())
-        is IDD  -> value.intSpecs = mutableListOf(dd.getRange())
-        is BDD  -> value.boolSpecs = mutableListOf(dd.value)
+        is IDD -> value.intSpecs = mutableListOf(dd.getRange())
+        is BDD -> value.boolSpecs = mutableListOf(dd.value)
         else -> throw SemanticError("parameter must be of subtype of DD<*>")
     }
 
     value.vectorQuantity = when(dd){
-        is AADD ->  Quantity(dd, value.unitSpec)
-        is BDD ->  Quantity(dd)
-        is IDD ->  Quantity(dd)
+        is AADD ->  VectorQuantity(dd, value.unitSpec)
+        is BDD ->  VectorQuantity(dd)
+        is IDD ->  VectorQuantity(dd)
     }
 
     //Sync with Conditions in DDBuilder

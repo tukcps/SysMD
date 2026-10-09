@@ -138,6 +138,8 @@ SysMD was developed and is maintained by
 - HOOD Group
   - Bertil Muth
   - Markus Eberhard
+- Others
+  - Brian Horakh (Prompt Execution)
 
 The solver very much profits from the AADD library for computation with ranges:
 - https://github.com/tukcps/Multiplatform-AADD

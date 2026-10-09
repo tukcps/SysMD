@@ -1,7 +1,9 @@
 package constraintnettests.functionstests
 
+import util.variable
 import com.github.tukcps.sysmd.services.Runlevel
 import util.assertNoIssues
+import util.assertBounds
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
@@ -15,10 +17,10 @@ class VectorFuncTests {
             feature a: Ranges::IntegerInRange {:>> range = (0..6, 6..12, 4..20);}
             feature b: ScalarValues::Integer = size(a);
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        val b = solver.getVariable("b")!!
-        assertEquals(3L, b.min())
-        assertEquals(3L, b.max())
+        val b = solver.variable("b")
+        assertBounds(3L .. 3L, b)
     }
 
     @Test
@@ -29,11 +31,8 @@ class VectorFuncTests {
         """)
         solver.propagate()
         assertNoIssues()
-        val b = solver.getVariable("b")!!
-        assertEquals(0.6, b.min(), 0.0001)
-        assertEquals(0.6, b.max(), 0.0001)
-        assertEquals(0.8, b.min(1), 0.0001)
-        assertEquals(0.8, b.max(1), 0.0001)
+        val b = solver.variable("b")
+        assertBounds(listOf(0.6 .. 0.6, 0.8 .. 0.8), b)
     }
 
     @Test
@@ -44,8 +43,7 @@ class VectorFuncTests {
         """)
         solver.propagate()
         assertNoIssues()
-        val b = solver.getVariable("b")!!
-        assertEquals(20.0, b.min(), 0.0001)
-        assertEquals(20.0, b.max(), 0.0001)
+        val b = solver.variable("b")
+        assertBounds(20.0 .. 20.0, b)
     }
 }

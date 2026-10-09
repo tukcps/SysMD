@@ -1,7 +1,8 @@
 package com.github.tukcps.sysmd.cspsolver.normalizer
 
-import io.github.tukcps.aadd.BDD
-import io.github.tukcps.aadd.values.XBool
+import io.github.tukcps.aadd.dd.BDD
+import io.github.tukcps.aadd.values.bool.XBool
+import io.github.tukcps.aadd.values.bool.XBoolImpl
 
 /**
  * Class to solve the normalized properties [NormalizedProperties] produced by the [CNNormalizer]
@@ -242,7 +243,7 @@ class NormalizedPropertiesSolver {
      * @return CNF represented as a set of sets of integers, whereby the integers represent the literals (negative value means negation).
      * Each 'inner' set of integers represents a clause.
      */
-    private fun createCNF(normalizedProps: MutableList<SimpleProperty<XBool>>) : Set<Set<Int>> {
+    private fun createCNF(normalizedProps: MutableList<SimpleProperty<XBoolImpl>>) : Set<Set<Int>> {
 
         var cnf = mutableSetOf<Set<Int>>()
         // build the conjunction of the CNFs of all given properties

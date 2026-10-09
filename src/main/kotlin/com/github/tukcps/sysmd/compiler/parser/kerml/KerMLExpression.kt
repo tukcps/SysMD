@@ -1,16 +1,19 @@
 @file:Suppress("FunctionName")
 package com.github.tukcps.sysmd.compiler.parser.kerml
 
-import com.github.tukcps.sysmd.compiler.*
-import com.github.tukcps.sysmd.compiler.scanner.*
+import com.github.tukcps.sysmd.compiler.KerML
+import com.github.tukcps.sysmd.compiler.parser.util.negateIf
+import com.github.tukcps.sysmd.compiler.scanner.Token
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.compiler.semantics.expression.*
 import com.github.tukcps.sysmd.compiler.semantics.kerml.*
-import com.github.tukcps.sysmd.exceptions.*
+import com.github.tukcps.sysmd.exceptions.LexicalError
+import com.github.tukcps.sysmd.exceptions.SyntaxError
 import com.github.tukcps.sysmd.model.datamodel.*
-import com.github.tukcps.sysmd.model.expression.implementation.*
+import com.github.tukcps.sysmd.model.expression.implementation.BinaryOperatorInformation
+import com.github.tukcps.sysmd.model.expression.implementation.UnaryOperatorInformation
 import com.github.tukcps.sysmd.model.generated.ElementType
-import com.github.tukcps.sysmd.model.util.*
+import com.github.tukcps.sysmd.model.util.QualifiedName
 
 /** An expression WITHOUT implicit owning membership */
 fun KerML.OwnedExpression() : ElementData = ConditionalExpression()
@@ -446,21 +449,21 @@ private fun KerML.BaseExpression() : ElementData
 			expr = OperatorExpressionAction(semantics, "..").parse {
 				// we could also just parse an arbitrary expression here...
 				fun bound() = ExpressionAction(semantics, ElementType.LiteralRational).parse {
-					var sign = 1
+					var negative : Boolean = false
 					alternatives {
-						PLUS then {}
-						MINUS then { sign = -1 }
+						PLUS then { }
+						MINUS then { negative = true }
 						others { }
 					}
 
 					alternatives {
 						INTEGER_LIT then {
 							type = ElementType.LiteralInteger
-							element.literalIntegerValue = consumedToken.number.toLong() * sign // really? manual conversion?
-							element.literalRationalValue = consumedToken.number * sign // as fallback
+							element.literalIntegerValue = consumedToken.integer.negateIf(negative)
+							element.literalRationalValue = consumedToken.real.negateIf(negative) // as fallback
 						}
 						FLOAT_LIT then {
-							element.literalRationalValue = consumedToken.number * sign
+							element.literalRationalValue = consumedToken.real.negateIf(negative)
 						}
 						TIMES then {
 							type = ElementType.LiteralInfinity
@@ -491,14 +494,14 @@ private fun KerML.BaseExpression() : ElementData
 		FLOAT_LIT starts {
 			expr = ExpressionAction(semantics, ElementType.LiteralRational).parse {
 				FLOAT_LIT.consume()
-				element.literalRationalValue = consumedToken.number
+				element.literalRationalValue = consumedToken.real
 			}
 		}
 
 		INTEGER_LIT starts {
 			expr = ExpressionAction(semantics, ElementType.LiteralInteger).parse {
 				INTEGER_LIT.consume()
-				element.literalIntegerValue = consumedToken.number.toLong()
+				element.literalIntegerValue = consumedToken.integer
 			}
 		}
 
@@ -551,7 +554,7 @@ private fun KerML.BodyExpression() : ElementData = ExpressionAction(semantics, E
 private fun KerML.TypeReference() = FeatureAction(semantics, owningMembershipType = null).parse {
 	val typeName = QualifiedName()
 	semantics.addOwnedRelationship( // ReferenceTyping
-		IdentifiedByName(typeName, IdentificationKind.Type),
+		ElementReference.ByName(typeName, IdentificationKind.Type),
 		ElementType.FeatureTyping
 	)
 }
@@ -575,14 +578,14 @@ private fun ExpressionAction.makeFeatureReference(name : String) {
 	}
 
 	context.compiler.semantics.addOwnedRelationship( // FeatureReferenceMember
-		IdentifiedByName(name, IdentificationKind.Feature),
+		ElementReference.ByName(name, IdentificationKind.Feature),
 		ElementType.Membership // really?
 	)
 }
 
 private fun ExpressionAction.addElementReference(name : QualifiedName) {
 	context.compiler.semantics.addOwnedRelationship(
-		IdentifiedByName(name, IdentificationKind.Element),
+		ElementReference.ByName(name, IdentificationKind.Element),
 		ElementType.Membership // really?
 	)
 }

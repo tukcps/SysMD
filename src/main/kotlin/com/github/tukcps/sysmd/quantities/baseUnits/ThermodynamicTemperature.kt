@@ -1,13 +1,9 @@
 package com.github.tukcps.sysmd.quantities.baseUnits
 
-import io.github.tukcps.aadd.DD
-import io.github.tukcps.aadd.functions.div
-import io.github.tukcps.aadd.functions.minus
-import io.github.tukcps.aadd.functions.plus
-import io.github.tukcps.aadd.functions.times
 import com.github.tukcps.sysmd.quantities.BaseUnit
 import com.github.tukcps.sysmd.quantities.NoPrefix
 import com.github.tukcps.sysmd.quantities.Prefix
+import io.github.tukcps.aadd.dd.*
 
 
 open class ThermodynamicTemperature(name: String, symbol: String, prefix: Prefix, convFac: Double = 1.0, exponent: Int = 1) :
@@ -18,7 +14,10 @@ open class ThermodynamicTemperature(name: String, symbol: String, prefix: Prefix
      */
     object Kelvin : ThermodynamicTemperature("kelvin", "K", NoPrefix)
     object Celsius : ThermodynamicTemperature("degree celsius", "°C", NoPrefix)
-    object Fahrenheit : ThermodynamicTemperature("degree fahrenheit", "°F", NoPrefix)
+    object Fahrenheit : ThermodynamicTemperature("degree fahrenheit", "°F", NoPrefix, 5.0 / 9.0)
+
+    /** True for units whose zero point is not absolute zero (°C, °F). [convFac] is only their scale. */
+    val hasOffset: Boolean get() = name != "kelvin"
 
     override fun copy(exponentValue: Int): ThermodynamicTemperature {
         return ThermodynamicTemperature(name, symbol, prefix, convFac, exponentValue)

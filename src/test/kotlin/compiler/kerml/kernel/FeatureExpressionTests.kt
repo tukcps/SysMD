@@ -57,9 +57,9 @@ class FeatureExpressionTests {
         val constraint = global.resolve("f::range")?.member<Feature>()
         assertNotNull(constraint)
         val expression = constraint.expression
-        assertEquals("1 .. 3", expression?.trim())
+        assertEquals("1.0..3.0", expression?.trim())
         val viaFeature = f.typeConstraint.first()
-        assertEquals("1 .. 3", viaFeature)
+        assertEquals("1.0..3.0", viaFeature)
     }
 
     @Test
@@ -110,7 +110,7 @@ class FeatureExpressionTests {
         assertEquals("f", f.declaredName)
         assertEquals("1", f.expression)
         val range = f.getOwnedElement("range") as? Feature
-        assertEquals("0 .. 2", range?.expression)
+        assertEquals("0..2", range?.expression)
     }
 
     @Test

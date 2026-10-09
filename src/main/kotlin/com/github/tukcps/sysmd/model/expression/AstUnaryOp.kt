@@ -1,18 +1,21 @@
 package com.github.tukcps.sysmd.model.expression
 
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.IDD
-import com.github.tukcps.sysmd.model.expression.functions.AstNot
-import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.compiler.scanner.Token
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.MINUS
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.PLUS
+import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.quantities.VectorQuantity
+import io.github.tukcps.aadd.dd.AADD
+import io.github.tukcps.aadd.dd.IDD
 
 internal class AstUnaryOp(
     val op: Token.Kind,
     val operand: AstNode
 ): AstNode(operand.model) {
+
+    init {
+        operand.parent = this
+    }
 
     override var root: AstNode? = null
         set(value) {
@@ -22,8 +25,8 @@ internal class AstUnaryOp(
 
     override fun initialize() {
         upQuantity = when (operand.upQuantity.values[0]) {
-            is AADD -> VectorQuantity(mutableListOf(model.builder.Reals), "")
-            is IDD -> VectorQuantity(mutableListOf(model.builder.Integers))
+            is AADD -> VectorQuantity(mutableListOf(model.builder.Reals.Reals))
+            is IDD -> VectorQuantity(mutableListOf(model.builder.Integers.Integers))
             else -> throw SemanticError("unary minus argument must be of type Integer or Real")
         }
         evalUp()
@@ -64,17 +67,16 @@ internal class AstUnaryOp(
     }
 
     override fun <R> withDepthFirst(receiver: AstNode, block: AstNode.() -> R): R =
-        with(receiver) {
-            withDepthFirst(operand, block)
-            return block()
+        run {
+            operand.withDepthFirst(operand, block)
+            receiver.block()
         }
 
     override fun toExpressionString(): String {
-        return "-${operand.toExpressionString()}"
+        val sign = if (op == PLUS) "+" else "-"
+        return "$sign${operand.toExpressionString()}"
     }
 
-    override fun clone(): AstNot {
-        val parClone = arrayListOf(operand.clone())
-        return AstNot(model, parClone)
-    }
+    override fun clone(): AstUnaryOp =
+        AstUnaryOp(op, operand.clone()).also { it.root = root }
 }

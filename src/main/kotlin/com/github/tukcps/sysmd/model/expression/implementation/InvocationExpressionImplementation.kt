@@ -1,5 +1,6 @@
 package com.github.tukcps.sysmd.model.expression.implementation
 
+import com.github.tukcps.sysmd.model.datamodel.ElementReference
 import com.github.tukcps.sysmd.model.expression.Expression
 import com.github.tukcps.sysmd.model.expression.InvocationExpression
 import com.github.tukcps.sysmd.model.kerml.Feature
@@ -55,7 +56,7 @@ open class InvocationExpressionImplementation(
                 b.append(", ")
 
             head = false
-            b.append((feat as? Unresolved)?.relativeName ?: feat.name ?: feat.shortName)
+            b.append(((feat as? Unresolved)?.reference as? ElementReference.ByName)?.name ?: feat.name ?: feat.shortName)
             b.append(" = ")
             arg.toAstString(b, 0)
         }

@@ -46,14 +46,13 @@ inline fun testProjectSession(
     val project = fromInterchangeFiles(Path(Paths.get(dir).toString()) )
         ?: throw Exception("Could not create project from .project.json and .meta.json in $testDirectory")
 
-    val session = SessionManager.createSession(project = project, runlevel = runlevel,)
+    val session = SessionManager.createSession(project = project, "Base", runlevel = Runlevel.NONE)
 
     try {
         with(session) {
             (SessionManager.projectService as MockupSysMDProjectService).setProjects(listOf(project))
-            loadLibraryArrangement("Base")
             arrangement.forEach { arrangement -> loadLibraryArrangement(arrangement) }
-            initialize(settings.runlevel)
+            initialize(runlevel)
             (this as ProjectSessionImplementation).test()
         }
     } finally {

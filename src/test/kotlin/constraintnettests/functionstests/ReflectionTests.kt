@@ -1,7 +1,9 @@
 package constraintnettests.functionstests
 
+import util.variable
 import com.github.tukcps.sysmd.services.Runlevel
 import util.assertNoIssues
+import util.assertBounds
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
@@ -18,10 +20,10 @@ class ReflectionTests {
         """)
         solver.propagate()
         assertNoIssues()
-        val b1 = solver.getVariable("b1")!!
-        val b2 = solver.getVariable("b2")!!
-        assertEquals(builder.True, b1.vectorQuantity.value.asBdd())
-        assertEquals(builder.False, b2.vectorQuantity.value.asBdd())
+        val b1 = solver.variable("b1")
+        val b2 = solver.variable("b2")
+        assertEquals(builder.Bool.True, b1.vectorQuantity.value.asBdd())
+        assertEquals(builder.Bool.False, b2.vectorQuantity.value.asBdd())
     }
 
     @Test
@@ -33,10 +35,10 @@ class ReflectionTests {
         """)
         solver.propagate()
         assertNoIssues()
-        val b1 = solver.getVariable("b1")!!
-        val b2 = solver.getVariable("b2")!!
-        assertEquals(builder.True, b1.vectorQuantity.value.asBdd())
-        assertEquals(builder.False, b2.vectorQuantity.value.asBdd())
+        val b1 = solver.variable("b1")
+        val b2 = solver.variable("b2")
+        assertEquals(builder.Bool.True, b1.vectorQuantity.value.asBdd())
+        assertEquals(builder.Bool.False, b2.vectorQuantity.value.asBdd())
     }
 
     @Test
@@ -46,10 +48,10 @@ class ReflectionTests {
             feature b: Ranges::RealInRange {:>> range = 3.0..7.0;}
             feature c: ScalarValues::Real = intersect(a, b);
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        val c = solver.getVariable("c")!!
-        assertEquals(3.0, c.min(), 0.0001)
-        assertEquals(5.0, c.max(), 0.0001)
+        val c = solver.variable("c")
+        assertBounds(3.0 .. 5.0, c)
     }
 
     @Test
@@ -59,9 +61,24 @@ class ReflectionTests {
             feature b: Ranges::IntegerInRange {:>> range = 3..7;}
             feature c: ScalarValues::Integer = intersect(a, b);
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        val c = solver.getVariable("c")!!
-        assertEquals(3L, c.min())
-        assertEquals(5L, c.max())
+        val c = solver.variable("c")
+        assertBounds(3L .. 5L, c)
+    }
+
+
+    /** Regression test: intersect(a, b) = r only says r is within a and b; a and b must not be narrowed to r. */
+    @Test
+    fun intersectEvalDownDoesNotNarrowRegressionTest() = testSession("Ranges") {
+        loadKerML("""
+            feature a: Ranges::RealInRange {:>> range = 1.0..5.0;}
+            feature b: Ranges::RealInRange {:>> range = 3.0..7.0;}
+            feature c: Ranges::RealInRange = intersect(a, b) {:>> range = 3.0..4.0;}
+        """, Runlevel.ALL)
+        solver.propagate()
+        assertNoIssues()
+        assertBounds(1.0 .. 5.0, solver.variable("a"))
+        assertBounds(3.0 .. 7.0, solver.variable("b"))
     }
 }

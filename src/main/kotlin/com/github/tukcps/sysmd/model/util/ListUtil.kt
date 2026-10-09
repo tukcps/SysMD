@@ -16,3 +16,5 @@ inline fun<T> MutableList<T>.mapInPlace(mutator: (T) -> T?)
         }
     }
 }
+
+inline fun<T, R> List<T>.mapToArrayList(f : (T) -> R) = mapTo(ArrayList(size), f)

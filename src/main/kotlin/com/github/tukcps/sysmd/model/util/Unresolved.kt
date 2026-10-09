@@ -1,26 +1,48 @@
 package com.github.tukcps.sysmd.model.util
 
+import com.github.tukcps.sysmd.model.datamodel.ElementReference
 import com.github.tukcps.sysmd.model.expression.Expression
+import com.github.tukcps.sysmd.model.generated.elementType
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.*
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
-import kotlin.uuid.Uuid
 
 /**
  * A reference that is still unresolved, as sealed interface for type safety.
- * @property relativeName the qualified name that should resolve to the respective element.
- * @property id a UUID that should resolve to the respective element.
+ * @property reference A reference to the actual element, or null for placeholder elements
  * @property input the input stream
  * @property indices indices in the input stream with the relative Name
  */
 sealed interface Unresolved: Element {
-    var relativeName: QualifiedName?
-    var id: Uuid?
+    val reference : ElementReference?
     override var input: CharSequence?
     override var indices: IntRange?
+
+    override val qualifiedName: QualifiedName? get() = when(val r = reference) {
+        is ElementReference.ByID -> null
+        is ElementReference.ByName -> r.name
+        ElementReference.ToRoot -> "$"
+        null -> null
+    }
+
+    override fun escapedName(): String? = when(val r = reference)  {
+        is ElementReference.ByID -> null
+        is ElementReference.ByName -> r.name.split("::").last()
+        ElementReference.ToRoot -> "global"
+        null -> null
+    }
 }
 
+/** Effective [toString] overload for [Unresolved] subtypes */
+private fun Unresolved.describe() = when(val r = reference) {
+    null -> "Placeholder [${elementType()}]"
+    else -> "Unresolved [${elementType()}] " + when(r) {
+        is ElementReference.ByID -> r.id.toString()
+        is ElementReference.ByName -> r.name
+        ElementReference.ToRoot -> "GLOBAL"
+    }
+}
 /** Checks that a resolved element's type matches an unresolved Element.
  * Reports an error if this is not the case.
  * @param containing Optional element to report the error at
@@ -40,16 +62,15 @@ internal fun checkType(unresolved : Unresolved, resolved : Element, containing :
 
 /**
  * Unresolved Referent to an Element in general.
- * @param relativeName Path relative to namespace of element as Qualified Name.
- * @param id The id of the element after name resolution.
  */
 class UnresolvedElement(
     model : Session,
-    override var relativeName: QualifiedName? = null,
-    override var id: Uuid? = null
+    override val reference : ElementReference? = null,
 ) : Unresolved, ElementImplementation(model, ) {
-    override fun toString(): String = "Unresolved Element: ${relativeName?:if(id != null) "(by id)" else "null"}"
-    override fun escapedName(): String? = relativeName
+    override val qualifiedName: QualifiedName? get() = super<Unresolved>.qualifiedName
+    override fun escapedName(): String? = super<Unresolved>.escapedName()
+    override fun toString(): String = describe()
+    override fun clone() = UnresolvedElement(model, reference)
 }
 
 /**
@@ -57,11 +78,12 @@ class UnresolvedElement(
  */
 class UnresolvedRelationship(
     model : Session,
-    override var relativeName: QualifiedName? = null,
-    override var id: Uuid? = null
+    override val reference : ElementReference? = null,
 ) : Unresolved, RelationshipImplementation(model, ) {
-    override fun toString(): String = "Unresolved Relationship: ${relativeName?:if(id != null) "(by id)" else "null"}"
-    override fun escapedName(): String? = relativeName
+    override val qualifiedName: QualifiedName? get() = super<Unresolved>.qualifiedName
+    override fun escapedName(): String? = super<Unresolved>.escapedName()
+    override fun toString(): String = describe()
+    override fun clone() = UnresolvedRelationship(model, reference)
 }
 
 /**
@@ -69,11 +91,12 @@ class UnresolvedRelationship(
  */
 class UnresolvedMembership(
     model : Session,
-    override var relativeName: QualifiedName? = null,
-    override var id: Uuid? = null
+    override val reference: ElementReference? = null,
 ): Unresolved, MembershipImplementation(model) {
-    override fun toString(): String = "Unresolved Membership: $relativeName"
-    override fun escapedName(): String? = relativeName
+    override val qualifiedName: QualifiedName? get() = super<Unresolved>.qualifiedName
+    override fun escapedName(): String? = super<Unresolved>.escapedName()
+    override fun toString(): String = describe()
+    override fun clone() = UnresolvedMembership(model, reference)
 }
 
 /**
@@ -81,11 +104,12 @@ class UnresolvedMembership(
  */
 class UnresolvedOwningMembership(
     model : Session,
-    override var relativeName: QualifiedName? = null,
-    override var id: Uuid? = null
+    override val reference: ElementReference? = null,
 ): Unresolved, OwningMembershipImplementation(model, elementType = "Unresolved OwningMembership"){
-    override fun toString(): String = "Unresolved Membership: $relativeName"
-    override fun escapedName(): String? = relativeName
+    override val qualifiedName: QualifiedName? get() = super<Unresolved>.qualifiedName
+    override fun escapedName(): String? = super<Unresolved>.escapedName()
+    override fun toString(): String = describe()
+    override fun clone() = UnresolvedOwningMembership(model, reference)
 }
 
 /**
@@ -93,11 +117,16 @@ class UnresolvedOwningMembership(
  */
 class UnresolvedType(
     model : Session,
-    override var relativeName: QualifiedName? = null,
-    override var id: Uuid? = null
-): Unresolved, TypeImplementation(model, ) {
-    override fun toString(): String = "Unresolved Type: $relativeName"
-    override fun escapedName(): String? = relativeName
+    override val reference: ElementReference? = null,
+): Unresolved, TypeImplementation(model) {
+    // convenience constructor
+    constructor(model : Session, relativeName : String) : this(model, ElementReference.ByName(relativeName))
+
+    override val qualifiedName: QualifiedName? get() = super<Unresolved>.qualifiedName
+    override fun escapedName(): String? = super<Unresolved>.escapedName()
+    override fun toString(): String = describe()
+
+    override fun clone() = UnresolvedType(model, reference)
 }
 
 /**
@@ -105,12 +134,17 @@ class UnresolvedType(
  */
 open class UnresolvedFeature(
     model : Session,
-    override var relativeName: QualifiedName? = null,
-    override var id: Uuid? = null,
-    elementType: String = "Unresolved Feature",
+    override val reference: ElementReference? = null
 ): Unresolved, FeatureImplementation(model){
-    override fun toString(): String = "Unresolved Feature: $relativeName"
-    override fun escapedName(): String? = relativeName
+    // convenience constructor
+    constructor(model : Session, relativeName : String) : this(model, ElementReference.ByName(relativeName))
+
+
+    override val qualifiedName: QualifiedName? get() = super<Unresolved>.qualifiedName
+    override fun escapedName(): String? = super<Unresolved>.escapedName()
+    override fun toString(): String = describe()
+
+    override fun clone() = UnresolvedFeature(model, reference)
 }
 
 /**
@@ -118,21 +152,16 @@ open class UnresolvedFeature(
  */
 class UnresolvedFeatureChain(
     model : Session,
-    relativeName: QualifiedName? = null,
-    id: Uuid? = null,
-): UnresolvedFeature(model, relativeName, id, elementType = "Unresolved Feature Chain") {
-    override fun toString(): String = "Unresolved Feature Chain: $relativeName"
-    override fun escapedName(): String? = relativeName
+    reference: ElementReference? = null,
+): UnresolvedFeature(model, reference) {
+    override fun clone() = UnresolvedFeatureChain(model, reference)
 }
 
 class UnresolvedExpression(
     model : Session,
-    relativeName: QualifiedName? = null,
-    id: Uuid? = null,
-) : UnresolvedFeature(model, relativeName, id), Expression
+    reference: ElementReference? = null,
+) : UnresolvedFeature(model, reference), Expression
 {
-    override fun toString(): String = "Unresolved Expression: $relativeName"
-
     private fun error() : Nothing = throw IllegalStateException("Solver accessed unresolved expression!")
 
     override val isModelLevelEvaluable: Boolean get() = error()
@@ -167,7 +196,7 @@ class UnresolvedExpression(
         error()
     }
 
-    override fun clone(): UnresolvedExpression = UnresolvedExpression(model, relativeName, id)
+    override fun clone(): UnresolvedExpression = UnresolvedExpression(model, reference)
 }
 
 /**
@@ -175,9 +204,11 @@ class UnresolvedExpression(
  */
 class UnresolvedNamespace(
     model : Session,
-    override var relativeName: QualifiedName? = null,
-    override var id: Uuid? = null,
+    override val reference: ElementReference? = null
 ): Unresolved, NamespaceImplementation(model) {
-    override fun toString(): String = "Unresolved Namespace: $relativeName"
-    override fun escapedName(): String? = relativeName
+    override val qualifiedName: QualifiedName? get() = super<Unresolved>.qualifiedName
+    override fun escapedName(): String? = super<Unresolved>.escapedName()
+    override fun toString(): String = describe()
+    override fun clone() = UnresolvedNamespace(model, reference)
+
 }

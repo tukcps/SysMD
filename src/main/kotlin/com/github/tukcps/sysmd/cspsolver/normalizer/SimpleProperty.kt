@@ -1,14 +1,15 @@
 package com.github.tukcps.sysmd.cspsolver.normalizer
 
-import io.github.tukcps.aadd.DD
-import io.github.tukcps.aadd.values.IntegerRange
-import io.github.tukcps.aadd.values.Range
-import io.github.tukcps.aadd.values.XBool
+import io.github.tukcps.aadd.dd.DD
+import io.github.tukcps.aadd.values.ScalarValue
+import io.github.tukcps.aadd.values.bool.XBool
+import io.github.tukcps.aadd.values.integer.IntegerRange
+import io.github.tukcps.aadd.values.real.ia.RealRange
 
 /**
  * Class to store a simple property.
  */
-data class SimpleProperty<T : Any>(
+data class SimpleProperty<out T : ScalarValue>(
     val name: String,
     val expression : String,
     val dd : DD<T>,
@@ -18,8 +19,8 @@ data class SimpleProperty<T : Any>(
 ) {
     /** access methods for the valueSpec field; returns different types */
     @Suppress("UNCHECKED_CAST")
-    val rangeSpec: MutableList<Range>
-        get() = if(valueSpecs.size>0) valueSpecs as MutableList<Range> else mutableListOf(Range.Reals)
+    val rangeSpec: MutableList<RealRange>
+        get() = if(valueSpecs.size>0) valueSpecs as MutableList<RealRange> else mutableListOf(RealRange.Reals)
 
     @Suppress("UNCHECKED_CAST")
     val boolSpec: MutableList<XBool>

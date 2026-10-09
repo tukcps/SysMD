@@ -1,5 +1,6 @@
 package com.github.tukcps.sysmd.rest.entities.response
 
+import java.util.UUID
 import kotlin.uuid.Uuid
 
 data class IndexEntry(
@@ -8,7 +9,7 @@ data class IndexEntry(
 )
 
 data class ProjectMetaResponse (
-    var id: Uuid,
+    var id: UUID,
     var name: String,
     var description: String? = null,
     var website: String? = null,

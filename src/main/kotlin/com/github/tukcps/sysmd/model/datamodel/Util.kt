@@ -1,20 +1,55 @@
 package com.github.tukcps.sysmd.model.datamodel
 
+import com.github.tukcps.sysmd.compiler.KerML
 import com.github.tukcps.sysmd.model.generated.ElementDataIF
 import com.github.tukcps.sysmd.model.generated.ElementHierarchy.directSuperTypes
 import com.github.tukcps.sysmd.model.generated.ElementType
-import com.github.tukcps.sysmd.rest.entities.api.entities.Identified
+import com.github.tukcps.sysmd.model.util.QualifiedName
+import io.github.tukcps.aadd.values.bounds.LongBound
+import io.github.tukcps.aadd.values.real.ia.RealRange
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.descriptors.buildClassSerialDescriptor
-import kotlinx.serialization.descriptors.element
+import kotlinx.serialization.descriptors.*
 import kotlinx.serialization.encoding.*
 import kotlinx.serialization.json.*
-import kotlinx.serialization.modules.SerializersModule
-import kotlinx.serialization.modules.polymorphic
-import kotlinx.serialization.modules.subclass
 import kotlinx.serialization.serializer
+import nl.adaptivity.xmlutil.core.impl.multiplatform.name
 import kotlin.uuid.Uuid
+
+
+/**
+ * Helper that builds a [ElementReference] from the name and the context in
+ * KerML.
+ */
+fun KerML.elementByName(name: QualifiedName) = ElementReference.ByName(
+    name = name,
+    kind = IdentificationKind.Element,
+)
+
+
+/**
+ * Helper that builds a [ElementReference] from the name and the context in KerML.
+ */
+fun KerML.featureByName(name: QualifiedName) = ElementReference.ByName(
+    name = name,
+    kind = IdentificationKind.Feature,
+)
+
+
+/**
+ * Helper that builds a [ElementReference] from the name and the context in KerML.
+ */
+fun KerML.typeByName(name: QualifiedName) = ElementReference.ByName(
+    name = name,
+    kind = IdentificationKind.Type,
+)
+
+/**
+ * Helper that builds a [ElementReference] from the name and the context in KerML.
+ */
+fun KerML.namespaceByName(name: QualifiedName) = ElementReference.ByName(
+    name = name,
+    kind = IdentificationKind.Namespace,
+)
 
 /**
  * Copies all matching properties from this [ElementDataIF] instance into a new
@@ -35,12 +70,6 @@ inline fun <reified T : ElementDataIF> ElementDataIF.createFrom(
 ): T {
     val jsonConfig = Json {
         ignoreUnknownKeys = true
-        serializersModule = SerializersModule {
-            polymorphic(Identified::class) {
-                subclass(IdentifiedImplementation::class)
-                subclass(IdentifiedByName::class)
-            }
-        }
     }
     // 1. Force retrieval of the concrete class serializer directly,
     // bypassing the polymorphic scope matching of the parent interface.
@@ -139,9 +168,9 @@ inline fun <reified T : ElementDataIF> ElementDataIF.updateExisting(
 
 
 object IntRangeSerializer : KSerializer<IntRange> {
-    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("IntRange") {
-        element<Int>("start")
-        element<Int>("endInclusive")
+    override val descriptor: SerialDescriptor = buildClassSerialDescriptor(IntRange::class.name) {
+        element<Int>(IntRange::start.name)
+        element<Int>(IntRange::endInclusive.name)
     }
 
     override fun serialize(encoder: Encoder, value: IntRange) {
@@ -166,6 +195,30 @@ object IntRangeSerializer : KSerializer<IntRange> {
             start..endInclusive
         }
     }
+}
+
+
+object LongBoundSerializer : KSerializer<LongBound> {
+    override val descriptor: SerialDescriptor =
+        PrimitiveSerialDescriptor(LongBound::class.name, PrimitiveKind.STRING)
+
+    override fun serialize(encoder: Encoder, value: LongBound) =
+        encoder.encodeString(value.toString())
+
+    override fun deserialize(decoder: Decoder): LongBound =
+        LongBound.parse(decoder.decodeString())
+}
+
+
+object RealRangeSerializer : KSerializer<RealRange> {
+    override val descriptor: SerialDescriptor =
+        PrimitiveSerialDescriptor(RealRange::class.name, PrimitiveKind.STRING)
+
+    override fun serialize(encoder: Encoder, value: RealRange) =
+        encoder.encodeString(value.toString())
+
+    override fun deserialize(decoder: Decoder): RealRange =
+        RealRange.parse(decoder.decodeString())
 }
 
 

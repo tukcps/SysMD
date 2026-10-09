@@ -1,7 +1,9 @@
 package constraintnettests
 
+import util.variable
 import com.github.tukcps.sysmd.services.Runlevel
 import util.assertNoIssues
+import util.assertBounds
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
@@ -23,12 +25,11 @@ class EvalUpEvalDownTests {
             feature x: ScalarValues::Real; 
             feature y: Ranges::RealInRange = x { :>> range = 1.0 .. 2.0;}
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
         // now, both x and y must be 1..2
-        assertEquals(1.0, solver.getVariable("y")!!.min(), 0.00001)
-        assertEquals(2.0, solver.getVariable("y")!!.max(), 0.00001)
-        assertEquals(1.0, solver.getVariable("x")!!.min(), 0.00001)
-        assertEquals(2.0, solver.getVariable("x")!!.max(), 0.00001)
+        assertBounds(1.0 .. 2.0, solver.variable("x"))
+        assertBounds(1.0 .. 2.0, solver.variable("y"))
     }
 
     /**
@@ -42,11 +43,10 @@ class EvalUpEvalDownTests {
             feature x: Ranges::RealInRange { :>> range = 1.5 .. 2.5;}
             feature y: Ranges::RealInRange = x { :>> range = 1.0 .. 2.0;}
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(1.5, solver.getVariable("y")!!.min(), 0.00001)
-        assertEquals(2.0, solver.getVariable("y")!!.max(), 0.00001)
-        assertEquals(1.5, solver.getVariable("x")!!.min(), 0.00001)
-        assertEquals(2.0, solver.getVariable("x")!!.max(), 0.00001)
+        assertBounds(1.5 .. 2.0, solver.variable("x"))
+        assertBounds(1.5 .. 2.0, solver.variable("y"))
     }
 
     /**
@@ -58,11 +58,10 @@ class EvalUpEvalDownTests {
             feature x: Ranges::IntegerInRange { :>> range = 1 .. 3;}
             feature y: Ranges::IntegerInRange = x { :>> range = 2 .. 4;}
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(2L, solver.getVariable("y")!!.min())
-        assertEquals(3L, solver.getVariable("y")!!.max())
-        assertEquals(2L, solver.getVariable("x")!!.min())
-        assertEquals(3L, solver.getVariable("x")!!.max())
+        assertBounds(2L .. 3L, solver.variable("x"))
+        assertBounds(2L .. 3L, solver.variable("y"))
     }
 
     /**
@@ -76,13 +75,11 @@ class EvalUpEvalDownTests {
             feature b: Ranges::RealInRange {:>> range = 3..5;}
             feature sum: Ranges::RealInRange = a+b {:>> range = 9..10;}
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(9.0, solver.getVariable("sum")!!.aadd().min, 0.00001)
-        assertEquals(10.0, solver.getVariable("sum")!!.aadd().max, 0.000001)
-        assertEquals(4.0, solver.getVariable("a")!!.aadd().getRange().min,0.0001)
-        assertEquals(7.0, solver.getVariable("a")!!.aadd().getRange().max,0.0001)
-        assertEquals(3.0, solver.getVariable("b")!!.aadd().getRange().min,0.0001)
-        assertEquals(5.0, solver.getVariable("b")!!.aadd().getRange().max,0.0001)
+        assertBounds(9.0..10.0, solver.variable("sum"))
+        assertBounds(4.0..7.0, solver.variable("a"))
+        assertBounds(3.0..5.0, solver.variable("b"))
     }
 
     /**
@@ -96,12 +93,10 @@ class EvalUpEvalDownTests {
            feature sum: Ranges::IntegerInRange = a+b {:>> range = 9..10;}
            """)
         solver.propagate()
-        assertEquals(9, solver.getVariable("sum")!!.idd().getRange().min)
-        assertEquals(10, solver.getVariable("sum")!!.idd().getRange().max)
-        assertEquals(4, solver.getVariable("a")!!.idd().getRange().min)
-        assertEquals(7, solver.getVariable("a")!!.idd().getRange().max)
-        assertEquals(3, solver.getVariable("b")!!.idd().getRange().min)
-        assertEquals(5, solver.getVariable("b")!!.idd().getRange().max)
+        assertNoIssues()
+        assertBounds(9L..10, solver.variable("sum"))
+        assertBounds(4L..7, solver.variable("a"))
+        assertBounds(3L..5, solver.variable("b"))
     }
 
     @Test
@@ -110,11 +105,10 @@ class EvalUpEvalDownTests {
             feature x: Ranges::RealInRange { :>> range = -2.5 .. -1.5;}
             feature y: Ranges::RealInRange = x { :>> range = -2.0 .. -1.0;}
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(-2.0, solver.getVariable("y")!!.min(), 0.00001)
-        assertEquals(-1.5, solver.getVariable("y")!!.max(), 0.00001)
-        assertEquals(-2.0, solver.getVariable("x")!!.min(), 0.00001)
-        assertEquals(-1.5, solver.getVariable("x")!!.max(), 0.00001)
+        assertBounds(-2.0..-1.5, solver.variable("x"))
+        assertBounds(-2.0..-1.5, solver.variable("y"))
     }
 
     @Test
@@ -123,11 +117,10 @@ class EvalUpEvalDownTests {
             feature x: Ranges::RealInRange { :>> range = -2.0 .. 2.0;}
             feature y: Ranges::RealInRange = x { :>> range = -1.0 .. 3.0;}
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(-1.0, solver.getVariable("y")!!.min(), 0.00001)
-        assertEquals(2.0, solver.getVariable("y")!!.max(), 0.00001)
-        assertEquals(-1.0, solver.getVariable("x")!!.min(), 0.00001)
-        assertEquals(2.0, solver.getVariable("x")!!.max(), 0.00001)
+        assertBounds(-1.0..2.0, solver.variable("x"))
+        assertBounds(-1.0..2.0, solver.variable("y"))
     }
 
     @Test fun evalDownRealNegative() = testSession("Ranges") {
@@ -136,13 +129,11 @@ class EvalUpEvalDownTests {
             feature b: Ranges::RealInRange {:>> range = -5..-3;}
             feature sum: Ranges::RealInRange = a+b {:>> range = -10..-9;}
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(-10.0, solver.getVariable("sum")!!.aadd().min, 0.00001)
-        assertEquals(-9.0, solver.getVariable("sum")!!.aadd().max, 0.000001)
-        assertEquals(-7.0, solver.getVariable("a")!!.aadd().getRange().min,0.0001)
-        assertEquals(-4.0, solver.getVariable("a")!!.aadd().getRange().max,0.0001)
-        assertEquals(-5.0, solver.getVariable("b")!!.aadd().getRange().min,0.0001)
-        assertEquals(-3.0, solver.getVariable("b")!!.aadd().getRange().max,0.0001)
+        assertBounds(-10.0 .. -9.0, solver.variable("sum"))
+        assertBounds(-7.0 .. -4.0, solver.variable("a"))
+        assertBounds(-5.0 .. -3.0, solver.variable("b"))
     }
 
     @Test fun evalDownIntNegative() = testSession("Ranges") {
@@ -151,11 +142,10 @@ class EvalUpEvalDownTests {
            feature b: Ranges::IntegerInRange {:>> range = -5..-3;}
            feature sum: Ranges::IntegerInRange = a+b {:>> range = -10..-9;}
         """, Runlevel.ALL)
-        assertEquals(-10, solver.getVariable("sum")!!.idd().getRange().min)
-        assertEquals(-9, solver.getVariable("sum")!!.idd().getRange().max)
-        assertEquals(-7, solver.getVariable("a")!!.idd().getRange().min)
-        assertEquals(-4, solver.getVariable("a")!!.idd().getRange().max)
-        assertEquals(-5, solver.getVariable("b")!!.idd().getRange().min)
-        assertEquals(-3, solver.getVariable("b")!!.idd().getRange().max)
+        solver.propagate()
+        assertNoIssues()
+        assertBounds(-10L .. -9, solver.variable("sum"))
+        assertBounds(-7L .. -4, solver.variable("a"))
+        assertBounds(-5L .. -3, solver.variable("b"))
     }
 }

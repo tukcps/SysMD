@@ -1,12 +1,12 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.IDD
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.exceptions.SysMDError
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
+import io.github.tukcps.aadd.Integer
+import io.github.tukcps.aadd.Real
 
 /**
  * Predefined functions: CityBlockDistance, absolute value for IDD and AADD
@@ -19,8 +19,8 @@ internal class AstCityBlockDistance(model: Session, args: ArrayList<AstNode>) :
         if (parameters.size != 2)
             throw SysMDError("cityBlockDistance expects two parameters")
         upQuantity = when (arg.upQuantity.values[0]) {
-            is AADD -> VectorQuantity(mutableListOf(model.builder.Reals), "?")
-            is IDD -> VectorQuantity(mutableListOf(model.builder.Integers))
+            is Real -> VectorQuantity(mutableListOf(model.builder.Reals.All), "?")
+            is Integer -> VectorQuantity(mutableListOf(model.builder.Integers.All))
             else -> throw SemanticError("cityBlockDistance must have Real or Int argument")
         }
         evalUp()
@@ -35,9 +35,5 @@ internal class AstCityBlockDistance(model: Session, args: ArrayList<AstNode>) :
         //TODO
     }
 
-    override fun clone(): AstCityBlockDistance {
-        val parClone = ArrayList<AstNode>()
-        for (p in parameters) parClone.add(p.clone())
-        return AstCityBlockDistance(model, parClone)
-    }
+    override fun clone() = AstCityBlockDistance(model, cloneParameters())
 }

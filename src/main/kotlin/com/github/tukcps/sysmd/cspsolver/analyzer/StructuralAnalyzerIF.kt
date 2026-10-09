@@ -2,7 +2,7 @@ package com.github.tukcps.sysmd.cspsolver.analyzer
 
 import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.services.session.Session
-import io.github.tukcps.aadd.DD
+import io.github.tukcps.aadd.dd.*
 
 interface StructuralAnalyzerIF: AnalyzerIF {
     override val model: Session

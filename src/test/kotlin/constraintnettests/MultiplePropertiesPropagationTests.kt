@@ -1,8 +1,9 @@
 package constraintnettests
 
+import util.variable
 import com.github.tukcps.sysmd.services.Runlevel
-import io.github.tukcps.aadd.values.Range
 import util.assertNoIssues
+import util.assertBounds
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
@@ -17,10 +18,10 @@ class MultiplePropertiesPropagationTests {
             feature b: ScalarValues::Real = a;
         """, Runlevel.VARIABLES)
         assertNoIssues()
-        solver.getVariable("b")!!.updated = false
+        solver.variable("b").updated = false
         solver.propagate()
-        assertEquals(true, solver.getVariable("b")!!.stable)
-        assertEquals(true, solver.getVariable("b")!!.updated)
+        assertEquals(true, solver.variable("b").stable)
+        assertEquals(true, solver.variable("b").updated)
     }
 
     @Test
@@ -30,22 +31,24 @@ class MultiplePropertiesPropagationTests {
             feature y: Ranges::RealInRange = x {:>> range = 1 .. 100;}
             feature z: Ranges::RealInRange = y;
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
         val y = solver.getVariable("y")
-        assertEquals(10.0, y!!.max(), 0.000001)
+        assertBounds(1.0..10.0, y!!)
     }
 
     @Test
-    fun up2() = testSession("ScalarValues") {
+    fun up2() = testSession("ScalarValues", "Ranges") {
         loadKerML("""
-            feature z: ScalarValues::Real = y;
-            feature y: ScalarValues::Real = x {:>> range = 1 .. 100;}
-            feature x: ScalarValues::Real = c {:>> range = 1 .. 10;}
-            feature c: ScalarValues::Real = 2.0 {:>> range = 1 .. 10;}
+            feature z: Ranges::RealInRange = y;
+            feature y: Ranges::RealInRange = x {:>> range = 1 .. 100;}
+            feature x: Ranges::RealInRange = c {:>> range = 1 .. 10;}
+            feature c: Ranges::RealInRange = 2.0 {:>> range = 1 .. 10;}
             // y should be 1 .. 10 via y = x.
         """)
         solver.propagate()
-        assertEquals(Range(2.0..2.0), solver.getVariable("y")!!.vectorQuantity.aadd().getRange())
+        assertNoIssues()
+        assertBounds(2.0 .. 2.0, solver.variable("y"))
     }
 
     @Test
@@ -55,7 +58,8 @@ class MultiplePropertiesPropagationTests {
             feature y: Ranges::RealInRange = x {:>> range = 1 .. 10;}
         """)
         solver.propagate()
-        assertEquals(10.0, solver.getVariable("x")!!.vectorQuantity.aadd().getRange().max, 0.000001)
+        assertNoIssues()
+        assertBounds(1.0..10.0, solver.variable("x").vectorQuantity.aadd())
     }
 
     @Test
@@ -65,9 +69,10 @@ class MultiplePropertiesPropagationTests {
             feature y: Ranges::RealInRange = x {:>> range = -100 .. -1;}
             feature z: Ranges::RealInRange = y;
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
         val y = solver.getVariable("y")
-        assertEquals(-1.0, y!!.max(), 0.000001)
+        assertBounds(-10.0..-1.0, y!!)
     }
 
     @Test
@@ -77,6 +82,7 @@ class MultiplePropertiesPropagationTests {
             feature y: Ranges::RealInRange = x {:>> range = -10 .. -1;}
         """)
         solver.propagate()
-        assertEquals(-1.0, solver.getVariable("x")!!.vectorQuantity.aadd().getRange().max, 0.000001)
+        assertNoIssues()
+        assertBounds(-10.0..-1.0, solver.variable("x").vectorQuantity.aadd())
     }
 }

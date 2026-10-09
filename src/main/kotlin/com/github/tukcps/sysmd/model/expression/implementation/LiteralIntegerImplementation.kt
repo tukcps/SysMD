@@ -6,6 +6,7 @@ import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.util.SimpleName
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
+import io.github.tukcps.aadd.values.bounds.LongBound
 import kotlin.uuid.Uuid
 
 class LiteralIntegerImplementation(
@@ -21,7 +22,7 @@ class LiteralIntegerImplementation(
     declaredShortName = declaredShortName,
     expression = expression
 ) {
-    override var value: Long? = null
+    override var value: LongBound? = null
 
     override val literalValue : AstLeaf?
         get() {

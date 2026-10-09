@@ -1,5 +1,6 @@
 package com.github.tukcps.sysmd.model.expression.implementation
 
+import com.github.tukcps.sysmd.model.datamodel.ElementReference
 import com.github.tukcps.sysmd.model.expression.Invariant
 import com.github.tukcps.sysmd.model.util.SimpleName
 import com.github.tukcps.sysmd.model.util.UnresolvedType
@@ -28,7 +29,7 @@ open class InvariantImplementation(
     override var isNegated: Boolean = false
 
 	override fun learnType() = listOf(
-		model.repo.booleanType ?: UnresolvedType(model, "ScalarValues::Boolean")
+		model.repo.booleanType ?: UnresolvedType(model, ElementReference.ByName("ScalarValues::Boolean"))
 	)
 
 	override fun initialize()

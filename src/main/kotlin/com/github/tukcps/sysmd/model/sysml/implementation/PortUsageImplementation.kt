@@ -2,9 +2,10 @@ package com.github.tukcps.sysmd.model.sysml.implementation
 
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.sysml.PortUsage
-import com.github.tukcps.sysmd.model.util.MultiplicityRange
+import com.github.tukcps.sysmd.model.util.DEFAULT_USAGE_MULTIPLICITY
 import com.github.tukcps.sysmd.model.util.SimpleName
 import com.github.tukcps.sysmd.services.session.Session
+import io.github.tukcps.aadd.values.integer.IntegerRange
 import kotlin.uuid.Uuid
 
 class PortUsageImplementation(
@@ -18,7 +19,7 @@ class PortUsageImplementation(
     declaredName = declaredName,
     declaredShortName = declaredShortName,
 ) {
-    override val defaultMultiplicityRange: MultiplicityRange = MultiplicityRange.USAGE_DEFAULT
+    override val defaultMultiplicityRange: IntegerRange = DEFAULT_USAGE_MULTIPLICITY
 
     override fun clone() = PortUsageImplementation(
         model,

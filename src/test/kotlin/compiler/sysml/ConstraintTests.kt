@@ -36,8 +36,6 @@ class ConstraintTests {
         val status = SessionStatus()
         val elements = SysMLv2(settings = settings, status = status).parse(src)
         assertTrue(status.issues.isEmpty(), status.issues.toString())
-        // Correct:
-        // assertTrue(elements.any { it.type == ElementType.BooleanExpression.toString() })
-        assertTrue(elements.any { it.type == ElementType.Feature })
+        assertTrue(elements.any { it.type == ElementType.ConstraintUsage })
     }
 }

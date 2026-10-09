@@ -2,18 +2,14 @@ package com.github.tukcps.sysmd.services
 
 import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.exceptions.SysMDException
+import com.github.tukcps.sysmd.model.datamodel.ElementReference
+import com.github.tukcps.sysmd.model.datamodel.toElementData
 import com.github.tukcps.sysmd.model.expression.Expression
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.ReferenceSubsettingImplementation
 import com.github.tukcps.sysmd.model.util.*
-import com.github.tukcps.sysmd.services.check.checkConsistencyOfInheritance
-import com.github.tukcps.sysmd.services.check.checkNameResolutionSuccessful
-import com.github.tukcps.sysmd.services.check.reportDoubleNamesInNamespace
-import com.github.tukcps.sysmd.services.check.reportErrorElementsExist
-import com.github.tukcps.sysmd.services.inheritance.addInheritedToSubtypes
-import com.github.tukcps.sysmd.services.inheritance.checkForCycles
-import com.github.tukcps.sysmd.services.inheritance.checkIsNotTypedByOwner
-import com.github.tukcps.sysmd.model.datamodel.toElementData
+import com.github.tukcps.sysmd.services.check.*
+import com.github.tukcps.sysmd.services.inheritance.*
 import com.github.tukcps.sysmd.services.resolve.resolveFeatureChain
 import com.github.tukcps.sysmd.services.session.Session
 import com.github.tukcps.sysmd.services.session.implementation.getAllOfClass
@@ -110,10 +106,13 @@ enum class Runlevel {
 /**
  * Schedules and initialize the properties and the elements.
  * This shall be done before calling propagate().
+ * @param runlevel how far the model is initialized.
+ * @param onStage optionally, called at the start of each stage with the runlevel the stage leads to, e.g., to show progress.
  */
-fun Session.initialize(runlevel: Runlevel) {
+fun Session.initialize(runlevel: Runlevel, onStage: (Runlevel) -> Unit = {}) {
     try {
         if (runlevel >= Runlevel.NAMES_RESOLVED) { // Ownership and Type definitions
+            onStage(Runlevel.NAMES_RESOLVED)
             resolveAllNames()
             fillCache()
 
@@ -123,18 +122,21 @@ fun Session.initialize(runlevel: Runlevel) {
             solveExpressionTypes()
         }
         if (runlevel >= Runlevel.TYPES_INHERITED) {  // Inheritance and redefinition
+            onStage(Runlevel.TYPES_INHERITED)
             repo.anything!!.addInheritedToSubtypes() // Calls 'initialize' of types that will add inherited properties.
             repo.anything!!.addInheritedToSubtypes()
             resolveRedefinitions()
         }
 
         if (runlevel >= Runlevel.FEATURE_CHAINS_RESOLVED) { // Feature chains considering inherited features
+            onStage(Runlevel.FEATURE_CHAINS_RESOLVED)
             addEndFeatureReferences()
             resolveAllNames()
             resolveAllFeatureChains()
         }
 
         if (runlevel >= Runlevel.MODEL) {
+            onStage(Runlevel.MODEL)
             reportErrorElementsExist()
             checkNameResolutionSuccessful()
 
@@ -150,16 +152,21 @@ fun Session.initialize(runlevel: Runlevel) {
             getAllOfClass<Feature>().asSequence().forEach { feature -> feature.checkIsNotTypedByOwner() }
         }
 
-        if (runlevel >= Runlevel.VARIABLES)
+        if (runlevel >= Runlevel.VARIABLES) {
+            onStage(Runlevel.VARIABLES)
             solver.initVariables()
-
-        // Now, we only do checking and reporting of issues to the Board.
-        if (runlevel >= Runlevel.VARIANCE_CHECKED) get().asSequence().filterIsInstance<Type>().forEach {
-            checkConsistencyOfInheritance(it)
         }
 
-        if (runlevel >= Runlevel.SOLVED)
+        // Now, we only do checking and reporting of issues to the Board.
+        if (runlevel >= Runlevel.VARIANCE_CHECKED) {
+            onStage(Runlevel.VARIANCE_CHECKED)
+            get().asSequence().filterIsInstance<Type>().forEach { checkConsistencyOfInheritance(it) }
+        }
+
+        if (runlevel >= Runlevel.SOLVED) {
+            onStage(Runlevel.SOLVED)
             solver.propagate()
+        }
 
     } catch (error: Exception) {
         if (error is SysMDException)
@@ -191,7 +198,7 @@ internal fun Session.resolveAllNames() {
             val unresolved = iter.next()
             if(unresolved !is Unresolved)
                 continue
-            val relativeName = unresolved.relativeName ?: run {
+            val relativeName = (unresolved.reference as? ElementReference.ByName)?.name ?: run {
                 status.warn(Issue.Kind.ERROR_UNRESOLVED_NAME, "Unresolved element with no name", element = namespace.toElementData())
                 iter.remove()
                 delta = true
@@ -241,16 +248,18 @@ internal fun Session.resolveAllFeatureChains() {
     initializeAllAssociations()
 
     fun resolveFeatureChain(namespace: Namespace, elements: MutableList<Element>) {
-        for (index in elements.indices) {
-            if (elements[index] is UnresolvedFeatureChain) {
-                if ( (elements[index] as Unresolved).relativeName == null)
-                    status.warn(Issue.Kind.ERROR_UNRESOLVED_NAME, "Unresolved feature chain with no name", element = elements[index].owningNamespace?.toElementData())
-                else {
-                    val unresolvedFeature = elements[index] as Unresolved
-                    val resolvedFeature = namespace.resolveFeatureChain(unresolvedFeature.relativeName!!)
-                    if (resolvedFeature != null)
-                        elements[index] = resolvedFeature
-                }
+        elements.mapInPlace {
+            if(it !is UnresolvedFeatureChain)
+                return@mapInPlace it
+
+            val r = it.reference
+
+            if(r is ElementReference.ByName) // replace if resolve is success
+                namespace.resolveFeatureChain(r.name) ?: it
+            else
+            {
+                status.warn(Issue.Kind.ERROR_UNRESOLVED_NAME, "Unresolved feature chain with no name", element = it.owningNamespace?.toElementData())
+                it // keep fixme: should we delete?
             }
         }
     }
@@ -314,36 +323,47 @@ internal fun Session.resolveRedefinitions() {
                     || it.target.any { target -> target is Unresolved } }.toSet()
 
     fun resolveQualifiedNameForRedefinition(namespace: Namespace, elements: MutableList<Element>, redefinition: Redefinition) {
-        elements.forEachIndexed { index, element ->
-            if (element is Unresolved && element.relativeName != null) {
-                namespace.resolve(element.relativeName!!)?.let { resolved ->
-                    val resolvedElement = if (element is Membership) resolved else resolved.memberElement
-                    
-                    if (resolvedElement === redefinition.redefiningFeature) {
-                        val hasIdenticalExpression = resolvedElement.expression?.trim() ==
-                                                   redefinition.redefiningFeature.expression?.trim()
-                        if (hasIdenticalExpression) elements[index] = resolvedElement
-                        else status.error("Feature cannot redefine itself: ${element.relativeName}", element = redefinition.toElementData())
-                    } else if (resolvedElement === redefinition.owningRelatedElement) {
-                        // Resolved to the owning element itself — this would create a self-referential cycle.
-                        // This can happen for inherited Redefinition clones where the local namespace contains
-                        // the redefining feature back under the same name.
-                        // Instead, try resolving in the supertypes of the enclosing owner feature's owning namespace.
-                        val enclosingOwner = (redefinition.owningRelatedElement as? Feature)?.owningNamespace as? Type
-                        val altResolved = enclosingOwner?.generalization
-                            ?.filterNot { it is Unresolved }?.firstNotNullOfOrNull { supertype ->
-                                supertype.resolve(element.relativeName!!)?.let { r ->
-                                    val re = if (element is Membership) r else r.memberElement
-                                    if (re !== redefinition.owningRelatedElement) re else null
-                                }
-                            }
-                        if (altResolved != null) elements[index] = altResolved
-                        // else: leave as Unresolved; will be caught later if needed
-                    } else {
-                        elements[index] = resolvedElement
+        elements.mapInPlace { element ->
+            if(element !is Unresolved)
+                return@mapInPlace element // no change
+
+            val ref = element.reference as? ElementReference.ByName ?: return@mapInPlace element
+            val resolved = namespace.resolve(ref.name)
+
+            if(resolved === null)
+            {
+                status.warn(Issue.Kind.ERROR_UNRESOLVED_NAME, "Redefined feature '${ref.name}' not found", element = namespace.toElementData())
+                return@mapInPlace element // no change
+            }
+
+            val resolvedElement = if(element is Membership) resolved else resolved.memberElement
+
+            when {
+                // check if expressions are identical (todo: translate to kerML expressions)
+                resolvedElement === redefinition.redefiningFeature && (resolvedElement.expression?.trim() != redefinition.redefiningFeature.expression?.trim()) -> {
+                        status.error(
+                            "Feature cannot redefine itself: ${ref.name}",
+                            element = redefinition.toElementData()
+                        )
+                        ErrorElement(element.model, element)
                     }
+                resolvedElement === redefinition.owningRelatedElement -> {
+                    // Resolved to the owning element itself — this would create a self-referential cycle.
+                    // This can happen for inherited Redefinition clones where the local namespace contains
+                    // the redefining feature back under the same name.
+                    // Instead, try resolving in the supertypes of the enclosing owner feature's owning namespace.
+                    val enclosingOwner = (redefinition.owningRelatedElement as? Feature)?.owningNamespace as? Type
+                    val altResolved = enclosingOwner?.generalization
+                        ?.filterNot { it is Unresolved }?.firstNotNullOfOrNull { supertype ->
+                            supertype.resolve(ref.name)?.let { r ->
+                                val re = if (element is Membership) r else r.memberElement
+                                if (re !== redefinition.owningRelatedElement) re else null
+                            }
+                        }
+                    // replace if not null
+                    altResolved ?: element
                 }
-                    ?: status.warn(Issue.Kind.ERROR_UNRESOLVED_NAME, "Redefined feature not found", element = namespace.toElementData())
+                else -> resolvedElement // replace
             }
         }
     }

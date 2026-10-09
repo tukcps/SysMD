@@ -1,8 +1,7 @@
 package com.github.tukcps.sysmd.rest.entities.api.entities.responseModels
 
 
-import com.github.tukcps.sysmd.model.datamodel.IdentifiedImplementation
-import com.github.tukcps.sysmd.rest.entities.api.entities.Identified
+import com.github.tukcps.sysmd.model.datamodel.ElementReference
 import com.github.tukcps.sysmd.rest.entities.api.entities.Identity
 import com.github.tukcps.sysmd.rest.entities.api.entities.Project
 import kotlinx.datetime.Instant
@@ -28,7 +27,7 @@ data class ProjectResponse(
 
     // Provide the default implementation as a fallback directly in the primary constructor.
     // This ensures kotlinx.serialization uses it correctly if the field is missing in JSON.
-    val defaultBranch: Identified? = IdentifiedImplementation(),
+    val defaultBranch: ElementReference? = ElementReference.ToRoot,
 
     val created: Instant? = null
 ) : Identity {
@@ -43,7 +42,7 @@ data class ProjectResponse(
             name = project.name,
             description = project.description,
             created = project.created,
-            defaultBranch = IdentifiedImplementation()
+            defaultBranch = ElementReference.ToRoot
         )
     }
 }

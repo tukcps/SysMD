@@ -66,7 +66,6 @@ class FeatureTests {
      * Ref: Section 7.3.4.2 Features
      * Kernel Modeling Language: https://www.omg.org/spec/KerML/1.0/Beta2/PDF/changebar
      */
-    @Ignore
     @Test
     fun testMultiplicityInFeaturesWithSpecialization() = testSession("ScalarValues") {
         loadKerML("""

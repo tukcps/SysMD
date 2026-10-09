@@ -1,14 +1,13 @@
 package models.expression
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.github.tukcps.sysmd.model.datamodel.ElementReference
 import com.github.tukcps.sysmd.model.datamodel.toElementData
 import com.github.tukcps.sysmd.model.expression.Expression
 import com.github.tukcps.sysmd.model.expression.InvocationExpression
 import com.github.tukcps.sysmd.model.expression.OperatorExpression
 import com.github.tukcps.sysmd.model.kerml.Feature
-import com.github.tukcps.sysmd.model.kerml.FeatureTyping
 import com.github.tukcps.sysmd.model.kerml.Package
-import com.github.tukcps.sysmd.rest.entities.api.entities.Identified
 import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.inheritance.deepCloneWithInheritedFeature
 import util.assertNoIssues
@@ -93,7 +92,7 @@ class ExpressionCloningTests
 
 
 	/** Custom overload required because == on Identified is too strict */
-	fun assertEquals(a : MutableList<Identified>, b : MutableList<Identified>)
+	fun assertEquals(a : MutableList<ElementReference>, b : MutableList<ElementReference>)
 	{
 		assertNotSame(a, b)
 		assertEquals(a.map { it.id }, b.map { it.id })

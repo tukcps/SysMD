@@ -1,7 +1,9 @@
 package constraintnettests.functionstests
 
+import util.variable
 import com.github.tukcps.sysmd.services.Runlevel
 import util.assertNoIssues
+import util.assertBounds
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
@@ -14,9 +16,9 @@ class CeilTests {
             feature qa: Ranges::RealInRange {:>> range = 3.1 .. 3.1;}
             feature a: ScalarValues::Real = ceil(qa);
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(4.0, solver.getVariable("a")!!.min(), 0.00001)
-        assertEquals(4.0, solver.getVariable("a")!!.max(), 0.00001)
+        assertBounds(4.0 .. 4.0, solver.variable("a"))
     }
     @Test
     fun ceilTest_real_range() = testSession("Ranges") {
@@ -24,9 +26,9 @@ class CeilTests {
             feature qa: Ranges::RealInRange {:>> range = 3.1 .. 5.5;}
             feature a: ScalarValues::Real = ceil(qa);
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(4.0, solver.getVariable("a")!!.min(), 0.00001)
-        assertEquals(6.0, solver.getVariable("a")!!.max(), 0.00001)
+        assertBounds(4.0 .. 6.0, solver.variable("a"))
     }
 
     @Test
@@ -35,9 +37,9 @@ class CeilTests {
             feature qa: Ranges::IntegerInRange {:>> range = 3 .. 3;}
             feature a: ScalarValues::Integer = ceil(qa);
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(3, solver.getVariable("a")!!.idd().getRange().min)
-        assertEquals(3, solver.getVariable("a")!!.idd().getRange().max)
+        assertBounds(3L .. 3L, solver.variable("a"))
     }
 
     @Test
@@ -46,9 +48,9 @@ class CeilTests {
             feature qa: Ranges::IntegerInRange {:>> range = -5 .. -3;}
             feature a: ScalarValues::Integer = ceil(qa);
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(-4L, solver.getVariable("a")!!.min())
-        assertEquals(-3L, solver.getVariable("a")!!.max())
+        assertBounds(-5L .. -3L, solver.variable("a"))
     }
 
     @Test
@@ -59,8 +61,7 @@ class CeilTests {
         """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(4, solver.getVariable("a")!!.idd().getRange().min)
-        assertEquals(5, solver.getVariable("a")!!.idd().getRange().max)
+        assertBounds(3L .. 5L, solver.variable("a"))
     }
 
     @Test
@@ -71,8 +72,7 @@ class CeilTests {
             """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(6, solver.getVariable("a")!!.idd().getRange().min)
-        assertEquals(10, solver.getVariable("a")!!.idd().getRange().max)
+        assertBounds(5L .. 10L, solver.variable("a"))
     }
 
     @Test
@@ -83,7 +83,26 @@ class CeilTests {
             """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(-7.0, solver.getVariable("a")!!.min(), 0.00001)
-        assertEquals(-4.0, solver.getVariable("a")!!.max(), 0.00001)
+        assertBounds(-7.0 .. -4.0, solver.variable("a"))
+    }
+
+    /** ceil rounds in the displayed unit, also for the propagation down to the parameter */
+    @Test
+    fun ceilTest_displayedUnit() = testSession("ISQ") {
+        loadKerML("""
+            feature a: ISQ::LengthValue(100..200 [cm]);
+            feature b: ISQ::LengthValue(150..150 [cm]) = ceil(a);
+            feature c: ISQ::LengthValue(150.5..150.5 [cm]);
+            feature d: ISQ::LengthValue(* [cm]) = ceil(c);
+            feature t: ISQ::ThermodynamicTemperatureValue(0..100 [°C]);
+            feature u: ISQ::ThermodynamicTemperatureValue(20..21 [°C]) = ceil(t);
+        """, Runlevel.ALL)
+        solver.propagate()
+        assertNoIssues()
+        assertBounds(149.0 .. 150.0, solver.variable("a"), unit = "cm")
+        assertBounds(150.0 .. 150.0, solver.variable("b"), unit = "cm")
+        assertBounds(151.0 .. 151.0, solver.variable("d"), unit = "cm")
+        assertBounds(19.0 .. 21.0, solver.variable("t"), unit = "°C")
+        assertBounds(20.0 .. 21.0, solver.variable("u"), unit = "°C")
     }
 }

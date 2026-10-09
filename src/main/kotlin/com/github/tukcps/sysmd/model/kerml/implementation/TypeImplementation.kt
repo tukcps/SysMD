@@ -1,8 +1,10 @@
 package com.github.tukcps.sysmd.model.kerml.implementation
 
 import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.model.util.MultiplicityRange
+import com.github.tukcps.sysmd.model.util.DEFAULT_TYPE_MULTIPLICITY
+import com.github.tukcps.sysmd.parseIntegerRange
 import com.github.tukcps.sysmd.services.session.Session
+import io.github.tukcps.aadd.values.integer.IntegerRange
 import kotlin.uuid.Uuid
 
 
@@ -140,15 +142,15 @@ open class TypeImplementation(
      */
     override val subtypes: MutableSet<Type> = mutableSetOf()
 
-    override fun multiplicityRange(): MultiplicityRange =
+    override fun multiplicityRange(): IntegerRange =
         if (getOwnedElementOfType<Multiplicity>() != null)
-            MultiplicityRange(
+            parseIntegerRange(
                 getOwnedElementOfType<Multiplicity>()?.getOwnedElementOfType<Feature>()?.expression ?: "0..*"
             )
         else
             defaultMultiplicityRange
 
-    open val defaultMultiplicityRange = MultiplicityRange.TYPE_DEFAULT
+    open val defaultMultiplicityRange = DEFAULT_TYPE_MULTIPLICITY
 
     override fun toString(): String {
         return super.toString() + if (isAbstract) " abstract " else ""

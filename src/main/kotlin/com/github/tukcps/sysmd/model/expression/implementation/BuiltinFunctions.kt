@@ -1,10 +1,21 @@
 package com.github.tukcps.sysmd.model.expression.implementation
 
-import com.github.tukcps.sysmd.exceptions.*
-import com.github.tukcps.sysmd.quantities.*
-import io.github.tukcps.aadd.*
-import io.github.tukcps.aadd.values.*
-import kotlin.math.*
+import com.github.tukcps.sysmd.exceptions.SemanticError
+import com.github.tukcps.sysmd.quantities.VectorQuantity
+import com.github.tukcps.sysmd.quantities.ite
+import io.github.tukcps.aadd.DDBuilder.BoolMath.not
+import io.github.tukcps.aadd.DDBuilder.IntMath.log
+import io.github.tukcps.aadd.DDBuilder.IntMath.root
+import io.github.tukcps.aadd.DDBuilder.RealMath.log
+import io.github.tukcps.aadd.DDBuilder.RealMath.root
+import io.github.tukcps.aadd.dd.*
+import io.github.tukcps.aadd.values.bool.XBool
+import io.github.tukcps.aadd.values.bounds.*
+import io.github.tukcps.aadd.values.bounds.DoubleBoundMath.toDouble
+import io.github.tukcps.aadd.values.bounds.LongMath.max
+import io.github.tukcps.aadd.values.bounds.LongMath.min
+import kotlin.math.max
+import kotlin.math.min
 
 /** @param arity Legal number of parameters for this function */
 abstract class BuiltinFunction(val arity : IntRange)
@@ -19,7 +30,7 @@ abstract class BuiltinFunction(val arity : IntRange)
 	abstract fun evalDown(result : VectorQuantity, args : List<VectorQuantity>) : List<VectorQuantity>
 }
 
-private abstract class UnaryFunction() : BuiltinFunction(1 .. 1)
+private abstract class UnaryFunction : BuiltinFunction(1 .. 1)
 {
 	abstract fun evalDown(result : VectorQuantity, argument : VectorQuantity) : VectorQuantity
 	abstract fun evalUp(argument : VectorQuantity) : VectorQuantity
@@ -54,7 +65,7 @@ private class VariantFunction(val f : BuiltinFunction, val g : BuiltinFunction)
 	}
 }
 
-private abstract class BinaryFunction() : BuiltinFunction(2..2)
+private abstract class BinaryFunction : BuiltinFunction(2..2)
 {
 	override fun evalDown(result : VectorQuantity, args : List<VectorQuantity>) : List<VectorQuantity>
 	{
@@ -84,7 +95,7 @@ private class FlippedOperator(private val flipped : BinaryFunction) : BinaryFunc
 
 }
 
-private abstract class MemberwiseOperator() : BinaryFunction()
+private abstract class MemberwiseOperator : BinaryFunction()
 {
 	/** evalDown  */
 	abstract fun evalDown(result : DD<*>, left : DD<*>, right : DD<*>) : Pair<DD<*>, DD<*>>
@@ -104,7 +115,7 @@ private fun pairedQuantities(fields : List<Pair<DD<*>, DD<*>>>) : Pair<VectorQua
 		= fields.unzip().let { (ls,rs) -> VectorQuantity(ls) to VectorQuantity(rs) }
 
 /** Shorthand for commutative operators where downwards eval happens independently */
-private abstract class AbelianOperator() : BinaryFunction()
+private abstract class AbelianOperator : BinaryFunction()
 {
 	/** Downward-evaluates the operator
 	 * @param result The current down quantity of the result
@@ -159,10 +170,7 @@ enum class BuiltinFunctions(val f : BuiltinFunction)
 			result.values.mapIndexed { ix, v ->
 				val b = v.builder
 				val o = operand.values[ix].asBdd()
-				v.asBdd().ite(
-					o.ite(b.Bool, b.False),
-					o.ite(b.False, b.True)
-				)
+				v.asBdd().ite(o.ite(b.Bool.All, b.Bool.False), o.ite(b.Bool.False, b.Bool.True))
 			}
 		)
 	}),
@@ -224,18 +232,15 @@ enum class BuiltinFunctions(val f : BuiltinFunction)
 		override fun evalDown(result : VectorQuantity, left : VectorQuantity, right : VectorQuantity) = Pair(
 			when(left.values[0])
 			{
-				is AADD -> VectorQuantity(
-					result.values.mapIndexed { ix, v ->
-						v.asAadd() power v.builder.real(1.0).div(right.values[ix] as AADD)
-					},
+				is AADD -> VectorQuantity.fromCanonical(
+					result.values.mapIndexed { ix, v -> root(v.asAadd(), right.values[ix] as AADD) },
 					result.unit,
-					result.unitSpec
+					result.unitSpec,
+					result.userWantedUnitSpec
 				)
 
 				is IDD -> VectorQuantity(
-					result.values.mapIndexed { ix, v ->
-						v.asIdd().root(right.values[ix] as IDD)
-					}
+					result.values.mapIndexed { ix, v -> root(v.asIdd(), (right.values[ix] as IDD)) }
 				)
 
 				else -> throw SemanticError("Expect base of type Real or Integer")
@@ -246,10 +251,10 @@ enum class BuiltinFunctions(val f : BuiltinFunction)
 					result.values.mapIndexed { ix, v ->
 						val lv = left.values[ix] as AADD
 						//Log with 1 not possible. All resulting values allowed
-						if(lv.min == 1.0 && lv.max == 1.0)
-							lv.builder.Reals.clone()
+						if(lv.min.toDouble() == 1.0 && lv.max.toDouble() == 1.0)
+							lv.builder.Reals.All
 						else
-							(v as AADD).log() / lv.log()
+							log(v as AADD,  lv)
 					}
 				)
 
@@ -257,10 +262,10 @@ enum class BuiltinFunctions(val f : BuiltinFunction)
 					result.values.mapIndexed { ix, v ->
 						val lv = left.values[ix] as IDD
 						//Log with 1 not possible. All resulting values allowed
-						if(lv.min == 1L && lv.max == 1L)
-							lv.builder.Integers.clone()
+						if(lv.min == LongBound.Finite(1L) && lv.max == LongBound.Finite(1L))
+							lv.builder.Integers.All
 						else
-							(v as IDD).log(lv)
+							log(v as IDD, lv)
 					}
 				)
 
@@ -274,47 +279,41 @@ enum class BuiltinFunctions(val f : BuiltinFunction)
 	{
 		override fun evalUp(l : VectorQuantity, r : VectorQuantity) = l eq r
 		override fun evalDown(result : VectorQuantity, left : VectorQuantity, right : VectorQuantity) =
-			when(left.values[0])
-			{
+			when(left.values[0]) {
 				is AADD ->
 				{
 					val rr = right.values.mapIndexed { ix, v ->
 						result.values[ix].asBdd().ite(
 							v as AADD,
-							v.builder.Reals
+							v.builder.Reals.All
 						)
 					}
 					val lr = left.values.mapIndexed { ix, v ->
 						result.values[ix].asBdd().ite(
 							v as AADD,
-							v.builder.Reals
+							v.builder.Reals.All
 						)
 					}
-					Pair(
-						VectorQuantity(rr, left.unit, left.unitSpec),
-						VectorQuantity(lr, right.unit, right.unitSpec)
-					)
+					Pair(VectorQuantity.fromCanonical(rr, left.unit, left.unitSpec, left.userWantedUnitSpec),
+						VectorQuantity.fromCanonical(lr, right.unit, right.unitSpec, right.userWantedUnitSpec))
 				}
-				is IDD ->
-				{
+				is IDD -> {
 					val rs = right.values.mapIndexed { ix, r ->
 						val down = result.values[ix].asBdd()
-						if(down.value in setOf(XBool.True, XBool.X))
+						if(down.value in setOf(XBool.True, XBool.All))
 						// intersect
 							left.values[ix].asIdd() intersect r.asIdd() // FIXME: clone?
 						else
-							r.builder.EmptyIntegerRange
+							r.builder.Integers.All
 					}
 					Pair(VectorQuantity(rs), VectorQuantity(rs))
 				}
 
 				is BDD -> Pair(left, right) // noop
 				is StrDD -> Pair(
-					result.value.asBdd().ite(right, VectorQuantity(right.value.builder.Strings)),
-					result.value.asBdd().ite(left, VectorQuantity(left.value.builder.Strings)),
+					result.value.asBdd().ite(right, VectorQuantity(right.value.builder.Strings.All)),
+					result.value.asBdd().ite(left, VectorQuantity(left.value.builder.Strings.All)),
 				)
-
-				else -> throw SemanticError("Comparison only defined between Integers, Reals, and Booleans.")
 			}
 	}),
 
@@ -352,15 +351,15 @@ enum class BuiltinFunctions(val f : BuiltinFunction)
 				Pair(
 					result.asBdd().ite(
 						if (minR < maxL) b.integer(max(minL, minR + 1)..maxL)
-						else b.EmptyIntegerRange,
+						else b.Integers.Empty,
 						if (minL < maxR) b.integer( minL..min(maxL, maxR - 1))
-						else b.EmptyIntegerRange
+						else b.Integers.Empty
 					) as DD<*>,
 					result.asBdd().ite(
-						if (minR < maxL) b.integer(minR..min(maxL-1, maxR))
-						else b.EmptyIntegerRange,
-						if (minL < maxR) b.integer(max(minL+1, minR)..maxR)
-						else b.EmptyIntegerRange
+						if (minR < maxL) b.integer(minR..min(maxL-1L, maxR))
+						else b.Integers.Empty,
+						if (minL < maxR) b.integer(max(minL+1L, minR)..maxR)
+						else b.Integers.Empty
 					) as DD<*>
 				)
 			}
@@ -394,15 +393,15 @@ enum class BuiltinFunctions(val f : BuiltinFunction)
 				Pair(
 					result.asBdd().ite(
 						if (minR <= maxL) b.integer(max(minL, minR)..maxL)
-						else b.EmptyIntegerRange,
+						else b.Integers.Empty,
 						if (minL < maxR) b.integer( minL..min(maxL, maxR))
-						else b.EmptyIntegerRange
+						else b.Integers.Empty
 					) as DD<*>,
 					result.asBdd().ite(
 						if (minR < maxL) b.integer(minR..min(maxL, maxR))
-						else b.EmptyIntegerRange,
+						else b.Integers.Empty,
 						if (minL < maxR) b.integer(max(minL, minR)..maxR)
-						else b.EmptyIntegerRange
+						else b.Integers.Empty
 					) as DD<*>
 				)
 			}
@@ -427,11 +426,11 @@ enum class BuiltinFunctions(val f : BuiltinFunction)
 		}
 
 		override fun evalDown(result : VectorQuantity, args : List<VectorQuantity>) : List<VectorQuantity>
-		= when {
-			result == args[1] && result != args[2] -> args.put(0, Quantity(result.value.builder.True))
-			result == args[2] && result != args[1] -> args.put(0, Quantity(result.value.builder.False))
-			// As we work on BDD for the digital side that are generated by evalUp, evalDown does nothing.
-			else -> args
-		}
+		= when (result) {
+            args[1] if result != args[2] -> args.put(0, VectorQuantity(result.value.builder.Bool.True))
+            args[2] if result != args[1] -> args.put(0, VectorQuantity(result.value.builder.Bool.False))
+            // As we work on BDD for the digital side that are generated by evalUp, evalDown does nothing.
+            else -> args
+        }
 	})
 }

@@ -9,6 +9,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.input.TextFieldValue
 import com.github.tukcps.sysmd.compiler.scanner.Scanner
 import com.github.tukcps.sysmd.compiler.scanner.Token
+import com.github.tukcps.sysmd.services.session.SessionStatus
 import kotlin.math.min
 
 
@@ -32,7 +33,9 @@ object SyntaxHighlighter {
         val tokens = mutableListOf<AnnotatedString>()
         val scanner = Scanner(
             skip = emptySet(),
-            keywords = Token.kerMLKeywords+Token.sysMLv2Keywords).also { it.input = text }
+            keywords = Token.kerMLKeywords+Token.sysMLv2Keywords,
+            status = SessionStatus() // fixme
+        ).also { it.input = text }
 
         do {
             tokens.add(
@@ -232,7 +235,7 @@ object SyntaxHighlighter {
      */
     fun checkForInconsistencies(tfv: MutableState<TextFieldValue>, sysMDColorScheme: ColorScheme) : MutableList<Inconsistency> {
 
-        val sc = Scanner(keywords = Token.kerMLKeywords + Token.sysMLv2Keywords)
+        val sc = Scanner(keywords = Token.kerMLKeywords + Token.sysMLv2Keywords, status = SessionStatus()) // FIXME
             .also { it.input = tfv.value.text }
 
         /**The Kind attribute of the previous Token (Whitespaces are excluded!)*/

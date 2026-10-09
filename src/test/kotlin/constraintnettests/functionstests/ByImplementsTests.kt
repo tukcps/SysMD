@@ -1,18 +1,12 @@
 package constraintnettests.functionstests
 
-import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.model.kerml.Association
 import com.github.tukcps.sysmd.model.kerml.Connector
-import com.github.tukcps.sysmd.services.Runlevel
-import io.github.tukcps.aadd.IDD
-import kotlin.test.Test
-import kotlin.test.Ignore
-import util.assertNoIssues
+import util.*
 import util.mockup.loadKerML
-import util.mockup.loadSysMLv2
-import util.testSession
-import kotlin.math.*
-import kotlin.test.*
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
 class ByImplementsTests {
 
@@ -39,8 +33,8 @@ class ByImplementsTests {
             assertNotNull(impl)
             val r = global.resolve("r")?.member<Connector>()
             assertNotNull(r)
-            val fx = solver.getVariable("f::x")!!
-            assertEquals(1.0, fx.min(), 0.0001)
-            assertEquals(0, status.issues.size, status.issues.toString())
+            val fx = solver.variable("f::x")
+            assertBounds(1.0, fx)
+            assertNoIssues()
         }
 }

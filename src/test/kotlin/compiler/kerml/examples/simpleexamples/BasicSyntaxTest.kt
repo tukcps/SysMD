@@ -8,7 +8,7 @@ import com.github.tukcps.sysmd.compiler.semantics.UuidPolicies.uuid5
 import com.github.tukcps.sysmd.compiler.semantics.UuidPolicy
 import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.model.datamodel.ElementData
-import com.github.tukcps.sysmd.rest.entities.api.entities.Identified
+import com.github.tukcps.sysmd.model.datamodel.ElementReference
 import com.github.tukcps.sysmd.services.session.SessionSettings
 import util.assertNoIssues
 import util.mockup.loadKerML
@@ -74,21 +74,21 @@ class BasicSyntaxTest {
                 else -> throw IllegalStateException("Ambiguous ID $x could refer to any of $hit")
             }
         }
-        fun name(x : Identified?) : String = if(x === null) "<null>" else x.id?.let { name(it) } ?: "<global or named reference>"
+        fun name(x : ElementReference?) : String = if(x === null) "<null>" else x.id?.let { name(it) } ?: "<global or named reference>"
 
         @JvmName("assertEquals1")
-        fun assertEquals(want : List<Uuid?>, got : List<Identified>?) = assertEquals(
+        fun assertEquals(want : List<Uuid?>, got : List<ElementReference>?) = assertEquals(
             want, assertNotNull(got).map { it.id },
             "(wanted ${want.map(::name)} but got ${got.map(::name)})"
         )
         @JvmName("assertEquals2")
-        fun assertEquals(want : List<ElementData>, got : List<Identified>?)
+        fun assertEquals(want : List<ElementData>, got : List<ElementReference>?)
                 = assertEquals(want.map { it.elementId }, got)
         @JvmName("assertEquals3")
-        fun assertEquals(want : ElementData, got : List<Identified>?)
+        fun assertEquals(want : ElementData, got : List<ElementReference>?)
                 = assertEquals(listOf(want), got)
         @JvmName("assertEquals4")
-        fun assertEquals(want : ElementData, got : Identified?) = assertEquals(
+        fun assertEquals(want : ElementData, got : ElementReference?) = assertEquals(
             want.elementId, got?.id,
             "(wanted ${name(want)} but got ${name(got)})"
         )

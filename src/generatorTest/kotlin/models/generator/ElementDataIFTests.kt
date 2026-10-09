@@ -36,23 +36,23 @@ class ElementDataIFTests {
         // Structural graph references.
         assertTrue(
             source.contains(
-                "var ownedElement: MutableList<Identified>"
+                "var ownedElement: MutableList<ElementReference>"
             )
         )
-        assertTrue(source.contains("var owner: Identified?"))
+        assertTrue(source.contains("var owner: ElementReference?"))
         assertTrue(
             source.contains(
-                "var owningRelationship: Identified?"
-            )
-        )
-        assertTrue(
-            source.contains(
-                "var source: MutableList<Identified>"
+                "var owningRelationship: ElementReference?"
             )
         )
         assertTrue(
             source.contains(
-                "var target: MutableList<Identified>"
+                "var source: MutableList<ElementReference>"
+            )
+        )
+        assertTrue(
+            source.contains(
+                "var target: MutableList<ElementReference>"
             )
         )
 
@@ -154,6 +154,7 @@ class ElementDataDebugTest {
                     className = clazz.name,
                     attributeName = attribute.name,
                     kotlinType = mapper.type(
+                        clazz,
                         attribute,
                         isReference,
                     ),

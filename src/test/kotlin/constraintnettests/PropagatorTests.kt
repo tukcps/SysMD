@@ -1,13 +1,15 @@
 package constraintnettests
 
+import util.variable
 import com.github.tukcps.sysmd.services.Runlevel
-import io.github.tukcps.aadd.BDD
-import io.github.tukcps.aadd.functions.numInternalNodes
+import io.github.tukcps.aadd.dd.BDD
+import io.github.tukcps.aadd.dd.numInternalNodes
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
 class PropagatorTests {
 
@@ -35,7 +37,7 @@ class PropagatorTests {
             inv z; 
         """, Runlevel.ALL)
         assertNoIssues()
-        assertEquals(1, solver.getVariable("a")!!.vectorQuantity.value.numInternalNodes())
+        assertEquals(1, solver.variable("a").vectorQuantity.value.numInternalNodes())
     }
 
     @Test
@@ -49,6 +51,6 @@ class PropagatorTests {
             feature g: ScalarValues::Boolean(true) = (a or b or c or d) and f; 
         """, Runlevel.ALL)
         assertNoIssues()
-        assertEquals(true, solver.getVariable("f")!!.vectorQuantity.value is BDD.Leaf)
+        assertIs<BDD.Leaf>(solver.variable("f").vectorQuantity.value)
     }
 }

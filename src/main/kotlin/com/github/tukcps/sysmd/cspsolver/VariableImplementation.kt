@@ -4,20 +4,22 @@ import com.github.tukcps.sysmd.compiler.KerML
 import com.github.tukcps.sysmd.compiler.parser.kerml.legacy.Expression
 import com.github.tukcps.sysmd.cspsolver.Variable.BaseType
 import com.github.tukcps.sysmd.exceptions.*
+import com.github.tukcps.sysmd.model.datamodel.toElementData
 import com.github.tukcps.sysmd.model.expression.AstRoot
-import com.github.tukcps.sysmd.model.expression.functions.AstByImplements
-import com.github.tukcps.sysmd.model.expression.functions.AstByParts
-import com.github.tukcps.sysmd.model.expression.functions.AstBySpecializations
+import com.github.tukcps.sysmd.model.expression.functions.*
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Membership
+import com.github.tukcps.sysmd.parseIntegerRange
+import com.github.tukcps.sysmd.parseRealRange
 import com.github.tukcps.sysmd.quantities.Representer
 import com.github.tukcps.sysmd.quantities.VectorQuantity
-import com.github.tukcps.sysmd.model.datamodel.toElementData
-import io.github.tukcps.aadd.*
-import io.github.tukcps.aadd.values.IntegerRange
+import io.github.tukcps.aadd.DDTypeCastError
+import io.github.tukcps.aadd.dd.*
 import io.github.tukcps.aadd.values.NumberRange
-import io.github.tukcps.aadd.values.Range
-import io.github.tukcps.aadd.values.XBool
+import io.github.tukcps.aadd.values.bool.XBool
+import io.github.tukcps.aadd.values.bounds.Bound
+import io.github.tukcps.aadd.values.integer.IntegerRange
+import io.github.tukcps.aadd.values.real.ia.RealRange
 import java.util.*
 import java.util.Locale.getDefault
 import kotlin.uuid.Uuid
@@ -55,27 +57,27 @@ open class VariableImplementation (
     override var hasBeenChanged: Boolean = true
 
     /** access methods for the valueSpec field; returns different types */
-    override var rangeSpecs: MutableList<Range> = mutableListOf()
+    override var rangeSpecs: MutableList<RealRange> = mutableListOf()
     override var boolSpecs: MutableList<XBool> = mutableListOf()
     override var intSpecs: MutableList<IntegerRange> = mutableListOf()
     override val stringSpecs: MutableList<String> = mutableListOf()
 
     init {
         when (baseType) {
-            BaseType.Real -> if (valueSpecs.isEmpty()) rangeSpecs = mutableListOf(Range.Reals) else
+            BaseType.Real -> if (valueSpecs.isEmpty()) rangeSpecs = mutableListOf(RealRange.Reals) else
                 valueSpecs.forEach {
-                    rangeSpecs.add(if (it.isNotBlank()) Range(it.trim('\"', '(', ')')) else Range.Reals) }
+                    rangeSpecs.add(parseRealRange(it)) }
 
-            BaseType.Int  -> if(valueSpecs.isEmpty()) intSpecs = mutableListOf(IntegerRange.Integers) else
+            BaseType.Int  -> if(valueSpecs.isEmpty()) intSpecs = mutableListOf(IntegerRange.All) else
                 valueSpecs.forEach {
-                    intSpecs.add(if (it.isNotBlank()) IntegerRange(it.trim('[', ']', ' ', '"')) else IntegerRange.Integers) }
+                    intSpecs.add(parseIntegerRange(it)) }
 
-            BaseType.Bool -> if(valueSpecs.isEmpty()) boolSpecs = mutableListOf(XBool.X)
+            BaseType.Bool -> if(valueSpecs.isEmpty()) boolSpecs = mutableListOf(XBool.All)
                 else valueSpecs.forEach {
                     when (it.trim().lowercase(getDefault())) {
                         "true"  -> boolSpecs.add(XBool.True)
                         "false" -> boolSpecs.add(XBool.False)
-                        else    -> boolSpecs.add(XBool.X)
+                        else    -> boolSpecs.add(XBool.All)
                     }
                 }
             BaseType.String -> {}
@@ -85,22 +87,11 @@ open class VariableImplementation (
 
     private fun formatSingleValue(element: DD<*>): String {
         return when (element) {
-            is IDD -> {
-                val range = element.getRange()
-                val minIsInf = range.min == Long.MIN_VALUE || range.min <= -2147483647L
-                val maxIsInf = range.max == Long.MAX_VALUE || range.max >= 2147483647L
-                when {
-                    minIsInf && maxIsInf -> "*..*"
-                    range.min == range.max -> range.min.toString()
-                    range.min > range.max -> "∅"
-                    else -> {
-                        val min = if (minIsInf) "*" else range.min.toString()
-                        val max = if (maxIsInf) "*" else range.max.toString()
-                        "$min..$max"
-                    }
-                }
+            // FIXME: When adopting -*..*, remove .replace("-*..", "*..") so negative infinity is preserved
+            is IDD -> element.getRange().toString().let {
+                it.replace("-*..", "*..")
             }
-            is AADD -> Representer().represent(element)
+            is AADD -> Representer.represent(element)
             else -> element.toString()
         }
     }
@@ -109,6 +100,7 @@ open class VariableImplementation (
     override var valueStr: String = ""
         get() {
             val formatted = vectorQuantity.values.map { formatSingleValue(it) }
+            // FIXME: When adopting -*..*, change check and assigned value from "*..*" to "-*..*"
             field = if (formatted.all { it == "*..*" }) "*..*"
             else if (formatted.size > 1) formatted.toString()
             else formatted[0]
@@ -154,8 +146,8 @@ open class VariableImplementation (
                 boolSpecs.forEach {
                     values.add(
                         when (it) {
-                            XBool.True -> builder.True
-                            XBool.False -> builder.False
+                            XBool.True -> builder.Bool.True
+                            XBool.False -> builder.Bool.False
                             else -> builder.variable(path, path)
                         }
                     )
@@ -165,7 +157,7 @@ open class VariableImplementation (
             BaseType.String -> {
                 val values = mutableListOf<StrDD>()
                 if(valueSpecs.isEmpty())
-                    values.add(builder.Strings)
+                    values.add(builder.Strings.All)
                 valueSpecs.forEach{ values.add(builder.string(it)) }
                 vectorQuantity = VectorQuantity(values)
             }
@@ -189,8 +181,8 @@ open class VariableImplementation (
         when(str.trim().lowercase(Locale.US)) {
             "true"          -> boolSpecs = mutableListOf(XBool.True)
             "false"         -> boolSpecs = mutableListOf(XBool.False)
-            "x", "unknown"  -> boolSpecs = mutableListOf(XBool.X)
-            "nab"           -> boolSpecs = mutableListOf(XBool.NaB)
+            "x", "unknown"  -> boolSpecs = mutableListOf(XBool.All)
+            "nab"           -> boolSpecs = mutableListOf(XBool.Empty)
             ""              -> { /* no update */ }
             else -> throw ExpressionError("boolean constraint must be true, false or x/unknown.")
         }
@@ -210,7 +202,7 @@ open class VariableImplementation (
 
         if (lb > ub)
             throw ExpressionError("in range subtype constraint, lower bound must be less or equal upper bound.")
-        rangeSpecs = mutableListOf(Range(lb, ub))
+        rangeSpecs = mutableListOf(RealRange(lb, ub))
         return this
     }
 
@@ -220,16 +212,16 @@ open class VariableImplementation (
         if (lb == null || ub == null) return this
         if (lb > ub)
             throw ExpressionError("in range subtype constraint, lower bound must be less or equal upper bound.")
-        rangeSpecs = mutableListOf(Range(lb, ub))
+        rangeSpecs = mutableListOf(RealRange(lb, ub))
         return this
     }
 
     /** Setter for a real ValueFeature */
-    override fun rangeSpec(init : Range): Variable {
+    override fun rangeSpec(init : RealRange): Variable {
         updated = true
         if (init.min > init.max)
             throw ExpressionError("in range subtype constraint, lower bound must be less or equal upper bound.")
-        rangeSpecs = mutableListOf(Range(init.min, init.max))
+        rangeSpecs = mutableListOf(RealRange(init.min, init.max))
         return this
     }
 
@@ -243,11 +235,15 @@ open class VariableImplementation (
     }
 
 
+    /** The values in the unit of [unitSpec], or in SI if there is none. */
+    private fun valuesInUnitSpec(): List<DD<*>> =
+        if (unitSpec.isEmpty()) vectorQuantity.valuesInSI() else vectorQuantity.valuesIn(unitSpec)
+
     /**
      * Casts the quantity value to AADD and returns it.
      */
     override fun aadd(): AADD {
-        if (vectorQuantity.values[0] is AADD) return vectorQuantity.valuesIn(unitSpec)[0] as AADD
+        if (vectorQuantity.values[0] is AADD) return valuesInUnitSpec()[0] as AADD
         else throw SolverError("Expression value cannot be cast to AADD", path = path)
     }
 
@@ -269,23 +265,30 @@ open class VariableImplementation (
     /**
      * Returns min value of position index of VectorQuantity
      */
-    override fun <T: Number>  min(index: Int): T =
+    override fun <T: Bound>  min(index: Int): T =
         when (vectorQuantity.values.getOrNull(index)) {
-            is AADD -> (vectorQuantity.valuesIn(unitSpec)[index] as AADD).getRange().min
-            is IDD -> (vectorQuantity.valuesIn(unitSpec)[index] as IDD).getRange().min
+            is AADD -> (valuesInUnitSpec()[index] as AADD).getRange().min
+            is IDD -> (valuesInUnitSpec()[index] as IDD).getRange().min
             else -> throw SolverError(".min can only be applied on properties of type Integer or Real", path=path)
         } as T
 
     /**
      * Returns max value of VectorQuantity's position index
      */
-    override fun <T: Number> max(index: Int): T =
+    override fun <T: Bound> max(index: Int): T =
         when (vectorQuantity.values.getOrNull(index)) {
-            is AADD -> (vectorQuantity.valuesIn(unitSpec)[index] as AADD).getRange().max
-            is IDD -> (vectorQuantity.valuesIn(unitSpec)[index] as IDD).getRange().max
+            is AADD -> (valuesInUnitSpec()[index] as AADD).getRange().max
+            is IDD -> (valuesInUnitSpec()[index] as IDD).getRange().max
             else -> throw SolverError(".max can only be applied on properties of type Integer or Real", path=path)
         } as T
 
+    override fun <T : NumberRange<*>> range(index: Int): T {
+        return when (baseType) {
+            BaseType.Int -> idd().getRange() as T
+            BaseType.Real -> aadd().getRange() as T
+            else -> throw SysMDError("Conversion not possible")
+        }
+    }
 
     /**
      * This method calls the parser with a given property, from which the dependency string is
@@ -310,7 +313,7 @@ open class VariableImplementation (
                         throw SolverError("Expecting expression of type Integer")
                     BaseType.Real if (ast!!.upQuantity.values[0] !is AADD) ->
                         throw SolverError("Expecting expression of type Real", elementId =  relatedElement)
-                    BaseType.String if (ast!!.upQuantity.value !is StrDD) ->
+                    BaseType.String if (ast!!.upQuantity.values[0] !is StrDD) ->
                         throw SolverError("Expecting expression of type String", elementId = relatedElement)
                     else -> {}
                 }
@@ -360,11 +363,4 @@ open class VariableImplementation (
         return bdd()
     }
 
-    override fun <T : Comparable<T>> range(index: Int): NumberRange<T> {
-        return when (baseType) {
-            BaseType.Int -> idd().getRange()
-            BaseType.Real -> aadd().getRange()
-            else -> throw SysMDError("Conversion not possible")
-        } as NumberRange<T>
-    }
 }

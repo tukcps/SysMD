@@ -1,5 +1,6 @@
 package compiler
 
+import util.assertEmpty
 import com.github.tukcps.sysmd.compiler.KerML
 import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.resolve.resolveVar
@@ -37,15 +38,14 @@ class ErrorReportingTests {
     }
 
     // Unsure whether we need this error or if we simply shall return an empty set.
-    // @Ignore
     @Test
     fun reportConstraintWrong() = testSession("ScalarValues") {
         loadKerML("feature x: ScalarValues::Real(1.0 .. 0.0);", Runlevel.ALL)
+        // shall we report an error? eventually, a user wants exactly this.
+        assertNoIssues()
         // x is empty
         val x = solver.getVariable("x")
-        assertEquals(builder.Empty, x?.aadd())
-        // shall we report an error? eventually, a user wants exactly this.
-        // assertTrue(status.reports.isNotEmpty() )
+        assertEmpty(x!!)
     }
 
     /**

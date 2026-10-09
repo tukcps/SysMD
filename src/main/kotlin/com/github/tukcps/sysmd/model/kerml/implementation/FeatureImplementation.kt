@@ -2,11 +2,11 @@ package com.github.tukcps.sysmd.model.kerml.implementation
 
 import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.model.util.MultiplicityRange
 import com.github.tukcps.sysmd.model.util.SimpleName
 import com.github.tukcps.sysmd.model.util.TypeConstraint
+import com.github.tukcps.sysmd.parseIntegerRange
 import com.github.tukcps.sysmd.services.session.Session
-import io.github.tukcps.aadd.values.IntegerRange
+import io.github.tukcps.aadd.values.integer.IntegerRange
 import kotlin.uuid.Uuid
 
 /**
@@ -45,7 +45,13 @@ open class FeatureImplementation(
         get() = TypeConstraint(getOwned<Feature>("range")?.expression?:"").value
 
     override val unitConstraint: String?
-        get() = TypeConstraint(getOwned<Feature>("range")?.expression?:"").unit
+        get() {
+            val unitExpr = getOwned<Feature>("unit")?.expression?.trim(' ', '"')
+            if (!unitExpr.isNullOrEmpty()) return unitExpr
+            val fromRange = TypeConstraint(getOwned<Feature>("range")?.expression ?: "").unit
+            if (fromRange.isNotEmpty()) return fromRange
+            return null
+        }
 
     override val typing: List<FeatureTyping>
         get() = getOwnedElementsOfType()
@@ -59,14 +65,14 @@ open class FeatureImplementation(
      *  - should be only for model, separated approach for solver needed.
      */
     @Deprecated("Use function call", ReplaceWith("multiplicityRange()"))
-    override var multiplicityRange: MultiplicityRange
+    override var multiplicityRange: IntegerRange
         get() = multiplicityRange()
-        set(value) { multiplicity()?.variable?.intSpecs = mutableListOf(IntegerRange(value.toLongRange())) }
+        set(value) { multiplicity()?.variable?.intSpecs = mutableListOf(value) }
 
-    override fun multiplicityRange(): MultiplicityRange =
+    override fun multiplicityRange(): IntegerRange =
         when {
             getOwnedElementOfType<Multiplicity>() != null ->
-                MultiplicityRange(getOwnedElementOfType<Multiplicity>()?.getOwnedElementOfType<Feature>()?.expression ?: "0..*")
+                parseIntegerRange(getOwnedElementOfType<Multiplicity>()?.getOwnedElementOfType<Feature>()?.expression ?: "0..*")
             redefining != null -> redefining!!.multiplicityRange
             referencedFeature != null -> referencedFeature!!.multiplicityRange
             else -> defaultMultiplicityRange

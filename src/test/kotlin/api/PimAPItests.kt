@@ -86,7 +86,7 @@ class PimApiServicesTests {
     @Test
     fun getSessionByIdTest() = testProjectSession {
         val project = projectService.createProject("getSessionByIdTest", "description", null)
-        val session = sessionService.createSession(project as ProjectData)
+        val session = sessionService.createSession(project as ProjectData, "Base")
         assertNotNull(session)
         assertEquals("getSessionByIdTest", session.project.name)
         assertEquals("description", session.project.description)
@@ -107,7 +107,7 @@ class PimApiServicesTests {
     @Test
     fun setMetaTest() {
         val project = projectService.createProject("setMetaTest", "description", null)
-        val session = sessionService.createSession(project as ProjectData)
+        val session = sessionService.createSession(project as ProjectData, "Base")
         val meta = Meta(
             index = linkedMapOf("a" to "A", "b" to "B"),
             created = Instant.parse("2021-09-09T00:00:00.00Z"),
@@ -133,7 +133,7 @@ class PimApiServicesTests {
     @Test
     fun setCellsTest()  {
         val project = projectService.createProject("setCellsTest", "description", null)
-        val session = sessionService.createSession(project as ProjectData)
+        val session = sessionService.createSession(project as ProjectData, "Base")
         val meta = Meta(
             index = linkedMapOf("a" to "A", "b" to "B"),
             created = Instant.parse("2021-09-09T00:00:00.00Z"),

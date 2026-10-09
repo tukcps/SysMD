@@ -8,9 +8,9 @@ import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Specialization
 import com.github.tukcps.sysmd.model.kerml.Type
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.IDD
-import io.github.tukcps.aadd.StrDD
+import io.github.tukcps.aadd.dd.AADD
+import io.github.tukcps.aadd.dd.IDD
+import io.github.tukcps.aadd.dd.StrDD
 
 /**
  * Checks if the Expression maps to a Variable which HAS initial values.
@@ -52,7 +52,7 @@ fun isVariableWithoutValues(feature : Feature) : Boolean {
     return when {
         feature.model.repo.realType as Type in feature.allSupertypes(true) -> feature.expression?.isEmpty() == true && !feature.variable!!.rangeSpecs[0].isFinite()
         feature.model.repo.integerType as Type in feature.allSupertypes(true)-> feature.expression?.isEmpty() ==true  && feature.variable!!.intSpecs[0].toString().contains("MAX")
-        feature.model.repo.stringType as Type in feature.allSupertypes(true)-> (feature.variable!!.vectorQuantity.value as StrDD.Leaf).value.isEmpty()
+        feature.model.repo.stringType as Type in feature.allSupertypes(true)-> (feature.variable!!.vectorQuantity.value as StrDD.Leaf).value.str.isEmpty()
         feature.model.repo.booleanType as Type in feature.allSupertypes(true)-> feature.expression?.isEmpty() == true
         else -> throw SysMDFatalInternalError("Cannot perform this Variable Check on a Expression with Data Type \"${feature.type.firstOrNull()}\"")
     }

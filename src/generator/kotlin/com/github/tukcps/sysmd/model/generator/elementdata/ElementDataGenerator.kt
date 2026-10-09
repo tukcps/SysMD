@@ -110,6 +110,7 @@ class ElementDataGenerator : KotlinGenerator() {
                         className = clazz.name,
                         attributeName = attribute.name,
                         kotlinType = mapper.type(
+                            clazz,
                             attribute,
                             isReference,
                         ),

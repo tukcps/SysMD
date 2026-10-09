@@ -7,6 +7,7 @@ import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.exceptions.SysMDException
 import com.github.tukcps.sysmd.logger
 import com.github.tukcps.sysmd.model.datamodel.ElementData
+import com.github.tukcps.sysmd.model.datamodel.ElementReference
 import com.github.tukcps.sysmd.model.datamodel.toElement
 import com.github.tukcps.sysmd.model.datamodel.toElementData
 import com.github.tukcps.sysmd.model.expression.InstantiationExpression
@@ -14,10 +15,11 @@ import com.github.tukcps.sysmd.model.generated.ElementDataIF
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.Function
 import com.github.tukcps.sysmd.model.kerml.implementation.*
+import com.github.tukcps.sysmd.model.util.ErrorElement
 import com.github.tukcps.sysmd.model.util.HandledAsElement
 import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.model.util.Unresolved
-import com.github.tukcps.sysmd.model.util.UnresolvedElement
+import com.github.tukcps.sysmd.model.util.mapInPlace
 import com.github.tukcps.sysmd.rest.entities.api.entities.CommitDataObject
 import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.check.checkConsistency
@@ -25,7 +27,9 @@ import com.github.tukcps.sysmd.services.initialize
 import com.github.tukcps.sysmd.services.repositories.local.Data
 import com.github.tukcps.sysmd.services.session.*
 import io.github.tukcps.aadd.DDBuilder
+import nl.adaptivity.xmlutil.core.impl.multiplatform.name
 import java.util.*
+import kotlin.reflect.KMutableProperty1
 import kotlin.reflect.full.isSubclassOf
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -250,11 +254,14 @@ open class SessionImplementation(
                     if (owningElement is Type) found.specific = owningElement
                     return found as T
                 }
-                if (relationship.general is Unresolved) {
+
+                (relationship.general as? Unresolved)?.let { general ->
+                    val ref = general.reference
+                    check(ref is ElementReference.ByName) { "Invalid reference: $general" }
                     val resolved = if (relationship !is Redefinition)
-                        (relationship.owningNamespace?.resolve((relationship.general as Unresolved).relativeName!!) )?.member<Type>()
+                        (relationship.owningNamespace?.resolve(ref.name) )?.member<Type>()
                     else
-                        (relationship.owningNamespace as Type).resolve((relationship.general as Unresolved).relativeName!!)?.member<Feature>()
+                        (relationship.owningNamespace as Type).resolve(ref.name)?.member<Feature>()
 
                     if ( resolved?.escapedName() == found.general.escapedName() ) {
                         if (owningElement is Type) found.specific = owningElement
@@ -330,6 +337,34 @@ open class SessionImplementation(
         import(newElements, namespace)
     }
 
+    /** Helper function for [import], cannot be local due to inline.
+     * Ensures an ownership-relevant field is resolved.
+     * @param ifRoot called to resolve a [ElementReference.ToRoot] reference
+     */
+    private inline fun<E : Element, reified T : Element?> E.resolveOwner(field : KMutableProperty1<E,T>, ifRoot : (ElementReference.ToRoot) -> T) : T
+    {
+        val cur = field.get(this)
+
+        if(cur !is Unresolved)
+            return cur
+
+        when(val ref = cur.reference) {
+            is ElementReference.ByID -> when(val resolved = repo[ref.id]) {
+                null -> throw InternalError("In import: Missing ID '${ref.id}' referenced as owningRelationship", element = this)
+                !is T -> throw InternalError("In import: ${field.name} resolved to $resolved, but an instance of ${T::class.name} was expected", element = this)
+                else -> {
+                    field.set(this, resolved)
+                    return resolved
+                }
+            }
+            is ElementReference.ByName -> throw InternalError("${field.name} may not be specified via relative name", element = this)
+            // hack: implicit owningRelationship
+            is ElementReference.ToRoot -> return ifRoot(ref)
+            null -> throw IllegalStateException("Placeholder element should not be inserted into model")
+        }
+    }
+
+
     /**
      * Adds new elements to the session. The elements are organized under the
      * root given as the second parameter.
@@ -337,34 +372,30 @@ open class SessionImplementation(
      * @param namespace where the new elements will be added; root as default.
      */
     override fun import(newElements: Collection<ElementDataIF>, namespace: Namespace) {
-        try {
-            fun resolveUuids(elements: MutableList<Element>) {
-                val iterator = elements.listIterator()
-                while (iterator.hasNext()) {
-                    val unresolved = iterator.next() as? UnresolvedElement ?: continue
+        fun resolveUuids(elements: MutableList<Element>) {
+            elements.mapInPlace { unresolved ->
+                if(unresolved !is Unresolved)
+                    return@mapInPlace unresolved // keep
 
-                    // 1. Resolve element based on availability (ID has priority over namespace/global context)
-                    val resolved = when {
-                        unresolved.id != null -> get(unresolved.id!!)
-                        unresolved.relativeName == null -> namespace
-                        else -> null // Pure relative names cannot be resolved in this pass
-                    }
+                // 1. Resolve element based on availability (ID has priority over namespace/global context)
+                val resolved = when(val ref = unresolved.reference) {
+                    is ElementReference.ByID -> get(ref.id)
+                    is ElementReference.ByName -> return@mapInPlace unresolved // keep, handle later
+                    ElementReference.ToRoot -> namespace
+                    null -> throw IllegalStateException("Placeholder element should not be inserted into model")
+                }
 
-                    // 2. Apply resolved element or log error and remove the unresolved one
-                    if (resolved != null) {
-                        iterator.set(resolved)
-                    } else {
-                        if (unresolved.relativeName == null) {
-                            val missingIdentifier = unresolved.id ?: unresolved.relativeName ?: "unknown"
-                            status.error(
-                                "Import of elements has reference to undefined element '$missingIdentifier'",
-                                kind = Issue.Kind.ERROR_UNRESOLVED_NAME
-                            )
-                            iterator.remove()
-                        }
-                    }
+                // delete if not found
+                resolved ?: null.also {
+                    status.error(
+                        "Import of elements has reference to undefined element ${unresolved.reference!!.id}",
+                        kind = Issue.Kind.ERROR_UNRESOLVED_NAME
+                    )
                 }
             }
+        }
+
+        try {
 
             if(settings.reportDoubleNames)
             {
@@ -394,30 +425,61 @@ open class SessionImplementation(
 
             // 2. Resolve IDs of all new relationships, elements
             added.forEach { addedElement ->
+                (addedElement.owningRelationship as? Unresolved)?.let { unresolved ->
+                    val ref = unresolved.reference
+                    val resolved = when(ref) {
+                        is ElementReference.ByID -> repo[ref.id]
+                        is ElementReference.ByName -> throw InternalError("owningRelationship cannot be set by relative name", element = addedElement)
+                        ElementReference.ToRoot -> {
+                            addOwnershipToGivenNamespace(addedElement, namespace)
+                            return@let
+                        }
+                        null -> throw IllegalStateException("Placeholder element should not be inserted into model")
+                    }
 
-                val owningRelationship = addedElement.owningRelationship
-                if (owningRelationship is Unresolved) {
-                    if (owningRelationship.id === null) // && (addedElement is HandledAsElement)
-                        addOwnershipToGivenNamespace(addedElement, namespace)
-                    else
-                        addedElement.owningRelationship = repo[owningRelationship.id] as? OwningMembership
-                            ?: throw InternalError("In import: id of owning membership of element '${addedElement.declaredName ?: addedElement.declaredShortName}' not found", element = addedElement)
+                    addedElement.owningRelationship = when(resolved) {
+                        null -> {
+                            status.error("owningRelationship is invalid reference $ref", element = addedElement.toElementData())
+                            ErrorElement(this, unresolved)
+                        }
+                        !is OwningMembership -> {
+                            status.error("owningRelationship is set to $resolved, which is not an OwningMembership", element = addedElement.toElementData())
+                            ErrorElement(this, unresolved)
+                        }
+                        else -> resolved
+                    }
                 }
+
+                assert(addedElement.owningRelationship !is Unresolved)
 
                 if (addedElement is Relationship) {
                     if (addedElement !is Namespace && addedElement !is Dependency && addedElement !is AnnotatingElement) {
-                        val owningRelatedElement = addedElement.owningRelatedElement // owner just is a getter ...
-                        if (owningRelatedElement is Unresolved)
-                            if (owningRelatedElement.id != null) {
-                                addedElement.owningRelatedElement = repo[owningRelatedElement.id]
-                                    ?: throw InternalError("Inconsistent data in import (id of owning element not found)")
-                                repo[owningRelatedElement.id]?.ownedRelationship?.add(addedElement)
-                            } else {
-                                addedElement.owningRelatedElement = namespace
-                                namespace.ownedRelationship.add(addedElement)
+                        (addedElement.owningRelatedElement as? Unresolved)?.let { unresolved ->
+                            val ref = unresolved.reference
+                            val resolved = when(ref) {
+                                is ElementReference.ByID -> repo[ref.id]
+                                // this is generated by the compiler for relative roots.
+                                // We should implement $-scoping to verify these are globally scoped
+                                is ElementReference.ByName ->
+                                    global.resolve(ref.name)?.memberElement
+                                ElementReference.ToRoot -> {
+                                    addedElement.owningRelatedElement = namespace
+                                    namespace.ownedRelationship.add(addedElement)
+                                    return@let
+                                }
+                                null -> throw IllegalStateException("Placeholder element should not be inserted into model")
                             }
+
+                            addedElement.owningRelatedElement = resolved ?: ErrorElement(this, unresolved).also {
+                                status.error("owningRelatedElement is invalid reference $ref", element = addedElement.toElementData())
+                            }
+                            resolved?.ownedRelationship?.add(addedElement)
+                        }
+
+                        assert(addedElement.owningRelatedElement !is Unresolved)
                         resolveUuids(addedElement.ownedRelatedElement)
                     }
+
                     resolveUuids(addedElement.source)
                     resolveUuids(addedElement.target)
                 }
@@ -451,11 +513,8 @@ open class SessionImplementation(
                 logger.error("Unresolved element ${element.qualifiedName?:element.path()} in export.")
 
             if (element is Relationship) {
-                element.source.filterIsInstance<Unresolved>().forEach {
-                    logger.warn("Unresolved source ${it.relativeName} in export.")
-                }
-                element.target.filterIsInstance<Unresolved>().forEach {
-                    logger.warn("Unresolved target ${it.relativeName} in export.")
+                (element.source + element.target).filter { it is ErrorElement || it is Unresolved  }.forEach {
+                    logger.warn("$it in export.")
                 }
             }
 

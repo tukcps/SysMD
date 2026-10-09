@@ -1,4 +1,6 @@
 import org.gradle.internal.os.OperatingSystem
+import java.nio.file.Files
+import java.nio.file.Path
 
 /**
  * Gradle build file for SysMD Notebook.
@@ -9,12 +11,17 @@ import org.gradle.internal.os.OperatingSystem
  * IMPORTANT: in plugins, you must
  * - comment-out the kotlin version if you use it in a hierarchical Gradle build
  * - comment in the kotlin version if you are using it in a standalone Gradle build
- * - also set the value standalone according to your setup
+ * - for use of local AADD, set path to clone of it in `gradle.properties`.
  */
 group   = "com.github.tukcps"
-version = "4.3.0"               // must be number.number.number
-val aaddVersion = "0.1.15"
-val useMavenAADD = true
+version = "4.3.1"               // must be number.number.number
+
+/**
+ * Which version of AADD to use if downloaded automatically as Maven dependency.
+ * If a local installation is used, adapt `gradle.properties` accordingly.
+ * Take care of capital (or non-capital) spelling of AADD / aadd.
+ */
+val aaddVersion = "0.9.13"
 
 if (JavaVersion.current() < JavaVersion.VERSION_25) {
     throw GradleException("The build must be run with JVM 25 or newer.")
@@ -24,19 +31,27 @@ if (JavaVersion.current() < JavaVersion.VERSION_25) {
     versionFile.writeText("$version")
 }
 
-// Plugins needed: id and versions.
+// Needed for Spring Boot (sets 1.10.2) & AADD (requires 1.11.0)
+extra["kotlin-coroutines.version"] = "1.11.0"
+
+/*
+ * Plugins: id and versions, see gradle/libs.versions.toml.
+ */
 plugins {
-    // Plugin that checks for updates of dependencies
-    id("com.github.ben-manes.versions") version "0.53.0"
+    alias(libs.plugins.versions)
     id("idea")
-    kotlin("jvm") version "2.4.10"
-    kotlin("plugin.serialization") version "2.4.10"
-    id("org.springframework.boot") version "4.1.0"
-    id("io.spring.dependency-management") version "1.1.7"
-    alias(libs.plugins.jetbrainsCompose) apply true
-    alias(libs.plugins.compose.compiler) apply true
+
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.kotlin.spring)
+
+    alias(libs.plugins.spring.boot)
+    alias(libs.plugins.spring.dependency.management)
+
+    alias(libs.plugins.jetbrainsCompose)
+    alias(libs.plugins.compose.compiler)
+
     id("maven-publish")
-    kotlin("plugin.spring") version "2.4.10"
 }
 
 // Repositories where to search
@@ -55,11 +70,13 @@ kotlin {
 // Dependencies
 dependencies {
     implementation(compose.desktop.currentOs)
+    implementation(libs.kotlinx.coroutines)
 
+    val aaddLocal = providers.gradleProperty("aaddDirectory").orNull?.let(Path::of)
     // Check if we do a standalone-build or a hierarchical build with git submodules
-    if(file("aadd").exists() && !useMavenAADD) {
-        println("  *** using AADD from project clone in ./aadd               ***")
-        implementation(project(":aadd"))
+    if(aaddLocal !== null && Files.isDirectory(aaddLocal)) {
+        println("  *** using AADD from local clone in $aaddLocal         ***")
+        implementation(project(":AADD")) // Take care of capitalization!!!
     } else {
         println("  *** using AADD v$aaddVersion from Maven repository            ***")
         implementation("io.github.tukcps:aadd:$aaddVersion")
@@ -72,8 +89,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json")
     implementation("io.github.oshai:kotlin-logging:8.0.4")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
-    implementation("io.ktor:ktor-utils:3.5.0")
-    implementation("io.ktor:ktor-http:3.5.0")
+    implementation("io.ktor:ktor-utils:3.6.0")
+    implementation("io.ktor:ktor-http:3.6.0")
 
     implementation("io.github.pdvrieze.xmlutil:serialization:0.90.2") // XML für KMP
 
@@ -91,7 +108,7 @@ dependencies {
     implementation("org.hibernate.validator:hibernate-validator:9.0.1.Final")
 
     // Open API / Swagger
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.1")
 
     // Needed for annotations for Spring Boot in package rest
     implementation("com.fasterxml.jackson.core:jackson-databind")
@@ -139,8 +156,13 @@ tasks.named<Jar>("jar") {
 }
 
 // Sets the file name of the bootJar
-tasks.named<Jar>("bootJar") {
+tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
     archiveFileName.set("sysmd-$version.jar")
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+}
+
+tasks.withType<org.springframework.boot.gradle.tasks.run.BootRun>().configureEach {
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
 }
 
 compose.resources {
@@ -203,7 +225,8 @@ tasks.register<Exec>("generateSysMDInstaller") {
         "--dest", "build/installer",
         "--icon", iconPath,
         "--app-content", "install",
-        "--java-options", """ "-splash:\${"$"}APPDIR/install/SysMD-Logo.png" """,
+        "--java-options", $$""" "-splash:\$APPDIR/install/SysMD-Logo.png" """,
+        "--java-options", "--enable-native-access=ALL-UNNAMED",
         "--resource-dir", "src/main/resources"      // location of resources
     ) + additionalArgs
 

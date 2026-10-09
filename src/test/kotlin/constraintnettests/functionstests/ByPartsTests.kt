@@ -1,7 +1,9 @@
 package constraintnettests.functionstests
 
+import util.variable
 import com.github.tukcps.sysmd.services.Runlevel
 import util.assertNoIssues
+import util.assertBounds
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
@@ -29,10 +31,10 @@ class ByPartsTests {
                     feature a: ScalarValues::Real = byParts(a); 
                 }
             """, Runlevel.ALL)
+            solver.propagate()
             assertNoIssues()
             val result = solver.getVariable("b::a")
-            assertEquals(0.0, result!!.min(), 0.000001)
-            assertEquals(5.0, result.max(), 0.000001)
+            assertBounds(0.0 .. 5.0, result!!)
             assertNoIssues()
         }
 
@@ -56,12 +58,11 @@ class ByPartsTests {
                     feature a: Ranges::RealInRange = byParts(a) {:>> range = 1..3;} 
                 }
             """, Runlevel.ALL)
+            solver.propagate()
             assertNoIssues()
-            val a1 = solver.getVariable("b::cElemem1::a")!!
-            val a2 = solver.getVariable("b::cElemen2::a")!!
-            assertEquals(1.0, a1.min(), 0.000001)
-            assertEquals(3.0, a1.max(), 0.000001)
-            assertEquals(1.0, a2.min(), 0.000001)
-            assertEquals(2.0, a2.max(), 0.000001)
+            val a1 = solver.variable("b::cElemem1::a")
+            val a2 = solver.variable("b::cElemen2::a")
+            assertBounds(1.0 .. 3.0, a1)
+            assertBounds(1.0 .. 2.0, a2)
         }
 }

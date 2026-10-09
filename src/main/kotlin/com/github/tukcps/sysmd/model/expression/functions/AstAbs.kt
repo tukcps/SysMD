@@ -1,11 +1,13 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.IDD
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.model.expression.AstNode
+import com.github.tukcps.sysmd.quantities.Unit
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
+import io.github.tukcps.aadd.dd.AADD
+import io.github.tukcps.aadd.dd.IDD
+import io.github.tukcps.aadd.values.bounds.unaryMinus
 
 /**
  * Predefined functions: abs, absolute value for IDD and AADD
@@ -16,8 +18,8 @@ internal class AstAbs(model: Session, args: ArrayList<AstNode>) :
 
     override fun initialize() {
         upQuantity = when (arg.upQuantity.values[0]) {
-            is AADD -> VectorQuantity(mutableListOf(model.builder.Reals), "?")
-            is IDD -> VectorQuantity(mutableListOf(model.builder.Integers))
+            is AADD -> VectorQuantity.fromCanonical(mutableListOf(model.builder.Reals.All), Unit("?"), "?")
+            is IDD -> VectorQuantity(mutableListOf(model.builder.Integers.All))
             else -> throw SemanticError("Abs function must have a Real or Integer parameter")
         }
         evalUp()
@@ -31,33 +33,42 @@ internal class AstAbs(model: Session, args: ArrayList<AstNode>) :
     override fun evalDown() {
         when (arg.upQuantity.values[0]) {
             is IDD -> {
-                val max = downQuantity.idd().getRange().max
-                //interval from -max to max, because max is always positive
                 val results = mutableListOf<IDD>()
-                getParam(0).downQuantity.values.forEach {
-                    results.add(it.asIdd().constrainTo(model.builder.integer(-max..max)))
+                getParam(0).downQuantity.values.indices.forEach { idx ->
+                    val yVal = downQuantity.values.getOrNull(idx)?.asIdd()
+                        ?: downQuantity.values.first().asIdd()
+                    val p0Val = getParam(0).downQuantity.values[idx].asIdd()
+                    if (yVal.max < 0L) {
+                        results.add(model.builder.Integers.Empty)
+                    } else {
+                        val max = yVal.getRange().max
+                        results.add(p0Val.constrainTo(model.builder.integer(-max..max)))
+                    }
                 }
-                getParam(0).downQuantity = VectorQuantity(results)
+                val newParam = VectorQuantity(results)
+                getParam(0).downQuantity = getParam(0).downQuantity.constrain(newParam)
             }
 
             is AADD -> {
-                val max = downQuantity.aadd().getRange().max
-                //interval from -max to max, because max is always positive
                 val results = mutableListOf<AADD>()
-                getParam(0).downQuantity.values.forEach {
-                    results.add(it.asAadd().constrainTo(model.builder.real(-max..max)))
+                getParam(0).downQuantity.values.indices.forEach { idx ->
+                    val yVal = downQuantity.values.getOrNull(idx)?.asAadd()
+                        ?: downQuantity.values.first().asAadd()
+                    val p0Val = getParam(0).downQuantity.values[idx].asAadd()
+                    if (yVal.max < 0.0) {
+                        results.add(model.builder.Reals.Empty)
+                    } else {
+                        val max = yVal.getRange().max
+                        results.add(p0Val.constrainTo(model.builder.real(-max..max)))
+                    }
                 }
-                getParam(0).downQuantity =
-                    VectorQuantity(results, getParam(0).downQuantity.unit, getParam(0).downQuantity.unitSpec)
+                val newParam = VectorQuantity.fromCanonical(results, getParam(0).downQuantity.unit, getParam(0).downQuantity.unitSpec, getParam(0).downQuantity.userWantedUnitSpec)
+                getParam(0).downQuantity = getParam(0).downQuantity.constrain(newParam)
             }
 
             else -> {}
         }
     }
 
-    override fun clone(): AstAbs {
-        val parClone = ArrayList<AstNode>()
-        for (p in parameters) parClone.add(p.clone())
-        return AstAbs(model, parClone)
-    }
+    override fun clone() = AstAbs(model, cloneParameters())
 }

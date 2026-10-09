@@ -1,14 +1,16 @@
 package constraintnettests.functionstests
 
+import util.variable
 import com.github.tukcps.sysmd.services.Runlevel
 import util.assertNoIssues
+import util.assertBounds
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class LnTests {
+class MinTests {
 
     @Test
     fun minTest1() = testSession("Ranges") {
@@ -20,8 +22,7 @@ class LnTests {
         solver.propagate()
         assertNoIssues()
         val result = solver.getVariable("c")
-        assertEquals(0.0, result!!.min(), 0.000001)
-        assertEquals(1.0, result.max(), 0.000001)
+        assertBounds(0.0 .. 1.0, result!!)
         assertNoIssues()
     }
 
@@ -31,10 +32,10 @@ class LnTests {
             feature a: Ranges::RealInRange {:>> range = 1..8;}
             feature b: Ranges::RealInRange = min(8.0,a) {:>> range = 6.0..6.0;}
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
         val result = solver.getVariable("a")
-        assertEquals(6.0, result!!.min(), 0.000001)
-        assertEquals(6.0, result.max(), 0.000001)
+        assertBounds(6.0 .. 6.0, result!!)
         assertNoIssues()
     }
 
@@ -44,12 +45,11 @@ class LnTests {
             feature a: Ranges::RealInRange = sqrt(9.0) {:>> range = 0..5;}
             feature b: Ranges::RealInRange = sqrt(4.0) {:>> range = 1.. 6;}
             feature c: Ranges::RealInRange = min(a,b);
-            """)
+        """, Runlevel.ALL)
         solver.propagate()
         assertNoIssues()
         val result = solver.getVariable("c")
-        assertEquals(2.0, result!!.min(), 0.000001)
-        assertEquals(2.0, result.max(), 0.000001)
+        assertBounds(2.0 .. 2.0, result!!)
         assertNoIssues()
     }
 
@@ -59,12 +59,11 @@ class LnTests {
             feature a: Ranges::RealInRange = 3.0 {:>> range = 0.. 6;}
             feature b: Ranges::RealInRange {:>> range = 1.. 6;}
             feature c: Ranges::RealInRange = min(a,b) {:>> range = 3.0..3.0;}
-        """)
+        """, Runlevel.ALL)
         solver.propagate()
         assertNoIssues()
         val result = solver.getVariable("b")
-        assertEquals(3.0, result!!.min(), 0.000001)
-        assertEquals(6.0, result.max(), 0.000001)
+        assertBounds(3.0 .. 6.0, result!!)
         assertNoIssues()
     }
 
@@ -74,12 +73,11 @@ class LnTests {
             feature a: Ranges::RealInRange = 4.0 {:>> range = 0..5;}
             feature b: Ranges::RealInRange = 6.0 {:>> range = 1.. 6;}
             feature c: Ranges::RealInRange = min(sqrt(9.0)+a,sqrt(4.0)+b);
-        """)
+        """, Runlevel.ALL)
         solver.propagate()
         assertNoIssues()
         val result = solver.getVariable("c")
-        assertEquals(7.0, result!!.min(), 0.000001)
-        assertEquals(7.0, result.max(), 0.000001)
+        assertBounds(7.0 .. 7.0, result!!)
         assertNoIssues()
     }
 
@@ -92,8 +90,7 @@ class LnTests {
         solver.propagate()
         assertNoIssues()
         val result = solver.getVariable("c")
-        assertEquals(6.0, result!!.min(), 0.000001)
-        assertEquals(6.0, result.max(), 0.000001)
+        assertBounds(6.0 .. 6.0, result!!)
         assertNoIssues()
     }
 
@@ -106,10 +103,10 @@ class LnTests {
             feature d: Ranges::RealInRange { :>> range = 4..5;}
             feature e: ScalarValues::Real = min(a,b,c,d);
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
         val result = solver.getVariable("e")
-        assertEquals(0.0, result!!.min(), 0.000001)
-        assertEquals(1.0, result.max(), 0.000001)
+        assertBounds(0.0 .. 1.0, result!!)
         assertNoIssues()
     }
     @Test
@@ -121,10 +118,10 @@ class LnTests {
             feature d: Ranges::RealInRange {:>> range = -3.5..-2.0;}
             feature e: ScalarValues::Real = min(a,b,c,d);
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
         val result = solver.getVariable("e")
-        assertEquals(-6.5, result!!.min(), 0.000001)
-        assertEquals(-4.5, result.max(), 0.000001)
+        assertBounds(-6.5 .. -4.5, result!!)
         assertNoIssues()
     }
 
@@ -137,10 +134,10 @@ class LnTests {
             feature d: Ranges::IntegerInRange {:>> range = 4 ..5; }
             feature e: ScalarValues::Integer = min(a,b,c,d);
             """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
         val result = solver.getVariable("e")
-        assertEquals(0, result!!.vectorQuantity.value.asIdd().min)
-        assertEquals(1, result.vectorQuantity.value.asIdd().max)
+        assertBounds(0L .. 1L, result!!)
         assertNoIssues()
     }
     @Test
@@ -154,10 +151,10 @@ class LnTests {
             feature e: ScalarValues::Integer = min(a,b,c,d);
             """, Runlevel.ALL
         )
+        solver.propagate()
         assertNoIssues()
         val result = solver.getVariable("e")
-        assertEquals(-8, result!!.vectorQuantity.value.asIdd().min)
-        assertEquals(-5, result.vectorQuantity.value.asIdd().max)
+        assertBounds(-8L .. -5L, result!!)
         assertNoIssues()
     }
 
@@ -171,10 +168,10 @@ class LnTests {
             feature d: Ranges::RealInRange {:>> range = 3.. 7;}
             feature e: Ranges::RealInRange = min(a,b,c,d) {:>> range = 0..0;}
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
         val result = solver.getVariable("a")
-        assertEquals(0.0, result!!.min(), 0.000001)
-        assertEquals(0.0, result.max(), 0.000001)
+        assertBounds(0.0 .. 0.0, result!!)
         assertNoIssues()
     }
 
@@ -187,10 +184,10 @@ class LnTests {
             feature d: Ranges::IntegerInRange {:>> range = 3..7;}
             feature e: Ranges::IntegerInRange = min(a,b,c,d) {:>> range = 0..0;}
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
         val result = solver.getVariable("a")
-        assertEquals(0, result!!.vectorQuantity.value.asIdd().min)
-        assertEquals(0, result.vectorQuantity.value.asIdd().max)
+        assertBounds(0L .. 0L, result!!)
         assertNoIssues()
     }
 
@@ -203,49 +200,41 @@ class LnTests {
             feature d: Ranges::RealInRange {:>> range = 3.. 4;}
             feature e: Ranges::RealInRange = min(a,b,c,d) {:>> range = 4..5;}
         """, Runlevel.VARIABLES)
-        val e = solver.getVariable("e")!!
-        assertEquals(4.0, e.min(), 0.000001)
-        assertEquals(4.0, e.min(), 0.000001)
+        val e = solver.variable("e")
         solver.propagate()
         assertNoIssues()
+        assertBounds(4.0, e)
         val result = solver.getVariable("a")
-        assertEquals(4.0, result!!.min(), 0.000001)
-        assertEquals(7.0, result.max(), 0.000001)
+        assertBounds(4.0 .. 7.0, result!!)
         val result1 = solver.getVariable("b")
-        assertEquals(4.0, result1!!.min(), 0.000001)
-        assertEquals(6.0, result1.max(), 0.000001)
+        assertBounds(4.0 .. 6.0, result1!!)
         val result2 = solver.getVariable("c")
-        assertEquals(4.0, result2!!.min(), 0.000001)
-        assertEquals(5.0, result2.max(), 0.000001)
+        assertBounds(4.0 .. 5.0, result2!!)
         val result3 = solver.getVariable("d")
-        assertEquals(4.0, result3!!.min(), 0.000001)
-        assertEquals(4.0, result3.max(), 0.000001)
+        assertBounds(4.0 .. 4.0, result3!!)
         assertNoIssues()
     }
 
 
-    @Test @Ignore
+    @Test
     fun minTestMultipleParams3Integer() = testSession("Ranges") {
         loadKerML("""
             feature a: Ranges::IntegerInRange {:>> range = 0.. 7;}
             feature b: Ranges::IntegerInRange {:>> range = 1.. 6;}
             feature c: Ranges::IntegerInRange {:>> range = 2..5;}
             feature d: Ranges::IntegerInRange {:>> range = 3.. 4;}
-            feature e: ScalarValues::Integer = min(a,b,c,d) {:>> range = 4..5;}
+            feature e: Ranges::IntegerInRange = min(a,b,c,d) {:>> range = 4..5;}
         """, Runlevel.SOLVED)
+        solver.propagate()
         assertNoIssues()
         val result = solver.getVariable("a")
-        assertEquals(4, result!!.vectorQuantity.value.asIdd().min)
-        assertEquals(7, result.vectorQuantity.value.asIdd().max)
+        assertBounds(4L .. 7L, result!!)
         val result1 = solver.getVariable("b")
-        assertEquals(4, result1!!.vectorQuantity.value.asIdd().min)
-        assertEquals(6, result1.vectorQuantity.value.asIdd().max)
+        assertBounds(4L .. 6L, result1!!)
         val result2 = solver.getVariable("c")
-        assertEquals(4, result2!!.vectorQuantity.value.asIdd().min)
-        assertEquals(5, result2.vectorQuantity.value.asIdd().max)
+        assertBounds(4L .. 5L, result2!!)
         val result3 = solver.getVariable("d")
-        assertEquals(4, result3!!.vectorQuantity.value.asIdd().min)
-        assertEquals(4, result3.vectorQuantity.value.asIdd().max)
+        assertBounds(4L .. 4L, result3!!)
         assertNoIssues()
     }
 
@@ -260,8 +249,7 @@ class LnTests {
         solver.propagate()
         assertNoIssues()
         val result = solver.getVariable("c")
-        assertEquals(0.5, result!!.min(), 0.000001)
-        assertEquals(0.5, result.max(), 0.000001)
+        assertBounds(0.5 .. 0.5, result!!)
         assertEquals(1, result.vectorQuantity.values.size )
         assertNoIssues()
     }
@@ -276,8 +264,7 @@ class LnTests {
         solver.propagate()
         assertNoIssues()
         val result = solver.getVariable("c")
-        assertEquals(1.5, result!!.min(), 0.000001)
-        assertEquals(1.5, result.max(), 0.000001)
+        assertBounds(1.5 .. 1.5, result!!)
         assertEquals(1, result.vectorQuantity.values.size )
         assertNoIssues()
     }
@@ -288,11 +275,45 @@ class LnTests {
             feature a: Ranges::IntegerInRange {:>> range = 0.. 1;}
             feature c: ScalarValues::Integer = min(a);
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
         val result = solver.getVariable("c")
-        assertEquals(0L, result!!.min())
-        assertEquals(0L, result.max())
+        assertBounds(0L .. 0L, result!!)
         assertEquals(1, result.vectorQuantity.values.size )
         assertNoIssues()
+    }
+
+    /**
+     * Regression test for min evalDown:
+     * When min(a, b) in [5.0..6.0], both 'a' and 'b' lower bounds are constrained to >= 5.0.
+     */
+    @Test
+    fun minEvalDownConstrainsLowerBoundsRegressionTest() = testSession("Ranges") {
+        loadKerML("""
+            feature a: Ranges::RealInRange {:>> range = 0.0 .. 10.0;}
+            feature b: Ranges::RealInRange {:>> range = 2.0 .. 8.0;}
+            feature m: Ranges::RealInRange = min(a, b) {:>> range = 5.0 .. 6.0;}
+        """, Runlevel.ALL)
+        solver.propagate()
+        assertNoIssues()
+        val a = solver.variable("a")
+        val b = solver.variable("b")
+        assertBounds(5.0 .. 10.0, a)
+        assertBounds(5.0 .. 8.0, b)
+    }
+
+    @Test
+    fun minEvalDownIntConstrainsLowerBoundsRegressionTest() = testSession("Ranges") {
+        loadKerML("""
+            feature a: Ranges::IntegerInRange {:>> range = 0 .. 10;}
+            feature b: Ranges::IntegerInRange {:>> range = 2 .. 8;}
+            feature m: Ranges::IntegerInRange = min(a, b) {:>> range = 5 .. 6;}
+        """, Runlevel.ALL)
+        solver.propagate()
+        assertNoIssues()
+        val a = solver.variable("a")
+        val b = solver.variable("b")
+        assertBounds(5L .. 10L, a)
+        assertBounds(5L .. 8L, b)
     }
 }

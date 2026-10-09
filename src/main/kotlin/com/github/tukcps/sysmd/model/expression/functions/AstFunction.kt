@@ -2,6 +2,7 @@ package com.github.tukcps.sysmd.model.expression.functions
 
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.model.expression.AstNode
+import com.github.tukcps.sysmd.model.util.mapToArrayList
 import com.github.tukcps.sysmd.services.session.Session
 
 /**
@@ -25,6 +26,9 @@ abstract class AstFunction(
             p.parent = this
         }
     }
+
+    /** Deep-clones [parameters], e.g. for use in subclass `clone()` overrides. */
+    fun cloneParameters(): ArrayList<AstNode> = parameters.mapToArrayList { it.clone() }
 
     /** Root is next-higher statement of other kind or null if this is overall root */
     override var root: AstNode? = null
@@ -67,11 +71,6 @@ abstract class AstFunction(
                 p.evalDownRec()
     }
 
-    /** No default method yet */
-    override fun evalDown() {
-        TODO("Inverse function missing for function $name")
-    }
-
     /** gets the parameter no. nr, starting from 0 */
     fun getParam(nr: Int): AstNode {
         if (nr >= parameters.size) throw SemanticError("Not enough parameters")
@@ -99,18 +98,7 @@ abstract class AstFunction(
         return parameters[nr]
     }
 
-    override fun clone(): AstFunction {
-        // clone this first, creates clone with same type as this and shallow copy
-        val clone: AstFunction = super.clone() as AstFunction
-
-        // deep-clone parameters
-        val parClone = ArrayList<AstNode>()
-        for (p in parameters) parClone.add(p)
-
-        // add cloned parameters to clone
-        clone.parameters = parClone
-        return clone
-    }
+    abstract override fun clone(): AstFunction
 
     override fun toString(): String {
         var s = "$name("

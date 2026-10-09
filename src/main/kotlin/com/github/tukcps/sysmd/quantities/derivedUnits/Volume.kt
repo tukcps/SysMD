@@ -18,7 +18,7 @@ open class Volume(name: String, symbol: String, prefix: Prefix, convFac: Double,
     object Pint : Volume("pint", "pt", NoPrefix, 0.000473176473)
     object Quart : Volume("quart", "qt", NoPrefix, 0.000946352946)
     object Gallon : Volume("gallon", "gal", NoPrefix, 0.003785411784)
-    object Barrel : Volume("barrel", "bbl", NoPrefix, 0.119240471196)
+    object Barrel : Volume("barrel", "bbl", NoPrefix, 0.158987294928)
 
     override fun copy(): Volume {
         return Volume(name, symbol, prefix, convFac, exponent, isLogarithmic)

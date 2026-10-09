@@ -2,16 +2,14 @@ package constraintnettests
 
 import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.letVar
-import io.github.tukcps.aadd.AADD
-import util.assertIssue
-import util.assertNoIssues
+import io.github.tukcps.aadd.dd.AADD
+import io.github.tukcps.aadd.util.Assertions.assertEquals
+import io.github.tukcps.aadd.util.Assertions.assertSafeInclusion
+import io.github.tukcps.aadd.values.bounds.LongBound
+import util.*
 import util.mockup.loadKerML
-import util.testSession
-import kotlin.test.Test
+import kotlin.test.*
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
-
 
 class ParseAndUseConstraintsTests {
 
@@ -21,14 +19,12 @@ class ParseAndUseConstraintsTests {
             feature a: Ranges::RealInRange {:>> range = 1 .. 2;}
             feature b: Ranges::RealInRange {:>> range = 1.0 .. 2.0;}
         """, Runlevel.VARIABLES)
-        val a = solver.getVariable("a")!!
-        val b = solver.getVariable("b")!!
+        val a = solver.variable("a")
+        val b = solver.variable("b")
         solver.propagate()
         assertNoIssues()
-        assertEquals(1.0, a.min())
-        assertEquals(2.0, a.max())
-        assertEquals(1.0, b.min())
-        assertEquals(2.0, b.max())
+        assertBounds(1.0 .. 2.0, a)
+        assertBounds(1.0 .. 2.0, b)
     }
 
     @Test
@@ -37,13 +33,13 @@ class ParseAndUseConstraintsTests {
             feature a: Ranges::RealInRange { :>> range = (1 .. *);}
             feature b: Ranges::RealInRange { :>> range = (* .. 2.0);}
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        val a = solver.getVariable("a")!!
-        val b = solver.getVariable("b")!!
-        assertEquals(1.0, a.min())
-        assertTrue(settings.maxReal < a.max() as Double)
-        assertTrue(settings.minReal > b.min() as Double)
-        assertEquals(2.0, b.max())
+        val a = solver.variable("a")
+        val b = solver.variable("b")
+
+        assertBounds(1.0 .. Double.POSITIVE_INFINITY, a)
+        assertBounds(Double.NEGATIVE_INFINITY .. 2.0, b)
     }
 
     @Test
@@ -54,8 +50,7 @@ class ParseAndUseConstraintsTests {
         solver.propagate()
         val a = solver.getVariable("a")
         assertNoIssues()
-        assertEquals(1L, a?.min())
-        assertEquals(2L, a?.max())
+        assertBounds(1L .. 2L, a!!)
     }
 
 
@@ -63,14 +58,10 @@ class ParseAndUseConstraintsTests {
     fun constraintTestIntegerStar() = testSession( "Ranges") {
         loadKerML("""
             feature a: ScalarValues::Integer;
-        """)
+        """, Runlevel.ALL)
         assertNoIssues()
-        solver.propagate()
-        val a = solver.getVariable("a")
-        assertNotNull(a)
-        assertTrue(settings.minInt >= a.min<Long>())
-        assertTrue(settings.maxInt <= a.max<Long>())
-        assertNoIssues()
+        val a = solver.variable("a")
+        assertBounds(Double.NEGATIVE_INFINITY..Double.POSITIVE_INFINITY, a)
     }
 
 
@@ -80,13 +71,12 @@ class ParseAndUseConstraintsTests {
             inv a;
             inv false b;
         """, Runlevel.ALL)
-        val a = solver.getVariable("a")!!
-        val b = solver.getVariable("b")!!
-        assertEquals(builder.True, a.vectorQuantity.value)
-        assertEquals(builder.False, b.vectorQuantity.value)
+        val a = solver.variable("a")
+        val b = solver.variable("b")
+        assertEquals(builder.Bool.True, a.vectorQuantity.value)
+        assertEquals(builder.Bool.False, b.vectorQuantity.value)
         assertNoIssues()
     }
-
 
     // Definition of variables initializes its value based on a Boolean expression.
     @Test
@@ -97,7 +87,7 @@ class ParseAndUseConstraintsTests {
             feature d: ScalarValues::Boolean = (a > b) & false; 
         """, Runlevel.ALL)
         assertNoIssues()
-        assertEquals(builder.False, solver.getVariable("d")!!.bdd())
+        assertEquals(builder.Bool.False, solver.variable("d").bdd())
     }
 
     // Definition of variables initializes its value based on an expression.
@@ -106,7 +96,7 @@ class ParseAndUseConstraintsTests {
         loadKerML("feature a: ScalarValues::Real = Math::pi + Math::e;", Runlevel.ALL)
         assertNoIssues()
         val a = solver.getVariable("a")
-        assertEquals(Math.PI + Math.E, a!!.min(), 0.00001)
+        assertSafeInclusion(Math.PI + Math.E .. Math.PI + Math.E, a!!.aadd(), 0.00001)
     }
 
     /**
@@ -117,11 +107,10 @@ class ParseAndUseConstraintsTests {
         loadKerML("""
             feature b: Ranges::RealInRange { :>> range = 2.0 .. 3.0; }
         """, Runlevel.VARIABLES)
+        solver.propagate()
         assertNoIssues()
-        val b = solver.getVariable("b")
-        assertNotNull(b)
-        assertEquals(2.0, b.min())
-        assertEquals(3.0, b.max())
+        val b = solver.variable("b")
+        assertBounds(2.0 .. 3.0, b)
     }
 
     // A variable can be changed after evaluation.
@@ -135,16 +124,17 @@ class ParseAndUseConstraintsTests {
             feature d: ScalarValues::Real = a+b*c;
         """, Runlevel.ALL)
         assertNoIssues()
-        assertEquals(7.0, solver.getVariable("d")!!.vectorQuantity.getMaxAsDouble(), 0.0000001)
+        solver.propagate()
+        assertBounds(7.0, solver.variable("d"))
         // now we change 'a' to 10, and set d to any real.
         letVar("a", builder.real(10.0))
-        letVar("d", builder.Reals)
-        assertEquals(10.0, solver.getVariable("a")!!.min(), 0.0000001)
+        letVar("d", builder.Reals.All)
+        assertBounds(10.0, solver.variable("a"))
         // A new evaluation must again change d to now 16.
         settings.runlevel = Runlevel.VARIANCE_CHECKED
         solver.propagate()
-        val d = solver.getVariable("d")!!.vectorQuantity.value as AADD.Leaf
-        assertEquals(16.0, d.central)
+        solver.propagate()
+        assertBounds(16.0, solver.variable("d"))
         assertNoIssues()
     }
 
@@ -157,8 +147,8 @@ class ParseAndUseConstraintsTests {
         """)
         assertNoIssues()
         solver.propagate()
-        assertEquals(builder.False, solver.getVariable("a")!!.bdd())
-        assertEquals(builder.True, solver.getVariable("b")!!.bdd())
+        assertEquals(builder.Bool.False, solver.variable("a").bdd())
+        assertEquals(builder.Bool.True, solver.variable("b").bdd())
         assertNoIssues()
     }
 
@@ -168,11 +158,9 @@ class ParseAndUseConstraintsTests {
         loadKerML("""
             feature i: ScalarValues::Real; 
             feature a: ScalarValues::Real = sum_i(1.0, 9.0, i);
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
-        assertEquals(45.0, solver.getVariable("a")!!.min(), 0.00000001)
-        assertNoIssues()
+        assertSafeInclusion(45.0..45.0, solver.variable("a").aadd(), 0.00000001)
     }
 
 
@@ -180,12 +168,12 @@ class ParseAndUseConstraintsTests {
     @Test
     fun sumFunctionTestIdd() = testSession("ScalarValues") {
         loadKerML("""
-                feature i: ScalarValues::Integer;
-                feature a: ScalarValues::Integer = sum_i(1, 9, i);
-            """)
+            feature i: ScalarValues::Integer;
+            feature a: ScalarValues::Integer = sum_i(1, 9, i);
+        """, Runlevel.ALL)
         solver.propagate()
-        assertEquals(45, solver.getVariable("a")!!.idd().getRange().min)
         assertNoIssues()
+        assertBounds(45, solver.variable("a").idd())
     }
 
 
@@ -195,11 +183,10 @@ class ParseAndUseConstraintsTests {
         loadKerML("""
                 feature i: ScalarValues::Real;
                 feature a: ScalarValues::Real = sum_i(1.0, oneOf(7.0 .. 9.0), i);
-        """)
+        """, Runlevel.ALL)
         solver.propagate()
         assertNoIssues()
-        assertEquals(28.0, solver.getVariable("a")!!.min(), 0.00000001)
-        assertEquals(45.0, solver.getVariable("a")!!.max(), 0.00000001)
+        assertBounds(28.0 .. 45.0, solver.variable("a"))
     }
 
 
@@ -211,8 +198,8 @@ class ParseAndUseConstraintsTests {
             feature MAC_notb: ScalarValues::Real = sum_i( 0.0, 3.0, s*i );
         """)
         solver.propagate()
-        assertEquals(60.0, solver.getVariable("MAC_notb")!!.min(), 0.00001)
-        assertEquals(60.0, solver.getVariable("MAC_notb")!!.max(), 0.00001)
+        assertNoIssues()
+        assertBounds(60.0 .. 60.0, solver.variable("MAC_notb"))
         //assertEquals(0, status.errors.size, "Error messages: ${status.errors}")
     }
 
@@ -226,16 +213,16 @@ class ParseAndUseConstraintsTests {
             feature d: Ranges::RealInRange {:>> range = 3.0;}
             feature unknown: ScalarValues::Boolean; 
         """, Runlevel.VARIABLES)
-        assertEquals(1, solver.getVariable("y")!!.aadd().height())
+        assertEquals(1, solver.variable("y").aadd().height())
         // Simple: knwon Boolean constants
         loadKerML("feature zb: ScalarValues::Boolean = ITE(true, true, false).")
-        assertEquals(solver.getVariable("zb")!!.bdd(), builder.True)
+        assertEquals(solver.variable("zb").bdd(), builder.Bool.True)
         // unknown decision variable with two ScalarValues::Boolean parameters
         loadKerML("feature zbunknown: ScalarValues::Boolean = ITE(unknown, true, false).")
-        assertEquals(1, solver.getVariable("zbunknown")!!.bdd().height())
+        assertEquals(1, solver.variable("zbunknown").bdd().height())
         // unknown decision variable with two real parameters
         loadKerML("feature z: ScalarValues::Real = ITE(unknown, 1.0, 2.0).")
-        assertEquals(1, solver.getVariable("z")!!.aadd().height())
+        assertEquals(1, solver.variable("z").aadd().height())
     }
 
 
@@ -249,8 +236,7 @@ class ParseAndUseConstraintsTests {
             """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(0.0, solver.getVariable("c")!!.min(), .00001)
-        assertEquals(0.0, solver.getVariable("c")!!.max(), .00001)
+        assertBounds(0.0 .. 0.0, solver.variable("c"))
     }
 
     // different names create two uncorrelated noise symbols.
@@ -261,14 +247,12 @@ class ParseAndUseConstraintsTests {
             feature b: ScalarValues::Real = oneOf(1.0 .. 2.0);
             feature c: ScalarValues::Real = a - b; 
         """, Runlevel.ALL)
-        val a = solver.getVariable("a")!!
-        assertNotNull(a)
-        val b = solver.getVariable("b")!!
-        assertNotNull(b)
-        val c = solver.getVariable("c")!!
+        val a = solver.variable("a")
+        solver.propagate()
         assertNoIssues()
-        assertEquals(-1.0, c.min(), .00001)
-        assertEquals(1.0, c.max(), .00001)
+        val b = solver.variable("b")
+        val c = solver.variable("c")
+        assertBounds(-1.0 .. 1.0, c)
     }
 
 
@@ -278,11 +262,9 @@ class ParseAndUseConstraintsTests {
             feature a: ScalarValues::Integer = oneOf(1..2);
             feature b: ScalarValues::Integer = oneOf(1..2);
             feature c: ScalarValues::Integer = a - b;
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
         assertNoIssues()
-        assertEquals(-1.0, solver.getVariable("c")!!.min(), .00001)
-        assertEquals(1.0, solver.getVariable("c")!!.max(), .00001)
+        assertBounds(-1L .. 1L, solver.variable("c"))
     }
 
     @Test
@@ -292,11 +274,10 @@ class ParseAndUseConstraintsTests {
             feature a: ScalarValues::Real = sqrt( oneOf(9.0 .. 25.0) );
             feature b: ScalarValues::Real = sqr( oneOf(2.0 .. 3.0) );
             feature c: ScalarValues::Real = a + b; 
-        """)
+        """, Runlevel.ALL)
         solver.propagate()
         assertNoIssues()
-        assertEquals(7.0, solver.getVariable("c")!!.min(), .00001)
-        assertEquals(14.0, solver.getVariable("c")!!.max(), .00001)
+        assertBounds(7.0 .. 14.0, solver.variable("c"))
     }
 
     /**
@@ -308,8 +289,7 @@ class ParseAndUseConstraintsTests {
         loadKerML("""
             feature b: ScalarValues::Real;
             feature a: ScalarValues::Real = a; // Meaningless binding. 
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
         assertIssue("Cyclic")
     }
 
@@ -318,10 +298,10 @@ class ParseAndUseConstraintsTests {
         loadKerML("""
             feature a: Ranges::RealInRange {:>> range = -2.0 .. -1.0;}
         """, Runlevel.ALL)
-        val a = solver.getVariable("a")!!
+        val a = solver.variable("a")
+        solver.propagate()
         assertNoIssues()
-        assertEquals(-2.0, a.min())
-        assertEquals(-1.0, a.max())
+        assertBounds(-2.0 .. -1.0, a)
     }
 
     @Test
@@ -329,9 +309,9 @@ class ParseAndUseConstraintsTests {
         loadKerML("""
             feature a: Ranges::IntegerInRange { :>> range = -2 .. -1; } 
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        val a = solver.getVariable("a")!!
-        assertEquals(-2L, a.min())
-        assertEquals(-1L, a.max())
+        val a = solver.variable("a")
+        assertBounds(-2L .. -1L, a)
     }
 }

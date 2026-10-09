@@ -9,8 +9,8 @@ import com.github.tukcps.sysmd.model.expression.AstLeaf
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.model.expression.AstRoot
 import com.github.tukcps.sysmd.model.kerml.Namespace
-import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.quantities.Unit
+import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
 import java.io.File
 
@@ -30,11 +30,11 @@ internal class AstCharacterizedResult (
 {
 
     private var importedResults : MutableList<Result>? = null
-    private lateinit var jsonQuantity : Quantity
+    private lateinit var jsonQuantity : VectorQuantity
     private var filePath = ""
 
     override fun initialize() {
-        upQuantity = Quantity(model.builder.Reals, "?")
+        upQuantity = VectorQuantity(model.builder.Reals.All, "?")
 
         // Set standard file path for result.json for the case user does not specify own one
          filePath = (
@@ -56,18 +56,21 @@ internal class AstCharacterizedResult (
 
         //Check if parameter 0 is an AstFunction, if so initialize the json_Quantity as a [-Inf,+Inf] range using the AstFunctions unit
         if(parameters[0] is AstFunction){
-            jsonQuantity = Quantity(model.builder.real(Double.NEGATIVE_INFINITY..Double.POSITIVE_INFINITY), parameters[0].upQuantity.unit.toString())
+            jsonQuantity = VectorQuantity(model.builder.real(Double.NEGATIVE_INFINITY..Double.POSITIVE_INFINITY), parameters[0].upQuantity.unit.toString())
         }else{
             throw SemanticError("The first parameter of 'characterizedResult' must always be a Function")
         }
 
         //Try to read FilePath from Second Parameter, if not possible use default File path for Result files
-        if(parameters[1].isString){
-            File((parameters[1] as AstLeaf).literalVal?.value.toString()).let {
-                if(it.isFile) filePath = it.absolutePath
+        if (parameters.size > 1) {
+            val pathParam = parameters[1]
+            if (pathParam.isString && pathParam is AstLeaf) {
+                File(pathParam.literalVal?.value.toString()).let {
+                    if (it.isFile) filePath = it.absolutePath
+                }
+            } else {
+                throw SemanticError("The second parameter should be a String!")
             }
-        }else{
-            throw SemanticError("The second parameter should be a String!")
         }
 
         /**
@@ -88,8 +91,8 @@ internal class AstCharacterizedResult (
                         // IF YES: Overwrite the [-INF,+INF] range of the json_Quantity with the min max values from the JSON File
                         // IF NO: Throw an Error, the remaining process will use the [-INF,+INF] range of the json_Quantity
                         try {
-                            if(parameters[0].upQuantity.unit == Unit(result.resultUnit).toSI()) {
-                                jsonQuantity = Quantity(model.builder.real(result.resultValue..result.resultValue), result.resultUnit)
+                            if(parameters[0].upQuantity.unit.isCompatibleWith(Unit(result.resultUnit))) {
+                                jsonQuantity = VectorQuantity(model.builder.real(result.resultValue..result.resultValue), result.resultUnit)
                                 break
                             }else{
                                 //Units did not match, inform the User and create a Quantity that uses the ASTFunction's unit to enable the intersect function in the evalUp() call
@@ -102,7 +105,7 @@ internal class AstCharacterizedResult (
                     }
                 }
             } else {
-                throw SysMDFatalInternalError("No Result file found for attribute: ${((this.root as AstRoot).dependency as AstCharacterizedResult).name}")
+                throw SysMDFatalInternalError("No Result file found for attribute: ${(this.root as AstRoot).variable.path}")
             }
         } catch (e : Exception){
             model.status.fatal(e.message.toString(), cause = e)
@@ -124,4 +127,5 @@ internal class AstCharacterizedResult (
 
     }
 
+    override fun clone() = AstCharacterizedResult(model, namespace, cloneParameters())
 }

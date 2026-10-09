@@ -1,15 +1,17 @@
 package solver
 
+import util.variable
 import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.services.Runlevel
-import io.github.tukcps.aadd.BDD
+import io.github.tukcps.aadd.dd.BDD
+import io.github.tukcps.aadd.util.Assertions.assertEquals
+import io.github.tukcps.aadd.values.bounds.*
 import util.assertNoIssues
+import util.assertBounds
 import util.mockup.loadSysMLv2
 import util.testSession
-import kotlin.test.Test
+import kotlin.test.*
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 
 class AttributeTests {
     @Test
@@ -18,6 +20,7 @@ class AttributeTests {
             attribute a: ScalarValues::Boolean;
             attribute b: ScalarValues::Boolean; 
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
         solver.propagate()
         val a = solver.getVariable("a")
@@ -34,10 +37,11 @@ class AttributeTests {
             attribute b: Ranges::BooleanInSpec{ :>> range=false;}
         """, Runlevel.ALL)
         assertNoIssues()
+        solver.propagate()
         val a = solver.getVariable("a")
         val b = solver.getVariable("b")
-        assertTrue((a!!.vectorQuantity.value === builder.True))
-        assertTrue((b!!.vectorQuantity.value === builder.False))
+        assertTrue((a!!.vectorQuantity.value === builder.Bool.True))
+        assertTrue((b!!.vectorQuantity.value === builder.Bool.False))
     }
 
     @Test
@@ -45,15 +49,16 @@ class AttributeTests {
         loadSysMLv2("""
             attribute a: ScalarValues::Boolean;
             attribute b: ScalarValues::Boolean = a;
-        """)
-        solver.propagate()
+        """, Runlevel.ALL)
+        assertNoIssues()
         val a = solver.getVariable("a")
         val b = solver.getVariable("b")
-        assertTrue(a!!.vectorQuantity.value is BDD.Leaf && a.vectorQuantity.value == builder.Bool)
-        assertTrue(b!!.vectorQuantity.value is BDD.Leaf && b.vectorQuantity.value == builder.Bool)
         solver.propagate()
-        assertTrue(a.vectorQuantity.value is BDD.Leaf && a.vectorQuantity.value == builder.Bool)
-        assertTrue(b.vectorQuantity.value is BDD.Leaf && b.vectorQuantity.value == builder.Bool)
+        assertTrue(a!!.vectorQuantity.value is BDD.Leaf && a.vectorQuantity.value == builder.Bool.All)
+        assertTrue(b!!.vectorQuantity.value is BDD.Leaf && b.vectorQuantity.value == builder.Bool.All)
+        solver.propagate()
+        assertTrue(a.vectorQuantity.value is BDD.Leaf && a.vectorQuantity.value == builder.Bool.All)
+        assertTrue(b.vectorQuantity.value is BDD.Leaf && b.vectorQuantity.value == builder.Bool.All)
     }
 
     @Test
@@ -77,12 +82,11 @@ class AttributeTests {
                 :>> a = 3.0;
             }
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(0.0, solver.getVariable("P1::a")!!.vectorQuantity.aadd().getRange().min, 0.000001)
-        assertEquals(20.0, solver.getVariable("P1::a")!!.vectorQuantity.aadd().getRange().max, 0.000001)
-        assertEquals(3.0, solver.getVariable("P2::a")!!.vectorQuantity.aadd().getRange().min, 0.000001)
-        assertEquals(3.0, solver.getVariable("P2::a")!!.vectorQuantity.aadd().getRange().max, 0.000001)
-        assertEquals("Real", solver.getVariable("P2::a")!!.baseType.name)
+        assertBounds(0.0 .. 20.0, solver.variable("P1::a"))
+        assertBounds(3.0 .. 3.0, solver.variable("P2::a"))
+        assertEquals("Real", solver.variable("P2::a").baseType.name)
     }
 
     @Test
@@ -96,12 +100,11 @@ class AttributeTests {
             }
             part def P3 :> P1; 
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(0.0, solver.getVariable("P1::a")!!.vectorQuantity.aadd().getRange().min, 0.000001)
-        assertEquals(20.0, solver.getVariable("P1::a")!!.vectorQuantity.aadd().getRange().max, 0.000001)
-        assertEquals(3.0, solver.getVariable("P2::a")!!.vectorQuantity.aadd().getRange().min, 0.000001)
-        assertEquals(3.0, solver.getVariable("P2::a")!!.vectorQuantity.aadd().getRange().max, 0.000001)
-        assertEquals("Real", solver.getVariable("P2::a")!!.baseType.name)
+        assertBounds(0.0 .. 20.0, solver.variable("P1::a"))
+        assertBounds(3.0 .. 3.0, solver.variable("P2::a"))
+        assertEquals("Real", solver.variable("P2::a").baseType.name)
     }
 
 
@@ -116,17 +119,16 @@ class AttributeTests {
                 :>> a: Ranges::RealInRange = 3.0 { :>> range=0..10; }
             }
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
         val p1a = global.resolve("P1::a")
         val p2a = global.resolve("P2::a")
         assertTrue(p1a !== p2a)
 
-        assertEquals(0.0, solver.getVariable("P1::a")!!.vectorQuantity.aadd().getRange().min, 0.000001)
-        assertEquals(20.0, solver.getVariable("P1::a")!!.vectorQuantity.aadd().getRange().max, 0.000001)
-        assertEquals(3.0, solver.getVariable("P2::a")!!.vectorQuantity.aadd().getRange().min, 0.000001)
-        assertEquals(3.0, solver.getVariable("P2::a")!!.vectorQuantity.aadd().getRange().max, 0.000001)
+        assertBounds(0.0 .. 20.0, solver.variable("P1::a"))
+        assertBounds(3.0 .. 3.0, solver.variable("P2::a"))
         assertNoIssues()
-        assertEquals("Real", solver.getVariable("P2::a")!!.baseType.name)
+        assertEquals("Real", solver.variable("P2::a").baseType.name)
     }
 
     @Test
@@ -142,8 +144,8 @@ class AttributeTests {
             }
         """, Runlevel.ALL)
         assertNoIssues()
-        assertEquals("Real", solver.getVariable("aa::b")!!.baseType.name)
-        assertEquals("Real", solver.getVariable("aa::c")!!.baseType.name)
+        assertEquals("Real", solver.variable("aa::b").baseType.name)
+        assertEquals("Real", solver.variable("aa::c").baseType.name)
     }
 
     @Test
@@ -164,13 +166,9 @@ class AttributeTests {
         assertNoIssues()
         val q = global.resolve("test::quantityDimension::quantityPowerFactors::quantity")
         assertEquals("Real",
-            solver.getVariable("test::quantityDimension::quantityPowerFactors::quantity")!!.baseType.name
+            solver.variable("test::quantityDimension::quantityPowerFactors::quantity").baseType.name
         )
-        assertEquals(3.0,
-            solver.getVariable("test::quantityDimension::quantityPowerFactors::quantity")!!.vectorQuantity.aadd()
-                .getRange().max,
-            0.000001
-        )
+        assertBounds(3.0, solver.variable("test::quantityDimension::quantityPowerFactors::quantity"))
     }
 
     /**
@@ -193,12 +191,8 @@ class AttributeTests {
             }
         """, Runlevel.ALL)
         assertNoIssues()
-        assertEquals(1, solver.getVariable("lengthPF::exponent")!!.vectorQuantity.idd().getRange().min)
-        assertEquals(
-            1,
-            solver.getVariable("quantityDimension::quantityPowerFactors::exponent")!!.vectorQuantity.idd()
-                .getRange().max
-        )
+        assertBounds(1L, solver.variable("lengthPF::exponent"))
+        assertBounds(1L, solver.variable("quantityDimension::quantityPowerFactors::exponent"))
         assertTrue(status.issues.isEmpty(), "${status.issues}")
     }
 
@@ -213,7 +207,7 @@ class AttributeTests {
         assertNoIssues()
         val redefinedOldA = global.resolve("redefinedOld::a")
         assertNotNull(redefinedOldA)
-        assertEquals("new", solver.getVariable("ownsOld::ownedOld::a")!!.vectorQuantity.value.asStrDD().toString())
+        assertEquals("new", solver.variable("ownsOld::ownedOld::a").vectorQuantity.value.asStrDD().toString())
     }
 
     @Test
@@ -235,22 +229,18 @@ class AttributeTests {
         assertNoIssues()
         assertEquals(
             "m",
-            solver.getVariable("quantityDimension::quantityPowerFactors::unit", 0)!!.vectorQuantity.value.asStrDD()
+            solver.variable("quantityDimension::quantityPowerFactors::unit", 0).vectorQuantity.value.asStrDD()
                 .toString()
         )
-        assertEquals(
-            "kg",
-            solver.getVariable("quantityDimension::quantityPowerFactors::unit", 1)!!.vectorQuantity.value.asStrDD()
-                .toString()
-        )
-        assertEquals(
-            "s",
-            solver.getVariable("quantityDimension::quantityPowerFactors::unit", 2)!!.vectorQuantity.value.asStrDD()
-                .toString()
-        )
-        assertEquals(1, solver.getVariable("quantityDimension::quantityPowerFactors::exponent", 0)!!.idd().max)
-        assertEquals(1, solver.getVariable("quantityDimension::quantityPowerFactors::exponent", 1)!!.idd().max)
-        assertEquals(-2, solver.getVariable("quantityDimension::quantityPowerFactors::exponent", 2)!!.idd().max)
+        assertEquals("kg",
+            solver.variable("quantityDimension::quantityPowerFactors::unit", 1).vectorQuantity.value.asStrDD()
+                .toString())
+        assertEquals("s",
+            solver.variable("quantityDimension::quantityPowerFactors::unit", 2).vectorQuantity.value.asStrDD()
+                .toString())
+        assertBounds(1L, solver.variable("quantityDimension::quantityPowerFactors::exponent", 0))
+        assertBounds(1L, solver.variable("quantityDimension::quantityPowerFactors::exponent", 1))
+        assertBounds(-2L, solver.variable("quantityDimension::quantityPowerFactors::exponent", 2))
     }
 
     // In ISQ::Mass, there is not the right type stored for unit and range (Base::Anything instead of String
@@ -261,11 +251,11 @@ class AttributeTests {
                 :>> range = 1..100 [kg];
             }
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
         val a = global.resolve("a")
         assertNotNull(a)
-        assertEquals(1.0, (solver.getVariable("a") as Variable).aadd().getRange().min, 0.00001)
-        assertEquals(100.0, (solver.getVariable("a") as Variable).aadd().getRange().max, 0.00001)
+        assertBounds(1.0 .. 100.0, (solver.getVariable("a") as Variable))
     }
 
     @Test
@@ -282,7 +272,7 @@ class AttributeTests {
         """)
         solver.propagate()
         assertNoIssues()
-        assertEquals(1.0, solver.getVariable("a")!!.aadd().min, 0.000001)
+        assertBounds(1.0..2.0, solver.variable("a"))
     }
 
 
@@ -300,7 +290,7 @@ class AttributeTests {
         """, Runlevel.ALL)
         solver.propagate()
         assertNoIssues()
-        assertEquals(1.0, solver.getVariable("a")!!.aadd().min, 0.000001)
+        assertBounds(1.0..2.0, solver.variable("a"))
     }
 
     @Test
@@ -315,7 +305,7 @@ class AttributeTests {
             }
         """, Runlevel.ALL)
         assertNoIssues()
-        assertEquals(1.0, solver.getVariable("a")!!.aadd().min, 0.000001)
+        assertBounds(1.0..2.0, solver.variable("a"))
     }
 
 }

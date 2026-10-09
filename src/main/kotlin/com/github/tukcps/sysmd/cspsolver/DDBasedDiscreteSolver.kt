@@ -1,8 +1,12 @@
 package com.github.tukcps.sysmd.cspsolver
 
 import com.github.tukcps.sysmd.services.session.Session
-import io.github.tukcps.aadd.BDD
-import io.github.tukcps.aadd.values.XBool
+import io.github.tukcps.aadd.DDBuilder.BoolMath.and
+import io.github.tukcps.aadd.DDBuilder.BoolMath.not
+import io.github.tukcps.aadd.dd.BDD
+import io.github.tukcps.aadd.dd.DD
+import io.github.tukcps.aadd.values.ScalarValue
+import io.github.tukcps.aadd.values.bool.XBool
 
 /**
  *  Handles discrete propagation. Currently only through one propagate method. Eventually will split in initialization and update.
@@ -25,15 +29,15 @@ class DDBasedDiscreteSolver(
      * @param body A BDD expressing this statement
      */
     class Statement(val about : Set<Int>, val body : BDD) {
-        fun merge(other : Statement) = Statement( about.plus(other.about), body.and(other.body) )
+        fun merge(other : Statement) = Statement( about.plus(other.about), body and other.body )
 
         /** Merge two variable states for finding profiles. */
         private fun merge(l : BDD.Leaf?, r : BDD.Leaf) : BDD.Leaf = when {
             l === null -> r
-            l === body.builder.Bool || r == body.builder.Bool -> body.builder.Bool
+            l === body.builder.Bool.All || r == body.builder.Bool.All -> body.builder.Bool.All
             l === r -> l
-            l === body.builder.True && r === body.builder.False -> body.builder.Bool
-            l === body.builder.False && r === body.builder.True -> body.builder.Bool
+            l === body.builder.Bool.True && r === body.builder.Bool.False -> body.builder.Bool.Bool
+            l === body.builder.Bool.False && r === body.builder.Bool.True -> body.builder.Bool.Bool
             else -> throw IllegalStateException("Arguments to merge() must be one of Bool, True or False, got $l, $r")
         }
 
@@ -46,22 +50,22 @@ class DDBasedDiscreteSolver(
                 val f = profile(spec, b.F)
 
                 if(t && f)
-                    spec[b.index] = body.builder.Bool
+                    spec[b.index] = body.builder.Bool.Bool
                 else if(t)
-                    spec.compute(b.index) { _, x -> merge(x, body.builder.True) }
+                    spec.compute(b.index) { _, x -> merge(x, body.builder.Bool.True) }
                 else if(f)
-                    spec.compute(b.index) { _, x -> merge(x, body.builder.False) }
+                    spec.compute(b.index) { _, x -> merge(x, body.builder.Bool.False) }
 
                 t || f
             } else
-                b === b.builder.True || b === b.builder.Bool
+                b === b.builder.Bool.True || b === b.builder.Bool.Bool
 
         private fun simplify(spec : Map<Int, BDD.Leaf>, b : BDD) : BDD
             = if(b is BDD.Internal) {
                 when(spec[b.index]) {
-                    null -> b.builder.False
-                    b.builder.True -> simplify(spec, b.T)
-                    b.builder.False -> simplify(spec, b.F)
+                    null -> b.builder.Bool.False
+                    b.builder.Bool.True -> simplify(spec, b.T)
+                    b.builder.Bool.False -> simplify(spec, b.F)
                     else -> {
                         val t = simplify(spec, b.T)
                         val f = simplify(spec, b.F)
@@ -80,8 +84,8 @@ class DDBasedDiscreteSolver(
             val rm = about.filter {
                 when(spec[it]) {
                     null -> true
-                    body.builder.True -> true
-                    body.builder.False -> true
+                    body.builder.Bool.True -> true
+                    body.builder.Bool.False -> true
                     else -> false
                 }
             }
@@ -104,7 +108,7 @@ class DDBasedDiscreteSolver(
                 assert(spec.keys.intersect(about).isEmpty())
 
                 for(a in about)
-                    spec[a] = body.builder.InfeasibleB
+                    spec[a] = body.builder.Bool.Infeasible
 
                 return null
             }
@@ -113,7 +117,7 @@ class DDBasedDiscreteSolver(
 
             // fill in unused variables
             for(a in about)
-                spec.computeIfAbsent(a) { body.builder.Bool }
+                spec.computeIfAbsent(a) { body.builder.Bool.Bool }
 
             return simpler
         }
@@ -182,15 +186,15 @@ class DDBasedDiscreteSolver(
                 s === XBool.True -> {
                     newTheorems.add(statement(q))
                     if(id !== null)
-                        newTheorems.add(Statement( setOf(id), BDD.Internal(builder, id, builder.True, builder.False) ))
+                        newTheorems.add(Statement( setOf(id), BDD.Internal(builder, id, builder.Bool.True, builder.Bool.False) ))
                 }
                 s === XBool.False -> {
                     newTheorems.add(statement(q.not()))
 
                     if(id !== null)
-                        newTheorems.add(Statement( setOf(id), BDD.Internal(builder, id, builder.False, builder.True) ))
+                        newTheorems.add(Statement( setOf(id), BDD.Internal(builder, id, builder.Bool.False, builder.Bool.True) ))
                 }
-                s === XBool.NaB -> continue//TODO()
+                s === XBool.Empty -> continue//TODO()
                 id !== null -> {
                     val ov = openVars(q)
 
@@ -199,10 +203,10 @@ class DDBasedDiscreteSolver(
                         require(q is BDD.Internal) { "A self-referencing definition must be an inner node" }
 
                         when(Pair(q.T, q.F)) {
-                            Pair(q.builder.True, q.builder.False) -> {} // simple tautology
-                            Pair(q.builder.False, q.builder.True) -> { // simple contradiction
+                            Pair(q.builder.Bool.True, q.builder.Bool.False) -> {} // simple tautology
+                            Pair(q.builder.Bool.False, q.builder.Bool.True) -> { // simple contradiction
                                 // Should it be entered into the theorem list to "corrupt" other theorems after merge or be handled right now?
-                                newTheorems.add( Statement(ov, builder.False) ) // not in the simplest form, may cause problems
+                                newTheorems.add( Statement(ov, builder.Bool.False) ) // not in the simplest form, may cause problems
                             }
                             else -> continue//TODO("A self-referencing definition should be a simple tautology or contradiction")
                         }
@@ -210,7 +214,7 @@ class DDBasedDiscreteSolver(
                     else
                         newTheorems.add( Statement(
                             ov.plus(id),
-                            BDD.Internal(builder, id, builder.True, builder.False).ite(q, q.not())
+                            BDD.Internal(builder, id, builder.Bool.True, builder.Bool.False).ite(q, q.not())
                         ) )
                 }
                 else -> continue//TODO()
@@ -223,7 +227,7 @@ class DDBasedDiscreteSolver(
     /** Ensures all units in the builder.conds are applied to theorems */
     private fun evaluateTheorems() {
         val fixed = builder.conds.x.entries
-            .filter { it.value === builder.True || it.value === builder.False }
+            .filter { it.value === builder.Bool.True || it.value === builder.Bool.False }
             .map { it.key }
             .toSet()
 
@@ -251,7 +255,7 @@ class DDBasedDiscreteSolver(
         }
 
         // delete any tautologies
-        theorems.removeAll{ it.body is BDD.Leaf && (it.body.value === XBool.True || it.body.value === XBool.X) }
+        theorems.removeAll{ it.body is BDD.Leaf && (it.body.value === XBool.True || it.body.value === XBool.XBool) }
     }
 
     /**
@@ -284,16 +288,16 @@ class DDBasedDiscreteSolver(
         }
 
         for (s in spec.entries) {
-            if(s.value === builder.True || s.value === builder.False || s.value === builder.InfeasibleB)
-                builder.conds.x[s.key] = s.value
+            if(s.value === builder.Bool.True || s.value === builder.Bool.False || s.value === builder.Bool.Infeasible)
+                builder.conditions.x[s.key] = s.value
 
-            builder.conds.indexes
+            builder.conditions.indexes
                 .filter { it.value == s.key }
                 .map { solver.getVariable(it.key) }
                 .filterNotNull()
                 .forEach {
                     it.boolSpecs = mutableListOf(s.value)
-                    it.vectorQuantity.values = mutableListOf(s.value)
+                    it.vectorQuantity = it.vectorQuantity.copy(values = listOf(s.value as DD<ScalarValue>))
                 }
         }
     }

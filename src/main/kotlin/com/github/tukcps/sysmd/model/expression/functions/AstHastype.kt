@@ -1,9 +1,10 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
+import com.github.tukcps.sysmd.model.datamodel.toElementData
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.util.QualifiedName
-import com.github.tukcps.sysmd.quantities.Quantity
+import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.model.datamodel.toElementData
 import com.github.tukcps.sysmd.services.session.Session
 
@@ -27,7 +28,7 @@ class AstHasType(
     private var supertype: Type? = null
 
     override fun initialize() {
-        upQuantity = Quantity(model.builder.Bool)
+        upQuantity = VectorQuantity(model.builder.Bool.All)
         subtype = owningNamespace.resolve(subclassName)?.member()
         supertype = owningNamespace.resolve(superclassName)?.member()
         if (subtype is Type && supertype is Type) {
@@ -39,9 +40,11 @@ class AstHasType(
 
     override fun evalUp() {
         if (subtype is Type && supertype is Type)
-            upQuantity = Quantity(if (supertype in subtype!!.allSupertypes(true)) model.builder.True else model.builder.False)
+            upQuantity = VectorQuantity(if (supertype in subtype!!.allSupertypes(true)) model.builder.Bool.True else model.builder.Bool.False)
     }
 
     override fun evalDown() {}
+
+    override fun clone() = AstHasType(model, owningNamespace, subclassName, superclassName)
 
 }

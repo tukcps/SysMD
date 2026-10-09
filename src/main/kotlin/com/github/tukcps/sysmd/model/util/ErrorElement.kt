@@ -2,6 +2,7 @@ package com.github.tukcps.sysmd.model.util
 
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.services.session.Session
+import io.github.tukcps.aadd.values.integer.IntegerRange
 import kotlin.uuid.Uuid
 
 /**
@@ -23,8 +24,8 @@ class ErrorElement(override val model : Session, val errorElement: Element?) : F
      * Getter and setter for the specified multiplicity; via
      * the owned Multiplicity element.
      */
-    override val multiplicityRange: MultiplicityRange
-        get() = if (errorElement is Feature) errorElement.multiplicityRange else MultiplicityRange(1,1 )
+    override val multiplicityRange: IntegerRange
+        get() = if (errorElement is Feature) errorElement.multiplicityRange else IntegerRange.One
 
     /** Variable that is true if the feature constrains the source/target of a relationship.*/
     override var isEnd: Boolean
@@ -169,9 +170,7 @@ class ErrorElement(override val model : Session, val errorElement: Element?) : F
     override val subtypes: MutableSet<Type>
         get() = mutableSetOf()
 
-    override fun multiplicityRange(): MultiplicityRange {
-        return MultiplicityRange(1,1)
-    }
+    override fun multiplicityRange(): IntegerRange = IntegerRange.One
 
     /**
      * The indices in the input string during a parse run.
@@ -312,12 +311,12 @@ class ErrorElement(override val model : Session, val errorElement: Element?) : F
         set(value) {}
     /** Reified Relationship from which owner and the below properties are derived. */
     override var owningRelationship: OwningMembership?
-        get() = TODO("Not yet implemented")
+        get() = errorElement?.owningRelationship
         set(value) {}
     override val owningNamespace: Namespace
-        get() = TODO("Not yet implemented")
+        get() =  errorElement?.owningNamespace ?: model.global
     override val standardNamespace: Namespace
-        get() = TODO("Not yet implemented")
+        get() =  errorElement?.standardNamespace?: model.global
     /** Whether the element is from SysML or KerML libraries, these have UUID type 5, not 4 */
     override var isLibraryElement: Boolean
         get() = false

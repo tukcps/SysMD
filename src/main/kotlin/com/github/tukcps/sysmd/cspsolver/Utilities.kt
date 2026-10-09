@@ -1,9 +1,9 @@
 package com.github.tukcps.sysmd.cspsolver
 
 import com.github.tukcps.sysmd.cspsolver.analyzer.SetOfSolutions
-import io.github.tukcps.aadd.DD
 import io.github.tukcps.aadd.DDBuilder
-import io.github.tukcps.aadd.values.XBool
+import io.github.tukcps.aadd.dd.DD
+import io.github.tukcps.aadd.values.bool.XBool
 
 
 open class UnitMap(private val builder: DDBuilder) {
@@ -28,11 +28,11 @@ open class UnitMap(private val builder: DDBuilder) {
 
     fun update(value: Variable, units: HashMap<Int, DD<*>>, dontcares: HashSet<Int>) {
         for (e in units.keys) {
-            if (dontcares.contains(e)) units[e] = XBool.X.bddLeafOf(builder)
+            if (dontcares.contains(e)) units[e] = XBool.XBool.bddLeafOf(builder)
         }
         if (units.isEmpty()) {
             for (i in dontcares) {
-                units[i] = XBool.X.bddLeafOf(builder)
+                units[i] = XBool.XBool.bddLeafOf(builder)
             }
         }
         unitMap[value] = units

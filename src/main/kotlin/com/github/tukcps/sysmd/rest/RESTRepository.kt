@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.ObjectWriter
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.github.tukcps.sysmd.model.datamodel.ElementData
-import com.github.tukcps.sysmd.model.datamodel.IdentifiedImplementation
+import com.github.tukcps.sysmd.model.datamodel.ElementReference
 import com.github.tukcps.sysmd.model.datamodel.createFrom
 import com.github.tukcps.sysmd.model.generated.ElementDataIF
 import com.github.tukcps.sysmd.model.generated.ElementType
@@ -214,7 +214,7 @@ object RESTRepository: SysMLv2Services {
     override fun getCommitById(project: Project, commitId: Uuid): CommitImplementation {
         Rest.login("/users/login", USER_KEY, username, PASSWORD_KEY, password)
         val commitResponse = Rest.get("/projects/${project.id}/commits/$commitId", internalSessionId.toString())
-        val commit = objectMapper.readValue(commitResponse.body, CommitResponse().javaClass)
+        val commit = objectMapper.readValue(commitResponse.body, CommitResponse::class.java)
         return CommitImplementation(commit)
     }
 
@@ -241,7 +241,7 @@ object RESTRepository: SysMLv2Services {
 
         try {
             Rest.login("/users/login", USER_KEY, username, PASSWORD_KEY, password)
-            val branchReq= BranchRequest(name = name, head = IdentifiedImplementation(headOfBranch))
+            val branchReq= BranchRequest(name = name, head = ElementReference.ByID(headOfBranch))
 
             val postProjectResponse = Rest.post("/projects/${project.id}/branches", writer.writeValueAsString(branchReq), null)
 
@@ -584,8 +584,8 @@ object RESTRepository: SysMLv2Services {
                         type = element.type,
                         declaredName = element.declaredName,
                         declaredShortName = element.declaredShortName,
-                        ownedElement = element.ownedElement.map { IdentifiedImplementation(id = it.id) }.toMutableList(),
-                        owner = IdentifiedImplementation(id = element.owner?.id),
+                        ownedElement = element.ownedElement.toMutableList(),
+                        owner = element.owner,
                         language = element.language,
                         aliasIds = TODO(),
                         elementId = TODO(),

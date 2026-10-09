@@ -2,7 +2,7 @@ package com.github.tukcps.sysmd.model.kerml
 
 import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.model.expression.Expression
-import com.github.tukcps.sysmd.model.util.MultiplicityRange
+import io.github.tukcps.aadd.values.integer.IntegerRange
 
 
 /**
@@ -27,7 +27,7 @@ interface Feature: Type {
     /**
      * Getter for the specified multiplicity; via the owned Multiplicity element and its range.
      */
-    val multiplicityRange: MultiplicityRange
+    val multiplicityRange: IntegerRange
 
     /** Variable that is true if the feature constrains the source/target of a relationship.*/
     var isEnd: Boolean

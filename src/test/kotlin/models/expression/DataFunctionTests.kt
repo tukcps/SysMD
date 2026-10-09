@@ -1,10 +1,7 @@
 package models.expression
 
-import com.github.tukcps.sysmd.compiler.parser.util.toIndentedString
-import com.github.tukcps.sysmd.model.expression.Expression
-import com.github.tukcps.sysmd.model.expression.FeatureReferenceExpression
-import com.github.tukcps.sysmd.model.expression.InvocationExpression
-import com.github.tukcps.sysmd.model.expression.OperatorExpression
+import util.assertBounds
+import com.github.tukcps.sysmd.model.expression.*
 import com.github.tukcps.sysmd.model.expression.implementation.*
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Function
@@ -13,6 +10,7 @@ import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.session.Session
 import org.junit.jupiter.api.assertAll
+import io.github.tukcps.aadd.values.bounds.LongBound
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
@@ -177,7 +175,7 @@ class DataFunctionTests
 
 		assertNotNull(call.resolve("a")).also {
 			val li = assertIs<LiteralIntegerImplementation>(it.memberElement)
-			assertEquals(47, li.value)
+			assertEquals(47L, assertIs<LongBound.Finite>(li.value).value)
 		}
 		assertNotNull(call.resolve("b")).also {
 			val ls = assertIs<LiteralStringImplementation>(it.memberElement)
@@ -208,7 +206,7 @@ class DataFunctionTests
 		expr.evalUpRec()
 		expr.evalDownRec()
 
-		assertEquals(VectorQuantity(builder.integer(20)), expr.upQuantity)
+		assertBounds(20L, expr.upQuantity)
 	}
 
 	@Test
@@ -232,7 +230,7 @@ class DataFunctionTests
 
 		// boolean variables aren't written back to variables
 		val x = assertIs<FeatureReferenceExpression>(expr.positionalArguments.first())
-		assertEquals(VectorQuantity(builder.True), x.downQuantity)
+		assertEquals(VectorQuantity(builder.Bool.True), x.downQuantity)
 		assertEquals(twenty, expr.downQuantity)
 	}
 }

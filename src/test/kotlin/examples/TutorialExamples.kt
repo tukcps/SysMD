@@ -1,9 +1,11 @@
 package examples
 
 
+import util.variable
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.services.Runlevel
 import util.assertNoIssues
+import util.assertBounds
 import util.mockup.loadKerML
 import util.mockup.loadSysMLv2
 import util.testSession
@@ -30,7 +32,6 @@ class TutorialExamples {
         assertNoIssues()
     }
 
-
     @Test
     fun reasonExample() = testSession("Occurrences") {
         loadKerML("""
@@ -41,21 +42,20 @@ class TutorialExamples {
                class Variant1 :> General {
                    :>> p: ScalarValues::Real = 2.0;
                }
-
                class Variant2 :> General {
                    :>> p: ScalarValues::Real = 3.0; 
                }
            }
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        val p = solver.getVariable("Reason::General::p")!!
-        assertEquals(p.vectorQuantity.getMaxAsDouble(), 3.0, 0.000001)
-        assertEquals(p.vectorQuantity.getMinAsDouble(), 2.0, 0.000001)
+        val p = solver.variable("Reason::General::p")
+        assertBounds(2.0 .. 3.0, p)
     }
 
 
     @Test
-    fun deCompositionExample() = testSession("Occurrences", "ISQ") {
+    fun decompositionExample() = testSession("Occurrences", "ISQ") {
         loadKerML("""
             package Example {
                 class Engine { 
@@ -74,9 +74,8 @@ class TutorialExamples {
             }
         """, Runlevel.ALL)
         assertNoIssues()
-        val mass = solver.getVariable("Example::Car::totalMass")!!
-        assertEquals(800.0, mass.vectorQuantity.getMaxAsDouble(), 0.00001)
-        assertEquals(50.0, mass.vectorQuantity.getMinAsDouble(), 0.00001)
+        val mass = solver.variable("Example::Car::totalMass")
+        assertBounds(50.0..800.0, mass)
     }
 
 
@@ -85,8 +84,8 @@ class TutorialExamples {
             attribute x: ScalarValues::Boolean(true) = 1.0 < 2.0 + 1.0;
         """, Runlevel.ALL)
         assertNoIssues()
-        val x = solver.getVariable("x")!!
-        assertEquals(builder.True, x.vectorQuantity.value)
+        val x = solver.variable("x")
+        assertEquals(builder.Bool.True, x.vectorQuantity.value)
     }
 
     /**
@@ -101,12 +100,13 @@ class TutorialExamples {
                 feature volume:  ISQ::VolumeValue = height * width * length { :>> range = 1000 .. 2000 [l];}
             }
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
 
-        val volume = solver.getVariable("partWithVolume::volume")!!
-        val height = solver.getVariable("partWithVolume::height")!!
-        assertEquals(82.6, height.min(), 0.1)
-        assertEquals(1210.0, volume.max(), 1.0)
+        val volume = solver.variable("partWithVolume::volume")
+        val height = solver.variable("partWithVolume::height")
+        assertBounds(82.6446280991735..100.0, height, unit = "cm")
+        assertBounds(999.9999999999999..1210.000000000001, volume, unit = "l")
     }
 
     @Test
@@ -144,12 +144,11 @@ class TutorialExamples {
                 feature tire: WinterTire;
             }
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
         val summerWheel = solver.getVariable("SummerWheel::totalMass") !!
         val winterWheel = solver.getVariable("WinterWheel::totalMass") !!
-        assertEquals(30.0, summerWheel.min(), 0.0000001)
-        assertEquals(40.0, summerWheel.max(), 0.0000001)
-        assertEquals(40.0, winterWheel.min(), 0.0000001)
-        assertEquals(50.0, winterWheel.max(), 0.0000001)
+        assertBounds(30.0 .. 40.0, summerWheel)
+        assertBounds(40.0 .. 50.0, winterWheel)
     }
 }

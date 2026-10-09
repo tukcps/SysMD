@@ -1,3 +1,5 @@
+@file:Suppress("UNCHECKED_CAST")
+
 package com.github.tukcps.sysmd.compiler.parser.kerml.legacy
 
 import com.github.tukcps.sysmd.compiler.KerML
@@ -5,17 +7,17 @@ import com.github.tukcps.sysmd.compiler.parser.kerml.QualifiedName
 import com.github.tukcps.sysmd.compiler.parser.kerml.parseIntegerRange
 import com.github.tukcps.sysmd.compiler.scanner.Token
 import com.github.tukcps.sysmd.compiler.semantics.kerml.ConditionalExpressionActions
-import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.exceptions.SyntaxError
-import com.github.tukcps.sysmd.model.expression.AstBinOp
-import com.github.tukcps.sysmd.model.expression.AstLeaf
-import com.github.tukcps.sysmd.model.expression.AstNode
-import com.github.tukcps.sysmd.model.expression.AstUnaryOp
+import com.github.tukcps.sysmd.model.expression.*
 import com.github.tukcps.sysmd.model.expression.functions.AstHasType
 import com.github.tukcps.sysmd.model.expression.functions.AstNot
-import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.quantities.VectorQuantity
-import io.github.tukcps.aadd.*
+import io.github.tukcps.aadd.DDBuilder
+import io.github.tukcps.aadd.dd.*
+import io.github.tukcps.aadd.values.bounds.*
+import io.github.tukcps.aadd.values.integer.IntegerRange
+import io.github.tukcps.aadd.values.real.ia.RealRange
+import io.github.tukcps.aadd.values.real.ia.unaryMinus
 
 /**
  * parseExpression parses an expression and returns the AST as the result.
@@ -103,7 +105,7 @@ fun KerML.Exponent(): AstNode
     if (tokenIs(Token.Kind.EXP)) {
         consume(Token.Kind.EXP)
         Exponent() .also {
-            return AstBinOp(exponent, Token.Kind.EXP, it)
+            return semantics.handleFunctionCall(function = "power", param = arrayListOf(exponent, it), semantics = semantics)
         }
     }
     return exponent
@@ -152,15 +154,17 @@ fun KerML.Unit(): String {
         Token.Kind.PERCENT then  { unit = "%" }
         others {
             optional(Token.Kind.INTEGER_LIT, consume = true) {
-                if (consumedToken.number.toInt() != 1)
+                if (consumedToken.integer != LongBound.Finite(1))
                     throw SyntaxError(this, "Unit must not start with number not equal to 1")
+
                 unit = "1 "
             }
 
             noOrMore(Token.Kind.NAME_LIT) {
                 consume().also { unit += consumedToken.toString() }
                 optional(Token.Kind.EXP, consume = true) {
-                    Token.Kind.INTEGER_LIT.consume().also { unit += "^${consumedToken.number.toInt()}" }
+                    Token.Kind.INTEGER_LIT.consume()
+                    unit += "^${consumedToken.integer.finiteValue}"
                 }
                 unit += " "
             }
@@ -170,7 +174,8 @@ fun KerML.Unit(): String {
                 while (token.kind == Token.Kind.NAME_LIT) {
                     consume().also { unit += consumedToken.toString() }
                     optional(Token.Kind.EXP, consume = true) {
-                        Token.Kind.INTEGER_LIT.consume().also { unit += "^${consumedToken.number.toInt()}" }
+                        Token.Kind.INTEGER_LIT.consume()
+                        unit += "^${consumedToken.integer.finiteValue}"
                     }
                     unit += " "
                 }
@@ -180,6 +185,89 @@ fun KerML.Unit(): String {
     return unit.trim()
 }
 
+val CONST_VALUE_START = setOf(Token.Kind.FLOAT_LIT, Token.Kind.INTEGER_LIT, Token.Kind.MINUS, Token.Kind.PLUS, Token.Kind.TIMES)
+
+/** union of possible value types */
+data class ConstValue(val real : RealRange, val int : LongBound?)
+{
+    operator fun unaryMinus() = ConstValue(-real, int?.unaryMinus())
+    fun negateIf(cond : Boolean) = if(cond) -this else this
+
+    fun toVQ(b : DDBuilder) = int?.let { VectorQuantity(b.integer(it)) }
+        ?: VectorQuantity(b.real(real), "?")
+}
+
+data class ConstRange(val real : RealRange, val int : IntegerRange?)
+{
+    override fun toString() = when {
+        // avoid printing an integer value that overflowed
+        int !== null && (int.isFinite() || real.isFinite()) -> when {
+            // This preserved invalid ranged because the dozens of re-parses don't accept the empty set symbol
+            int.isEmpty() -> "${int.min}..${int.max}"
+            else -> int.toString()
+        }
+        else -> when {
+            real.isEmpty() -> "${real.min}..${real.max}"
+            else -> real.toString()
+        }
+    }
+}
+
+/** Parses a constant value, possibly with leading sign */
+fun KerML.ConstValue() : ConstValue {
+    var negate = false
+    alternatives {
+        Token.Kind.PLUS then {}
+        Token.Kind.MINUS then { negate = true }
+        others {}
+    }
+
+    lateinit var result : ConstValue
+
+    alternatives {
+        Token.Kind.FLOAT_LIT then {
+            result = ConstValue(
+                consumedToken.real,
+                null
+            ).negateIf(negate)
+        }
+        Token.Kind.INTEGER_LIT then {
+            result = ConstValue(
+                consumedToken.real,
+                consumedToken.integer
+            ).negateIf(negate)
+        }
+        Token.Kind.NAME_LIT starts {
+            throw SyntaxError(this@ConstValue, "Unsupported Syntax; only number literals supported")
+        }
+        Token.Kind.TIMES then {
+            result = ConstValue(
+                RealRange(if(negate) DoubleBound.NegativeInfinity else DoubleBound.PositiveInfinity),
+                if(negate) LongBound.NegativeInfinity else LongBound.PositiveInfinity
+            )
+        }
+    }
+
+    return result
+}
+
+fun KerML.ConstRange() : ConstRange
+{
+    val left = ConstValue()
+    val right = if(consumeIfTokenIs(Token.Kind.DOTDOT)) ConstValue() else left
+
+    return ConstRange(
+        RealRange(left.real.min, right.real.max),
+        if(left.int !== null && right.int !== null) IntegerRange(left.int, right.int) else null
+    )
+}
+
+/** A number literal (Int or Float) as the closest representable doubles */
+fun KerML.ConstReal(): RealRange = ConstValue().real
+
+/** A number literal (Int) or a property with known value */
+fun KerML.ConstInt(): LongBound = ConstValue().int
+    ?: throw SyntaxError(this@ConstInt, "Unsupported Syntax; only integer literals supported")
 
 /**
  * Value :-
@@ -195,7 +283,7 @@ fun KerML.Value(): AstNode
     var astNode: AstNode? = null            // Value or expression
     alternatives {
         Token.Kind.LCBRACE then {                   // Range of kind [number, number] unit
-            val quantity: Quantity
+            val quantity: VectorQuantity
             var unit = ""
             parseValueRange().also { quantity = it }
             Token.Kind.RCBRACE.consume()
@@ -214,68 +302,45 @@ fun KerML.Value(): AstNode
                 }
             }
 
-            astNode = when(quantity.value){
-                is AADD -> AstLeaf(model, Quantity(quantity.value as AADD, unit))
-                is IDD -> AstLeaf(model, Quantity(quantity.value as IDD))
-                is StrDD -> AstLeaf(model, Quantity(quantity.value as StrDD))
-                is BDD -> AstLeaf(model, Quantity(quantity.value as BDD))
-                else -> throw SemanticError("Unsupported type for $quantity.")
+            astNode = when(quantity.values[0]){
+                is AADD -> AstLeaf(model, VectorQuantity(quantity.values as List<AADD>, unit))
+                is IDD -> AstLeaf(model, VectorQuantity(quantity.values))
+                is StrDD -> AstLeaf(model, VectorQuantity(quantity.values))
+                is BDD -> AstLeaf(model, VectorQuantity(quantity.values))
             }
         }
 
-        Token.Kind.FLOAT_LIT then {              // Floating point literal of kind number unit
-            val value = consumedToken.number
-            var upperBound: Double? = null
-            var unit = ""
-            optional(Token.Kind.DOTDOT, consume = true) {
-                Token.Kind.FLOAT_LIT.consume().also { upperBound = consumedToken.number }
+        CONST_VALUE_START starts { // number literal
+            val r = ConstRange()
+            var unit : String? = null
+
+            alternatives {
+                Token.Kind.LCBRACE then {
+                    unit = Unit()
+                    Token.Kind.RCBRACE.consume()
+                }
+                setOf(Token.Kind.NAME_LIT, Token.Kind.PERCENT) then {
+                    unit = consumedToken.string
+                }
+                others {}
             }
 
-            optional (Token.Kind.LCBRACE or Token.Kind.NAME_LIT or Token.Kind.PERCENT) {
-                alternatives {
-                    Token.Kind.LCBRACE then {
-                        Unit().also { unit = it }
-                        Token.Kind.RCBRACE.consume()
-                    }
-                    others {
-                        unit = token.string
-                        Token.Kind.NAME_LIT.consume()
-                    }
-                }
-            }
-            val ub = upperBound?:value
-            astNode = AstLeaf(model, Quantity(model.builder.real(value..ub), unit))
-        }
-
-        Token.Kind.INTEGER_LIT then  {            // Integer literal
-            val min = consumedToken.number.toLong()
-            // optional: Extension to range by
-            val max = optional(Token.Kind.DOTDOT, consume = true, noMatch = min) {
-                when(token.kind) {
-                    Token.Kind.INTEGER_LIT -> {
-                        Token.Kind.INTEGER_LIT.consume()
-                        consumedToken.number.toLong()
-                    }
-                    Token.Kind.TIMES -> {
-                        Token.Kind.TIMES.consume()
-                        Long.MAX_VALUE
-                    }
-                    else -> min
-                }
-            }!!
-            astNode = AstLeaf(model, Quantity(model.builder.integer(min..max)))
+            astNode = AstLeaf(model, when {
+                r.int !== null && unit === null -> VectorQuantity(model.builder.integer(r.int))
+                else -> VectorQuantity(model.builder.real(r.real), unit ?: "")
+            })
         }
 
         Token.Kind.STRING_LIT then {            // A string literal
-            astNode = AstLeaf(model, Quantity(StrDD.Leaf(model.builder, consumedToken.string)))
+            astNode = AstLeaf(model, VectorQuantity((model.builder.string(consumedToken.string))))
         }
 
         Token.Kind.TRUE then {               // True literal
-            astNode = AstLeaf(model, Quantity(model.builder.True))
+            astNode = AstLeaf(model, VectorQuantity(model.builder.Bool.True))
         }
 
         Token.Kind.FALSE then {              // False literal
-            astNode = AstLeaf(model, Quantity(model.builder.False))
+            astNode = AstLeaf(model, VectorQuantity(model.builder.Bool.False))
         }
 
         // '(' Expression ( ',' Expression)* ')'
@@ -310,7 +375,7 @@ fun KerML.Value(): AstNode
                         quantityValues.add(it.dd)
                     }
                     astNode =
-	                    AstLeaf(model, VectorQuantity(quantityValues, com.github.tukcps.sysmd.quantities.Unit(unit)))
+                        AstLeaf(model, VectorQuantity(quantityValues, com.github.tukcps.sysmd.quantities.Unit(unit)))
                 } catch (_: UninitializedPropertyAccessException) {
                     var resultingString = ""
                     values.forEach {
@@ -333,8 +398,8 @@ fun KerML.Value(): AstNode
                 }
                 Token.Kind.LCBRACE starts {
                     Token.Kind.LCBRACE.consume()
-                    val position = parseIntegerRange().toLongRange()
-                    val rangeQuantity = Quantity(model.builder.integer(position))
+                    val position = parseIntegerRange()
+                    val rangeQuantity = VectorQuantity(model.builder.integer(position))
                     astNode = semantics.handleFunctionCall(
                         function = "quantityOfVectorAtPosition",
                         param = arrayListOf(AstLeaf(semantics.namespace, name, model), AstLeaf(model, rangeQuantity)),
@@ -358,64 +423,4 @@ fun KerML.Value(): AstNode
         Token.Kind.IF starts { ConditionalExpression().also { astNode = it  } }
     }
     return astNode!!
-}
-
-/** A number literal (Int or Float) */
-fun KerML.ConstReal(): Double {
-    var result = 0.0
-    val neg = consumeIfTokenIs(Token.Kind.MINUS) // Sign of negative value.
-    alternatives {
-        (Token.Kind.INTEGER_LIT or Token.Kind.FLOAT_LIT) starts {           // Number literal
-            val value = token.number
-            consume()
-            result = if (neg) -value else value
-        }
-        Token.Kind.NAME_LIT starts {
-            throw SyntaxError(this@ConstReal, "Unsupported Syntax; only number literals supported")
-        }
-        Token.Kind.TIMES starts   {
-            consume()
-            result = if(neg) model.settings.minReal else model.settings.maxReal
-        }
-    }
-    return result
-}
-
-/** A number literal (Int or Float) or a property with a known value */
-fun KerML.Number(): String {
-    val neg = consumeIfTokenIs(Token.Kind.MINUS) // Sign of negative value.
-    var result = ""
-    alternatives {
-        (Token.Kind.INTEGER_LIT or Token.Kind.FLOAT_LIT) starts {           // Number literal
-            val value = if (token.number.rem(1).equals(0.0))
-                token.number.toLong().toString()  // No ".0" as in Double.toString ...
-            else
-                token.number.toString()
-            consume()
-            result=if (neg) "-$value" else value
-        }
-        Token.Kind.TIMES then  { result="*" }
-    }
-    return result
-}
-
-/** A number literal (Int) or a property with known value */
-fun KerML.ConstInt(): Long {
-    val neg = consumeIfTokenIs(Token.Kind.MINUS) // Sign of negative value.
-    var result: Long = 0
-    alternatives {
-        Token.Kind.INTEGER_LIT starts {           // Number literal
-            val value = token.number
-            consume()
-            result = if (neg) -value.toLong() else value.toLong()
-        }
-        Token.Kind.NAME_LIT starts {
-            throw SyntaxError(this@ConstInt, "Unsupported Syntax; only number literals supported")
-        }
-        Token.Kind.TIMES starts {
-            consume()
-            result = if (neg) model.settings.minInt else model.settings.maxInt
-        }
-    }
-    return result
 }

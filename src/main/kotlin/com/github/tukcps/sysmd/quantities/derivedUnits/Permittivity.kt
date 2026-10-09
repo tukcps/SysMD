@@ -19,7 +19,7 @@ open class Permittivity(name: String, symbol: String, prefix: Prefix, convFac: D
     /**
      * generate UnitObjects and add them to the UnitList
      */
-    object FaradPerSecond : Permittivity("farad per meter", "F/m", NoPrefix, 1.0)
+    object FaradPerMeter : Permittivity("farad per meter", "F/m", NoPrefix, 1.0)
 
     override fun copy(): Permittivity {
         return Permittivity(name, symbol, prefix, convFac, exponent, isLogarithmic)

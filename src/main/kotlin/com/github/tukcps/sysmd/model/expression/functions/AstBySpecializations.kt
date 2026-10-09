@@ -4,21 +4,20 @@ import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.exceptions.SolverError
+import com.github.tukcps.sysmd.model.datamodel.toElementData
 import com.github.tukcps.sysmd.model.expression.AstLeaf
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.util.QualifiedName
-import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.quantities.VectorDimensionError
 import com.github.tukcps.sysmd.quantities.VectorQuantity
-import com.github.tukcps.sysmd.model.datamodel.toElementData
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.session.Session
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.DD
-import io.github.tukcps.aadd.IDD
-import io.github.tukcps.aadd.functions.ite
+import io.github.tukcps.aadd.dd.AADD
+import io.github.tukcps.aadd.dd.DD
+import io.github.tukcps.aadd.dd.IDD
+import io.github.tukcps.aadd.dd.ite
 
 /**
  * Computes the range of a property given as a parameter in all subclasses.
@@ -50,7 +49,7 @@ class AstBySpecializations(model: Session, namespace: Namespace, args: ArrayList
                 val chooser = model.builder.variable("choose_+${subclass.qualifiedName}", inNameSpace.qualifiedName+"::"+propertyName, true)
                 val newSubclassProperty = subclass.resolveVar(propertyName)
                     ?: throw SemanticError("Missing value $propertyName in ${subclass.qualifiedName}")
-                if (newSubclassProperty.vectorQuantity.unit != quantity.unit)
+                if (!newSubclassProperty.vectorQuantity.unit.isCompatibleWith(quantity.unit))
                     model.status.error("different units in different subclasses", element = inNameSpace.toElementData())
                 result = chooser.ite(result, newSubclassProperty.vectorQuantity.values[0])
             }
@@ -70,9 +69,9 @@ class AstBySpecializations(model: Session, namespace: Namespace, args: ArrayList
         val variable = inNameSpace.resolveVar(propertyName)
 
         upQuantity = when(variable?.baseType) {
-            Variable.BaseType.Bool -> Quantity(model.builder.Bool)
-            Variable.BaseType.Int -> Quantity(model.builder.Integers)
-            Variable.BaseType.Real -> Quantity(model.builder.Reals, "?")
+            Variable.BaseType.Bool -> VectorQuantity(model.builder.Bool.All)
+            Variable.BaseType.Int -> VectorQuantity(model.builder.Integers.All)
+            Variable.BaseType.Real -> VectorQuantity(model.builder.Reals.All, "?")
             else -> throw SolverError("Undefined type in function bySubclasses: '${variable?.path}'", path = variable?.path!!)
         }
         downQuantity = upQuantity.clone()
@@ -104,4 +103,6 @@ class AstBySpecializations(model: Session, namespace: Namespace, args: ArrayList
     override fun evalDownRec() {
         evalDown()
     }
+
+    override fun clone() = AstBySpecializations(model, inNameSpace, cloneParameters())
 }

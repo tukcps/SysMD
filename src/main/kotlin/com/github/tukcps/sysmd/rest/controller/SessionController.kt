@@ -8,6 +8,7 @@ import com.github.tukcps.sysmd.rest.entities.requests.ProjectMetaRequest
 import com.github.tukcps.sysmd.rest.entities.response.*
 import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.repositories.local.Language
+import com.github.tukcps.sysmd.services.session.SessionManager.SYSML_LIBRARIES
 import com.github.tukcps.sysmd.services.session.SessionManager
 import com.github.tukcps.sysmd.services.session.SessionManager.projectService
 import com.github.tukcps.sysmd.services.session.SessionManager.sessionService
@@ -114,7 +115,9 @@ class SessionController {
         val project = projectService.getProjects().find { it.name == projectName } ?:
             return ResponseEntity.notFound().build()
 
-        val session = project.let {  sessionService.createSession(project) }
+        val session = project.let {
+            sessionService.createSession(project = project, libraries = SYSML_LIBRARIES)
+        }
         logger.info("Accessed endpoint POST /session")
         return ResponseEntity(session.id.toString(), HttpStatus.CREATED)
     }
@@ -156,7 +159,7 @@ class SessionController {
         val index = project?.getIndexedFiles()
         if (project == null) return ResponseEntity.notFound().build()
         val responseContent = ProjectMetaResponse(
-            project.id,
+            project.id.toJavaUuid(),
             project.name!!,
             project.description
         )
@@ -214,7 +217,7 @@ class SessionController {
         val project = session.project
         project.clearIndex()
         val responseContent = ProjectMetaResponse(
-            project.id,
+            project.id.toJavaUuid(),
             project.name!!,
             project.description
         )

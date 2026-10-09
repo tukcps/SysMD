@@ -9,8 +9,8 @@ import com.github.tukcps.sysmd.quantities.VectorDimensionError
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.session.Session
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.IDD
+import io.github.tukcps.aadd.dd.AADD
+import io.github.tukcps.aadd.dd.IDD
 
 /**
  * @class AstLeaf
@@ -31,6 +31,9 @@ class AstLeaf private constructor (
      * It can be used as a key to a variable.
      */
     var resolvedName: String? = null
+
+    /** True if constructed directly from a variable; then resolvedName is already known. */
+    private var fromVariable = false
 
     /**
      * Resolves the qualified name in namespace and returns the path of the element found.
@@ -65,14 +68,14 @@ class AstLeaf private constructor (
      */
     override fun initialize() {
         if (qualifiedName != null) {
-            resolvedName = resolveToPath()
+            if (!fromVariable) resolvedName = resolveToPath()
             upQuantity = variable!!.vectorQuantity
             downQuantity = variable!!.vectorQuantity
         } else {
             // No variable, hence we have a literal.
             if(literalVal!=null) {
-                upQuantity = literalVal!!
-                downQuantity = literalVal!!
+                upQuantity = literalVal!!.clone()
+                downQuantity = literalVal!!.clone()
             }
         }
         if (node != null) {
@@ -116,8 +119,16 @@ class AstLeaf private constructor (
     constructor(model: Session, variable: Variable)
             : this(model, null, null) {
         this.qualifiedName = variable.path
+        this.resolvedName = variable.path
+        this.fromVariable = true
     }
 
+
+    /** Checks the variable for change; the solver is told about it if it has become unstable. */
+    private fun reportIfChanged(v: Variable) {
+        v.checkEvent()
+        if (!v.stable) model.solver.changedByDownPropagation?.add(v)
+    }
 
     // Eval down stops recursion.
     override fun evalDownRec() {
@@ -133,19 +144,24 @@ class AstLeaf private constructor (
      * already constrained value.
      */
     override fun evalDown() {
-        if (node?.upQuantity != null ) {
-            upQuantity = node!!.upQuantity
-        }
+        node?.let { upQuantity = it.upQuantity }
 
         if (variable != null) {
+            val hasExplicitExpression = variable?.ast != null || (variable?.expression?.isNotBlank() == true)
             if (variable?.baseType == Variable.BaseType.Real) {
-                // TODO: check is only hot fix ... (?)
-                if (! (downQuantity.value.asAadd().maxIsInf && downQuantity.value.asAadd().minIsInf) ) {
-                    variable!!.vectorQuantity = downQuantity.constrain(
+                if (downQuantity.values.none { it.asAadd().min.isInfinite && it.asAadd().max.isInfinite }) {
+                    val constrained = downQuantity.constrain(
                         variable!!.vectorQuantity,
                         variable!!.rangeSpecs,
                         variable!!.unitSpec
                     )
+                    if (hasExplicitExpression && constrained.values.any { it.asAadd().isEmpty() } && !variable!!.vectorQuantity.values.any { it.asAadd().isEmpty() }) {
+                        // Keep forward-evaluated value for diagnostics on contradiction
+                    } else if (variable!!.vectorQuantity.values.any { it.asAadd().isEmpty() }) {
+                        // An empty value (contradiction) stays empty, independent of the order of down-propagation
+                    } else {
+                        variable!!.vectorQuantity = constrained
+                    }
                 }
                 if (variable!!.satisfyAll) {
                     if (variable!!.rangeSpecs.size != downQuantity.values.size && variable!!.rangeSpecs.size != 1)
@@ -154,10 +170,17 @@ class AstLeaf private constructor (
                         if (variable!!.rangeSpecs.indices.any { variable!!.rangeSpecs[it] !in (downQuantity.values[it] as AADD).getRange() })
                             model.status.warn(Issue.Kind.WARN_INCONSISTENCY,"Cannot be satisfied for all values for ${variable!!.path}")
                 }
-                variable!!.checkEvent()
+                reportIfChanged(variable!!)
             }
             if (variable?.baseType == Variable.BaseType.Int) {
-                variable!!.vectorQuantity = downQuantity.constrain(variable!!.vectorQuantity).clone()
+                val constrained = downQuantity.constrain(variable!!.vectorQuantity).clone()
+                if (hasExplicitExpression && constrained.values.any { it.asIdd().isEmpty() } && !variable!!.vectorQuantity.values.any { it.asIdd().isEmpty() }) {
+                    // Keep forward-evaluated value for diagnostics on contradiction
+                } else if (variable!!.vectorQuantity.values.any { it.asIdd().isEmpty() }) {
+                    // An empty value (contradiction) stays empty, independent of the order of down-propagation
+                } else {
+                    variable!!.vectorQuantity = constrained
+                }
                 if (variable!!.satisfyAll) {
                     if (variable!!.intSpecs.size != downQuantity.values.size && variable!!.intSpecs.size != 1)
                         throw VectorDimensionError("Vector size of ${downQuantity.values.size} does not match Constraint size of ${variable!!.intSpecs.size}")
@@ -168,11 +191,11 @@ class AstLeaf private constructor (
                                 message = "Cannot be satisfied for all values in ${variable!!.path}",
                             )
                 }
-                variable!!.checkEvent()
+                reportIfChanged(variable!!)
             }
             if(isString){
                 variable!!.vectorQuantity = downQuantity.constrainString(variable!!.vectorQuantity)
-                variable!!.checkEvent()
+                reportIfChanged(variable!!)
             }
         }
     }
@@ -197,8 +220,7 @@ class AstLeaf private constructor (
         if (variable != null) {
             upQuantity = variable!!.vectorQuantity
         }
-        if (node?.upQuantity != null)
-            upQuantity = node!!.upQuantity
+        node?.let { upQuantity = it.upQuantity }
     }
 
 
@@ -214,6 +236,8 @@ class AstLeaf private constructor (
     override fun clone(): AstLeaf {
         return AstLeaf(model, literalVal, qualifiedName, namespace).also {
             it.resolvedName = resolvedName
+            it.node = node
+            it.fromVariable = fromVariable
             // If it is initialized, the value feature is not null, or literalval is not null.
             if (it.literalVal != null) {
                 it.upQuantity = upQuantity.clone()
@@ -229,8 +253,9 @@ class AstLeaf private constructor (
     // Returns AST as simple expression string
     override fun toExpressionString(): String {
         return if (qualifiedName == null) { // A literal ...
-            if (literalVal!!.values[0] is AADD) {
-                var valStr = literalVal!!.values.toString()
+            if (literalVal == null) node?.toExpressionString() ?: ""
+            else if (literalVal!!.values[0] is AADD) {
+                var valStr = literalVal!!.values[0].toString()
                 if (valStr.split(".").size == 1) valStr += ".0"
                 var unitStr = literalVal!!.unit.toString()
                 unitStr = if (unitStr != "1") unitStr else ""

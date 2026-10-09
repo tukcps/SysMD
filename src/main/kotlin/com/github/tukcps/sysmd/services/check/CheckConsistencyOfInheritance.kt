@@ -1,16 +1,22 @@
 package com.github.tukcps.sysmd.services.check
 
 import com.github.tukcps.sysmd.compiler.semantics.Identification
+import com.github.tukcps.sysmd.model.datamodel.toElementData
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.Function
 import com.github.tukcps.sysmd.model.sysml.AttributeUsage
-import com.github.tukcps.sysmd.quantities.Quantity
-import com.github.tukcps.sysmd.model.datamodel.toElementData
+import com.github.tukcps.sysmd.parseIntegerRange
+import com.github.tukcps.sysmd.parseRealRange
+import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
-import io.github.tukcps.aadd.values.IntegerRange
-import io.github.tukcps.aadd.values.Range
-import kotlin.math.abs
+import io.github.tukcps.aadd.util.Tolerance
+import io.github.tukcps.aadd.values.integer.IntegerRange
+import io.github.tukcps.aadd.values.real.ia.RealRange
 
+/** Tolerance for accepting a range specialization as "almost equal" */
+private val almostEqualTolerance = Tolerance(
+	absolute = 0.001
+)
 
 /**
  * We look at an element and its superclass(es).
@@ -34,44 +40,32 @@ fun Session.checkConsistencyOfInheritance(element: Type) {
 						feature.typeConstraint.indices.forEach {
 							val ownedRangeSpec = feature.typeConstraint.getOrNull(it)?.ifBlank { "*..*" } ?: "*..*"
 							if(feature.type.first().specializes(repo.realType)) {
+								// fixme: what about vectors?
 								val superClassRangeSpec = (superclassFeature.typeConstraint.getOrNull(it)?.ifBlank { "*..*" } ?: "*..*").trim('"', '(', ')', ' ').split(",").first()
-								val superClassRangeObj = Range(superClassRangeSpec)
 
-								val extendedRangeSuperclass = builder.real(
-									superClassRangeObj.min - abs(superClassRangeObj.min * 0.000001)..
-									superClassRangeObj.max + abs(superClassRangeObj.max * 0.000001)
-								)
-								val superClassRange = Quantity(extendedRangeSuperclass, superclassFeature.unitConstraint ?: "").getRange()
-								
 								// Check range compatibility with unit conversion
 								// Quantity handles unit conversion internally - values are always in SI units
-								val ownedQuantity = Quantity(builder.real(Range(ownedRangeSpec)), feature.unitConstraint ?: "")
-								val superQuantity = Quantity(builder.real(Range(superClassRangeSpec)), superclassFeature.unitConstraint ?: "")
+								val ownedQuantity = VectorQuantity(builder.real(parseRealRange(ownedRangeSpec)), feature.unitConstraint ?: "")
+								val superQuantity = VectorQuantity(builder.real(parseRealRange(superClassRangeSpec)), superclassFeature.unitConstraint ?: "")
 								
 								// Get the ranges (Quantity handles unit conversion internally)
 								val ownedRangeFromQuantity = ownedQuantity.getRange()
 								val superRangeFromQuantity = superQuantity.getRange()
 								
 								// Compare the ranges directly (both are in SI units now)
-								if (ownedRangeFromQuantity !in superRangeFromQuantity && ownedRangeFromQuantity != Range.Reals) {
-									val rangesAreEffectivelyIdentical =
-										abs(ownedRangeFromQuantity.min - superRangeFromQuantity.min) < 0.001 &&
-										abs(ownedRangeFromQuantity.max - superRangeFromQuantity.max) < 0.001
-
-									if (!rangesAreEffectivelyIdentical) {
-										val featureUnit = feature.unitConstraint ?: ""
-										val superUnit = superclassFeature.unitConstraint ?: ""
-										val unitInfo = if (featureUnit.isNotEmpty() || superUnit.isNotEmpty()) {
-											" (unit: ${featureUnit.ifEmpty { superUnit }})"
-										} else {
-											""
-										}
-										
-										status.inconsistency(
-											"value ${feature.typeConstraint}$unitInfo of specialization must be refinement of general ${superclassFeature.escapedName()} with value ${superclassFeature.typeConstraint}${if (superUnit.isNotEmpty()) " (unit: $superUnit)" else ""}",
-											element = feature.toElementData(),
-										)
+								if (ownedRangeFromQuantity !in superRangeFromQuantity && ownedRangeFromQuantity != RealRange.Reals && !almostEqualTolerance.areEqual(superRangeFromQuantity, ownedRangeFromQuantity)) {
+									val featureUnit = feature.unitConstraint ?: ""
+									val superUnit = superclassFeature.unitConstraint ?: ""
+									val unitInfo = if (featureUnit.isNotEmpty() || superUnit.isNotEmpty()) {
+										" (unit: ${featureUnit.ifEmpty { superUnit }})"
+									} else {
+										""
 									}
+
+									status.inconsistency(
+										"value ${feature.typeConstraint}$unitInfo of specialization must be refinement of general ${superclassFeature.escapedName()} with value ${superclassFeature.typeConstraint}${if (superUnit.isNotEmpty()) " (unit: $superUnit)" else ""}",
+										element = feature.toElementData(),
+									)
 								}
 								if(!(feature.type[0]).specializes(superclassFeature.type[0]) && feature.type[0] != superclassFeature.type[0]) {
 									val isLegitimateRedefinition = try {
@@ -104,8 +98,8 @@ fun Session.checkConsistencyOfInheritance(element: Type) {
 					feature.specializes(repo.integerType) -> feature.typeConstraint.indices.forEach {
 						if(superclassFeature.indices?.contains(it) != false) {
 							try {
-								val featureRange = IntegerRange(feature.typeConstraint[it])
-								val superRange = IntegerRange(superclassFeature.typeConstraint[it])
+								val featureRange = parseIntegerRange(feature.typeConstraint[it])
+								val superRange = parseIntegerRange(superclassFeature.typeConstraint[it])
 
 								if (featureRange != superRange && featureRange !in superRange && featureRange != IntegerRange.Integers) {
 									status.inconsistency(

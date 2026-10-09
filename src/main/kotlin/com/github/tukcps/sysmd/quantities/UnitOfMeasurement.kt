@@ -15,20 +15,29 @@ package com.github.tukcps.sysmd.quantities
 open class UnitOfMeasurement(
     val name: String,
     val symbol: String,
-    var prefix: Prefix,
-    var domain: String,
-    var convFac: Double,
-    var exponent: Int,
-    var isLogarithmic: Boolean = false,
-    var isDifference: Boolean = false,
-    var alternativeDomain: String = "",
+    val prefix: Prefix,
+    val domain: String,
+    val convFac: Double,
+    val exponent: Int,
+    val isLogarithmic: Boolean = false,
+    val isDifference: Boolean = false,
+    val alternativeDomain: String = "",
 ) : Cloneable {
 
-    public override fun clone(): UnitOfMeasurement {
+    public override fun clone(): UnitOfMeasurement = this
+
+    /**
+     * Negates all exponents in the SI Set if the Unit is detected in the Denominator
+     */
+    fun negateExponent(): UnitOfMeasurement {
+        return copyWith(exponent = -exponent)
+    }
+
+    open fun copyWith(prefix: Prefix = this.prefix, exponent: Int = this.exponent): UnitOfMeasurement {
         return UnitOfMeasurement(
             name,
             symbol,
-            prefix.clone(),
+            prefix,
             domain,
             convFac,
             exponent,
@@ -36,14 +45,6 @@ open class UnitOfMeasurement(
             isDifference,
             alternativeDomain
         )
-    }
-
-    /**
-     * Negates all exponents in the SI Set if the Unit is detected in the Denominator
-     */
-    fun negateExponent(): UnitOfMeasurement {
-        exponent *= -1
-        return this
     }
 
     /**
@@ -60,23 +61,21 @@ open class UnitOfMeasurement(
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        var result = true
         if (other !is UnitOfMeasurement)
             return false
         if (name != other.name)
-            result = false
+            return false
         if (symbol != other.symbol)
-            result = false
+            return false
         if (prefix != other.prefix)
-            result = false
+            return false
         if (domain != other.domain)
-            result =false
+            return false
         if (convFac != other.convFac)
-            result = false
+            return false
         if (exponent != other.exponent)
-            result = false
-        result = result && isLogarithmic == other.isLogarithmic
-        return result
+            return false
+        return isLogarithmic == other.isLogarithmic
     }
 
     override fun hashCode(): Int {

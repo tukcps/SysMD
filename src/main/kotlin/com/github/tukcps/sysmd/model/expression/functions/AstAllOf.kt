@@ -1,12 +1,12 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.IDD
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.quantities.Unit
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
+import io.github.tukcps.aadd.dd.AADD
+import io.github.tukcps.aadd.dd.IDD
 
 
 /**
@@ -24,8 +24,8 @@ class AstAllOf(model: Session, args: ArrayList<AstNode>) :
 
     override fun initialize() {
         upQuantity = when (getParam(0).upQuantity.values[0]) {
-            is IDD  -> VectorQuantity(model.builder.Integers, Unit(), "")
-            is AADD -> VectorQuantity(mutableListOf(model.builder.Reals), "")
+            is IDD  -> VectorQuantity(model.builder.Integers.All)
+            is AADD -> VectorQuantity(mutableListOf(model.builder.Reals.All))
             else -> throw SemanticError("allOf function parameter must be of type Real, Integer, or Subtype thereof")
         }
         downQuantity = upQuantity.clone()
@@ -40,9 +40,5 @@ class AstAllOf(model: Session, args: ArrayList<AstNode>) :
         // No restriction
     }
 
-    override fun clone(): AstAllOf {
-        val parClone = ArrayList<AstNode>()
-        for (p in parameters) parClone.add(p.clone())
-        return AstAllOf(model, parClone)
-    }
+    override fun clone() = AstAllOf(model, cloneParameters())
 }

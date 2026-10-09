@@ -28,10 +28,6 @@ class SerializationTest
 	/** Tests that serializing 2+2 and re-importing yields the same expression.
 	 * Ensures that the DAOs can be reordered
 	 */
-	@Ignore // I added the OwningRelationship to the Global Namespace to the serialization.
-    // I is unclear whether they are to be included in the serialized model or not.
-    // As of now I assume yes, because otherwise one cannot import anything to the global namespace, or have any reference to it.
-    // (maybe this is even forbidden --> to be checked.)
     @RepeatedTest(10) // we want to reach "every" permutation of the list
 	fun exampleExpressionSerialization() = testProjectSession {
 		val tt = twoPlusTwo()

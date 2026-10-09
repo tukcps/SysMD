@@ -1,5 +1,6 @@
 package com.github.tukcps.sysmd.model.kerml.implementation
 
+import com.github.tukcps.sysmd.model.datamodel.ElementReference
 import com.github.tukcps.sysmd.model.generated.elementType
 import com.github.tukcps.sysmd.model.kerml.Element
 import com.github.tukcps.sysmd.model.kerml.Relationship
@@ -50,7 +51,7 @@ open class RelationshipImplementation(
             source = template.source.toMutableList()
 
             fun fix(list : MutableList<Element>) = list.mapInPlace { e ->
-                (e as? Unresolved)?.id?.let { cache[it] } ?: e
+                ((e as? Unresolved)?.reference as? ElementReference.ByID)?.id?.let { cache[it] } ?: e
             }
 
             fix(target)

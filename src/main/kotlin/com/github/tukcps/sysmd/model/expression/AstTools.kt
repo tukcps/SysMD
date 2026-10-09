@@ -1,59 +1,56 @@
 package com.github.tukcps.sysmd.model.expression
 
-import io.github.tukcps.aadd.*
 import com.github.tukcps.sysmd.cspsolver.Variable
-import kotlin.math.absoluteValue
-import kotlin.math.ulp
+import com.github.tukcps.sysmd.quantities.VectorQuantity
+import io.github.tukcps.aadd.dd.*
+import io.github.tukcps.aadd.util.Tolerance
 
+/** Tolerance within which constraint propagation is considered finished */
+private val tolerance = Tolerance(
+    relative = 0.00001,
+    ulps = 100
+)
 
 /**
- * Checks if a property value has been restricted to a smaller interval, and if so, sets the marker
- * stable to false, otherwise to true.
+ * Updates [Variable.stable] by checking if its value changed significantly from the last propagation iteration
  */
-fun Variable.checkEvent() {
-    stable = vectorQuantity.values.indices.all {
-        when (vectorQuantity.values[0]) {
-        is AADD -> {
-                // We allow here some percentage of slack to become robust against potential FP rounding errors.
-                var lb = vectorQuantity.values[it].asAadd().min - 0.00001 * vectorQuantity.values[it].asAadd().min.absoluteValue
-                lb -= lb.ulp*100
-                var ub = vectorQuantity.values[it].asAadd().max + 0.00001 * vectorQuantity.values[it].asAadd().max.absoluteValue
-                ub += ub.ulp*100
-                val oldValue = if(oldVectorQuantity!!.values.size>1) oldVectorQuantity!!.values[it] else oldVectorQuantity!!.value
+fun Variable.checkEvent()
+{
+    /**
+    * @param old A broader approximation of [new]
+    * @param new A more refined approximation of the same value as [old]
+    * @return Whether the change from [old] to [new] is negligible
+     */
+    fun isStable(old : DD<*>, new : DD<*>) : Boolean = when {
+        old is AADD && new is AADD -> {
+            val oldRange = old.getRange()
+            val newRange = new.getRange()
 
-                (((oldValue as AADD) in lb..ub || (lb >= ub)))
-                        || (lb.isNaN() || ub.isNaN())
-        }
-        is IDD -> {
-            val lb = vectorQuantity.values[it].asIdd().getRange().min
-            val ub = vectorQuantity.values[it].asIdd().getRange().max
-            if (oldVectorQuantity != null) {
-                val oldValue = if (oldVectorQuantity!!.values.size > 1) oldVectorQuantity!!.values[it] else oldVectorQuantity!!.value
-                (oldValue as IDD).getRange().min in lb..ub && oldValue.getRange().max in lb..ub || (lb > ub)
-            } else
-                false
-        }
-        is BDD -> {
-            // Only covers really serious changes. More by Alex?
-            val oldValue = if(oldVectorQuantity!!.values.size>1) oldVectorQuantity!!.values[it] else oldVectorQuantity!!.value
-            when (vectorQuantity.values[it]) {
-                vectorQuantity.values[it].builder.True -> {
-                    oldValue == vectorQuantity.values[it]
-                }
-                vectorQuantity.values[it].builder.False -> {
-                    oldValue == vectorQuantity.values[it]
-                }
-                else -> true
-            }
-        }
-        is StrDD -> {
-            val oldValue = if(oldVectorQuantity!!.values.size>1) oldVectorQuantity!!.values[it] else oldVectorQuantity!!.value
-            oldValue.toString() == vectorQuantity.values[it].toString()
-        }
-        else -> throw DDException("checkUpdated called with wrong type")
-    }}
-    if (!stable)
-        updated = true
+            if(newRange.isEmpty())
+                return oldRange.isEmpty()
 
+            // give some slack for floating point errors
+            oldRange in tolerance.widen(newRange)
+        }
+        // fixme: why was previous version of this so weird?
+        old is IDD && new is IDD -> old.getRange() == new.getRange()
+        old is BDD && new is BDD -> old.value == new.value
+        old is StrDD && new is StrDD -> old.toString() == new.toString()
+        else -> throw IllegalStateException("Variable changed type across iterations?!")
+    }
+
+    fun isStable(old : VectorQuantity, new : VectorQuantity) : Boolean
+    {
+        return old.values.size == new.values.size && // changing size should be impossible
+                old.unitSpec == new.unitSpec && old.unit == new.unit && // unit might change if it was "?" or "" previously
+                (old.values zip new.values).all { (x, y) -> isStable(x, y) } // finally check for value change
+    }
+
+    val old = oldVectorQuantity
     oldVectorQuantity = vectorQuantity.clone()
+
+    stable = old !== null && isStable(old, vectorQuantity)
+
+    if(! stable)
+        updated = true
 }

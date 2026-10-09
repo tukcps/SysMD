@@ -1,9 +1,5 @@
 package com.github.tukcps.sysmd.services.session.implementation
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.github.tukcps.sysmd.compiler.KerML
 import com.github.tukcps.sysmd.compiler.SysMD
 import com.github.tukcps.sysmd.compiler.SysMLv2
@@ -19,19 +15,20 @@ import com.github.tukcps.sysmd.rest.entities.interchange.InterchangeProject
 import com.github.tukcps.sysmd.rest.entities.interchange.Meta
 import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.initialize
-import com.github.tukcps.sysmd.services.repositories.local.*
+import com.github.tukcps.sysmd.services.repositories.local.Language
+import com.github.tukcps.sysmd.services.repositories.local.ProjectData
+import com.github.tukcps.sysmd.services.repositories.local.toMarkdownString
 import com.github.tukcps.sysmd.services.session.ProjectSession
 import com.github.tukcps.sysmd.services.session.SessionManager
 import com.github.tukcps.sysmd.services.session.SessionService
 import com.github.tukcps.sysmd.services.session.SessionStatus
+import com.github.tukcps.sysmd.services.util.JsonSupport
 import com.github.tukcps.sysmd.ui.listChildNames
 import com.github.tukcps.sysmd.ui.readBytes
 import com.github.tukcps.sysmd.ui.writeBytes
 import com.github.tukcps.sysmd.ui.writeText
-import com.github.tukcps.sysmd.services.util.JsonSupport
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
-import kotlinx.serialization.json.Json
 import kotlin.uuid.Uuid
 
 class SessionServiceImplementation : SessionService {
@@ -53,8 +50,8 @@ class SessionServiceImplementation : SessionService {
      * @param project An existing project.
      * @return The session created for working with the project.
      */
-    override fun createSession(project: ProjectData): ProjectSession =
-        SessionManager.createSession(project = project, libraries = SessionManager.SYSML_LIBRARIES)
+    override fun createSession(project: ProjectData, vararg libraries: String): ProjectSession =
+        SessionManager.createSession(project = project, libraries = libraries.ifEmpty { SessionManager.SYSML_LIBRARIES })
 
     /**
      * Returns the .meta.json, i.e., in particular the index of the source-files of the project.

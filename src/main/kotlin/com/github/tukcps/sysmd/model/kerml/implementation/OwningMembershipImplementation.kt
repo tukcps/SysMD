@@ -36,10 +36,7 @@ open class OwningMembershipImplementation(
     )
 
     override fun toString(): String {
-        fun describe(e : Element) = when(e) {
-            is Unresolved -> "Unresolved(${e.relativeName ?: e.id})"
-            else -> e.path()
-        }
+        fun describe(e : Element) = e.path().ifEmpty { e.toString() }
 
         return "[${elementType().name}] ${describe(owningRelatedElement)} owns ${describe(memberElement)}"
     }

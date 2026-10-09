@@ -1,7 +1,9 @@
 package constraintnettests.functionstests
 
+import util.variable
 import com.github.tukcps.sysmd.services.Runlevel
 import util.assertNoIssues
+import util.assertBounds
 import util.mockup.loadSysMLv2
 import util.testSession
 import kotlin.test.Test
@@ -27,9 +29,10 @@ class UserDefinedFunctionTests {
             attribute controllability: Ranges::IntegerInRange {:>> range = 0..3;}
             attribute ASILCalculated: Ranges::IntegerInRange = calcASIL(severity,exposure,controllability) {:>> range = 4;}           
             """, Runlevel.ALL)
+            solver.propagate()
             assertNoIssues()
             val test2 = solver.getVariable("controllability")
-            assertEquals(3L, test2!!.min())
+            assertBounds(3L, test2!!)
         }
 
         @Test
@@ -48,11 +51,10 @@ class UserDefinedFunctionTests {
                 attribute controllability: Ranges::IntegerInRange {:>> range = 0..3; }
                 attribute ASILCalculated: Ranges::IntegerInRange = calcASIL(severity,exposure,controllability) {:>> range = 0;}
             """, Runlevel.ALL)
+            solver.propagate()
             assertNoIssues()
-            val test2 = solver.getVariable("controllability")
-            assertNotNull(test2)
-            assertEquals(0L, test2.min())
-            assertEquals(1L, test2.max())
+            val test2 = solver.variable("controllability")
+            assertBounds(0L .. 1L, test2)
         }
 
         @Test
@@ -62,10 +64,10 @@ class UserDefinedFunctionTests {
                 attribute ASILFromAvailability: Ranges::IntegerInRange = a {:>> range = 0..4;}
                 assert constraint ASIL {ASILFromAvailability == 4}   
             """, Runlevel.ALL)
+            solver.propagate()
             assertNoIssues()
-            val test2 = solver.getVariable("ASILFromAvailability")
-            assertEquals(4, test2!!.vectorQuantity.value.asIdd().min)
-            assertEquals(4, test2.vectorQuantity.value.asIdd().max)
+            val test2 = solver.variable("ASILFromAvailability")
+            assertBounds(4L ..4L, test2)
             //assertEquals(0.999, test2!!.vectorQuantity.value.asAadd().min)
             //assertEquals(1.0, test2.vectorQuantity.value.asAadd().max)
         }
@@ -77,10 +79,10 @@ class UserDefinedFunctionTests {
                 attribute ASILFromAvailability: Ranges::RealInRange = a {:>> range = 0.0..4.0;}
                 assert constraint ASIL {ASILFromAvailability == 4.0}   
             """, Runlevel.ALL)
+            solver.propagate()
             assertNoIssues()
-            val test2 = solver.getVariable("ASILFromAvailability")
-            assertEquals(4.0, test2!!.vectorQuantity.value.asAadd().min)
-            assertEquals(4.0, test2.vectorQuantity.value.asAadd().max)
+            val test2 = solver.variable("ASILFromAvailability")
+            assertBounds(4.0 .. 4.0, test2)
             //assertEquals(0.999, test2!!.vectorQuantity.value.asAadd().min)
             //assertEquals(1.0, test2.vectorQuantity.value.asAadd().max)
         }
@@ -103,10 +105,10 @@ class UserDefinedFunctionTests {
                 attribute ASIlFromReliability: Ranges::IntegerInRange = ASIL_from_Reliab(reliability) {:>> range = 0..4;}
                 assert constraint ASIL {ASIlFromReliability == ASILFromAvailability}  
             """, Runlevel.ALL)
+            solver.propagate()
             assertNoIssues()
-            val test2 = solver.getVariable("ASILFromAvailability")
-            assertEquals(4, test2!!.vectorQuantity.value.asIdd().min)
-            assertEquals(4, test2.vectorQuantity.value.asIdd().max)
+            val test2 = solver.variable("ASILFromAvailability")
+            assertBounds(4L..4L, test2)
             //assertEquals(0.999, test2!!.vectorQuantity.value.asAadd().min)
             //assertEquals(1.0, test2.vectorQuantity.value.asAadd().max)
         }

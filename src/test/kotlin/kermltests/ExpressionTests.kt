@@ -1,11 +1,12 @@
 package kermltests
 
+import util.assertBounds
 import com.github.tukcps.sysmd.services.Runlevel
+import io.github.tukcps.aadd.util.Assertions.assertEquals
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Test
-import kotlin.test.assertEquals
 
 class ExpressionTests {
     @Test
@@ -13,8 +14,9 @@ class ExpressionTests {
         loadKerML("""
             feature f: ScalarValues::Real = oneOf(1.0 .. 2.0);    
         """, Runlevel.VARIABLES)
+        solver.propagate()
         assertNoIssues()
         val f = solver.getVariable("f")
-        assertEquals(2.0, f!!.max())
+        assertBounds(1.0..2.0, f!!)
     }
 }

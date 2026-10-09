@@ -5,12 +5,12 @@ package com.github.tukcps.sysmd.cspsolver
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.github.tukcps.sysmd.model.expression.AstRoot
 import com.github.tukcps.sysmd.quantities.VectorQuantity
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.BDD
-import io.github.tukcps.aadd.IDD
-import io.github.tukcps.aadd.values.IntegerRange
-import io.github.tukcps.aadd.values.Range
-import io.github.tukcps.aadd.values.XBool
+import io.github.tukcps.aadd.dd.*
+import io.github.tukcps.aadd.values.NumberRange
+import io.github.tukcps.aadd.values.bool.XBool
+import io.github.tukcps.aadd.values.bounds.Bound
+import io.github.tukcps.aadd.values.integer.IntegerRange
+import io.github.tukcps.aadd.values.real.ia.RealRange
 import kotlin.uuid.Uuid
 
 
@@ -39,7 +39,7 @@ interface Variable: ConstraintPropagation {
     val unitSpec:   String       // Specified unit as string
 
     /** access methods for the valueSpec field; returns different types */
-    var rangeSpecs: MutableList<Range>
+    var rangeSpecs: MutableList<RealRange>
     var boolSpecs: MutableList<XBool>
     var intSpecs: MutableList<IntegerRange>
     val stringSpecs: MutableList<String>
@@ -77,7 +77,7 @@ interface Variable: ConstraintPropagation {
     fun rangeSpec(lb: Double?, ub: Double?): Variable
 
     /** Setter for a real ValueFeature */
-    fun rangeSpec(init : Range): Variable
+    fun rangeSpec(init : RealRange): Variable
 
     /** Setter for range specification that also initializes the value */
     fun intSpec(init: IntegerRange) : Variable
@@ -89,11 +89,14 @@ interface Variable: ConstraintPropagation {
     fun compileExpression()
     fun checkForCyclicDependency()
 
+    // TODO: these are very ugly
     /**
      * Methods to get the result as Number.
      */
-    fun <T: Number> min(index: Int = 0): T
-    fun <T: Number> max(index: Int = 0): T
-    fun <T: Comparable<T> > range(index: Int = 0): ClosedRange<T>
+    fun <T: Bound> min(index: Int = 0) : T
+    fun <T: Bound> max(index: Int = 0) : T
+
+    fun <T: NumberRange<*>> range(index: Int = 0) : T
+
     fun bool(): XBool
 }

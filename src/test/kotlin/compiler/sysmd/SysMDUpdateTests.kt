@@ -2,16 +2,13 @@ package compiler.sysmd
 
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.getOwned
-import com.github.tukcps.sysmd.model.util.MultiplicityRange
 import com.github.tukcps.sysmd.services.Runlevel
-import util.assertNoIssues
+import io.github.tukcps.aadd.values.integer.IntegerRange
+import util.*
 import util.mockup.loadKerML
 import util.mockup.loadSysMD
-import util.testSession
-import kotlin.test.Test
+import kotlin.test.*
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 
 /**
  * Tests that check the ownership creation, in particular by "hasA";
@@ -41,18 +38,14 @@ class SysMDUpdateTests {
         """, Runlevel.ALL)
         assertNoIssues()
         assertEquals(4, global.resolve("hasARange::Auto")?.memberElement?.getOwnedElementsOfType<Feature>()?.size)
-        assertEquals(
-            1, global.resolve("hasARange::Auto")?.member<Namespace>()?.getOwned<Feature>("motoren")?.multiplicityRange?.min
-        )
-        assertEquals(
-            2, global.resolve("hasARange::Auto")?.member<Namespace>()?.getOwned<Feature>("motoren")?.multiplicityRange?.max
+
+        assertBounds(1L .. 2L,
+            global.resolve("hasARange::Auto")!!.member<Namespace>()!!.getOwned<Feature>("motoren")!!.multiplicityRange
         )
         // val element = global.resolve("hasARange::Auto::motoren")?.member<Namespace>()
         // val variable = solver.getVariable("hasARange::Auto::motoren::multiplicity")
-        assertEquals(1, (solver.getVariable("hasARange::Auto::motoren::multiplicity"))!!.intSpecs[0].min)
-        assertEquals(2, (solver.getVariable("hasARange::Auto::motoren::multiplicity"))!!.intSpecs[0].max)
-        assertEquals(1.0, (solver.getVariable("hasARange::Auto::motoren::multiplicity"))!!.min(), 0.0001)
-        assertEquals(2.0, (solver.getVariable("hasARange::Auto::motoren::multiplicity"))!!.max(), 0.0001)
+        assertBounds(1L ..2L, solver.variable("hasARange::Auto::motoren::multiplicity").intSpecs.single())
+        assertBounds(1L .. 2L, solver.variable("hasARange::Auto::motoren::multiplicity"))
     }
 
 
@@ -73,12 +66,12 @@ class SysMDUpdateTests {
         """)
         assertNoIssues()
         val b1 = global.resolve("b::x")?.member<Feature>()
-        assertEquals(MultiplicityRange(1, 3), b1?.multiplicityRange, "Multiplicity must be 1..3")
+        assertEquals(IntegerRange(1, 3), b1?.multiplicityRange, "Multiplicity must be 1..3")
 
         loadKerML("""type b :> Base::Anything { feature x: a [1 .. 2]; }""")
         assertNoIssues()
         val b2 = global.resolve("b::x")?.member<Feature>()
-        assertEquals(MultiplicityRange(1, 2), b2?.multiplicityRange, "An already existing feature shall be updated")
+        assertEquals(IntegerRange(1, 2), b2?.multiplicityRange, "An already existing feature shall be updated")
     }
 
     /**
@@ -90,7 +83,7 @@ class SysMDUpdateTests {
         assertNoIssues()
         val y: Feature? = global.resolve("y")?.member()
         loadKerML("feature y: Base::Anything [3 .. 4]; ")
-        assertEquals(MultiplicityRange(3, 4), y?.multiplicityRange())
+        assertEquals(IntegerRange(3, 4), y?.multiplicityRange())
     }
 
     @Test

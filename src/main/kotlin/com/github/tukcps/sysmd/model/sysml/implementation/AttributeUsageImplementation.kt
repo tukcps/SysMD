@@ -2,7 +2,7 @@ package com.github.tukcps.sysmd.model.sysml.implementation
 
 import com.github.tukcps.sysmd.model.kerml.DataType
 import com.github.tukcps.sysmd.model.sysml.AttributeUsage
-import com.github.tukcps.sysmd.model.util.MultiplicityRange
+import com.github.tukcps.sysmd.model.util.DEFAULT_USAGE_MULTIPLICITY
 import com.github.tukcps.sysmd.services.session.Session
 import kotlin.uuid.Uuid
 
@@ -18,7 +18,7 @@ open class AttributeUsageImplementation(
     declaredShortName = declaredShortName
 ) {
 
-    override val defaultMultiplicityRange = MultiplicityRange.USAGE_DEFAULT
+    override val defaultMultiplicityRange = DEFAULT_USAGE_MULTIPLICITY
 
     override fun clone(): AttributeUsageImplementation = AttributeUsageImplementation(
         model,

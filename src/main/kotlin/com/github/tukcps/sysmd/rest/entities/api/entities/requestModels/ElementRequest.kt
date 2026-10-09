@@ -1,12 +1,14 @@
 package com.github.tukcps.sysmd.rest.entities.api.entities.requestModels
 
+import com.github.tukcps.sysmd.model.datamodel.ElementReference
 import com.github.tukcps.sysmd.model.datamodel.IntRangeSerializer
 import com.github.tukcps.sysmd.model.generated.ElementDataIF
 import com.github.tukcps.sysmd.model.generated.ElementType
 import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Import
 import com.github.tukcps.sysmd.model.sysml.*
-import com.github.tukcps.sysmd.rest.entities.api.entities.Identified
+import io.github.tukcps.aadd.values.bounds.LongBound
+import io.github.tukcps.aadd.values.real.ia.RealRange
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.uuid.Uuid
@@ -43,8 +45,8 @@ class ElementRequest(): ElementDataIF {
     var shortName: String? = null
     override var declaredShortName: String? = null
     override var declaredName: String? = null
-    override var ownedElement: MutableList<Identified> = mutableListOf() // The IDs of the owned elements.
-    override var owner: Identified? = null                 // The ID of the owner; if null, the node is the root of an ownership tree
+    override var ownedElement: MutableList<ElementReference> = mutableListOf() // The IDs of the owned elements.
+    override var owner: ElementReference? = null                 // The ID of the owner; if null, the node is the root of an ownership tree
 
     // For type Feature :
     override var direction: Feature.FeatureDirectionKind? = null
@@ -88,7 +90,7 @@ class ElementRequest(): ElementDataIF {
      * `value` declared by `LiteralInteger`.
      * MOF multiplicity: `0..1`.
      */
-    override var literalIntegerValue: Long?
+    override var literalIntegerValue: LongBound?
         get() = TODO("Not yet implemented")
         set(value) {}
 
@@ -96,7 +98,7 @@ class ElementRequest(): ElementDataIF {
      * `value` declared by `LiteralRational`.
      * MOF multiplicity: `0..1`.
      */
-    override var literalRationalValue: Double?
+    override var literalRationalValue: RealRange?
         get() = TODO("Not yet implemented")
         set(value) {}
 
@@ -161,8 +163,8 @@ class ElementRequest(): ElementDataIF {
         set(value) {}
 
     // For Relationship and subtypes thereof:
-    override var source: MutableList<Identified> = mutableListOf()     // qualified names of sources
-    override var target: MutableList<Identified> = mutableListOf()     // qualified names of targets
+    override var source: MutableList<ElementReference> = mutableListOf()     // qualified names of sources
+    override var target: MutableList<ElementReference> = mutableListOf()     // qualified names of targets
 
     override var visibility: Import.VisibilityKind? = null
 
@@ -270,24 +272,24 @@ class ElementRequest(): ElementDataIF {
         set(value) { id = value}
 
     override var aliasIds: MutableList<String> = mutableListOf()
-    override var owningMembership: Identified? = null
-    override var owningNamespace: Identified? = null
+    override var owningMembership: ElementReference? = null
+    override var owningNamespace: ElementReference? = null
 
     /**
      * `ownedRelationship` declared by `Element`.
      * MOF multiplicity: `0..*`.
      * Structural element reference.
      */
-    override var ownedRelationship: MutableList<Identified>
+    override var ownedRelationship: MutableList<ElementReference>
         get() = TODO("Not yet implemented")
         set(value) {}
-    override var owningRelationship: Identified? = null
+    override var owningRelationship: ElementReference? = null
 
-    override var ownedRelatedElement: MutableList<Identified>
+    override var ownedRelatedElement: MutableList<ElementReference>
         get() = TODO("Not yet implemented")
         set(value) {}
 
-    override var owningRelatedElement: Identified?
+    override var owningRelatedElement: ElementReference?
         get() = TODO("Not yet implemented")
         set(value) {}
 

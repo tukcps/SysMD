@@ -5,7 +5,7 @@ import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.model.expression.functions.*
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
-import io.github.tukcps.aadd.*
+import io.github.tukcps.aadd.dd.*
 import java.util.*
 
 /**
@@ -73,7 +73,7 @@ abstract class AstNode(val model: Session, val uuid : UUID = UUID.randomUUID()!!
 
     /** get a collection of all leaf nodes */
     fun getLeaves(): Collection<AstLeaf> =
-        this.runDepthFirst {
+        run {
             when (this) {
                 is AstLeaf -> arrayListOf(this)
                 is AstBinOp -> l.getLeaves() + r.getLeaves()
@@ -81,7 +81,7 @@ abstract class AstNode(val model: Session, val uuid : UUID = UUID.randomUUID()!!
                 is AstFunction -> {
                     val r = arrayListOf<AstLeaf>()
                     for (p in parameters) r += p.getLeaves()
-                    return@runDepthFirst r
+                    return@run r
                 }
                 is AstRoot -> dependency.getLeaves()
                 else -> throw Exception("AstNode of unknown type.")
@@ -93,7 +93,7 @@ abstract class AstNode(val model: Session, val uuid : UUID = UUID.randomUUID()!!
      * @return the set of all referenced feature's variables from which this expression depends.
      */
     fun getDependencies(): Set<Variable> =
-        this.runDepthFirst {
+        run {
             when (this) {
                 is AstLeaf -> if (variable != null) setOf(variable!!) else emptySet()
                 is AstBinOp -> l.getDependencies() + r.getDependencies()
@@ -103,7 +103,7 @@ abstract class AstNode(val model: Session, val uuid : UUID = UUID.randomUUID()!!
                 is AstFunction -> {
                     val r = mutableSetOf<Variable>()
                     for (p in parameters) r += (p.getDependencies())
-                    return@runDepthFirst r
+                    return@run r
                 }
                 is AstRoot -> dependency.getDependencies()
                 else -> throw Exception("AstNode of unknown type.")
@@ -114,7 +114,7 @@ abstract class AstNode(val model: Session, val uuid : UUID = UUID.randomUUID()!!
      * @return the qualified names of all referenced features
      */
     fun getDependencyStrings(): Set<String> =
-        this.runDepthFirst {
+        run {
             when (this) {
                 is AstLeaf -> {
                     if (qualifiedName != null) {
@@ -132,7 +132,7 @@ abstract class AstNode(val model: Session, val uuid : UUID = UUID.randomUUID()!!
                 is AstFunction -> {
                     when(this){
                         is AstAggregationFunction -> {
-                            return@runDepthFirst getDependentPropertyStrings()
+                            return@run getDependentPropertyStrings()
                         }
                         else-> {
                             val r = mutableSetOf<String>()
@@ -140,7 +140,7 @@ abstract class AstNode(val model: Session, val uuid : UUID = UUID.randomUUID()!!
                             for (p in parameters) {
                                 r += (p.getDependencyStrings())
                             }
-                            return@runDepthFirst r
+                            return@run r
                         }
                     }
                 }

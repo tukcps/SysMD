@@ -18,6 +18,19 @@ data class CellData(
 
 
 /**
+ * A cell that can be compiled.
+ * @param language The language of the code, e.g., SysML.
+ * @param namespace The namespace into which the cell is compiled; null or empty for the root namespace.
+ * @param body The code.
+ */
+data class CompilableCell(
+    val language: Language,
+    val namespace: QualifiedName?,
+    val body: String
+)
+
+
+/**
  * Data class for maintaining all changes, including those that are not displayed.
  * Manages the transfer between repository, local data, and view model of UI.
  * - repository is some kind of backend, e.g., file system or database.

@@ -8,8 +8,8 @@ import com.github.tukcps.sysmd.compiler.scanner.Token
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.compiler.semantics.Identification
 import com.github.tukcps.sysmd.compiler.semantics.kerml.*
+import com.github.tukcps.sysmd.model.datamodel.ElementReference
 import com.github.tukcps.sysmd.model.datamodel.IdentificationKind
-import com.github.tukcps.sysmd.model.datamodel.IdentifiedByName
 import com.github.tukcps.sysmd.model.datamodel.elementByName
 import com.github.tukcps.sysmd.model.generated.ElementType
 import com.github.tukcps.sysmd.model.kerml.Import
@@ -270,7 +270,7 @@ internal fun KerML.ImportDeclaration() {
  */
 internal fun KerML.MembershipImport() {
     semantics.element.type = ElementType.MembershipImport
-    semantics.setTarget(IdentifiedByName((semantics.action as ImportAction).importQualifiedName?:"", IdentificationKind.Membership))
+    semantics.setTarget(ElementReference.ByName((semantics.action as ImportAction).importQualifiedName?:"", IdentificationKind.Membership))
     DPDP.optional {
         STARSTAR.optional().also { semantics.element.isRecursive = true }
     }
@@ -286,7 +286,7 @@ internal fun KerML.MembershipImport() {
  */
 internal fun KerML.NamespaceImport() {
     semantics.element.type = ElementType.NamespaceImport
-    semantics.setTarget(IdentifiedByName((semantics.action as ImportAction).importQualifiedName?:"", IdentificationKind.Namespace))
+    semantics.setTarget(ElementReference.ByName((semantics.action as ImportAction).importQualifiedName?:"", IdentificationKind.Namespace))
     DPDP.consume()
     TIMES.optional {
         DPDP.optional {
@@ -307,7 +307,7 @@ internal fun KerML.AliasMember() = OwnedRelationshipAction(semantics, ElementTyp
     ALIAS.consume()
     Identification()        .semantics { setIdentification(it) } // fixme: this is wrong, we need to set memberName, not declaredName
     FOR.consume()
-    QualifiedName()         .semantics { setTarget(IdentifiedByName(it, IdentificationKind.Element)) }
+    QualifiedName()         .semantics { setTarget(ElementReference.ByName(it, IdentificationKind.Element)) }
     RelationshipBody()
 }
 

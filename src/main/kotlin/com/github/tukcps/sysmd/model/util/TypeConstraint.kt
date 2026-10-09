@@ -31,7 +31,7 @@ data class TypeConstraint(
 
         /** Either a number or '*' for an open range boundary. */
         private const val NUMBER_OR_STAR =
-            """(?:$NUMBER|\*)"""
+            """(?:$NUMBER|[-+]?\*)"""
 
         /** Validates one value or one range. */
         private val VALUE_REGEX =

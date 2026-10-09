@@ -10,6 +10,7 @@ import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.repositories.local.*
 import com.github.tukcps.sysmd.services.session.implementation.ProjectSessionImplementation
 import com.github.tukcps.sysmd.services.session.implementation.SessionServiceImplementation
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -32,8 +33,9 @@ object SessionManager {
 
     /**
      * A map with all active sessions; hashmap of UId of commits and sessions working with it.
+     * Sessions are created, read and killed from different threads (UI, background compile, REST).
      */
-    private val sessions = hashMapOf<Uuid, ProjectSession>()
+    private val sessions = ConcurrentHashMap<Uuid, ProjectSession>()
 
     fun getSession(id: Uuid) = sessions[id]
 
@@ -63,6 +65,7 @@ object SessionManager {
         vararg libraries: String,
         runlevel: Runlevel = Runlevel.NAMES_RESOLVED,
     ): ProjectSession {
+        require(libraries.any {it == "Base"})
         val session = ProjectSessionImplementation(
             project = project,
             libraries = libraries,

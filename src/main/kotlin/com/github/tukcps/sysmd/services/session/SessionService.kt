@@ -1,10 +1,10 @@
 package com.github.tukcps.sysmd.services.session
 
 import com.github.tukcps.sysmd.cspsolver.Variable
+import com.github.tukcps.sysmd.model.datamodel.ElementData
 import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.rest.entities.interchange.Meta
 import com.github.tukcps.sysmd.services.Runlevel
-import com.github.tukcps.sysmd.model.datamodel.ElementData
 import com.github.tukcps.sysmd.services.repositories.local.Language
 import com.github.tukcps.sysmd.services.repositories.local.ProjectData
 import kotlin.uuid.ExperimentalUuidApi
@@ -34,7 +34,7 @@ interface SessionService {
      * @param project An existing project.
      * @return The session created for working with the project.
      */
-    fun createSession(project: ProjectData): ProjectSession
+    fun createSession(project: ProjectData, vararg libraries: String): ProjectSession
 
     /**
      * Returns the .meta.json, i.e., in particular the index of the source-files of the project.

@@ -3,17 +3,17 @@ package models.expression
 import com.github.tukcps.sysmd.compiler.KerML
 import com.github.tukcps.sysmd.compiler.parser.kerml.OwnedExpression
 import com.github.tukcps.sysmd.compiler.parser.kerml.tokenOf
-import com.github.tukcps.sysmd.compiler.parser.util.toIndentedString
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.EOF
 import com.github.tukcps.sysmd.compiler.semantics.Identification
+import com.github.tukcps.sysmd.model.datamodel.ElementReference
 import com.github.tukcps.sysmd.model.expression.*
 import com.github.tukcps.sysmd.model.expression.implementation.BinaryOperatorInformation
 import com.github.tukcps.sysmd.model.kerml.*
-import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.util.*
 import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.check.checkOwnership
 import com.github.tukcps.sysmd.services.inheritance.deepCloneWithInheritedFeature
+import io.github.tukcps.aadd.values.bounds.LongBound
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.opentest4j.AssertionFailedError
 import util.assertNoIssues
@@ -66,15 +66,21 @@ private fun Feature.typeOperator(op : String, type : Type.() -> Unit) = expressi
 	assertIs<FeatureTyping>(t.ownedRelationship.single()).type.type()
 }
 
+private fun assertReferences(want : String, got : ElementReference?)
+{
+	assertIs<ElementReference.ByName>(got)
+	assertEquals(want, got.name)
+}
+
 private fun Feature.typeOperator(op : String, feature : String, type : String) = typeOperator(op, {
 	featureRef(feature)
 }, {
 	assertIs<UnresolvedType>(this)
-	assertEquals(type, relativeName)
+	assertReferences(type, reference)
 })
 private fun Feature.typeOperator(op : String, type : String) = typeOperator(op) {
 	assertIs<UnresolvedType>(this)
-	assertEquals(type, relativeName)
+	assertReferences(type, reference)
 }
 
 
@@ -95,7 +101,7 @@ private fun Feature.invocation(of : QualifiedName, vararg argChecks : Pair<Strin
 
 	for((feature, value) in args)
 	{
-		val id = if(feature is Unresolved) Identification(feature.relativeName)
+		val id = if(feature is Unresolved) Identification(assertIs<ElementReference.ByName>(feature.reference).name)
 				 else Identification(feature)
 		val check = argChecks.firstOrNull { Identification(it.first) == id }?.second
 		assertNotNull(check, "No matches for named argument $feature")
@@ -131,7 +137,7 @@ private fun Feature.metadataAccess(of : QualifiedName)
 {
 	assertIs<MetadataAccessExpression>(this)
 	assertIs<UnresolvedElement>(referencedElement).also {
-		assertEquals(of, it.relativeName)
+		assertEquals(ElementReference.ByName(of), it.reference)
 	}
 }
 
@@ -167,7 +173,7 @@ private fun Feature.functionRef(name : QualifiedName)
 		assertIs<FeatureReferenceExpression>(this)
 		val fr = ownedElement.filterIsInstance<Expression>().single()
 		val f = assertIs<Unresolved>(fr.type.single())
-		assertEquals(name, f.relativeName)
+		assertReferences(name, f.reference)
 	}
 }
 
@@ -202,13 +208,13 @@ private fun Feature.literal(want : Boolean)
 private fun Feature.literal(want : Long)
 {
 	assertIs<LiteralInteger>(this)
-	assertEquals(want, value)
+	assertEquals(LongBound.Finite(want), value)
 }
 
 private fun Feature.literal(want : Double)
 {
 	assertIs<LiteralRational>(this)
-	assertEquals(want, assertNotNull(value), 1e-8)
+	assertTrue(want in assertNotNull(value))
 }
 
 private fun Feature.flatten(op : String = ",") : List<Feature>
@@ -238,7 +244,7 @@ class SyntaxSamples
 		val elements = parser.semantics.elementsBuilt
 		elements.add(expr) // left out otherwise
 
-		println(elements.toIndentedString())
+		// println(elements.toIndentedString())
 
 		import(elements)
 		assertNoIssues()
@@ -465,7 +471,7 @@ class SyntaxSamples
 		typeOperator("istype", "ThermalSensor")
 	}
 
-	@Test @Ignore // TODO: '@' is lexed as 'metadata'?
+	@Test
 	fun classification6() = parseTest("@ThermalSensor") {
 		typeOperator("@", "ThermalSensor")
 	}
@@ -494,7 +500,7 @@ class SyntaxSamples
 			metadataAccess("designModel")
 		}, {
 			assertIs<UnresolvedType>(this)
-			assertEquals("ApprovalAnnotation", relativeName)
+			assertReferences("ApprovalAnnotation", reference)
 		})
 	}
 
@@ -509,11 +515,11 @@ class SyntaxSamples
 			metadataAccess("sensors")
 		}, {
 			assertIs<UnresolvedType>(this)
-			assertEquals("KerML::Feature", relativeName)
+			assertReferences("KerML::Feature", reference)
 		})
 	}
 
-	@Test @Ignore // TODO: lexer doesn't recognize 'meta' keyword
+	@Test
 	fun metaclassification5() = parseTest("(sensors meta KerML::Feature).name") {
 		featureChain("name") {
 			typeOperator("meta", "sensors", "KerML::Feature")
@@ -760,12 +766,12 @@ class SyntaxSamples
 	@Test @Ignore // TODO
 	fun invocation5() = parseTest("myStats.avg()") {}
 
-	@Test @Ignore
+	@Test
 	fun constructor1() = parseTest("new Member(\"Jane\", \"Doe\", 1234, null)") {
 		// TODO
 	}
 
-	@Test @Ignore
+	@Test
 	fun constructor2() = parseTest("new Member(\n" +
 			"firstName = \"John\", lastName = \"Doe\", sponsor = thisMember,\n" +
 			"memberNumber = thisMember.memberNumber + 1)") {
@@ -827,25 +833,25 @@ class SyntaxSamples
 	@Test
 	fun literal4() = parseTest("3.14") {
 		assertIs<LiteralRational>(this)
-		assertEquals(assertNotNull(value), 3.14, 0.00001)
+		assertTrue(3.14 in assertNotNull(value))
 	}
 
 	@Test @Ignore // TODO: fix lexer
 	fun literal5() = parseTest(".5") {
 		assertIs<LiteralRational>(this)
-		assertEquals(assertNotNull(value), 0.5, 0.001)
+		assertTrue(0.5 in assertNotNull(value))
 	}
 
 	@Test
 	fun literal6() = parseTest("2.5E-10") {
 		assertIs<LiteralRational>(this)
-		assertEquals(assertNotNull(value), 2.5E-10, 1E-14)
+		assertTrue(2.5E-10 in assertNotNull(value))
 	}
 
 	@Test
 	fun literal7() = parseTest("1E+3") {
 		assertIs<LiteralRational>(this)
-		assertEquals(assertNotNull(value), 1000.0, 0.01)
+		assertTrue(1000.0 in assertNotNull(value))
 	}
 
 	@Test

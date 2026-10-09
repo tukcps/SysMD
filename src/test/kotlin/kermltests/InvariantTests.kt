@@ -1,9 +1,10 @@
 package kermltests
 
+import util.variable
 import com.github.tukcps.sysmd.model.expression.Invariant
 import com.github.tukcps.sysmd.model.kerml.getOwnedElementOfType
 import com.github.tukcps.sysmd.services.Runlevel
-import io.github.tukcps.aadd.values.XBool
+import io.github.tukcps.aadd.values.bool.XBool
 import util.assertNoIssues
 import util.mockup.loadKerML
 import util.mockup.loadSysMLv2
@@ -21,11 +22,9 @@ class InvariantTests {
             assert constraint a { e }
         """, Runlevel.ALL)
         assertNoIssues()
-        val e = solver.getVariable("e")!!
-        val a = solver.getVariable("a")
-        assertNotNull(e)
-        assertNotNull(a)
-        assertEquals(XBool.True, e.vectorQuantity.value as XBool)
+        val e = solver.variable("e")
+        val a = solver.variable("a")
+        assertEquals(XBool.True, e.vectorQuantity.value.asBdd().value)
     }
 
     @Test
@@ -35,11 +34,9 @@ class InvariantTests {
             inv a { e }
         """, Runlevel.ALL)
         assertNoIssues()
-        val e = solver.getVariable("e")!!
-        val a = solver.getVariable("a")
-        assertNotNull(e)
-        assertNotNull(a)
-        assertEquals(XBool.True, e.vectorQuantity.value as XBool)
+        val e = solver.variable("e")
+        val a = solver.variable("a")
+        assertEquals(XBool.True, e.vectorQuantity.value.asBdd().value)
     }
 
 
@@ -51,10 +48,9 @@ class InvariantTests {
         """)
         solver.propagate()
         assertNoIssues()
-        val e = solver.getVariable("e")
-        assertNotNull(e)
+        val e = solver.variable("e")
         val a = global.getOwnedElementOfType<Invariant>()
         assertNotNull(a)
-        assertEquals(e.bool(), XBool.True)
+        assertEquals(XBool.True,e.bool().value )
     }
 }

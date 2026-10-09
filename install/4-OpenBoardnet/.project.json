@@ -1,0 +1,11 @@
+{
+  "name" : "OpenBoardNet",
+  "version" : "4.0",
+  "description" : "OpenBoardNet: SysML v2 library for analyzing automotive boardnet architectures (domain and zonal architectures, compute units, networks, safety, reliability)",
+  "license" : "Apache 2.0",
+  "maintainer" : ["RPTU Kaiserslautern-Landau, Chair of Cyber-Physical Systems"],
+  "website" : null,
+  "topic" : null,
+  "usage" : [ ],
+  "id" : "106086d5-234f-4b26-9ef9-9917e8593062"
+}

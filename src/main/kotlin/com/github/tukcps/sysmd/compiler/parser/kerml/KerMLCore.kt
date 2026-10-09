@@ -4,20 +4,16 @@ package com.github.tukcps.sysmd.compiler.parser.kerml
 
 import com.github.tukcps.sysmd.compiler.KerML
 import com.github.tukcps.sysmd.compiler.SysMLv2
-import com.github.tukcps.sysmd.compiler.parser.kerml.legacy.ConstInt
-import com.github.tukcps.sysmd.compiler.parser.kerml.legacy.Number
-import com.github.tukcps.sysmd.compiler.parser.kerml.legacy.Unit
+import com.github.tukcps.sysmd.compiler.parser.kerml.legacy.*
 import com.github.tukcps.sysmd.compiler.parser.util.Unsupported
 import com.github.tukcps.sysmd.compiler.scanner.Token.Kind.*
 import com.github.tukcps.sysmd.compiler.semantics.kerml.*
 import com.github.tukcps.sysmd.exceptions.SyntaxError
+import com.github.tukcps.sysmd.model.datamodel.ElementReference
 import com.github.tukcps.sysmd.model.datamodel.IdentificationKind
-import com.github.tukcps.sysmd.model.datamodel.IdentifiedByName
 import com.github.tukcps.sysmd.model.generated.ElementType
-import com.github.tukcps.sysmd.model.util.IntegerRange
-import com.github.tukcps.sysmd.model.util.MultiplicityRange
 import com.github.tukcps.sysmd.model.util.TypeConstraint
-import com.github.tukcps.sysmd.rest.entities.api.entities.Identified
+import io.github.tukcps.aadd.values.integer.IntegerRange
 
 /**
  * SPECIALIZES is a pseudo-lexical element that is either
@@ -250,10 +246,10 @@ fun KerML.SpecificType() =
         else -> QualifiedName()
     }
 
-fun KerML.GeneralType(): Identified =
+fun KerML.GeneralType(): ElementReference =
     when(nextToken.kind) {
-        DOT ->  FeatureChain().let { return IdentifiedByName(name=it, IdentificationKind.FeatureChain) }
-        else -> QualifiedName().let { return IdentifiedByName(name=it, IdentificationKind.Feature) }
+        DOT ->  FeatureChain().let { return ElementReference.ByName(name=it, IdentificationKind.FeatureChain) }
+        else -> QualifiedName().let { return ElementReference.ByName(name=it, IdentificationKind.Feature) }
     }
 
 /**
@@ -286,9 +282,9 @@ fun KerML.Conjugation() = OwnedRelationshipAction(semantics, ElementType.Conjuga
         Identification()    .semantics { setIdentification(it) }
     }
     CONJUGATE.consume()
-    QualifiedName()         .semantics { setSource(IdentifiedByName(it, IdentificationKind.Type)) }
+    QualifiedName()         .semantics { setSource(ElementReference.ByName(it, IdentificationKind.Type)) }
     CONJUGATES.consume()
-    QualifiedName()         .semantics { setTarget(IdentifiedByName(it, IdentificationKind.Type)) }
+    QualifiedName()         .semantics { setTarget(ElementReference.ByName(it, IdentificationKind.Type)) }
     RelationshipBody()
 }
 
@@ -457,54 +453,24 @@ fun KerML.MultiplicityPart() {
  */
 fun KerML.OwnedMultiplicity() = MultiplicityAction(semantics).parse {
     optional(LCBRACE, consume = true) {
-        parseMultiplicityRange().semantics { (action as MultiplicityAction).typeConstraint = TypeConstraint(it.toString()) }
+        parseIntegerRange().semantics { (action as MultiplicityAction).typeConstraint = TypeConstraint(it.toString()) }
         RCBRACE.consume               { (semantics.action as TypeAction).multiplicityAdded = true}
     }
-}
-
-/**
- *      MultiplicityRange :- ConstInt [".." ConstInt]
- */
-fun KerML.parseMultiplicityRange(): MultiplicityRange {
-    val result = MultiplicityRange(0L, null)
-    ConstInt().also {
-        if (consumedToken.kind == TIMES) {
-            result.min = 0
-        } else {
-            result.min = it; result.max = it
-        }
-    }
-    optional(DOTDOT, consume = true) {
-        ConstInt().also {
-            if (consumedToken.kind == TIMES) {
-                result.max = null
-            } else
-                result.max = it
-        }
-    }
-    if (result.min > (result.max ?: Long.MAX_VALUE))
-        throw SyntaxError(this, message = "max of range must be larger or equal min")
-    return result
 }
 
 /**
  *      IntegerRange :- ConstInt [".." ConstInt]
  */
 fun KerML.parseIntegerRange(): IntegerRange {
-    val result = IntegerRange(null, null)
-    ConstInt().also {
-        if (consumedToken.kind == TIMES) {
-            result.min = null; result.max = null
-        } else {
-            result.min = it; result.max = it
-        }
-    }
-    optional(DOTDOT, consume = true) {
-        ConstInt().also { result.max = it }
-    }
-    if ((result.min ?: Long.MIN_VALUE) > (result.max ?: Long.MAX_VALUE))
-        throw SyntaxError(this, message = "max of range must be larger or equal min")
-    return result
+    val min = ConstInt()
+    val max = if(consumeIfTokenIs(DOTDOT)) ConstInt() else min
+
+    val range = IntegerRange(min, max)
+
+    if (range.isEmpty())
+        throw SyntaxError(this, message = "empty multiplicity not allowed")
+
+    return range
 }
 
 /**
@@ -575,26 +541,14 @@ fun KerML.TypeConstraint(): TypeConstraint {
         nextToken.kind in setOf(MINUS, TIMES, INTEGER_LIT, FLOAT_LIT, STRING_LIT, TRUE, FALSE)) {
         LBRACE.consume()
         alternatives {
-            (MINUS or TIMES or INTEGER_LIT or FLOAT_LIT) starts  {
-                var min: String? = null
-                var max: String? = null
-                Number()                    .also { min = it  }
-                optional(DOTDOT, noMatch = min) {
-                    DOTDOT.consume()
-                    Number()                .also { max = it  }
-                }
-                value.add("$min .. ${max?:min}")
+            CONST_VALUE_START starts {
+                do {
+                    val r = ConstRange()
 
-                noOrMore(start = COMMA) { // Multiple constraints for vector
-                    COMMA.consume             { min = null; max = null }
-                    Number()                  .also { min = it  }
-                    optional(DOTDOT, noMatch = min) {
-                        DOTDOT.consume()
-                        Number()              .also { max = it  }
-                    }
-                    value.add("$min .. ${max?:min}")
-                }
+                    value.add(r.toString())
+                } while(consumeIfTokenIs(COMMA))
             }
+
             (TRUE or FALSE) starts {
                 while(!tokenIs(RBRACE)){
                     if(consumeIfTokenIs(TRUE))

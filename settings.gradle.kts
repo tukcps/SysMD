@@ -1,3 +1,5 @@
+import java.nio.file.Files
+
 // Gradle 9 needs an explicit toolchain repository; without it `jvmToolchain(25)` (build.gradle.kts)
 // cannot be auto-provisioned and the build fails on machines that only have a JRE or an older JDK.
 plugins {
@@ -6,22 +8,23 @@ plugins {
 
 rootProject.name = "sysmd"
 
-//
-// Uncomment the following in case you want to include aadd or sysmlapi directly from the file system.
-// Then, also adapt the file 'build.gradle.kts' accordingly.
-//
-if (file("aadd").exists()) {
-    include(":aadd")
-}
-if (file("sysmlapi").exists()) {
-    include(":sysmlapi")
-}
+/**
+ * SysMD uses AADD library for semi-symbolic computations and constraint propagation.
+ * - Adapt the files `gradle.properties` to specify where aadd library lies;
+ * take care of upper/lower case spelling!
+ * - Set in 'build.gradle.kts' whether the dependency from a local directory shall be used,
+ * or one from Maven.
+ */
+val aaddDirectory = providers
+    .gradleProperty("aaddDirectory")
+    .orNull
 
+val path = aaddDirectory?.let { rootDir.resolve(it) }
+val isDir = Files.isDirectory(path!!.toPath())
 
-// 'settings.gradle.kts' is executed in standalone-build, so we delete the marker for hierarchical projects here.
-// Check if we do a standalone-build or a hierarchical build with git submodules
-// Following is only needed for Backend Agila hierarchical builds.
-if (org.gradle.internal.os.OperatingSystem.current().isWindows)
-    File("${System.getProperty("user.home")}\\agila.hierarchical.build").delete()
-else
-    File("/tmp/agila.hierarchical.build").delete()
+// If there is a local folder with AADD, use it.
+// (also, check build.gradle.kts!)
+if (aaddDirectory != null && isDir) {
+    println("Found a configured AADD project in: $aaddDirectory")
+    includeBuild(aaddDirectory)
+}

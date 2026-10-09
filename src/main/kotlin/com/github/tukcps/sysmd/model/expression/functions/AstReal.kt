@@ -1,11 +1,14 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import io.github.tukcps.aadd.AADD
-import io.github.tukcps.aadd.IDD
+import com.github.tukcps.sysmd.convexHull
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
+import io.github.tukcps.aadd.dd.AADD
+import io.github.tukcps.aadd.dd.IDD
+import io.github.tukcps.aadd.values.bounds.DoubleBoundMath.toDouble
+import io.github.tukcps.aadd.values.bounds.LongBound
 import kotlin.math.ceil
 import kotlin.math.floor
 
@@ -23,7 +26,7 @@ class AstReal(model: Session, args: ArrayList<AstNode>) :
 
     override fun initialize() {
         upQuantity = when (getParam(0).upQuantity.values[0]) {
-            is IDD -> VectorQuantity(mutableListOf(model.builder.Reals), "")
+            is IDD -> VectorQuantity(mutableListOf(model.builder.Reals.All))
             else -> throw SemanticError("Real function parameter must be of type Integer")
         }
         evalUp()
@@ -34,26 +37,24 @@ class AstReal(model: Session, args: ArrayList<AstNode>) :
     override fun evalUp() {
         val results = mutableListOf<AADD>()
         getParam(0).idds.forEach {
-            val min = if (it.min == Long.MIN_VALUE) Double.NEGATIVE_INFINITY else it.min.toDouble()
-            val max = if (it.max == Long.MAX_VALUE) Double.POSITIVE_INFINITY else it.max.toDouble()
-            results.add(model.builder.real(min..max))
+            results.add(model.builder.real(convexHull(it)))
         }
-        upQuantity = VectorQuantity(results, getParam(0).upQuantity.unit, getParam(0).upQuantity.unitSpec)
+        upQuantity = VectorQuantity.fromCanonical(results, getParam(0).upQuantity.unit, getParam(0).upQuantity.unitSpec, getParam(0).upQuantity.userWantedUnitSpec)
     }
 
     override fun evalDown() {
         val results = mutableListOf<IDD>()
         downQuantity.aadds().forEach {
-            val min = floor(it.min).toLong()
-            val max = ceil(it.max).toLong()
-            results.add(model.builder.integer(min..max))
+            val minCeil = ceil(it.min.toDouble()).toLong()
+            val maxFloor = floor(it.max.toDouble()).toLong()
+            if (minCeil <= maxFloor) {
+                results.add(model.builder.integer(minCeil..maxFloor))
+            } else {
+                results.add(model.builder.Integers.Empty)
+            }
         }
-        getParam(0).downQuantity = VectorQuantity(results)
+        getParam(0).downQuantity = getParam(0).downQuantity.constrain(VectorQuantity(results))
     }
 
-    override fun clone(): AstReal {
-        val parClone = ArrayList<AstNode>()
-        for (p in parameters) parClone.add(p.clone())
-        return AstReal(model, parClone)
-    }
+    override fun clone() = AstReal(model, cloneParameters())
 }

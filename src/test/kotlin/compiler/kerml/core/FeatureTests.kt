@@ -1,13 +1,14 @@
 package compiler.kerml.core
 
+import util.variable
+import util.assertBounds
 import com.github.tukcps.sysmd.compiler.KerML
 import com.github.tukcps.sysmd.cspsolver.getRange
 import com.github.tukcps.sysmd.model.generated.ElementType
 import com.github.tukcps.sysmd.model.kerml.*
 import com.github.tukcps.sysmd.model.kerml.implementation.getOwned
-import com.github.tukcps.sysmd.model.util.MultiplicityRange
 import com.github.tukcps.sysmd.services.Runlevel
-import org.junit.jupiter.api.Assertions
+import io.github.tukcps.aadd.values.integer.IntegerRange
 import org.junit.jupiter.api.assertNotNull
 import util.assertNoIssues
 import util.mockup.loadKerML
@@ -143,7 +144,7 @@ class FeatureTests {
         assertNoIssues()
         val f = global.resolve("f")!!.memberElement as Feature
         val multiplicity = f.multiplicityRange
-        assertEquals(MultiplicityRange(1, 2), multiplicity)
+        assertEquals(IntegerRange(1, 2), multiplicity)
     }
 
     @Test
@@ -152,7 +153,7 @@ class FeatureTests {
         assertNoIssues()
         val f = global.resolve("f")!!.memberElement as Feature
         val multiplicity = f.multiplicity()?.getRange()
-        assertEquals("1 .. 2", multiplicity?.first())
+        assertEquals("1..2", multiplicity?.first())
     }
 
     @Test
@@ -165,7 +166,7 @@ class FeatureTests {
         """)
         assertNoIssues()
         val b1 = global.resolve("b::x")?.member<Feature>()
-        assertEquals(MultiplicityRange(1, 3), b1?.multiplicityRange, "Multiplicity must be 1..3")
+        assertEquals(IntegerRange(1, 3), b1?.multiplicityRange, "Multiplicity must be 1..3")
     }
 
     @Test
@@ -202,11 +203,10 @@ class FeatureTests {
                 :>> a = 3.0;
             }
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        Assertions.assertEquals(1.0, solver.getVariable("f1::a")!!.min(), 0.000001)
-        Assertions.assertEquals(1.0, solver.getVariable("f1::a")!!.max(), 0.000001)
-        Assertions.assertEquals(3.0, solver.getVariable("f2::a")!!.min(), 0.000001)
-        Assertions.assertEquals(3.0, solver.getVariable("f2::a")!!.max(), 0.000001)
+        assertBounds(1.0, solver.variable("f1::a"))
+        assertBounds(3.0, solver.variable("f2::a"))
     }
 
     @Test

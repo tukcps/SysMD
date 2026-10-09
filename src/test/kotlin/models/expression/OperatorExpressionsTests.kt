@@ -1,15 +1,13 @@
 package models.expression
 
-import com.github.tukcps.sysmd.model.expression.Expression
-import com.github.tukcps.sysmd.model.expression.FeatureReferenceExpression
-import com.github.tukcps.sysmd.model.expression.LiteralInteger
-import com.github.tukcps.sysmd.model.expression.OperatorExpression
-import com.github.tukcps.sysmd.model.expression.implementation.FeatureReferenceExpressionImplementation
+import util.variable
+import com.github.tukcps.sysmd.model.expression.*
 import com.github.tukcps.sysmd.model.expression.implementation.OperatorExpressionImplementation
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.Runlevel
-import io.github.tukcps.aadd.IDD
+import io.github.tukcps.aadd.dd.IDD
 import util.assertNoIssues
+import util.assertBounds
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.*
@@ -54,9 +52,9 @@ class OperatorExpressionsTests {
                 feature c: ScalarValues::Boolean = a and b;
             """, Runlevel.ALL)
 
-            val a = solver.getVariable("a")!!
-            val b = solver.getVariable("b")!!
-            val c = solver.getVariable("c")!!
+            val a = solver.variable("a")
+            val b = solver.variable("b")
+            val c = solver.variable("c")
 
             val falseLiteral = LiteralBooleanImplementation(
                 declaredName = null,
@@ -116,7 +114,7 @@ class OperatorExpressionsTests {
 		tt.evalUp()
 		tt.evalDown()
 
-		assertEquals(VectorQuantity(builder.integer(4)), tt.upQuantity)
+		assertBounds(4L, tt.upQuantity)
 	}
 
     @Test
@@ -214,10 +212,7 @@ class OperatorExpressionsTests {
 
 	fun assertQuantityEquals(want : Long, q : VectorQuantity)
 	{
-		val r = assertIs<IDD>(q.values.single()).getRange()
-
-		assertEquals(r.min, r.max, "Expected a point range of value $want")
-		assertEquals(want, r.min)
+		assertBounds(want, q)
 	}
 
 	fun assertExpressionEquals(want : Long, of : Expression)
@@ -336,7 +331,7 @@ class OperatorExpressionsTests {
 		assertExpressionEquals(7, mulR)
 		assertExpressionEquals(2, sum)
 
-		assertQuantityEquals(-1, solver.getVariable("x")!!.vectorQuantity)
+		assertQuantityEquals(-1, solver.variable("x").vectorQuantity)
 	}
 
 
@@ -348,7 +343,7 @@ class OperatorExpressionsTests {
 		expr.evalUpRec()
 		expr.evalDownRec()
 
-		assertEquals(VectorQuantity(builder.integer(-42)), expr.upQuantity)
+		assertBounds(-42L, expr.upQuantity)
 		println(expr.astString)
 	}
 
@@ -360,7 +355,7 @@ class OperatorExpressionsTests {
 		expr.evalUpRec()
 		expr.evalDownRec()
 
-		assertEquals(VectorQuantity(builder.integer(29)), expr.upQuantity)
+		assertBounds(29L, expr.upQuantity)
 	}
 
 	@Test
@@ -370,6 +365,6 @@ class OperatorExpressionsTests {
 		expr.evalUpRec()
 		expr.evalDownRec()
 
-		assertEquals(VectorQuantity(builder.False), expr.upQuantity)
+		assertEquals(VectorQuantity(builder.Bool.False), expr.upQuantity)
 	}
 }

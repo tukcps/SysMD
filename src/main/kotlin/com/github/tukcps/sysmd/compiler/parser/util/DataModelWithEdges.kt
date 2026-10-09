@@ -1,10 +1,10 @@
 package com.github.tukcps.sysmd.compiler.parser.util
 
 import com.github.tukcps.sysmd.compiler.parser.util.DataModelWithEdges.EdgeKind.*
+import com.github.tukcps.sysmd.compiler.parser.util.DataModelWithEdges.NamedElement
 import com.github.tukcps.sysmd.model.datamodel.ElementData
-import com.github.tukcps.sysmd.model.datamodel.IdentifiedByName
+import com.github.tukcps.sysmd.model.datamodel.ElementReference
 import com.github.tukcps.sysmd.model.generated.ElementType
-import com.github.tukcps.sysmd.rest.entities.api.entities.Identified
 import java.util.*
 import kotlin.reflect.KProperty1
 import kotlin.uuid.Uuid
@@ -253,27 +253,22 @@ class DataModelWithEdges(val elements : List<ElementData>)
     fun get(id : Uuid) : VirtualElement
         = deduplicated[id] ?: missing.computeIfAbsent(id, ::MissingElement)
 
-    fun get(id : Identified?) : VirtualElement = when(id) {
-        null -> {
+    fun get(id : ElementReference?) : VirtualElement = when(id) {
+        is ElementReference.ByID -> get(id.id)
+        is ElementReference.ByName -> named.computeIfAbsent(id.name, ::NamedElement)
+        ElementReference.ToRoot, null -> {
             hasRootNamespace = true
             NoElement
         }
-        is IdentifiedByName -> named.computeIfAbsent(id.name, ::NamedElement)
-        // Do not distinguish `Identified(null)` from `null`
-        else if id.id === null -> {
-            hasRootNamespace = true
-            NoElement
-        }
-        else -> get(id.id!!)
     }
 
-    operator fun List<Identified?>.contains(x : VirtualElement) = any { get(it) == x }
+    operator fun List<ElementReference?>.contains(x : VirtualElement) = any { get(it) == x }
 
     /** Lifts an [ElementData] property to [VirtualElement] */
-    private fun FoundElement.relatedBy(p : KProperty1<ElementData, Identified?>) : Set<VirtualElement>
+    private fun FoundElement.relatedBy(p : KProperty1<ElementData, ElementReference?>) : Set<VirtualElement>
             = elements.mapNotNull { p.get(it) }.map(::get).toSet()
     @JvmName("relatedByMany")
-    private fun FoundElement.relatedBy(p : KProperty1<ElementData, List<Identified?>?>) : Set<VirtualElement>
+    private fun FoundElement.relatedBy(p : KProperty1<ElementData, List<ElementReference?>?>) : Set<VirtualElement>
             = elements.flatMap { p.get(it) ?: emptyList() }.map(::get).toSet()
 
     // these are the only fields relevant for reconstructing ownership. Other fields are derived.

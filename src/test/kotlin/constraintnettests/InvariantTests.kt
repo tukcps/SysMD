@@ -1,12 +1,10 @@
 package constraintnettests
 
 import com.github.tukcps.sysmd.services.Runlevel
-import util.assertNoIssues
+import util.*
 import util.mockup.loadKerML
 import util.mockup.loadSysMLv2
-import util.testSession
 import kotlin.test.Test
-import kotlin.test.assertEquals
 
 class InvariantTests {
 
@@ -16,9 +14,9 @@ class InvariantTests {
             attribute weight: Ranges::IntegerInRange {:>> range = 0..50;}
             assert constraint r { weight >= 30 }
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(30L, solver.getVariable("weight")!!.min())
-        assertEquals(50L, solver.getVariable("weight")!!.max())
+        assertBounds(30L .. 50L, solver.variable("weight"))
     }
 
     @Test
@@ -27,9 +25,9 @@ class InvariantTests {
             attribute weight: Ranges::IntegerInRange {:>> range = 0..50;}
             assert constraint r { 30 >= weight }
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(0L, solver.getVariable("weight")!!.min())
-        assertEquals(30L, solver.getVariable("weight")!!.max())
+        assertBounds(0L .. 30L, solver.variable("weight"))
     }
 
     @Test
@@ -38,9 +36,9 @@ class InvariantTests {
                 attribute weight: Ranges::IntegerInRange {:>> range = 0..50;}
                 assert constraint r { weight > 30 }
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(31L, solver.getVariable("weight")!!.min())
-        assertEquals(50L, solver.getVariable("weight")!!.max())
+        assertBounds(31L .. 50L, solver.variable("weight"))
     }
 
     @Test
@@ -49,9 +47,9 @@ class InvariantTests {
                 attribute weight: Ranges::IntegerInRange {:>> range = 0..50;}
                 assert constraint r { 30 > weight }
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(0L, solver.getVariable("weight")!!.min())
-        assertEquals(29L, solver.getVariable("weight")!!.max())
+        assertBounds(0L .. 29L, solver.variable("weight"))
     }
 
     @Test
@@ -62,8 +60,7 @@ class InvariantTests {
         """, Runlevel.ALL)
         solver.propagate()
         assertNoIssues()
-        assertEquals(0L, solver.getVariable("weight")!!.min())
-        assertEquals(30L, solver.getVariable("weight")!!.max())
+        assertBounds(0L .. 30L, solver.variable("weight"))
     }
 
     @Test
@@ -72,9 +69,9 @@ class InvariantTests {
                 attribute weight: Ranges::IntegerInRange {:>> range = 0..50;}
                 assert constraint r { 30 <= weight }
         """, Runlevel.SOLVED)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(30L, solver.getVariable("weight")!!.min())
-        assertEquals(50L, solver.getVariable("weight")!!.max())
+        assertBounds(30L .. 50L, solver.variable("weight"))
     }
 
     @Test
@@ -83,9 +80,9 @@ class InvariantTests {
                 attribute weight: Ranges::IntegerInRange {:>> range = 0..50;}
                 assert constraint r { weight < 30 }
         """, Runlevel.SOLVED)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(0L, solver.getVariable("weight")!!.min())
-        assertEquals(29L, solver.getVariable("weight")!!.max())
+        assertBounds(0L .. 29L, solver.variable("weight"))
     }
 
     @Test
@@ -94,9 +91,9 @@ class InvariantTests {
                 attribute weight: Ranges::IntegerInRange {:>> range = 0..50;}
                 assert constraint r { 30 < weight }
         """, Runlevel.SOLVED)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(31L, solver.getVariable("weight")!!.min())
-        assertEquals(50L, solver.getVariable("weight")!!.max())
+        assertBounds(31L .. 50L, solver.variable("weight"))
     }
 
     @Test
@@ -106,7 +103,7 @@ class InvariantTests {
                 assert constraint r { weight <= -10 }
         """, Runlevel.SOLVED)
         assertNoIssues()
-        assert(solver.getVariable("weight")!!.vectorQuantity.value.asIdd().isEmpty())
+        assertEmpty(solver.variable("weight"))
     }
 
     @Test
@@ -116,7 +113,7 @@ class InvariantTests {
                 assert constraint r { weight < -10 }
         """, Runlevel.SOLVED)
         assertNoIssues()
-        assert(solver.getVariable("weight")!!.vectorQuantity.value.asIdd().isEmpty())
+        assertEmpty(solver.variable("weight"))
     }
 
     @Test
@@ -126,7 +123,7 @@ class InvariantTests {
                 assert constraint r { weight >= 60 }
         """, Runlevel.SOLVED)
         assertNoIssues()
-        assert(solver.getVariable("weight")!!.vectorQuantity.value.asIdd().isEmpty())
+        assertEmpty(solver.variable("weight"))
     }
 
     @Test
@@ -136,7 +133,7 @@ class InvariantTests {
                 assert constraint r { weight > 60 }
         """, Runlevel.SOLVED)
         assertNoIssues()
-        assert(solver.getVariable("weight")!!.vectorQuantity.value.asIdd().isEmpty())
+        assertEmpty(solver.variable("weight"))
     }
 
     @Test
@@ -145,9 +142,9 @@ class InvariantTests {
             attribute f: Ranges::IntegerInRange = oneOf(1 .. 4); 
             assert constraint ass { 12 / f < 6 } 
         """, Runlevel.SOLVED)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(2, solver.getVariable("f")!!.idd().getRange().min)
-        assertEquals(4, solver.getVariable("f")!!.idd().getRange().max)
+        assertBounds(2L..4L, solver.variable("f"))
     }
 
     @Test
@@ -156,9 +153,9 @@ class InvariantTests {
             attribute f: Ranges::IntegerInRange = oneOf(1 .. 4); 
             assert constraint ass { 12 * f > 24 } 
         """, Runlevel.SOLVED)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(2, solver.getVariable("f")!!.idd().getRange().min)
-        assertEquals(4, solver.getVariable("f")!!.idd().getRange().max)
+        assertBounds(2L..4L, solver.variable("f"))
     }
 
     @Test
@@ -167,9 +164,9 @@ class InvariantTests {
             feature weight: Ranges::RealInRange {:>> range = 0..50;}
             inv r { weight <= 30.0 }
         """, Runlevel.SOLVED)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(0.0, solver.getVariable("weight")!!.min(), 0.00001)
-        assertEquals(30.0, solver.getVariable("weight")!!.max(), 0.00001)
+        assertBounds(0.0..30.0, solver.variable("weight"))
     }
 
     @Test
@@ -178,9 +175,9 @@ class InvariantTests {
             feature weight: Ranges::RealInRange {:>> range = 0..50;} 
             inv r { weight >= 30.0 }
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(30.0, solver.getVariable("weight")!!.min(), 0.00001)
-        assertEquals(50.0, solver.getVariable("weight")!!.max(), 0.00001)
+        assertBounds(30.0 .. 50.0, solver.variable("weight"))
     }
 
     @Test  // Problem with evalDown of Requirement vs. Expression
@@ -190,9 +187,9 @@ class InvariantTests {
             feature weight2: Ranges::RealInRange = weight/2.0;
             inv r { weight2 >= 30.0 }
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(60.0, solver.getVariable("weight")!!.min(), 0.00001)
-        assertEquals(100.0, solver.getVariable("weight")!!.max(), 0.00001)
+        assertBounds(60.0 .. 100.0, solver.variable("weight"))
     }
 
     @Test // Problem with evalDown of ScalarValues::Requirement vs. Expression
@@ -201,9 +198,9 @@ class InvariantTests {
                 feature weight: Ranges::RealInRange {:>> range = 0..50;}
                 inv r { weight > 30.0 }
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(30.0, solver.getVariable("weight")!!.min(), 0.00001)
-        assertEquals(50.0, solver.getVariable("weight")!!.max(), 0.00001)
+        assertBounds(30.0 .. 50.0, solver.variable("weight"))
     }
 
     @Test
@@ -212,9 +209,9 @@ class InvariantTests {
             feature weight: Ranges::RealInRange {:>> range = 0..50;}
             inv r { weight < 30.0 }
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(0.0, solver.getVariable("weight")!!.min(), 0.00001)
-        assertEquals(30.0, solver.getVariable("weight")!!.max(), 0.00001)
+        assertBounds(0.0 .. 30.0, solver.variable("weight"))
     }
 
     @Test
@@ -224,11 +221,10 @@ class InvariantTests {
             feature b: Ranges::RealInRange {:>> range = 4..6;}
             inv c { a == b }
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(4.0, solver.getVariable("a")!!.min(), 0.00001)
-        assertEquals(5.0, solver.getVariable("a")!!.max(), 0.00001)
-        assertEquals(4.0, solver.getVariable("b")!!.min(), 0.00001)
-        assertEquals(5.0, solver.getVariable("b")!!.max(), 0.00001)
+        assertBounds(4.0 .. 5.0, solver.variable("a"))
+        assertBounds(4.0 .. 5.0, solver.variable("b"))
     }
 
     @Test
@@ -240,9 +236,9 @@ class InvariantTests {
             feature b2: ScalarValues::Boolean = a == 4;
             feature c: ScalarValues::Integer = if b == 6 ? 7 else 6;
         """, Runlevel.SOLVED)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(6L, solver.getVariable("c")!!.min())
-        assertEquals(6L, solver.getVariable("c")!!.max())
+        assertBounds(6L .. 6L, solver.variable("c"))
     }
 
     @Test
@@ -254,9 +250,9 @@ class InvariantTests {
             feature b2: ScalarValues::Boolean = a == 4.0;
             feature c: ScalarValues::Real = if b == 6.0 ? 7.0 else 6.0; 
         """, Runlevel.SOLVED)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(6.0, solver.getVariable("c")!!.aadd().getRange().min)
-        assertEquals(6.0, solver.getVariable("c")!!.aadd().getRange().max)
+        assertBounds(6.0 .. 6.0, solver.variable("c"))
     }
 
     @Test
@@ -265,10 +261,11 @@ class InvariantTests {
             feature a: ScalarValues::Integer; 
             feature b: ScalarValues::Integer = 5; 
             inv { a == b } 
-        """, Runlevel.SOLVED)
+        """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(5L, solver.getVariable("a")!!.min())
-        assertEquals(5L, solver.getVariable("a")!!.max())
+        assertBounds(5L, solver.variable("b"))
+        assertBounds(5L, solver.variable("a"))
     }
 
     @Test
@@ -278,10 +275,10 @@ class InvariantTests {
             attribute result: Real = 1.0..4.0 * 1.0..2.0;
             assert constraint range {result<=2.0}
         """, Runlevel.SOLVED)
+        solver.propagate()
         assertNoIssues()
-        val resultVar = solver.getVariable("result")!!
-        assertEquals(2.0, resultVar.max(), 0.00001)
-        assertEquals(1.0, resultVar.min(), 0.00001)
+        val resultVar = solver.variable("result")
+        assertBounds(1.0 .. 2.0, resultVar)
     }
 
     @Test
@@ -291,9 +288,9 @@ class InvariantTests {
                 attribute weight: Ranges::IntegerInRange {:>> range = -50..0; }
                 assert constraint r { weight <= -30 }
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(-50L, solver.getVariable("weight")!!.min())
-        assertEquals(-30L, solver.getVariable("weight")!!.max())
+        assertBounds(-50L .. -30L, solver.variable("weight"))
     }
 
     @Test
@@ -302,8 +299,8 @@ class InvariantTests {
                 feature weight: Ranges::RealInRange {:>> range = -50.0..0.0; } 
                 inv r { weight >= -30.0 }
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        assertEquals(-30.0, solver.getVariable("weight")!!.min(), 0.00001)
-        assertEquals(0.0, solver.getVariable("weight")!!.max(), 0.00001)
+        assertBounds(-30.0 .. 0.0, solver.variable("weight"))
     }
 }

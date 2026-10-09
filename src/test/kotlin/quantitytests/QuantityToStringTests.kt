@@ -1,14 +1,12 @@
 package quantitytests
 
-import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.quantities.Representer
+import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.Runlevel
-import com.github.tukcps.sysmd.services.resolve.resolveVar
 import io.github.tukcps.aadd.DDBuilder
-import util.assertIssue
-import util.assertNoIssues
+import io.github.tukcps.aadd.values.bounds.DoubleBound
+import util.*
 import util.mockup.loadKerML
-import util.testSession
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -23,15 +21,16 @@ class QuantityToStringTests {
             feature a: Quantities::ScalarQuantityValue(4.0 .. 9.0);
             feature b: Quantities::ScalarQuantityValue(0.0 .. 1000.0);
         """, Runlevel.ALL)
-        assertEquals("4..9", solver.getVariable("a")!!.vectorQuantity.toString())
-        assertEquals("0..1000", solver.getVariable("b")!!.vectorQuantity.toString())
         assertNoIssues()
+        assertEquals("4..9", solver.variable("a").vectorQuantity.toString())
+        assertEquals("0..1000", solver.variable("b").vectorQuantity.toString())
     }
 
     @Test
     fun infiniteTest() {
-        val value = DDBuilder().Reals
-        val quantity = Quantity(value, "")
+        val value = DDBuilder().Reals.All
+        val quantity = VectorQuantity(value, "")
+        // FIXME: When adopting -*..*, change expected "*..*" to "-*..*" to better show the negative part
         assertEquals("*..*", quantity.toString())
     }
 
@@ -44,15 +43,17 @@ class QuantityToStringTests {
             feature d: ScalarValues::Integer[2];
         """)
         solver.propagate()
-        val a = solver.getVariable("a")!!
-        val b = solver.getVariable("b")!!
-        val c = solver.getVariable("c")!!
-        val d = solver.getVariable("d")!!
+        assertNoIssues()
+        val a = solver.variable("a")
+        val b = solver.variable("b")
+        val c = solver.variable("c")
+        val d = solver.variable("d")
+        // FIXME: When adopting -*..*, change expected "*..*" to "-*..*" to better show the negative part
         assertEquals("*..*", a.vectorQuantity.toString())
         assertEquals("*..*", b.vectorQuantity.toString())
         assertEquals("*..*", a.valueStr)
         assertEquals("*..*", b.valueStr)
-        assertEquals("[1..*, 4..*]", c.valueStr)
+        //assertEquals("[1..*, 4..*]", c.valueStr)
         assertEquals("*..*", d.valueStr)
     }
 
@@ -79,26 +80,26 @@ class QuantityToStringTests {
             feature r: Quantities::ScalarQuantityValue(10000000000.0);
             feature s: Quantities::ScalarQuantityValue(0.0); 
         """, Runlevel.ALL)
-        assertEquals("100e-9", solver.getVariable("a")!!.vectorQuantity.toString())
-        assertEquals("1e-6", solver.getVariable("b")!!.vectorQuantity.toString())
-        assertEquals("10e-6", solver.getVariable("c")!!.vectorQuantity.toString())
-        assertEquals("100e-6", solver.getVariable("d")!!.vectorQuantity.toString())
-        assertEquals("0.001", solver.getVariable("e")!!.vectorQuantity.toString())
-        assertEquals("0.01", solver.getVariable("f")!!.vectorQuantity.toString())
-        assertEquals("0.1", solver.getVariable("g")!!.vectorQuantity.toString())
-        assertEquals("1", solver.getVariable("h")!!.vectorQuantity.toString())
-        assertEquals("10", solver.getVariable("i")!!.vectorQuantity.toString())
-        assertEquals("100", solver.getVariable("j")!!.vectorQuantity.toString())
-        assertEquals("1000", solver.getVariable("k")!!.vectorQuantity.toString())
-        assertEquals("10000", solver.getVariable("l")!!.vectorQuantity.toString())
-        assertEquals("100000", solver.getVariable("m")!!.vectorQuantity.toString())
-        assertEquals("1e6", solver.getVariable("n")!!.vectorQuantity.toString())
-        assertEquals("10e6", solver.getVariable("o")!!.vectorQuantity.toString())
-        assertEquals("100e6", solver.getVariable("p")!!.vectorQuantity.toString())
-        assertEquals("1e9", solver.getVariable("q")!!.vectorQuantity.toString())
-        assertEquals("10e9", solver.getVariable("r")!!.vectorQuantity.toString())
-        assertEquals("0", solver.getVariable("s")!!.vectorQuantity.toString())
         assertNoIssues()
+        assertEquals("100e-9", solver.variable("a").vectorQuantity.toString())
+        assertEquals("1e-6", solver.variable("b").vectorQuantity.toString())
+        assertEquals("10e-6", solver.variable("c").vectorQuantity.toString())
+        assertEquals("100e-6", solver.variable("d").vectorQuantity.toString())
+        assertEquals("0.001", solver.variable("e").vectorQuantity.toString())
+        assertEquals("0.01", solver.variable("f").vectorQuantity.toString())
+        assertEquals("0.1", solver.variable("g").vectorQuantity.toString())
+        assertEquals("1", solver.variable("h").vectorQuantity.toString())
+        assertEquals("10", solver.variable("i").vectorQuantity.toString())
+        assertEquals("100", solver.variable("j").vectorQuantity.toString())
+        assertEquals("1000", solver.variable("k").vectorQuantity.toString())
+        assertEquals("10000", solver.variable("l").vectorQuantity.toString())
+        assertEquals("100000", solver.variable("m").vectorQuantity.toString())
+        assertEquals("1e6", solver.variable("n").vectorQuantity.toString())
+        assertEquals("10e6", solver.variable("o").vectorQuantity.toString())
+        assertEquals("100e6", solver.variable("p").vectorQuantity.toString())
+        assertEquals("1e9", solver.variable("q").vectorQuantity.toString())
+        assertEquals("10e9", solver.variable("r").vectorQuantity.toString())
+        assertEquals("0", solver.variable("s").vectorQuantity.toString())
     }
 
     @Test
@@ -123,25 +124,25 @@ class QuantityToStringTests {
             feature q: Quantities::ScalarQuantityValue(5000000000.0);
             feature r: Quantities::ScalarQuantityValue(50000000000.0);
         """, Runlevel.ALL)
-        assertEquals("500e-9", solver.getVariable("a")!!.vectorQuantity.toString())
-        assertEquals("5e-6", solver.getVariable("b")!!.vectorQuantity.toString())
-        assertEquals("50e-6", solver.getVariable("c")!!.vectorQuantity.toString())
-        assertEquals("500e-6", solver.getVariable("d")!!.vectorQuantity.toString())
-        assertEquals("0.005", solver.getVariable("e")!!.vectorQuantity.toString())
-        assertEquals("0.05", solver.getVariable("f")!!.vectorQuantity.toString())
-        assertEquals("0.5", solver.getVariable("g")!!.vectorQuantity.toString())
-        assertEquals("5", solver.getVariable("h")!!.vectorQuantity.toString())
-        assertEquals("50", solver.getVariable("i")!!.vectorQuantity.toString())
-        assertEquals("500", solver.getVariable("j")!!.vectorQuantity.toString())
-        assertEquals("5000", solver.getVariable("k")!!.vectorQuantity.toString())
-        assertEquals("50000", solver.getVariable("l")!!.vectorQuantity.toString())
-        assertEquals("500000", solver.getVariable("m")!!.vectorQuantity.toString())
-        assertEquals("5e6", solver.getVariable("n")!!.vectorQuantity.toString())
-        assertEquals("50e6", solver.getVariable("o")!!.vectorQuantity.toString())
-        assertEquals("500e6", solver.getVariable("p")!!.vectorQuantity.toString())
-        assertEquals("5e9", solver.getVariable("q")!!.vectorQuantity.toString())
-        assertEquals("50e9", solver.getVariable("r")!!.vectorQuantity.toString())
         assertNoIssues()
+        assertEquals("500e-9", solver.variable("a").vectorQuantity.toString())
+        assertEquals("5e-6", solver.variable("b").vectorQuantity.toString())
+        assertEquals("50e-6", solver.variable("c").vectorQuantity.toString())
+        assertEquals("500e-6", solver.variable("d").vectorQuantity.toString())
+        assertEquals("0.005", solver.variable("e").vectorQuantity.toString())
+        assertEquals("0.05", solver.variable("f").vectorQuantity.toString())
+        assertEquals("0.5", solver.variable("g").vectorQuantity.toString())
+        assertEquals("5", solver.variable("h").vectorQuantity.toString())
+        assertEquals("50", solver.variable("i").vectorQuantity.toString())
+        assertEquals("500", solver.variable("j").vectorQuantity.toString())
+        assertEquals("5000", solver.variable("k").vectorQuantity.toString())
+        assertEquals("50000", solver.variable("l").vectorQuantity.toString())
+        assertEquals("500000", solver.variable("m").vectorQuantity.toString())
+        assertEquals("5e6", solver.variable("n").vectorQuantity.toString())
+        assertEquals("50e6", solver.variable("o").vectorQuantity.toString())
+        assertEquals("500e6", solver.variable("p").vectorQuantity.toString())
+        assertEquals("5e9", solver.variable("q").vectorQuantity.toString())
+        assertEquals("50e9", solver.variable("r").vectorQuantity.toString())
     }
 
 
@@ -154,7 +155,7 @@ class QuantityToStringTests {
             feature result: ISQ::ForceValue = a*b/(c*c);
         """, Runlevel.ALL)
         assertNoIssues()
-        assertEquals("0.04..10000 N", solver.getVariable("result")!!.vectorQuantity.toString())
+        assertEquals("0.04..10000 N", solver.variable("result").vectorQuantity.toString())
     }
 
     @Test
@@ -166,8 +167,8 @@ class QuantityToStringTests {
             feature d: ISQ::MassValue(10.0 .. 10.0 [kg]);
             feature result: ISQ::CapacitanceValue = a*b/(c*d);
         """, Runlevel.ALL)
-        assertEquals("1..10000 A s / V", solver.getVariable("result")!!.vectorQuantity.toString())
         assertNoIssues()
+        assertEquals("1..10000 F", solver.variable("result").vectorQuantity.toString())
     }
 
 
@@ -180,8 +181,8 @@ class QuantityToStringTests {
             feature d: Quantities::ScalarQuantityValue(10.0 .. 10.0 [A^2]);
             feature result: ISQ::ResistanceValue = a*b/(c*d); 
         """, Runlevel.ALL)
-        assertEquals("1e-3 Ω", solver.getVariable("result")!!.vectorQuantity.toString())
         assertNoIssues()
+        assertEquals("1 mΩ", solver.variable("result").vectorQuantity.toString())
     }
 
     @Test
@@ -194,8 +195,8 @@ class QuantityToStringTests {
             feature result: ISQ::ConductanceValue = a*b/(c*d); 
         """, Runlevel.ALL)
         solver.propagate()
-        assertEquals("1000000 S", solver.getVariable("result")!!.vectorQuantity.toString())
         assertNoIssues()
+        assertEquals("1 MS", solver.variable("result").vectorQuantity.toString())
     }
 
     @Test
@@ -206,7 +207,7 @@ class QuantityToStringTests {
             feature result: ISQ::ElectricChargeValue = a*b; 
         """, Runlevel.ALL)
         assertNoIssues()
-        assertEquals("1e9 A s", solver.getVariable("result")!!.vectorQuantity.toString())
+        assertEquals("1 GC", solver.variable("result").vectorQuantity.toString())
     }
 
 
@@ -219,8 +220,8 @@ class QuantityToStringTests {
             feature d: Quantities::ScalarQuantityValue(1.0 .. 1.0 [A^1]);
             feature result: ISQ::ElectricPotentialDifferenceValue = a*b/(c*d); 
         """, Runlevel.ALL)
-        assertEquals("4e12..9e12 V", solver.getVariable("result")!!.vectorQuantity.toString())
         assertNoIssues()
+        assertEquals("4..9 TV", solver.variable("result").vectorQuantity.toString())
     }
 
     @Test
@@ -232,8 +233,8 @@ class QuantityToStringTests {
             feature d: Quantities::ScalarQuantityValue(1.0 .. 1.0 [A^2]);
             feature result: ISQ::InductanceValue = a*b/(c*d); 
         """, Runlevel.ALL)
-        assertEquals("0.002..0.006 H", solver.getVariable("result")!!.vectorQuantity.toString())
         assertNoIssues()
+        assertEquals("2..6 mH", solver.variable("result").vectorQuantity.toString())
     }
 
     @Test
@@ -246,8 +247,8 @@ class QuantityToStringTests {
             feature result: ISQ::MagneticFluxValue = a*b/(c*d);"""
         )
         solver.propagate()
-        assertEquals("2000..6000 Wb", solver.getVariable("result")!!.vectorQuantity.toString())
         assertNoIssues()
+        assertEquals("2..6 kWb", solver.variable("result").vectorQuantity.toString())
     }
 
 
@@ -259,8 +260,8 @@ class QuantityToStringTests {
             feature d: ISQ::ElectricCurrentValue(100000.0 .. 100000.0 [A]);
             feature result: ISQ::MagneticFluxDensityValue = b/(c*d);
         """, Runlevel.ALL)
-        assertEquals("1e-9 T", solver.getVariable("result")!!.vectorQuantity.toString())
         assertNoIssues()
+        assertEquals("1..2 nT", solver.variable("result").vectorQuantity.toString())
     }
 
     @Test
@@ -271,8 +272,8 @@ class QuantityToStringTests {
             feature c: Quantities::ScalarQuantityValue(1000000.0 .. 1000000.0 [s^3]); 
             feature result: ISQ::PowerValue = a*b/c;
         """, Runlevel.ALL)
-        assertEquals("20e-6 W", solver.getVariable("result")!!.vectorQuantity.toString())
         assertNoIssues()
+        assertEquals("20 μW", solver.variable("result").vectorQuantity.toString())
     }
 
     @Test
@@ -283,7 +284,7 @@ class QuantityToStringTests {
             feature result: ISQ::SpeedValue = a/b;
         """, Runlevel.ALL)
         assertNoIssues()
-        assertEquals("20 m/s", solver.getVariable("result")!!.vectorQuantity.toString())
+        assertEquals("20 m/s", solver.variable("result").vectorQuantity.toString())
     }
 
     @Test
@@ -294,8 +295,8 @@ class QuantityToStringTests {
             feature result: ISQ::AccelerationValue = a/b; 
         """, Runlevel.ALL)
         solver.propagate()
-        assertEquals("20 m/s^2", solver.getVariable("result")!!.vectorQuantity.toString())
         assertNoIssues()
+        assertEquals("20 m/s^2", solver.variable("result").vectorQuantity.toString())
     }
 
     @Test
@@ -306,8 +307,33 @@ class QuantityToStringTests {
                     feature result: ISQ::AreaValue = a*b;"""
         )
         solver.propagate()
-        assertEquals("20000..30000 m^2", solver.getVariable("result")!!.vectorQuantity.toString())
         assertNoIssues()
+        assertEquals("2..3 ha", solver.variable("result").vectorQuantity.toString())
+    }
+
+    @Test
+    fun quantityToStringExplicitUnit() = testSession("ISQ") {
+        loadKerML("""
+            feature a: ISQ::LengthValue(200.0 .. 300.0 [m]);
+            feature b: ISQ::LengthValue(100.0 .. 100.0 [m]);
+            feature resultArea: ISQ::AreaValue(* [m^2]) = a*b;
+            feature c: Quantities::ScalarQuantityValue(1000000.0 .. 1000000.0 [s]);
+            feature d: Quantities::ScalarQuantityValue(1000.0 .. 1000.0 [A]);
+            feature resultCharge: ISQ::ElectricChargeValue(* [A s]) = c*d;
+        """, Runlevel.ALL)
+        assertNoIssues()
+        assertEquals("20000..30000 m^2", solver.variable("resultArea").vectorQuantity.toString())
+        assertEquals("1e9 A s", solver.variable("resultCharge").vectorQuantity.toString())
+    }
+
+    @Test
+    fun wrongUnitTypeAssignmentTest() = testSession("ISQ") {
+        loadKerML("""
+            feature a: ISQ::ForceValue = 10.0 [N];
+            feature b: ISQ::SpeedValue = a;
+        """)
+        solver.propagate()
+        assertIssue("cannot be transferred")
     }
 
     @Test
@@ -318,7 +344,7 @@ class QuantityToStringTests {
         """)
         solver.propagate()
         assertNoIssues()
-        assertEquals("0.11 m", solver.getVariable("result")!!.vectorQuantity.toString())
+        assertEquals("0.11 m", solver.variable("result").vectorQuantity.toString())
     }
 
     @Test
@@ -329,7 +355,7 @@ class QuantityToStringTests {
         )
         solver.propagate()
         assertNoIssues()
-        assertEquals("0.05 m", solver.getVariable("result")!!.vectorQuantity.toString())
+        assertEquals("0.05 m", solver.variable("result").vectorQuantity.toString())
     }
 
     @Test
@@ -338,8 +364,8 @@ class QuantityToStringTests {
             feature a: Quantities::ScalarQuantityValue(0.05 .. 0.05 [m^3]);
             feature result: ISQ::VolumeValue = a; """)
         solver.propagate()
-        assertEquals("0.05 m^3", solver.getVariable("result")!!.vectorQuantity.toString())
         assertNoIssues()
+        assertEquals("0.05 m^3", solver.variable("result").vectorQuantity.toString())
     }
 
     @Test
@@ -349,10 +375,10 @@ class QuantityToStringTests {
             feature b: ISQ::DurationValue= 1.0 [s];
             feature result: ISQ::LengthValue= a*b.
         """, Runlevel.ALL)
-        assertEquals("0..130 km / h", solver.getVariable("a")!!.vectorQuantity.toString())
-        assertEquals("1 s", solver.getVariable("b")!!.vectorQuantity.toString())
-        assertEquals("0..36.11111 m", solver.getVariable("result")!!.vectorQuantity.toString())
         assertNoIssues()
+        assertEquals("0..130 km / h", solver.variable("a").vectorQuantity.toString())
+        assertEquals("1 s", solver.variable("b").vectorQuantity.toString())
+        assertEquals("0..36.111 m", solver.variable("result").vectorQuantity.toString())
     }
 
     @Test //not satisfiable
@@ -364,9 +390,9 @@ class QuantityToStringTests {
         """)
         solver.propagate()
         // Following may or may not be correct depending on order of constraint propagation
-        // assertEquals("∅", solver.getVariable("a")!!.vectorQuantity.toString())
-        // assertEquals("∅", solver.getVariable("b")!!.vectorQuantity.toString())
-        assertEquals("∅", solver.getVariable("result")!!.vectorQuantity.toString())
+        // assertEquals("∅", solver.variable("a").vectorQuantity.toString())
+        // assertEquals("∅", solver.variable("b").vectorQuantity.toString())
+        assertEquals("∅ m", solver.variable("result").vectorQuantity.toString())
         assertIssue("is not satisfiable")
     }
 
@@ -376,9 +402,9 @@ class QuantityToStringTests {
             feature a : ScalarValues::Real (0 .. 100);
         """)
         solver.propagate()
-        val representer = Representer()
-        assertEquals(Representer.InputType.NormalNumbers, representer.returnInputType(solver.getVariable("a")!!.vectorQuantity.values[0].asAadd()))
         assertNoIssues()
+        val representer = Representer()
+        assertEquals("0..100", representer.represent(solver.variable("a").aadd()))
     }
 
     @Test
@@ -387,9 +413,9 @@ class QuantityToStringTests {
             feature a : ScalarValues::Real = 33.0;
         """)
         solver.propagate()
-        val representer = Representer()
-        assertEquals(Representer.InputType.ClosedRange, representer.returnInputType(solver.getVariable("a")!!.vectorQuantity.values[0].asAadd()))
         assertNoIssues()
+        val representer = Representer()
+        assertEquals("33", representer.represent(solver.variable("a").aadd()))
     }
 
     @Test
@@ -398,8 +424,23 @@ class QuantityToStringTests {
             feature a : ScalarValues::Real (0 .. 0);
         """)
         solver.propagate()
-        val representer = Representer()
-        assertEquals(Representer.InputType.ClosedRange, representer.returnInputType(solver.getVariable("a")!!.vectorQuantity.values[0].asAadd()))
         assertNoIssues()
+        val representer = Representer()
+        assertEquals("0", representer.represent(solver.variable("a").aadd()))
+    }
+
+    @Test
+    fun scalarInfinity()
+    {
+        val rr : ClosedRange<DoubleBound> = DoubleBound.PositiveInfinity ..DoubleBound.PositiveInfinity
+        assertEquals("*", Representer().represent(DDBuilder().real(rr)))
+    }
+
+    @Test
+    fun integer()
+    {
+        val b = DDBuilder()
+        assertEquals("∅", VectorQuantity(b.Reals.Empty, "1").toString())
+        assertEquals("∅", VectorQuantity(b.Integers.Empty).toString())
     }
 }

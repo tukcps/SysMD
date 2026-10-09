@@ -1,11 +1,13 @@
 package constraintnettests
 
+import util.variable
 import com.github.tukcps.sysmd.services.Runlevel
 import util.assertIssue
 import kotlin.test.assertEquals
 import kotlin.test.Ignore
 import kotlin.test.Test
 import util.assertNoIssues
+import util.assertBounds
 import util.mockup.loadKerML
 import util.mockup.loadSysMLv2
 import util.testSession
@@ -21,24 +23,14 @@ class VectorTests {
             feature b: Quantities::VectorQuantityValue = (0.5, 1.5) N { :>> range = *..* [N]; }
             feature c: ISQ::CartesianForce3dVector  = (-5.0, -1.0, 3.0) N {:>> range = (-5.0..-1.0, -1.0..2.0, 2.0..4.0) [N]; }
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        val a = solver.getVariable("a")!!
-        val b = solver.getVariable("b")!!
-        val c = solver.getVariable("c")!!
-        assertEquals(0.5, a.min(), 0.000001)
-        assertEquals(0.5, a.max(), 0.000001)
-        assertEquals(1.5, a.min(1), 0.000001)
-        assertEquals(1.5, a.max(1), 0.000001)
-        assertEquals(0.5, b.min(), 0.000001)
-        assertEquals(0.5, b.max(), 0.000001)
-        assertEquals(1.5, b.min(1), 0.000001)
-        assertEquals(1.5, b.max(1), 0.000001)
-        assertEquals(-5.0, c.min(), 0.000001)
-        assertEquals(-5.0, c.max(), 0.000001)
-        assertEquals(-1.0, c.min(1), 0.000001)
-        assertEquals(-1.0, c.max(1), 0.000001)
-        assertEquals(3.0, c.min(2), 0.000001)
-        assertEquals(3.0, c.max(2), 0.000001)
+        val a = solver.variable("a")
+        val b = solver.variable("b")
+        val c = solver.variable("c")
+        assertBounds(listOf(0.5 .. 0.5, 1.5 .. 1.5), a)
+        assertBounds(listOf(0.5 .. 0.5, 1.5 .. 1.5), b)
+        assertBounds(listOf(-5.0 .. -5.0, -1.0 .. -1.0, 3.0 .. 3.0), c)
     }
 
     @Test fun vectorDefineTestRealError1() = testSession("ISQ", "Ranges") {
@@ -55,24 +47,20 @@ class VectorTests {
             feature b: Ranges::IntegerInRange = (0,1) {:>> range = (0..1,1..2);}
             feature c: Ranges::IntegerInRange = (-5, -1, 3) {:>> range = (-5..-1,-1..2, 2..4);}
             """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        val a = solver.getVariable("a")!!
-        val b = solver.getVariable("b")!!
-        val c = solver.getVariable("c")!!
-        assertEquals(0L, a.min())
-        assertEquals(0L, a.vectorQuantity.values[0].asIdd().max)
-        assertEquals(1L, a.vectorQuantity.values[1].asIdd().min)
-        assertEquals(1L, a.vectorQuantity.values[1].asIdd().max)
-        assertEquals(0L, b.min())
-        assertEquals(0L, b.vectorQuantity.values[0].asIdd().max)
-        assertEquals(1L, b.vectorQuantity.values[1].asIdd().min)
-        assertEquals(1L, b.vectorQuantity.values[1].asIdd().max)
-        assertEquals(-5L, c.min())
-        assertEquals(-5L, c.vectorQuantity.values[0].asIdd().max)
-        assertEquals(-1L, c.vectorQuantity.values[1].asIdd().min)
-        assertEquals(-1L, c.vectorQuantity.values[1].asIdd().max)
-        assertEquals(3L, c.vectorQuantity.values[2].asIdd().min)
-        assertEquals(3L, c.vectorQuantity.values[2].asIdd().max)
+        val a = solver.variable("a")
+        val b = solver.variable("b")
+        val c = solver.variable("c")
+        assertBounds(listOf(
+            0L..0L, 1L..1L
+        ), a)
+        assertBounds(listOf(
+            0L..0L, 1L..1L
+        ), b)
+        assertBounds(listOf(
+            -5L..-5L, -1L..-1L, 3L..3L
+        ), c)
     }
 
     @Test fun vectorDefineTestIntegerError1() = testSession("Ranges") {
@@ -89,31 +77,22 @@ class VectorTests {
             feature b: ISQ::CartesianPosition3dVector {:>> range = (0..1, 1..3, -2..2) [m]; }
             feature c: ISQ::CartesianPosition3dVector = a + b;
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        val c = solver.getVariable("c")!!
-        assertEquals(0.0, c.min(), 0.000001)
-        assertEquals(2.0, c.max(), 0.000001)
-        assertEquals(2.0, c.min(1), 0.000001)
-        assertEquals(5.0, c.max(1), 0.000001)
-        assertEquals(1.0, c.min(2), 0.000001)
-        assertEquals(6.0, c.max(2), 0.000001)
+        val c = solver.variable("c")
+        assertBounds(listOf(0.0 .. 2.0, 2.0 .. 5.0, 1.0 .. 6.0), c)
     }
 
     @Test fun vectorPlusTestInt() = testSession("Ranges") {
         loadKerML("""
-                feature a: Ranges::IntegerInRange {:>> range = (0..1 ,1..2, 3..4);} 
-                feature b: Ranges::IntegerInRange {:>> range = (0..1, 1..3, -2..2);}
-                feature c: ScalarValues::Integer  = a + b;
-            """)
+            feature a: Ranges::IntegerInRange {:>> range = (0..1 ,1..2, 3..4);} 
+            feature b: Ranges::IntegerInRange {:>> range = (0..1, 1..3, -2..2);}
+            feature c: ScalarValues::Integer  = a + b;
+        """, Runlevel.ALL)
         solver.propagate()
         assertNoIssues()
-        val c = solver.getVariable("c")!!
-        assertEquals(0L, c.min())
-        assertEquals(2L, c.vectorQuantity.values[0].asIdd().max)
-        assertEquals(2L, c.vectorQuantity.values[1].asIdd().min)
-        assertEquals(5L, c.vectorQuantity.values[1].asIdd().max)
-        assertEquals(1L, c.vectorQuantity.values[2].asIdd().min)
-        assertEquals(6L, c.vectorQuantity.values[2].asIdd().max)
+        val c = solver.variable("c")
+        assertBounds(listOf(0L..2L, 2L..5L, 1L..6L), c)
     }
 
     @Test fun vectorMinusTestReal() = testSession("ISQ", "Ranges") {
@@ -122,14 +101,10 @@ class VectorTests {
             feature b: ISQ::CartesianVelocity3dVector { :>> range = (0..1, 1..3, -2..2) [m/s]; } 
             feature c: ISQ::CartesianVelocity3dVector = a - b;
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        val c = solver.getVariable("c")!!
-        assertEquals(-1.0, c.min(), 0.000001)
-        assertEquals(1.0, c.max(), 0.000001)
-        assertEquals(-2.0, c.min(1), 0.000001)
-        assertEquals(1.0, c.max(1), 0.000001)
-        assertEquals(1.0, c.min(2), 0.000001)
-        assertEquals(6.0, c.max(2), 0.000001)
+        val c = solver.variable("c")
+        assertBounds(listOf(-1.0 .. 1.0, -2.0 .. 1.0, 1.0 .. 6.0), c)
     }
 
     @Test fun vectorMinusTestInt() = testSession("Ranges") {
@@ -138,14 +113,12 @@ class VectorTests {
             feature b: Ranges::IntegerInRange { :>> range = (0..1,1..3,-2..2);}
             feature c: ScalarValues::Integer  = a - b;
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        val c = solver.getVariable("c")!!
-        assertEquals(-1L, c.min())
-        assertEquals(1L, c.vectorQuantity.values[0].asIdd().max)
-        assertEquals(-2L, c.vectorQuantity.values[1].asIdd().min)
-        assertEquals(1L, c.vectorQuantity.values[1].asIdd().max)
-        assertEquals(1L, c.vectorQuantity.values[2].asIdd().min)
-        assertEquals(6L, c.vectorQuantity.values[2].asIdd().max)
+        val c = solver.variable("c")
+        assertBounds(listOf(
+            -1L..1L, -2L..1L, 1L..6L
+        ), c)
     }
 
     @Test fun vectorScalarMultiplicationTestReal() = testSession("Ranges") {
@@ -156,13 +129,8 @@ class VectorTests {
             """)
         solver.propagate()
         assertNoIssues()
-        val c = solver.getVariable("c")!!
-        assertEquals(-12.0, c.min(), 0.000001)
-        assertEquals(18.0, c.max(), 0.000001)
-        assertEquals(-24.0, c.min(1), 0.000001)
-        assertEquals(36.0, c.max(1), 0.000001)
-        assertEquals(-40.0, c.min(2), 0.000001)
-        assertEquals(60.0, c.max(2), 0.000001)
+        val c = solver.variable("c")
+        assertBounds(listOf(-12.0 .. 18.0, -24.0 .. 36.0, -40.0 .. 60.0), c)
     }
 
 
@@ -186,44 +154,22 @@ class VectorTests {
                 part space : FrontSpace;
             }
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
     }
 
-    @Ignore //TODO Eval Down of Power (row wise or scalar operand)
     @Test fun vectorPowerTestReal() = testSession("Ranges") {
         loadKerML("""
-                feature a: ISQ::CartesianForce3dVector {:>> range = "0..1, 1..4, 4..9";}
-                feature b: ISQ::CartesianForce3dVector {:>> range = "-2..2";}
-                feature c: ISQ::CartesianForce3dVector = a ^ b;
+                feature a: Ranges::RealInRange {:>> range = (0..1, 1..4, 4..9);}
+                feature b: Ranges::RealInRange {:>> range = -2..2;}
+                feature c: Ranges::RealInRange = a ^ b;
         """)
         solver.propagate()
         assertNoIssues()
-        val c = solver.getVariable("c")!!
-        assertEquals(0.0, c.min(), 0.000001)
-        assertEquals(1.0, c.max(), 0.000001)
-        assertEquals(1.0, c.min(1), 0.000001)
-        assertEquals(8.0, c.max(1), 0.000001)
-        assertEquals(2.0, c.min(2), 0.000001)
-        assertEquals(81.0, c.max(2), 0.000001)
+        val c = solver.variable("c")
+        assertBounds(listOf(Double.NEGATIVE_INFINITY .. Double.POSITIVE_INFINITY, (1.0 / 16.0) .. 16.0, (1.0 / 81.0) .. 81.0), c)
     }
 
-    @Ignore //TODO Eval Down of Power (row wise or scalar operand)
-    @Test fun vectorPowerTestInt() = testSession("Ranges") {
-        loadKerML("""
-                feature a: Ranges::IntegerInRange {:>> range = (0..1,1..2,3..4);}
-                feature b: Ranges::IntegerInRange {:>> range = (0..1,1..3,-2..2);}
-                feature c: Ranges::IntegerInRange  = a ^ b;
-            """)
-        solver.propagate()
-        assertNoIssues()
-        val c = solver.getVariable("c")!!
-        assertEquals(0L, c.min())
-        assertEquals(1L, c.max())
-        assertEquals(1L, c.vectorQuantity.values[1].asIdd().min)
-        assertEquals(6L, c.vectorQuantity.values[1].asIdd().max)
-        assertEquals(-8L, c.vectorQuantity.values[2].asIdd().min)
-        assertEquals(8L, c.vectorQuantity.values[2].asIdd().max)
-    }
 
     @Test fun vectorNegateTestReal() = testSession("ISQ", "Ranges") {
         loadKerML("""
@@ -231,13 +177,8 @@ class VectorTests {
             feature c: ISQ::CartesianPosition3dVector = -a;
         """, Runlevel.ALL)
         assertNoIssues()
-        val c = solver.getVariable("c")!!
-        assertEquals(-1.0, c.min(), 0.000001)
-        assertEquals(0.0, c.max(), 0.000001)
-        assertEquals(-2.0, c.min(1), 0.000001)
-        assertEquals(-1.0, c.max(1), 0.000001)
-        assertEquals(-4.0, c.min(2), 0.000001)
-        assertEquals(-3.0, c.max(2), 0.000001)
+        val c = solver.variable("c")
+        assertEquals("(-1..0, -2..-1, -4..-3) m", c.vectorQuantity.toString())
     }
 
     @Test fun vectorNegateTestInt() = testSession("Ranges") {
@@ -247,13 +188,10 @@ class VectorTests {
             """)
         solver.propagate()
         assertNoIssues()
-        val c = solver.getVariable("c")!!
-        assertEquals(-1L, c.min())
-        assertEquals(0L, c.vectorQuantity.values[0].asIdd().max)
-        assertEquals(-2L, c.vectorQuantity.values[1].asIdd().min)
-        assertEquals(-1L, c.vectorQuantity.values[1].asIdd().max)
-        assertEquals(-4L, c.vectorQuantity.values[2].asIdd().min)
-        assertEquals(-3L, c.vectorQuantity.values[2].asIdd().max)
+        val c = solver.variable("c")
+        assertBounds(listOf(
+            -1L..0L, -2L..-1L, -4L..-3L
+        ), c)
     }
 
     @Test fun vectorAbsTestReal() = testSession("ISQ", "Ranges") {
@@ -261,11 +199,10 @@ class VectorTests {
             feature a: ISQ::CartesianVelocity3dVector { :>> range = (3..3, 0..0, 4..4) [m/s];}
             feature c: ISQ::SpeedValue = abs(a);
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        val c = solver.getVariable("c")!!
-        assertEquals(5.0, c.min(), 0.000001)
-        assertEquals(5.0, c.max(), 0.000001)
-        assertEquals(1, c.vectorQuantity.values.size)
+        val c = solver.variable("c")
+        assertBounds(5.0 .. 5.0, c)
     }
 
     @Test fun vectorLenTestReal() = testSession("ISQ") {
@@ -275,10 +212,8 @@ class VectorTests {
             """)
         solver.propagate()
         assertNoIssues()
-        val c = solver.getVariable("c")!!
-        assertEquals(3L, c.min())
-        assertEquals(3L, c.vectorQuantity.values[0].asIdd().max)
-        assertEquals(1, c.vectorQuantity.values.size)
+        val c = solver.variable("c")
+        assertBounds(3L..3L, c)
     }
 
     @Test fun vectorCityBlockTestReal() = testSession("ISQ") {
@@ -287,10 +222,10 @@ class VectorTests {
             feature b: ISQ::CartesianPosition3dVector {:>> range = (5..5,-3..-3,4..4) [m];}
             feature c: ISQ::LengthValue = cityBlockDistance(a, b);
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        val c = solver.getVariable("c")!!
-        assertEquals(5.0, c.min(), 0.000001)
-        assertEquals(5.0, c.max(), 0.000001)
+        val c = solver.variable("c")
+        assertBounds(5.0 .. 5.0, c)
         assertEquals(1, c.vectorQuantity.values.size)
     }
 
@@ -300,11 +235,10 @@ class VectorTests {
             feature b: Ranges::IntegerInRange {:>> range = (5..5,-3..-3,4..4);}
             feature c: ScalarValues::Integer = cityBlockDistance(a,b); 
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        val c = solver.getVariable("c")!!
-        assertEquals(5L, c.min())
-        assertEquals(5L, c.vectorQuantity.values[0].asIdd().max)
-        assertEquals(1, c.vectorQuantity.values.size)
+        val c = solver.variable("c")
+        assertBounds(5L .. 5L, c)
     }
 
     @Test fun vectorAbsTestInt() = testSession("Ranges") {
@@ -312,11 +246,10 @@ class VectorTests {
             feature a: Ranges::IntegerInRange {:>> range = (3..3,4..4,0..0);}
             feature c: ScalarValues::Integer  = abs(a);
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        val c = solver.getVariable("c")!!
-        assertEquals(5L, c.min())
-        assertEquals(5L, c.vectorQuantity.values[0].asIdd().max)
-        assertEquals(1, c.vectorQuantity.values.size)
+        val c = solver.variable("c")
+        assertBounds(5L .. 5L, c)
     }
 
     @Test fun vectorFloorTestReal() = testSession("ISQ") {
@@ -326,13 +259,8 @@ class VectorTests {
             """)
         solver.propagate()
         assertNoIssues()
-        val c = solver.getVariable("c")!!
-        assertEquals(0.0, c.min(), 0.000001)
-        assertEquals(1.0, c.max(), 0.000001)
-        assertEquals(6.0, c.min(1), 0.000001)
-        assertEquals(9.0, c.max(1), 0.000001)
-        assertEquals(-7.0, c.min(2), 0.000001)
-        assertEquals(7.0, c.max(2), 0.000001)
+        val c = solver.variable("c")
+        assertBounds(listOf(0.0 .. 1.0, 6.0 .. 9.0, -7.0 .. 7.0), c)
     }
 
     @Test fun vectorCeilTestReal() = testSession("ISQ", "Ranges") {
@@ -342,13 +270,8 @@ class VectorTests {
             """)
         solver.propagate()
         assertNoIssues()
-        val c = solver.getVariable("c")!!
-        assertEquals(1.0, c.min(), 0.000001)
-        assertEquals(2.0, c.max(), 0.000001)
-        assertEquals(7.0, c.min(1), 0.000001)
-        assertEquals(10.0, c.max(1), 0.000001)
-        assertEquals(-6.0, c.min(2), 0.000001)
-        assertEquals(8.0, c.max(2), 0.000001)
+        val c = solver.variable("c")
+        assertBounds(listOf(1.0 .. 2.0, 7.0 .. 10.0, -6.0 .. 8.0), c)
     }
 
     @Test fun vectorSqrtTestReal() = testSession("ISQ") {
@@ -356,15 +279,11 @@ class VectorTests {
             feature a: Quantities::VectorQuantityValue {:>> range = (1..4,0.64..225,9..81);}
             feature c: Ranges::RealInRange = sqrt(a);
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        val c = solver.getVariable("c")!!
+        val c = solver.variable("c")
 
-        assertEquals(1.0, c.min(), 0.000001)
-        assertEquals(2.0, c.max(), 0.000001)
-        assertEquals(0.8, c.min(1), 0.000001)
-        assertEquals(15.0, c.max(1), 0.000001)
-        assertEquals(3.0, c.min(2), 0.000001)
-        assertEquals(9.0, c.max(2), 0.000001)
+        assertBounds(listOf(1.0 .. 2.0, 0.8 .. 15.0, 3.0 .. 9.0), c)
     }
 
     @Test fun vectorsSqrtTestInt() = testSession("Ranges") {
@@ -372,45 +291,32 @@ class VectorTests {
             feature a: Ranges::IntegerInRange {:>> range = (1..4, 64..225, 9..81);}
             feature c: ScalarValues::Integer  = sqrt(a);
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        val c = solver.getVariable("c")!!
-        assertEquals(1L, c.min())
-        assertEquals(2L, c.vectorQuantity.values[0].asIdd().max)
-        assertEquals(8L, c.vectorQuantity.values[1].asIdd().min)
-        assertEquals(15L, c.vectorQuantity.values[1].asIdd().max)
-        assertEquals(3L, c.vectorQuantity.values[2].asIdd().min)
-        assertEquals(9L, c.vectorQuantity.values[2].asIdd().max)
+        val c = solver.variable("c")
+        assertBounds(listOf(1L..2L, 8L..15L, 3L..9L), c)
     }
 
     @Test fun vectorSqrTestReal() = testSession("ISQ") {
         loadKerML("""
-            feature a: Quantities::VectorQuantityValue {:>> range = (1..4,0.5..15.0,-3..2);}
+            feature a: Quantities::VectorQuantityValue { :>> range = (1..4, 0.5..15.0, -3..2); }
             feature c: Quantities::VectorQuantityValue = sqr(a);
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        val c = solver.getVariable("c")!!
-
-        assertEquals(1.0, c.min(), 0.000001)
-        assertEquals(16.0, c.max(), 0.000001)
-        assertEquals(0.25, c.min(1), 0.000001)
-        assertEquals(225.0, c.max(1), 0.000001)
-        assertEquals(0.0, c.min(2), 0.000001)
-        assertEquals(9.0, c.max(2), 0.000001)
+        val c = solver.variable("c")
+        assertBounds(listOf(1.0 .. 16.0, 0.25 .. 225.0, 0.0 .. 9.0), c)
     }
 
     @Test fun vectorsSqrTestInt() = testSession("Ranges") {
         loadKerML("""
-            feature a: Ranges::IntegerInRange {:>> range = (1..4,5..15,-3..2);}
+            feature a: Ranges::IntegerInRange {:>> range = (1..4, 5..15, -3..2);}
             feature c: Ranges::IntegerInRange  = sqr(a);
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        val c = solver.getVariable("c")!!
-        assertEquals(1L, c.min())
-        assertEquals(16L, c.vectorQuantity.values[0].asIdd().max)
-        assertEquals(25L, c.vectorQuantity.values[1].asIdd().min)
-        assertEquals(225L, c.vectorQuantity.values[1].asIdd().max)
-        assertEquals(0L, c.vectorQuantity.values[2].asIdd().min)
-        assertEquals(9L, c.vectorQuantity.values[2].asIdd().max)
+        val c = solver.variable("c")
+        assertBounds(listOf(1L..16L, 25L..225L, 0L..9L), c)
     }
 
     @Test fun vectorLogTestReal() = testSession("Ranges") {
@@ -420,14 +326,13 @@ class VectorTests {
             """)
         solver.propagate()
         assertNoIssues()
-        val c = solver.getVariable("c")!!
+        val c = solver.variable("c")
 
-        assertEquals(0.0, c.min(), 0.000001)
-        assertEquals(1.3862943611198904, c.max(), 0.000001)
-        assertEquals(0.0, c.min(1), 0.000001)
-        assertEquals(2.3025850929940455, c.max(1), 0.000001)
-        assertEquals(0.916290731874155, c.min(2), 0.000001)
-        assertEquals(1.3862943611198904, c.max(2), 0.000001)
+        assertBounds(listOf(
+            0.0 .. 1.3862943611198904,
+            0.0 .. 2.3025850929940455,
+            0.916290731874155 .. 1.3862943611198904
+        ), c)
     }
 
     @Test fun vectorPow2TestReal() = testSession("Ranges") {
@@ -437,33 +342,29 @@ class VectorTests {
             """)
         solver.propagate()
         assertNoIssues()
-        val c = solver.getVariable("c")!!
+        val c = solver.variable("c")
 
-        assertEquals(2.0, c.min(), 0.000001)
-        assertEquals(16.0, c.max(), 0.000001)
-        assertEquals(1.0, c.min(1), 0.000001)
-        assertEquals(32.0, c.max(1), 0.000001)
-        assertEquals(64.0, c.min(2), 0.000001)
-        assertEquals(1024.0, c.max(2), 0.000001)
+        assertBounds(listOf(
+            2.0 .. 16.0, 1.0 .. 32.0, 64.0 .. 1024.0
+         ), c)
     }
 
-    @Test fun vectorsPow2TestInt() = testSession("Ranges") {
+    @Test
+    fun vectorsPow2TestInt() = testSession("Ranges") {
         loadKerML("""
                 feature a: Ranges::IntegerInRange {:>> range = (1..4, 0..5, 6..10);}
                 feature c: ScalarValues::Integer  = pow2(a);
             """)
         solver.propagate()
         assertNoIssues()
-        val c = solver.getVariable("c")!!
-        assertEquals(2L, c.min())
-        assertEquals(16L, c.vectorQuantity.values[0].asIdd().max)
-        assertEquals(1L, c.vectorQuantity.values[1].asIdd().min)
-        assertEquals(32L, c.vectorQuantity.values[1].asIdd().max)
-        assertEquals(64L, c.vectorQuantity.values[2].asIdd().min)
-        assertEquals(1024L, c.vectorQuantity.values[2].asIdd().max)
+        val c = solver.variable("c")
+        assertBounds(listOf(
+            2L..16L, 1L..32L, 64L..1024L
+        ), c)
     }
 
-    @Test fun vectorsToString() = testSession("Ranges") {
+    @Test
+    fun vectorsToString() = testSession("Ranges") {
         loadKerML("""
             feature a: Ranges::IntegerInRange {:>> range = (1..4,0..5,6..10);}
             feature b: Quantities::VectorQuantityValue {:>> range = (1..4,0..5,6..10);}
@@ -471,10 +372,10 @@ class VectorTests {
             feature d: Quantities::VectorQuantityValue = (4.0,5.0,6.0) {:>> range = (1..4,0..5,6..10);}
         """, Runlevel.ALL)
         assertNoIssues()
-        val a = solver.getVariable("a")!!
-        val b = solver.getVariable("b")!!
-        val c = solver.getVariable("c")!!
-        val d = solver.getVariable("d")!!
+        val a = solver.variable("a")
+        val b = solver.variable("b")
+        val c = solver.variable("c")
+        val d = solver.variable("d")
         assertEquals("(1..4, 0..5, 6..10)", a.vectorQuantity.toString())
         assertEquals("(1..4, 0..5, 6..10)", b.vectorQuantity.toString())
         assertEquals("(4, 5, 6)", c.vectorQuantity.toString())
@@ -488,9 +389,9 @@ class VectorTests {
             feature c: ISQ::CartesianVelocity3dVector = (1.0,3.0,4.0) [km/h] { :>> range = (1..4,0..5,4..10) [km / h];}
         """, Runlevel.ALL)
         assertNoIssues()
-        val a = solver.getVariable("a")!!
-        val b = solver.getVariable("b")!!
-        val c = solver.getVariable("c")!!
+        val a = solver.variable("a")
+        val b = solver.variable("b")
+        val c = solver.variable("c")
         assertEquals("(1..4, 0..5, 6..10) kg m / s", a.vectorQuantity.toString())
         assertEquals("(4, 5, 6) N", b.vectorQuantity.toString())
         assertEquals("(1, 3, 4) km / h", c.vectorQuantity.toString())
@@ -502,14 +403,10 @@ class VectorTests {
             feature b: ISQ::CartesianPosition3dVector {:>> range = (5..5, 1..1, 10..10) [m];}
             feature c: ISQ::CartesianMomentOfForce3dVector = a cross b;
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        val c = solver.getVariable("c")!!
-        assertEquals(40.0, c.min(), 0.000001)
-        assertEquals(40.0, c.max(), 0.000001)
-        assertEquals(40.0, c.min(1), 0.000001)
-        assertEquals(40.0, c.max(1), 0.000001)
-        assertEquals(-24.0, c.min(2), 0.000001)
-        assertEquals(-24.0, c.max(2), 0.000001)
+        val c = solver.variable("c")
+        assertBounds(listOf(40.0 .. 40.0, 40.0 .. 40.0, -24.0 .. -24.0), c)
     }
 
     @Test fun vectorCrossProductTestInt() = testSession("Ranges") {
@@ -520,33 +417,29 @@ class VectorTests {
             """)
         solver.propagate()
         assertNoIssues()
-        val c = solver.getVariable("c")!!
-        assertEquals(40L, c.min())
-        assertEquals(40L, c.vectorQuantity.values[0].asIdd().max)
-        assertEquals(40L, c.vectorQuantity.values[1].asIdd().min)
-        assertEquals(40L, c.vectorQuantity.values[1].asIdd().max)
-        assertEquals(-24L, c.vectorQuantity.values[2].asIdd().min)
-        assertEquals(-24L, c.vectorQuantity.values[2].asIdd().max)
+        val c = solver.variable("c")
+        assertBounds(listOf(
+            40L..40L, 40L..40L, -24L..-24L
+        ), c)
     }
 
     @Ignore // Should have the same result as test with Int, but AA gives some strange results for independent values.
     @Test fun vectorCrossProductTestReal2() = testSession("Ranges") {
         loadKerML(
             """
-                feature a: ISQ::CartesianForce3dVector {:>> range = (-3..4,5..7,0..1);}
-                feature b: ISQ::CartesianPosition3dVector {:>> range = (4..5,-2..-1,3..10);}
+                feature a: ISQ::CartesianForce3dVector {:>> range = (-3..4,5..7,0..1) [N];}
+                feature b: ISQ::CartesianPosition3dVector {:>> range = (4..5,-2..-1,3..10) [m];}
                 feature c: ISQ::CartesianMomentOfForce3dVector = a cross b.
             """
         )
         solver.propagate()
         assertNoIssues()
-        val c = solver.getVariable("c")!!
-        assertEquals(15.0, c.min(), 0.000001)
-        assertEquals(72.0, c.max(), 0.000001)
-        assertEquals(-40.0, c.min(1), 0.000001)
-        assertEquals(35.0, c.max(1), 0.000001)
-        assertEquals(-43.0, c.min(2), 0.000001)
-        assertEquals(-14.0, c.max(2), 0.000001)
+        val c = solver.variable("c")
+        assertBounds(listOf(
+            15.0 .. 72.0,
+            -40.0 .. 35.0,
+            -43.0 .. -14.0
+        ), c)
     }
 
     @Test fun vectorCrossProductTestInt2() = testSession("Ranges") {
@@ -555,16 +448,12 @@ class VectorTests {
                 feature b: Ranges::IntegerInRange {:>> range = (4..5,-2..-1,3..10);}
                 feature c: ScalarValues::Integer  = a cross b;
             """)
+        solver.propagate()
         assertNoIssues()
         solver.propagate()
         assertNoIssues()
-        val c = solver.getVariable("c")!!
-        assertEquals(15L, c.min())
-        assertEquals(72L, c.vectorQuantity.values[0].asIdd().max)
-        assertEquals(-40L, c.vectorQuantity.values[1].asIdd().min)
-        assertEquals(35L, c.vectorQuantity.values[1].asIdd().max)
-        assertEquals(-43L, c.vectorQuantity.values[2].asIdd().min)
-        assertEquals(-14L, c.vectorQuantity.values[2].asIdd().max)
+        val c = solver.variable("c")
+        assertBounds(listOf(15L..72L, -40L..35L, -43L..-14L), c)
     }
 
     @Ignore // Should have the same result as test with Int, but AA gives some strange results for independent values.
@@ -576,9 +465,8 @@ class VectorTests {
             """)
         solver.propagate()
         assertNoIssues()
-        val c = solver.getVariable("c")!!
-        assertEquals(-29.0, c.min(), 0.000001)
-        assertEquals(25.0, c.max(), 0.000001)
+        val c = solver.variable("c")
+        assertBounds(-29.0 .. 25.0, c)
         assertEquals(1,c.vectorQuantity.values.size)
     }
 
@@ -590,10 +478,8 @@ class VectorTests {
             """)
         solver.propagate()
         assertNoIssues()
-        val c = solver.getVariable("c")!!
-        assertEquals(-29L, c.min())
-        assertEquals(25L, c.vectorQuantity.values[0].asIdd().max)
-        assertEquals(1,c.vectorQuantity.values.size)
+        val c = solver.variable("c")
+        assertBounds(-29L .. 25L, c)
     }
 
     @Test fun vectorNormalizeTestReal() = testSession("Ranges") {
@@ -603,21 +489,18 @@ class VectorTests {
             feature c: ScalarValues::Real = norm(a);
             feature d: ScalarValues::Real = norm(b);
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        val c = solver.getVariable("c")!!
-        val d = solver.getVariable("d")!!
-        assertEquals(0.0, c.min(), 0.000001)
-        assertEquals(0.0, c.max(), 0.000001)
-        assertEquals(0.6, c.min(1), 0.000001)
-        assertEquals(0.6, c.max(1), 0.000001)
-        assertEquals(0.8, c.min(2), 0.000001)
-        assertEquals(0.8, c.max(2), 0.000001)
-        assertEquals(0.9407208683835953, d.min(), 0.000001)
-        assertEquals(0.9407208683835953, d.max(), 0.000001)
-        assertEquals(0.28221626051507853, d.min(1), 0.000001)
-        assertEquals(0.28221626051507853, d.max(1), 0.000001)
-        assertEquals(0.18814417367671904, d.min(2), 0.000001)
-        assertEquals(0.18814417367671904, d.max(2), 0.000001)
+        val c = solver.variable("c")
+        val d = solver.variable("d")
+        assertBounds(listOf(
+            0.0 .. 0.0, 0.6 .. 0.6, 0.8 .. 0.8
+        ), c)
+        assertBounds(listOf(
+            0.9407208683835973,
+            0.2822162605150792,
+            0.18814417367671946
+        ).map { it .. it }, d)
     }
 
     @Test fun vectorAngleTestReal() = testSession("ISQ", "Ranges") {
@@ -628,7 +511,7 @@ class VectorTests {
         """)
         solver.propagate()
         assertNoIssues()
-        val c = solver.getVariable("c")!!
+        val c = solver.variable("c")
         assertEquals("45 °", c.vectorQuantity.toString())
         assertEquals(1,c.vectorQuantity.values.size)
     }
@@ -641,9 +524,8 @@ class VectorTests {
             """)
         solver.propagate()
         assertNoIssues()
-        val c = solver.getVariable("c")!!
-        assertEquals(0.0, c.min(), 0.00001)
-        assertEquals(0.0, c.max(), 0.00001)
+        val c = solver.variable("c")
+        assertBounds(0.0, c)
         assertEquals(1,c.vectorQuantity.values.size)
     }
 
@@ -655,7 +537,7 @@ class VectorTests {
             """)
         solver.propagate()
         assertNoIssues()
-        val c = solver.getVariable("c")!!
+        val c = solver.variable("c")
         assertEquals("180 °", c.vectorQuantity.toString())
         assertEquals(1,c.vectorQuantity.values.size)
     }
@@ -667,8 +549,8 @@ class VectorTests {
             feature c: ISQ::DimensionOneValue = angle(a,b) {:>> range = *..* [°];}
         """, Runlevel.ALL)
         assertNoIssues()
-        val c = solver.getVariable("c")!!
-        assertEquals("85.33527 °", c.vectorQuantity.toString())
+        val c = solver.variable("c")
+        assertEquals("85.335 °", c.vectorQuantity.toString())
         assertEquals(1,c.vectorQuantity.values.size)
     }
 
@@ -680,7 +562,7 @@ class VectorTests {
             feature c: ISQ::DimensionOneValue = angle(a,b) { :>> range = *..* [°]; }
         """, Runlevel.ALL)
         assertNoIssues()
-        val c = solver.getVariable("c")!!
+        val c = solver.variable("c")
         assertEquals("90 °", c.vectorQuantity.toString())
         assertEquals(1,c.vectorQuantity.values.size)
     }
@@ -705,7 +587,7 @@ class VectorTests {
             feature b: ISQ::LengthValue = a[1];
         """, Runlevel.ALL)
         assertNoIssues()
-        val b = solver.getVariable("b")!!
+        val b = solver.variable("b")
         assertEquals("5 m", b.vectorQuantity.toString())
         assertEquals(1, b.vectorQuantity.values.size)
     }
@@ -717,10 +599,8 @@ class VectorTests {
             """)
         solver.propagate()
         assertNoIssues()
-        val c = solver.getVariable("b")!!
-        assertEquals(5.0, c.max(), 0.00001)
-        assertEquals(10.0, c.max(1), 0.0001)
-        assertEquals(2,c.vectorQuantity.values.size)
+        val c = solver.variable("b")
+        assertBounds(listOf(5.0..5.0, 10.0..10.0), c)
     }
 
     @Test fun vectorPositionAccessTest3() = testSession("ISQ") {
@@ -730,8 +610,10 @@ class VectorTests {
             feature c: ISQ::LengthValue = a[1]+b[2];
         """, Runlevel.ALL)
         assertNoIssues()
-        val c = solver.getVariable("c")!!
+        val c = solver.variable("c")
         assert(12.0 in c.vectorQuantity.values[0].asAadd())
+        solver.propagate()
+        assertNoIssues()
         assertEquals(1,c.vectorQuantity.values.size)
     }
 
@@ -742,9 +624,7 @@ class VectorTests {
             feature a: ISQ::CartesianPosition3dVector {:>> range = (1..1,5..5,10..10) [m];}
             feature a[1]: ISQ::LengthValue = 2..2;
         """, Runlevel.ALL)
-        solver.propagate()
-        assertNoIssues()
-        val c = solver.getVariable("a")!!
+        val c = solver.variable("a")
         assert(2.0 in c.vectorQuantity.values[1].asAadd())
         assertEquals(3,c.vectorQuantity.values.size)
     }

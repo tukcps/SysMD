@@ -15,7 +15,6 @@ import com.github.tukcps.sysmd.model.kerml.Import
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.util.QualifiedName
 import com.github.tukcps.sysmd.model.util.TypeConstraint
-import com.github.tukcps.sysmd.rest.entities.api.entities.Identified
 import com.github.tukcps.sysmd.services.session.SessionStatus
 import kotlin.uuid.Uuid
 
@@ -50,12 +49,12 @@ open class ActionsContext(
         get() = action.element
 
     /** Constructs a reference to the current element */
-    val elementReference : Identified get() = when(val action = this.action) {
+    val elementReference : ElementReference get() = when(val action = this.action) {
         is RootNamespaceAction -> when(val qn = action.qualifiedName) {
-            null -> IdentifiedImplementation(null)
-            else -> IdentifiedByName(name = qn, resolvesTo = IdentificationKind.Namespace)
+            null, "" -> ElementReference.ToRoot
+            else -> ElementReference.ByName(name = qn, kind = IdentificationKind.Namespace)
         }
-        else -> IdentifiedImplementation(element.elementId)
+        else -> ElementReference.ByID(element.elementId)
     }
 
     /** Whether [element] is the root namespace or not.
@@ -117,7 +116,7 @@ open class ActionsContext(
     fun addOwnedElement(ownedElement: ElementData, owningRelationshipType: ElementType): Pair<ElementData?, ElementData> {
         assert(this.element !== ownedElement) { "Tried to make element own itself" }
         val owner = elementReference
-        val owned = IdentifiedImplementation(ownedElement.elementId)
+        val owned = ElementReference.ByID(ownedElement.elementId)
 
         owningRelationship = when {
             elementIsRoot && !compiler.settings.includeOwningRelationshipsToRoot -> null
@@ -134,7 +133,7 @@ open class ActionsContext(
                 owner = owner.clone()
             )
         }
-        val rel = IdentifiedImplementation(owningRelationship?.elementId)
+        val rel = owningRelationship?.elementId?.let(ElementReference::ByID) ?: ElementReference.ToRoot
 
         ownedElement.owningRelationship = rel.clone()
         ownedElement.owningMembership = rel.clone()
@@ -153,11 +152,11 @@ open class ActionsContext(
      */
     fun addOwnedRelationship(ownedRelationship: ElementData) {
         // owningMembership is nullable, then we have the root namespace.
-        element.ownedRelationship.add(IdentifiedImplementation(ownedRelationship.elementId))
+        element.ownedRelationship.add(ElementReference.ByID(ownedRelationship.elementId))
 
         // fixme: likely wrong, as relationships only have (owner !== null) if they are owned via OwningMembership
         if (!elementIsRoot)
-            ownedRelationship.owner = IdentifiedImplementation(element.elementId)
+            ownedRelationship.owner = ElementReference.ByID(element.elementId)
 
         // source links it with the owning element; null for root namespace!
         val source = elementReference
@@ -171,7 +170,7 @@ open class ActionsContext(
      * @param target the target of the owned relationship, identified by name or id.
      * @param type the type of the owned relationship to be generated.
      */
-    fun addOwnedRelationship(target: Identified, type: ElementType) {
+    fun addOwnedRelationship(target: ElementReference, type: ElementType) {
         val action = action
 
         if (action is TypeAction) {
@@ -187,7 +186,7 @@ open class ActionsContext(
 
                 owner = source.clone() // fixme: wrong.
             )
-            action.element.ownedRelationship.add(IdentifiedImplementation(ownedRelationship.elementId))
+            action.element.ownedRelationship.add(ElementReference.ByID(ownedRelationship.elementId))
             elementsBuilt.add(ownedRelationship)
         } else
             status.fatal("Internal issue: owner of addOwnedRelationship must be a type")
@@ -232,7 +231,7 @@ open class ActionsContext(
      * Adds a ReferenceSubsetting relationship.
      * @param referencedFeature qualified name of the referenced feature
      */
-    fun addReferenceSubsetting(referencedFeature: Identified) =
+    fun addReferenceSubsetting(referencedFeature: ElementReference) =
         addOwnedRelationship(referencedFeature, ElementType.ReferenceSubsetting)
 
     /**
@@ -322,38 +321,38 @@ open class ActionsContext(
         }
     }
 
-    fun setSource(source: Identified) {
+    fun setSource(source: ElementReference) {
         element.source = mutableListOf(source)
     }
 
-    fun addSource(source: Identified) {
+    fun addSource(source: ElementReference) {
         element.source.add(source)
     }
 
-    fun setTarget(target: Identified) {
+    fun setTarget(target: ElementReference) {
         element.target = mutableListOf(target)
     }
 
-    fun addTarget(target: Identified) {
+    fun addTarget(target: ElementReference) {
         element.target.add(target)
     }
 
     fun setSourceEnd(source: ElementData) {
-        element.source = mutableListOf(IdentifiedImplementation(source.elementId))
+        element.source = mutableListOf(ElementReference.ByID(source.elementId))
     }
 
     fun setSourceEnd(name: QualifiedName) {
-        element.source = mutableListOf(IdentifiedByName(name = name, resolvesTo = IdentificationKind.Element))
+        element.source = mutableListOf(ElementReference.ByName(name = name))
     }
 
     fun setTargetEnd(target: QualifiedName) {
-        element.target = mutableListOf(IdentifiedByName(target, resolvesTo = IdentificationKind.Element))
+        element.target = mutableListOf(ElementReference.ByName(target))
     }
 
-    fun addTargetEnd(target: ElementData) = element.target.add(IdentifiedImplementation(target.elementId))
+    fun addTargetEnd(target: ElementData) = element.target.add(ElementReference.ByID(target.elementId))
 
     fun setTargetEnd(target: ElementData) {
-        element.target = mutableListOf(IdentifiedImplementation(target.elementId))
+        element.target = mutableListOf(ElementReference.ByID(target.elementId))
     }
 
     fun directionFromPrefixes(): Feature.FeatureDirectionKind? = when {
@@ -396,6 +395,7 @@ open class ActionsContext(
             "exp" -> AstExp(model, param)
             "sqr" -> AstSqr(model, param)
             "sqrt" -> AstSqrt(model, param)
+            "inverseSqr" -> AstInverseSqr(model, param)
             "ceil" -> AstCeil(model, param)
             "floor" -> AstFloor(model, param)
             "power2" -> AstPower2(model, param)

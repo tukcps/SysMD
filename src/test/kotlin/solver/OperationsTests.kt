@@ -1,13 +1,14 @@
 package solver
 
+import util.assertBounds
 import com.github.tukcps.sysmd.model.expression.AstBinOp
 import com.github.tukcps.sysmd.services.Runlevel
-import io.github.tukcps.aadd.values.XBool
+import io.github.tukcps.aadd.util.Assertions.assertEquals
+import io.github.tukcps.aadd.values.bool.XBool
+import io.github.tukcps.aadd.values.bounds.DoubleBound
 import util.mockup.loadKerML
 import util.testSession
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
+import kotlin.test.*
 
 class OperationsTests {
     @Test
@@ -16,7 +17,7 @@ class OperationsTests {
             feature a: ScalarValues::Boolean = not true; 
         """, Runlevel.VARIABLES)
         val a = solver.getVariable("a")
-        assertEquals(XBool.False, a?.bool())
+        assertEquals(XBool.False, a?.bool()?.value)
     }
 
     @Test
@@ -26,7 +27,7 @@ class OperationsTests {
         """, Runlevel.VARIABLES)
         val a = solver.getVariable("a")
         assertTrue(a?.ast?.dependency is AstBinOp)
-        assertEquals(XBool.True, a.bool())
+        assertEquals(XBool.True, a.bool().value)
     }
 
     @Test
@@ -35,6 +36,6 @@ class OperationsTests {
             feature a: ScalarValues::Real = - 1.0 -- 1.0; 
         """, Runlevel.VARIABLES)
         val a = solver.getVariable("a")
-        assertEquals(0.0, a!!.max(), 0.00000001)
+        assertBounds(0.0, a!!)
     }
 }

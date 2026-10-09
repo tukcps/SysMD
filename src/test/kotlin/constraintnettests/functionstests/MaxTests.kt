@@ -1,12 +1,13 @@
 package constraintnettests.functionstests
 
+import util.variable
 import com.github.tukcps.sysmd.services.Runlevel
 import util.assertNoIssues
+import util.assertBounds
 import util.mockup.loadKerML
 import util.testSession
 import kotlin.test.Ignore
 import kotlin.test.Test
-import kotlin.test.assertEquals
 
 class MaxTests {
 
@@ -17,10 +18,10 @@ class MaxTests {
             feature b: Ranges::RealInRange {:>> range = 1.. 2;}
             feature c: ScalarValues::Real = max(a,b);
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        val result = solver.getVariable("c")!!
-        assertEquals(1.0, result.min(), 0.000001)
-        assertEquals(2.0, result.max(), 0.000001)
+        val result = solver.variable("c")
+        assertBounds(1.0 .. 2.0, result)
         assertNoIssues()
     }
 
@@ -33,8 +34,7 @@ class MaxTests {
         solver.propagate()
         assertNoIssues()
         val result = solver.getVariable("a")
-        assertEquals(6.0, result!!.min(), 0.000001)
-        assertEquals(6.0, result.max(), 0.000001)
+        assertBounds(6.0 .. 6.0, result!!)
         assertNoIssues()
     }
 
@@ -44,10 +44,10 @@ class MaxTests {
             feature a: ScalarValues::Real = oneOf(1.0 .. 7.0);
             feature b: Ranges::RealInRange = max(8.0, 2.0+a) {:>> range = 8.0..8.0;}
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
         val result = solver.getVariable("a")
-        assertEquals(1.0, result!!.min(), 0.000001)
-        assertEquals(6.0, result.max(), 0.000001)
+        assertBounds(1.0 .. 6.0, result!!)
         assertNoIssues()
     }
 
@@ -58,10 +58,10 @@ class MaxTests {
             feature b: Ranges::RealInRange = sqrt(4.0) {:>> range = 1.. 6;}
             feature c: Ranges::RealInRange = max(a,b);
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
-        val result = solver.getVariable("c")!!
-        assertEquals(3.0, result.min(), 0.000001)
-        assertEquals(3.0, result.max(), 0.000001)
+        val result = solver.variable("c")
+        assertBounds(3.0 .. 3.0, result)
         assertNoIssues()
     }
 
@@ -75,8 +75,7 @@ class MaxTests {
         solver.propagate()
         assertNoIssues()
         val result = solver.getVariable("b")
-        assertEquals(4.0, result!!.min(), 0.000001)
-        assertEquals(4.0, result.max(), 0.000001)
+        assertBounds(4.0 .. 4.0, result!!)
         assertNoIssues()
     }
 
@@ -90,8 +89,7 @@ class MaxTests {
         solver.propagate()
         assertNoIssues()
         val result = solver.getVariable("c")
-        assertEquals(8.0, result!!.min(), 0.000001)
-        assertEquals(8.0, result.max(), 0.000001)
+        assertBounds(8.0 .. 8.0, result!!)
         assertNoIssues()
     }
 
@@ -104,8 +102,7 @@ class MaxTests {
         solver.propagate()
         assertNoIssues()
         val result = solver.getVariable("c")
-        assertEquals(7.0, result!!.min(), 0.000001)
-        assertEquals(7.0, result.max(), 0.000001)
+        assertBounds(7.0 .. 7.0, result!!)
         assertNoIssues()
     }
     @Test
@@ -116,8 +113,7 @@ class MaxTests {
         solver.propagate()
         assertNoIssues()
         val result = solver.getVariable("c")
-        assertEquals(-1.3, result!!.min(), 0.000001)
-        assertEquals(-1.3, result.max(), 0.000001)
+        assertBounds(-1.3 .. -1.3, result!!)
         assertNoIssues()
     }
 
@@ -130,10 +126,10 @@ class MaxTests {
             feature d: Ranges::RealInRange {:>> range = 4..5;}
             feature e: ScalarValues::Real = max(a, b, c, d);
         """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
         val result = solver.getVariable("e")
-        assertEquals(4.0, result!!.min(), 0.000001)
-        assertEquals(5.0, result.max(), 0.000001)
+        assertBounds(4.0 .. 5.0, result!!)
         assertNoIssues()
     }
 
@@ -147,10 +143,10 @@ class MaxTests {
             feature d: Ranges::IntegerInRange {:>> range = 4..5;}
             feature e: ScalarValues::Integer = max(a,b,c,d);
             """, Runlevel.ALL)
+        solver.propagate()
         assertNoIssues()
         val result = solver.getVariable("e")
-        assertEquals(4, result!!.vectorQuantity.value.asIdd().min)
-        assertEquals(5, result.vectorQuantity.value.asIdd().max)
+        assertBounds(4L .. 5L, result!!)
         assertNoIssues()
     }
 
@@ -167,8 +163,7 @@ class MaxTests {
         solver.propagate()
         assertNoIssues()
         val result = solver.getVariable("e")
-        assertEquals(4.32, result!!.min(), 0.000001)
-        assertEquals(5.45, result.max(), 0.000001)
+        assertBounds(4.32 .. 5.45, result!!)
         assertNoIssues()
     }
 
@@ -185,8 +180,7 @@ class MaxTests {
         solver.propagate()
         assertNoIssues()
         val result = solver.getVariable("e")
-        assertEquals(-1.67, result!!.min(), 0.000001)
-        assertEquals(-1.5, result.max(), 0.000001)
+        assertBounds(-1.67 .. -1.5, result!!)
         assertNoIssues()
     }
 
@@ -202,8 +196,7 @@ class MaxTests {
         solver.propagate()
         assertNoIssues()
         val result = solver.getVariable("e")
-        assertEquals(-2, result!!.vectorQuantity.value.asIdd().min)
-        assertEquals(-1, result.vectorQuantity.value.asIdd().max)
+        assertBounds(-2L .. -1L, result!!)
         assertNoIssues()
     }
 
@@ -220,8 +213,7 @@ class MaxTests {
         solver.propagate()
         assertNoIssues()
         val result = solver.getVariable("d")
-        assertEquals(4.0, result!!.min(), 0.000001)
-        assertEquals(4.0, result.max(), 0.000001)
+        assertBounds(4.0 .. 4.0, result!!)
         assertNoIssues()
     }
 
@@ -238,8 +230,7 @@ class MaxTests {
         solver.propagate()
         assertNoIssues()
         val result = solver.getVariable("d")
-        assertEquals(4, result!!.vectorQuantity.value.asIdd().min)
-        assertEquals(4, result.vectorQuantity.value.asIdd().max)
+        assertBounds(4L .. 4L, result!!)
         assertNoIssues()
     }
 
@@ -256,17 +247,13 @@ class MaxTests {
         solver.propagate()
         assertNoIssues()
         val result = solver.getVariable("a")
-        assertEquals(0.0, result!!.min(), 0.000001)
-        assertEquals(4.0, result.max(), 0.000001)
+        assertBounds(0.0 .. 4.0, result!!)
         val result1 = solver.getVariable("b")
-        assertEquals(1.0, result1!!.min(), 0.000001)
-        assertEquals(4.0, result1.max(), 0.000001)
+        assertBounds(1.0 .. 4.0, result1!!)
         val result2 = solver.getVariable("c")
-        assertEquals(2.0, result2!!.min(), 0.000001)
-        assertEquals(4.0, result2.max(), 0.000001)
+        assertBounds(2.0 .. 4.0, result2!!)
         val result3 = solver.getVariable("d")
-        assertEquals(3.0, result3!!.min(), 0.000001)
-        assertEquals(4.0, result3.max(), 0.000001)
+        assertBounds(3.0 .. 4.0, result3!!)
         assertNoIssues()
     }
 
@@ -283,17 +270,93 @@ class MaxTests {
         solver.propagate()
         assertNoIssues()
         val result = solver.getVariable("a")
-        assertEquals(0, result!!.vectorQuantity.value.asIdd().min)
-        assertEquals(4, result.vectorQuantity.value.asIdd().max)
+        assertBounds(0L .. 4L, result!!)
         val result1 = solver.getVariable("b")
-        assertEquals(1, result1!!.vectorQuantity.value.asIdd().min)
-        assertEquals(4, result1.vectorQuantity.value.asIdd().max)
+        assertBounds(1L .. 4L, result1!!)
         val result2 = solver.getVariable("c")
-        assertEquals(2, result2!!.vectorQuantity.value.asIdd().min)
-        assertEquals(4, result2.vectorQuantity.value.asIdd().max)
+        assertBounds(2L .. 4L, result2!!)
         val result3 = solver.getVariable("d")
-        assertEquals(3, result3!!.vectorQuantity.value.asIdd().min)
-        assertEquals(4, result3.vectorQuantity.value.asIdd().max)
+        assertBounds(3L .. 4L, result3!!)
         assertNoIssues()
+    }
+
+    /**
+     * Regression test for max evalDown:
+     * When max(a, b) in [3.0..4.0], both 'a' and 'b' upper bounds are constrained to <= 4.0.
+     */
+    @Test
+    fun maxEvalDownConstrainsUpperBoundsRegressionTest() = testSession("Ranges") {
+        loadKerML("""
+            feature a: Ranges::RealInRange {:>> range = 0.0 .. 10.0;}
+            feature b: Ranges::RealInRange {:>> range = 0.0 .. 8.0;}
+            feature m: Ranges::RealInRange = max(a, b) {:>> range = 3.0 .. 4.0;}
+        """, Runlevel.ALL)
+        solver.propagate()
+        assertNoIssues()
+        val a = solver.variable("a")
+        val b = solver.variable("b")
+        assertBounds(0.0 .. 4.0, a)
+        assertBounds(0.0 .. 4.0, b)
+    }
+
+    @Test
+    fun maxEvalDownIntConstrainsUpperBoundsRegressionTest() = testSession("Ranges") {
+        loadKerML("""
+            feature a: Ranges::IntegerInRange {:>> range = 0 .. 10;}
+            feature b: Ranges::IntegerInRange {:>> range = 0 .. 8;}
+            feature m: Ranges::IntegerInRange = max(a, b) {:>> range = 3 .. 4;}
+        """, Runlevel.ALL)
+        solver.propagate()
+        assertNoIssues()
+        val a = solver.variable("a")
+        val b = solver.variable("b")
+        assertBounds(0L .. 4L, a)
+        assertBounds(0L .. 4L, b)
+    }
+
+    /**
+     * Regression test: only parameter b can reach the lower bound of the result, so b must be inside the result's
+     * range while the existing range of a stays untouched (not overwritten).
+     */
+    @Test
+    fun maxEvalDownSingleCandidateRegressionTest() = testSession("Ranges") {
+        loadKerML("""
+            feature a: Ranges::RealInRange {:>> range = 0.0 .. 3.0;}
+            feature b: Ranges::RealInRange {:>> range = 0.0 .. 10.0;}
+            feature m: Ranges::RealInRange = max(a, b) {:>> range = 5.0 .. 6.0;}
+        """, Runlevel.ALL)
+        solver.propagate()
+        assertNoIssues()
+        assertBounds(0.0 .. 3.0, solver.variable("a"))
+        assertBounds(5.0 .. 6.0, solver.variable("b"))
+    }
+
+    /** Regression test: three parameters, two of them can still reach the result, so no lower bound is forced. */
+    @Test
+    fun maxEvalDownTwoCandidatesRegressionTest() = testSession("Ranges") {
+        loadKerML("""
+            feature a: Ranges::RealInRange {:>> range = 0.0 .. 3.0;}
+            feature b: Ranges::RealInRange {:>> range = 0.0 .. 10.0;}
+            feature c: Ranges::RealInRange {:>> range = 0.0 .. 10.0;}
+            feature m: Ranges::RealInRange = max(a, b, c) {:>> range = 5.0 .. 6.0;}
+        """, Runlevel.ALL)
+        solver.propagate()
+        assertNoIssues()
+        assertBounds(0.0 .. 3.0, solver.variable("a"))
+        assertBounds(0.0 .. 6.0, solver.variable("b"))
+        assertBounds(0.0 .. 6.0, solver.variable("c"))
+    }
+
+    @Test
+    fun maxEvalDownIntSingleCandidateRegressionTest() = testSession("Ranges") {
+        loadKerML("""
+            feature a: Ranges::IntegerInRange {:>> range = 0 .. 3;}
+            feature b: Ranges::IntegerInRange {:>> range = 0 .. 10;}
+            feature m: Ranges::IntegerInRange = max(a, b) {:>> range = 5 .. 6;}
+        """, Runlevel.ALL)
+        solver.propagate()
+        assertNoIssues()
+        assertBounds(0L .. 3L, solver.variable("a"))
+        assertBounds(5L .. 6L, solver.variable("b"))
     }
 }

@@ -83,7 +83,7 @@ open class ElementImplementation(
 
 
     /** Field-less property; name + owner's name determines qualified name. */
-    final override val qualifiedName: QualifiedName?
+    override val qualifiedName: QualifiedName?
         get() = when {
             this == model.global -> null
             this.owningNamespace == model.global -> escapedName()

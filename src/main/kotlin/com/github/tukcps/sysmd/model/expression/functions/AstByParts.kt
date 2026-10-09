@@ -7,14 +7,14 @@ import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Namespace
 import com.github.tukcps.sysmd.model.kerml.getOwnedElementsOfType
 import com.github.tukcps.sysmd.model.util.QualifiedName
-import com.github.tukcps.sysmd.quantities.Quantity
+import com.github.tukcps.sysmd.quantities.Unit
 import com.github.tukcps.sysmd.quantities.VectorDimensionError
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.model.datamodel.toElementData
 import com.github.tukcps.sysmd.services.resolve.resolveVar
 import com.github.tukcps.sysmd.services.session.Session
-import io.github.tukcps.aadd.DD
-import io.github.tukcps.aadd.functions.ite
+import io.github.tukcps.aadd.dd.DD
+import io.github.tukcps.aadd.dd.ite
 
 /**
  * Computes the range of a property given as parameter in all parts.
@@ -43,11 +43,11 @@ class  AstByParts(model: Session, namespace: Namespace, args: ArrayList<AstNode>
                 val chooser = model.builder.variable("choose_+${part.qualifiedName}", inNameSpace.qualifiedName+"::"+propertyName, true)
                 val newPartProperty = part.resolveVar(propertyName)
                     ?: throw SemanticError("Missing value $propertyName in ${part.qualifiedName}")
-                if (newPartProperty.vectorQuantity.unit != quantity.unit)
+                if (!newPartProperty.vectorQuantity.unit.isCompatibleWith(quantity.unit))
                     model.status.error( "Different units in different subclasses", element = inNameSpace.toElementData())
                 result = chooser.ite(result.clone(), newPartProperty.vectorQuantity.values[0])
             }
-            this.upQuantity = VectorQuantity(result, quantity.unit.clone())
+            this.upQuantity = VectorQuantity.fromCanonical(result, quantity.unit.clone(), quantity.unitSpec, quantity.userWantedUnitSpec)
         }
     }
 
@@ -67,9 +67,9 @@ class  AstByParts(model: Session, namespace: Namespace, args: ArrayList<AstNode>
 
         upQuantity = when {
             type == null -> throw SemanticError("Null type in function bySubclasses")
-            type.specializes(model.repo.booleanType) -> Quantity(model.builder.Bool)
-            type.specializes(model.repo.integerType) -> Quantity(model.builder.Integers)
-            type.specializes(model.repo.realType) -> Quantity(model.builder.Reals, "?")
+            type.specializes(model.repo.booleanType) -> VectorQuantity(model.builder.Bool.All)
+            type.specializes(model.repo.integerType) -> VectorQuantity(model.builder.Integers.All)
+            type.specializes(model.repo.realType) -> VectorQuantity.fromCanonical(model.builder.Reals.All, Unit("?"), "?")
             else -> throw Exception("Unknown data type in function bySubclasses: '${type.qualifiedName}'")
         }
         downQuantity = upQuantity.clone()
@@ -103,4 +103,6 @@ class  AstByParts(model: Session, namespace: Namespace, args: ArrayList<AstNode>
     override fun evalDownRec() {
         evalDown()
     }
+
+    override fun clone() = AstByParts(model, inNameSpace, cloneParameters())
 }

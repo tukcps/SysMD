@@ -1,10 +1,10 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import io.github.tukcps.aadd.AADD
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
+import io.github.tukcps.aadd.Real
 
 /**
  * Normalize a vector to length 1
@@ -17,7 +17,7 @@ internal class AstNormalizeVector(model: Session, args: ArrayList<AstNode>) : As
 
     override fun initialize() {
         upQuantity = when (getParam(0).upQuantity.values[0]) {
-            is AADD -> VectorQuantity(mutableListOf(model.builder.Reals), "?")
+            is Real -> VectorQuantity(mutableListOf(model.builder.Reals.All), "?")
             else -> throw SemanticError("Normalize must have a Real argument")
         }
         evalUp()
@@ -38,9 +38,5 @@ internal class AstNormalizeVector(model: Session, args: ArrayList<AstNode>) : As
         return block()
     }
 
-    override fun clone(): AstNormalizeVector {
-        val parClone = ArrayList<AstNode>()
-        for (p in parameters) parClone.add(p.clone())
-        return AstNormalizeVector(model, parClone)
-    }
+    override fun clone() = AstNormalizeVector(model, cloneParameters())
 }

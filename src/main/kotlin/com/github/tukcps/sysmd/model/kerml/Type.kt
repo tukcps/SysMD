@@ -1,8 +1,8 @@
 package com.github.tukcps.sysmd.model.kerml
 
 import com.github.tukcps.sysmd.exceptions.Issue.Kind
-import com.github.tukcps.sysmd.model.util.MultiplicityRange
 import com.github.tukcps.sysmd.model.datamodel.toElementData
+import io.github.tukcps.aadd.values.integer.IntegerRange
 
 
 /**
@@ -155,5 +155,5 @@ interface Type: Namespace {
         return false
     }
 
-    fun multiplicityRange(): MultiplicityRange
+    fun multiplicityRange(): IntegerRange
 }

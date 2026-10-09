@@ -93,7 +93,7 @@ object SysMDNotebook {
      * This is then used as the main repository where all files lie.
      */
     private suspend fun init() {
-        AppTheme.version = try { Res.readBytes("files/version.txt").decodeToString() } catch (_: Exception) { "(?)" }
+        AppTheme.version = "4.3.1" // try { Res.readBytes("files/version.txt").decodeToString() } catch (_: Exception) { "(?)" }
         importSettings()
         copyInstallToSysMdDataFolder()
     }

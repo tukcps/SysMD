@@ -1,38 +1,67 @@
 package com.github.tukcps.sysmd.model.expression.implementation
 
+import com.github.tukcps.sysmd.model.datamodel.ElementReference
 import com.github.tukcps.sysmd.model.expression.BooleanExpression
+import com.github.tukcps.sysmd.model.util.SimpleName
+import com.github.tukcps.sysmd.model.util.UnresolvedType
 import com.github.tukcps.sysmd.services.session.Session
 import kotlin.uuid.Uuid
 
 open class BooleanExpressionImplementation(
     model : Session,
     elementId : Uuid = Uuid.random(),
-): BooleanExpression, ExpressionImplementation(model,elementId = elementId) {
-    override fun clone(): BooleanExpressionImplementation {
-        TODO("Not yet implemented")
+    declaredName: SimpleName? = null,
+    declaredShortName: SimpleName? = null,
+    expression: String? = null,
+): BooleanExpression, ExpressionImplementation(
+    model,
+    elementId = elementId,
+    declaredName = declaredName,
+    declaredShortName = declaredShortName,
+    expression = expression,
+) {
+    override fun clone(): BooleanExpressionImplementation = BooleanExpressionImplementation(
+        model,
+        declaredName = declaredName,
+        declaredShortName = declaredShortName,
+        expression = expression,
+    ).also {
+        it.updateFrom(this)
     }
 
-    /** Initializes this expression subtree recursively.
-     * Assigns default domains to `upQuantity` and `downQuantity` of the correct types for this AST.
-     * Does not search for properties etc. in the symbol table as these might not be declared.
-     */
+    override fun learnType() = listOf(
+        model.repo.booleanType ?: UnresolvedType(model, ElementReference.ByName("ScalarValues::Boolean"))
+    )
+
     override fun initialize() {
-        TODO("Not yet implemented")
+        val result = this.result ?: return
+        result.initialize()
+        upQuantity = result.upQuantity
+        downQuantity = result.downQuantity
     }
 
     override fun evalUp() {
-        TODO("Not yet implemented")
+        val result = this.result ?: return
+        result.evalUp()
+        upQuantity = result.upQuantity
     }
 
     override fun evalDown() {
-        TODO("Not yet implemented")
+        val result = this.result ?: return
+        result.evalDown()
+        downQuantity = result.downQuantity
     }
 
     override fun toAstString(b: StringBuilder, precedence: Int) {
-        TODO("Not yet implemented")
-    }
+        name?.let {
+            b.append(' ')
+            b.append(it)
+        }
 
-    override fun learnType(): List<com.github.tukcps.sysmd.model.kerml.Type> {
-        TODO("Not yet implemented")
+        this.result?.let {
+            b.append("{ ")
+            it.toAstString(b, 0)
+            b.append(" }")
+        }
     }
 }

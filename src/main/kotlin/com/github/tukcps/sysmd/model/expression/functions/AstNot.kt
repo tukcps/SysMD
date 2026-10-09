@@ -1,11 +1,11 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import io.github.tukcps.aadd.BDD
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.model.expression.AstNode
-import com.github.tukcps.sysmd.quantities.Quantity
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
+import io.github.tukcps.aadd.DDBuilder.BoolMath.not
+import io.github.tukcps.aadd.dd.BDD
 
 /**
  * Predefined functions: not
@@ -20,7 +20,7 @@ class AstNot(model: Session, args: ArrayList<AstNode>) :
 
     override fun initialize() {
         upQuantity = when (getParam(0).upQuantity.values[0]) {
-            is BDD -> Quantity(model.builder.Bool)
+            is BDD -> VectorQuantity(model.builder.Bool.All)
             else -> throw SemanticError("Parameter of not function parameter must be of type Bool")
         }
         evalUp()
@@ -39,9 +39,5 @@ class AstNot(model: Session, args: ArrayList<AstNode>) :
     /** No propagation; Boolean functions are handled by discrete solver */
     override fun evalDown() {}
 
-    override fun clone(): AstNot {
-        val parClone = ArrayList<AstNode>()
-        for (p in parameters) parClone.add(p.clone())
-        return AstNot(model, parClone)
-    }
+    override fun clone() = AstNot(model, cloneParameters())
 }

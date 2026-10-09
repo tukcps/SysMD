@@ -29,7 +29,8 @@ object ConversionTables {
         "d" to Deci,
         "c" to Centi,
         "m" to Milli,
-        "μ" to Micro,
+        "μ" to Micro, // greek small letter mu U+03BC
+        "µ" to Micro, // micro sign U+00B5
         "n" to Nano,
         "p" to Pico,
         "f" to Femto,
@@ -80,6 +81,7 @@ object ConversionTables {
         "t" to Mass.Tonne,
         "tn" to Mass.ShortTon,
         "HP" to Power.Horsepower,
+        "PS" to Power.PferdeStaerke,
         "B" to StorageCapacity.Byte,
         "Byte" to StorageCapacity.Byte,
         "°C" to ThermodynamicTemperature.Celsius,
@@ -125,9 +127,9 @@ object ConversionTables {
         "°" to DimensionOne.Degree,
         "deg" to DimensionOne.Degree,
         "rad" to DimensionOne.One,
-        "Pi" to DimensionOne.Radiant,
-        "pi" to DimensionOne.Radiant,
-        "π" to DimensionOne.Radiant,
+        "Pi" to DimensionOne.Pi,
+        "pi" to DimensionOne.Pi,
+        "π" to DimensionOne.Pi,
         "g" to Mass.Gram,
         "DateTime" to Timestamp.UnixTimeStamp,
         "Year" to Timestamp.UnixTimeStamp,
@@ -152,7 +154,7 @@ object ConversionTables {
         "Bps" to BitRate.BytesPerSecond,
         "kg m^2" to MomentOfInertia.KilogramSquareMeter,
         "kg m/s" to Momentum.KilogramMeterPerSecond,
-        "F/s" to Permittivity.FaradPerSecond,
+        "F/m" to Permittivity.FaradPerMeter,
         "m/s" to Speed.MeterPerSeconds,
     )
 }

@@ -1,17 +1,21 @@
 package com.github.tukcps.sysmd.model.expression.implementation
 
+import com.github.tukcps.sysmd.model.datamodel.ElementReference
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.model.expression.Expression
 import com.github.tukcps.sysmd.model.generated.elementType
-import com.github.tukcps.sysmd.model.kerml.*
+import com.github.tukcps.sysmd.model.kerml.Element
+import com.github.tukcps.sysmd.model.kerml.Feature
 import com.github.tukcps.sysmd.model.kerml.Function
+import com.github.tukcps.sysmd.model.kerml.Type
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureImplementation
 import com.github.tukcps.sysmd.model.kerml.implementation.FeatureTypingImplementation
 import com.github.tukcps.sysmd.model.util.SimpleName
 import com.github.tukcps.sysmd.model.util.Unresolved
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
-import io.github.tukcps.aadd.DD
+import io.github.tukcps.aadd.dd.DD
+import io.github.tukcps.aadd.values.ScalarValue
 import kotlin.uuid.Uuid
 
 sealed class ExpressionImplementation(
@@ -117,7 +121,7 @@ sealed class ExpressionImplementation(
     open var internalValue: AstNode? = null
 
     //For solvers
-    open var domain: DD<*>? = null //One DD should be enough to encode lb,ub for ints/reals and t,f,x for booleans
+    open var domain: DD<ScalarValue>? = null //One DD should be enough to encode lb,ub for ints/reals and t,f,x for booleans
 
 	override fun updateFrom(template: Element) {
 		super.updateFrom(template)
@@ -126,8 +130,8 @@ sealed class ExpressionImplementation(
 			this.internalValue = template.internalValue
 	}
 
-	protected fun localIdentifier(x : Element?)
-		= if(x is Unresolved) x.relativeName else x?.qualifiedName ?: "'missing feature'"
+	protected fun localIdentifier(x : Element?) : String
+		= ((x as? Unresolved)?.reference as? ElementReference.ByName)?.name ?: x?.qualifiedName  ?: "'missing feature'"
 
 	abstract override fun clone() : ExpressionImplementation
 
