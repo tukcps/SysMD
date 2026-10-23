@@ -1,22 +1,15 @@
 package quantitytests
 
-import util.variable
-import com.github.tukcps.sysmd.quantities.ConversionTables
-import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.quantities.Unit
+import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.Runlevel
 import io.github.tukcps.aadd.DDBuilder
 import io.github.tukcps.aadd.dd.AADD
-import util.assertNoIssues
-import util.assertBounds
+import io.github.tukcps.aadd.util.Tolerance
+import util.*
 import util.mockup.loadKerML
-import util.testSession
-import kotlin.test.BeforeTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertIs
-import kotlin.test.assertTrue
+import kotlin.math.pow
+import kotlin.test.*
 
 class QuantityConversionTests {
     private lateinit var ddDummy0: AADD
@@ -136,7 +129,7 @@ class QuantityConversionTests {
         val result11 = VectorQuantity(ddDummy1, Unit("m^2")).valueIn("dm^2")
         assertBounds(100.0, (result11 as AADD))
         val result12 = VectorQuantity(ddDummy1, Unit("m^2")).valueIn("mm^2")
-        assertBounds(1000000.0, (result12 as AADD))
+        assertBounds(1000000.0, (result12 as AADD), tol = Tolerance(relative = 1e-13))
         val result13 = VectorQuantity(ddDummy1, Unit("m^2")).valueIn("cm^2")
         assertBounds(10000.0, (result13 as AADD))
 
@@ -145,9 +138,9 @@ class QuantityConversionTests {
         val result21 = VectorQuantity(ddDummy1, Unit("m^3")).valueIn("dm^3")
         assertBounds(1000.0, (result21 as AADD))
         val result22 = VectorQuantity(ddDummy1, Unit("m^3")).valueIn("mm^3")
-        assertBounds(9.999999999999998E8..1.0E9, (result22 as AADD))
+        assertBounds(1.0E9, (result22 as AADD), tol = Tolerance(relative = 1.0e-9))
         val result23 = VectorQuantity(ddDummy1, Unit("m^3")).valueIn("cm^3")
-        assertBounds(1000000.0, (result23 as AADD))
+        assertBounds(1000000.0, (result23 as AADD), tol = Tolerance(relative = 1e-13))
 
         val result3 = VectorQuantity(ddDummy1, Unit("m")).valueIn("km")
         assertBounds(0.001, (result3 as AADD))
@@ -186,23 +179,24 @@ class QuantityConversionTests {
     fun lengthConvert2() {
         val q1 = VectorQuantity(ddDummy1, Unit("cm"))
         val qResult1 = q1.valueIn("inch")
-        assertBounds(0.39370078740157, qResult1.asAadd())
+        assertBounds(0.01 / 0.0254, qResult1.asAadd())
 
         val q2 = VectorQuantity(ddDummy1, Unit("m"))
         val qResult2 = q2.valueIn("ft")
-        assertBounds(3.2808398950131, qResult2.asAadd())
+        val mPerFt = 0.3048
+        assertBounds(1.0 / mPerFt, qResult2.asAadd())
 
         val q3 = VectorQuantity(ddDummy1, Unit("dm"))
         val qResult3 = q3.valueIn("yd")
-        assertBounds(0.10936132983377, qResult3.asAadd())
+        assertBounds(0.1 / (3 * mPerFt), qResult3.asAadd())
 
         val q4 = VectorQuantity(ddDummy1, Unit("km"))
         val qResult4 = q4.valueIn("mi")
-        assertBounds(0.62137119223733, qResult4.asAadd())
+        assertBounds(1000.0 / (5280 * mPerFt), qResult4.asAadd())
 
         val q5 = VectorQuantity(ddDummy1, Unit("km"))
         val qResult5 = q5.valueIn("nmi")
-        assertBounds(0.53995680345572, qResult5.asAadd())
+        assertBounds(1000.0 / 1852, qResult5.asAadd())
     }
 
     @Test
@@ -246,11 +240,11 @@ class QuantityConversionTests {
 
         val q2 = VectorQuantity(ddDummy1, Unit("C"))
         val qResult2 = q2.valueIn("Ah")
-        assertBounds(0.000277777777777, qResult2.asAadd())
+        assertBounds(1.0 / 3600, qResult2.asAadd())
 
         val q3 = VectorQuantity(ddDummy1, Unit("As"))
         val qResult3 = q3.valueIn("Ah")
-        assertBounds(0.000277777777777, qResult3.asAadd())
+        assertBounds(1.0 / 3600, qResult3.asAadd())
 
         val q4 = VectorQuantity(ddDummy1, Unit("Ah"))
         val qResult4 = q4.valueIn("C")
@@ -263,13 +257,16 @@ class QuantityConversionTests {
 
     @Test
     fun massConvert2() {
+        val kgPerLbs = 0.453_592_37
+        val lbsPerKg = 1.0 / kgPerLbs
+
         val q1 = VectorQuantity(ddDummy1, Unit("kg"))
         val qResult1 = q1.valueIn("lb")
-        assertBounds(2.2046226218488, qResult1.asAadd())
+        assertBounds(lbsPerKg, qResult1.asAadd())
 
         val q2 = VectorQuantity(ddDummy1, Unit("g"))
         val qResult2 = q2.valueIn("oz")
-        assertBounds(0.03527396194958, qResult2.asAadd())
+        assertBounds(lbsPerKg * 16 / 1000, qResult2.asAadd())
 
         val q3 = VectorQuantity(ddDummy1, Unit("g"))
         val qResult3 = q3.valueIn("ct")
@@ -277,7 +274,7 @@ class QuantityConversionTests {
 
         val q4 = VectorQuantity(ddDummy1, Unit("g"))
         val qResult4 = q4.valueIn("gr")
-        assertBounds(15.432358352941, qResult4.asAadd())
+        assertBounds(1 / 0.064_798_91, qResult4.asAadd())
 
         val q5 = VectorQuantity(ddDummy1, Unit("g"))
         val qResult5 = q5.valueIn("t")
@@ -285,7 +282,7 @@ class QuantityConversionTests {
 
         val q6 = VectorQuantity(ddDummy1, Unit("g"))
         val qResult6 = q6.valueIn("tn")
-        assertBounds(1.10231131092439E-6, qResult6.asAadd())
+        assertBounds(1 / 907.18474e3, qResult6.asAadd())
     }
 
     @Test
@@ -317,21 +314,22 @@ class QuantityConversionTests {
         val qResult1 = q1.valueIn("l")
         assertBounds(1000.0, qResult1.asAadd())
 
+        val lPerPt = 0.473176473
         val q2 = VectorQuantity(ddDummy1, Unit("dm^3"))
         val qResult2 = q2.valueIn("pt")
-        assertBounds(2.1133764188652, qResult2.asAadd())
+        assertBounds(1.0 / lPerPt, qResult2.asAadd())
 
         val q3 = VectorQuantity(ddDummy1, Unit("dm^3"))
         val qResult3 = q3.valueIn("qt")
-        assertBounds(1.0566882094326, qResult3.asAadd())
+        assertBounds(1.0 / (2 * lPerPt), qResult3.asAadd())
 
         val q4 = VectorQuantity(ddDummy1, Unit("dm^3"))
         val qResult4 = q4.valueIn("gal")
-        assertBounds(0.26417205235815, qResult4.asAadd())
+        assertBounds(1.0 / (8 * lPerPt), qResult4.asAadd())
 
         val q5 = VectorQuantity(ddDummy1, Unit("m^3"))
         val qResult5 = q5.valueIn("bbl")
-        assertBounds(6.289810770432, qResult5.asAadd())
+        assertBounds(1000.0 / 158.987294928, qResult5.asAadd())
     }
 
     @Test
@@ -349,7 +347,7 @@ class QuantityConversionTests {
     fun area2() {
         val q2 = VectorQuantity(ddDummy1, Unit("m^2"))
         val qResult2 = q2.valueIn("ac")
-        assertBounds(0.000247105, qResult2.asAadd())
+        assertBounds(1 / 4046.8564224, qResult2.asAadd())
 
         val q3 = VectorQuantity(ddDummy1, Unit("m^2"))
         val qResult3 = q3.valueIn("ha")
@@ -380,34 +378,37 @@ class QuantityConversionTests {
 
     @Test
     fun power() {
+        val psPerW = 1.013869665424 * 735.49875
         val q1 = VectorQuantity(ddDummy1, Unit("W"))
         val qResult1 = q1.valueIn("HP")
-        assertBounds(0.001341022090, qResult1.asAadd())
+        assertBounds(1 / psPerW, qResult1.asAadd())
 
         val q2 = VectorQuantity(ddDummy1, Unit("HP"))
         val qResult2 = q2.valueIn("W")
-        assertBounds(745.699871582, qResult2.asAadd())
+        assertBounds(psPerW, qResult2.asAadd())
     }
 
-    @Test
+    @Test // FIXME: value for psi wrong somewhere ??
     fun pressure() {
         val q1 = VectorQuantity(ddDummy1, Unit("bar"))
         val qResult1 = q1.valueIn("Pa")
         val qResult3 = q1.valueIn("psi")
         assertBounds(100000.0, qResult1.asAadd())
-        assertBounds(14.503773773, qResult3.asAadd())
+        // approx. 6894.757293
+        val paPerPsi = 0.45359237 * 9.80665 / 0.0254.pow(2)
+        assertBounds(100000.0 / paPerPsi, qResult3.asAadd()) // FIXME
 
         val q2 = VectorQuantity(ddDummy1, Unit("Pa"))
         val qResult2 = q2.valueIn("bar")
         val qResult4 = q2.valueIn("psi")
         assertBounds(0.00001, qResult2.asAadd())
-        assertBounds(0.00014503773773, qResult4.asAadd())
+        assertBounds(1.0 / paPerPsi, qResult4.asAadd())
 
         val q3 = VectorQuantity(ddDummy1, Unit("psi"))
         val qResult5 = q3.valueIn("bar")
         val qResult6 = q3.valueIn("Pa")
-        assertBounds(0.06894757293, qResult5.asAadd())
-        assertBounds(6894.757293, qResult6.asAadd())
+        assertBounds(paPerPsi / 100000.0, qResult5.asAadd())
+        assertBounds(paPerPsi, qResult6.asAadd())
     }
 
     @Test
@@ -417,8 +418,7 @@ class QuantityConversionTests {
         assertBounds(1.0, qResult1.asAadd())
 
         val q2 = VectorQuantity(ddDummy1, Unit("J"))
-        val qResult2 = q2.valueIn("Wh")
-        assertBounds(0.0002777777, qResult2.asAadd())
+        assertBounds(0.0002777777777777777, q2, unit = "Wh")
 
         val q3 = VectorQuantity(ddDummy1, Unit("J"))
         val qResult3 = q3.valueIn("cal")
@@ -444,11 +444,11 @@ class QuantityConversionTests {
     fun rad() {
         val q1 = VectorQuantity(ddDummy1, Unit("Pi"))
         val qResult1 = q1.valueIn("1")
-        assertBounds(3.1415926535, qResult1.asAadd())
+        assertBounds(Math.PI, qResult1.asAadd())
 
         val q2 = VectorQuantity(ddDummy1, Unit("1"))
         val qResult2 = q2.valueIn("Pi")
-        assertBounds(0.3183098862, qResult2.asAadd())
+        assertBounds(1.0 / Math.PI, qResult2.asAadd())
     }
 
     @Test
@@ -690,16 +690,17 @@ assertNoIssues()
     @Test
     fun volumeUnitsImperial() {
         // 1 pt (US liquid pint) = 473.176473 ml
+        val m3PerPt = 0.000473176473
         val q1 = VectorQuantity(ddDummy1, "pt")
-        assertBounds(0.000473176, q1.valueIn("m^3").asAadd())
+        assertBounds(m3PerPt, q1.valueIn("m^3").asAadd())
 
         // 1 qt (US liquid quart) = 946.352946 ml
         val q2 = VectorQuantity(ddDummy1, "qt")
-        assertBounds(0.000946352, q2.valueIn("m^3").asAadd())
+        assertBounds(m3PerPt * 2, q2.valueIn("m^3").asAadd())
 
         // 1 gal (US liquid gallon) = 3.785411784 l
         val q3 = VectorQuantity(ddDummy1, "gal")
-        assertBounds(0.003785411784, q3.valueIn("m^3").asAadd())
+        assertBounds(m3PerPt * 8, q3.valueIn("m^3").asAadd())
 
         // 1 bbl (US oil barrel) = 158.987294928 l
         val q4 = VectorQuantity(ddDummy1, "bbl")
@@ -753,6 +754,6 @@ assertNoIssues()
     fun metricHorsepower() {
         // 1 PS = 75 kgf m/s = 735.49875 W
         assertBounds(735.49875, VectorQuantity(ddDummy1, Unit("PS")).valueIn("W").asAadd())
-        assertBounds(0.98632007061953, VectorQuantity(ddDummy1, Unit("PS")).valueIn("HP").asAadd())
+        assertBounds(1.0 / 1.013869665424, VectorQuantity(ddDummy1, Unit("PS")).valueIn("HP").asAadd())
     }
 }

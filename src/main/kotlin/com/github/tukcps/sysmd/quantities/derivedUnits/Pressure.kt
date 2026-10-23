@@ -1,25 +1,18 @@
 package com.github.tukcps.sysmd.quantities.derivedUnits
 
-import com.github.tukcps.sysmd.quantities.DerivedUnit
-import com.github.tukcps.sysmd.quantities.NoPrefix
-import com.github.tukcps.sysmd.quantities.Prefix
+import com.github.tukcps.sysmd.quantities.DerivedQuantityKind
+import com.github.tukcps.sysmd.quantities.unit
+import com.github.tukcps.sysmd.quantities.baseUnits.Duration
 import com.github.tukcps.sysmd.quantities.baseUnits.Length
 import com.github.tukcps.sysmd.quantities.baseUnits.Mass
-import com.github.tukcps.sysmd.quantities.baseUnits.Duration
 
-private var siUnitSet = setOf(Mass.Kilogram.copy(), Length.Meter.copy(-1), Duration.Second.copy(-2))
+data object Pressure : DerivedQuantityKind("Pressure", setOf(
+    Mass.Kilogram, Length.Meter.pow(-1), Duration.Second.pow(-2)
+))
+{
+    val PASCAL_PER_PSI = Force.NEWTONS_PER_POUND / Area.SQ_METERS_PER_SQ_INCH
 
-open class Pressure(name: String, symbol: String, prefix: Prefix, convFac: Double, exponent: Int = 1, isLogarithmic: Boolean = false) :
-    DerivedUnit(name, symbol, prefix, "Pressure", siUnitSet, convFac, exponent, isLogarithmic) {
-
-    /**
-     * generate UnitObjects and add them to the UnitList
-     */
-    object Pascal : Pressure("pascal", "Pa", NoPrefix, 1.0)
-    object Bar : Pressure("bar", "bar", NoPrefix, 100000.0)
-    object PoundPerSquareInch : Pressure("psi", "psi", NoPrefix, 6894.757293)
-
-    override fun copy(): Pressure {
-        return Pressure(name, symbol, prefix, convFac, exponent, isLogarithmic)
-    }
+    val Pascal = unit("pascal", "Pa")
+    val Bar = unit("bar", "bar", 100000)
+    val PoundPerSquareInch = unit("psi", "psi", PASCAL_PER_PSI)
 }

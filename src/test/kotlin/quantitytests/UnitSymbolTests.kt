@@ -1,12 +1,13 @@
 package quantitytests
 
-import com.github.tukcps.sysmd.quantities.NoPrefix
+import com.github.tukcps.sysmd.quantities.*
 import com.github.tukcps.sysmd.quantities.Unit
 import com.github.tukcps.sysmd.quantities.derivedUnits.ElectricPotentialDifferenceValue
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import io.github.tukcps.aadd.util.Assertions.assertEquals
+import io.github.tukcps.aadd.util.Tolerance
+import io.github.tukcps.aadd.values.real.ia.RealRange
+import util.assertBounds
+import kotlin.test.*
 
 /**
  * The symbol of a unit must be the string under which it can be parsed again;
@@ -25,7 +26,7 @@ class UnitSymbolTests {
         val psi = Unit("psi")
         val parsedAgain = Unit(psi.toString())
         assertEquals(psi.unitSet, parsedAgain.unitSet)
-        assertEquals(6894.757293, parsedAgain.unitSet.first().convFac)
+        assertEquals(6894.757293, parsedAgain.unitSet.first().convFac.min, Tolerance(absolute = 1e-6))
     }
 
     @Test
@@ -34,7 +35,7 @@ class UnitSymbolTests {
         assertEquals("yd", yard.toString())
         val parsedAgain = Unit(yard.toString())
         assertEquals(yard.unitSet, parsedAgain.unitSet)
-        assertEquals(0.9144, parsedAgain.unitSet.first().convFac)
+        assertBounds(0.9144, parsedAgain.unitSet.first().convFac)
     }
 
     @Test
@@ -43,7 +44,7 @@ class UnitSymbolTests {
         assertEquals("inch", inch.toString())
         val parsedAgain = Unit(inch.toString())
         assertEquals(inch.unitSet, parsedAgain.unitSet)
-        assertEquals(0.0254, parsedAgain.unitSet.first().convFac)
+        assertBounds(0.0254, parsedAgain.unitSet.first().convFac)
     }
 
     @Test
@@ -54,7 +55,11 @@ class UnitSymbolTests {
 
     @Test
     fun copyOfPotentialDifferenceKeepsIsDifference() {
-        val difference = ElectricPotentialDifferenceValue("volt difference", "V", NoPrefix, 1.0, isDifference = true)
+        val difference = UnitOfKind(
+            ElectricPotentialDifferenceValue,
+            "volt difference", "V", NoPrefix,
+            RealRange(1.0), isDifference = true
+        )
         val copy = difference.copy()
         assertTrue(copy.isDifference)
         assertFalse(copy.isLogarithmic)

@@ -1,25 +1,20 @@
 package com.github.tukcps.sysmd.quantities.derivedUnits
 
-import com.github.tukcps.sysmd.quantities.DerivedUnit
-import com.github.tukcps.sysmd.quantities.NoPrefix
-import com.github.tukcps.sysmd.quantities.Prefix
+import com.github.tukcps.sysmd.quantities.*
+import com.github.tukcps.sysmd.quantities.baseUnits.Duration
 import com.github.tukcps.sysmd.quantities.baseUnits.Length
 import com.github.tukcps.sysmd.quantities.baseUnits.Mass
-import com.github.tukcps.sysmd.quantities.baseUnits.Duration
 
-private var siUnitSet = setOf(Length.Meter.copy(2), Mass.Kilogram.copy(), Duration.Second.copy(-3))
+data object Power : DerivedQuantityKind("Power", setOf(
+    Length.Meter.pow(2), Mass.Kilogram, Duration.Second.pow(-3)
+))
+{
+    /** Defined as 550 ft lbf */
+    val HORSE_POWER_IN_WATT = (Length.METERS_PER_FOOT * Force.NEWTONS_PER_POUND) * 550
+    /** Defined as 75 m kgf */
+    val PS_IN_WATT = Acceleration.STANDARD_GRAVITY * 75
 
-open class Power(name: String, symbol: String, prefix: Prefix, convFac: Double, exponent: Int = 1, isLogarithmic: Boolean = false) :
-    DerivedUnit(name, symbol, prefix, "Power", siUnitSet, convFac, exponent, isLogarithmic) {
-
-    /**
-     * generate UnitObjects and add them to the UnitList
-     */
-    object Watt : Power("watt", "W", NoPrefix, 1.0)
-    object Horsepower : Power("horsepower", "HP", NoPrefix, 745.69987158227022)
-    object PferdeStaerke : Power("metric horsepower", "PS", NoPrefix, 735.49875)
-
-    override fun copy(): Power {
-        return Power(name, symbol, prefix, convFac, exponent, isLogarithmic)
-    }
+    val Watt = unit("watt", "W")
+    val Horsepower = unit("horsepower", "HP", HORSE_POWER_IN_WATT)
+    val PferdeStaerke = unit("metric horsepower", "PS", PS_IN_WATT)
 }

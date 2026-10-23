@@ -1,27 +1,16 @@
 package com.github.tukcps.sysmd.quantities.derivedUnits
 
-import com.github.tukcps.sysmd.quantities.DerivedUnit
-import com.github.tukcps.sysmd.quantities.NoPrefix
-import com.github.tukcps.sysmd.quantities.Prefix
+import com.github.tukcps.sysmd.quantities.DerivedQuantityKind
+import com.github.tukcps.sysmd.quantities.unit
+import com.github.tukcps.sysmd.quantities.baseUnits.Duration
 import com.github.tukcps.sysmd.quantities.baseUnits.ElectricCurrent
 import com.github.tukcps.sysmd.quantities.baseUnits.Length
 import com.github.tukcps.sysmd.quantities.baseUnits.Mass
-import com.github.tukcps.sysmd.quantities.baseUnits.Duration
 
-private var siUnitSet = setOf(
-    Duration.Second.copy(4), ElectricCurrent.Ampere.copy(2),
-    Length.Meter.copy(-3), Mass.Kilogram.copy(-1)
-)
-
-open class Permittivity(name: String, symbol: String, prefix: Prefix, convFac: Double, exponent: Int = 1, isLogarithmic: Boolean = false) :
-    DerivedUnit(name, symbol, prefix, "Permittivity", siUnitSet, convFac, exponent, isLogarithmic) {
-
-    /**
-     * generate UnitObjects and add them to the UnitList
-     */
-    object FaradPerMeter : Permittivity("farad per meter", "F/m", NoPrefix, 1.0)
-
-    override fun copy(): Permittivity {
-        return Permittivity(name, symbol, prefix, convFac, exponent, isLogarithmic)
-    }
+data object Permittivity : DerivedQuantityKind("Permittivity", setOf(
+    Duration.Second.pow(4), ElectricCurrent.Ampere.pow(2),
+    Length.Meter.pow(-3), Mass.Kilogram.pow(-1)
+))
+{
+    val FaradPerMeter = unit("farad per meter", "F/m")
 }

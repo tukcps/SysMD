@@ -57,8 +57,8 @@ class TrigTests {
         """)
         solver.propagate()
         assertNoIssues()
-        assertBounds(0.479425538604203, solver.variable("b").vectorQuantity.value.asAadd())
-        assertBounds(0.8775825618903725, solver.variable("c").vectorQuantity.value.asAadd())
+        assertBounds(sin(0.5), solver.variable("b"))
+        assertBounds(cos(0.5), solver.variable("c"))
     }
 
     @Test
@@ -69,8 +69,8 @@ class TrigTests {
             feature c: ScalarValues::Real = cos(a);""")
         solver.propagate()
         assertNoIssues()
-        assertBounds(0.8414709848078965, solver.variable("b").vectorQuantity.value.asAadd())
-        assertBounds(0.5403023058681394, solver.variable("c").vectorQuantity.value.asAadd())
+        assertBounds(sin(1.0), solver.variable("b"))
+        assertBounds(cos(1.0), solver.variable("c"))
     }
 
     @Test

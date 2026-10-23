@@ -1,48 +1,45 @@
 package com.github.tukcps.sysmd.quantities.baseUnits
 
-import com.github.tukcps.sysmd.quantities.BaseUnit
-import com.github.tukcps.sysmd.quantities.NoPrefix
-import com.github.tukcps.sysmd.quantities.Prefix
-import io.github.tukcps.aadd.dd.*
+import com.github.tukcps.sysmd.quantities.*
+import io.github.tukcps.aadd.DDBuilder.RealMath.div
+import io.github.tukcps.aadd.DDBuilder.RealMath.minus
+import io.github.tukcps.aadd.DDBuilder.RealMath.plus
+import io.github.tukcps.aadd.DDBuilder.RealMath.times
+import io.github.tukcps.aadd.dd.AADD
+import io.github.tukcps.aadd.util.toDoubleExact
+import io.github.tukcps.aadd.values.real.ia.RealRange
+import io.github.tukcps.aadd.values.real.ia.div
 
+data object ThermodynamicTemperature : BaseQuantityKind("ThermodynamicTemperature")
+{
+    val CELSIUS_OFFSET = "273.15".toDoubleExact()
 
-open class ThermodynamicTemperature(name: String, symbol: String, prefix: Prefix, convFac: Double = 1.0, exponent: Int = 1) :
-    BaseUnit(name, symbol, prefix, "ThermodynamicTemperature", convFac, exponent) {
+    val Kelvin = unit("kelvin", "K")
+    val Celsius = unit("degree celsius", "°C")
+    val Fahrenheit = unit(
+        "degree fahrenheit", "°F",
+        RealRange(5.0) / RealRange(9.0),
+    )
 
-    /**
-     * generate UnitObjects and add them to the UnitList
-     */
-    object Kelvin : ThermodynamicTemperature("kelvin", "K", NoPrefix)
-    object Celsius : ThermodynamicTemperature("degree celsius", "°C", NoPrefix)
-    object Fahrenheit : ThermodynamicTemperature("degree fahrenheit", "°F", NoPrefix, 5.0 / 9.0)
+    override val baseUnit = setOf(Kelvin)
 
-    /** True for units whose zero point is not absolute zero (°C, °F). [convFac] is only their scale. */
-    val hasOffset: Boolean get() = name != "kelvin"
-
-    override fun copy(exponentValue: Int): ThermodynamicTemperature {
-        return ThermodynamicTemperature(name, symbol, prefix, convFac, exponentValue)
+    /** Converts a kelvin value to a different temperature unit */
+    fun fromKelvin(kelvin: AADD, targetUnit: UnitOfTemperature): AADD = when(targetUnit.name) {
+        Celsius.name -> (kelvin - CELSIUS_OFFSET) / targetUnit.prefix.factor
+        Fahrenheit.name -> ((kelvin - CELSIUS_OFFSET) * 9.0 / 5.0 + 32.0) / targetUnit.prefix.factor
+        else -> kelvin
     }
 
-    fun convertTo(inputValue: DD<*>, destinationTemperature: ThermodynamicTemperature): DD<*> {
-        return when (destinationTemperature.name) {
-            "degree celsius" -> {
-                (inputValue - 273.15) / destinationTemperature.prefix.factor
-            }
-            "degree fahrenheit" -> {
-                ((inputValue - 273.15) * 9.0 / 5.0 + 32.0) / destinationTemperature.prefix.factor
-            }
-            else -> {
-                inputValue
-            }
-        }
+    /** Converts a temperature value to kelvins */
+    fun toKelvin(value: AADD, currentUnit : UnitOfTemperature): AADD = when(currentUnit.name) {
+        Fahrenheit.name -> (value - 32.0) * 5.0 / 9.0 + CELSIUS_OFFSET
+        Celsius.name -> value + CELSIUS_OFFSET
+        // assume kelvin for invalid name
+        else -> value
     }
 
-    fun toKelvin(value: DD<*>): DD<*> {
-        if (name == "degree fahrenheit")
-            return (value - 32.0) * 5.0 / 9.0 + 273.15
-        if (name == "degree celsius")
-            return value + 273.15
-        //is already in Kelvin
-        return value
+    fun convert(value : AADD, from : UnitOfTemperature, to : UnitOfTemperature) : AADD = when {
+        from == to -> value
+        else -> fromKelvin(toKelvin(value, from), to)
     }
 }

@@ -2,13 +2,10 @@ package constraintnettests
 
 import com.github.tukcps.sysmd.services.Runlevel
 import com.github.tukcps.sysmd.services.letVar
-import io.github.tukcps.aadd.dd.AADD
-import io.github.tukcps.aadd.util.Assertions.assertEquals
-import io.github.tukcps.aadd.util.Assertions.assertSafeInclusion
 import io.github.tukcps.aadd.values.bounds.LongBound
 import util.*
 import util.mockup.loadKerML
-import kotlin.test.*
+import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class ParseAndUseConstraintsTests {
@@ -61,7 +58,7 @@ class ParseAndUseConstraintsTests {
         """, Runlevel.ALL)
         assertNoIssues()
         val a = solver.variable("a")
-        assertBounds(Double.NEGATIVE_INFINITY..Double.POSITIVE_INFINITY, a)
+        assertBounds(LongBound.NegativeInfinity..LongBound.PositiveInfinity, a)
     }
 
 
@@ -95,8 +92,7 @@ class ParseAndUseConstraintsTests {
     fun constantsCheck() = testSession("Math") {
         loadKerML("feature a: ScalarValues::Real = Math::pi + Math::e;", Runlevel.ALL)
         assertNoIssues()
-        val a = solver.getVariable("a")
-        assertSafeInclusion(Math.PI + Math.E .. Math.PI + Math.E, a!!.aadd(), 0.00001)
+        assertBounds(Math.PI + Math.E .. Math.PI + Math.E, solver.variable("a"))
     }
 
     /**
@@ -160,7 +156,7 @@ class ParseAndUseConstraintsTests {
             feature a: ScalarValues::Real = sum_i(1.0, 9.0, i);
         """, Runlevel.ALL)
         assertNoIssues()
-        assertSafeInclusion(45.0..45.0, solver.variable("a").aadd(), 0.00000001)
+        assertBounds(45.0..45.0, solver.variable("a"))
     }
 
 
@@ -247,10 +243,10 @@ class ParseAndUseConstraintsTests {
             feature b: ScalarValues::Real = oneOf(1.0 .. 2.0);
             feature c: ScalarValues::Real = a - b; 
         """, Runlevel.ALL)
-        val a = solver.variable("a")
+        solver.variable("a")
         solver.propagate()
         assertNoIssues()
-        val b = solver.variable("b")
+        solver.variable("b")
         val c = solver.variable("c")
         assertBounds(-1.0 .. 1.0, c)
     }

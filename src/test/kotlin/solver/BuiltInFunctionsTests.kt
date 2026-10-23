@@ -1,14 +1,10 @@
 package solver
 
-import util.variable
 import com.github.tukcps.sysmd.services.Runlevel
 import io.github.tukcps.aadd.util.Assertions.assertSafeInclusion
-import util.assertNoIssues
+import util.*
 import util.mockup.loadKerML
-import util.testSession
-import kotlin.test.Ignore
-import kotlin.test.Test
-import kotlin.test.assertEquals
+import kotlin.test.*
 
 class BuiltInFunctionsTests {
 
@@ -109,8 +105,8 @@ class BuiltInFunctionsTests {
         loadKerML("feature r: ScalarValues::Real(1.5) = allOf(1.0 .. 2.0);")
         solver.propagate()
         assertNoIssues()
-        val r = solver.getVariable("r")
-        assertSafeInclusion(1.0..2.0, r!!.vectorQuantity.getRange(), 0.0)
+        val r = solver.variable("r")
+        assertBounds(1.0..2.0, r)
     }
 
 
@@ -119,7 +115,7 @@ class BuiltInFunctionsTests {
         loadKerML("feature r: Ranges::RealInRange = oneOf(1.0 .. 2.0) { :>> range = 1.0 ;}", Runlevel.ALL)
         assertNoIssues()
         val r = solver.variable("r")
-        assertSafeInclusion(1.0..1.0, r.vectorQuantity.getRange(), 0.0)
+        assertBounds(1.0..1.0, r)
     }
 
     @Test
@@ -129,6 +125,6 @@ class BuiltInFunctionsTests {
         solver.propagate()
         assertNoIssues()
         val r = solver.variable("r")
-        assertSafeInclusion(1.0..2.0, r.vectorQuantity.getRange(), 0.0)
+        assertBounds(1.0..2.0, r)
     }
 }

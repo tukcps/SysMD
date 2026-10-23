@@ -476,9 +476,9 @@ class VectorQuantityTests {
         assertBounds(0.6, result1.values[0].asAadd())
         assertBounds(0.8, result1.values[1].asAadd())
         assertBounds(0.0, result1.values[2].asAadd())
-        assertBounds(0.9407208683835953, result2.values[0].asAadd())
-        assertBounds(0.28221626051507853, result2.values[1].asAadd())
-        assertBounds(0.18814417367671904, result2.values[2].asAadd())
+        assertBounds(0.9407208683835973, result2.values[0].asAadd())
+        assertBounds(0.2822162605150792, result2.values[1].asAadd())
+        assertBounds(0.1881441736767195, result2.values[2].asAadd())
     }
 
     @Test
@@ -521,7 +521,7 @@ class VectorQuantityTests {
         val quantity1 = VectorQuantity(vec1, u1)
         val quantity2 = VectorQuantity(vec2, u1)
         val result = quantity1.angle(quantity2)
-        assertBounds(85.33526881505367..85.33526881505367, result.valueIn("°").asAadd())
+        assertBounds(85.3352688150538, result.valueIn("°").asAadd())
     }
 
     @Test

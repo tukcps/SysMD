@@ -21,6 +21,7 @@ import util.mockup.loadKerML
 import util.testSession
 import kotlin.math.ln
 import kotlin.math.pow
+import kotlin.math.sqrt
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -232,7 +233,7 @@ class QuantityArithmeticTests {
 
         val u1 = Unit("s^4 m^2")
         result = VectorQuantity(ddDummy20, u1).sqrt()
-        assertBounds(4.472135955, (result.value as AADD))
+        assertBounds(sqrt(20.0), (result.value as AADD))
         assertEquals("m s^2", result.unit.toString())
     }
 

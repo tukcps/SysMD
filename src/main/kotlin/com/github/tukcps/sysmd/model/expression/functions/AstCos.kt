@@ -5,12 +5,11 @@ import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.quantities.Unit
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
-import com.github.tukcps.sysmd.unaryMinus
 import io.github.tukcps.aadd.DDBuilder.RealMath
 import io.github.tukcps.aadd.dd.AADD
+import io.github.tukcps.aadd.DDBuilder.RealMath.unaryMinus
 import io.github.tukcps.aadd.values.bounds.DoubleBound
 import io.github.tukcps.aadd.values.bounds.DoubleBoundMath.toDouble
-import io.github.tukcps.aadd.values.bounds.minus
 import io.github.tukcps.aadd.values.bounds.unaryMinus
 import io.github.tukcps.aadd.values.real.ia.minus
 

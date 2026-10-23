@@ -2,14 +2,19 @@ package com.github.tukcps.sysmd.quantities
 
 import com.github.tukcps.sysmd.quantities.baseUnits.ThermodynamicTemperature
 import com.github.tukcps.sysmd.quantities.derivedUnits.DimensionOne
+import io.github.tukcps.aadd.util.Tolerance
+import io.github.tukcps.aadd.values.real.ia.RealRange
+import io.github.tukcps.aadd.values.real.ia.abs
+import io.github.tukcps.aadd.values.real.ia.log
+import io.github.tukcps.aadd.values.real.ia.minus
+import io.github.tukcps.aadd.values.real.ia.pow
+import io.github.tukcps.aadd.values.real.ia.times
 import java.io.Reader
 import java.io.StreamTokenizer
 import java.io.StringReader
 import kotlin.math.abs
 import kotlin.math.log
-import kotlin.math.max
 import kotlin.math.min
-import kotlin.math.pow
 
 class Unit(
     val unitSet: Set<UnitOfMeasurement> = emptySet(),
@@ -58,7 +63,7 @@ class Unit(
             if (unitSet.isEmpty()) {
                 return copy(unitDomain = DimensionOne.One.domain)
             }
-            val unitList = ConversionTables.unitsMap.values.filter { it.getBaseUnits() == unitSet }
+            val unitList = ConversionTables.unitsMap.values.filter { it.baseUnits == unitSet }
             // prefer the unit that was actually given ("uts" is a timestamp, although it contains the "s" of a duration)
             unitList.firstOrNull { unitString.replace(" ", "") == it.symbol }?.let {
                 return copy(unitDomain = it.domain, isDifference = isDifference || it.isDifference)
@@ -87,7 +92,7 @@ class Unit(
                 return copy(calculatedUnitSymbol = "")
             }
             //List of possible units for the domains
-            val unitList = ConversionTables.unitsMap.values.filter { it.getBaseUnits() == unitSet }
+            val unitList = ConversionTables.unitsMap.values.filter { it.baseUnits == unitSet }
 
             //if there are units from different (or zero) domains
             //and also different units (or zero), return empty string, because no unique solution possible
@@ -95,7 +100,7 @@ class Unit(
                 return copy(calculatedUnitSymbol = "")
             } else {
                 //For more than one unit of the same domain use the unit with the closest conversion factor to one
-                val symbol = unitList.minByOrNull { abs(log(it.convFac, 10.0)) }?.symbol ?: ""
+                val symbol = unitList.minByOrNull { abs(log(it.convFac, 10.0)).min }?.symbol ?: ""
                 return copy(calculatedUnitSymbol = symbol)
             }
         }
@@ -156,7 +161,7 @@ class Unit(
         if (toString() == "?") return Unit("?")
         val newSet = unitSet.map {
             if (it.exponent % 2 != 0) throw SquareRootError(toString())
-            it.copyWith(exponent = it.exponent / 2)
+            it.copy(exponent = it.exponent / 2)
         }.toSet()
         return Unit(
             unitSet = newSet,
@@ -168,7 +173,7 @@ class Unit(
     fun sqr(): Unit {
         if (toString() == "?") return Unit("?")
         val newSet = unitSet.map {
-            it.copyWith(exponent = it.exponent * 2)
+            it.copy(exponent = it.exponent * 2)
         }.toSet()
         return Unit(
             unitSet = newSet,
@@ -182,7 +187,7 @@ class Unit(
         if (exponent == 1 && !isDifference) return this // units are immutable; a difference must lose its flag
         if (toString() == "?") return Unit("?")
         val newSet = unitSet.map {
-            it.copyWith(exponent = it.exponent * exponent)
+            it.copy(exponent = it.exponent * exponent)
         }.toSet()
         return Unit(
             unitSet = newSet,
@@ -202,9 +207,8 @@ class Unit(
         if (!hasSameDimension(other)) return false
         // Temperatures differ by an offset, not only by scale (°C vs K)
         if (singleTemperature != null || other.singleTemperature != null) return false
-        val a = scaleToSI(unitSet)
-        val b = scaleToSI(other.unitSet)
-        return abs(a - b) <= 1e-12 * max(abs(a), abs(b))
+
+        return Tolerance(relative = 1e-12).areEqual(scaleToSI(unitSet), scaleToSI(other.unitSet))
     }
 
     /** Compares the SI dimensions, ignoring prefix, scale and representation: m and km have the same dimension. */
@@ -223,8 +227,8 @@ class Unit(
     }
 
     /** The temperature unit if this is a single temperature with exponent 1 (K, °C, m°F), otherwise null. */
-    internal val singleTemperature: ThermodynamicTemperature?
-        get() = (unitSet.singleOrNull() as? ThermodynamicTemperature)?.takeIf { it.exponent == 1 }
+    internal val singleTemperature: UnitOfTemperature?
+        get() = unitSet.singleOrNull()?.tryCast<ThermodynamicTemperature>()?.takeIf { it.exponent == 1 }
 
     /** Whether this unit can be treated as a plain number or not */
     val isNumber: Boolean get() = when(toString()) {
@@ -250,15 +254,15 @@ class Unit(
     /**
      * Transforms Unit to the SI System (does not consider value of Quantity)
      */
-    fun toSI(): Unit {
-        return Unit(
-            unitSet = computeSI(unitSet),
-            unitDomain = unitDomain,
-            calculatedUnitSymbol = calculatedUnitSymbol,
-            isDifference = isDifference,
-            isLogarithmic = false
-        )
-    }
+    fun toSI() = Unit(
+        unitSet = computeSI(unitSet),
+        unitDomain = unitDomain,
+        calculatedUnitSymbol = calculatedUnitSymbol,
+        isDifference = isDifference,
+        isLogarithmic = false
+    )
+
+    fun siUnitSet() = computeSI(unitSet)
 
     override fun hashCode(): Int {
         return computeSI(unitSet).hashCode()
@@ -361,14 +365,14 @@ class Unit(
                 }
                 return if (possibleDomain.isNotEmpty()) {
                     // select unit with the closest conversion factor to 1
-                    val selectedUnit = possibleDomain.minByOrNull { abs(it.convFac - 1) }!!
+                    val selectedUnit = possibleDomain.minByOrNull { abs(it.convFac - 1.0).min }!!
                     ParsedUnit(setOf(selectedUnit), unitDomain, isLogarithmic, isDifference, selectedUnit.symbol)
                 } else {
                     ParsedUnit(unitSet, "", isLogarithmic, isDifference, unitStr)
                 }
             } else { // unit is defined
                 val siUnitSet = computeSI(unitSet)
-                val possibleUnits = ConversionTables.unitsMap.values.filter { it.getBaseUnits() == siUnitSet }
+                val possibleUnits = ConversionTables.unitsMap.values.filter { it.baseUnits == siUnitSet }
                 // test if the given unit domain is possible (remove whitespaces and ignore case)
                 if (possibleUnits.none {
                     it.domain.replace(" ", "").equals(unitDomain.replace("Value", "").replace("3dVector", "").replace("Cartesian", ""), ignoreCase = true) ||
@@ -395,7 +399,7 @@ class Unit(
             } else {
                 1
             }
-            return unitOfMeasurement.copyWith(exponent = exponent)
+            return unitOfMeasurement.copy(exponent = exponent)
         }
 
         private fun isolatePrefix(str: String): UnitOfMeasurement {
@@ -405,7 +409,7 @@ class Unit(
                 if (ConversionTables.prefixes.containsKey(tempPref) && ConversionTables.unitsMap.containsKey(tempBase)) {
                     val baseUnit = ConversionTables.unitsMap[tempBase]!!
                     val prefix = ConversionTables.prefixes[tempPref]!!
-                    return baseUnit.copyWith(prefix = prefix)
+                    return baseUnit.copy(prefix = prefix)
                 }
             }
             throw UnknownUnitError(str)
@@ -429,16 +433,16 @@ class Unit(
             return numeratorStr + denominatorStr
         }
 
-        fun addUnitOfMeasurementToSet(
-            units: Collection<UnitOfMeasurement>,
-            unit: UnitOfMeasurement
-        ): Set<UnitOfMeasurement> {
+        fun<K : Kind> addUnitOfMeasurementToSet(
+            units: Collection<UnitOfKind<K>>,
+            unit: UnitOfKind<K>
+        ): Set<UnitOfKind<K>> {
             val list = units.toMutableList()
             val index = list.indexOfFirst { it.name == unit.name && it.prefix == unit.prefix }
             if (index >= 0) {
                 val existing = list[index]
                 val newExponent = existing.exponent + unit.exponent
-                list[index] = existing.copyWith(exponent = newExponent)
+                list[index] = existing.copy(exponent = newExponent)
             } else {
                 list.add(unit)
             }
@@ -446,15 +450,19 @@ class Unit(
         }
 
         /** Factor to multiply a value in these units with to get the value in the SI units of [computeSI]. */
-        private fun scaleToSI(unitSet: Set<UnitOfMeasurement>): Double =
-            unitSet.fold(1.0) { factor, unit -> factor * (unit.prefix.factor * unit.convFac).pow(unit.exponent) }
+        private fun scaleToSI(unitSet: Set<UnitOfMeasurement>): RealRange =
+            unitSet.fold(RealRange(1.0)) { factor, unit ->
+                factor * pow(unit.prefix.factor * unit.convFac, unit.exponent.toDouble()) // int into double
+            }
 
-        fun computeSI(unitSet: Set<UnitOfMeasurement>): Set<UnitOfMeasurement> {
-            var resultUnits = emptySet<UnitOfMeasurement>()
+        fun computeSI(unitSet: Set<UnitOfMeasurement>): Set<BaseUnit>
+        {
+            var resultUnits = emptySet<BaseUnit>()
+
             for (currentUnit in unitSet) {
-                for (baseUnit in currentUnit.getBaseUnits()) {
+                for (baseUnit in currentUnit.baseUnits) {
                     val exponent = currentUnit.exponent * baseUnit.exponent
-                    resultUnits = addUnitOfMeasurementToSet(resultUnits, baseUnit.copyWith(exponent = exponent))
+                    resultUnits = addUnitOfMeasurementToSet(resultUnits, baseUnit.copy(exponent = exponent))
                 }
             }
             return resultUnits

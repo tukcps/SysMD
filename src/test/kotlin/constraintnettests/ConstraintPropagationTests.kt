@@ -2,14 +2,10 @@ package constraintnettests
 
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.Runlevel
-import io.github.tukcps.aadd.dd.AADD
-import io.github.tukcps.aadd.util.Assertions.assertSafeInclusion
 import util.*
 import util.mockup.loadKerML
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 
 class ConstraintPropagationTests {
 
@@ -246,7 +242,7 @@ class ConstraintPropagationTests {
             feature d: Ranges::RealInRange { :>> range=3.0; }
             feature a: Ranges::RealInRange = b+c*d.
         """, Runlevel.ALL)
-        val a = solver.variable("a")
+        solver.variable("a")
         solver.propagate()
         assertNoIssues()
         assertBounds(7.0, solver.variable("a"))
@@ -294,7 +290,7 @@ class ConstraintPropagationTests {
         loadKerML("feature c: Ranges::RealInRange {:>> range =2.0..3.0;}")
         loadKerML("feature d: Ranges::RealInRange {:>> range =3.0..4.0;}")
         loadKerML("feature a: Ranges::RealInRange = b+c*d;")
-        val a = solver.variable("a")
+        solver.variable("a")
         solver.propagate()
         assertNoIssues()
         assertBounds(7.0 .. 14.0, solver.variable("a"))
@@ -517,11 +513,11 @@ class ConstraintPropagationTests {
             feature V: ScalarValues::Real = I * R; 
             feature P: ScalarValues::Real = I * V; 
         """, Runlevel.ALL)
-        assertSafeInclusion(9.9 * 1.9..10.1 * 2.1, solver.variable("V").aadd(), 0.00001)
+        assertBounds(9.9 * 1.9..10.1 * 2.1, solver.variable("V"))
         assertNoIssues()
         solver.propagate()
         assertNoIssues()
-        assertSafeInclusion(9.9 * 1.9..21.21, solver.variable("V").aadd(), 0.00001)
+        assertBounds(9.9 * 1.9..21.21, solver.variable("V"))
     }
 
     @Test
@@ -582,7 +578,7 @@ class ConstraintPropagationTests {
         """, Runlevel.ALL)
         assertNoIssues()
         val a = solver.variable("a")
-        assertSafeInclusion(Double.NEGATIVE_INFINITY..Double.POSITIVE_INFINITY, a.aadd(), 0.00001)
+        assertBounds(Double.NEGATIVE_INFINITY..Double.POSITIVE_INFINITY, a)
     }
 
     @Test

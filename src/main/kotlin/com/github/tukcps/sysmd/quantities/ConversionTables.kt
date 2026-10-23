@@ -1,5 +1,6 @@
 package com.github.tukcps.sysmd.quantities
 
+import com.github.tukcps.sysmd.quantities.baseUnits.AmountOfMoney
 import com.github.tukcps.sysmd.quantities.baseUnits.*
 import com.github.tukcps.sysmd.quantities.derivedUnits.*
 
@@ -40,7 +41,7 @@ object ConversionTables {
         "" to NoPrefix
     )
 
-    val unitsMap = mutableMapOf(
+    private val _unitsMap = mutableMapOf(
         // Base Units
         "m" to Length.Meter,
         "kg" to Mass.Kilogram,
@@ -107,7 +108,8 @@ object ConversionTables {
         "As" to ElectricCharge.AmpereSecond,
         "V" to ElectricPotentialDifferenceValue.Volt,
         "F" to Capacitance.Farad,
-        "Ω" to Resistance.Ohm,
+        "Ω" to Resistance.Ohm, // actual dedicated ohm symbol
+        "Ω" to Resistance.Ohm, // uppercase greek letter
         "Ohm" to Resistance.Ohm,
         "S" to Conductance.Siemens,
         "Wb" to MagneticFlux.Weber,
@@ -157,20 +159,11 @@ object ConversionTables {
         "F/m" to Permittivity.FaradPerMeter,
         "m/s" to Speed.MeterPerSeconds,
     )
-}
 
-/**
- * Adds a new Unit to the ConversionTable
- */
-fun addUnit(name: String, symbol: String, baseUnit: String, domain: String, convFac: Double, isLogarithmic: Boolean = false) {
-    //Generate unit and convert it to Base Units. After that get the BaseUnits
-    val newUnit = Unit(baseUnit)
-    val unitSet=newUnit.toSI().unitSet
-    //Add Base units to a set of BaseUnits
-    val newBaseUnitSet = mutableSetOf<BaseUnit>()
-    unitSet.forEach { newBaseUnitSet.add(it as BaseUnit) } // can be done, because newUnit is in SI
-    // Generate unitOfMeasurement and add it to ConversionTables unitsMap
-    val unitOfMeasurement = DerivedUnit(name, symbol, NoPrefix, domain, newBaseUnitSet, convFac, isLogarithmic = isLogarithmic)
-    if(symbol !in ConversionTables.unitsMap.keys) //only add if symbol not in conversion table
-        ConversionTables.unitsMap[symbol] = unitOfMeasurement
+    val unitsMap : Map<String, UnitOfMeasurement> = _unitsMap
+
+    fun addUnit(unit : DerivedUnit)
+    {
+        _unitsMap.putIfAbsent(unit.symbol, unit)
+    }
 }

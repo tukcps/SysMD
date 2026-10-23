@@ -1,34 +1,34 @@
 package com.github.tukcps.sysmd.quantities
 
-import com.github.tukcps.sysmd.*
 import com.github.tukcps.sysmd.cspsolver.Variable
 import com.github.tukcps.sysmd.exceptions.SemanticError
+import com.github.tukcps.sysmd.model.util.mapInPlace
 import com.github.tukcps.sysmd.quantities.baseUnits.ThermodynamicTemperature
 import io.github.tukcps.aadd.*
+import io.github.tukcps.aadd.DDBuilder.*
 import io.github.tukcps.aadd.DDBuilder.BoolMath.and
 import io.github.tukcps.aadd.DDBuilder.BoolMath.not
 import io.github.tukcps.aadd.DDBuilder.BoolMath.or
 import io.github.tukcps.aadd.DDBuilder.BoolMath.xor
-import io.github.tukcps.aadd.DDBuilder.IntMath
 import io.github.tukcps.aadd.DDBuilder.IntMath.abs
 import io.github.tukcps.aadd.DDBuilder.IntMath.exp
 import io.github.tukcps.aadd.DDBuilder.IntMath.ln
 import io.github.tukcps.aadd.DDBuilder.IntMath.log
 import io.github.tukcps.aadd.DDBuilder.IntMath.sqrt
-import io.github.tukcps.aadd.DDBuilder.RealMath
 import io.github.tukcps.aadd.DDBuilder.RealMath.acos
 import io.github.tukcps.aadd.DDBuilder.RealMath.exp
 import io.github.tukcps.aadd.DDBuilder.RealMath.ln
 import io.github.tukcps.aadd.DDBuilder.RealMath.log
 import io.github.tukcps.aadd.DDBuilder.RealMath.negate
+import io.github.tukcps.aadd.DDBuilder.RealMath.times
 import io.github.tukcps.aadd.dd.*
-import io.github.tukcps.aadd.util.Tolerance
+import io.github.tukcps.aadd.util.*
 import io.github.tukcps.aadd.values.bool.XBool
-import io.github.tukcps.aadd.values.integer.IntegerRange
 import io.github.tukcps.aadd.values.bounds.*
 import io.github.tukcps.aadd.values.bounds.DoubleBoundMath.abs
 import io.github.tukcps.aadd.values.bounds.DoubleBoundMath.toDouble
-import io.github.tukcps.aadd.values.real.ia.RealRange
+import io.github.tukcps.aadd.values.integer.IntegerRange
+import io.github.tukcps.aadd.values.real.ia.*
 import kotlin.math.*
 
 private val equalsTolerance = Tolerance(relative = 1e-6)
@@ -87,18 +87,17 @@ class VectorQuantity private constructor(
         val NO_UNIT = Unit("")
 
         private fun removePrefixes(values: List<AADD>, unit: Unit): Pair<List<DD<*>>, Unit> {
-            var factor = 1.0
+            var factor = RealRange(1.0)
             for (element in unit.unitSet) {
-                factor *= element.prefix.factor.pow(element.exponent)
+                factor *= pow(element.prefix.factor, element.exponent)
             }
-            val resultingValues = if (unit.unitSet.isNotEmpty()) {
-                if (factor != 1.0) values.map { it * factor } else values
-            } else {
-                values
+            val resultingValues = when {
+                unit.unitSet.isNotEmpty() && !factor.isOne() -> values.map { it * factor }
+                else -> values
             }
             var newSet = emptySet<UnitOfMeasurement>()
             for (element in unit.unitSet) {
-                newSet = Unit.addUnitOfMeasurementToSet(newSet, element.copyWith(prefix = NoPrefix))
+                newSet = Unit.addUnitOfMeasurementToSet(newSet, element.copy(prefix = NoPrefix))
             }
             val newUnit = Unit(
                 unitSet = newSet,
@@ -121,7 +120,7 @@ class VectorQuantity private constructor(
                     val range = resultingValues[i].asAadd().getRange()
                     val exact = range.min == range.max && range.min.toDouble().let {
                         val n = it / 10.0
-                        n == Math.rint(n) && n * 10.0 == it && kotlin.math.abs(n) <= 22.0
+                        n == Math.rint(n) && n * 10.0 == it && abs(n) <= 22.0
                     }
                     resultingValues[i] = if (exact) ten.builder.real(Math.pow(10.0, range.min.toDouble() / 10.0))
                     else RealMath.pow(ten, RealMath.divide(resultingValues[i].asAadd(), ten))
@@ -140,16 +139,20 @@ class VectorQuantity private constructor(
             val hasOffset = noPrefixUnit.singleTemperature != null && !noPrefixUnit.isDifference
             for (currentUnit in noPrefixUnit.unitSet) {
                 // Change Unit to SI
-                for (it in currentUnit.getBaseUnits()) {
-                    val newUnitElement = it.copyWith(exponent = currentUnit.exponent * it.exponent)
+                for (it in currentUnit.baseUnits) {
+                    val newUnitElement = it.pow(currentUnit.exponent)
                     resultUnit = resultUnit.addUnitOfMeasurement(newUnitElement)
                 }
                 // Update values
-                for (i in resultingValues.indices) {
-                    if (hasOffset && currentUnit is ThermodynamicTemperature)
-                        resultingValues[i] = currentUnit.toKelvin(resultingValues[i])
-                    else if (currentUnit.convFac.pow(currentUnit.exponent) != 1.0)
-                        resultingValues[i] = resultingValues[i] * currentUnit.convFac.pow(currentUnit.exponent)
+                resultingValues.mapInPlace {
+                    @Suppress("UNCHECKED_CAST")
+                    if(hasOffset) currentUnit.tryCast<ThermodynamicTemperature>()?.let { u ->
+                        return@mapInPlace ThermodynamicTemperature.toKelvin(it.asAadd(), u)
+                    }
+
+                    val f = pow(currentUnit.convFac, currentUnit.exponent)
+
+                    if(f.isOne()) it else it.asAadd() * f
                 }
             }
             return Pair(resultingValues, resultUnit.reduceRedundantUnits())
@@ -193,6 +196,10 @@ class VectorQuantity private constructor(
             }
             return VectorQuantity(validateAndCopy(values), unit, unitSpec, userWantedUnitSpec)
         }
+
+        /** Shorthand for [fromCanonical] that copies the unit information from another VQ directly */
+        fun fromCanonical(values : List<DD<*>>, unitsFrom : VectorQuantity) =
+            fromCanonical(values, unitsFrom.unit, unitsFrom.unitSpec, unitsFrom.userWantedUnitSpec)
 
         fun fromCanonical(
             value: DD<*>,
@@ -1067,7 +1074,7 @@ class VectorQuantity private constructor(
         val unit2 = expectedUnit.singleTemperature
         if (unit1 != null && unit2 != null && unit2.hasOffset && !unit.isDifference) {
             val factor = unit1.prefix.factor
-            return values.map { unit1.convertTo(it * factor, unit2) }
+            return values.map { ThermodynamicTemperature.convert(it.asAadd() * factor, unit1, unit2) }
         }
 
         // Vectors always have exactly one unit across all elements:
@@ -1327,7 +1334,7 @@ class VectorQuantity private constructor(
                     val min = it.asIdd().min
                     val max = it.asIdd().max
                     val absoluteValue = if (min <= 0 && max >= 0)
-                        it.builder.integer(0L .. max(abs(min), max))
+                        it.builder.integer(0L .. maxOf(abs(min), max))
                     else if (max < 0)
                         it.builder.integer(abs(max)..abs(min))
                     else
@@ -1343,7 +1350,7 @@ class VectorQuantity private constructor(
                     val min = it.asAadd().min
                     val max = it.asAadd().max
                     val absoluteValue = if (min <= 0.0 && max >= 0.0)
-                        it.builder.real(0.0 .. max(abs(min), max))
+                        it.builder.real(0.0 .. maxOf(abs(min), max))
                     else if (max < 0.0)
                         it.builder.real(abs(max) .. abs(min))
                     else
@@ -1379,7 +1386,7 @@ class VectorQuantity private constructor(
                     val min = it.asIdd().min
                     val max = it.asIdd().max
                     val absoluteValue = when {
-                        min <= 0 && max >= 0 -> it.builder.integer(0L..max(abs(min),max))
+                        min <= 0 && max >= 0 -> it.builder.integer(0L..maxOf(abs(min),max))
                         max < 0 -> it.builder.integer(abs(max)..abs(min))
                         else -> it.builder.integer(min..max)
                     }
@@ -1397,7 +1404,7 @@ class VectorQuantity private constructor(
                     val min = it.asAadd().min
                     val max = it.asAadd().max
                     val absoluteValue = if (min <= 0.0 && max >= 0.0)
-                        it.builder.real(0.0..max(abs(min), max))
+                        it.builder.real(0.0..maxOf(abs(min), max))
                     else if (max < 0.0)
                         it.builder.real(abs(max)..abs(min))
                     else

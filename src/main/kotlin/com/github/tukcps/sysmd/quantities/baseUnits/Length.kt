@@ -1,23 +1,23 @@
 package com.github.tukcps.sysmd.quantities.baseUnits
 
-import com.github.tukcps.sysmd.quantities.BaseUnit
-import com.github.tukcps.sysmd.quantities.NoPrefix
-import com.github.tukcps.sysmd.quantities.Prefix
+import com.github.tukcps.sysmd.quantities.*
 
-open class Length(name: String, symbol: String, prefix: Prefix, convFac: Double = 1.0, exponent: Int = 1) :
-    BaseUnit(name, symbol, prefix, "Length", convFac, exponent, alternativeDomain = "Position") {
+data object Length : BaseQuantityKind("Length")
+{
+    // per NIST SP 811 and ISO 80000-3
+    val METERS_PER_YARD = exactDecimal("0.9144")
+    val METERS_PER_FOOT = METERS_PER_YARD / 3
+    val METERS_PER_INCH = METERS_PER_FOOT / 12
+    val METERS_PER_MILE = METERS_PER_FOOT * 5280
+    // per ISO 80000-3
+    const val METERS_PER_NAUTICAL_MILE = 1852
 
-    /**
-     * generate UnitObjects and add them to the UnitList
-     */
-    object Meter : Length("meter", "m", NoPrefix)
-    object Mile : Length("mile", "mi", NoPrefix, 1609.344)
-    object NauticalMile : Length("nautical mile", "nmi", NoPrefix, 1852.0)
-    object Yard : Length("yard", "yd", NoPrefix, 0.9144)
-    object Feet : Length("feet", "ft", NoPrefix, 0.3048)
-    object Inch : Length("inch", "inch", NoPrefix, 0.0254)
+    val Meter = unit("meter", "m")
+    val NauticalMile = unit("nautical mile", "nmi", METERS_PER_NAUTICAL_MILE)
+    val Mile = unit("mile", "mi", METERS_PER_MILE)
+    val Yard = unit("yard", "yd", METERS_PER_YARD)
+    val Feet = unit("feet", "ft", METERS_PER_FOOT)
+    val Inch = unit("inch", "inch", METERS_PER_INCH)
 
-    override fun copy(exponentValue: Int): Length {
-        return Length(name, symbol, prefix, convFac, exponentValue)
-    }
+    override val baseUnit = setOf(Meter)
 }

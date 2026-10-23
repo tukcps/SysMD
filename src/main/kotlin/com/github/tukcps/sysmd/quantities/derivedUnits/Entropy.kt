@@ -1,27 +1,16 @@
 package com.github.tukcps.sysmd.quantities.derivedUnits
 
-import com.github.tukcps.sysmd.quantities.DerivedUnit
-import com.github.tukcps.sysmd.quantities.NoPrefix
-import com.github.tukcps.sysmd.quantities.Prefix
+import com.github.tukcps.sysmd.quantities.DerivedQuantityKind
+import com.github.tukcps.sysmd.quantities.unit
+import com.github.tukcps.sysmd.quantities.baseUnits.Duration
 import com.github.tukcps.sysmd.quantities.baseUnits.Length
 import com.github.tukcps.sysmd.quantities.baseUnits.Mass
 import com.github.tukcps.sysmd.quantities.baseUnits.ThermodynamicTemperature
-import com.github.tukcps.sysmd.quantities.baseUnits.Duration
 
-private var siUnitSet = setOf(
-    Length.Meter.copy(2), Mass.Kilogram.copy(),
-    Duration.Second.copy(-2), ThermodynamicTemperature.Kelvin.copy(-1)
-)
-
-open class Entropy(name: String, symbol: String, prefix: Prefix, convFac: Double, exponent: Int = 1, isLogarithmic: Boolean = false) :
-    DerivedUnit(name, symbol, prefix, "Entropy", siUnitSet, convFac, exponent, isLogarithmic) {
-
-    /**
-     * generate UnitObjects and add them to the UnitList
-     */
-    object JoulePerKelvin : Entropy("joule per kelvin", "J/K", NoPrefix, 1.0)
-
-    override fun copy(): Entropy {
-        return Entropy(name, symbol, prefix, convFac, exponent, isLogarithmic)
-    }
+data object Entropy : DerivedQuantityKind("Entropy", setOf(
+    Length.Meter.pow(2), Mass.Kilogram,
+    Duration.Second.pow(-2), ThermodynamicTemperature.Kelvin.pow(-1)
+))
+{
+    val JoulePerKelvin = unit("joule per kelvin", "J/K")
 }

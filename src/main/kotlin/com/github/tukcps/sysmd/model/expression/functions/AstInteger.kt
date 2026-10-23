@@ -1,12 +1,12 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import com.github.tukcps.sysmd.convexHull
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.quantities.VectorQuantity
 import com.github.tukcps.sysmd.services.session.Session
 import io.github.tukcps.aadd.dd.AADD
 import io.github.tukcps.aadd.dd.IDD
+import io.github.tukcps.aadd.util.convexHull
 import io.github.tukcps.aadd.values.bounds.DoubleBoundMath.toDouble
 import kotlin.math.ceil
 import kotlin.math.floor
@@ -46,19 +46,12 @@ class AstInteger(model: Session, args: ArrayList<AstNode>) :
     }
 
     override fun evalDown() {
-        val results = mutableListOf<AADD>()
-        downQuantity.idds().forEach {
-            if (it.isEmpty()) {
-                results.add(model.builder.Reals.Empty)
-            } else {
-                results.add(model.builder.real(convexHull(it)))
-            }
+        val results = downQuantity.idds().map {
+            model.builder.real(convexHull(it))
         }
         val newParam = VectorQuantity.fromCanonical(
             results,
-            getParam(0).downQuantity.unit,
-            getParam(0).downQuantity.unitSpec,
-            getParam(0).downQuantity.userWantedUnitSpec
+            unitsFrom = getParam(0).downQuantity
         )
         getParam(0).downQuantity = getParam(0).downQuantity.constrain(newParam)
     }

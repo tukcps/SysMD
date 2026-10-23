@@ -1,26 +1,25 @@
 package com.github.tukcps.sysmd.quantities.derivedUnits
 
-import com.github.tukcps.sysmd.quantities.DerivedUnit
-import com.github.tukcps.sysmd.quantities.NoPrefix
-import com.github.tukcps.sysmd.quantities.Prefix
+import com.github.tukcps.sysmd.quantities.*
 import com.github.tukcps.sysmd.quantities.baseUnits.Length
 
-private var siUnitSet = setOf(Length.Meter.copy(3))
+data object Volume : DerivedQuantityKind("Volume", setOf(
+    Length.Meter.pow(3)
+))
+{
+    val CubicMeter = unit("cubic meter", "m^3")
+    val Liter = unit("liter", "l", "0.001")
 
-open class Volume(name: String, symbol: String, prefix: Prefix, convFac: Double, exponent: Int = 1, isLogarithmic: Boolean = false) :
-    DerivedUnit(name, symbol, prefix, "Volume", siUnitSet, convFac, exponent, isLogarithmic) {
+    val CUBIC_METERS_PER_CUBIC_INCH = Length.METERS_PER_INCH.pow(3)!!
+    /** 1 gallon := 231 in³ */
+    val CUBIC_METERS_PER_GALLON = CUBIC_METERS_PER_CUBIC_INCH * 231
+    val CUBIC_METERS_PER_QUART = CUBIC_METERS_PER_GALLON / 4
+    val CUBIC_METERS_PER_PINT = CUBIC_METERS_PER_GALLON / 8
+    val CUBIC_METERS_PER_BARREL = CUBIC_METERS_PER_GALLON * 42
+    // no fluid ounce
 
-    /**
-     * generate UnitObjects and add them to the UnitList
-     */
-    object CubicMeter : Volume("cubic meter", "m^3", NoPrefix, 1.0)
-    object Liter : Volume("liter", "l", NoPrefix, 0.001)
-    object Pint : Volume("pint", "pt", NoPrefix, 0.000473176473)
-    object Quart : Volume("quart", "qt", NoPrefix, 0.000946352946)
-    object Gallon : Volume("gallon", "gal", NoPrefix, 0.003785411784)
-    object Barrel : Volume("barrel", "bbl", NoPrefix, 0.158987294928)
-
-    override fun copy(): Volume {
-        return Volume(name, symbol, prefix, convFac, exponent, isLogarithmic)
-    }
+    val Pint = unit("pint", "pt", CUBIC_METERS_PER_PINT)
+    val Quart = unit("quart", "qt", CUBIC_METERS_PER_QUART)
+    val Gallon = unit("gallon", "gal", CUBIC_METERS_PER_GALLON)
+    val Barrel = unit("barrel", "bbl", CUBIC_METERS_PER_BARREL)
 }

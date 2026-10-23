@@ -1,20 +1,12 @@
 package quantitytests
 
-import util.assertBounds
 import com.github.tukcps.sysmd.quantities.*
-import com.github.tukcps.sysmd.quantities.Unit
-import com.github.tukcps.sysmd.quantities.baseUnits.Duration
-import com.github.tukcps.sysmd.quantities.baseUnits.Length
-import com.github.tukcps.sysmd.quantities.baseUnits.Mass
+import com.github.tukcps.sysmd.quantities.baseUnits.*
 import io.github.tukcps.aadd.DDBuilder
 import io.github.tukcps.aadd.dd.AADD
 import io.github.tukcps.aadd.dd.IDD
-import io.github.tukcps.aadd.util.Assertions.assertEquals
-import kotlin.test.BeforeTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertFailsWith
+import util.assertBounds
+import kotlin.test.*
 
 class QuantityParsingTests {
     private lateinit var ddDummy0: AADD
@@ -305,22 +297,29 @@ class QuantityParsingTests {
         assertBounds(30.0, quant3.valueIn("dB").asAadd())
     }
 
+    object TestDomain : DerivedQuantityKind("testdomain", Unit("Nm"))
+    {
+        val testunit = unit("testunit", "tu", 5)
+    }
+
     @Test
     fun addUnit1() {
-        addUnit("testunit", "tu", "Nm", "testdomain", 5.0, false)
+        ConversionTables.addUnit(TestDomain.testunit)
         val unit = Unit("tu")
-        assertEquals("testunit", unit.unitSet.elementAt(0).name)
-        assertEquals("tu", unit.unitSet.elementAt(0).symbol)
-        assertEquals("testdomain", unit.unitSet.elementAt(0).domain)
-        assertEquals(5.0, unit.unitSet.elementAt(0).convFac)
-        assertFalse(unit.unitSet.elementAt(0).isLogarithmic)
-        val baseUnitSet = mutableSetOf(Length.Meter.copy(2), Mass.Kilogram.copy(1), Duration.Second.copy(-2))
-        assertEquals(baseUnitSet, unit.unitSet.elementAt(0).getBaseUnits())
+        val u = unit.unitSet.single()
+        assertEquals("testunit", u.name)
+        assertEquals("tu", u.symbol)
+        assertEquals("testdomain", u.domain)
+        assertBounds(5.0, u.convFac)
+        assertFalse(u.isLogarithmic)
+
+        val baseUnitSet = mutableSetOf(Length.Meter.pow(2), Mass.Kilogram.pow(1), Duration.Second.pow(-2))
+        assertEquals(baseUnitSet as Set<UnitOfMeasurement>, u.baseUnits)
     }
 
     @Test
     fun addUnit2() {
-        addUnit("testunit", "tu", "Nm", "testdomain", 5.0, false)
+        ConversionTables.addUnit(TestDomain.testunit)
         val quantity = VectorQuantity(ddDummy1, "tu")
         assertBounds(5.0, quantity.valueIn("Nm").asAadd())
     }

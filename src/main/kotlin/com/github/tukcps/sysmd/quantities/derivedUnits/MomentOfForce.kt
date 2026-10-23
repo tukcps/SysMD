@@ -1,23 +1,14 @@
 package com.github.tukcps.sysmd.quantities.derivedUnits
 
-import com.github.tukcps.sysmd.quantities.DerivedUnit
-import com.github.tukcps.sysmd.quantities.NoPrefix
-import com.github.tukcps.sysmd.quantities.Prefix
+import com.github.tukcps.sysmd.quantities.DerivedQuantityKind
+import com.github.tukcps.sysmd.quantities.unit
+import com.github.tukcps.sysmd.quantities.baseUnits.Duration
 import com.github.tukcps.sysmd.quantities.baseUnits.Length
 import com.github.tukcps.sysmd.quantities.baseUnits.Mass
-import com.github.tukcps.sysmd.quantities.baseUnits.Duration
 
-private var siUnitSet = setOf(Length.Meter.copy(2), Mass.Kilogram.copy(), Duration.Second.copy(-2))
-
-open class MomentOfForce(name: String, symbol: String, prefix: Prefix, convFac: Double, exponent: Int = 1, isLogarithmic: Boolean = false) :
-    DerivedUnit(name, symbol, prefix, "MomentOfForce", siUnitSet, convFac, exponent, isLogarithmic) {
-
-    /**
-     * generate UnitObjects and add them to the UnitList
-     */
-    object NewtonMeter : MomentOfForce("newton meter", "Nm", NoPrefix, 1.0)
-
-    override fun copy(): MomentOfForce {
-        return MomentOfForce(name, symbol, prefix, convFac, exponent, isLogarithmic)
-    }
+data object MomentOfForce : DerivedQuantityKind("MomentOfForce", setOf(
+    Length.Meter.pow(2), Mass.Kilogram, Duration.Second.pow(-2)
+))
+{
+    val NewtonMeter = unit("newton meter", "Nm")
 }

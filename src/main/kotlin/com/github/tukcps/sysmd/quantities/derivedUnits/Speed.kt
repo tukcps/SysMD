@@ -1,24 +1,22 @@
 package com.github.tukcps.sysmd.quantities.derivedUnits
 
-import com.github.tukcps.sysmd.quantities.DerivedUnit
-import com.github.tukcps.sysmd.quantities.NoPrefix
-import com.github.tukcps.sysmd.quantities.Prefix
-import com.github.tukcps.sysmd.quantities.baseUnits.Length
+import com.github.tukcps.sysmd.quantities.*
 import com.github.tukcps.sysmd.quantities.baseUnits.Duration
+import com.github.tukcps.sysmd.quantities.baseUnits.Length
+import io.github.tukcps.aadd.values.real.ia.RealRange
+import io.github.tukcps.aadd.values.real.ia.div
+import java.math.BigDecimal
+import java.math.MathContext
 
-private var siUnitSet = setOf(Length.Meter.copy(), Duration.Second.copy(-1))
+data object Speed : DerivedQuantityKind("Speed", setOf(
+    Length.Meter, Duration.Second.pow(-1)
+))
+{
+    /** 1 knot = 1 nautical mile / 1 hour. Has no exact (arbitrary-precision) decimal representation. */
+    val MS_PER_KNOT = RealRange(Length.METERS_PER_NAUTICAL_MILE.toDouble()) / 3600.0
+    val MS_PER_MPH = Length.METERS_PER_MILE / 3600
 
-open class Speed(name: String, symbol: String, prefix: Prefix, convFac: Double, exponent: Int = 1, isLogarithmic: Boolean = false) :
-    DerivedUnit(name, symbol, prefix, "Speed", siUnitSet, convFac, exponent, isLogarithmic, alternativeDomain = "Velocity") {
-
-    /**
-     * generate UnitObjects and add them to the UnitList
-     */
-    object MeterPerSeconds : Speed("meter per second", "m/s", NoPrefix, 1.0)
-    object MilesPerHour : Speed("miles per hour", "mph", NoPrefix, 0.44704)
-    object Knot : Speed("knot", "kt", NoPrefix, 0.514444444444444)
-
-    override fun copy(): Speed {
-        return Speed(name, symbol, prefix, convFac, exponent, isLogarithmic)
-    }
+    val MeterPerSeconds = unit("meter per second", "m/s")
+    val MilesPerHour = unit("miles per hour", "mph", MS_PER_MPH)
+    val Knot = unit("knot", "kt", MS_PER_KNOT)
 }

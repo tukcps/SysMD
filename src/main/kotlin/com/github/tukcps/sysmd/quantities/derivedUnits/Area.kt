@@ -1,23 +1,19 @@
 package com.github.tukcps.sysmd.quantities.derivedUnits
 
-import com.github.tukcps.sysmd.quantities.DerivedUnit
-import com.github.tukcps.sysmd.quantities.NoPrefix
-import com.github.tukcps.sysmd.quantities.Prefix
+import com.github.tukcps.sysmd.quantities.*
 import com.github.tukcps.sysmd.quantities.baseUnits.Length
 
-private var siUnitSet = setOf(Length.Meter.copy(2))
+data object Area : DerivedQuantityKind("Area", setOf(
+    Length.Meter.pow(2)
+))
+{
+    val SQ_METERS_PER_SQ_FOOT = Length.METERS_PER_FOOT.pow(2)!!
+    // 1 Acre = 43560 ft²
+    val SQ_METERS_PER_ACRE = SQ_METERS_PER_SQ_FOOT * 43_560
+    val SQ_METERS_PER_SQ_INCH = Length.METERS_PER_INCH.pow(2)!!
 
-open class Area(name: String, symbol: String, prefix: Prefix, convFac: Double, exponent: Int = 1, isLogarithmic: Boolean = false) :
-    DerivedUnit(name, symbol, prefix, "Area", siUnitSet, convFac, exponent, isLogarithmic) {
+    val SquareMeters = unit("square meters", "m^2")
+    val Hectare = unit("hectare", "ha", 10000)
 
-    /**
-     * generate UnitObjects and add them to the UnitList
-     */
-    object SquareMeters : Area("square meters", "m^2", NoPrefix, 1.0)
-    object Hectare : Area("hectare", "ha", NoPrefix, 10000.0)
-    object Acre : Area("acre", "ac", NoPrefix, 4046.8564224)
-
-    override fun copy(): Area {
-        return Area(name, symbol, prefix, convFac, exponent, isLogarithmic)
-    }
+    val Acre = unit("acre", "ac", SQ_METERS_PER_ACRE)
 }

@@ -1,6 +1,5 @@
 package com.github.tukcps.sysmd.model.expression.functions
 
-import com.github.tukcps.sysmd.*
 import com.github.tukcps.sysmd.exceptions.SemanticError
 import com.github.tukcps.sysmd.model.expression.AstNode
 import com.github.tukcps.sysmd.model.kerml.Namespace
@@ -12,6 +11,8 @@ import io.github.tukcps.aadd.DDBuilder.IntMath.plus
 import io.github.tukcps.aadd.DDBuilder.RealMath.plus
 import io.github.tukcps.aadd.dd.AADD
 import io.github.tukcps.aadd.dd.IDD
+import io.github.tukcps.aadd.util.roundInwards
+import io.github.tukcps.aadd.util.roundOutwards
 import io.github.tukcps.aadd.values.bounds.*
 import io.github.tukcps.aadd.values.bounds.DoubleBoundMath.max
 import io.github.tukcps.aadd.values.bounds.DoubleBoundMath.min
@@ -187,19 +188,18 @@ internal class AstSumI(
             iteration.evalUpRec()
             currentSum -= iteration.upQuantity
             if (isEnd)
-                i = (i + 1L)!! // for sure no NaN
+                i += 1L
             else
-                i = (i - 1L)!!
+                i -= 1L
             if(i<0 && currentSum.values[0].asIdd().getRange().min > 0)
-                i = (i - 2L) !!
+                i -= 2L
                 //special case, because this case does not work otherwise. i+2 is calculated before returning ??
         }
-        return if (currentSum.values[0].asIdd().getRange().min eq 0L) //result exact
-            if (isEnd) IntegerRange((i - 1L) !! )
-            else IntegerRange((i + 1L) !! )
-        else
-            if (isEnd) IntegerRange((i - 2L) !!)
-            else IntegerRange((i +2L) !! )
+
+        val resultExact = currentSum.values[0].asIdd().getRange().min eq 0L
+        val adjust = (if(isEnd) -1L else +1L) * (if(resultExact) 1L else 2L)
+
+        return IntegerRange(i + adjust)
     }
 
     /**

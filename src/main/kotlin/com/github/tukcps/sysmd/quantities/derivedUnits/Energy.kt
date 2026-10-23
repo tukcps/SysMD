@@ -1,26 +1,18 @@
 package com.github.tukcps.sysmd.quantities.derivedUnits
 
-import com.github.tukcps.sysmd.quantities.DerivedUnit
-import com.github.tukcps.sysmd.quantities.NoPrefix
-import com.github.tukcps.sysmd.quantities.Prefix
+import com.github.tukcps.sysmd.quantities.DerivedQuantityKind
+import com.github.tukcps.sysmd.quantities.unit
+import com.github.tukcps.sysmd.quantities.baseUnits.Duration
 import com.github.tukcps.sysmd.quantities.baseUnits.Length
 import com.github.tukcps.sysmd.quantities.baseUnits.Mass
-import com.github.tukcps.sysmd.quantities.baseUnits.Duration
 
-private var siUnitSet = setOf(Length.Meter.copy(2), Mass.Kilogram.copy(), Duration.Second.copy(-2))
-
-open class Energy(name: String, symbol: String, prefix: Prefix, convFac: Double, exponent: Int = 1, isLogarithmic: Boolean = false) :
-    DerivedUnit(name, symbol, prefix, "Energy", siUnitSet, convFac, exponent, isLogarithmic) {
-
-    /**
-     * generate UnitObjects and add them to the UnitList
-     */
-    object Joule : Energy("joule", "J", NoPrefix, 1.0)
-    object WattSecond : Energy("watt-second", "Ws", NoPrefix, 1.0)
-    object WattHour : Energy("watt-hour", "Wh", NoPrefix, 3600.0)
-    object Calorie : Energy("calorie", "cal", NoPrefix, 4.184)
-
-    override fun copy(): Energy {
-        return Energy(name, symbol, prefix, convFac, exponent, isLogarithmic)
-    }
+data object Energy : DerivedQuantityKind("Energy", setOf(
+    Length.Meter.pow(2), Mass.Kilogram, Duration.Second.pow(-2)
+))
+{
+    val Joule = unit("joule", "J")
+    val WattSecond = unit("watt-second", "Ws")
+    val WattHour = unit("watt-hour", "Wh", 3600)
+    // thermochemical calorie per NIST SP 811 and ISO 80000-5
+    val Calorie = unit("calorie", "cal", "4.184")
 }

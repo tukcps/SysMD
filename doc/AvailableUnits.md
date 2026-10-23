@@ -15,9 +15,9 @@ For Quantities without a domain, the following types from the **Quantities** pac
 # Basic units
 | Domain                       | Unit                      |    Symbol     |
 |:-----------------------------|:--------------------------|:-------------:|
-| **AmountOfMoneyValue**       | Euro (base currency)      |      EUR      |
-|                              | US Dollar (live rate)     |      USD      |
-|                              | Pound Sterling (live rate) |     GBP      |
+| **AmountOfMoneyValue**       | Euro                      |      EUR      |
+|                              | US Dollar                 |      USD      |
+|                              | Pound Sterling            |      GBP      |
 | **AreaValue**                | Square Meter              |      m^2      |
 |                              | Acre                      |      ac       |
 |                              | Hectare                   |      ha       |
@@ -134,7 +134,7 @@ For Quantities without a domain, the following types from the **Quantities** pac
 | **EntropyValue**                  | Joule per kelvin  |    J/K     |
 
 **Notes**
-- Currency rates: EUR is the base currency. USD and GBP are converted with the ECB reference rates, which are fetched live at application start-up (frankfurter.dev). If the fetch fails (e.g. offline), built-in fallback rates are used (2026-10-02: 1 EUR = 1.1225 USD = 0.85033 GBP).
+- Currencies are considered independent of another with no implicit conversion possible.
 - `PS` is the unit metric horsepower. Consequently, petasiemens cannot be written as `PS`.
 - `Pi` (also `pi`, `π`) is the dimensionless factor π, whereas `rad` is 1.
 

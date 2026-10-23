@@ -257,3 +257,6 @@ src/test/resources/saveAndLoadProjectData/project/.project.json
 src/main/resources/metamodel/KerML.xmi
 src/main/resources/metamodel/SysML.xmi
 *.generated
+/.agents
+/.claude
+.mcp.json

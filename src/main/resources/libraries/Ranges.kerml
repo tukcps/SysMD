@@ -20,7 +20,7 @@ standard library package Ranges {
     For example, consider the following model:
 
         feature x: ScalarValues::Real, Ranges::OneInRange = f(something) {
-            range :>> [-3.141 .. 3.142];
+            range :>> -3.141 .. 3.142; // Also vectors allowed or unit, e.g. (1..2, 3..4) m
         }
 
        It inherits the types Real, which specifies that the result is generally from the domain of the Reals.
@@ -52,7 +52,7 @@ standard library package Ranges {
 
     // Abstract Range from which a Real is chosen
     datatype InRange :> Base::Anything {
-        feature range: ScalarValues::ScalarValue;
+        feature range: ScalarValues::ScalarValue; // must be "EvaluabelExpression"-> Vector with Unit!!
         // inv thatIsInRange { (that.min <= that.range.min) and (that.range.max <= that.max) }
         // Automatically added and globally solved by SysMD's compiler
     }

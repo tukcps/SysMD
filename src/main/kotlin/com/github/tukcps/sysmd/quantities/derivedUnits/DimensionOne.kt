@@ -1,26 +1,19 @@
 package com.github.tukcps.sysmd.quantities.derivedUnits
 
-import com.github.tukcps.sysmd.quantities.BaseUnit
-import com.github.tukcps.sysmd.quantities.DerivedUnit
-import com.github.tukcps.sysmd.quantities.NoPrefix
-import com.github.tukcps.sysmd.quantities.Prefix
+import com.github.tukcps.sysmd.quantities.DerivedQuantityKind
+import com.github.tukcps.sysmd.quantities.UnitOfKind
+import com.github.tukcps.sysmd.quantities.unit
+import io.github.tukcps.aadd.values.real.ia.RealRange
+import io.github.tukcps.aadd.values.real.ia.div
 
-private var siUnitSet = emptySet<BaseUnit>()
+data object DimensionOne : DerivedQuantityKind("DimensionOne", emptySet())
+{
+    val RADIANS_PER_DEGREE = RealRange.PI / 180.0
 
-open class DimensionOne(name: String, symbol: String, prefix: Prefix, convFac: Double, isLogarithmic: Boolean = false) :
-    DerivedUnit(name, symbol, prefix, "DimensionOne", siUnitSet, convFac, isLogarithmic = isLogarithmic) {
-
-    /**
-     * generate UnitObjects and add them to the UnitList
-     */
-    object One : DimensionOne("one", "1", NoPrefix, 1.0)
-    object Pi : DimensionOne("pi","π",NoPrefix,kotlin.math.PI)
-    object Degree : DimensionOne("degree","°",NoPrefix,2*kotlin.math.PI/360)
-    object Percent : DimensionOne("percent", "%", NoPrefix, 0.01)
-    object Decibel : DimensionOne("decibel", "dB", NoPrefix, 1.0, isLogarithmic = true)
-    object FLOPs : DimensionOne("floating point operations", "FLOPs", NoPrefix, 1.0)
-
-    override fun copy(): DimensionOne {
-        return DimensionOne(name, symbol, prefix, convFac, isLogarithmic)
-    }
+    val One = unit("one", "1")
+    val Pi = unit("pi", "π", RealRange.PI)
+    val Degree = unit("degree", "°", RADIANS_PER_DEGREE)
+    val Percent = unit("percent", "%", "0.01")
+    val Decibel = UnitOfKind(this, "decibel", "dB", isLogarithmic = true)
+    val FLOPs = unit("floating point operations", "FLOPs")
 }

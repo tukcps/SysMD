@@ -1,15 +1,12 @@
 package constraintnettests.functionstests
 
-import com.github.tukcps.sysmd.compareTo
 import com.github.tukcps.sysmd.exceptions.Issue
 import com.github.tukcps.sysmd.services.Runlevel
-import io.github.tukcps.aadd.values.bounds.DoubleBound
-import kotlin.test.assertEquals
 import util.*
 import util.mockup.loadKerML
 import kotlin.math.*
 import kotlin.test.Test
-import kotlin.test.assertTrue
+import kotlin.test.assertEquals
 
 class SqrtTests {
 

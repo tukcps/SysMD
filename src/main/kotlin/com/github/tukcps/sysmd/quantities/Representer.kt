@@ -1,9 +1,7 @@
 package com.github.tukcps.sysmd.quantities
 
-import com.github.tukcps.sysmd.roundOutwards
 import io.github.tukcps.aadd.dd.*
-import io.github.tukcps.aadd.util.Tolerance
-import io.github.tukcps.aadd.util.isNotEmpty
+import io.github.tukcps.aadd.util.*
 import io.github.tukcps.aadd.values.NumberRange
 import io.github.tukcps.aadd.values.bounds.DoubleBound
 import io.github.tukcps.aadd.values.bounds.DoubleBoundMath.toDouble
@@ -116,7 +114,7 @@ class Representer(
                             -> Double.MIN_VALUE
                         min > 0.0 && (max / min) > 10e24
                             -> Double.MIN_VALUE
-                        else -> prefix.value.factor
+                        else -> prefix.value.factor.max.toDouble()
                     }
                 }?.value ?: NoPrefix
 

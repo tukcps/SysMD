@@ -1,3 +1,5 @@
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier
+import org.gradle.api.artifacts.result.ResolvedArtifactResult
 import org.gradle.internal.os.OperatingSystem
 import java.nio.file.Files
 import java.nio.file.Path
@@ -14,14 +16,14 @@ import java.nio.file.Path
  * - for use of local AADD, set path to clone of it in `gradle.properties`.
  */
 group   = "com.github.tukcps"
-version = "4.3.1"               // must be number.number.number
+version = "4.3.2"               // must be number.number.number
 
 /**
  * Which version of AADD to use if downloaded automatically as Maven dependency.
  * If a local installation is used, adapt `gradle.properties` accordingly.
  * Take care of capital (or non-capital) spelling of AADD / aadd.
  */
-val aaddVersion = "0.9.13"
+val aaddVersion = "0.9.14"
 
 if (JavaVersion.current() < JavaVersion.VERSION_25) {
     throw GradleException("The build must be run with JVM 25 or newer.")
@@ -76,7 +78,7 @@ dependencies {
     // Check if we do a standalone-build or a hierarchical build with git submodules
     if(aaddLocal !== null && Files.isDirectory(aaddLocal)) {
         println("  *** using AADD from local clone in $aaddLocal         ***")
-        implementation(project(":AADD")) // Take care of capitalization!!!
+        implementation(project(":${aaddLocal.fileName}"))
     } else {
         println("  *** using AADD v$aaddVersion from Maven repository            ***")
         implementation("io.github.tukcps:aadd:$aaddVersion")
@@ -158,7 +160,17 @@ tasks.named<Jar>("jar") {
 // Sets the file name of the bootJar
 tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
     archiveFileName.set("sysmd-$version.jar")
-    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+
+    // JetBrains Compose publishes redirect stubs (e.g. org.jetbrains.compose.runtime:runtime-desktop) with the
+    // same file names as the androidx jars they point to. Drop them so they don't shadow the real jars.
+    val composeStubs = configurations.runtimeClasspath.map { cfg ->
+        val artifacts = cfg.incoming.artifacts.artifacts
+        fun group(a: ResolvedArtifactResult) = (a.id.componentIdentifier as? ModuleComponentIdentifier)?.group.orEmpty()
+        val androidxNames = artifacts.filter { group(it).startsWith("androidx.") }.map { it.file.name }.toSet()
+        artifacts.filter { group(it).startsWith("org.jetbrains.compose") && it.file.name in androidxNames }
+            .map { it.file }.toSet()
+    }
+    setClasspath(classpath!!.filter { it !in composeStubs.get() })
 }
 
 tasks.withType<org.springframework.boot.gradle.tasks.run.BootRun>().configureEach {
@@ -177,40 +189,12 @@ tasks.test {
     systemProperty("log4j2.level", "DEBUG")
 }
 
-/**
- * Task that generates an installer package for SysMD Notebook.
- * For Windows, WiX-Tools 3.0 to 3.11.2 must be installed.
- * If it does not work, make bootJar explicit first and ensure that the folder 'libraries' is empty before.
- */
-tasks.register<Exec>("generateSysMDInstaller") {
-    description = "Creates the SysMD installer"
-    group = "sysmd"
-    dependsOn("bootJar")
-
-    val os = OperatingSystem.current()
-
-    // Package type, depending on OS
-    val packageType = when {
-        os.isWindows -> "msi"
-        os.isMacOsX -> "dmg"
-        os.isLinux -> "deb"
-        else -> throw GradleException("Unsupported OS: ${os.name}")
-    }
-
-    // Icon path, depending on OS
-    val iconPath = when {
-        os.isWindows -> "src/main/resources/SysMD-Icon.ico"
-        os.isMacOsX -> "src/main/resources/SysMD-Icon.icns"
-        os.isLinux -> "src/main/resources/SysMD-Icon.png" // if needed by Linux
-        else -> throw GradleException("Unsupported OS: ${os.name}")
-    }
-
-    // Additional arguments for jPackage, depending on OS
-    val additionalArgs = when {
-        os.isWindows -> listOf("--win-shortcut", "--win-menu", "--win-dir-chooser", "--win-per-user-install")
-        os.isMacOsX -> emptyList()
-        os.isLinux -> emptyList()
-        else -> throw GradleException("Unsupported OS: ${os.name}")
+private fun ExecSpec.jpackage(packageType : String, additionalArgs : List<String> = emptyList())
+{
+    val iconPath = "src/main/resources/SysMD-Icon" + when(packageType) {
+        "msi","exe" -> ".ico"
+        "dmg","pkg" -> ".icns"
+        else -> ".png"
     }
 
     // Combination of arguments in a list of parameters for the command line
@@ -231,7 +215,83 @@ tasks.register<Exec>("generateSysMDInstaller") {
     ) + additionalArgs
 
     // Finally, execute jPackage command line
+    // If this fails with "Invalid or unsupported type", you are missing dependencies (e.g. rpmtools)
     commandLine(args)
+}
+
+/**
+ * Task that generates an installer package for SysMD Notebook.
+ * For Windows, WiX-Tools 3.0 to 3.11.2 must be installed.
+ * If it does not work, make bootJar explicit first and ensure that the folder 'libraries' is empty before.
+ */
+tasks.register<Exec>("generateSysMDInstaller") {
+    description = "Creates the SysMD installer"
+    group = "sysmd"
+    dependsOn("bootJar")
+
+    val os = OperatingSystem.current()
+
+    // Package type, depending on OS
+    val packageType = when {
+        os.isWindows -> "msi"
+        os.isMacOsX -> "dmg"
+        os.isLinux -> "deb" // TODO: also make RPM if host OS supports it
+        else -> throw GradleException("Unsupported OS: ${os.name}")
+    }
+
+    // Additional arguments for jPackage, depending on OS
+    val additionalArgs = when {
+        os.isWindows -> listOf("--win-shortcut", "--win-menu", "--win-dir-chooser", "--win-per-user-install")
+        os.isMacOsX -> emptyList()
+        os.isLinux -> emptyList()
+        else -> throw GradleException("Unsupported OS: ${os.name}")
+    }
+
+    jpackage(packageType, additionalArgs)
+}
+
+tasks.register<Exec>("generateSysMDAppDir") {
+    description = "Builds the directory structure that can be packaged into an AppImage executable"
+    group = "sysmd"
+    dependsOn("bootJar")
+
+    // jpackage refuses to write an app-image into an existing directory
+    doFirst { delete("build/installer/SysMD Notebook") }
+
+    jpackage("app-image")
+}
+
+/**
+ * Task that bundles the application directory into a Linux AppImage.
+ * Requires `appimagetool` to be installed and on the PATH.
+ */
+tasks.register<Exec>("generateSysMDAppImage") {
+    description = "Creates an executable linux appimage"
+    group = "sysmd"
+    dependsOn("generateSysMDAppDir")
+
+    val arch = System.getProperty("os.arch").let { if (it == "amd64") "x86_64" else it }
+    val appDir = file("build/installer/SysMD Notebook")
+    val appImage = file("build/installer/SysMD_Notebook-$version-$arch.AppImage")
+
+    // Turn the jpackage app-image into an AppDir: entry point, desktop file and icon at its root
+    doFirst {
+        val root = appDir.toPath()
+        Files.createSymbolicLink(root.resolve("AppRun"), Path.of("bin/SysMD Notebook"))
+        Files.copy(root.resolve("lib/SysMD Notebook.png"), root.resolve("sysmd-notebook.png"))
+        Files.writeString(root.resolve("sysmd-notebook.desktop"), """
+            |[Desktop Entry]
+            |Type=Application
+            |Name=SysMD Notebook
+            |Exec=AppRun
+            |Icon=sysmd-notebook
+            |Categories=Development;
+            |""".trimMargin())
+        appImage.delete()
+    }
+
+    environment("ARCH", arch)
+    commandLine("appimagetool", appDir, appImage)
 }
 
 /**

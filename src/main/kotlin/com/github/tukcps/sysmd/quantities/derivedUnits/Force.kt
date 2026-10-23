@@ -1,23 +1,17 @@
 package com.github.tukcps.sysmd.quantities.derivedUnits
 
-import com.github.tukcps.sysmd.quantities.DerivedUnit
-import com.github.tukcps.sysmd.quantities.NoPrefix
-import com.github.tukcps.sysmd.quantities.Prefix
+import com.github.tukcps.sysmd.quantities.DerivedQuantityKind
+import com.github.tukcps.sysmd.quantities.unit
+import com.github.tukcps.sysmd.quantities.baseUnits.Duration
 import com.github.tukcps.sysmd.quantities.baseUnits.Length
 import com.github.tukcps.sysmd.quantities.baseUnits.Mass
-import com.github.tukcps.sysmd.quantities.baseUnits.Duration
 
-private var siUnitSet = setOf(Length.Meter.copy(), Mass.Kilogram.copy(), Duration.Second.copy(-2))
+data object Force : DerivedQuantityKind("Force", setOf(
+    Length.Meter, Mass.Kilogram, Duration.Second.pow(-2)
+))
+{
+    /** The weight force exerted by a pound of mass under standard gravity */
+    val NEWTONS_PER_POUND = Mass.KG_PER_POUND * Acceleration.STANDARD_GRAVITY
 
-open class Force(name: String, symbol: String, prefix: Prefix, convFac: Double, exponent: Int = 1, isLogarithmic: Boolean = false) :
-    DerivedUnit(name, symbol, prefix, "Force", siUnitSet, convFac, exponent, isLogarithmic) {
-
-    /**
-     * generate UnitObjects and add them to the UnitList
-     */
-    object Newton : Force("newton", "N", NoPrefix, 1.0)
-
-    override fun copy(): Force {
-        return Force(name, symbol, prefix, convFac, exponent, isLogarithmic)
-    }
+    val Newton = unit("newton", "N")
 }
